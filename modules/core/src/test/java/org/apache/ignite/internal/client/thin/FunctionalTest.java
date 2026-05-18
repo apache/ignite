@@ -34,6 +34,7 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.cache.expiry.AccessedExpiryPolicy;
@@ -557,7 +558,10 @@ public class FunctionalTest extends AbstractBinaryArraysTest {
             expEx
         );
 
-        assertContains(log, expEx.getMessage(), Config.SERVER);
+        String[] addr = Config.SERVER.split(":");
+
+        assertContains(log, expEx.getMessage(),
+            Pattern.compile(".*" + Pattern.quote(addr[0]) + "(?:/<unresolved>)?:" + addr[1] + ".*"));
     }
 
 

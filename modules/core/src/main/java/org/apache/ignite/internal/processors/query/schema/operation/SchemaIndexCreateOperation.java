@@ -18,20 +18,17 @@
 package org.apache.ignite.internal.processors.query.schema.operation;
 
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.cache.query.QueryIndexMessage;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 
 /**
  * Schema index create operation.
  */
-public class SchemaIndexCreateOperation extends SchemaIndexAbstractOperation implements MarshallableMessage {
+public class SchemaIndexCreateOperation extends SchemaIndexAbstractOperation {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -41,11 +38,8 @@ public class SchemaIndexCreateOperation extends SchemaIndexAbstractOperation imp
 
     /** Index. */
     @GridToStringInclude
-    private QueryIndex idx;
-
-    /** Serialized form of 'query index'. */
     @Order(1)
-    transient byte[] qryIdxBytes;
+    QueryIndexMessage idxMsg;
 
     /** Ignore operation if index exists. */
     @Order(2)
@@ -56,7 +50,9 @@ public class SchemaIndexCreateOperation extends SchemaIndexAbstractOperation imp
     int parallel;
 
     /** */
-    public SchemaIndexCreateOperation() {}
+    public SchemaIndexCreateOperation() {
+        // No-op.
+    }
 
     /**
      * Constructor.
@@ -74,14 +70,14 @@ public class SchemaIndexCreateOperation extends SchemaIndexAbstractOperation imp
         super(opId, cacheName, schemaName);
 
         this.tblName = tblName;
-        this.idx = idx;
+        this.idxMsg = new QueryIndexMessage(idx);
         this.ifNotExists = ifNotExists;
         this.parallel = parallel;
     }
 
     /** {@inheritDoc} */
     @Override public String indexName() {
-        return QueryUtils.indexName(tblName, idx);
+        return QueryUtils.indexName(tblName, idxMsg.name, idxMsg.fields);
     }
 
     /**
@@ -95,7 +91,7 @@ public class SchemaIndexCreateOperation extends SchemaIndexAbstractOperation imp
      * @return Index params.
      */
     public QueryIndex index() {
-        return idx;
+        return QueryIndexMessage.queryIndex(idxMsg);
     }
 
     /**
@@ -112,21 +108,6 @@ public class SchemaIndexCreateOperation extends SchemaIndexAbstractOperation imp
      */
     public int parallel() {
         return parallel;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (idx != null)
-            qryIdxBytes = U.marshal(marsh, idx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (qryIdxBytes != null) {
-            idx = U.unmarshal(marsh, qryIdxBytes, clsLdr);
-
-            qryIdxBytes = null;
-        }
     }
 
     /** {@inheritDoc} */

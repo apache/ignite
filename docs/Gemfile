@@ -4,7 +4,7 @@ source "https://rubygems.org"
 
 gem 'asciidoctor'
 gem 'jekyll', group: :jekyll_plugins
-gem 'wdm', '~> 0.1.1' if Gem.win_platform?
+# gem 'wdm', '~> 0.1.1' if Gem.win_platform?
 group :jekyll_plugins do
   gem 'jekyll-asciidoc'
   gem 'jekyll-sass-converter', '~> 2.2'
@@ -13,6 +13,10 @@ end
 gem 'thread_safe', '~> 0.3.6'
 gem 'slim', '~> 4.0.1'
 gem 'tilt', '~> 2.0.9'
+gem 'bigdecimal', '~> 4.1'
+gem 'base64', '~> 0.3'
+gem 'csv', '~> 3.3'
+gem 'logger', '~> 1.7'
 
 # Ruby 3.0.0 requires dependency which doesn't contains in the bundle
 gem "webrick", "~> 1.7"

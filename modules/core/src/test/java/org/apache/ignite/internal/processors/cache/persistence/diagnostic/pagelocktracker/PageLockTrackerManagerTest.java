@@ -50,7 +50,7 @@ public class PageLockTrackerManagerTest extends GridCommonAbstractTest {
         System.setProperty("IGNITE_PAGE_LOCK_TRACKER_TYPE", String.valueOf(-1));
 
         try {
-            PageLockTrackerManager mgr = new PageLockTrackerManager(new ListeningTestLogger());
+            PageLockTrackerManager mgr = new PageLockTrackerManager("testIgniteInstance", "testManager", new ListeningTestLogger());
 
             PageLockListener pll = mgr.createPageLockTracker("test");
 
@@ -65,7 +65,7 @@ public class PageLockTrackerManagerTest extends GridCommonAbstractTest {
         System.setProperty("IGNITE_PAGE_LOCK_TRACKER_TYPE", String.valueOf(HEAP_LOG));
 
         try {
-            PageLockTrackerManager mgr = new PageLockTrackerManager(new ListeningTestLogger());
+            PageLockTrackerManager mgr = new PageLockTrackerManager("testIgniteInstance", "testManager", new ListeningTestLogger());
 
             PageLockListener pll = mgr.createPageLockTracker("test");
 
@@ -101,7 +101,7 @@ public class PageLockTrackerManagerTest extends GridCommonAbstractTest {
         System.setProperty("IGNITE_PAGE_LOCK_TRACKER_CHECK_INTERVAL", String.valueOf(timeOutWorkerInterval));
 
         try {
-            PageLockTrackerManager mgr = new PageLockTrackerManager(new ListeningTestLogger());
+            PageLockTrackerManager mgr = new PageLockTrackerManager("testIgniteInstance", "testManager", new ListeningTestLogger());
 
             mgr.start();
 

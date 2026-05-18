@@ -155,7 +155,7 @@ public class IgniteMock implements IgniteEx {
         ClassLoader lrd = staticCfg == null ? U.gridClassLoader() : U.resolveClassLoader(staticCfg);
 
         msgFactory = new IgniteMessageFactoryImpl(new MessageFactoryProvider[] {
-            new CoreMessagesProvider(marshaller, lrd)});
+            new CoreMessagesProvider(marshaller, marshaller, lrd)});
 
         try {
             kernalCtx = new StandaloneGridKernalContext(new GridTestLog4jLogger(), null) {

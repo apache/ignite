@@ -29,17 +29,13 @@ import org.jetbrains.annotations.Nullable;
  * As discovery messaging doesn't guarantee that message makes only one pass across the cluster
  * <b>MetadataRemoveAcceptedMessage</b> enables to mark it as duplicated so other nodes won't process it but skip.
  */
-public class MetadataRemoveAcceptedMessage implements DiscoveryCustomMessage {
+public class MetadataRemoveAcceptedMessage extends DiscoveryCustomMessage {
     /** */
     @Order(0)
-    IgniteUuid id;
-
-    /** */
-    @Order(1)
     int typeId;
 
     /** */
-    @Order(2)
+    @Order(1)
     boolean duplicated;
 
     /** Constructor. */
@@ -51,13 +47,9 @@ public class MetadataRemoveAcceptedMessage implements DiscoveryCustomMessage {
      * @param typeId Type id.
      */
     MetadataRemoveAcceptedMessage(int typeId) {
-        id = IgniteUuid.randomUuid();
-        this.typeId = typeId;
-    }
+        super(IgniteUuid.randomUuid());
 
-    /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
+        this.typeId = typeId;
     }
 
     /** {@inheritDoc} */

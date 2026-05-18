@@ -39,7 +39,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.CacheException;
@@ -175,7 +174,6 @@ import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.suggestions.JvmConfigurationSuggestions;
 import org.apache.ignite.internal.suggestions.OsConfigurationSuggestions;
 import org.apache.ignite.internal.systemview.ConfigurationViewWalker;
-import org.apache.ignite.internal.thread.pool.IgniteStripedExecutor;
 import org.apache.ignite.internal.util.TimeBag;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -220,6 +218,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.isolated.IsolatedDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.tracing.TracingConfigurationManager;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -904,7 +903,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         log = (GridLoggerProxy)cfg.getGridLogger().getLogger(
             getClass().getName() + (igniteInstanceName != null ? '%' + igniteInstanceName : ""));
 
-        longJVMPauseDetector = new LongJVMPauseDetector(log);
+        longJVMPauseDetector = new LongJVMPauseDetector(igniteInstanceName, log);
 
         longJVMPauseDetector.start();
 
@@ -948,7 +947,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
             startProcessor(clusterProc);
 
-            U.onGridStart();
+            U.onGridStart(igniteInstanceName);
 
             // Start and configure resource processor first as it contains resources used
             // by all other managers and processors.
@@ -1320,14 +1319,15 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
         List<MessageFactoryProvider> compMsgs = new ArrayList<>();
 
-        compMsgs.add(new CoreMessagesProvider(ctx.marshaller(), U.resolveClassLoader(ctx.config())));
+        ClassLoader resolvedClsLdr = U.resolveClassLoader(ctx.config());
+
+        compMsgs.add(new CoreMessagesProvider(ctx.marshallerContext().jdkMarshaller(), ctx.marshaller(), resolvedClsLdr));
 
         for (IgniteComponentType compType : IgniteComponentType.values()) {
             MessageFactoryProvider f = compType.messageFactory();
 
             if (f != null) {
-                if (f instanceof AbstractMarshallableMessageFactoryProvider)
-                    ((AbstractMarshallableMessageFactoryProvider)f).init(ctx.marshaller(), U.resolveClassLoader(ctx.config()));
+                initProvider(f, resolvedClsLdr);
 
                 compMsgs.add(f);
             }
@@ -1338,14 +1338,30 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         if (discoSpi instanceof IgniteDiscoverySpi) {
             MessageFactoryProvider discoMsgs = ((IgniteDiscoverySpi)discoSpi).messageFactoryProvider();
 
-            if (discoMsgs != null)
+            if (discoMsgs != null) {
+                initProvider(discoMsgs, resolvedClsLdr);
+
                 compMsgs.add(discoMsgs);
+            }
         }
 
         if (!compMsgs.isEmpty())
             msgs = F.concat(msgs, compMsgs.toArray(new MessageFactoryProvider[compMsgs.size()]));
 
         msgFactory = new IgniteMessageFactoryImpl(msgs);
+    }
+
+    /**
+     * Re-init {@link AbstractMarshallableMessageFactoryProvider} with a proper marshaller and classloader.
+     *
+     * @param factoryProvider Message factory provider.
+     * @param clsLdr Class loader.
+     */
+    private void initProvider(MessageFactoryProvider factoryProvider, ClassLoader clsLdr) {
+        if (factoryProvider instanceof AbstractMarshallableMessageFactoryProvider) {
+            ((AbstractMarshallableMessageFactoryProvider)factoryProvider).init(ctx.marshallerContext().jdkMarshaller(),
+                ctx.marshaller(), clsLdr);
+        }
     }
 
     /**
@@ -1362,37 +1378,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         return prc != null && prc.enabled()
             ? new IgniteSecurityProcessor(ctx, prc)
             : new NoOpIgniteSecurityProcessor(ctx);
-    }
-
-    /**
-     * Create description of an executor service for logging.
-     *
-     * @param execSvcName Name of the service.
-     * @param execSvc Service to create a description for.
-     */
-    private String createExecutorDescription(String execSvcName, ExecutorService execSvc) {
-        int poolSize = 0;
-        int poolActiveThreads = 0;
-        int poolQSize = 0;
-
-        if (execSvc instanceof ThreadPoolExecutor) {
-            ThreadPoolExecutor exec = (ThreadPoolExecutor)execSvc;
-
-            poolSize = exec.getPoolSize();
-            poolActiveThreads = Math.min(poolSize, exec.getActiveCount());
-            poolQSize = exec.getQueue().size();
-        }
-        else if (execSvc instanceof IgniteStripedExecutor) {
-            IgniteStripedExecutor exec = (IgniteStripedExecutor)execSvc;
-
-            poolSize = exec.stripesCount();
-            poolActiveThreads = exec.activeStripesCount();
-            poolQSize = exec.queueSize();
-        }
-
-        int poolIdleThreads = poolSize - poolActiveThreads;
-
-        return execSvcName + " [active=" + poolActiveThreads + ", idle=" + poolIdleThreads + ", qSize=" + poolQSize + "]";
     }
 
     /**
@@ -3198,11 +3183,11 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
                             reconnectState.firstReconnectFut.onDone(e);
 
-                            new Thread(() -> {
+                            new IgniteThread(igniteInstanceName, "node-stopper", () -> {
                                 U.error(log, "Stopping the node after a failed reconnect attempt.");
 
                                 close();
-                            }, "node-stopper").start();
+                            }).start();
                         }
                         else {
                             assert ctx.discovery().reconnectSupported();

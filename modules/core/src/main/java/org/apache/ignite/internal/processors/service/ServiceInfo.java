@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.service;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
@@ -30,6 +29,8 @@ import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceDescriptor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.service.ServiceTopology.EMPTY;
 
 /**
  * Service's information container.
@@ -55,7 +56,7 @@ public class ServiceInfo implements ServiceDescriptor {
 
     /** Topology snapshot. */
     @GridToStringInclude
-    private volatile Map<UUID, Integer> top;
+    private volatile ServiceTopology top = EMPTY;
 
     /** Service class. */
     private transient volatile Class<? extends Service> srvcCls;
@@ -97,8 +98,13 @@ public class ServiceInfo implements ServiceDescriptor {
      *
      * @param top Topology snapshot.
      */
-    public void topologySnapshot(@NotNull Map<UUID, Integer> top) {
+    public void updateServiceTopology(@NotNull ServiceTopology top) {
         this.top = top;
+    }
+
+    /** @return Service Topology. */
+    public ServiceTopology serviceTopology() {
+        return top;
     }
 
     /**
@@ -118,7 +124,7 @@ public class ServiceInfo implements ServiceDescriptor {
     }
 
     /**
-     * Rerurns services id.
+     * Returns services id.
      *
      * @return Service id.
      */
@@ -186,16 +192,7 @@ public class ServiceInfo implements ServiceDescriptor {
 
     /** {@inheritDoc} */
     @Override public Map<UUID, Integer> topologySnapshot() {
-        return top == null ? Collections.emptyMap() : Collections.unmodifiableMap(top);
-    }
-
-    /**
-     * Whether service topology was initialized.
-     *
-     * @return {@code True} if service topology was initialized.
-     */
-    public boolean topologyInitialized() {
-        return top != null;
+        return top.snapshot();
     }
 
     /** {@inheritDoc} */

@@ -94,6 +94,7 @@ import org.apache.ignite.internal.processors.query.calcite.rules.JoinOrderOptimi
 import org.apache.ignite.internal.processors.query.calcite.rules.OrToUnionRuleTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.ProjectScanMergeRuleTest;
 import org.apache.ignite.internal.processors.query.calcite.thin.MultiLineQueryTest;
+import org.apache.ignite.internal.processors.tx.TxThreadLockingTest;
 import org.apache.ignite.internal.processors.tx.TxWithExceptionalInterceptorTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -180,7 +181,7 @@ import org.junit.runners.Suite;
     TxWithExceptionalInterceptorTest.class,
     UserDefinedTxAwareFunctionsIntegrationTest.class,
     CacheWithInterceptorIntegrationTest.class,
-    TxWithExceptionalInterceptorTest.class,
+    TxThreadLockingTest.class,
     SelectByKeyFieldTest.class,
 })
 public class IntegrationTestSuite {

@@ -50,6 +50,9 @@ public class QueryEntityEx extends QueryEntity {
     /** INLINE_SIZE for affinity field index. */
     private Integer affKeyInlineSize;
 
+    /** Whether query entity was created by SQL. */
+    private boolean sql;
+
     /**
      * Default constructor.
      */
@@ -77,6 +80,7 @@ public class QueryEntityEx extends QueryEntity {
             fillAbsentPKsWithDefaults = other0.fillAbsentPKsWithDefaults;
             pkInlineSize = other0.pkInlineSize != null ? other0.pkInlineSize : -1;
             affKeyInlineSize = other0.affKeyInlineSize != null ? other0.affKeyInlineSize : -1;
+            sql = other0.sql;
         }
     }
 
@@ -117,6 +121,18 @@ public class QueryEntityEx extends QueryEntity {
     /** */
     public QueryEntity implicitPk(boolean implicitPk) {
         this.implicitPk = implicitPk;
+
+        return this;
+    }
+
+    /** */
+    public boolean sql() {
+        return sql;
+    }
+
+    /** */
+    public QueryEntityEx sql(boolean sql) {
+        this.sql = sql;
 
         return this;
     }
@@ -204,7 +220,8 @@ public class QueryEntityEx extends QueryEntity {
             && preserveKeysOrder == entity.preserveKeysOrder
             && implicitPk == entity.implicitPk
             && Objects.equals(pkInlineSize, entity.pkInlineSize)
-            && Objects.equals(affKeyInlineSize, entity.affKeyInlineSize);
+            && Objects.equals(affKeyInlineSize, entity.affKeyInlineSize)
+            && sql == entity.sql;
     }
 
     /** {@inheritDoc} */
@@ -216,6 +233,7 @@ public class QueryEntityEx extends QueryEntity {
         res = 31 * res + (implicitPk ? 1 : 0);
         res = 31 * res + (pkInlineSize != null ? pkInlineSize.hashCode() : 0);
         res = 31 * res + (affKeyInlineSize != null ? affKeyInlineSize.hashCode() : 0);
+        res = 31 * res + (sql ? 1 : 0);
         return res;
     }
 

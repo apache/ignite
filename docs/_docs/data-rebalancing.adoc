@@ -149,4 +149,4 @@ The following table lists the properties of `IgniteConfiguration` related to reb
 
 == Monitoring Rebalancing Process
 
-You can monitor the link:monitoring-metrics/metrics/new-metrics#caches[rebalancing process for specific caches using JMX].
+You can monitor the link:monitoring-metrics/new-metrics#caches[rebalancing process for specific caches using JMX].

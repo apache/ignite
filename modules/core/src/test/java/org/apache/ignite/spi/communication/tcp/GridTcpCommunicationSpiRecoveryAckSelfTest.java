@@ -400,7 +400,7 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
             GridSpiTestContext ctx = initSpiContext();
 
             ctx.messageFactory(new IgniteMessageFactoryImpl(
-                    new MessageFactoryProvider[] {new CoreMessagesProvider(jdk(), U.gridClassLoader()), GRID_TEST_MESSAGE_FACTORY})
+                    new MessageFactoryProvider[] {new CoreMessagesProvider(jdk(), jdk(), U.gridClassLoader()), GRID_TEST_MESSAGE_FACTORY})
             );
 
             ctx.setLocalNode(node);

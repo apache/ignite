@@ -241,6 +241,7 @@
                         <!-- This configuration checkstyle files will be obtained from the 'ignite-checkstyle' resources. -->
                         <configLocation>checkstyle/checkstyle.xml</configLocation>
                         <suppressionsLocation>checkstyle/checkstyle-suppressions.xml</suppressionsLocation>
+                        <suppressionsFileExpression>checkstyle.suppressions.file</suppressionsFileExpression>
                         <includeTestSourceDirectory>true</includeTestSourceDirectory>
                         <excludes>**/generated/**/*</excludes>
                     </configuration>
@@ -789,6 +790,7 @@
                                         <inputExclude>**/*.iml</inputExclude><!--IDEA files-->
                                         <inputExclude>**/*.csv</inputExclude><!--CSV files-->
                                         <inputExclude>**/*.jks</inputExclude><!--bin-files-->
+                                        <inputExclude>**/*.svg</inputExclude><!--SVG-files-->
                                         <inputExclude>**/pom-installed.xml</inputExclude><!--tmp-files-->
                                         <inputExclude>**/keystore</inputExclude><!--bin-files-->
                                         <inputExclude>**/keystore/*.jks</inputExclude><!--bin-files-->

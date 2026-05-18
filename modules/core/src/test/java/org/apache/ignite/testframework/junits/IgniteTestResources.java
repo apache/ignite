@@ -22,7 +22,6 @@ import java.lang.management.ManagementFactory;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -62,7 +61,7 @@ public class IgniteTestResources {
     private final String home = U.getIgniteHome();
 
     /** */
-    private ThreadPoolExecutor execSvc;
+    private IgniteThreadPoolExecutor execSvc;
 
     /** */
     private IgniteConfiguration cfg;
@@ -160,8 +159,13 @@ public class IgniteTestResources {
      * @param prestart Prestart flag.
      */
     public void startThreads(boolean prestart) {
-        execSvc = new IgniteThreadPoolExecutor(nodeId.toString(), null, 40, 40, Long.MAX_VALUE,
-                new LinkedBlockingQueue<>());
+        execSvc = new IgniteThreadPoolExecutor(
+            nodeId.toString(),
+            null,
+            40,
+            40,
+            Long.MAX_VALUE,
+            new LinkedBlockingQueue<>());
 
         // Improve concurrency for testing.
         if (prestart)
