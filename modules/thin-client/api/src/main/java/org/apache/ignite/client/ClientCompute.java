@@ -18,7 +18,6 @@
 package org.apache.ignite.client;
 
 import java.util.concurrent.Future;
-import org.apache.ignite.compute.ComputeTask;
 import org.jetbrains.annotations.Nullable;
 
 /**
