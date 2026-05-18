@@ -95,9 +95,6 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
     /** Reset consistent ID flag. */
     private boolean resetConsistentId;
 
-    /** Timeout in milliseconds to await for snapshot operation being completed. */
-    protected static final long TIMEOUT = 60_000;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);

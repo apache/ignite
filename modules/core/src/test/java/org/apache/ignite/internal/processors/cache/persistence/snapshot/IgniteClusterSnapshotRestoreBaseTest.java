@@ -41,6 +41,9 @@ public abstract class IgniteClusterSnapshotRestoreBaseTest extends AbstractSnaps
     /** Default shared cache group name. */
     protected static final String SHARED_GRP = "shared";
 
+    /** Timeout in milliseconds to await for snapshot operation being completed. */
+    protected static final long TIMEOUT = 60_000;
+
     /**
      * @param nodesCnt Nodes count.
      * @param keysCnt Number of keys to create.
