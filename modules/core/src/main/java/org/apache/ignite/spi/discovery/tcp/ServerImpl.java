@@ -117,6 +117,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.IgniteSpiContext;
@@ -3347,6 +3348,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                 byte[] msgBytes;
 
                 try {
+                    MessageSerializer ser = spi.messageFactory().serializer(msg.directType());
+
+                    if (ser != null)
+                        ser.prepareMarshalCacheObjects(msg, ((IgniteEx)spi.ignite()).context().cache().context(), null);
+                    
                     msgBytes = clientMsgSer.serializeMessage(msg);
                 }
                 catch (IgniteCheckedException | IOException e) {

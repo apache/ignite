@@ -100,6 +100,9 @@ public class MessageSerializerGenerator {
     /** Collection of lines for {@code readFrom} method. */
     private final List<String> read = new ArrayList<>();
 
+    /** */
+    private final List<String> marshall = new ArrayList<>();
+
     /** Collection of message-specific imports. */
     private final Set<String> imports = new TreeSet<>();
 
@@ -114,9 +117,6 @@ public class MessageSerializerGenerator {
 
     /** The marshallable message type. */
     private final TypeMirror marshallableMsgType;
-
-    /** */
-    private final List<String> prepareCacheObjects = new ArrayList<>();
 
     /** */
     private int indent;
@@ -193,10 +193,10 @@ public class MessageSerializerGenerator {
 
             writer.write(TAB + "}" + NL);
 
-            if (!prepareCacheObjects.isEmpty()) {
+            if (!marshall.isEmpty()) {
                 writer.write(NL);
 
-                for (String p: prepareCacheObjects)
+                for (String p: marshall)
                     writer.write(p + NL);
             }
 
@@ -213,23 +213,23 @@ public class MessageSerializerGenerator {
 
         ++indent;
 
-        writer.write(identedLine(METHOD_JAVADOC));
+        writer.write(indentedLine(METHOD_JAVADOC));
         writer.write(NL);
-        writer.write(identedLine("public " + serClsName + "(Marshaller marshaller, ClassLoader clsLdr) {"));
+        writer.write(indentedLine("public " + serClsName + "(Marshaller marshaller, ClassLoader clsLdr) {"));
 
         writer.write(NL);
 
         ++indent;
 
-        writer.write(identedLine("this.marshaller = marshaller;"));
+        writer.write(indentedLine("this.marshaller = marshaller;"));
         writer.write(NL);
-        writer.write(identedLine("this.clsLdr = clsLdr;"));
+        writer.write(indentedLine("this.clsLdr = clsLdr;"));
 
         --indent;
 
         writer.write(NL);
 
-        writer.write(identedLine("}"));
+        writer.write(indentedLine("}"));
         writer.write(NL);
 
         --indent;
@@ -257,407 +257,200 @@ public class MessageSerializerGenerator {
 
     /** */
     private void generateCacheObjectMarshallMethods(List<VariableElement> orderedFields) throws Exception {
-        List<VariableElement> traversable = new ArrayList<>();
-
-        for (VariableElement field: orderedFields) {
-            if (classify(field.asType()) != FieldKind.SKIP)
-                traversable.add(field);
-        }
-
-        if (traversable.isEmpty())
-            return;
-
         imports.add("org.apache.ignite.IgniteCheckedException");
         imports.add("org.apache.ignite.internal.processors.cache.CacheObjectValueContext");
         imports.add("org.apache.ignite.internal.processors.cache.GridCacheSharedContext");
         imports.add("org.apache.ignite.internal.processors.cache.GridCacheContext");
 
-        startCacheObjectMethod(prepareCacheObjects);
+        indent = 1;
+
+        marshall.add(indentedLine(METHOD_JAVADOC));
+
+        marshall.add(indentedLine(
+            "@Override public void prepareMarshalCacheObjects(" + simpleNameWithGeneric(type) +
+                " msg, GridCacheSharedContext<?,?> sctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {"));
 
         indent++;
 
         if (isCacheIdAwareMessage(type))
-            prepareCacheObjects.add(
-                identedLine("GridCacheContext<?, ?> ctx = nested == null ? sctx.cacheContext(msg.cacheId()) : nested;"));
+            marshall.add(
+                indentedLine("GridCacheContext<?, ?> ctx = nested == null ? sctx.cacheContext(msg.cacheId()) : nested;"));
         else
-            prepareCacheObjects.add(identedLine("GridCacheContext<?, ?> ctx = nested;"));
-        
-        prepareCacheObjects.add(EMPTY);
+            marshall.add(indentedLine("GridCacheContext<?, ?> ctx = nested;"));
 
-        boolean first = true;
-
-        for (VariableElement field: traversable) {
-            if (!first)
-                prepareCacheObjects.add(EMPTY);
-
-            emitCacheObjectCall(prepareCacheObjects, field);
-
-            first = false;
+        for (VariableElement field: orderedFields) {
+            if (!marshall.get(marshall.size() - 1).equals(EMPTY))
+                marshall.add(EMPTY);
+            
+            List<String> elemCode = new ArrayList<>();
+            
+            marshall(field.asType(), fieldAccessor(field), elemCode);
+            
+            marshall.addAll(elemCode);
         }
+
+        if (marshallableMessage())           
+            marshall.add(indentedLine("msg.prepareMarshal(marshaller);"));
 
         indent--;
 
-        prepareCacheObjects.add(identedLine("}"));
-    }
-
-    /** Traversal kinds for {@link #generateCacheObjectMarshallMethods}. */
-    private enum FieldKind {
-        /** {@code CacheObject} / {@code KeyCacheObject} scalar. */
-        CO,
-        /** {@code Collection<CacheObject>} / {@code Collection<KeyCacheObject>}. */
-        CO_COLL,
-        /** {@code CacheObject[]} / {@code KeyCacheObject[]}. */
-        CO_ARR,
-        /** Nested concrete {@code Message}. */
-        MSG,
-        /** {@code Collection<? extends Message>} with concrete element type. */
-        MSG_COLL,
-        /** {@code Message[]} with concrete component type. */
-        MSG_ARR,
-        /** {@code Map<K, V>} with at least one CacheObject/Message side. */
-        MAP,
-        /** Skipped — abstract Message, cross-cache nested Message, Map with no traversable side, unsupported. */
-        SKIP
+        marshall.add(indentedLine("}"));
     }
 
     /** */
-    private FieldKind classify(TypeMirror t) {
+    private void marshall(TypeMirror t, String accessor, List<String> code) {
         if (t.getKind() == TypeKind.ARRAY) {
             TypeMirror comp = ((ArrayType)t).getComponentType();
 
-            if (comp.getKind() != TypeKind.DECLARED)
-                return FieldKind.SKIP;
+            if (comp.getKind() == TypeKind.DECLARED) {
+                imports.add(((QualifiedNameable)((DeclaredType)comp).asElement()).getQualifiedName().toString());
 
-            if (isCacheObjectType(comp))
-                return FieldKind.CO_ARR;
+                code.add(indentedLine("if (%s != null) {", accessor));
 
-            return isRecursableMessage(comp) ? FieldKind.MSG_ARR : FieldKind.SKIP;
+                indent++;
+
+                String el = "e" + indent;
+
+                code.add(indentedLine("for (%s %s : %s) {", ((DeclaredType)comp).asElement().getSimpleName().toString(), el, accessor));
+
+                indent++;
+
+                marshall(comp, el, code);
+
+                indent--;
+
+                code.add(indentedLine("}"));
+
+                indent--;
+
+                code.add(indentedLine("}"));
+            }
         }
+        else if (t.getKind() == TypeKind.DECLARED) {
+            if (isMessage(t)) {
+                code.add(indentedLine("if (%s != null)", accessor));
 
-        if (t.getKind() != TypeKind.DECLARED)
-            return FieldKind.SKIP;
+                indent++;
 
-        if (isCacheObjectType(t))
-            return FieldKind.CO;
+                code.add(indentedLine(
+                    "sctx.gridIO().messageFactory().serializer(%s.directType()).prepareMarshalCacheObjects(%s, sctx, ctx);",
+                    accessor,
+                    accessor));
 
-        if (assignableFrom(erasedType(t), type(Map.class.getName()))) {
-            List<? extends TypeMirror> args = ((DeclaredType)t).getTypeArguments();
+                indent--;
+            }
+            else if (isCacheObject(t)) {
+                code.add(indentedLine("if (%s != null)", accessor));
 
-            if (args.size() != 2)
-                return FieldKind.SKIP;
+                indent++;
 
-            FieldKind kSide = classifyMapSide(args.get(0));
-            FieldKind vSide = classifyMapSide(args.get(1));
+                code.add(indentedLine("%s.prepareMarshal(ctx != null ? ctx.cacheObjectContext() : null);", accessor));
 
-            if (kSide == FieldKind.SKIP && vSide == FieldKind.SKIP)
-                return FieldKind.SKIP;
+                indent--;
+            }
+            else if (assignableFrom(erasedType(t), type(Map.class.getName()))) {
+                List<? extends TypeMirror> args = ((DeclaredType)t).getTypeArguments();
 
-            return FieldKind.MAP;
+                TypeMirror keyType = args.get(0);
+                TypeMirror valType = args.get(1);
+
+                String el = "e" + indent;
+
+                code.add(indentedLine("if (%s != null) {", accessor));
+
+                indent++;
+
+                if (keyType.getKind() == TypeKind.DECLARED) {
+                    imports.add(((QualifiedNameable)((DeclaredType)keyType).asElement()).getQualifiedName().toString());
+                    imports.add("java.util.Collection");
+
+                    String type = ((DeclaredType)keyType).asElement().getSimpleName().toString();
+
+                    code.add(indentedLine("for (%s %s : ((Collection<? extends %s>)%s.keySet())) {", type, el, type, accessor));
+
+                    indent++;
+
+                    marshall(keyType, el, code);
+
+                    indent--;
+
+                    code.add(indentedLine("}"));
+                }
+
+                if (valType.getKind() == TypeKind.DECLARED) {
+                    imports.add(((QualifiedNameable)((DeclaredType)valType).asElement()).getQualifiedName().toString());
+                    imports.add("java.util.Collection");
+
+                    String type = ((DeclaredType)valType).asElement().getSimpleName().toString();
+
+                    code.add(indentedLine("for (%s %s : ((Collection<? extends %s>)%s.values())) {", type, el, type, accessor));
+
+                    indent++;
+
+                    marshall(valType, el, code);
+
+                    indent--;
+
+                    code.add(indentedLine("}"));
+                }
+
+                indent--;
+
+                code.add(indentedLine("}"));
+            }
+            else if (assignableFrom(erasedType(t), type(Collection.class.getName()))) {
+                List<? extends TypeMirror> args = ((DeclaredType)t).getTypeArguments();
+
+                TypeMirror arg = args.get(0);
+
+                if (arg.getKind() == TypeKind.DECLARED) {
+                    imports.add(((QualifiedNameable)((DeclaredType)arg).asElement()).getQualifiedName().toString());
+                    imports.add("java.util.Collection");
+
+                    String el = "e" + indent;
+
+                    code.add(indentedLine("if (%s != null) {", accessor));
+
+                    indent++;
+
+                    String type = ((DeclaredType)arg).asElement().getSimpleName().toString();
+
+                    code.add(indentedLine("for (%s %s : (Collection<? extends %s>)%s) {", type, el, type, accessor));
+
+                    indent++;
+
+                    marshall(arg, el, code);
+
+                    indent--;
+
+                    code.add(indentedLine("}"));
+
+                    indent--;
+
+                    code.add(indentedLine("}"));
+                }
+            }
+            else {
+                if (!code.isEmpty())
+                    code.add(indentedLine("// No-op."));
+            }
         }
-
-        if (assignableFrom(erasedType(t), type(Collection.class.getName()))) {
-            List<? extends TypeMirror> args = ((DeclaredType)t).getTypeArguments();
-
-            if (args.size() != 1)
-                return FieldKind.SKIP;
-
-            TypeMirror arg = args.get(0);
-
-            if (arg.getKind() != TypeKind.DECLARED)
-                return FieldKind.SKIP;
-
-            if (isCacheObjectType(arg))
-                return FieldKind.CO_COLL;
-
-            return isRecursableMessage(arg) ? FieldKind.MSG_COLL : FieldKind.SKIP;
-        }
-
-        return isRecursableMessage(t) ? FieldKind.MSG : FieldKind.SKIP;
-    }
-
-    /** Classifies one side (key or value) of a {@code Map} field: {@link FieldKind#CO}, {@link FieldKind#MSG}, or
-     *  {@link FieldKind#SKIP}. */
-    private FieldKind classifyMapSide(TypeMirror t) {
-        if (t.getKind() != TypeKind.DECLARED)
-            return FieldKind.SKIP;
-
-        if (isCacheObjectType(t))
-            return FieldKind.CO;
-
-        return isRecursableMessage(t) ? FieldKind.MSG : FieldKind.SKIP;
+        
     }
 
     /** */
-    private boolean isCacheObjectType(TypeMirror type) {
+    private boolean isCacheObject(TypeMirror type) {
         return assignableFrom(type, type("org.apache.ignite.internal.processors.cache.CacheObject"));
     }
 
-    /** True if {@code t} is a concrete non-abstract {@code Message} safe to recurse into (no self-ref). */
-    private boolean isRecursableMessage(TypeMirror t) {
-        TypeMirror msgIface = type(MESSAGE_INTERFACE);
-
-        if (msgIface == null || !assignableFrom(t, msgIface))
-            return false;
-
-        Element el = env.getTypeUtils().asElement(t);
-
-        if (!(el instanceof TypeElement))
-            return false;
-
-        TypeElement te = (TypeElement)el;
-
-        return !te.equals(type);
+    /** */
+    private boolean isMessage(TypeMirror type) {
+        return assignableFrom(type, type(MESSAGE_INTERFACE));
     }
 
     /** True if {@code te} extends {@code CacheIdAware} and therefore carries its own per-cache {@code cacheId()}. */
     private boolean isCacheIdAwareMessage(TypeElement te) {
         return assignableFrom(te.asType(), type("org.apache.ignite.plugin.extensions.communication.CacheIdAware"));
-    }
-
-    /** */
-    private void startCacheObjectMethod(List<String> code) {
-        indent = 1;
-
-        code.add(identedLine(METHOD_JAVADOC));
-
-        code.add(identedLine(
-            "@Override public void prepareMarshalCacheObjects(" + simpleNameWithGeneric(type) +
-                " msg, GridCacheSharedContext<?,?> sctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {"));
-    }
-
-    /** */
-    private void emitCacheObjectCall(List<String> code, VariableElement field) {
-        String accessor = fieldAccessor(field);
-        TypeMirror t = field.asType();
-        FieldKind kind = classify(t);
-
-        switch (kind) {
-            case CO:
-                emitCoDirect(code, accessor);
-                break;
-
-            case CO_COLL:
-            case CO_ARR:
-                emitCoIterable(code, accessor, t, kind == FieldKind.CO_ARR);
-                break;
-
-            case MSG:
-                emitMsgDirect(code, accessor);
-                break;
-
-            case MSG_COLL:
-                emitMsgIterable(code, accessor, (DeclaredType)((DeclaredType)t).getTypeArguments().get(0));
-                break;
-
-            case MSG_ARR:
-                emitMsgIterable(code, accessor, (DeclaredType)((ArrayType)t).getComponentType());
-                break;
-
-            case MAP:
-                emitMapTraversal(code, accessor, (DeclaredType)t);
-                break;
-
-            default:
-                throw new IllegalStateException("Unexpected kind: " + kind);
-        }
-    }
-
-    /** */
-    private void emitMapTraversal(List<String> code, String accessor, DeclaredType mapType) {
-        List<? extends TypeMirror> args = mapType.getTypeArguments();
-
-        TypeMirror keyT = args.get(0);
-        TypeMirror valT = args.get(1);
-
-        FieldKind kSide = classifyMapSide(keyT);
-        FieldKind vSide = classifyMapSide(valT);
-
-        code.add(identedLine("if (%s != null) {", accessor));
-
-        indent++;
-
-        if (kSide != FieldKind.SKIP)
-            emitMapSideIteration(code, accessor, keyT, kSide, true);
-
-        if (kSide != FieldKind.SKIP && vSide != FieldKind.SKIP)
-            code.add(EMPTY);
-
-        if (vSide != FieldKind.SKIP)
-            emitMapSideIteration(code, accessor, valT, vSide, false);
-
-        indent--;
-
-        code.add(identedLine("}"));
-    }
-
-    /** */
-    private void emitMapSideIteration(
-        List<String> code,
-        String accessor,
-        TypeMirror sideType,
-        FieldKind sideKind,
-        boolean isKey
-    ) {
-        String side = accessor + (isKey ? ".keySet()" : ".values()");
-
-        String var = isKey ? "k" : "v";
-
-        if (sideKind == FieldKind.CO) {
-            String elementType = "org.apache.ignite.internal.processors.cache.KeyCacheObject";
-
-            if (!assignableFrom(sideType, type(elementType)))
-                elementType = "org.apache.ignite.internal.processors.cache.CacheObject";
-
-            imports.add(elementType);
-
-            String simple = elementType.substring(elementType.lastIndexOf('.') + 1);
-
-            code.add(identedLine("for (%s %s : %s) {", simple, var, side));
-
-            indent++;
-
-            code.add(identedLine("if (%s != null)", var));
-
-            indent++;
-
-            code.add(identedLine("%s.prepareMarshal(ctx != null ? ctx.cacheObjectContext() : null);", var));
-
-            indent--;
-            indent--;
-
-            code.add(identedLine("}"));
-        }
-        else {
-            assert sideKind == FieldKind.MSG : sideKind;
-
-            DeclaredType msgType = (DeclaredType)sideType;
-            String elemSimple = msgType.asElement().getSimpleName().toString();
-
-            imports.add(((TypeElement)msgType.asElement()).getQualifiedName().toString());
-
-            code.add(identedLine("for (%s %s : %s) {", elemSimple, var, side));
-
-            indent++;
-
-            code.add(identedLine("if (%s != null)", var));
-
-            indent++;
-
-            code.add(identedLine(
-                "sctx.gridIO().messageFactory().serializer(%s.directType()).prepareMarshalCacheObjects(%s, sctx, ctx);", var, var));
-
-            indent--;
-            indent--;
-
-            code.add(identedLine("}"));
-        }
-    }
-
-    /** */
-    private void emitCoDirect(List<String> code, String accessor) {
-        code.add(identedLine("if (%s != null)", accessor));
-
-        indent++;
-
-        code.add(identedLine("%s.prepareMarshal(ctx != null ? ctx.cacheObjectContext() : null);", accessor));
-
-        indent--;
-    }
-
-    /** */
-    private void emitCoIterable(List<String> code, String accessor, TypeMirror t, boolean isArr) {
-        String elementType = "org.apache.ignite.internal.processors.cache.KeyCacheObject";
-
-        TypeMirror elem = isArr ? ((ArrayType)t).getComponentType() : ((DeclaredType)t).getTypeArguments().get(0);
-
-        if (!assignableFrom(elem, type(elementType)))
-            elementType = "org.apache.ignite.internal.processors.cache.CacheObject";
-
-        imports.add(elementType);
-
-        String simple = elementType.substring(elementType.lastIndexOf('.') + 1);
-
-        code.add(identedLine("if (%s != null) {", accessor));
-
-        indent++;
-
-        code.add(identedLine("for (%s obj : %s) {", simple, accessor));
-
-        indent++;
-
-        code.add(identedLine("if (obj != null)"));
-
-        indent++;
-
-        code.add(identedLine("obj.prepareMarshal(ctx != null ? ctx.cacheObjectContext() : null);"));
-
-        indent--;
-        
-        indent--;
-
-        code.add(identedLine("}"));
-
-        indent--;
-
-        code.add(identedLine("}"));
-    }
-
-    /** */
-    private void emitMsgDirect(List<String> code, String accessor) {
-        code.add(identedLine("if (%s != null)", accessor));
-
-        indent++;
-
-        code.add(identedLine(
-            "sctx.gridIO().messageFactory().serializer(%s.directType()).prepareMarshalCacheObjects(%s, sctx, ctx);", accessor, accessor));
-
-        indent--;
-    }
-
-    /** */
-    private void emitMsgIterable(List<String> code, String accessor, DeclaredType elemType) {
-        String elemSimple = elemType.asElement().getSimpleName().toString();
-
-        imports.add(((TypeElement)elemType.asElement()).getQualifiedName().toString());
-
-        code.add(identedLine("if (%s != null) {", accessor));
-
-        indent++;
-
-        code.add(identedLine("for (%s e : %s) {", elemSimple, accessor));
-
-        indent++;
-
-        code.add(identedLine("if (e != null)"));
-
-        indent++;
-
-        code.add(identedLine("sctx.gridIO().messageFactory().serializer(e.directType()).prepareMarshalCacheObjects(e, sctx, ctx);"));
-
-        indent--;
-        indent--;
-
-        code.add(identedLine("}"));
-
-        indent--;
-
-        code.add(identedLine("}"));
-    }
-
-    /** Converts {@code CacheInvokeDirectResult} to {@code CACHE_INVOKE_DIRECT_RESULT}. */
-    private static String camelToConstant(String simple) {
-        StringBuilder sb = new StringBuilder(simple.length() + 8);
-
-        for (int i = 0; i < simple.length(); i++) {
-            char c = simple.charAt(i);
-
-            if (i > 0 && Character.isUpperCase(c) && !Character.isUpperCase(simple.charAt(i - 1)))
-                sb.append('_');
-
-            sb.append(Character.toUpperCase(c));
-        }
-
-        return sb.toString();
     }
 
     /** */
@@ -685,57 +478,31 @@ public class MessageSerializerGenerator {
     private void start(Collection<String> code, boolean write) {
         indent = 1;
 
-        code.add(identedLine(METHOD_JAVADOC));
+        code.add(indentedLine(METHOD_JAVADOC));
 
-        code.add(identedLine("@Override public boolean %s(" + simpleNameWithGeneric(type) + " msg, %s) {",
+        code.add(indentedLine("@Override public boolean %s(" + simpleNameWithGeneric(type) + " msg, %s) {",
             write ? "writeTo" : "readFrom",
             write ? "MessageWriter writer" : "MessageReader reader"));
 
         indent++;
 
         if (write) {
-            code.add(identedLine("if (!writer.isHeaderWritten()) {"));
+            code.add(indentedLine("if (!writer.isHeaderWritten()) {"));
 
             indent++;
 
             returnFalseIfWriteFailed(code, "writer.writeHeader", "directType()");
 
-            if (write && marshallableMessage()) {
-                imports.add("org.apache.ignite.IgniteCheckedException");
-                imports.add("org.apache.ignite.IgniteException");
-
-                code.add(EMPTY);
-
-                code.add(identedLine("try {"));
-
-                indent++;
-
-                code.add(identedLine("msg.prepareMarshal(marshaller);"));
-
-                indent--;
-
-                code.add(identedLine("}"));
-                code.add(identedLine("catch (IgniteCheckedException e) {"));
-
-                indent++;
-
-                code.add(identedLine("throw new IgniteException(\"Failed to marshal object \" + msg.getClass().getSimpleName(), e);"));
-
-                indent--;
-
-                code.add(identedLine("}"));
-            }
-
             code.add(EMPTY);
-            code.add(identedLine("writer.onHeaderWritten();"));
+            code.add(indentedLine("writer.onHeaderWritten();"));
 
             indent--;
 
-            code.add(identedLine("}"));
+            code.add(indentedLine("}"));
             code.add(EMPTY);
         }
 
-        code.add(identedLine("switch (%s.state()) {", write ? "writer" : "reader"));
+        code.add(indentedLine("switch (%s.state()) {", write ? "writer" : "reader"));
     }
 
     /**
@@ -764,14 +531,14 @@ public class MessageSerializerGenerator {
      * @param opt Case option.
      */
     private void writeField(VariableElement field, int opt) throws Exception {
-        write.add(identedLine("case %d:", opt));
+        write.add(indentedLine("case %d:", opt));
 
         indent++;
 
         returnFalseIfWriteFailed(field);
 
         write.add(EMPTY);
-        write.add(identedLine("writer.incrementState();"));
+        write.add(indentedLine("writer.incrementState();"));
         write.add(EMPTY);
 
         indent--;
@@ -792,14 +559,14 @@ public class MessageSerializerGenerator {
      * @param opt Case option.
      */
     private void readField(VariableElement field, int opt) throws Exception {
-        read.add(identedLine("case %d:", opt));
+        read.add(indentedLine("case %d:", opt));
 
         indent++;
 
         returnFalseIfReadFailed(field);
 
         read.add(EMPTY);
-        read.add(identedLine("reader.incrementState();"));
+        read.add(indentedLine("reader.incrementState();"));
         read.add(EMPTY);
 
         indent--;
@@ -961,11 +728,11 @@ public class MessageSerializerGenerator {
     private void returnFalseIfWriteFailed(Collection<String> code, String accessor, @Nullable String... args) {
         String argsStr = String.join(", ", args);
 
-        code.add(identedLine("if (!%s(msg.%s))", accessor, argsStr));
+        code.add(indentedLine("if (!%s(msg.%s))", accessor, argsStr));
 
         indent++;
 
-        code.add(identedLine(RETURN_FALSE_STMT));
+        code.add(indentedLine(RETURN_FALSE_STMT));
 
         indent--;
     }
@@ -977,15 +744,15 @@ public class MessageSerializerGenerator {
         String argsStr = String.join(", ", args);
 
         if (type.equals(field.getEnclosingElement()))
-            code.add(identedLine("if (!%s(msg.%s))", accessor, argsStr));
+            code.add(indentedLine("if (!%s(msg.%s))", accessor, argsStr));
         else {
             // Field has to be requested from a super class object.
-            code.add(identedLine("if (!%s(((%s)msg).%s))", accessor, field.getEnclosingElement().getSimpleName(), argsStr));
+            code.add(indentedLine("if (!%s(((%s)msg).%s))", accessor, field.getEnclosingElement().getSimpleName(), argsStr));
         }
 
         indent++;
 
-        code.add(identedLine(RETURN_FALSE_STMT));
+        code.add(indentedLine(RETURN_FALSE_STMT));
 
         indent--;
     }
@@ -1000,16 +767,16 @@ public class MessageSerializerGenerator {
         String mapperCall,
         String fieldGetterCall) {
         if (type.equals(field.getEnclosingElement()))
-            code.add(identedLine("if (!%s(%s(msg.%s)))", writerCall, mapperCall, fieldGetterCall));
+            code.add(indentedLine("if (!%s(%s(msg.%s)))", writerCall, mapperCall, fieldGetterCall));
         else {
             // Field has to be requested from a super class object.
-            code.add(identedLine("if (!%s(%s(((%s)msg).%s)))",
+            code.add(indentedLine("if (!%s(%s(((%s)msg).%s)))",
                 writerCall, mapperCall, field.getEnclosingElement().getSimpleName(), fieldGetterCall));
         }
 
         indent++;
 
-        code.add(identedLine(RETURN_FALSE_STMT));
+        code.add(indentedLine(RETURN_FALSE_STMT));
 
         indent--;
     }
@@ -1303,20 +1070,20 @@ public class MessageSerializerGenerator {
         String argsStr = String.join(", ", args);
 
         if (type.equals(field.getEnclosingElement()))
-            read.add(identedLine("msg.%s = %s(%s);", field.getSimpleName().toString(), mtd, argsStr));
+            read.add(indentedLine("msg.%s = %s(%s);", field.getSimpleName().toString(), mtd, argsStr));
         else {
             // Field has to be requested from a super class object.
-            read.add(identedLine("((%s)msg).%s = %s(%s);",
+            read.add(indentedLine("((%s)msg).%s = %s(%s);",
                 field.getEnclosingElement().getSimpleName(), field.getSimpleName().toString(), mtd, argsStr));
         }
 
         read.add(EMPTY);
 
-        read.add(identedLine("if (!reader.isLastRead())"));
+        read.add(indentedLine("if (!reader.isLastRead())"));
 
         indent++;
 
-        read.add(identedLine(RETURN_FALSE_STMT));
+        read.add(indentedLine(RETURN_FALSE_STMT));
 
         indent--;
     }
@@ -1335,20 +1102,20 @@ public class MessageSerializerGenerator {
             readOp = line("%s(%s, reader.readByte())", mapperDecodeCallStmnt, enumValuesFieldName);
 
         if (type.equals(field.getEnclosingElement()))
-            read.add(identedLine("msg.%s = %s;", field.getSimpleName().toString(), readOp));
+            read.add(indentedLine("msg.%s = %s;", field.getSimpleName().toString(), readOp));
         else {
             // Field has to be requested from a super class object.
-            read.add(identedLine("((%s)msg).%s = %s;",
+            read.add(indentedLine("((%s)msg).%s = %s;",
                 field.getEnclosingElement().getSimpleName(), field.getSimpleName().toString(), readOp));
         }
 
         read.add(EMPTY);
 
-        read.add(identedLine("if (!reader.isLastRead())"));
+        read.add(indentedLine("if (!reader.isLastRead())"));
 
         indent++;
 
-        read.add(identedLine(RETURN_FALSE_STMT));
+        read.add(indentedLine(RETURN_FALSE_STMT));
 
         indent--;
     }
@@ -1360,36 +1127,36 @@ public class MessageSerializerGenerator {
         if (EMPTY.equals(lastLine))
             code.remove(code.size() - 1);
 
-        code.add(identedLine("}"));
+        code.add(indentedLine("}"));
         code.add(EMPTY);
 
         if (read && marshallable) {
             imports.add("org.apache.ignite.IgniteCheckedException");
             imports.add("org.apache.ignite.IgniteException");
 
-            code.add(identedLine("try {"));
+            code.add(indentedLine("try {"));
 
             indent++;
 
-            code.add(identedLine("msg.finishUnmarshal(marshaller, clsLdr);"));
+            code.add(indentedLine("msg.finishUnmarshal(marshaller, clsLdr);"));
 
             indent--;
 
-            code.add(identedLine("}"));
-            code.add(identedLine("catch (IgniteCheckedException e) {"));
+            code.add(indentedLine("}"));
+            code.add(indentedLine("catch (IgniteCheckedException e) {"));
 
             indent++;
 
-            code.add(identedLine("throw new IgniteException(\"Failed to unmarshal object \" + msg.getClass().getSimpleName(), e);"));
+            code.add(indentedLine("throw new IgniteException(\"Failed to unmarshal object \" + msg.getClass().getSimpleName(), e);"));
 
             indent--;
 
-            code.add(identedLine("}"));
+            code.add(indentedLine("}"));
 
             code.add(EMPTY);
         }
 
-        code.add(identedLine("return true;"));
+        code.add(indentedLine("return true;"));
     }
 
     /**
@@ -1397,7 +1164,7 @@ public class MessageSerializerGenerator {
      *
      * @return Line with current indent.
      */
-    private String identedLine(String format, Object... args) {
+    private String indentedLine(String format, Object... args) {
         SB sb = new SB();
 
         for (int i = 0; i < indent; i++)
@@ -1429,9 +1196,9 @@ public class MessageSerializerGenerator {
         indent = 1;
 
         for (String field: fields) {
-            writer.write(identedLine(METHOD_JAVADOC));
+            writer.write(indentedLine(METHOD_JAVADOC));
             writer.write(NL);
-            writer.write(identedLine(field));
+            writer.write(indentedLine(field));
             writer.write(NL);
         }
         writer.write(NL);

@@ -128,6 +128,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.CommunicationListener;
@@ -1983,6 +1984,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             MTC.span().addLog(() -> "Create communication msg - " + traceName(msg));
 
             GridIoMessage ioMsg = createGridIoMessage(topic, topicOrd, msg, plc, ordered, timeout, skipOnTimeout);
+
+            MessageSerializer ser = ctx.io().messageFactory().serializer(ioMsg.directType());
+
+            if (ser != null)
+                ser.prepareMarshalCacheObjects(ioMsg, ctx.cache().context(), null);
 
             if (locNodeId.equals(node.id())) {
 
