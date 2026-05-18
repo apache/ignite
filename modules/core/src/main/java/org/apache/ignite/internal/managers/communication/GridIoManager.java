@@ -78,7 +78,6 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
-import org.apache.ignite.internal.GridTopicMessage;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteDeploymentCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -2273,7 +2272,15 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
     ) throws IgniteCheckedException {
         boolean loc = nodes.size() == 1 && F.first(nodes).id().equals(locNodeId);
 
-        byte[] serMsg = loc ? null : U.marshal(marsh, msg);
+        byte[] serMsg = null;
+        byte[] serTopic = null;
+
+        if (!loc) {
+            serMsg = U.marshal(marsh, msg);
+
+            if (topic != null)
+                serTopic = U.marshal(marsh, topic);
+        }
 
         GridDeployment dep = null;
 
@@ -2298,6 +2305,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             serMsg,
             depClsName,
             topic,
+            serTopic,
             dep != null ? dep.classLoaderId() : null,
             dep != null ? dep.deployMode() : null,
             dep != null ? dep.userVersion() : null,
@@ -3503,6 +3511,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                 assert msgBody != null || ioMsg.bodyBytes() != null;
 
                 try {
+                    byte[] msgTopicBytes = ioMsg.topicBytes();
+
+                    Object msgTopic = ioMsg.topic();
+
                     GridDeployment dep = ioMsg.deployment();
 
                     if (dep == null && ctx.config().isPeerClassLoadingEnabled() &&
@@ -3526,14 +3538,12 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                         ioMsg.deployment(dep); // Cache deployment.
                     }
 
-                    GridTopicMessage topicMsg = ioMsg.topicMessage();
-                    Object msgTopic = null;
-
                     // Unmarshall message topic if needed.
-                    if (topicMsg != null) {
-                        topicMsg.unmarshal(marsh, U.resolveClassLoader(dep != null ? dep.classLoader() : null, ctx.config()));
+                    if (msgTopic == null && msgTopicBytes != null) {
+                        msgTopic = U.unmarshal(marsh, msgTopicBytes,
+                            U.resolveClassLoader(dep != null ? dep.classLoader() : null, ctx.config()));
 
-                        msgTopic = topicMsg.topic();
+                        ioMsg.topic(msgTopic); // Save topic to avoid future unmarshallings.
                     }
 
                     if (!Objects.equals(topic, msgTopic))

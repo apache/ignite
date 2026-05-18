@@ -36,10 +36,6 @@ public class GridTopicMessage implements MarshallableMessage {
     @Order(1)
     int ord = -1;
 
-    /** */
-    @Order(2)
-    boolean needCustomClsLdr;
-
     /** Constructor for {@link CoreMessagesProvider}. */
     public GridTopicMessage() {
         // No-op.
@@ -47,16 +43,7 @@ public class GridTopicMessage implements MarshallableMessage {
 
     /** Constructor. */
     public GridTopicMessage(Object topic) {
-        this(topic, false);
-    }
-
-    /**
-     * @param topic Topic.
-     * @param needCustomClsLdr Flag indicating whether to use a special class loader for unmarshalling.
-     */
-    public GridTopicMessage(Object topic, boolean needCustomClsLdr) {
         this.topic = topic;
-        this.needCustomClsLdr = needCustomClsLdr;
 
         if (topic instanceof GridTopic)
             ord = ((Enum<GridTopic>)topic).ordinal();
@@ -64,22 +51,12 @@ public class GridTopicMessage implements MarshallableMessage {
 
     /** @return Topic object or null. */
     public static @Nullable Object topic(GridTopicMessage msg) {
-        return msg == null ? null : msg.topic();
+        return msg == null ? null : msg.topic;
     }
 
     /** @return Topic ordinal. */
     public static int ordinal(GridTopicMessage msg) {
-        return msg == null ? -1 : msg.ordinal();
-    }
-
-    /** @return Topic. */
-    public Object topic() {
-        return topic;
-    }
-
-    /** @return Ordinal value from enum or negative number in case when it's not an GridTopic type. */
-    private int ordinal() {
-        return ord;
+        return msg == null ? -1 : msg.ord;
     }
 
     /** {@inheritDoc} */
@@ -90,21 +67,8 @@ public class GridTopicMessage implements MarshallableMessage {
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (needCustomClsLdr)
-            return;
-
-        unmarshal(marsh, clsLdr);
-    }
-
-    /**
-     * Unmarshals topic using given marshaller and user-defined class loader.
-     *
-     * @param marsh Marshaller.
-     * @param customClsLdr Custom class loader.
-     */
-    public void unmarshal(Marshaller marsh, ClassLoader customClsLdr) throws IgniteCheckedException {
         if (ord < 0 && topicBytes != null) {
-            topic = U.unmarshal(marsh, topicBytes, customClsLdr);
+            topic = U.unmarshal(marsh, topicBytes, clsLdr);
 
             topicBytes = null;
         }
