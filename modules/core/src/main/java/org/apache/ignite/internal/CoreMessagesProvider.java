@@ -358,7 +358,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(GridCacheVersionEx.class);
         withNoSchema(WALPointer.class);
         withNoSchemaResolvedClassLoader(ObjectData.class);
-        withNoSchemaResolvedClassLoader(GridTopicMessage.class);
+        withSchemaResolvedClassLoader(GridTopicMessage.class);
 
         // [5700 - 5900]: Discovery originated messages.
         msgIdx = 5700;
