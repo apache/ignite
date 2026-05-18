@@ -305,60 +305,27 @@ If you want to use the key and value objects inside `IgniteCallable` and `Ignite
 ====
 
 
-////////////////////////////////////////////////////////////////////////////////
+=== Processing Cache Data Locally
 
+If you need to process all cache data remotely, you can broadcast a task to the data nodes and run a local cache query inside the task.
+In this mode, each node scans only the cache entries stored locally, processes them there, and returns only the aggregated result to the caller.
 
+For example, assume that a cache stores `Person` objects and it is necessary to calculate the average age of all persons.
+A regular link:key-value-api/using-cache-queries[scan query] transfers matching entries to the query initiator page by page.
+The following example avoids transferring the full dataset over the network: the task is broadcast to the nodes that store data for the `person` cache, and each node runs `ScanQuery.setLocal(true)`.
+The task checks primary ownership so backup copies are not counted twice.
 
-In the cases where you do not need to colocate computations with data but simply want to process all data remotely, you can run local cache queries inside the `call()` method. Consider the following example.
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=local-scan-query,indent=0]
+----
+tab:C#/.NET[unsupported]
 
-Let's say we have a cache that stores information about persons and we want to calculate the average age of all persons. One way to accomplish this is to run a link:key-value-api/using-cache-queries[scan query] that will fetch the ages of all persons to the local node, where you can calculate the average age.
-
-A more efficient way, however, is to avoid network calls to other nodes by running the query locally on each remote node and aggregating the result on the local node.
-
-This task can be easily split
-
-[source, java]
--------------------------------------------------------------------------------
-private class AverageAgeJob implements IgniteCallable<Double> {
-
-    @IgniteInstanceResource
-    private Ignite ignite;
-
-    @Override
-    public Double call() throws Exception {
-
-        IgniteCache<Long, Person> cache = ignite.cache("person");
-
-        int localAvg = 0;
-        try (QueryCursor<Cache.Entry<Long, Person>> cursor = cache
-                .query(new ScanQuery<Long, Person>().setLocal(true))) {
-            for (Cache.Entry<Long, Person> entry : cursor) {
-                localAvg += (int) entry.getValue().getAge();
-            }
-        }
-
-        return (localAvg / (double) cache.size());
-    }
-}
-
--------------------------------------------------------------------------------
-Note that the scan query is executed in the local mode. It means that it will only fetch objects from the Person cache that are stored localy and will not request data from other nodes.
-
-If you broadcast this task to all nodes, all person objecs will be processed (each locally), and the results are sent to the node that initiated the task.
-
-[source, java]
--------------------------------------------------------------------------------
-Ignite ignite = Ignition.ignite();
-
-double average = ignite.compute().broadcast(new AverageAgeTask()).stream().reduce(0D, (a, b) -> a + b);
--------------------------------------------------------------------------------
-
-
-The task is executed on every node, where it will query all persons stored locally and calculate the local average. Then the result are sent to the node that initiated the task and summed up. In this implementation, objects are not transferred via network.
-
-
-
-////////////////////////////////////////////////////////////////////////////////
+tab:C++[unsupported]
+--
 
 
 ////////////////////////////////////////////////////////////////////////////////

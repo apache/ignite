@@ -17,25 +17,35 @@
 
 package org.apache.ignite.internal.processors.cache.verify;
 
+import java.io.Serializable;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
 
 /** Represents committed transactions hash for a pair of nodes. */
-public class TransactionsHashRecord extends IgniteDataTransferObject {
+public class TransactionsHashRecord implements MarshallableMessage, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Consistent ID of local node that participated in the transaction. This node produces this record. */
-    @Order(0)
     @GridToStringInclude
     Object locConsistentId;
 
+    /** Bytes of {@link #locConsistentId}. */
+    @Order(0)
+    transient byte[] locConsistentIdBytes;
+
     /** Consistent ID of remote node that participated in the transactions. */
-    @Order(1)
     @GridToStringInclude
     Object rmtConsistentId;
+
+    /** Bytes of {@link #rmtConsistentId}. */
+    @Order(1)
+    transient byte[] rmtConsistentIdBytes;
 
     /** Committed transactions IDs hash. */
     @Order(2)
@@ -52,6 +62,18 @@ public class TransactionsHashRecord extends IgniteDataTransferObject {
         this.locConsistentId = locConsistentId;
         this.rmtConsistentId = rmtConsistentId;
         this.txHash = txHash;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        locConsistentIdBytes = U.marshal(marsh, locConsistentId);
+        rmtConsistentIdBytes = U.marshal(marsh, rmtConsistentId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        locConsistentId = U.unmarshal(marsh, locConsistentIdBytes, clsLdr);
+        rmtConsistentId = U.unmarshal(marsh, rmtConsistentIdBytes, clsLdr);
     }
 
     /** @return Committed transactions IDs hash. */
