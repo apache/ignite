@@ -27,7 +27,6 @@ import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.client.ClientAddressFinder;
 import org.apache.ignite.client.ClientPartitionAwarenessMapper;
@@ -37,7 +36,6 @@ import org.apache.ignite.client.ClientRetryPolicy;
 import org.apache.ignite.client.ClientTransactions;
 import org.apache.ignite.client.SslMode;
 import org.apache.ignite.client.SslProtocol;
-import org.apache.ignite.internal.client.thin.TcpIgniteClient;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
