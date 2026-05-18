@@ -66,7 +66,7 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     private FailureProcessor failureProcessor;
 
     /** */
-    private Map<Short, MessageListener> lsnrs;
+    private Map<Class<? extends Message>, MessageListener> lsnrs;
 
     /** */
     public MessageServiceImpl(GridKernalContext ctx) {
@@ -162,11 +162,11 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     }
 
     /** {@inheritDoc} */
-    @Override public void register(MessageListener lsnr, MessageType type) {
+    @Override public <T extends Message> void register(MessageListener lsnr, Class<T> type) {
         if (lsnrs == null)
             lsnrs = new HashMap<>();
 
-        MessageListener old = lsnrs.put(type.directType(), lsnr);
+        MessageListener old = lsnrs.put(type, lsnr);
 
         assert old == null : old;
     }
@@ -223,7 +223,7 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
 
     /** */
     private void onMessage(UUID nodeId, Object msg, byte plc) {
-        if (msg instanceof Message && MessageType.isCalciteMessage((Message)msg))
+        if (msg instanceof Message && CalciteMessageFactory.isCalciteMessage((Message)msg))
             onMessage(nodeId, (Message)msg);
     }
 
