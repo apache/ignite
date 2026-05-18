@@ -207,7 +207,7 @@ public class TcpDiscoveryIoSession {
             if (e instanceof IgniteCheckedException)
                 throw (IgniteCheckedException)e;
 
-            throw new IgniteCheckedException(e);
+            throw new IgniteCheckedException("Failed to read a discovery message.", e);
         }
     }
 

@@ -71,6 +71,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
+import org.apache.ignite.internal.processors.query.running.RunningQueryManager;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.Span;
@@ -454,6 +455,8 @@ public class GridMapQueryExecutor {
 
                 MapH2QueryInfo qryInfo = null;
 
+                long runningQryId = RunningQueryManager.UNDEFINED_QUERY_ID;
+
                 try {
                     res.lock();
 
@@ -468,7 +471,28 @@ public class GridMapQueryExecutor {
 
                         H2Utils.bindParameters(stmt, params0);
 
-                        qryInfo = new MapH2QueryInfo(stmt, qry.query(), node.id(), qryId, qryInitiatorId, reqId, segmentId);
+                        GridQueryCancel qryCancel = qryResults.queryCancel(qryIdx);
+
+                        runningQryId = h2.runningQueryManager().registerMapQuery(
+                            sql,
+                            schemaName,
+                            qryCancel,
+                            qryInitiatorId,
+                            node.id(),
+                            enforceJoinOrder,
+                            distributedJoins
+                        );
+
+                        qryInfo = new MapH2QueryInfo(
+                            stmt,
+                            qry.query(),
+                            node.id(),
+                            qryId,
+                            runningQryId,
+                            qryInitiatorId,
+                            reqId,
+                            segmentId
+                        );
 
                         h2.heavyQueriesTracker().startTracking(qryInfo);
 
@@ -481,8 +505,6 @@ public class GridMapQueryExecutor {
                                 qryInfo.plan()
                             );
                         }
-
-                        GridQueryCancel qryCancel = qryResults.queryCancel(qryIdx);
 
                         ResultSet rs = h2.executeWithResumableTimeTracking(
                             () -> h2.executeSqlQueryWithTimer(
@@ -566,6 +588,8 @@ public class GridMapQueryExecutor {
                 catch (Throwable e) {
                     if (qryInfo != null)
                         h2.heavyQueriesTracker().stopTracking(qryInfo, e);
+
+                    h2.runningQueryManager().unregister(runningQryId, e);
 
                     throw e;
                 }
@@ -684,6 +708,8 @@ public class GridMapQueryExecutor {
 
         MapNodeResults nodeResults = resultsForNode(node.id());
 
+        long runningQryId = RunningQueryManager.UNDEFINED_QUERY_ID;
+
         // We don't use try with resources on purpose - the catch block must also be executed in the context of this span.
         TraceSurroundings trace = MTC.support(ctx.tracing()
             .create(SpanType.SQL_DML_QRY_EXEC_REQ, MTC.span())
@@ -720,6 +746,7 @@ public class GridMapQueryExecutor {
 
             fldsQry.setEnforceJoinOrder(req.isFlagSet(GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER));
             fldsQry.setPageSize(req.pageSize());
+            fldsQry.setQueryInitiatorId(req.queryInitiatorId());
             fldsQry.setLocal(true);
 
             if (req.timeout() > 0 || req.explicitTimeout())
@@ -735,6 +762,16 @@ public class GridMapQueryExecutor {
 
                 loc = false;
             }
+
+            runningQryId = h2.runningQueryManager().registerMapQuery(
+                req.query(),
+                req.schemaName(),
+                cancel,
+                req.queryInitiatorId(),
+                node.id(),
+                req.isFlagSet(GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER),
+                fldsQry.isDistributedJoins()
+            );
 
             UpdateResult updRes = h2.executeUpdateOnDataNode(req.schemaName(), fldsQry, filter, cancel, loc);
 
@@ -760,12 +797,16 @@ public class GridMapQueryExecutor {
             }
 
             sendUpdateResponse(node, reqId, updRes, null);
+
+            h2.runningQueryManager().unregister(runningQryId, null);
         }
         catch (Exception e) {
             MTC.span().addTag(ERROR, e::getMessage);
 
             U.error(log, "Error processing dml request. [localNodeId=" + ctx.localNodeId() +
                 ", nodeId=" + node.id() + ", req=" + req + ']', e);
+
+            h2.runningQueryManager().unregister(runningQryId, e);
 
             sendUpdateResponse(node, reqId, null, e.getMessage());
         }

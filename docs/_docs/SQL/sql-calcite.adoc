@@ -485,7 +485,7 @@ Disables certain optimizer rules. This is an optimizer level hint.
 SELECT /*+ DISABLE_RULE('MergeJoinConverter') */ T1.* FROM TBL1 T1 JOIN TBL2 T2 ON T1.V1=T2.V1 WHERE T2.V2=?
 ----
 
-== Transactions [[transactions]]
+== Transaction-aware Queries [[transaction-aware-queries]]
 
 The Calcite-based query engine supports SQL transactions with READ_COMMITTED isolation.
 To ensure backward compatibility, transaction support is disabled by default. To enable it, use the following configuration:
