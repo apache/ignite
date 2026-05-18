@@ -61,6 +61,9 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
     /** Custom snapshot handlers. */
     private final List<SnapshotHandler<?>> handlers = new ArrayList<>();
 
+    /** Timeout in milliseconds to await for snapshot operation being completed. */
+    protected static final long TIMEOUT = 60_000;
+
     /** Extensions plugin provider. */
     private final PluginProvider<PluginConfiguration> pluginProvider = new AbstractTestPluginProvider() {
         @Override public String name() {

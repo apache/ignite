@@ -24,9 +24,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteFutureTimeoutException;
 
 /**
  * Snapshot restore test base.
@@ -40,9 +38,6 @@ public abstract class IgniteClusterSnapshotRestoreBaseTest extends AbstractSnaps
 
     /** Default shared cache group name. */
     protected static final String SHARED_GRP = "shared";
-
-    /** Timeout in milliseconds to await for snapshot operation being completed. */
-    protected static final long TIMEOUT = 60_000;
 
     /**
      * @param nodesCnt Nodes count.
@@ -97,18 +92,6 @@ public abstract class IgniteClusterSnapshotRestoreBaseTest extends AbstractSnaps
             builder.setField("name", String.valueOf(key));
 
             return builder.build();
-        }
-    }
-
-    /** Print thread dump if {@code IgniteFutureTimeoutException} is raised. */
-    protected void runWithLogggedThreadDump(Runnable action) {
-        try {
-            action.run();
-        }
-        catch (IgniteFutureTimeoutException ex) {
-            U.dumpThreads(log);
-
-            throw ex;
         }
     }
 }
