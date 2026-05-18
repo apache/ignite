@@ -51,7 +51,7 @@ public interface MessageSerializer<M extends Message> {
      * @param nested Nested context.
      * @throws IgniteCheckedException If marshalling fails.
      */
-    public default void prepareMarshalCacheObjects(M msg, GridCacheSharedContext<?, ?> sctx, GridCacheContext<?, ?> nested)
+    public default void prepareMarshal(M msg, GridCacheSharedContext<?, ?> sctx, GridCacheContext<?, ?> nested)
         throws IgniteCheckedException {
         // No-op by default.
     }

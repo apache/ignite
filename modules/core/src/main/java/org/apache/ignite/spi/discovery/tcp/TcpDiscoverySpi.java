@@ -1768,7 +1768,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         MessageSerializer ser = messageFactory().serializer(msg.directType());
 
         if (ser != null)
-            ser.prepareMarshalCacheObjects(msg, ((IgniteEx)ignite()).context().cache().context(), null);
+            ser.prepareMarshal(msg, ((IgniteEx)ignite()).context().cache().context(), null);
 
         try (SocketTimeoutObject ignored = startTimer(sock, timeout)) {
             ses.writeMessage(msg);

@@ -3351,7 +3351,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     MessageSerializer ser = spi.messageFactory().serializer(msg.directType());
 
                     if (ser != null)
-                        ser.prepareMarshalCacheObjects(msg, ((IgniteEx)spi.ignite()).context().cache().context(), null);
+                        ser.prepareMarshal(msg, ((IgniteEx)spi.ignite()).context().cache().context(), null);
                     
                     msgBytes = clientMsgSer.serializeMessage(msg);
                 }

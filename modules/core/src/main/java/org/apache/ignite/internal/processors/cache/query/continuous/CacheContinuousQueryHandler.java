@@ -932,7 +932,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         MessageSerializer ser = cctx.gridIO().messageFactory().serializer(entry.directType());
 
         if (ser != null)
-            ser.prepareMarshalCacheObjects(entry, cctx.shared(), null);
+            ser.prepareMarshal(entry, cctx.shared(), null);
         
         if (cctx.kernalContext().config().isPeerClassLoadingEnabled() && cctx.discovery().node(nodeId) != null)
             cctx.deploy().prepare(entry);

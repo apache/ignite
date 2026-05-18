@@ -267,7 +267,7 @@ public class MessageSerializerGenerator {
         marshall.add(indentedLine(METHOD_JAVADOC));
 
         marshall.add(indentedLine(
-            "@Override public void prepareMarshalCacheObjects(" + simpleNameWithGeneric(type) +
+            "@Override public void prepareMarshal(" + simpleNameWithGeneric(type) +
                 " msg, GridCacheSharedContext<?,?> sctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {"));
 
         indent++;
@@ -333,7 +333,7 @@ public class MessageSerializerGenerator {
                 indent++;
 
                 code.add(indentedLine(
-                    "sctx.gridIO().messageFactory().serializer(%s.directType()).prepareMarshalCacheObjects(%s, sctx, ctx);",
+                    "sctx.gridIO().messageFactory().serializer(%s.directType()).prepareMarshal(%s, sctx, ctx);",
                     accessor,
                     accessor));
 

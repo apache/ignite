@@ -191,7 +191,7 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
                 MessageSerializer ser = ctx.gridIO().messageFactory().serializer(msg.directType());
 
                 if (ser != null)
-                    ser.prepareMarshalCacheObjects(msg, ctx, null);
+                    ser.prepareMarshal(msg, ctx, null);
             }
         }
         catch (Exception e) {

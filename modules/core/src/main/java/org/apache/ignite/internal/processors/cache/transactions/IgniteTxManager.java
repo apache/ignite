@@ -2437,7 +2437,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 MessageSerializer ser = cctx.gridIO().messageFactory().serializer(req.directType());
 
                 if (ser != null)
-                    ser.prepareMarshalCacheObjects(req, cctx, null);
+                    ser.prepareMarshal(req, cctx, null);
             }
 
             cctx.gridIO().sendToGridTopic(node, TOPIC_TX, req, SYSTEM_POOL);
@@ -3373,7 +3373,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                             MessageSerializer ser = cctx.gridIO().messageFactory().serializer(res.directType());
 
                             if (ser != null)
-                                ser.prepareMarshalCacheObjects(res, cctx, null);
+                                ser.prepareMarshal(res, cctx, null);
                         }
 
                         cctx.gridIO().sendToGridTopic(nodeId, TOPIC_TX, res, SYSTEM_POOL);

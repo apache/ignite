@@ -1988,7 +1988,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             MessageSerializer ser = ctx.io().messageFactory().serializer(ioMsg.directType());
 
             if (ser != null)
-                ser.prepareMarshalCacheObjects(ioMsg, ctx.cache().context(), null);
+                ser.prepareMarshal(ioMsg, ctx.cache().context(), null);
 
             if (locNodeId.equals(node.id())) {
 
