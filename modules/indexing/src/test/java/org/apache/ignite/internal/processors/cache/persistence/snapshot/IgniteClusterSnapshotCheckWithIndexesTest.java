@@ -90,7 +90,7 @@ public class IgniteClusterSnapshotCheckWithIndexesTest extends AbstractSnapshotS
             cache2.put(i, new Account(i, i));
         }
 
-        runWithLogggedThreadDump(() ->
+        runWithLoggedThreadDump(() ->
             createAndCheckSnapshot(grid(0), SNAPSHOT_NAME, null, TIMEOUT)
         );
 

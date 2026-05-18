@@ -145,12 +145,12 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
 
         IgniteFuture<Void> fut = ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null);
 
-        runWithLogggedThreadDump(() ->
+        runWithLoggedThreadDump(() ->
             GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), IgniteCheckedException.class, expMsg));
 
         changeMetadataRequestIdOnDisk(reqIdRef.get());
 
-        runWithLogggedThreadDump(() ->
+        runWithLoggedThreadDump(() ->
             ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT));
 
         assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
@@ -217,7 +217,7 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
 
         IgniteFuture<Void> fut = snp(ignite).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
-        runWithLogggedThreadDump(() ->
+        runWithLoggedThreadDump(() ->
             GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), IgniteCheckedException.class, expMsg));
 
         failCreateFlag.set(false);
@@ -230,12 +230,12 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
 
         IgniteFuture<Void> fut0 = ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null);
 
-        runWithLogggedThreadDump(() ->
+        runWithLoggedThreadDump(() ->
             GridTestUtils.assertThrowsAnyCause(log, () -> fut0.get(TIMEOUT), IgniteCheckedException.class, expMsg));
 
         failRestoreFlag.set(false);
 
-        runWithLogggedThreadDump(() ->
+        runWithLoggedThreadDump(() ->
             ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT));
 
         assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
@@ -414,7 +414,7 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
             ignite.destroyCache(DEFAULT_CACHE_NAME);
             awaitPartitionMapExchange();
 
-            runWithLogggedThreadDump(() ->
+            runWithLoggedThreadDump(() ->
                 snpMgr.restoreSnapshot(snpName, snpDir.getAbsolutePath(), null).get(TIMEOUT));
         }
         finally {

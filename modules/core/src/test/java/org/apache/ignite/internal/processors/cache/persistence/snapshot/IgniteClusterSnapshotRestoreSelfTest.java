@@ -120,7 +120,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         // Skip check because some partitions will be empty - keysCnt == parts/2.
         Ignite ignite = startGridsWithSnapshot(1, keysCnt, false, true);
 
-        runWithLogggedThreadDump(() ->
+        runWithLoggedThreadDump(() ->
             ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT));
 
         assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), keysCnt);
@@ -239,7 +239,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
             TestRecordingCommunicationSpi.spi(g).record(SnapshotFilesRequestMessage.class);
 
         // Restore all cache groups.
-        runWithLogggedThreadDump(() ->
+        runWithLoggedThreadDump(() ->
             grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT));
 
         awaitPartitionMapExchange(true, true, null, true);
@@ -282,7 +282,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(() -> {
             try {
-                runWithLogggedThreadDump(() ->
+                runWithLoggedThreadDump(() ->
                     grid(nodeIdxSupplier.getAsInt()).snapshot().restoreSnapshot(
                         SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME)).get(TIMEOUT));
 
@@ -450,7 +450,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         resetBaselineTopology();
 
-        runWithLogggedThreadDump(() ->
+        runWithLoggedThreadDump(() ->
             grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME)).get(TIMEOUT));
 
         assertCacheKeys(grid(0).cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);

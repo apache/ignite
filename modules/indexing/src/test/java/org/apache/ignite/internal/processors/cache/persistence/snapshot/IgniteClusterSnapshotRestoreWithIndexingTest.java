@@ -57,6 +57,9 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
     /** Number of cache keys to pre-create at node start. */
     private static final int CACHE_KEYS_RANGE = 10_000;
 
+    /** Timeout in milliseconds to await for snapshot operation being completed. */
+    protected static final long TIMEOUT = 60_000;
+
     /** {@inheritDoc} */
     @Override protected <K, V> CacheConfiguration<K, V> txCacheConfig(CacheConfiguration<K, V> ccfg) {
         return super.txCacheConfig(ccfg).setSqlIndexMaxInlineSize(255).setSqlSchema("PUBLIC")
@@ -74,7 +77,7 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
 
         IgniteEx client = startGridsWithSnapshot(2, CACHE_KEYS_RANGE, true);
 
-        runWithLogggedThreadDump(() ->
+        runWithLoggedThreadDump(() ->
             grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME)).get(TIMEOUT));
 
         // Only primary mode leads to index rebuild on restore.
@@ -102,7 +105,7 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
 
         forceCheckpoint();
 
-        runWithLogggedThreadDump(() ->
+        runWithLoggedThreadDump(() ->
             ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME)).get(TIMEOUT));
 
         // Only primary mode leads to index rebuild on restore.
@@ -128,7 +131,7 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
 
         startGridsWithCache(nodesCnt - 2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
-        runWithLogggedThreadDump(() ->
+        runWithLoggedThreadDump(() ->
             grid(0).snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT));
 
         startGrid(nodesCnt - 2);
@@ -155,7 +158,7 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
         forceCheckpoint();
 
         // Restore from an empty node.
-        runWithLogggedThreadDump(() -> ignite.snapshot().restoreSnapshot(
+        runWithLoggedThreadDump(() -> ignite.snapshot().restoreSnapshot(
             SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME)).get(TIMEOUT));
 
         awaitPartitionMapExchange();

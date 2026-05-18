@@ -905,7 +905,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     }
 
     /** Print thread dump if {@code IgniteFutureTimeoutException} is raised. */
-    protected void runWithLogggedThreadDump(Runnable action) {
+    protected void runWithLoggedThreadDump(Runnable action) {
         try {
             action.run();
         }
