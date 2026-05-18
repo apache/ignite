@@ -68,7 +68,6 @@ import org.apache.ignite.spi.IgniteSpiConsistencyChecked;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
-import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.internal.ClusterStateProvider;
@@ -776,11 +775,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         this.srvLsnr.communicationWorker(commWorker);
         this.nioSrvWrapper.communicationWorker(commWorker);
 
-        new IgniteSpiThread(igniteInstanceName, commWorker.name(), log) {
-            @Override protected void body() {
-                commWorker.run();
-            }
-        }.start();
+        commWorker.start();
 
         // Ack start.
         if (log.isDebugEnabled())

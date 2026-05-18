@@ -37,7 +37,6 @@ import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -105,11 +104,12 @@ import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
-import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.processors.tracing.SpanTags;
+import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.Scope;
+import org.apache.ignite.internal.thread.context.function.OperationContextAwareWrapper;
 import org.apache.ignite.internal.util.GridListSet;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.internal.util.GridStringBuilder;
@@ -129,11 +129,11 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.internal.util.worker.IgniteLinkedBlockingQueueProcessor;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.metric.MetricRegistry;
-import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -163,8 +163,6 @@ import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION_HISTOGRAM;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.REBALANCED;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.remoteSecurityContext;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.withRemoteSecurityContext;
 import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 import static org.apache.ignite.internal.processors.tracing.SpanType.EXCHANGE_FUTURE;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
@@ -679,10 +677,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         // Notify indexing engine about node leave so that we can re-map coordinator accordingly.
         if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED) {
-            SecurityContext secCtx = remoteSecurityContext(cctx.kernalContext());
-
-            exchWorker.addCustomTask(new SchemaNodeLeaveExchangeWorkerTask(secCtx, evt.eventNode()));
-            exchWorker.addCustomTask(new WalStateNodeLeaveExchangeTask(secCtx, evt.eventNode()));
+            exchWorker.addCustomTask(new SchemaNodeLeaveExchangeWorkerTask(evt.eventNode()));
+            exchWorker.addCustomTask(new WalStateNodeLeaveExchangeTask(evt.eventNode()));
         }
     }
 
@@ -744,7 +740,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         else if (reconnect)
             reconnectExchangeFut.onDone();
 
-        new IgniteThread(cctx.igniteInstanceName(), "exchange-worker", exchWorker).start();
+        exchWorker.start();
 
         if (reconnect) {
             if (fut != null) {
@@ -855,7 +851,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         // Finish all exchange futures.
         ExchangeFutureSet exchFuts0 = exchFuts;
 
-        for (CachePartitionExchangeWorkerTask task : exchWorker.futQ) {
+        for (CachePartitionExchangeWorkerTask task : exchWorker) {
             if (task instanceof GridDhtPartitionsExchangeFuture)
                 ((GridDhtPartitionsExchangeFuture)task).onDone(stopErr);
         }
@@ -2449,7 +2445,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         if (exchWorker.waitForExchangeFuture(resVer))
             return true;
 
-        for (CachePartitionExchangeWorkerTask task : exchWorker.futQ) {
+        for (CachePartitionExchangeWorkerTask task : exchWorker) {
             if (task instanceof GridDhtPartitionsExchangeFuture) {
                 GridDhtPartitionsExchangeFuture fut = (GridDhtPartitionsExchangeFuture)task;
 
@@ -2529,7 +2525,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         synchronized (curFut.mutex()) {
             int awaited = 0;
 
-            for (CachePartitionExchangeWorkerTask task : exchWorker.futQ) {
+            for (CachePartitionExchangeWorkerTask task : exchWorker) {
                 if (task instanceof GridDhtPartitionsExchangeFuture) {
                     GridDhtPartitionsExchangeFuture fut = (GridDhtPartitionsExchangeFuture)task;
 
@@ -2628,7 +2624,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         while (U.currentTimeMillis() < end) {
             boolean found = false;
 
-            for (CachePartitionExchangeWorkerTask task : exchWorker.futQ) {
+            for (CachePartitionExchangeWorkerTask task : exchWorker) {
                 if (task instanceof GridDhtPartitionsExchangeFuture) {
                     GridDhtPartitionsExchangeFuture fut = (GridDhtPartitionsExchangeFuture)task;
 
@@ -2750,11 +2746,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * Exchange future thread. All exchanges happen only by one thread and next
      * exchange will not start until previous one completes.
      */
-    private class ExchangeWorker extends GridWorker {
-        /** Future queue. */
-        private final LinkedBlockingDeque<CachePartitionExchangeWorkerTask> futQ =
-            new LinkedBlockingDeque<>();
-
+    private class ExchangeWorker extends IgniteLinkedBlockingQueueProcessor<CachePartitionExchangeWorkerTask> {
         /** */
         private AffinityTopologyVersion lastFutVer;
 
@@ -2771,8 +2763,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          * Constructor.
          */
         private ExchangeWorker() {
-            super(cctx.igniteInstanceName(), "partition-exchanger", GridCachePartitionExchangeManager.this.log,
-                cctx.kernalContext().workersRegistry());
+            super(
+                cctx.igniteInstanceName(),
+                "exchange-worker",
+                GridCachePartitionExchangeManager.this.log,
+                cctx.kernalContext().workersRegistry()
+            );
         }
 
         /**
@@ -2780,7 +2776,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          */
         void forceReassign(GridDhtPartitionExchangeId exchId, GridDhtPartitionsExchangeFuture fut) {
             if (!hasPendingExchange())
-                futQ.add(new RebalanceReassignExchangeTask(remoteSecurityContext(cctx.kernalContext()), exchId, fut));
+                addToQueue(new RebalanceReassignExchangeTask(exchId, fut));
         }
 
         /**
@@ -2790,7 +2786,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         IgniteInternalFuture<Boolean> forceRebalance(GridDhtPartitionExchangeId exchId) {
             GridCompoundFuture<Boolean, Boolean> fut = new GridCompoundFuture<>(CU.boolReducer());
 
-            futQ.add(new ForceRebalanceExchangeTask(remoteSecurityContext(cctx.kernalContext()), exchId, fut));
+            addToQueue(new ForceRebalanceExchangeTask(exchId, fut));
 
             return fut;
         }
@@ -2799,10 +2795,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          * @param caches Caches to stop.
          */
         IgniteInternalFuture<Void> deferStopCachesOnClientReconnect(Collection<GridCacheAdapter> caches) {
-            StopCachesOnClientReconnectExchangeTask task =
-                new StopCachesOnClientReconnectExchangeTask(remoteSecurityContext(cctx.kernalContext()), caches);
+            StopCachesOnClientReconnectExchangeTask task = new StopCachesOnClientReconnectExchangeTask(caches);
 
-            futQ.add(task);
+            addToQueue(task);
 
             return task;
         }
@@ -2813,7 +2808,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          * @param rebalanceId Rebalance id.
          */
         void finishPreloading(AffinityTopologyVersion topVer, int grpId, long rebalanceId) {
-            futQ.add(new FinishPreloadingTask(remoteSecurityContext(cctx.kernalContext()), topVer, grpId, rebalanceId));
+            addToQueue(new FinishPreloadingTask(topVer, grpId, rebalanceId));
         }
 
         /**
@@ -2822,7 +2817,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         void addExchangeFuture(GridDhtPartitionsExchangeFuture exchFut) {
             assert exchFut != null;
 
-            futQ.offer(exchFut);
+            addToQueue(exchFut);
 
             synchronized (this) {
                 lastFutVer = exchFut.initialVersion();
@@ -2869,14 +2864,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             if (resVer.compareTo(exchFut.initialVersion()) != 0) {
                 waitForExchangeFuture(resVer);
 
-                for (CachePartitionExchangeWorkerTask task : futQ) {
+                for (CachePartitionExchangeWorkerTask task : this) {
                     if (task instanceof GridDhtPartitionsExchangeFuture) {
                         GridDhtPartitionsExchangeFuture fut0 = (GridDhtPartitionsExchangeFuture)task;
 
                         if (resVer.compareTo(fut0.initialVersion()) >= 0) {
                             fut0.finishMerged(resVer, exchFut);
 
-                            futQ.remove(fut0);
+                            removeQueuedElement(fut0);
                         }
                         else
                             break;
@@ -2895,7 +2890,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             assert !isExchangeTask(task);
 
-            futQ.offer(task);
+            addToQueue(task);
         }
 
         /**
@@ -2918,8 +2913,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          * @return Whether pending exchange future exists.
          */
         boolean hasPendingExchange() {
-            if (!futQ.isEmpty()) {
-                for (CachePartitionExchangeWorkerTask task : futQ) {
+            if (!isQueueEmpty()) {
+                for (CachePartitionExchangeWorkerTask task : this) {
                     if (isExchangeTask(task))
                         return true;
                 }
@@ -2932,8 +2927,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          * @return Whether pending exchange future triggered by non client node exists.
          */
         boolean hasPendingServerExchange() {
-            if (!futQ.isEmpty()) {
-                for (CachePartitionExchangeWorkerTask task : futQ) {
+            if (!isQueueEmpty()) {
+                for (CachePartitionExchangeWorkerTask task : this) {
                     if (task instanceof GridDhtPartitionsExchangeFuture) {
                         if (((GridDhtPartitionsExchangeFuture)task).changedAffinity())
                             return true;
@@ -2948,12 +2943,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          * Dump debug info.
          */
         void dumpExchangeDebugInfo() {
-            U.warn(log, "First " + DIAGNOSTIC_WARN_LIMIT + " pending exchange futures [total=" + futQ.size() + ']');
+            U.warn(log, "First " + DIAGNOSTIC_WARN_LIMIT + " pending exchange futures [total=" + queueSize() + ']');
 
             if (DIAGNOSTIC_WARN_LIMIT > 0) {
                 int cnt = 0;
 
-                for (CachePartitionExchangeWorkerTask task : futQ) {
+                for (CachePartitionExchangeWorkerTask task : this) {
                     if (task instanceof GridDhtPartitionsExchangeFuture) {
                         U.warn(log, ">>> " + ((GridDhtPartitionsExchangeFuture)task).shortInfo());
 
@@ -3038,16 +3033,17 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     if (isCancelled())
                         Thread.currentThread().interrupt();
 
-                    blockingSectionBegin();
+                    OperationContextAwareWrapper<CachePartitionExchangeWorkerTask> contextualTask = pollQueuedElement(
+                        timeout,
+                        MILLISECONDS
+                    );
 
-                    task = futQ.poll(timeout, MILLISECONDS);
-
-                    blockingSectionEnd();
-
-                    if (task == null)
+                    if (contextualTask == null)
                         continue; // Main while loop.
 
-                    try (Scope ignored = withRemoteSecurityContext(cctx.kernalContext(), task.securityContext())) {
+                    try (Scope ignored = OperationContext.restoreSnapshot(contextualTask.contextSnapshot())) {
+                        task = contextualTask.delegate();
+
                         if (!isExchangeTask(task)) {
                             processCustomTask(task);
 

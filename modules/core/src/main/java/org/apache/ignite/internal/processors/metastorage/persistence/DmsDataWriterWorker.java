@@ -23,18 +23,19 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RunnableFuture;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
+import org.apache.ignite.internal.thread.context.OperationContext;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.thread.context.concurrent.IgniteCompletableFuture;
+import org.apache.ignite.internal.thread.context.function.OperationContextAwareWrapper;
 import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.thread.IgniteThread;
+import org.apache.ignite.internal.util.worker.IgniteLinkedBlockingQueueProcessor;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.COMMON_KEY_PREFIX;
@@ -44,7 +45,7 @@ import static org.apache.ignite.internal.processors.metastorage.persistence.Dist
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.versionKey;
 
 /** */
-public class DmsDataWriterWorker extends GridWorker {
+public class DmsDataWriterWorker extends IgniteLinkedBlockingQueueProcessor<RunnableFuture<?>> {
     /** */
     public static final byte[] DUMMY_VALUE = {};
 
@@ -53,9 +54,6 @@ public class DmsDataWriterWorker extends GridWorker {
 
     /** */
     private static final Object AWAIT = new Object();
-
-    /** */
-    private final LinkedBlockingQueue<RunnableFuture<?>> updateQueue = new LinkedBlockingQueue<>();
 
     /** */
     private final DmsLocalMetaStorageLock lock;
@@ -85,12 +83,12 @@ public class DmsDataWriterWorker extends GridWorker {
         DmsLocalMetaStorageLock lock,
         Consumer<Throwable> errorHnd
     ) {
-        super(igniteInstanceName, "dms-writer", log);
+        super(igniteInstanceName, "dms-writer", log, null);
         this.lock = lock;
         this.errorHnd = errorHnd;
 
         // Put restore task to the queue, so it will be executed on worker start.
-        updateQueue.offer(newDmsTask(this::restore));
+        addToQueue(newDmsTask(this::restore));
     }
 
     /** */
@@ -99,10 +97,10 @@ public class DmsDataWriterWorker extends GridWorker {
     }
 
     /** Start new distributed metastorage worker thread. */
-    public void start() {
+    @Override public void start() {
         isCancelled.set(false);
 
-        new IgniteThread(igniteInstanceName(), "dms-writer-thread", this).start();
+        super.start();
     }
 
     /**
@@ -121,7 +119,7 @@ public class DmsDataWriterWorker extends GridWorker {
         else {
             latch = new CountDownLatch(1);
 
-            updateQueue.offer((RunnableFuture<?>)(suspendFut = new FutureTask<>(() -> AWAIT)));
+            addToQueue((RunnableFuture<?>)(suspendFut = new FutureTask<>(() -> AWAIT)));
 
             compFut.listen(() -> latch.countDown());
         }
@@ -129,7 +127,7 @@ public class DmsDataWriterWorker extends GridWorker {
 
     /** */
     public void update(DistributedMetaStorageHistoryItem histItem) {
-        updateQueue.offer(newDmsTask(() -> {
+        addToQueue(newDmsTask(() -> {
             metastorage.write(historyItemKey(workerDmsVer.id() + 1), histItem);
 
             workerDmsVer = workerDmsVer.nextVersion(histItem);
@@ -146,7 +144,7 @@ public class DmsDataWriterWorker extends GridWorker {
         assert fullNodeData.fullData != null;
         assert fullNodeData.hist != null;
 
-        updateQueue.offer(newDmsTask(() -> {
+        addToQueue(newDmsTask(() -> {
             metastorage.writeRaw(cleanupGuardKey(), DUMMY_VALUE);
 
             doCleanup();
@@ -172,19 +170,19 @@ public class DmsDataWriterWorker extends GridWorker {
 
     /** */
     public void removeHistItem(long ver) {
-        updateQueue.offer(newDmsTask(() -> metastorage.remove(historyItemKey(ver))));
+        addToQueue(newDmsTask(() -> metastorage.remove(historyItemKey(ver))));
     }
 
     /** */
     public void cancel(boolean halt) throws InterruptedException {
         if (halt) {
-            updateQueue.clear();
+            clearQueue();
 
             if (suspendFut instanceof RunnableFuture)
                 ((Runnable)suspendFut).run();
         }
 
-        updateQueue.offer(new FutureTask<>(() -> STOP));
+        addToQueue(new FutureTask<>(() -> STOP));
         latch.countDown();
 
         isCancelled.set(true);
@@ -199,18 +197,22 @@ public class DmsDataWriterWorker extends GridWorker {
     @Override protected void body() {
         while (true) {
             try {
-                RunnableFuture<?> curTask = updateQueue.take();
+                OperationContextAwareWrapper<RunnableFuture<?>> contextualCurTask = takeQueuedElement();
 
-                curTask.run();
+                try (Scope ignored = OperationContext.restoreSnapshot(contextualCurTask.contextSnapshot())) {
+                    RunnableFuture<?> curTask = contextualCurTask.delegate();
 
-                // Result will be null for any runnable executed tasks over metastorage and non-null for system DMS tasks.
-                Object res = U.get(curTask);
+                    curTask.run();
 
-                if (res == STOP)
-                    break;
+                    // Result will be null for any runnable executed tasks over metastorage and non-null for system DMS tasks.
+                    Object res = U.get(curTask);
 
-                if (res == AWAIT)
-                    latch.await();
+                    if (res == STOP)
+                        break;
+
+                    if (res == AWAIT)
+                        latch.await();
+                }
             }
             catch (InterruptedException ignore) {
             }

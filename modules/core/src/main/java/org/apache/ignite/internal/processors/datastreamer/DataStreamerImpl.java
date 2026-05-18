@@ -35,7 +35,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.DelayQueue;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -271,9 +270,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     private volatile long lastFlushTime = U.currentTimeMillis();
 
     /** */
-    private final DelayQueue<DataStreamerImpl<K, V>> flushQ;
-
-    /** */
     private boolean skipStore;
 
     /** */
@@ -300,12 +296,10 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /**
      * @param ctx Grid kernal context.
      * @param cacheName Cache name.
-     * @param flushQ Flush queue.
      */
     public DataStreamerImpl(
         final GridKernalContext ctx,
-        @Nullable final String cacheName,
-        DelayQueue<DataStreamerImpl<K, V>> flushQ
+        @Nullable final String cacheName
     ) {
         assert ctx != null;
 
@@ -325,7 +319,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         }
 
         this.cacheName = cacheName;
-        this.flushQ = flushQ;
 
         discoLsnr = new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {
@@ -583,9 +576,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             this.autoFlushFreq = autoFlushFreq;
 
             if (autoFlushFreq != 0 && old == 0)
-                flushQ.add(this);
+                ctx.dataStream().scheduleAutoFlush(this);
             else if (autoFlushFreq == 0)
-                flushQ.remove(this);
+                ctx.dataStream().stopAutoFlush(this);
         }
     }
 

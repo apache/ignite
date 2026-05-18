@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
@@ -290,17 +288,14 @@ public class DmsDataWriterWorkerTest extends GridCommonAbstractTest {
     public void testHalt() throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
 
-        LinkedBlockingQueue<RunnableFuture<?>> queue = GridTestUtils.getFieldValue(worker, DmsDataWriterWorker.class,
-            "updateQueue");
-
         metastorage = new MyReadWriteMetaStorageMock() {
             @Override public void writeRaw(String key, byte[] data) {
                 try {
-                    assertTrue(GridTestUtils.waitForCondition(() -> queue.size() == 3, getTestTimeout()));
+                    assertTrue(GridTestUtils.waitForCondition(() -> worker.queueSize() == 3, getTestTimeout()));
 
                     latch.countDown();
 
-                    assertTrue(GridTestUtils.waitForCondition(() -> queue.size() == 1, getTestTimeout()));
+                    assertTrue(GridTestUtils.waitForCondition(() -> worker.queueSize() == 1, getTestTimeout()));
                 }
                 catch (Exception ignore) {
                 }

@@ -21,10 +21,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -41,12 +39,15 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.thread.context.OperationContext;
+import org.apache.ignite.internal.thread.context.Scope;
+import org.apache.ignite.internal.thread.context.function.OperationContextAwareWrapper;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.internal.util.worker.IgniteLinkedBlockingQueueProcessor;
 
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
@@ -119,7 +120,7 @@ class BinaryMetadataFileStore {
 
         writer = new BinaryMetadataAsyncWriter();
 
-        U.newThread(writer).start();
+        writer.start();
     }
 
     /**
@@ -392,12 +393,7 @@ class BinaryMetadataFileStore {
     /**
      *
      */
-    private class BinaryMetadataAsyncWriter extends GridWorker {
-        /**
-         * Queue of write tasks submitted for execution.
-         */
-        private final BlockingQueue<OperationTask> queue = new LinkedBlockingQueue<>();
-
+    private class BinaryMetadataAsyncWriter extends IgniteLinkedBlockingQueueProcessor<OperationTask> {
         /**
          * Write operation tasks prepared for writing (but not yet submitted to execution (actual writing).
          */
@@ -405,8 +401,7 @@ class BinaryMetadataFileStore {
 
         /** */
         BinaryMetadataAsyncWriter() {
-            super(ctx.igniteInstanceName(), "binary-metadata-writer",
-                BinaryMetadataFileStore.this.log, ctx.workersRegistry());
+            super(ctx.igniteInstanceName(), "binary-metadata-writer", BinaryMetadataFileStore.this.log, ctx.workersRegistry());
         }
 
         /**
@@ -427,7 +422,7 @@ class BinaryMetadataFileStore {
                             ", typeVersion=" + typeVer + ']'
                     );
 
-                queue.add(task);
+                addToQueue(task);
             }
             else {
                 if (log.isDebugEnabled())
@@ -443,7 +438,7 @@ class BinaryMetadataFileStore {
         @Override public synchronized void cancel() {
             super.cancel();
 
-            queue.clear();
+            clearQueue();
 
             IgniteCheckedException err = new IgniteCheckedException("Operation has been cancelled (node is stopping).");
 
@@ -479,27 +474,23 @@ class BinaryMetadataFileStore {
 
         /** */
         private void body0() throws InterruptedException {
-            OperationTask task;
+            OperationContextAwareWrapper<OperationTask> contextualTask = takeQueuedElement();
 
-            blockingSectionBegin();
+            try (Scope ignored = OperationContext.restoreSnapshot(contextualTask.contextSnapshot())) {
+                OperationTask task = contextualTask.delegate();
 
-            try {
-                task = queue.take();
-
-                if (log.isDebugEnabled())
+                if (log.isDebugEnabled()) {
                     log.debug(
                         "Starting write operation for" +
                             " [typeId=" + task.typeId() +
                             ", typeVer=" + task.typeVersion() + ']'
                     );
+                }
 
                 task.execute(BinaryMetadataFileStore.this);
-            }
-            finally {
-                blockingSectionEnd();
-            }
 
-            finishWriteFuture(task.typeId(), task.typeVersion(), task);
+                finishWriteFuture(task.typeId(), task.typeVersion(), task);
+            }
         }
 
         /**

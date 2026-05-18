@@ -21,9 +21,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -36,16 +34,21 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteTooManyOpenFilesException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
+import org.apache.ignite.internal.thread.context.OperationContext;
+import org.apache.ignite.internal.thread.context.Scope;
+import org.apache.ignite.internal.thread.context.function.OperationContextAwareWrapper;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.nio.GridNioRecoveryDescriptor;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridTcpNioCommunicationClient;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.internal.util.worker.IgniteLinkedBlockingQueueProcessor;
 import org.apache.ignite.internal.worker.WorkersRegistry;
+import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.communication.tcp.AttributeNames;
 import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage;
+import org.apache.ignite.thread.IgniteThread;
 
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
@@ -54,7 +57,7 @@ import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpU
 /**
  * Works with connections states.
  */
-public class CommunicationWorker extends GridWorker {
+public class CommunicationWorker extends IgniteLinkedBlockingQueueProcessor<DisconnectedSessionInfo> {
     /** Worker name. */
     public static final String WORKER_NAME = "tcp-comm-worker";
 
@@ -63,9 +66,6 @@ public class CommunicationWorker extends GridWorker {
 
     /** Attributes. */
     private final AttributeNames attrs;
-
-    /** */
-    private final BlockingQueue<DisconnectedSessionInfo> q = new LinkedBlockingQueue<>();
 
     /** Client pool. */
     private final ConnectionClientPool clientPool;
@@ -132,11 +132,20 @@ public class CommunicationWorker extends GridWorker {
         this.spiName = spiName;
     }
 
+    /** {@inheritDoc} */
+    @Override public IgniteThread createWorkerThread() {
+        return new IgniteSpiThread(igniteInstanceName(), name(), log) {
+            @Override protected void body() {
+                CommunicationWorker.this.run();
+            }
+        };
+    }
+
     /**
      * @param sesInfo Disconnected session information.
      */
     public void addProcessDisconnectRequest(DisconnectedSessionInfo sesInfo) {
-        boolean add = q.add(sesInfo);
+        boolean add = addToQueue(sesInfo);
 
         assert add;
     }
@@ -159,19 +168,16 @@ public class CommunicationWorker extends GridWorker {
 
         try {
             while (!isCancelled()) {
-                DisconnectedSessionInfo disconnectData;
+                OperationContextAwareWrapper<DisconnectedSessionInfo> contextualDisconnectData = pollQueuedElement(
+                    cfg.idleConnectionTimeout(),
+                    TimeUnit.MILLISECONDS
+                );
 
-                blockingSectionBegin();
-
-                try {
-                    disconnectData = q.poll(cfg.idleConnectionTimeout(), TimeUnit.MILLISECONDS);
+                if (contextualDisconnectData != null) {
+                    try (Scope ignored = OperationContext.restoreSnapshot(contextualDisconnectData.contextSnapshot())) {
+                        processDisconnect(contextualDisconnectData.delegate());
+                    }
                 }
-                finally {
-                    blockingSectionEnd();
-                }
-
-                if (disconnectData != null)
-                    processDisconnect(disconnectData);
                 else
                     processIdle();
 

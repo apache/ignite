@@ -99,19 +99,17 @@ public class GridWorkerPool {
      *      before waiting for them to finish.
      */
     public void join(boolean cancel) {
-        if (cancel)
-            U.cancel(workers);
+        for (GridWorker worker : workers) {
+            try {
+                if (cancel)
+                    U.cancel(worker);
 
-        // Record current interrupted status of calling thread.
-        boolean interrupted = Thread.interrupted();
-
-        try {
-            U.join(workers, log);
-        }
-        finally {
-            // Reset interrupted flag on calling thread.
-            if (interrupted)
-                Thread.currentThread().interrupt();
+                U.join(worker, log);
+            }
+            catch (Exception e) {
+                if (log != null)
+                    log.warning("Failed to stop grid worker [" + worker.name() + ']', e);
+            }
         }
     }
 }

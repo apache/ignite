@@ -15,32 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.thread.context.function;
+package org.apache.ignite.internal.util.worker;
 
-import org.apache.ignite.internal.thread.context.OperationContext;
+import java.util.concurrent.LinkedBlockingQueue;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.thread.context.OperationContextSnapshot;
-import org.apache.ignite.internal.thread.context.Scope;
-import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.internal.thread.context.function.OperationContextAwareWrapper;
+import org.apache.ignite.internal.worker.WorkersRegistry;
 
 /** */
-public class OperationContextAwareInClosure<E> extends OperationContextAwareWrapper<IgniteInClosure<E>> implements IgniteInClosure<E> {
+public abstract class IgniteLinkedBlockingQueueProcessor<T> extends AsynchronousQueueProcessor<T, OperationContextAwareWrapper<T>> {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
-    public OperationContextAwareInClosure(IgniteInClosure<E> delegate, OperationContextSnapshot snapshot) {
-        super(delegate, snapshot);
+    protected IgniteLinkedBlockingQueueProcessor(
+        String igniteInstanceName,
+        String workerThreadName,
+        IgniteLogger log,
+        WorkersRegistry workerReg
+    ) {
+        super(igniteInstanceName, workerThreadName, log, workerReg, new LinkedBlockingQueue<>());
     }
 
     /** {@inheritDoc} */
-    @Override public void apply(E e) {
-        try (Scope ignored = OperationContext.restoreSnapshot(snapshot)) {
-            delegate.apply(e);
-        }
-    }
-
-    /** */
-    public static <E> IgniteInClosure<E> wrap(IgniteInClosure<E> delefate) {
-        return wrap(delefate, OperationContextAwareInClosure::new);
+    @Override protected OperationContextAwareWrapper<T> wrapQueueElement(T delegate, OperationContextSnapshot snapshot) {
+        return new OperationContextAwareWrapper<>(delegate, snapshot);
     }
 }

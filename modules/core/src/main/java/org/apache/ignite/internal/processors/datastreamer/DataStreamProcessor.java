@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.datastreamer;
 
 import java.util.Collection;
 import java.util.UUID;
-import java.util.concurrent.DelayQueue;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
@@ -35,6 +34,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.thread.OomExceptionHandler;
+import org.apache.ignite.internal.thread.context.OperationContext;
+import org.apache.ignite.internal.thread.context.Scope;
+import org.apache.ignite.internal.thread.context.function.OperationContextAwareWrapper;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -42,7 +44,7 @@ import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.internal.util.worker.IgniteDelayQueueProcessor;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -56,18 +58,15 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.DAT
 /**
  * Data stream processor.
  */
-public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
+public class DataStreamProcessor extends GridProcessorAdapter {
     /** Loaders map (access is not supposed to be highly concurrent). */
     private Collection<DataStreamerImpl> ldrs = new GridConcurrentHashSet<>();
 
     /** Busy lock. */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
-    /** Flushing thread. */
-    private Thread flusher;
-
-    /** */
-    private final DelayQueue<DataStreamerImpl<K, V>> flushQ = new DelayQueue<>();
+    /** Data Streamer flusher. */
+    private final DataStreamerFlusher flusher = new DataStreamerFlusher();
 
     /** Marshaller. */
     private final Marshaller marsh;
@@ -93,31 +92,6 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        flusher = U.newThread(new GridWorker(ctx.igniteInstanceName(), "grid-data-loader-flusher", log) {
-            @Override protected void body() throws InterruptedException {
-                while (!isCancelled()) {
-                    DataStreamerImpl<K, V> ldr = flushQ.take();
-
-                    if (!busyLock.enterBusy())
-                        return;
-
-                    try {
-                        if (ldr.isClosed())
-                            continue;
-
-                        ldr.tryFlush();
-
-                        flushQ.offer(ldr);
-                    }
-                    finally {
-                        busyLock.leaveBusy();
-                    }
-                }
-            }
-        });
-
-        flusher.setUncaughtExceptionHandler(new OomExceptionHandler(ctx));
-
         flusher.start();
 
         if (log.isDebugEnabled())
@@ -131,7 +105,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
 
         busyLock.block();
 
-        U.interrupt(flusher);
+        U.interrupt(flusher.runner());
         U.join(flusher, log);
 
         for (DataStreamerImpl<?, ?> ldr : ldrs) {
@@ -163,12 +137,12 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
      * @param cacheName Cache name ({@code null} for default cache).
      * @return Data loader.
      */
-    public DataStreamerImpl<K, V> dataStreamer(@Nullable String cacheName) {
+    public <K, V> DataStreamerImpl<K, V> dataStreamer(@Nullable String cacheName) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to create data streamer (grid is stopping).");
 
         try {
-            final DataStreamerImpl<K, V> ldr = new DataStreamerImpl<>(ctx, cacheName, flushQ);
+            final DataStreamerImpl<K, V> ldr = new DataStreamerImpl<>(ctx, cacheName);
 
             ldrs.add(ldr);
 
@@ -188,6 +162,16 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
         finally {
             busyLock.leaveBusy();
         }
+    }
+
+    /** */
+    public void scheduleAutoFlush(DataStreamerImpl<?, ?> dataStreamer) {
+        flusher.addToQueue(dataStreamer);
+    }
+
+    /** */
+    public void stopAutoFlush(DataStreamerImpl<?, ?> dataStreamer) {
+        flusher.removeQueuedElement(dataStreamer);
     }
 
     /**
@@ -272,7 +256,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                 clsLdr = dep.classLoader();
             }
 
-            StreamReceiver<K, V> updater;
+            StreamReceiver<?, ?> updater;
 
             try {
                 updater = U.unmarshal(marsh, req.updaterBytes(), U.resolveClassLoader(clsLdr, ctx.config()));
@@ -303,7 +287,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
      */
     private void localUpdate(final UUID nodeId,
         final DataStreamerRequest req,
-        final StreamReceiver<K, V> updater,
+        final StreamReceiver<?, ?> updater,
         final Object topic) {
         final boolean allowOverwrite = !(updater instanceof DataStreamerImpl.IsolatedUpdater);
 
@@ -460,5 +444,42 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
         X.println(">>>");
         X.println(">>> Data streamer processor memory stats [igniteInstanceName=" + ctx.igniteInstanceName() + ']');
         X.println(">>>   ldrsSize: " + ldrs.size());
+    }
+
+    /** */
+    private class DataStreamerFlusher extends IgniteDelayQueueProcessor<DataStreamerImpl<?, ?>> {
+        /** */
+        public DataStreamerFlusher() {
+            super(ctx.igniteInstanceName(), "grid-data-loader-flusher", DataStreamProcessor.this.log, ctx.workersRegistry());
+        }
+
+        /** {@inheritDoc} */
+        @Override public Thread.UncaughtExceptionHandler uncaughtExceptionHandler() {
+            return new OomExceptionHandler(ctx);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void body() throws InterruptedException {
+            while (!isCancelled()) {
+                OperationContextAwareWrapper<DataStreamerImpl<?, ?>> contextualLdr = takeQueuedElement();
+
+                if (!busyLock.enterBusy())
+                    return;
+
+                try (Scope ignored = OperationContext.restoreSnapshot(contextualLdr.contextSnapshot())) {
+                    DataStreamerImpl<?, ?> ldr = contextualLdr.delegate();
+
+                    if (ldr.isClosed())
+                        continue;
+
+                    ldr.tryFlush();
+
+                    addToQueue(ldr);
+                }
+                finally {
+                    busyLock.leaveBusy();
+                }
+            }
+        }
     }
 }
