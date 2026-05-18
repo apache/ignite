@@ -128,12 +128,13 @@ public class QueryParser {
      *
      * @param schemaName schema name.
      * @param qry query to parse.
+     * @param lazy Lazy query flag.
      * @param remainingAllowed Whether multiple statements are allowed.
      * @return Parsing result that contains Parsed leading query and remaining sql script.
      */
-    public QueryParserResult parse(String schemaName, SqlFieldsQuery qry, boolean remainingAllowed) {
+    public QueryParserResult parse(String schemaName, SqlFieldsQuery qry, boolean lazy, boolean remainingAllowed) {
         try (TraceSurroundings ignored = MTC.support(idx.kernalContext().tracing().create(SQL_QRY_PARSE, MTC.span()))) {
-            QueryParserResult res = parse0(schemaName, qry, remainingAllowed);
+            QueryParserResult res = parse0(schemaName, qry, lazy, remainingAllowed);
 
             checkQueryType(qry, res.isSelect());
 
@@ -145,9 +146,10 @@ public class QueryParser {
      * Create parameters from query.
      *
      * @param qry Query.
+     * @param lazy Lazy query flag.
      * @return Parameters.
      */
-    public QueryParameters queryParameters(SqlFieldsQuery qry) {
+    public QueryParameters queryParameters(SqlFieldsQuery qry, boolean lazy) {
         boolean autoCommit = true;
         List<Object[]> batchedArgs = null;
 
@@ -168,7 +170,7 @@ public class QueryParser {
             qry.getArgs(),
             qry.getPartitions(),
             timeout,
-            qry.isLazy(),
+            lazy,
             qry.getPageSize(),
             null,
             autoCommit,
@@ -183,9 +185,10 @@ public class QueryParser {
      * @param schemaName schema name.
      * @param qry query to parse.
      * @param remainingAllowed Whether multiple statements are allowed.
+     * @param lazy Lazy query flag.
      * @return Parsing result that contains Parsed leading query and remaining sql script.
      */
-    private QueryParserResult parse0(String schemaName, SqlFieldsQuery qry, boolean remainingAllowed) {
+    private QueryParserResult parse0(String schemaName, SqlFieldsQuery qry, boolean lazy, boolean remainingAllowed) {
         QueryDescriptor qryDesc = queryDescriptor(schemaName, qry);
 
         QueryParserCacheEntry cached = cache.get(qryDesc);
@@ -197,7 +200,7 @@ public class QueryParser {
 
             return new QueryParserResult(
                 qryDesc,
-                queryParameters(qry),
+                queryParameters(qry, lazy),
                 null,
                 cached.parametersMeta(),
                 cached.select(),
@@ -215,7 +218,7 @@ public class QueryParser {
 
         // Otherwise parse with H2.
         if (parseRes == null)
-            parseRes = parseH2(schemaName, qry, qryDesc.batched(), remainingAllowed);
+            parseRes = parseH2(schemaName, qry, lazy, qryDesc.batched(), remainingAllowed);
 
         // Add to cache if not multi-statement.
         if (parseRes.remainingQuery() == null) {
@@ -271,7 +274,7 @@ public class QueryParser {
 
             return new QueryParserResult(
                 newPlanKey,
-                queryParameters(newQry),
+                queryParameters(newQry, true),
                 remainingQry,
                 Collections.emptyList(), // Currently none of native statements supports parameters.
                 null,
@@ -310,7 +313,7 @@ public class QueryParser {
      * @return Parsing result.
      */
     @SuppressWarnings("IfMayBeConditional")
-    private QueryParserResult parseH2(String schemaName, SqlFieldsQuery qry, boolean batched,
+    private QueryParserResult parseH2(String schemaName, SqlFieldsQuery qry, boolean lazy, boolean batched,
         boolean remainingAllowed) {
         try (H2PooledConnection c = connMgr.connection(schemaName)) {
             // For queries that are explicitly local, we rely on the flag specified in the query
@@ -406,7 +409,7 @@ public class QueryParser {
 
                     return new QueryParserResult(
                         newQryDesc,
-                        queryParameters(newQry),
+                        queryParameters(newQry, lazy),
                         remainingQry,
                         paramsMeta,
                         null,
@@ -419,7 +422,7 @@ public class QueryParser {
 
                     return new QueryParserResult(
                         newQryDesc,
-                        queryParameters(newQry),
+                        queryParameters(newQry, lazy),
                         remainingQry,
                         paramsMeta,
                         null,
@@ -432,7 +435,7 @@ public class QueryParser {
 
                     return new QueryParserResult(
                         newQryDesc,
-                        queryParameters(newQry),
+                        queryParameters(newQry, lazy),
                         remainingQry,
                         paramsMeta,
                         null,
@@ -507,7 +510,7 @@ public class QueryParser {
 
                 return new QueryParserResult(
                     newQryDesc,
-                    queryParameters(newQry),
+                    queryParameters(newQry, lazy),
                     remainingQry,
                     paramsMeta,
                     select,

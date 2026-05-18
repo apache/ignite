@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
 import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
+import org.apache.ignite.internal.processors.query.schema.management.SchemaManager;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -203,16 +204,13 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         List<QueryField> cols
     ) {
         IgniteCacheTable oldTbl = table(schemaName, typeDesc.tableName());
-        assert oldTbl != null;
+        assert oldTbl != null : String.format("schemaName=%s, tableName=%s", schemaName, typeDesc.tableName());
 
         IgniteCacheTable newTbl = createTable(typeDesc, cacheInfo);
 
         // Recreate indexes for the new table without columns shift.
-        for (IgniteIndex idx : oldTbl.indexes().values()) {
-            CacheIndexImpl idx0 = (CacheIndexImpl)idx;
-
-            newTbl.addIndex(new CacheIndexImpl(idx0.collation(), idx0.name(), idx0.queryIndex(), newTbl));
-        }
+        for (IgniteIndex idx : oldTbl.indexes().values())
+            newTbl.addIndex(((CacheIndexImpl)idx).copy(newTbl));
 
         publishTable(schemaName, typeDesc.tableName(), newTbl);
     }
@@ -225,7 +223,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         List<String> cols
     ) {
         IgniteCacheTable oldTbl = table(schemaName, typeDesc.tableName());
-        assert oldTbl != null;
+        assert oldTbl != null : String.format("schemaName=%s, tableName=%s", schemaName, typeDesc.tableName());
 
         IgniteCacheTable newTbl = createTable(typeDesc, cacheInfo);
 
@@ -242,8 +240,9 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         for (IgniteIndex idx : oldTbl.indexes().values()) {
             CacheIndexImpl idx0 = (CacheIndexImpl)idx;
 
-            newTbl.addIndex(new CacheIndexImpl(RelCollations.permute(idx0.collation(), mapping), idx0.name(),
-                idx0.queryIndex(), newTbl));
+            RelCollation newCollation = RelCollations.permute(idx0.collation(), mapping);
+
+            newTbl.addIndex(idx0.copy(newTbl, newCollation));
         }
 
         publishTable(schemaName, typeDesc.tableName(), newTbl);
@@ -301,12 +300,20 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         IndexDescriptor idxDesc
     ) {
         IgniteCacheTable tbl = table(schemaName, tblName);
-        assert tbl != null;
+        assert tbl != null : String.format("schemaName=%s, tableName=%s, idxName=%s", schemaName, tblName, idxName);
 
         RelCollation idxCollation = deriveSecondaryIndexCollation(idxDesc, tbl);
 
         IgniteIndex idx = new CacheIndexImpl(idxCollation, idxName, idxDesc.index(), tbl);
         tbl.addIndex(idx);
+
+        // For a composite PK index, we need to create another proxy index that will expand the passed boundaries into
+        // index keys for BinaryObject/Key classes. That is, _key -> idx_field_0, idx_field_1, etc.
+        if (idxDesc.isPk() && idxDesc.isComposite()) {
+            tbl.addIndex(new CacheWrappedKeyIndexImpl(
+                RelCollations.EMPTY, SchemaManager.generateProxyIdxName(idxName), idxDesc.index(), tbl
+            ));
+        }
     }
 
     /**

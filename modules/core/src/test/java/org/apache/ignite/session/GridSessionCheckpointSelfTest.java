@@ -26,7 +26,7 @@ import org.apache.ignite.spi.checkpoint.cache.CacheCheckpointSpi;
 import org.apache.ignite.spi.checkpoint.jdbc.JdbcCheckpointSpi;
 import org.apache.ignite.spi.checkpoint.sharedfs.SharedFsCheckpointSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
-import org.hsqldb.jdbc.jdbcDataSource;
+import org.hsqldb.jdbc.JDBCDataSource;
 import org.junit.Test;
 
 /**
@@ -53,7 +53,7 @@ public class GridSessionCheckpointSelfTest extends GridSessionCheckpointAbstract
     public void testJdbcCheckpoint() throws Exception {
         IgniteConfiguration cfg = getConfiguration();
 
-        jdbcDataSource ds = new jdbcDataSource();
+        JDBCDataSource ds = new JDBCDataSource();
 
         ds.setDatabase("jdbc:hsqldb:mem:gg_test");
         ds.setUser("sa");

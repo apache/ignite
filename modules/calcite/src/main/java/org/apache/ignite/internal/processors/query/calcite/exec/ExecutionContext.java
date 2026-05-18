@@ -145,6 +145,9 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     /** */
     private Object[] correlations = new Object[16];
 
+    /** Entries holder per execution thread. */
+    private static final ThreadLocal<Collection<QueryTxEntry>> txEntriesHolder = new ThreadLocal<>();
+
     /**
      * @param qctx Parent base query context.
      * @param qryId Query ID.
@@ -182,7 +185,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         this.ioTracker = ioTracker;
         this.params = params;
         this.timeout = timeout;
-        this.qryTxEntries = qryTxEntries;
+        this.qryTxEntries = qryTxEntries == null ? txEntriesHolder.get() : qryTxEntries;
 
         startTs = U.currentTimeMillis();
 
@@ -421,11 +424,16 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
 
         executor.execute(qryId, fragmentId(), () -> {
             try {
+                txEntriesHolder.set(qryTxEntries);
+
                 if (!isCancelled())
                     task.run();
             }
             catch (Throwable e) {
                 onError.accept(e);
+            }
+            finally {
+                txEntriesHolder.remove();
             }
         });
     }

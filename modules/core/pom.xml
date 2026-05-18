@@ -125,7 +125,7 @@
         <dependency>
             <groupId>org.hsqldb</groupId>
             <artifactId>hsqldb</artifactId>
-            <version>1.8.0.10</version>
+            <version>2.7.4</version>
             <scope>test</scope>
         </dependency>
 
@@ -349,10 +349,10 @@
                             <shadedArtifactAttached>false</shadedArtifactAttached>
                             <artifactSet>
                                 <includes>
-                                    <include>${groupId}:ignite-commons</include>
-                                    <include>${groupId}:ignite-binary-api</include>
-                                    <include>${groupId}:ignite-binary-impl</include>
-                                    <include>${groupId}:ignite-grid-unsafe</include>
+                                    <include>${project.groupId}:ignite-commons</include>
+                                    <include>${project.groupId}:ignite-binary-api</include>
+                                    <include>${project.groupId}:ignite-binary-impl</include>
+                                    <include>${project.groupId}:ignite-grid-unsafe</include>
                                 </includes>
                             </artifactSet>
                         </configuration>
@@ -412,6 +412,28 @@
     </build>
 
     <profiles>
+        <profile>
+            <id>javadoc</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <!--
+                                    Even if automatically generated source files are excluded from Javadoc generation,
+                                    Javadoc Builder still requires them to be present in the source path for import checking.
+                                 -->
+                                <id>add-generated-sources</id>
+                                <phase>validate</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
         <profile>
             <id>release</id>
             <activation>

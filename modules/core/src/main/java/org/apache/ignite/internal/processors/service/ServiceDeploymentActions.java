@@ -21,9 +21,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.jetbrains.annotations.NotNull;
@@ -42,10 +42,10 @@ public class ServiceDeploymentActions {
     private Map<IgniteUuid, ServiceInfo> servicesToUndeploy;
 
     /** Services deployment topologies. */
-    private Map<IgniteUuid, Map<UUID, Integer>> depTops;
+    private Map<IgniteUuid, ServiceTopology> depTops;
 
     /** Services deployment errors. */
-    private Map<IgniteUuid, Collection<byte[]>> depErrors;
+    private Map<IgniteUuid, Collection<Throwable>> depErrors;
 
     /** Current platform */
     private final String platform;
@@ -117,28 +117,28 @@ public class ServiceDeploymentActions {
     /**
      * @return Deployment topologies.
      */
-    @NotNull public Map<IgniteUuid, Map<UUID, Integer>> deploymentTopologies() {
+    @NotNull public Map<IgniteUuid, ServiceTopology> deploymentTopologies() {
         return depTops != null ? depTops : Collections.emptyMap();
     }
 
     /**
      * @param depTops Deployment topologies.
      */
-    public void deploymentTopologies(@NotNull Map<IgniteUuid, Map<UUID, Integer>> depTops) {
-        this.depTops = Collections.unmodifiableMap(new HashMap<>(depTops));
+    public void deploymentTopologies(@NotNull Map<IgniteUuid, ServiceTopology> depTops) {
+        this.depTops = Collections.unmodifiableMap(depTops);
     }
 
     /**
      * @return Deployment errors.
      */
-    @NotNull public Map<IgniteUuid, Collection<byte[]>> deploymentErrors() {
-        return depErrors != null ? depErrors : Collections.emptyMap();
+    @NotNull public Map<IgniteUuid, Collection<Throwable>> deploymentErrors() {
+        return F.emptyIfNull(depErrors);
     }
 
     /**
      * @param depErrors Deployment errors.
      */
-    public void deploymentErrors(@NotNull Map<IgniteUuid, Collection<byte[]>> depErrors) {
-        this.depErrors = Collections.unmodifiableMap(new HashMap<>(depErrors));
+    public void deploymentErrors(@NotNull Map<IgniteUuid, Collection<Throwable>> depErrors) {
+        this.depErrors = Collections.unmodifiableMap(depErrors);
     }
 }

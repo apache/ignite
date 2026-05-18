@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.managers.communication.UnknownMessageException;
 
 /**
  * Base class for all communication messages.
@@ -63,18 +64,12 @@ public interface Message {
      *
      * @return Message type.
      */
-    /**
-     * Gets message type.
-     *
-     * @return Message type.
-     */
     default short directType() {
         var clazz = getClass();
         Short type = REGISTRATIONS.get(clazz);
 
-        if (type == null) {
-            throw new IgniteException("No registration for class " + clazz.getSimpleName());
-        }
+        if (type == null)
+            throw new UnknownMessageException(clazz);
 
         return type;
     }
@@ -91,8 +86,7 @@ public interface Message {
         var clazz = getClass();
         var type = REGISTRATIONS.putIfAbsent(clazz, directType);
 
-        if ((type != null) && (type != directType)) {
+        if ((type != null) && (type != directType))
             throw new IgniteException(clazz.getSimpleName() + " is already registered for direct type " + type);
-        }
     }
 }

@@ -84,7 +84,8 @@ public class IgniteExceptionInNioWorkerSelfTest extends GridCommonAbstractTest {
                 return (byte)242;
             }
 
-            return -61;
+            // IgniteDiagnosticRequest as an example.
+            return 13003;
         }
     }
 }

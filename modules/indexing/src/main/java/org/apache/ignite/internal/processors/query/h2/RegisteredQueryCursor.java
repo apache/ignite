@@ -65,13 +65,17 @@ public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
      * @param iterExec Query executor.
      * @param cancel Cancellation closure.
      * @param runningQryMgr Running query manager.
-     * @param lazy Lazy mode flag.
      * @param qryId Registered running query id.
      * @param tracing Tracing processor.
      */
-    public RegisteredQueryCursor(Iterable<T> iterExec, GridQueryCancel cancel, RunningQueryManager runningQryMgr,
-        boolean lazy, long qryId, Tracing tracing) {
-        super(iterExec, cancel, true, lazy);
+    public RegisteredQueryCursor(
+        Iterable<T> iterExec,
+        GridQueryCancel cancel,
+        RunningQueryManager runningQryMgr,
+        long qryId,
+        Tracing tracing
+    ) {
+        super(iterExec, cancel, true);
 
         assert runningQryMgr != null;
         assert qryId != RunningQueryManager.UNDEFINED_QUERY_ID;
@@ -88,7 +92,7 @@ public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
     /** {@inheritDoc} */
     @Override protected Iterator<T> iter() {
         try (TraceSurroundings ignored = MTC.supportContinual(qrySpan)) {
-            Iterator<T> iter = lazy() ? new RegisteredIterator(super.iter()) : super.iter();
+            Iterator<T> iter = new RegisteredIterator(super.iter());
 
             return qrySpan != NoopSpan.INSTANCE ? new TraceableIterator<>(iter) : iter;
         }

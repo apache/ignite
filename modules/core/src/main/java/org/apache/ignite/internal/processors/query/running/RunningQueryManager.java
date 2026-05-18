@@ -281,13 +281,74 @@ public class RunningQueryManager {
      * @param loc Local query flag.
      * @param cancel Query cancel. Should be passed in case query is cancelable, or {@code null} otherwise.
      * @param enforceJoinOrder Enforce join order flag.
-     * @param lazy Lazy flag.
      * @param distributedJoins Distributed joins flag.
      * @return Id of registered query. Id is a positive number.
      */
     public long register(String qry, GridCacheQueryType qryType, String schemaName, boolean loc,
         @Nullable GridQueryCancel cancel,
-        String qryInitiatorId, boolean enforceJoinOrder, boolean lazy, boolean distributedJoins) {
+        String qryInitiatorId, boolean enforceJoinOrder, boolean distributedJoins) {
+        return register(
+            qry,
+            qryType,
+            schemaName,
+            loc,
+            cancel,
+            qryInitiatorId,
+            enforceJoinOrder,
+            distributedJoins,
+            localNodeId,
+            false
+        );
+    }
+
+    /**
+     * Registers map-side running query and returns an id associated with the query on the current node.
+     *
+     * @param qry Query text.
+     * @param schemaName Schema name.
+     * @param cancel Query cancel.
+     * @param qryInitiatorId Query initiator ID.
+     * @param originNodeId Query origin node ID.
+     * @param enforceJoinOrder Enforce join order flag.
+     * @param distributedJoins Distributed joins flag.
+     * @return Id of registered query.
+     */
+    public long registerMapQuery(
+        String qry,
+        String schemaName,
+        @Nullable GridQueryCancel cancel,
+        String qryInitiatorId,
+        UUID originNodeId,
+        boolean enforceJoinOrder,
+        boolean distributedJoins
+    ) {
+        return register(
+            qry,
+            SQL_FIELDS,
+            schemaName,
+            false,
+            cancel,
+            qryInitiatorId,
+            enforceJoinOrder,
+            distributedJoins,
+            originNodeId,
+            true
+        );
+    }
+
+    /** Registers running query and returns an id associated with the query. */
+    private long register(
+        String qry,
+        GridCacheQueryType qryType,
+        String schemaName,
+        boolean loc,
+        @Nullable GridQueryCancel cancel,
+        String qryInitiatorId,
+        boolean enforceJoinOrder,
+        boolean distributedJoins,
+        UUID nodeId,
+        boolean mapQry
+    ) {
         long qryId = qryIdGen.incrementAndGet();
 
         if (qryInitiatorId == null)
@@ -295,7 +356,7 @@ public class RunningQueryManager {
 
         final GridRunningQueryInfo run = new GridRunningQueryInfo(
             qryId,
-            localNodeId,
+            nodeId,
             qry,
             qryType,
             schemaName,
@@ -304,8 +365,8 @@ public class RunningQueryManager {
             cancel,
             loc,
             qryInitiatorId,
+            mapQry,
             enforceJoinOrder,
-            lazy,
             distributedJoins,
             securitySubjectId(ctx)
         );
@@ -316,7 +377,7 @@ public class RunningQueryManager {
 
         run.span().addTag(SQL_QRY_ID, run::globalQueryId);
 
-        if (!qryStartedListeners.isEmpty()) {
+        if (!mapQry && !qryStartedListeners.isEmpty()) {
             GridQueryStartedInfo info = new GridQueryStartedInfo(
                 run.id(),
                 localNodeId,
@@ -327,7 +388,6 @@ public class RunningQueryManager {
                 run.cancelable(),
                 run.local(),
                 run.enforceJoinOrder(),
-                run.lazy(),
                 run.distributedJoins(),
                 run.queryInitiatorId()
             );
@@ -378,10 +438,13 @@ public class RunningQueryManager {
             if (failed)
                 qrySpan.addTag(ERROR, failReason::getMessage);
 
-            //We need to collect query history and metrics only for SQL queries.
             if (isSqlQuery(qry)) {
                 qry.runningFuture().onDone();
 
+                if (qry.mapQuery())
+                    return;
+
+                // We need to collect query history and metrics only for SQL queries initiated by user.
                 qryHistTracker.collectHistory(qry, failed);
 
                 if (!failed)
@@ -403,9 +466,6 @@ public class RunningQueryManager {
                 // Create string for flags with not default values.
                 if (qry.local())
                     flags = "local";
-
-                if (!qry.lazy())
-                    flags = (flags == null ? "" : flags + ", ") + "notLazy";
 
                 if (qry.distributedJoins())
                     flags = (flags == null ? "" : flags + ", ") + "distributedJoins";
@@ -443,7 +503,6 @@ public class RunningQueryManager {
                     U.currentTimeMillis(),
                     qry.local(),
                     qry.enforceJoinOrder(),
-                    qry.lazy(),
                     qry.distributedJoins(),
                     failed,
                     failReason,
@@ -560,7 +619,7 @@ public class RunningQueryManager {
         long curTime = U.currentTimeMillis();
 
         for (GridRunningQueryInfo runningQryInfo : runs.values()) {
-            if (curTime - runningQryInfo.startTime() > duration)
+            if (!runningQryInfo.mapQuery() && curTime - runningQryInfo.startTime() > duration)
                 res.add(runningQryInfo);
         }
 

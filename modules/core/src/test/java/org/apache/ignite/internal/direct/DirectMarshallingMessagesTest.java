@@ -20,7 +20,7 @@ package org.apache.ignite.internal.direct;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Map;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
+import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -46,7 +46,7 @@ public class DirectMarshallingMessagesTest extends GridCommonAbstractTest {
     /** Message factory. */
     private final MessageFactory msgFactory =
         new IgniteMessageFactoryImpl(new MessageFactoryProvider[] {
-            new GridIoMessageFactory(jdk(), U.gridClassLoader()),
+            new CoreMessagesProvider(jdk(), jdk(), U.gridClassLoader()),
             factory -> factory.register(
                 TestNestedContainersMessage.TYPE,
                 TestNestedContainersMessage::new,

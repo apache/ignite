@@ -106,18 +106,6 @@ import org.apache.ignite.internal.jdbc2.JdbcConnection;
  *         {@code enforceJoinOrder} - Sets flag to enforce join order of tables in the query. If set to {@code true}
  *          query optimizer will not reorder tables in join. By default is {@code false}.
  *     </li>
- *     <li>
- *         {@code lazy} - Sets flag to enable lazy query execution.
- *         By default Ignite attempts to fetch the whole query result set to memory and send it to the client.
- *         For small and medium result sets this provides optimal performance and minimize duration of internal
- *         database locks, thus increasing concurrency.
- *
- *         <p> If result set is too big to fit in available memory this could lead to excessive GC pauses and even
- *         OutOfMemoryError. Use this flag as a hint for Ignite to fetch result set lazily, thus minimizing memory
- *         consumption at the cost of moderate performance hit.
- *
- *         <p> Defaults to {@code false}, meaning that the whole result set is fetched to memory eagerly.
- *     </li>
  * </ul>
  * <h1 class="header">Example</h1>
  * <pre name="code" class="java">
@@ -194,9 +182,6 @@ public class IgniteJdbcDriver implements Driver {
     /** Parameter: enforce join order flag (SQL hint). */
     public static final String PARAM_ENFORCE_JOIN_ORDER = "enforceJoinOrder";
 
-    /** Parameter: replicated only flag (SQL hint). */
-    public static final String PARAM_LAZY = "lazy";
-
     /** Parameter: schema name. */
     public static final String PARAM_SCHEMA = "schema";
 
@@ -247,9 +232,6 @@ public class IgniteJdbcDriver implements Driver {
 
     /** Transactions allowed property name. */
     public static final String PROP_ENFORCE_JOIN_ORDER = PROP_PREFIX + PARAM_ENFORCE_JOIN_ORDER;
-
-    /** Lazy property name. */
-    public static final String PROP_LAZY = PROP_PREFIX + PARAM_LAZY;
 
     /** Schema property name. */
     public static final String PROP_SCHEMA = PROP_PREFIX + PARAM_SCHEMA;
@@ -314,7 +296,6 @@ public class IgniteJdbcDriver implements Driver {
             new JdbcDriverPropertyInfo("Collocated", info.getProperty(PROP_COLLOCATED), ""),
             new JdbcDriverPropertyInfo("Distributed Joins", info.getProperty(PROP_DISTRIBUTED_JOINS), ""),
             new JdbcDriverPropertyInfo("Enforce Join Order", info.getProperty(PROP_ENFORCE_JOIN_ORDER), ""),
-            new JdbcDriverPropertyInfo("Lazy query execution", info.getProperty(PROP_LAZY), ""),
             new JdbcDriverPropertyInfo("Transactions Allowed", info.getProperty(PROP_TX_ALLOWED), ""),
             new JdbcDriverPropertyInfo("Queries with multiple statements allowed", info.getProperty(PROP_MULTIPLE_STMTS), ""),
             new JdbcDriverPropertyInfo("Skip reducer on update", info.getProperty(PROP_SKIP_REDUCER_ON_UPDATE), ""),

@@ -210,9 +210,6 @@ namespace Apache.Ignite.Linq.Impl
                 Colocated = _options.Colocated,
                 Local = _options.Local,
                 Arguments = args,
-#pragma warning disable 618
-                Lazy = _options.Lazy,
-#pragma warning restore 618
                 UpdateBatchSize = _options.UpdateBatchSize,
                 Partitions = _options.Partitions
             };

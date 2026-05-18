@@ -1298,7 +1298,7 @@ public class RexImpTable {
             // one or both of parameter(s) is(are) ANY type
             final Expression expression0 = maybeBox(expressions.get(0));
             final Expression expression1 = maybeBox(expressions.get(1));
-            return Expressions.call(SqlFunctions.class, backupMethodNameForAnyType,
+            return Expressions.call(IgniteSqlFunctions.class, backupMethodNameForAnyType,
                 expression0, expression1);
         }
 

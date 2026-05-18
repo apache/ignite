@@ -74,7 +74,7 @@ public class GridTestKernalContext extends GridKernalContextImpl {
                 null,
                 null,
                 null,
-                new LongJVMPauseDetector(log)
+                new LongJVMPauseDetector(cfg.getIgniteInstanceName() == null ? "test-ignite-kernal" : cfg.getIgniteInstanceName(), log)
         );
 
         GridTestUtils.setFieldValue(grid(), "cfg", config());

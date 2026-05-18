@@ -44,7 +44,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryLocalJoinData;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -84,7 +83,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersi
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryItem.EMPTY_ARRAY;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyItemPrefix;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyItemVer;
-import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.marshal;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.unmarshal;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageVersion.INITIAL_VERSION;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
@@ -479,7 +477,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     @Override public void write(@NotNull String key, @NotNull Serializable val) throws IgniteCheckedException {
         assert val != null : key;
 
-        startWrite(key, marshal(marshaller, val)).get();
+        startWrite(key, val).get();
     }
 
     /** {@inheritDoc} */
@@ -489,7 +487,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     ) throws IgniteCheckedException {
         assert val != null : key;
 
-        return startWrite(key, marshal(marshaller, val));
+        return startWrite(key, val);
     }
 
     /** {@inheritDoc} */
@@ -521,7 +519,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     ) throws IgniteCheckedException {
         assert newVal != null : key;
 
-        return startCas(key, marshal(marshaller, expVal), marshal(marshaller, newVal));
+        return startCas(key, expVal, newVal);
     }
 
     /** {@inheritDoc} */
@@ -531,7 +529,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     ) throws IgniteCheckedException {
         assert expVal != null : key;
 
-        return startCas(key, marshal(marshaller, expVal), null).get();
+        return startCas(key, expVal, null).get();
     }
 
     /** {@inheritDoc} */
@@ -1046,10 +1044,10 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * for operation to be completed.
      *
      * @param key The key.
-     * @param valBytes Value bytes to write. Null if value needs to be removed.
+     * @param val Value to write. Null if value needs to be removed.
      * @throws IgniteCheckedException If there was an error while sending discovery message.
      */
-    private GridFutureAdapter<?> startWrite(String key, byte[] valBytes) throws IgniteCheckedException {
+    private GridFutureAdapter<?> startWrite(String key, @Nullable Serializable val) throws IgniteCheckedException {
         UUID reqId = UUID.randomUUID();
 
         GridFutureAdapter<?> fut = prepareWriteFuture(reqId);
@@ -1057,7 +1055,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         if (fut.isDone())
             return fut;
 
-        DiscoveryCustomMessage msg = new DistributedMetaStorageUpdateMessage(reqId, key, valBytes);
+        DistributedMetaStorageUpdateMessage msg = new DistributedMetaStorageUpdateMessage(reqId, key, val);
+
+        msg.prepareMarshal(marshaller);
 
         ctx.discovery().sendCustomEvent(msg);
 
@@ -1065,9 +1065,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     }
 
     /**
-     * Basically the same as {@link #startWrite(String, byte[])} but for CAS operations.
+     * Basically the same as {@link #startWrite(String, Serializable)} but for CAS operations.
      */
-    private GridFutureAdapter<Boolean> startCas(String key, byte[] expValBytes, byte[] newValBytes)
+    private GridFutureAdapter<Boolean> startCas(String key, @Nullable Serializable expVal, @Nullable Serializable newVal)
         throws IgniteCheckedException {
         UUID reqId = UUID.randomUUID();
 
@@ -1076,7 +1076,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         if (fut.isDone())
             return fut;
 
-        DiscoveryCustomMessage msg = new DistributedMetaStorageCasMessage(reqId, key, expValBytes, newValBytes);
+        DistributedMetaStorageCasMessage msg = new DistributedMetaStorageCasMessage(reqId, key, expVal, newVal);
+
+        msg.prepareMarshal(marshaller);
 
         ctx.discovery().sendCustomEvent(msg);
 
@@ -1134,7 +1136,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             if (msg instanceof DistributedMetaStorageCasMessage)
                 completeCas((DistributedMetaStorageCasMessage)msg);
             else
-                completeWrite(new DistributedMetaStorageHistoryItem(msg.key(), msg.value()));
+                completeWrite(new DistributedMetaStorageHistoryItem(msg.key(), msg.valueBytes()));
         }
         catch (IgniteInterruptedCheckedException e) {
             throw U.convertException(e);
@@ -1318,16 +1320,16 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
         Serializable oldVal = bridge.read(msg.key());
 
-        Serializable expVal = unmarshal(marshaller, msg.expectedValue());
+        msg.finishUnmarshal(marshaller);
 
-        if (!Objects.deepEquals(oldVal, expVal)) {
+        if (!Objects.deepEquals(oldVal, msg.expectedValue())) {
             msg.setMatches(false);
 
             // Do nothing if expected value doesn't match with the actual one.
             return;
         }
 
-        completeWrite(new DistributedMetaStorageHistoryItem(msg.key(), msg.value()));
+        completeWrite(new DistributedMetaStorageHistoryItem(msg.key(), msg.valueBytes()));
     }
 
     /**

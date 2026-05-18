@@ -20,33 +20,25 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Acknowledge message for {@link MetadataUpdateProposedMessage}: see its javadoc for detailed description of protocol.
- *
+ * <p>
  * As discovery messaging doesn't guarantee that message makes only one pass across the cluster
  * <b>MetadataUpdateAcceptedMessage</b> enables to mark it as duplicated so other nodes won't process it but skip.
  */
-public class MetadataUpdateAcceptedMessage implements DiscoveryCustomMessage, Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class MetadataUpdateAcceptedMessage extends DiscoveryCustomMessage {
     /** */
     @Order(0)
-    IgniteUuid id;
-
-    /** */
-    @Order(1)
     int typeId;
 
     /** */
-    @Order(2)
+    @Order(1)
     int acceptedVer;
 
     /** */
-    @Order(3)
+    @Order(2)
     boolean duplicated;
 
     /** */
@@ -57,14 +49,10 @@ public class MetadataUpdateAcceptedMessage implements DiscoveryCustomMessage, Me
      * @param acceptedVer Accepted version.
      */
     MetadataUpdateAcceptedMessage(int typeId, int acceptedVer) {
-        id = IgniteUuid.randomUuid();
+        super(IgniteUuid.randomUuid());
+
         this.typeId = typeId;
         this.acceptedVer = acceptedVer;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
     }
 
     /** {@inheritDoc} */
@@ -98,7 +86,6 @@ public class MetadataUpdateAcceptedMessage implements DiscoveryCustomMessage, Me
     public void duplicated(boolean duplicated) {
         this.duplicated = duplicated;
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

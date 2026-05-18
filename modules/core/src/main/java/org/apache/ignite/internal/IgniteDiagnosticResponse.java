@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
@@ -33,7 +32,7 @@ public class IgniteDiagnosticResponse implements Message {
     @Nullable String respInfo;
 
     /**
-     * Default constructor required by {@link GridIoMessageFactory}.
+     * Default constructor required by {@link CoreMessagesProvider}.
      */
     public IgniteDiagnosticResponse() {
         // No-op.

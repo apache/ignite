@@ -2091,33 +2091,17 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 return;
             }
 
-            Throwable err = null;
+            Throwable err = res.error();
 
-            byte[] errBytes = res.errorBytes();
+            if (err != null) {
+                final String msg = "DataStreamer request failed [node=" + nodeId + "]";
 
-            if (errBytes != null) {
-                try {
-                    GridPeerDeployAware jobPda0 = jobPda;
-
-                    res.finishUnmarshal(ctx.marshaller(),
-                        U.resolveClassLoader(jobPda0 != null ? jobPda0.classLoader() : null, ctx.config()));
-
-                    final Throwable cause = res.error();
-
-                    final String msg = "DataStreamer request failed [node=" + nodeId + "]";
-
-                    if (cause instanceof ClusterTopologyCheckedException)
-                        err = new ClusterTopologyCheckedException(msg, cause);
-                    else if (X.hasCause(cause, IgniteClusterReadOnlyException.class))
-                        err = new IgniteClusterReadOnlyException(msg, cause);
-                    else
-                        err = new IgniteCheckedException(msg, cause);
-                }
-                catch (IgniteCheckedException e) {
-                    f.onDone(null, new IgniteCheckedException("Failed to unmarshal response.", e));
-
-                    return;
-                }
+                if (err instanceof ClusterTopologyCheckedException)
+                    err = new ClusterTopologyCheckedException(msg, err);
+                else if (X.hasCause(err, IgniteClusterReadOnlyException.class))
+                    err = new IgniteClusterReadOnlyException(msg, err);
+                else
+                    err = new IgniteCheckedException(msg, err);
             }
 
             f.onDone(null, err);

@@ -18,22 +18,22 @@
 package org.apache.ignite.internal.processors.rest.handlers.task;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Task result response.
  */
-public class GridTaskResultResponse implements Message {
+public class GridTaskResultResponse implements MarshallableMessage {
     /** Result. */
-    private @Nullable Object res;
+    public @Nullable Object res;
 
     /** Serialized result. */
     @Order(0)
-    byte[] resBytes;
+    @Nullable byte[] resBytes;
 
     /** Finished flag. */
     @Order(1)
@@ -96,24 +96,16 @@ public class GridTaskResultResponse implements Message {
         this.err = err;
     }
 
-    /**
-     * Marshals task result to byte array.
-     *
-     * @param ctx Context.
-     * @param res Task result.
-     */
-    public void marshalResult(GridKernalContext ctx, @Nullable Object res) throws IgniteCheckedException {
-        resBytes = U.marshal(ctx, res);
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (res != null)
+            resBytes = U.marshal(marsh, res);
     }
 
-    /**
-     * Unmarshals task result from byte array.
-     *
-     * @param ctx Context.
-     */
-    public void unmarshalResult(GridKernalContext ctx) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         if (resBytes != null) {
-            res = U.unmarshal(ctx, resBytes, U.resolveClassLoader(ctx.config()));
+            res = U.unmarshal(marsh, resBytes, clsLdr);
 
             // It is not required anymore.
             resBytes = null;

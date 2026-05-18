@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsProvider;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -30,7 +31,6 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetri
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetricsImpl;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
-import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderWithDelegateMetric;
@@ -180,7 +180,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     private final PeriodicHistogramMetricImpl pageTsHistogram;
 
     /** Metric indicating whether page eviction has started. */
-    private final BooleanMetricImpl evictionsStarted;
+    private final AtomicBoolean evictionsStarted = new AtomicBoolean();
 
     /**
      * Same as {@link #DataRegionMetricsImpl(DataRegionConfiguration, GridKernalContext, DataRegionMetricsProvider)}
@@ -285,7 +285,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         mreg.longMetric("MaxSize", "Maximum memory region size in bytes defined by its data region.")
             .value(dataRegionCfg.getMaxSize());
 
-        evictionsStarted = mreg.booleanMetric("EvictionsStarted",
+        mreg.register("EvictionsStarted", evictionsStarted::get,
             "True if page eviction was triggered due to data region memory pressure.");
 
         if (persistenceEnabled) {
@@ -885,12 +885,11 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
     /** {@inheritDoc} */
     @Override public boolean isEvictionsStarted() {
-        return evictionsStarted.value();
+        return evictionsStarted.get();
     }
 
-    /** */
-    public void onPageEvictionsStarted() {
-        if (!evictionsStarted.value())
-            evictionsStarted.value(true);
+    /** @return {@code True} if eviction has started for the first time. */
+    public boolean onPageEvictionsStarted() {
+        return evictionsStarted.compareAndSet(false, true);
     }
 }

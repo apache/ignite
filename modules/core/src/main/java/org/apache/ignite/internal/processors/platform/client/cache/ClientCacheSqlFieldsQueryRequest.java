@@ -78,7 +78,7 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheQueryRequest im
         boolean replicatedOnly = reader.readBoolean();
         boolean enforceJoinOrder = reader.readBoolean();
         boolean collocated = reader.readBoolean();
-        boolean lazy = reader.readBoolean();
+        reader.readBoolean();  // Lazy flag.
         int timeout = (int)reader.readLong();
         includeFieldNames = reader.readBoolean();
 
@@ -93,8 +93,7 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheQueryRequest im
                 .setLocal(loc)
                 .setReplicatedOnly(replicatedOnly)
                 .setEnforceJoinOrder(enforceJoinOrder)
-                .setCollocated(collocated)
-                .setLazy(lazy);
+                .setCollocated(collocated);
 
         // Zero value of the timeout from the old client is interpreted as a 'default'.
         // So, old clients cannot disable default timeout by explicit set timeout to 0.

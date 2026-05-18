@@ -67,11 +67,11 @@ public class GridRunningQueryInfo {
     /** Originator. */
     private final String qryInitiatorId;
 
+    /** Map query flag. */
+    private final boolean mapQry;
+
     /** Enforce join order flag. */
     private final boolean enforceJoinOrder;
-
-    /** Lazy flag. */
-    private final boolean lazy;
 
     /** Distributed joins flag. */
     private final boolean distributedJoins;
@@ -92,8 +92,8 @@ public class GridRunningQueryInfo {
      * @param cancel Query cancel.
      * @param loc Local query flag.
      * @param qryInitiatorId Query's initiator identifier.
+     * @param mapQry Map query flag.
      * @param enforceJoinOrder Enforce join order flag.
-     * @param lazy Lazy flag.
      * @param distributedJoins Distributed joins flag.
      * @param subjId Subject ID.
      */
@@ -108,8 +108,8 @@ public class GridRunningQueryInfo {
         GridQueryCancel cancel,
         boolean loc,
         String qryInitiatorId,
+        boolean mapQry,
         boolean enforceJoinOrder,
-        boolean lazy,
         boolean distributedJoins,
         UUID subjId
     ) {
@@ -124,8 +124,8 @@ public class GridRunningQueryInfo {
         this.loc = loc;
         this.span = MTC.span();
         this.qryInitiatorId = qryInitiatorId;
+        this.mapQry = mapQry;
         this.enforceJoinOrder = enforceJoinOrder;
-        this.lazy = lazy;
         this.distributedJoins = distributedJoins;
         this.subjId = subjId;
     }
@@ -231,6 +231,13 @@ public class GridRunningQueryInfo {
     }
 
     /**
+     * @return {@code true} if query executes map phase.
+     */
+    public boolean mapQuery() {
+        return mapQry;
+    }
+
+    /**
      * @return Distributed joins.
      */
     public boolean distributedJoins() {
@@ -242,13 +249,6 @@ public class GridRunningQueryInfo {
      */
     public boolean enforceJoinOrder() {
         return enforceJoinOrder;
-    }
-
-    /**
-     * @return Lazy flag.
-     */
-    public boolean lazy() {
-        return lazy;
     }
 
     /** @return Subject ID. */

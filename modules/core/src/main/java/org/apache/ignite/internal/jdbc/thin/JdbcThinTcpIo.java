@@ -106,8 +106,11 @@ public class JdbcThinTcpIo {
     /** Version 2.17.0. */
     private static final ClientListenerProtocolVersion VER_2_17_0 = ClientListenerProtocolVersion.create(2, 17, 0);
 
+    /** Version 2.18.0. */
+    private static final ClientListenerProtocolVersion VER_2_18_0 = ClientListenerProtocolVersion.create(2, 18, 0);
+
     /** Current version. */
-    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_17_0;
+    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_18_0;
 
     /** Initial output stream capacity for handshake. */
     private static final int HANDSHAKE_MSG_SIZE = 13;
@@ -287,7 +290,7 @@ public class JdbcThinTcpIo {
         writer.writeBoolean(connProps.isCollocated());
         writer.writeBoolean(connProps.isReplicatedOnly());
         writer.writeBoolean(connProps.isAutoCloseServerCursor());
-        writer.writeBoolean(connProps.isLazy());
+        writer.writeBoolean(true); // Lazy flag.
         writer.writeBoolean(connProps.isSkipReducerOnUpdate());
 
         if (ver.compareTo(VER_2_7_0) >= 0)
@@ -406,7 +409,8 @@ public class JdbcThinTcpIo {
                     + ", url=" + connProps.getUrl() + " address=" + sockAddr + ']', SqlStateCode.CONNECTION_REJECTED);
             }
 
-            if (VER_2_13_0.equals(srvProtoVer0)
+            if (VER_2_17_0.equals(srvProtoVer0)
+                || VER_2_13_0.equals(srvProtoVer0)
                 || VER_2_9_0.equals(srvProtoVer0)
                 || VER_2_8_0.equals(srvProtoVer0)
                 || VER_2_7_0.equals(srvProtoVer0)
@@ -720,6 +724,15 @@ public class JdbcThinTcpIo {
      */
     boolean isTxAwareQueriesSupported() {
         return protoCtx.isFeatureSupported(JdbcThinFeature.TX_AWARE_QUERIES);
+    }
+
+    /**
+     * Whether transaction savepoint operations are supported by the server or not.
+     *
+     * @return {@code true} if transaction savepoint operations supported, {@code false} otherwise.
+     */
+    boolean isSavepointsSupported() {
+        return protoCtx.isFeatureSupported(JdbcThinFeature.SAVEPOINTS);
     }
 
     /**

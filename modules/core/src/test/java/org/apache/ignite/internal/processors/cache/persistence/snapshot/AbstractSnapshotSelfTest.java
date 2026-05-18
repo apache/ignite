@@ -99,6 +99,7 @@ import org.apache.ignite.lang.IgniteFutureCancelledException;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -911,7 +912,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected static class BlockingCustomMessageDiscoverySpi extends TcpDiscoverySpi {
+    protected static class BlockingCustomMessageDiscoverySpi extends TestTcpDiscoverySpi {
         /** List of messages which have been blocked. */
         private final List<DiscoveryCustomMessage> blocked = new CopyOnWriteArrayList<>();
 

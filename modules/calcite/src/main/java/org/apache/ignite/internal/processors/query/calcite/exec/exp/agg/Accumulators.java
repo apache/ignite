@@ -38,6 +38,7 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.calcite.sql.type.SqlTypeName.ANY;
@@ -234,7 +235,11 @@ public class Accumulators {
                 return () -> new ComparableMinMax<Row, UUID>(call, hnd, true,
                     tf -> tf.createTypeWithNullability(tf.createSqlType(SqlTypeName.UUID), true));
             case ANY:
-                throw new UnsupportedOperationException("MIN() is not supported for type '" + call.type + "'.");
+                return () -> new ComparableMinMax<>(call, hnd, true,
+                    tf -> tf.createTypeWithNullability(tf.createSqlType(ANY), true));
+            case OTHER:
+                return () -> new ComparableMinMax<>(call, hnd, true,
+                    tf -> tf.createTypeWithNullability(tf.createSqlType(SqlTypeName.OTHER), true));
             case BIGINT:
             default:
                 return () -> new LongMinMax<>(call, hnd, true);
@@ -263,7 +268,11 @@ public class Accumulators {
                 return () -> new ComparableMinMax<Row, UUID>(call, hnd, false,
                     tf -> tf.createTypeWithNullability(tf.createSqlType(SqlTypeName.UUID), true));
             case ANY:
-                throw new UnsupportedOperationException("MAX() is not supported for type '" + call.type + "'.");
+                return () -> new ComparableMinMax<>(call, hnd, false,
+                    tf -> tf.createTypeWithNullability(tf.createSqlType(ANY), true));
+            case OTHER:
+                return () -> new ComparableMinMax<>(call, hnd, false,
+                    tf -> tf.createTypeWithNullability(tf.createSqlType(SqlTypeName.OTHER), true));
             case BIGINT:
             default:
                 return () -> new LongMinMax<>(call, hnd, false);
@@ -1116,7 +1125,7 @@ public class Accumulators {
     }
 
     /** */
-    private static class ComparableMinMax<Row, T extends Comparable<T>> extends AbstractAccumulator<Row> {
+    private static class ComparableMinMax<Row, T> extends AbstractAccumulator<Row> {
         /** */
         private final boolean min;
 
@@ -1149,8 +1158,8 @@ public class Accumulators {
                 return;
 
             val = empty ? in : min ?
-                (val.compareTo(in) < 0 ? val : in) :
-                (val.compareTo(in) < 0 ? in : val);
+                (compare(val, in) < 0 ? val : in) :
+                (compare(val, in) < 0 ? in : val);
 
             empty = false;
         }
@@ -1163,8 +1172,8 @@ public class Accumulators {
                 return;
 
             val = empty ? other0.val : min ?
-                (val.compareTo(other0.val) < 0 ? val : other0.val) :
-                (val.compareTo(other0.val) < 0 ? other0.val : val);
+                (compare(val, other0.val) < 0 ? val : other0.val) :
+                (compare(val, other0.val) < 0 ? other0.val : val);
 
             empty = false;
         }
@@ -1182,6 +1191,22 @@ public class Accumulators {
         /** {@inheritDoc} */
         @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
             return typeSupplier.apply(typeFactory);
+        }
+
+        /** */
+        @SuppressWarnings({"rawtypes", "unchecked"})
+        private int compare(Object a, Object b) {
+            if (Commons.isBinaryComparable(a, b))
+                return Commons.compareBinary(a, b);
+
+            if (a.getClass() != b.getClass()) {
+                throw new UnsupportedOperationException(String.format(
+                    "%s() is not supported for different value types: [type0=%s, type1=%s]",
+                    min ? "MIN" : "MAX", a.getClass().getName(), b.getClass().getName()
+                ));
+            }
+
+            return ((Comparable)a).compareTo(b);
         }
     }
 

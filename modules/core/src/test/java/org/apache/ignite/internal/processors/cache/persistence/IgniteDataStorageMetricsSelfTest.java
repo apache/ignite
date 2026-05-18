@@ -532,9 +532,11 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
 
         String template = "Page-based evictions started. Consider increasing 'maxSize' on Data Region configuration: ";
 
-        LogListener lsnr = LogListener.matches(template + NO_PERSISTENCE_1).build();
+        LogListener lsnr1 = LogListener.matches(template + NO_PERSISTENCE_1).build();
+        LogListener lsnr2 = LogListener.matches(template + NO_PERSISTENCE_2).build();
 
-        listeningLog.registerListener(lsnr);
+        listeningLog.registerListener(lsnr1);
+        listeningLog.registerListener(lsnr2);
 
         DataRegionMetrics memMetrics1 = ignite.dataRegionMetrics(NO_PERSISTENCE_1);
         DataRegionMetrics memMetrics2 = ignite.dataRegionMetrics(NO_PERSISTENCE_2);
@@ -550,15 +552,12 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
 
         String big = repeat('X', 256 * 1024);
 
-        int entryCnt = 0;
+        int entryCntMax = 1_000_000;
 
-        for (int i = 0; i < 1_000_000 && !lsnr.check(); i++) {
+        for (int i = 0; i < entryCntMax && !lsnr1.check(); i++)
             cacheNp1.put(i, new Person("first-" + i + "-" + big, "last-" + i + "-" + big));
 
-            entryCnt++;
-        }
-
-        assertTrue(lsnr.check());
+        assertTrue(lsnr1.check());
 
         memMetrics1 = ignite.dataRegionMetrics(NO_PERSISTENCE_1);
         memMetrics2 = ignite.dataRegionMetrics(NO_PERSISTENCE_2);
@@ -566,8 +565,10 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
         assertTrue(memMetrics1.isEvictionsStarted());
         assertFalse(memMetrics2.isEvictionsStarted());
 
-        for (int i = 0; i < entryCnt + 10; i++)
+        for (int i = 0; i < entryCntMax && !lsnr2.check(); i++)
             cacheNp2.put(i, new Person("first-" + i + "-" + big, "last-" + i + "-" + big));
+
+        assertTrue(lsnr2.check());
 
         memMetrics1 = ignite.dataRegionMetrics(NO_PERSISTENCE_1);
         memMetrics2 = ignite.dataRegionMetrics(NO_PERSISTENCE_2);

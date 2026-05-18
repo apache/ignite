@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
-
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
@@ -55,7 +54,7 @@ public class ReducerRowsBufferTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void plainQuery() {
-        Iterator<List<?>> it = query("select * from TEST", true).iterator();
+        Iterator<List<?>> it = query("select * from TEST").iterator();
 
         it.next();
 
@@ -104,10 +103,9 @@ public class ReducerRowsBufferTest extends GridCommonAbstractTest {
      * @param sql SQL query
      * @return Results set.
      */
-    FieldsQueryCursor<List<?>> query(String sql, boolean lazy) {
+    FieldsQueryCursor<List<?>> query(String sql) {
         return grid(0).context().query().querySqlFields(
             new SqlFieldsQueryEx(sql, null)
-                .setLazy(lazy)
                 .setEnforceJoinOrder(true)
                 .setPageSize(100), false);
     }

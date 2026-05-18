@@ -36,9 +36,6 @@ class JdbcQueryTaskV2 extends JdbcQueryTask {
     /** Enforce join order flag. */
     private final boolean enforceJoinOrder;
 
-    /** Lazy query execution flag. */
-    private final boolean lazy;
-
     /**
      * @param ignite Ignite.
      * @param cacheName Cache name.
@@ -52,17 +49,15 @@ class JdbcQueryTaskV2 extends JdbcQueryTask {
      * @param locQry Local query flag.
      * @param collocatedQry Collocated query flag.
      * @param distributedJoins Distributed joins flag.
-     * @param enforceJoinOrder Enforce joins order falg.
-     * @param lazy Lazy query execution flag.
+     * @param enforceJoinOrder Enforce joins order flag.
      */
     public JdbcQueryTaskV2(Ignite ignite, String cacheName, String schemaName, String sql, Boolean isQry, boolean loc,
         Object[] args, int fetchSize, UUID uuid, boolean locQry, boolean collocatedQry, boolean distributedJoins,
-        boolean enforceJoinOrder, boolean lazy) {
+        boolean enforceJoinOrder) {
         super(ignite, cacheName, schemaName, sql, isQry, loc, args, fetchSize, uuid, locQry,
             collocatedQry, distributedJoins);
 
         this.enforceJoinOrder = enforceJoinOrder;
-        this.lazy = lazy;
     }
 
     /** {@inheritDoc} */
@@ -70,11 +65,6 @@ class JdbcQueryTaskV2 extends JdbcQueryTask {
         return enforceJoinOrder;
     }
 
-    /** {@inheritDoc} */
-    @Override protected boolean lazy() {
-        return lazy;
-    }
-
     /**
      * @param ignite Ignite.
      * @param cacheName Cache name.
@@ -89,17 +79,16 @@ class JdbcQueryTaskV2 extends JdbcQueryTask {
      * @param collocatedQry Collocated query flag.
      * @param distributedJoins Distributed joins flag.
      * @param enforceJoinOrder Enforce joins order falg.
-     * @param lazy Lazy query execution flag.
      * @return Appropriate task JdbcQueryTask or JdbcQueryTaskV2.
      */
     public static JdbcQueryTask createTask(Ignite ignite, String cacheName, String schemaName, String sql,
         Boolean isQry, boolean loc, Object[] args, int fetchSize, UUID uuid, boolean locQry,
         boolean collocatedQry, boolean distributedJoins,
-        boolean enforceJoinOrder, boolean lazy) {
+        boolean enforceJoinOrder) {
 
-        if (enforceJoinOrder || lazy)
+        if (enforceJoinOrder)
             return new JdbcQueryTaskV2(ignite, cacheName, schemaName, sql, isQry, loc, args, fetchSize,
-                uuid, locQry, collocatedQry, distributedJoins, enforceJoinOrder, lazy);
+                uuid, locQry, collocatedQry, distributedJoins, enforceJoinOrder);
         else
             return new JdbcQueryTask(ignite, cacheName, schemaName, sql, isQry, loc, args, fetchSize,
                 uuid, locQry, collocatedQry, distributedJoins);

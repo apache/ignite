@@ -115,6 +115,7 @@ import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_EX
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_FETCH;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_META;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.TX_END;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.TX_SAVEPOINT;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.TX_SET_PARAMS;
 
 /**
@@ -136,9 +137,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
 
     /** Busy lock. */
     private final GridSpinBusyLock busyLock;
-
-    /** Worker. */
-    private final JdbcRequestHandlerWorker worker;
 
     /** Maximum allowed cursors. */
     private final int maxCursors;
@@ -180,7 +178,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
      * @param collocated Collocated flag.
      * @param replicatedOnly Replicated only flag.
      * @param autoCloseCursors Flag to automatically close server cursors.
-     * @param lazy Lazy query execution flag.
      * @param loc Local query flag.
      * @param skipReducerOnUpdate Skip reducer on update flag.
      * @param qryEngine Name of SQL query engine to use.
@@ -202,7 +199,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
         boolean collocated,
         boolean replicatedOnly,
         boolean autoCloseCursors,
-        boolean lazy,
         boolean loc,
         boolean skipReducerOnUpdate,
         @Nullable String qryEngine,
@@ -233,7 +229,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
             enforceJoinOrder,
             collocated,
             replicatedOnly,
-            lazy,
             loc,
             skipReducerOnUpdate,
             dataPageScanEnabled,
@@ -251,10 +246,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
         this.protocolVer = protocolVer;
 
         log = connCtx.kernalContext().log(getClass());
-
-        // TODO IGNITE-9484 Do not create worker if there is a possibility to unbind TX from threads.
-        worker = new JdbcRequestHandlerWorker(connCtx.kernalContext().igniteInstanceName(), log, this,
-            connCtx.kernalContext());
     }
 
     /** {@inheritDoc} */
@@ -289,14 +280,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
             if (isCancellationSupported())
                 reqRegister.remove(reqId);
         }
-    }
-
-    /**
-     * Start worker, if it's present.
-     */
-    void start() {
-        if (worker != null)
-            worker.start();
     }
 
     /**
@@ -397,6 +380,10 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
 
                 case TX_END:
                     resp = endTransaction((JdbcTxEndRequest)req);
+                    break;
+
+                case TX_SAVEPOINT:
+                    resp = savepoint((JdbcTxSavepointRequest)req);
                     break;
 
                 default:
@@ -555,17 +542,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
      * or due to {@code IOException} during network operations.
      */
     public void onDisconnect() {
-        if (worker != null) {
-            worker.cancel();
-
-            try {
-                worker.join();
-            }
-            catch (InterruptedException e) {
-                // No-op.
-            }
-        }
-
         for (JdbcCursor cursor : jdbcCursors.values())
             U.close(cursor, log);
 
@@ -1121,7 +1097,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
         qry.setEnforceJoinOrder(cliCtx.isEnforceJoinOrder());
         qry.setCollocated(cliCtx.isCollocated());
         qry.setReplicatedOnly(cliCtx.isReplicatedOnly());
-        qry.setLazy(cliCtx.isLazy());
         qry.setLocal(cliCtx.isLocal());
         qry.setSchema(schemaName);
         qry.setQueryInitiatorId(connCtx.clientDescriptor());
@@ -1472,6 +1447,85 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to end transaction [reqId=" + req.requestId() + ", req=" + req + ']', e);
+
+            return exceptionToResult(e);
+        }
+    }
+
+    /**
+     * Execute transaction savepoint operation.
+     *
+     * @param req Request.
+     * @return Resulting {@link JdbcResponse}.
+     */
+    private JdbcResponse savepoint(JdbcTxSavepointRequest req) {
+        int txId = req.txId();
+        boolean txStarted = false;
+
+        try {
+            if (txId == NONE_TX) {
+                if (req.operation() != JdbcTxSavepointRequest.SAVEPOINT)
+                    throw transactionNotFoundException();
+
+                txId = startClientTransaction(
+                    connCtx,
+                    cliCtx.concurrency(),
+                    cliCtx.isolation(),
+                    cliCtx.transactionTimeout(),
+                    cliCtx.transactionLabel(),
+                    cliCtx.applicationAttributes()
+                );
+
+                txStarted = true;
+            }
+
+            ClientTxContext txCtx = connCtx.txContext(txId);
+
+            if (txCtx == null)
+                throw transactionNotFoundException();
+
+            txCtx.acquire(true);
+
+            try {
+                switch (req.operation()) {
+                    case JdbcTxSavepointRequest.SAVEPOINT:
+                        txCtx.tx().savepoint(req.name(), false);
+
+                        break;
+
+                    case JdbcTxSavepointRequest.ROLLBACK_TO_SAVEPOINT:
+                        txCtx.tx().rollbackToSavepoint(req.name());
+
+                        break;
+
+                    case JdbcTxSavepointRequest.RELEASE_SAVEPOINT:
+                        txCtx.tx().releaseSavepoint(req.name());
+
+                        break;
+
+                    default:
+                        throw new IgniteSQLException("Unsupported savepoint operation: " + req.operation(),
+                            IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+                }
+            }
+            finally {
+                txCtx.release(true);
+            }
+
+            return resultToResonse(new JdbcTxSavepointResult(req.requestId(), txId));
+        }
+        catch (Exception e) {
+            if (txStarted) {
+                try {
+                    endTxAsync(connCtx, txId, false).get();
+                }
+                catch (Exception e0) {
+                    e.addSuppressed(e0);
+                }
+            }
+
+            U.error(log, "Failed to execute transaction savepoint operation [reqId=" + req.requestId() +
+                ", req=" + req + ']', e);
 
             return exceptionToResult(e);
         }

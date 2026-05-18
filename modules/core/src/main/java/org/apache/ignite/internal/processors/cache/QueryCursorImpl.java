@@ -22,11 +22,9 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -63,9 +61,6 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
     /** */
     private final GridQueryCancel cancel;
 
-    /** */
-    private final boolean lazy;
-
     /** Partition result. */
     private PartitionResult partRes;
 
@@ -73,18 +68,17 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
      * @param iterExec Query executor.
      */
     public QueryCursorImpl(Iterable<T> iterExec) {
-        this(iterExec, null, true, false);
+        this(iterExec, null, true);
     }
 
     /**
      * @param iterExec Query executor.
      * @param isQry Result type flag - {@code true} for query, {@code false} for update operation.
      */
-    public QueryCursorImpl(Iterable<T> iterExec, GridQueryCancel cancel, boolean isQry, boolean lazy) {
+    public QueryCursorImpl(Iterable<T> iterExec, GridQueryCancel cancel, boolean isQry) {
         this.iterExec = iterExec;
         this.cancel = cancel;
         this.isQry = isQry;
-        this.lazy = lazy;
     }
 
     /** {@inheritDoc} */
@@ -99,19 +93,7 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
         if (!STATE_UPDATER.compareAndSet(this, IDLE, EXECUTING))
             throw new IgniteException("Iterator is already fetched or query was cancelled.");
 
-        iter = iterExec.iterator();
-
-        if (!lazy && !STATE_UPDATER.compareAndSet(this, EXECUTING, COMPLETED)) {
-            // Handle race with cancel and make sure the iterator resources are freed correctly.
-            closeIter();
-
-            throw new CacheException(new QueryCancelledException());
-        }
-
-        assert iter != null;
-
-        if (lazy)
-            iter = new LazyIterator<>(iter);
+        iter = new LazyIterator<>(iterExec.iterator());
 
         return iter;
     }
@@ -241,13 +223,6 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
      */
     public PartitionResult partitionResult() {
         return partRes;
-    }
-
-    /**
-     * @return Lazy mode flag.
-     */
-    protected boolean lazy() {
-        return lazy;
     }
 
     /**

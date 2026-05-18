@@ -27,7 +27,7 @@ public class IgniteSqlCustomSchemaTest extends AbstractCustomSchemaTest {
     /** {@inheritDoc} */
     @Override protected List<List<?>> execSql(String qry) {
         return grid(0).context().query()
-            .querySqlFields(new SqlFieldsQuery(qry).setLazy(true), false)
+            .querySqlFields(new SqlFieldsQuery(qry), false)
             .getAll();
     }
 

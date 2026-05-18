@@ -942,9 +942,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
 #pragma warning restore 618
             writer.WriteBoolean(qry.EnforceJoinOrder);
             writer.WriteBoolean(qry.Colocated);
-#pragma warning disable 618
-            writer.WriteBoolean(qry.Lazy);
-#pragma warning restore 618
+            writer.WriteBoolean(true); // Lazy flag.
             writer.WriteTimeSpanAsLong(qry.Timeout);
             writer.WriteBoolean(includeColumns);
 

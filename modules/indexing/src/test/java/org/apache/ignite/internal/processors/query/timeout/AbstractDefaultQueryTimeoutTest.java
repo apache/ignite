@@ -200,11 +200,11 @@ public abstract class AbstractDefaultQueryTimeoutTest extends AbstractIndexingCo
     public void testConcurrent() throws Exception {
         IgniteEx ign = startGrid(0);
 
-        setDefaultQueryTimeout(2000);
+        setDefaultQueryTimeout(3000);
 
         prepareQueryExecution();
 
-        TimedQueryHelper helper = new TimedQueryHelper(1000, DEFAULT_CACHE_NAME);
+        TimedQueryHelper helper = new TimedQueryHelper(2000, DEFAULT_CACHE_NAME);
 
         helper.createCache(ign);
 
@@ -217,7 +217,7 @@ public abstract class AbstractDefaultQueryTimeoutTest extends AbstractIndexingCo
         });
 
         IgniteInternalFuture<?> fut2 = GridTestUtils.runAsync(() -> {
-            executeQuery(qryText, 1500);
+            executeQuery(qryText, 2500);
 
             return null;
         });

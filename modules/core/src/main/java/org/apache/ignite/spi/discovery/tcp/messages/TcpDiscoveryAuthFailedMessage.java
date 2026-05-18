@@ -20,17 +20,13 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 import java.net.InetAddress;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /**
  * Message telling joining node that its authentication failed.
  */
-public class TcpDiscoveryAuthFailedMessage extends TcpDiscoveryAbstractMessage implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class TcpDiscoveryAuthFailedMessage extends TcpDiscoveryAbstractMessage {
     /** Creator address. */
     @Order(0)
     InetAddressMessage creatorAddrMsg;
@@ -39,7 +35,7 @@ public class TcpDiscoveryAuthFailedMessage extends TcpDiscoveryAbstractMessage i
     @Order(1)
     UUID targetNodeId;
 
-    /** Default constructor for {@link DiscoveryMessageFactory}. */
+    /** Default constructor for {@link MessageFactory}. */
     public TcpDiscoveryAuthFailedMessage() {
         // No-op.
     }
@@ -67,7 +63,6 @@ public class TcpDiscoveryAuthFailedMessage extends TcpDiscoveryAbstractMessage i
     public InetAddress creatorAddress() {
         return creatorAddrMsg.address();
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

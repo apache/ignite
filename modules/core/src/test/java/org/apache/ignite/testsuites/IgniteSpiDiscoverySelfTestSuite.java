@@ -18,7 +18,6 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.IgniteDiscoveryMassiveNodeFailTest;
-import org.apache.ignite.internal.managers.discovery.IgniteDiscoveryMessageSerializationTest;
 import org.apache.ignite.spi.ExponentialBackoffTimeoutStrategyTest;
 import org.apache.ignite.spi.GridTcpSpiForwardingSelfTest;
 import org.apache.ignite.spi.discovery.AuthenticationRestartTest;
@@ -30,6 +29,8 @@ import org.apache.ignite.spi.discovery.LongClientConnectToClusterTest;
 import org.apache.ignite.spi.discovery.datacenter.MultiDataCenterClientRoutingTest;
 import org.apache.ignite.spi.discovery.datacenter.MultiDataCenterDeploymentTest;
 import org.apache.ignite.spi.discovery.tcp.DiscoveryClientSocketTest;
+import org.apache.ignite.spi.discovery.tcp.DiscoveryDeserializationExceptionTest;
+import org.apache.ignite.spi.discovery.tcp.DiscoverySerializationExceptionTest;
 import org.apache.ignite.spi.discovery.tcp.DiscoveryUnmarshalVulnerabilityTest;
 import org.apache.ignite.spi.discovery.tcp.IgniteClientConnectSslTest;
 import org.apache.ignite.spi.discovery.tcp.IgniteClientConnectTest;
@@ -37,6 +38,7 @@ import org.apache.ignite.spi.discovery.tcp.IgniteClientReconnectMassiveShutdownS
 import org.apache.ignite.spi.discovery.tcp.IgniteClientReconnectMassiveShutdownTest;
 import org.apache.ignite.spi.discovery.tcp.IgniteMetricsOverflowTest;
 import org.apache.ignite.spi.discovery.tcp.MultiDataCenterRingTest;
+import org.apache.ignite.spi.discovery.tcp.MultiDataCenterSplitTest;
 import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoveryMarshallerCheckSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoverySpiCoordinatorChangeTest;
 import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoverySpiFailureTimeoutSelfTest;
@@ -193,15 +195,17 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
 
     TcpDiscoveryDeadNodeAddressResolvingTest.class,
 
+    DiscoverySerializationExceptionTest.class,
+    DiscoveryDeserializationExceptionTest.class,
+
     // MDC.
     TcpDiscoveryMdcSelfTest.class,
     TcpDiscoveryPendingMessageDeliveryMdcTest.class,
     TcpDiscoveryPendingMessageDeliveryMdcReversedTest.class,
     MultiDataCenterDeploymentTest.class,
     MultiDataCenterRingTest.class,
-    MultiDataCenterClientRoutingTest.class,
-
-    IgniteDiscoveryMessageSerializationTest.class
+    MultiDataCenterSplitTest.class,
+    MultiDataCenterClientRoutingTest.class
 })
 public class IgniteSpiDiscoverySelfTestSuite {
     /** */

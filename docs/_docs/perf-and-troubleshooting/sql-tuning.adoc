@@ -78,45 +78,10 @@ with 100+ columns may perform worse than expected.
 
 == Lazy Loading
 
-By default, Ignite will set Lazy Loading enabled, this will minimize memory consumption at the cost of moderate performance degradation.
-
-Otherwise, Ignite attempts to load the whole result set to memory and send it back to the query initiator (which is usually your application). This approach provides optimal performance for queries of small or medium result sets, and minimizes the duration of internal database locks, thus increasing concurrency. 
-
-WARNING, if the result set is too big to fit in the available memory, it can lead to prolonged GC pauses and even `OutOfMemoryError` exceptions. This property is deprecated since Ignite 2.15.0.
-
-To change the default behavior: 
-
-[tabs]
---
-
-tab:Java[]
-[source,java]
-----
-SqlFieldsQuery query = new SqlFieldsQuery("SELECT * FROM Person WHERE id > 10");
-
-// Result set will be loaded eagerly.
-query.setLazy(false);
-----
-tab:JDBC[]
-[source,sql]
-----
-jdbc:ignite:thin://192.168.0.15?lazy=false
-----
-tab:C#/.NET[]
-[source,csharp]
-----
-var query = new SqlFieldsQuery("SELECT * FROM Person WHERE id > 10")
-{
-    // Result set will be loaded eagerly.
-    Lazy = false
-};
-----
-tab:C++[]
---
-
-////
-*TODO* Add tabs for ODBC and other programming languages - C# and C++
-////
+Ignite always operates in lazy loading mode. Query results are not loaded entirely into memory when possible. Data
+is streamed to the client in pages as the result set is iterated. The page size determines how many rows are fetched
+per network round trip, allowing you to balance memory consumption and performance and eliminating the risk of
+prolonged GC pauses and `OutOfMemoryError` exceptions for large result sets.
 
 == Querying Colocated Data
 

@@ -164,9 +164,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /** Page size from memory configuration, may be set only for fake(standalone) IgniteCacheDataBaseSharedManager */
     private int pageSize;
 
-    /** First eviction was warned flag. */
-    private volatile boolean firstEvictWarn;
-
     /** Data storege metrics. */
     protected final DataStorageMetricsImpl dsMetrics;
 
@@ -1247,9 +1244,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             return;
 
         while (memPlc.evictionTracker().evictionRequired()) {
-            memPlc.metrics().onPageEvictionsStarted();
-
-            warnFirstEvict(memPlc.config());
+            if (memPlc.metrics().onPageEvictionsStarted()) {
+                U.warn(log, "Page-based evictions started." +
+                    " Consider increasing 'maxSize' on Data Region configuration: " + memPlc.config().getName());
+            }
 
             memPlc.evictionTracker().evictDataPage();
 
@@ -1585,26 +1583,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     public void lastCheckpointInapplicableForWalRebalance(int grpId) {
         // No-op.
-    }
-
-    /**
-     * Warns on first eviction.
-     * @param regCfg data region configuration.
-     */
-    private void warnFirstEvict(DataRegionConfiguration regCfg) {
-        if (firstEvictWarn)
-            return;
-
-        // Do not move warning output to synchronized block (it causes warning in IDE).
-        synchronized (this) {
-            if (firstEvictWarn)
-                return;
-
-            firstEvictWarn = true;
-        }
-
-        U.warn(log, "Page-based evictions started." +
-                " Consider increasing 'maxSize' on Data Region configuration: " + regCfg.getName());
     }
 
     /**

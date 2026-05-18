@@ -66,12 +66,12 @@ public class TcpDiscoverySslParametersTest extends GridCommonAbstractTest {
             new String[][] {
                 new String[] {
                     "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
-                    "TLS_RSA_WITH_AES_128_GCM_SHA256",
+                    "TLS_DHE_RSA_WITH_AES_128_CBC_SHA256",
                     "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256"
                 },
                 new String[] {
                     "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
-                    "TLS_RSA_WITH_AES_128_GCM_SHA256",
+                    "TLS_DHE_RSA_WITH_AES_128_CBC_SHA256",
                     "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256"
                 }
             },
@@ -87,7 +87,7 @@ public class TcpDiscoverySslParametersTest extends GridCommonAbstractTest {
         checkDiscoverySuccess(
             new String[][] {
                 new String[] {
-                    "TLS_RSA_WITH_AES_128_GCM_SHA256",
+                    "TLS_DHE_RSA_WITH_AES_128_CBC_SHA256",
                     "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256"
                 },
                 new String[] {
@@ -107,7 +107,7 @@ public class TcpDiscoverySslParametersTest extends GridCommonAbstractTest {
         checkDiscoveryFailure(
             new String[][] {
                 new String[] {
-                    "TLS_RSA_WITH_AES_128_GCM_SHA256",
+                    "TLS_DHE_RSA_WITH_AES_128_CBC_SHA256",
                 },
                 new String[] {
                     "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
@@ -126,7 +126,7 @@ public class TcpDiscoverySslParametersTest extends GridCommonAbstractTest {
         checkDiscoveryFailure(
             new String[][] {
                 new String[] {
-                    "TLS_RSA_WITH_AES_128_GCM_SHA256",
+                    "TLS_DHE_RSA_WITH_AES_128_CBC_SHA256",
                     "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256"
                 },
                 new String[] {

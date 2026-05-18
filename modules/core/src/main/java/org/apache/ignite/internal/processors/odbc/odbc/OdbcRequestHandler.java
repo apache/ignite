@@ -92,9 +92,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     /** Busy lock. */
     private final GridSpinBusyLock busyLock;
 
-    /** Worker. */
-    private final OdbcRequestHandlerWorker worker;
-
     /** Maximum allowed cursors. */
     private final int maxCursors;
 
@@ -126,7 +123,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      * @param enforceJoinOrder Enforce join order flag.
      * @param replicatedOnly Replicated only flag.
      * @param collocated Collocated flag.
-     * @param lazy Lazy flag.
      * @param skipReducerOnUpdate Skip reducer on update flag.
      * @param qryEngine Name of SQL query engine to use.
      * @param ver Client protocol version.
@@ -140,7 +136,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         boolean enforceJoinOrder,
         boolean replicatedOnly,
         boolean collocated,
-        boolean lazy,
         boolean skipReducerOnUpdate,
         @Nullable String qryEngine,
         ClientListenerProtocolVersion ver,
@@ -161,7 +156,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             enforceJoinOrder,
             collocated,
             replicatedOnly,
-            lazy,
             false,
             skipReducerOnUpdate,
             null,
@@ -179,9 +173,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         this.ver = ver;
 
         log = ctx.log(getClass());
-
-        // TODO IGNITE-9484 Do not create worker if there is a possibility to unbind TX from threads.
-        worker = new OdbcRequestHandlerWorker(ctx.igniteInstanceName(), log, this, ctx);
     }
 
     /** {@inheritDoc} */
@@ -191,14 +182,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         assert req instanceof OdbcRequest;
 
         return doHandle((OdbcRequest)req);
-    }
-
-    /**
-     * Start worker, if it's present.
-     */
-    void start() {
-        if (worker != null)
-            worker.start();
     }
 
     /**
@@ -267,17 +250,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      */
     public void onDisconnect() {
         if (busyLock.enterBusy()) {
-            if (worker != null) {
-                worker.cancel();
-
-                try {
-                    worker.join();
-                }
-                catch (InterruptedException e) {
-                    // No-op.
-                }
-            }
-
             try {
                 for (OdbcQueryResults res : qryResults.values())
                     res.closeAll();
@@ -348,7 +320,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         qry.setEnforceJoinOrder(cliCtx.isEnforceJoinOrder());
         qry.setReplicatedOnly(cliCtx.isReplicatedOnly());
         qry.setCollocated(cliCtx.isCollocated());
-        qry.setLazy(cliCtx.isLazy());
         qry.setSchema(OdbcUtils.prepareSchema(schema));
         qry.setSkipReducerOnUpdate(cliCtx.isSkipReducerOnUpdate());
         qry.setQueryInitiatorId(connCtx.clientDescriptor());

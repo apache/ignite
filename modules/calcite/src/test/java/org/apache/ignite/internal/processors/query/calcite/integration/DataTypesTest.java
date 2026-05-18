@@ -168,10 +168,10 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
             .check();
 
         assertThrows("SELECT MIN(oth) FROM t", UnsupportedOperationException.class,
-            "MIN() is not supported for type 'OTHER'.");
+            "MIN() is not supported for different value types");
 
         assertThrows("SELECT MAX(oth) FROM t", UnsupportedOperationException.class,
-            "MAX() is not supported for type 'OTHER'.");
+            "MAX() is not supported for different value types");
 
         assertThrows("SELECT AVG(oth) from t", UnsupportedOperationException.class,
             "AVG() is not supported for type 'OTHER'.");

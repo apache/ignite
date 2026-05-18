@@ -26,13 +26,13 @@ import org.apache.ignite.cache.store.CacheTransactionalStoreReadFromBackupTest;
 import org.apache.ignite.cache.store.GridStoreLoadCacheTest;
 import org.apache.ignite.cache.store.jdbc.dialect.OracleDialectTest;
 import org.apache.ignite.internal.IgniteInternalCacheRemoveTest;
+import org.apache.ignite.internal.managers.IgniteCoreMessagesSerializationTest;
 import org.apache.ignite.internal.managers.communication.CommunicationMessageDelayTest;
 import org.apache.ignite.internal.managers.communication.GridIoManagerSelfTest;
 import org.apache.ignite.internal.managers.communication.IgniteCommunicationBalanceMultipleConnectionsTest;
 import org.apache.ignite.internal.managers.communication.IgniteCommunicationBalancePairedConnectionsTest;
 import org.apache.ignite.internal.managers.communication.IgniteCommunicationBalanceTest;
 import org.apache.ignite.internal.managers.communication.IgniteCommunicationSslBalanceTest;
-import org.apache.ignite.internal.managers.communication.IgniteIoCommunicationMessageSerializationTest;
 import org.apache.ignite.internal.managers.communication.IgniteIoTestMessagesTest;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImplTest;
 import org.apache.ignite.internal.managers.communication.IgniteVariousConnectionNumberTest;
@@ -185,10 +185,9 @@ public class IgniteCacheTestSuite10 {
         GridTestUtils.addTestIfNeeded(suite, IgniteCommunicationBalanceMultipleConnectionsTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCommunicationSslBalanceTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteIoTestMessagesTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgniteIoTestMessagesTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteMessageFactoryImplTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, MessageDirectTypeIdConflictTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgniteIoCommunicationMessageSerializationTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCoreMessagesSerializationTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CommunicationMessageDelayTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, IgniteIncompleteCacheObjectSelfTest.class, ignoredTests);

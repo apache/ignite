@@ -29,11 +29,14 @@ import javax.cache.processor.MutableEntry;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cache.context.SessionContextImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheProxyImpl;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryProperties;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.ModifyTuple;
@@ -49,6 +52,12 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.cacheForDML
  *
  */
 public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
+    /**
+     * Timeout to wait for async invoke operation to complete. In case this timeout exceeded, release thread and
+     * continue execution after invoke operation finished.
+     */
+    private static final long INVOKE_TIMEOUT = 100;
+
     /** */
     protected final CacheTableDescriptor desc;
 
@@ -75,6 +84,9 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
 
     /** */
     private State state = State.UPDATING;
+
+    /** */
+    private IgniteInternalFuture<Map<Object, EntryProcessorResult<Long>>> invokeFut;
 
     /**
      * @param ctx Execution context.
@@ -118,22 +130,23 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
 
         waiting--;
 
-        switch (op) {
-            case DELETE:
-            case UPDATE:
-            case INSERT:
-            case MERGE:
-                tuples.add(desc.toTuple(context(), row, op, cols));
+        tuples.add(desc.toTuple(context(), row, op, cols));
 
-                flushTuples(false);
+        if (invokeFut != null) // Still waiting for previous invocation result.
+            return;
 
-                break;
-            default:
-                throw new UnsupportedOperationException(op.name());
+        flushTuples(false);
+
+        if (invokeFut != null) {
+            invokeFut.listen(f -> {
+                // Push new task to execute in correct thread.
+                context().execute(() -> {
+                    processInvokeResult(f.get());
+
+                    flushTuples(false);
+                }, this::onError);
+            });
         }
-
-        if (waiting == 0)
-            source().request(waiting = MODIFY_BATCH_SIZE);
     }
 
     /** {@inheritDoc} */
@@ -170,7 +183,26 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
             source().request(waiting = MODIFY_BATCH_SIZE);
 
         if (state == State.UPDATED && requested > 0) {
+            if (invokeFut != null) { // Still waiting for previous invocation result.
+                invokeFut.listen(f -> context().execute(this::tryEnd, this::onError));
+
+                return;
+            }
+
             flushTuples(true);
+
+            if (invokeFut != null) {
+                invokeFut.listen(f -> {
+                    // Push new task to execute in correct thread.
+                    context().execute(() -> {
+                        processInvokeResult(f.get());
+
+                        tryEnd();
+                    }, this::onError);
+                });
+
+                return;
+            }
 
             state = State.END;
 
@@ -192,7 +224,7 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
 
     /** */
     @SuppressWarnings("unchecked")
-    private void flushTuples(boolean force) throws IgniteCheckedException {
+    private void flushTuples(boolean force) throws Exception {
         if (F.isEmpty(tuples) || !force && tuples.size() < MODIFY_BATCH_SIZE)
             return;
 
@@ -200,8 +232,14 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
         this.tuples = new ArrayList<>(MODIFY_BATCH_SIZE);
 
         GridCacheContext<Object, Object> cctx = desc.cacheContext();
-        GridCacheProxyImpl<Object, Object> cache = cctx.cache().keepBinary();
+        IgniteInternalCache<Object, Object> cache = cctx.cache();
         GridNearTxLocal tx = Commons.queryTransaction(context(), cctx.shared());
+
+        QueryProperties props = context().unwrap(QueryProperties.class);
+        boolean keepBinaryMode = props == null || props.keepBinary();
+
+        if (keepBinaryMode)
+            cache = cache.keepBinary();
 
         if (tx == null)
             invokeOutsideTransaction(tuples, cache);
@@ -217,8 +255,8 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
      */
     private void invokeOutsideTransaction(
         List<ModifyTuple> tuples,
-        GridCacheProxyImpl<Object, Object> cache
-    ) throws IgniteCheckedException {
+        IgniteInternalCache<Object, Object> cache
+    ) throws Exception {
         SessionContextImpl sesCtx = context().unwrap(SessionContextImpl.class);
         Map<String, String> sesAttrs = sesCtx == null ? null : sesCtx.attributes();
 
@@ -226,7 +264,22 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
             cache = cache.withApplicationAttributes(sesAttrs);
 
         Map<Object, EntryProcessor<Object, Object, Long>> map = invokeMap(tuples);
-        Map<Object, EntryProcessorResult<Long>> res = cacheForDML(cache).invokeAll(map);
+        invokeFut = cacheForDML(cache).invokeAllAsync(map);
+
+        try {
+            // Shortcut - give a chance for operation to be executed in sync mode (it will simplify workflow).
+            Map<Object, EntryProcessorResult<Long>> res = invokeFut.get(INVOKE_TIMEOUT);
+
+            processInvokeResult(res);
+        }
+        catch (IgniteFutureTimeoutCheckedException ignore) {
+            // No-op. Result processing task will be scheduled by caller if invokeFut != null.
+        }
+    }
+
+    /** */
+    private void processInvokeResult(Map<Object, EntryProcessorResult<Long>> res) throws Exception {
+        invokeFut = null;
 
         long updated = res.values().stream().mapToLong(EntryProcessorResult::get).sum();
 
@@ -240,6 +293,9 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
         }
 
         updatedRows += updated;
+
+        if (waiting == 0)
+            source().request(waiting = MODIFY_BATCH_SIZE);
     }
 
     /**
@@ -251,9 +307,9 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
      */
     private void invokeInsideTransaction(
         List<ModifyTuple> tuples,
-        GridCacheProxyImpl<Object, Object> cache,
+        IgniteInternalCache<Object, Object> cache,
         GridNearTxLocal userTx
-    ) throws IgniteCheckedException {
+    ) throws Exception {
         userTx.resume();
 
         try {
