@@ -413,6 +413,9 @@ public class ServiceConfiguration implements Serializable {
         if (svc != null ? !svc.getClass().equals(that.svc.getClass()) : that.svc != null)
             return false;
 
+        if (locStartOrder != that.locStartOrder)
+            return false;
+
         return Arrays.deepEquals(interceptors, that.interceptors);
     }
 
@@ -426,6 +429,9 @@ public class ServiceConfiguration implements Serializable {
         String svcCls = svc == null ? "" : svc.getClass().getSimpleName();
         String nodeFilterCls = nodeFilter == null ? "" : nodeFilter.getClass().getSimpleName();
 
-        return S.toString(ServiceConfiguration.class, this, "svcCls", svcCls, "nodeFilterCls", nodeFilterCls);
+        return S.toString(ServiceConfiguration.class, this,
+            "svcCls", svcCls,
+            "nodeFilterCls", nodeFilterCls,
+            "localStartOrder", locStartOrder);
     }
 }
