@@ -270,31 +270,31 @@ This view exposes information about currently running transactions.
 [{table_opts}]
 |===
 |NAME | TYPE |    DESCRIPTION
-|ORIGINATING_NODE_ID | UUID |
-|STATE | string |
-|XID | UUID |
-|LABEL | string |
-|START_TIME | long |
-|ISOLATION | string |
-|CONCURRENCY | string |
-|KEYS_COUNT | int |
-|CACHE_IDS | string |
-|COLOCATED | boolean |
-|DHT | boolean |
-|DURATION | long |
-|IMPLICIT | boolean |
-|IMPLICIT_SINGLE | boolean |
-|INTERNAL | boolean |
-|LOCAL | boolean |
-|LOCAL_NODE_ID | UUID |
-|NEAR | boolean |
-|ONE_PHASE_COMMIT | boolean |
-|OTHER_NODE_ID | UUID |
-|SUBJECT_ID | UUID |
-|SYSTEM | boolean |
-|THREAD_ID | long |
-|TIMEOUT | long |
-|TOP_VER | string |
+|ORIGINATING_NODE_ID | UUID | ID of the node that directly started the transaction
+|STATE | string | Current transaction state
+|XID | UUID | Unique transaction identifier
+|LABEL | string | Transaction label
+|START_TIME | long | Start time of the transaction on this node
+|ISOLATION | string | Transaction isolation level
+|CONCURRENCY | string | Transaction concurrency mode
+|KEYS_COUNT | int | Number of cache keys participating in the transaction
+|CACHE_IDS | string | Comma-separated IDs of caches participating in the transaction
+|COLOCATED | boolean | `True` if the transaction is DHT colocated
+|DHT | boolean | `True` if the transaction is DHT
+|DURATION | long | Transaction duration in milliseconds
+|IMPLICIT | boolean | `True` if the transaction was started implicitly
+|IMPLICIT_SINGLE | boolean | `True` if the transaction is implicit with only one key
+|INTERNAL | boolean | `True` if the transaction has at least one internal entry
+|LOCAL | boolean | `True` if the transaction is local, `false` if it is remote
+|LOCAL_NODE_ID | UUID | Local node ID
+|NEAR | boolean | `True` if the transaction is near
+|ONE_PHASE_COMMIT | boolean | `True` if the transaction is a one-phase-commit transaction
+|OTHER_NODE_ID | UUID | ID of an additional node involved in the transaction
+|SUBJECT_ID | UUID | ID of the subject that initiated the transaction
+|SYSTEM | boolean | `True` if the transaction was started for a system cache
+|THREAD_ID | long | ID of the thread in which the transaction started
+|TIMEOUT | long | Transaction timeout in milliseconds
+|TOP_VER | string | Topology version
 |===
 
 == NODES
