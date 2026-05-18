@@ -1982,7 +1982,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             nodeAddedMsg.topology(null);
             nodeAddedMsg.topologyHistory(null);
             nodeAddedMsg.messages(null);
-            nodeAddedMsg.clearUnmarshalledDiscoveryData();
         }
     }
 
@@ -4524,19 +4523,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                     err = spi.getSpiContext().validateNode(node);
 
                 if (err == null) {
-                    try {
-                        DiscoveryDataBag data = msg.gridDiscoveryData().unmarshalJoiningNodeData(
-                            spi.marshaller(),
-                            U.resolveClassLoader(spi.ignite().configuration()),
-                            false,
-                            log
-                        );
+                    DiscoveryDataBag data = msg.gridDiscoveryData().bagWithJoiningNodeData();
 
-                        err = spi.getSpiContext().validateNode(node, data);
-                    }
-                    catch (IgniteCheckedException e) {
-                        err = new IgniteNodeValidationResult(node.id(), e.getMessage());
-                    }
+                    err = spi.getSpiContext().validateNode(node, data);
                 }
 
                 if (err != null) {

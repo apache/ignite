@@ -571,14 +571,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                     EMPTY_ARRAY
                 );
 
-                try {
-                    dataBag.addJoiningNodeData(COMPONENT_ID, marshaller.marshal(data));
+                dataBag.addJoiningNodeData(COMPONENT_ID, data);
 
-                    return;
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
+                return;
             }
 
             Serializable data = new DistributedMetaStorageJoiningNodeData(
@@ -587,12 +582,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 histCache.toArray()
             );
 
-            try {
-                dataBag.addJoiningNodeData(COMPONENT_ID, marshaller.marshal(data));
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
+            dataBag.addJoiningNodeData(COMPONENT_ID, data);
         }
         finally {
             lock.readLock().unlock();
@@ -640,10 +630,10 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         try {
             DistributedMetaStorageVersion locVer = ver;
 
-            DistributedMetaStorageJoiningNodeData joiningData = getJoiningNodeData(discoData);
+            DistributedMetaStorageJoiningNodeData joiningData = discoData.joiningNodeData();
 
             if (joiningData == null) {
-                String errorMsg = "Cannot unmarshal joining node data";
+                String errorMsg = "Empty joining node data";
 
                 return new IgniteNodeValidationResult(node.id(), errorMsg);
             }
@@ -774,10 +764,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         if (!discoData.hasJoiningNodeData())
             return;
 
-        DistributedMetaStorageJoiningNodeData joiningData = getJoiningNodeData(discoData);
-
-        if (joiningData == null)
-            return;
+        DistributedMetaStorageJoiningNodeData joiningData = discoData.joiningNodeData();
 
         DistributedMetaStorageVersion remoteVer = joiningData.ver;
 
@@ -832,10 +819,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         if (!discoData.hasJoiningNodeData())
             return;
 
-        DistributedMetaStorageJoiningNodeData joiningData = getJoiningNodeData(discoData);
-
-        if (joiningData == null)
-            return;
+        DistributedMetaStorageJoiningNodeData joiningData = discoData.joiningNodeData();
 
         DistributedMetaStorageVersion remoteVer = joiningData.ver;
 
@@ -877,29 +861,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         }
         finally {
             lock.readLock().unlock();
-        }
-    }
-
-    /**
-     * Retrieve joining node data from discovery data. It is expected that it is present as a {@code byte[]} object.
-     *
-     * @param discoData Joining node discovery data.
-     * @return Unmarshalled data or null if unmarshalling failed.
-     */
-    @Nullable private DistributedMetaStorageJoiningNodeData getJoiningNodeData(
-        JoiningNodeDiscoveryData discoData
-    ) {
-        byte[] data = (byte[])discoData.joiningNodeData();
-
-        assert data != null;
-
-        try {
-            return marshaller.unmarshal(data, U.gridClassLoader());
-        }
-        catch (IgniteCheckedException e) {
-            log.error("Unable to unmarshal joinging node data for distributed metastorage component.", e);
-
-            return null;
         }
     }
 
