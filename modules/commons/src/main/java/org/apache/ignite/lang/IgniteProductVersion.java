@@ -25,11 +25,8 @@ import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.IgniteVersionUtils;
-import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -40,7 +37,7 @@ import org.jetbrains.annotations.NotNull;
  * Two versions are compared in the following order: major number,
  * minor number, maintenance number, revision timestamp.
  */
-public class IgniteProductVersion implements Comparable<IgniteProductVersion>, Externalizable, Message {
+public class IgniteProductVersion implements Comparable<IgniteProductVersion>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -55,27 +52,21 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
         Pattern.compile("(\\d+)\\.(\\d+)\\.(\\d+)([-.]([^0123456789][^-]+)(-SNAPSHOT)?)?(-(\\d+))?(-([\\da-f]+))?");
 
     /** Major version number. */
-    @Order(0)
     byte major;
 
     /** Minor version number. */
-    @Order(1)
     byte minor;
 
     /** Maintenance version number. */
-    @Order(2)
     byte maintenance;
 
     /** Stage of development. */
-    @Order(3)
     String stage;
 
     /** Revision timestamp. */
-    @Order(4)
     long revTs;
 
     /** Revision hash. */
-    @Order(5)
     byte[] revHash;
 
     /**
@@ -262,7 +253,7 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
         out.writeByte(minor);
         out.writeByte(maintenance);
         out.writeLong(revTs);
-        U.writeByteArray(out, revHash);
+        CommonUtils.writeByteArray(out, revHash);
     }
 
     /** {@inheritDoc} */
@@ -271,14 +262,14 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
         minor = in.readByte();
         maintenance = in.readByte();
         revTs = in.readLong();
-        revHash = U.readByteArray(in);
+        revHash = CommonUtils.readByteArray(in);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         String revTsStr = IgniteVersionUtils.formatBuildTimeStamp(revTs * 1000);
 
-        String hash = U.byteArray2HexString(revHash).toLowerCase();
+        String hash = CommonUtils.byteArray2HexString(revHash).toLowerCase();
 
         hash = hash.length() > 8 ? hash.substring(0, 8) : hash;
 
@@ -318,7 +309,7 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
                 byte[] revHash = null;
 
                 if (match.group(9) != null)
-                    revHash = U.decodeHex(match.group(10).toCharArray());
+                    revHash = CommonUtils.decodeHex(match.group(10).toCharArray());
 
                 return new IgniteProductVersion(major, minor, maintenance, stage, revTs, revHash);
             }

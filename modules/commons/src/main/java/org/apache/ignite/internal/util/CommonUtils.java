@@ -241,6 +241,9 @@ public abstract class CommonUtils {
     /** Field name for value. */
     public static final String VAL_FIELD_NAME = "_VAL";
 
+    /** Byte bit-mask. */
+    private static final int MASK = 0xf;
+
     /** */
     private static final Set<Class<?>> SQL_TYPES = createSqlTypes();
 
@@ -1693,6 +1696,43 @@ public abstract class CommonUtils {
     }
 
     /**
+     * Writes byte array to output stream accounting for <tt>null</tt> values.
+     *
+     * @param out Output stream to write to.
+     * @param arr Array to write, possibly <tt>null</tt>.
+     * @throws java.io.IOException If write failed.
+     */
+    public static void writeByteArray(DataOutput out, @Nullable byte[] arr) throws IOException {
+        if (arr == null)
+            out.writeInt(-1);
+        else {
+            out.writeInt(arr.length);
+
+            out.write(arr);
+        }
+    }
+
+    /**
+     * Reads byte array from input stream accounting for <tt>null</tt> values.
+     *
+     * @param in Stream to read from.
+     * @return Read byte array, possibly <tt>null</tt>.
+     * @throws java.io.IOException If read failed.
+     */
+    @Nullable public static byte[] readByteArray(DataInput in) throws IOException {
+        int len = in.readInt();
+
+        if (len == -1)
+            return null; // Value "-1" indicates null.
+
+        byte[] res = new byte[len];
+
+        in.readFully(res);
+
+        return res;
+    }
+
+    /**
      * Get number of bytes for {@link DataOutput#writeUTF},
      * depending on character: <br/>
      *
@@ -2196,6 +2236,93 @@ public abstract class CommonUtils {
         long tmp = TimeUnit.MILLISECONDS.convert(timeout, timeUnit);
 
         return (int)tmp;
+    }
+
+    /**
+     * Converts byte array to hex string.
+     *
+     * @param arr Array of bytes.
+     * @return Hex string.
+     */
+    public static String byteArray2HexString(byte[] arr) {
+        return byteArray2HexString(arr, true);
+    }
+
+    /**
+     * Converts byte array to hex string.
+     *
+     * @param arr Array of bytes.
+     * @param toUpper If {@code true} returns upper cased result.
+     * @return Hex string.
+     */
+    public static String byteArray2HexString(byte[] arr, boolean toUpper) {
+        StringBuilder sb = new StringBuilder(arr.length << 1);
+
+        for (byte b : arr)
+            addByteAsHex(sb, b);
+
+        return toUpper ? sb.toString().toUpperCase() : sb.toString();
+    }
+
+    /**
+     * @param sb String builder.
+     * @param b Byte to add in hexadecimal format.
+     */
+    protected static void addByteAsHex(StringBuilder sb, byte b) {
+        sb.append(Integer.toHexString(MASK & b >>> 4)).append(Integer.toHexString(MASK & b));
+    }
+
+    /**
+     * Converts an array of characters representing hexidecimal values into an
+     * array of bytes of those same values. The returned array will be half the
+     * length of the passed array, as it takes two characters to represent any
+     * given byte. An exception is thrown if the passed char array has an odd
+     * number of elements.
+     *
+     * @param data An array of characters containing hexidecimal digits
+     * @return A byte array containing binary data decoded from
+     *         the supplied char array.
+     * @throws IgniteCheckedException Thrown if an odd number or illegal of characters is supplied.
+     */
+    public static byte[] decodeHex(char[] data) throws IgniteCheckedException {
+        int len = data.length;
+
+        if ((len & 0x01) != 0)
+            throw new IgniteCheckedException("Odd number of characters.");
+
+        byte[] out = new byte[len >> 1];
+
+        // Two characters form the hex value.
+        for (int i = 0, j = 0; j < len; i++) {
+            int f = toDigit(data[j], j) << 4;
+
+            j++;
+
+            f |= toDigit(data[j], j);
+
+            j++;
+
+            out[i] = (byte)(f & 0xFF);
+        }
+
+        return out;
+    }
+
+    /**
+     * Converts a hexadecimal character to an integer.
+     *
+     * @param ch A character to convert to an integer digit
+     * @param idx The index of the character in the source
+     * @return An integer
+     * @throws IgniteCheckedException Thrown if ch is an illegal hex character
+     */
+    public static int toDigit(char ch, int idx) throws IgniteCheckedException {
+        int digit = Character.digit(ch, 16);
+
+        if (digit == -1)
+            throw new IgniteCheckedException("Illegal hexadecimal character " + ch + " at index " + idx);
+
+        return digit;
     }
 
     /**

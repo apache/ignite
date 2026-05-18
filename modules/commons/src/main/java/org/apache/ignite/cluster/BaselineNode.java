@@ -18,7 +18,6 @@
 package org.apache.ignite.cluster;
 
 import java.util.Map;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.jetbrains.annotations.Nullable;
 
 /**

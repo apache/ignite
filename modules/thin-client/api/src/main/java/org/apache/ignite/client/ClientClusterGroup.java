@@ -20,9 +20,7 @@ package org.apache.ignite.client;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.function.Predicate;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.jetbrains.annotations.Nullable;
 
 /**
