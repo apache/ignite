@@ -17,12 +17,7 @@
 
 package org.apache.ignite.internal.processors.continuous;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -79,7 +74,6 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.lang.gridfunc.ReadOnlyCollectionView2X;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -126,9 +120,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     /** Local infos. */
     private final ConcurrentMap<UUID, LocalRoutineInfo> locInfos = new ConcurrentHashMap<>();
 
-    /** Local infos. */
-    private final ConcurrentMap<UUID, Map<UUID, LocalRoutineInfo>> clientInfos = new ConcurrentHashMap<>();
-
     /** Remote infos. */
     private final ConcurrentMap<UUID, RemoteRoutineInfo> rmtInfos = new ConcurrentHashMap<>();
 
@@ -171,9 +162,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     /** */
     private ContinuousRoutinesInfo routinesInfo;
 
-    /** Whether Discovery SPI uses immutable custom messages. */
-    private boolean immutableDiscoCustomMsg;
-
     /**
      * @param ctx Kernal context.
      */
@@ -188,10 +176,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             new ReadOnlyCollectionView2X<>(rmtInfos.entrySet(), locInfos.entrySet()),
             e -> new ContinuousQueryView(e.getKey(), e.getValue()));
 
-        immutableDiscoCustomMsg = !ctx.discovery().mutableCustomMessages();
-
-        if (immutableDiscoCustomMsg)
-            routinesInfo = new ContinuousRoutinesInfo();
+        routinesInfo = new ContinuousRoutinesInfo();
 
         retryDelay = ctx.config().getNetworkSendRetryDelay();
         retryCnt = ctx.config().getNetworkSendRetryCount();
@@ -211,38 +196,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 @Override public void onCustomEvent(AffinityTopologyVersion topVer,
                     ClusterNode snd,
                     StartRoutineDiscoveryMessage msg) {
-                    assert !immutableDiscoCustomMsg;
-
                     if (ctx.isStopping())
                         return;
 
-                    processStartRequestMutable(snd, msg);
-                }
-            });
-
-        ctx.discovery().setCustomEventListener(StartRoutineDiscoveryMessageV2.class,
-            new CustomEventListener<StartRoutineDiscoveryMessageV2>() {
-                @Override public void onCustomEvent(AffinityTopologyVersion topVer,
-                    ClusterNode snd,
-                    StartRoutineDiscoveryMessageV2 msg) {
-                    assert immutableDiscoCustomMsg;
-
-                    if (ctx.isStopping())
-                        return;
-
-                    processStartRequestImmutable(topVer, snd, msg);
-                }
-            });
-
-        ctx.discovery().setCustomEventListener(StartRoutineAckDiscoveryMessage.class,
-            new CustomEventListener<StartRoutineAckDiscoveryMessage>() {
-                @Override public void onCustomEvent(AffinityTopologyVersion topVer,
-                    ClusterNode snd,
-                    StartRoutineAckDiscoveryMessage msg) {
-                    if (ctx.isStopping())
-                        return;
-
-                    processStartAckRequest(topVer, msg);
+                    processStartRequest(topVer, snd, msg);
                 }
             });
 
@@ -251,8 +208,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 @Override public void onCustomEvent(AffinityTopologyVersion topVer,
                     ClusterNode snd,
                     StopRoutineDiscoveryMessage msg) {
-                    if (immutableDiscoCustomMsg)
-                        routinesInfo.removeRoutine(msg.routineId);
+                    routinesInfo.removeRoutine(msg.routineId);
 
                     if (ctx.isStopping())
                         return;
@@ -346,11 +302,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         return Collections.unmodifiableMap(locInfos);
     }
 
-    /** */
-    Map<UUID, Map<UUID, LocalRoutineInfo>> clientRoutineInfos() {
-        return Collections.unmodifiableMap(clientInfos);
-    }
-
     /**
      * @return {@code true} if lock successful, {@code false} if processor already stopped.
      */
@@ -408,106 +359,12 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
-        if (immutableDiscoCustomMsg) {
-            routinesInfo.collectJoiningNodeData(dataBag);
-
-            return;
-        }
-
-        Serializable data = getDiscoveryData(dataBag.joiningNodeId());
-
-        if (data != null)
-            dataBag.addJoiningNodeData(CONTINUOUS_PROC.ordinal(), data);
+        routinesInfo.collectJoiningNodeData(dataBag);
     }
 
     /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
-        if (immutableDiscoCustomMsg) {
-            routinesInfo.collectGridNodeData(dataBag);
-
-            return;
-        }
-
-        Serializable data = getDiscoveryData(dataBag.joiningNodeId());
-
-        if (data != null)
-            dataBag.addNodeSpecificData(CONTINUOUS_PROC.ordinal(), data);
-    }
-
-    /**
-     * @param joiningNodeId Joining node id.
-     */
-    private Serializable getDiscoveryData(UUID joiningNodeId) {
-        if (log.isDebugEnabled()) {
-            log.debug("collectDiscoveryData [node=" + joiningNodeId +
-                    ", loc=" + ctx.localNodeId() +
-                    ", locInfos=" + locInfos +
-                    ", clientInfos=" + clientInfos +
-                    ']');
-        }
-
-        if (!joiningNodeId.equals(ctx.localNodeId()) || !locInfos.isEmpty()) {
-            Map<UUID, Map<UUID, LocalRoutineInfo>> clientInfos0 = copyClientInfos(clientInfos);
-
-            if (joiningNodeId.equals(ctx.localNodeId()) && ctx.discovery().localNode().isClient()) {
-                Map<UUID, LocalRoutineInfo> infos = copyLocalInfos(locInfos);
-
-                clientInfos0.put(ctx.localNodeId(), infos);
-            }
-
-            DiscoveryData data = new DiscoveryData(ctx.localNodeId(), clientInfos0);
-
-            // Collect listeners information (will be sent to joining node during discovery process).
-            for (Map.Entry<UUID, LocalRoutineInfo> e : locInfos.entrySet()) {
-                UUID routineId = e.getKey();
-                LocalRoutineInfo info = e.getValue();
-
-                assert !ctx.config().isPeerClassLoadingEnabled() ||
-                    !(info.hnd instanceof CacheContinuousQueryHandler) ||
-                    ((CacheContinuousQueryHandler)info.hnd).isMarshalled();
-
-                data.addItem(new DiscoveryDataItem(routineId,
-                    info.prjPred,
-                    info.hnd,
-                    info.bufSize,
-                    info.interval,
-                    info.autoUnsubscribe));
-            }
-
-            return data;
-        }
-
-        return null;
-    }
-
-    /**
-     * @param clientInfos Client infos.
-     */
-    private Map<UUID, Map<UUID, LocalRoutineInfo>> copyClientInfos(Map<UUID, Map<UUID, LocalRoutineInfo>> clientInfos) {
-        Map<UUID, Map<UUID, LocalRoutineInfo>> res = U.newHashMap(clientInfos.size());
-
-        for (Map.Entry<UUID, Map<UUID, LocalRoutineInfo>> e : clientInfos.entrySet()) {
-            Map<UUID, LocalRoutineInfo> cp = U.newHashMap(e.getValue().size());
-
-            for (Map.Entry<UUID, LocalRoutineInfo> e0 : e.getValue().entrySet())
-                cp.put(e0.getKey(), e0.getValue());
-
-            res.put(e.getKey(), cp);
-        }
-
-        return res;
-    }
-
-    /**
-     * @param locInfos Locale infos.
-     */
-    private Map<UUID, LocalRoutineInfo> copyLocalInfos(Map<UUID, LocalRoutineInfo> locInfos) {
-        Map<UUID, LocalRoutineInfo> res = U.newHashMap(locInfos.size());
-
-        for (Map.Entry<UUID, LocalRoutineInfo> e : locInfos.entrySet())
-            res.put(e.getKey(), e.getValue());
-
-        return res;
+        routinesInfo.collectGridNodeData(dataBag);
     }
 
     /** {@inheritDoc} */
@@ -519,102 +376,41 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 ']');
         }
 
-        if (immutableDiscoCustomMsg) {
-            if (data.hasJoiningNodeData()) {
-                ContinuousRoutinesJoiningNodeDiscoveryData nodeData = (ContinuousRoutinesJoiningNodeDiscoveryData)
-                    data.joiningNodeData();
+        if (data.hasJoiningNodeData()) {
+            ContinuousRoutinesJoiningNodeDiscoveryData nodeData = (ContinuousRoutinesJoiningNodeDiscoveryData)
+                data.joiningNodeData();
 
-                for (ContinuousRoutineInfo routineInfo : nodeData.startedRoutines) {
-                    routinesInfo.addRoutineInfo(routineInfo);
+            for (ContinuousRoutineInfo routineInfo : nodeData.startedRoutines) {
+                routinesInfo.addRoutineInfo(routineInfo);
 
-                    onDiscoveryDataReceivedImmutable(routineInfo);
-                }
+                onDiscoveryDataReceived(routineInfo);
             }
-        }
-        else {
-            if (data.hasJoiningNodeData())
-                onDiscoveryDataReceivedMutable((DiscoveryData)data.joiningNodeData());
         }
     }
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(GridDiscoveryData data) {
-        if (immutableDiscoCustomMsg) {
-            if (data.commonData() != null) {
-                ContinuousRoutinesCommonDiscoveryData commonData =
-                    (ContinuousRoutinesCommonDiscoveryData)data.commonData();
+        if (data.commonData() != null) {
+            ContinuousRoutinesCommonDiscoveryData commonData =
+                (ContinuousRoutinesCommonDiscoveryData)data.commonData();
 
-                for (ContinuousRoutineInfo routineInfo : commonData.startedRoutines) {
-                    if (routinesInfo.routineExists(routineInfo.routineId))
-                        continue;
+            for (ContinuousRoutineInfo routineInfo : commonData.startedRoutines) {
+                if (routinesInfo.routineExists(routineInfo.routineId))
+                    continue;
 
-                    routinesInfo.addRoutineInfo(routineInfo);
+                routinesInfo.addRoutineInfo(routineInfo);
 
-                    onDiscoveryDataReceivedImmutable(routineInfo);
-                }
-            }
-        }
-        else {
-            Map<UUID, Serializable> nodeSpecData = data.nodeSpecificData();
-
-            if (nodeSpecData != null) {
-                for (Map.Entry<UUID, Serializable> e : nodeSpecData.entrySet())
-                    onDiscoveryDataReceivedMutable((DiscoveryData)e.getValue());
+                onDiscoveryDataReceived(routineInfo);
             }
         }
     }
 
     /**
      * Processes data received in a discovery message.
-     * Used when Discovery SPI supports mutable custom messages.
-     *
-     * @param data received discovery data.
-     */
-    private void onDiscoveryDataReceivedMutable(DiscoveryData data) {
-        if (data != null) {
-            for (DiscoveryDataItem item : data.items) {
-                if (!locInfos.containsKey(item.routineId)) {
-                    registerHandlerOnJoin(data.nodeId, item.routineId, item.prjPred,
-                        item.hnd, item.bufSize, item.interval, item.autoUnsubscribe);
-                }
-
-                if (!item.autoUnsubscribe) {
-                    locInfos.putIfAbsent(item.routineId, new LocalRoutineInfo(data.nodeId,
-                        item.prjPred, item.hnd, item.bufSize, item.interval, item.autoUnsubscribe));
-                }
-            }
-
-            // Process CQs started on clients.
-            for (Map.Entry<UUID, Map<UUID, LocalRoutineInfo>> entry : data.clientInfos.entrySet()) {
-                UUID clientNodeId = entry.getKey();
-
-                if (!ctx.localNodeId().equals(clientNodeId)) {
-                    Map<UUID, LocalRoutineInfo> clientRoutineMap = entry.getValue();
-
-                    for (Map.Entry<UUID, LocalRoutineInfo> e : clientRoutineMap.entrySet()) {
-                        UUID routineId = e.getKey();
-                        LocalRoutineInfo info = e.getValue();
-
-                        registerHandlerOnJoin(clientNodeId, routineId, info.prjPred,
-                            info.hnd, info.bufSize, info.interval, info.autoUnsubscribe);
-                    }
-                }
-
-                Map<UUID, LocalRoutineInfo> map =
-                    clientInfos.computeIfAbsent(clientNodeId, k -> new HashMap<>());
-
-                map.putAll(entry.getValue());
-            }
-        }
-    }
-
-    /**
-     * Processes data received in a discovery message.
-     * Used when Discovery SPI doesn't support mutable custom messages.
      *
      * @param routineInfo Routine info.
      */
-    private void onDiscoveryDataReceivedImmutable(ContinuousRoutineInfo routineInfo) {
+    private void onDiscoveryDataReceived(ContinuousRoutineInfo routineInfo) {
         IgnitePredicate<ClusterNode> nodeFilter;
 
         try {
@@ -792,16 +588,14 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         LocalRoutineInfo routineInfo = new LocalRoutineInfo(ctx.localNodeId(), prjPred, hnd, 1, 0, true);
 
-        if (immutableDiscoCustomMsg) {
-            routinesInfo.addRoutineInfo(createRoutineInfo(
-                ctx.localNodeId(),
-                routineId,
-                hnd,
-                prjPred,
-                routineInfo.bufSize,
-                routineInfo.interval,
-                routineInfo.autoUnsubscribe));
-        }
+        routinesInfo.addRoutineInfo(createRoutineInfo(
+            ctx.localNodeId(),
+            routineId,
+            hnd,
+            prjPred,
+            routineInfo.bufSize,
+            routineInfo.interval,
+            routineInfo.autoUnsubscribe));
 
         locInfos.put(routineId, routineInfo);
 
@@ -991,18 +785,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         reqData.prepareMarshal(ctx);
 
-        if (!immutableDiscoCustomMsg) {
-            StartRoutineDiscoveryMessage msg = new StartRoutineDiscoveryMessage(
-                    routineId,
-                    reqData);
-
-            if (hnd.updateCounters() != null)
-                msg.addUpdateCounters(ctx.localNodeId(), hnd.updateCounters());
-
-            return msg;
-        }
-        else
-            return new StartRoutineDiscoveryMessageV2(routineId, reqData);
+        return new StartRoutineDiscoveryMessage(routineId, reqData);
     }
 
     /**
@@ -1072,7 +855,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     unregisterHandler(routineId, routine.hnd, true);
                 }
 
-                if (!stop && immutableDiscoCustomMsg)
+                if (!stop)
                     stop = routinesInfo.routineExists(routineId);
 
                 // Finish if routine is not found (wrong ID is provided).
@@ -1240,11 +1023,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
         cancelFutures(new IgniteClientDisconnectedCheckedException(reconnectFut, "Client node disconnected."));
 
-        if (log.isDebugEnabled()) {
-            log.debug("onDisconnected [rmtInfos=" + rmtInfos +
-                ", locInfos=" + locInfos +
-                ", clientInfos=" + clientInfos + ']');
-        }
+        if (log.isDebugEnabled())
+            log.debug("onDisconnected [rmtInfos=" + rmtInfos + ", locInfos=" + locInfos + ']');
 
         for (Map.Entry<UUID, RemoteRoutineInfo> e : rmtInfos.entrySet()) {
             RemoteRoutineInfo info = e.getValue();
@@ -1258,16 +1038,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         rmtInfos.clear();
 
-        clientInfos.clear();
+        routinesInfo.onClientDisconnected(locInfos.keySet());
 
-        if (immutableDiscoCustomMsg)
-            routinesInfo.onClientDisconnected(locInfos.keySet());
-
-        if (log.isDebugEnabled()) {
-            log.debug("after onDisconnected [rmtInfos=" + rmtInfos +
-                ", locInfos=" + locInfos +
-                ", clientInfos=" + clientInfos + ']');
-        }
+        if (log.isDebugEnabled())
+            log.debug("after onDisconnected [rmtInfos=" + rmtInfos + ", locInfos=" + locInfos + ']');
     }
 
     /**
@@ -1311,7 +1085,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
     /**
      * @param snd Sender node.
-     * @param msg Message/
+     * @param msg Message.
      */
     private void processStopRequest(ClusterNode snd, StopRoutineDiscoveryMessage msg) {
         if (!snd.id().equals(ctx.localNodeId())) {
@@ -1319,131 +1093,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
             unregisterRemote(routineId);
         }
-
-        for (Map<UUID, LocalRoutineInfo> clientInfo : clientInfos.values()) {
-            if (clientInfo.remove(msg.routineId()) != null)
-                break;
-        }
-    }
-
-    /**
-     * @param topVer Topology version.
-     * @param msg Message.
-     */
-    private void processStartAckRequest(AffinityTopologyVersion topVer,
-        StartRoutineAckDiscoveryMessage msg) {
-        StartFuture fut = startFuts.remove(msg.routineId());
-
-        if (fut != null) {
-            fut.onAllRemoteRegistered(
-                topVer,
-                msg.errors(),
-                msg.updateCountersPerNode(),
-                msg.updateCounters());
-        }
-    }
-
-    /**
-     * @param node Sender.
-     * @param req Start request.
-     */
-    private void processStartRequestMutable(ClusterNode node, StartRoutineDiscoveryMessage req) {
-        if (node.id().equals(ctx.localNodeId()))
-            return;
-
-        UUID routineId = req.routineId();
-
-        StartRequestData data = req.startRequestData();
-
-        IgniteCheckedException err = null;
-
-        try {
-            data.finishUnmarshal(ctx, node.id());
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to unmarshal start request data [nodeId=" + node.id() +
-                ", routineId=" + routineId + ']', e);
-
-            // Tolerate missing classes exceptions (e.g. remote filter class).
-            // We need this means because CQ registration process assumes that an "ack message" will be sent.
-            if (X.hasCause(e, ClassNotFoundException.class)) {
-                if (checkNodeFilter(req))
-                    req.addError(node.id(), e);
-
-                return;
-            }
-
-            err = e;
-        }
-
-        GridContinuousHandler hnd = data.handler();
-
-        if (node.isClient()) {
-            Map<UUID, LocalRoutineInfo> clientRoutineMap = clientInfos.get(node.id());
-
-            if (clientRoutineMap == null) {
-                clientRoutineMap = new HashMap<>();
-
-                Map<UUID, LocalRoutineInfo> old = clientInfos.put(node.id(), clientRoutineMap);
-
-                assert old == null;
-            }
-
-            clientRoutineMap.put(routineId, new LocalRoutineInfo(node.id(),
-                data.nodeFilter(),
-                hnd,
-                data.bufferSize(),
-                data.interval(),
-                data.autoUnsubscribe()));
-        }
-
-        if (err == null) {
-            try {
-                IgnitePredicate<ClusterNode> prjPred = data.nodeFilter();
-
-                if (prjPred != null)
-                    ctx.resource().injectGeneric(prjPred);
-
-                if ((prjPred == null || prjPred.apply(ctx.discovery().node(ctx.localNodeId()))) &&
-                    !locInfos.containsKey(routineId)) {
-                    if (ctx.config().isPeerClassLoadingEnabled())
-                        hnd.p2pUnmarshal(node.id(), ctx);
-
-                    registerHandler(node.id(), routineId, hnd, data.bufferSize(), data.interval(),
-                        data.autoUnsubscribe(), false);
-
-                    // Load partition counters.
-                    if (err == null && hnd.isQuery()) {
-                        GridCacheProcessor proc = ctx.cache();
-
-                        if (proc != null) {
-                            GridCacheAdapter cache = ctx.cache().internalCache(hnd.cacheName());
-
-                            if (cache != null && cache.context().userCache())
-                                req.addUpdateCounters(ctx.localNodeId(), hnd.updateCounters());
-                        }
-                    }
-                }
-
-                if (!data.autoUnsubscribe())
-                    // Register routine locally.
-                    locInfos.putIfAbsent(routineId, new LocalRoutineInfo(
-                        node.id(), prjPred, hnd, data.bufferSize(), data.interval(), data.autoUnsubscribe()));
-            }
-            catch (IgniteCheckedException e) {
-                err = e;
-
-                U.error(log, "Failed to register handler [nodeId=" + node.id() + ", routineId=" + routineId + ']', e);
-            }
-        }
-
-        if (err != null)
-            req.addError(ctx.localNodeId(), err);
     }
 
     /** */
-    private boolean checkNodeFilter(StartRoutineDiscoveryMessage req) {
-        StartRequestData reqData = req.startRequestData();
+    private boolean checkNodeFilter(StartRequestData reqData) {
         IgnitePredicate<ClusterNode> nodeFilter;
 
         return reqData == null || (nodeFilter = reqData.nodeFilter()) == null
@@ -1466,9 +1119,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @param snd Sender.
      * @param msg Start request.
      */
-    private void processStartRequestImmutable(final AffinityTopologyVersion topVer,
+    private void processStartRequest(final AffinityTopologyVersion topVer,
         final ClusterNode snd,
-        final StartRoutineDiscoveryMessageV2 msg) {
+        final StartRoutineDiscoveryMessage msg) {
         StartRequestData reqData = msg.startRequestData();
 
         ContinuousRoutineInfo routineInfo = new ContinuousRoutineInfo(snd.id(),
@@ -1508,6 +1161,12 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     U.error(log, "Failed to unmarshal continuous request data [" +
                         "routineId=" + msg.routineId +
                         ", srcNodeId=" + snd.id() + ']', e);
+
+                    if (X.hasCause(e, ClassNotFoundException.class) && !checkNodeFilter(reqData)) {
+                        sendMessageStartResult(snd, msg.routineId(), null, null);
+
+                        return;
+                    }
                 }
 
                 IgnitePredicate<ClusterNode> nodeFilter = reqData.nodeFilter();
@@ -1908,14 +1567,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
             UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 
-            if (immutableDiscoCustomMsg) {
-                routinesInfo.onNodeFail(nodeId);
+            routinesInfo.onNodeFail(nodeId);
 
-                for (StartFuture fut : startFuts.values())
-                    fut.onNodeFail(nodeId);
-            }
-
-            clientInfos.remove(nodeId);
+            for (StartFuture fut : startFuts.values())
+                fut.onNodeFail(nodeId);
 
             // Unregister handlers created by left node.
             for (Map.Entry<UUID, RemoteRoutineInfo> e : rmtInfos.entrySet()) {
@@ -2288,157 +1943,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(RemoteRoutineInfo.class, this);
-        }
-    }
-
-    /**
-     * Discovery data.
-     */
-    private static class DiscoveryData implements Externalizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Node ID. */
-        private UUID nodeId;
-
-        /** Items. */
-        @GridToStringInclude
-        private Collection<DiscoveryDataItem> items;
-
-        /** */
-        private Map<UUID, Map<UUID, LocalRoutineInfo>> clientInfos;
-
-        /**
-         * Required by {@link Externalizable}.
-         */
-        public DiscoveryData() {
-            // No-op.
-        }
-
-        /**
-         * @param nodeId Node ID.
-         * @param clientInfos Client information.
-         */
-        DiscoveryData(UUID nodeId, Map<UUID, Map<UUID, LocalRoutineInfo>> clientInfos) {
-            assert nodeId != null;
-
-            this.nodeId = nodeId;
-
-            this.clientInfos = clientInfos;
-
-            items = new ArrayList<>();
-        }
-
-        /**
-         * @param item Item.
-         */
-        public void addItem(DiscoveryDataItem item) {
-            items.add(item);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            U.writeUuid(out, nodeId);
-            U.writeCollection(out, items);
-            U.writeMap(out, clientInfos);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            nodeId = U.readUuid(in);
-            items = U.readCollection(in);
-            clientInfos = U.readMap(in);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(DiscoveryData.class, this);
-        }
-    }
-
-    /**
-     * Discovery data item.
-     */
-    private static class DiscoveryDataItem implements Externalizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Consume ID. */
-        private UUID routineId;
-
-        /** Projection predicate. */
-        private IgnitePredicate<ClusterNode> prjPred;
-
-        /** Handler. */
-        private GridContinuousHandler hnd;
-
-        /** Buffer size. */
-        private int bufSize;
-
-        /** Time interval. */
-        private long interval;
-
-        /** Automatic unsubscribe flag. */
-        private boolean autoUnsubscribe;
-
-        /**
-         * Required by {@link Externalizable}.
-         */
-        public DiscoveryDataItem() {
-            // No-op.
-        }
-
-        /**
-         * @param routineId Consume ID.
-         * @param prjPred Projection predicate.
-         * @param hnd Handler.
-         * @param bufSize Buffer size.
-         * @param interval Time interval.
-         * @param autoUnsubscribe Automatic unsubscribe flag.
-         */
-        DiscoveryDataItem(UUID routineId,
-            @Nullable IgnitePredicate<ClusterNode> prjPred,
-            GridContinuousHandler hnd,
-            int bufSize,
-            long interval,
-            boolean autoUnsubscribe
-        ) {
-            assert routineId != null;
-            assert hnd != null;
-            assert bufSize > 0;
-            assert interval >= 0;
-
-            this.routineId = routineId;
-            this.prjPred = prjPred;
-            this.hnd = hnd;
-            this.bufSize = bufSize;
-            this.interval = interval;
-            this.autoUnsubscribe = autoUnsubscribe;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            U.writeUuid(out, routineId);
-            out.writeObject(prjPred);
-            out.writeObject(hnd);
-            out.writeInt(bufSize);
-            out.writeLong(interval);
-            out.writeBoolean(autoUnsubscribe);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            routineId = U.readUuid(in);
-            prjPred = (IgnitePredicate<ClusterNode>)in.readObject();
-            hnd = (GridContinuousHandler)in.readObject();
-            bufSize = in.readInt();
-            interval = in.readLong();
-            autoUnsubscribe = in.readBoolean();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(DiscoveryDataItem.class, this);
         }
     }
 

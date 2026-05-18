@@ -17,13 +17,8 @@
 
 package org.apache.ignite.internal.processors.continuous;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.communication.ErrorMessage;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -33,18 +28,6 @@ public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
     /** */
     @Order(0)
     StartRequestData startReqData;
-
-    /** */
-    @Order(1)
-    Map<UUID, ErrorMessage> errs = new HashMap<>();
-
-    /** */
-    @Order(2)
-    Map<Integer, Long> updateCntrs;
-
-    /** */
-    @Order(3)
-    Map<UUID, Map<Integer, Long>> updateCntrsPerNode;
 
     /**
      * @param routineId Routine id.
@@ -64,58 +47,6 @@ public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
      */
     public StartRequestData startRequestData() {
         return startReqData;
-    }
-
-    /**
-     * @param nodeId Node id.
-     * @param e Exception.
-     */
-    public void addError(UUID nodeId, IgniteCheckedException e) {
-        if (errs == null)
-            errs = new HashMap<>();
-
-        errs.put(nodeId, new ErrorMessage(e));
-    }
-
-    /**
-     * @param cntrs Update counters.
-     */
-    private void addUpdateCounters(Map<Integer, Long> cntrs) {
-        if (updateCntrs == null)
-            updateCntrs = new HashMap<>();
-
-        for (Map.Entry<Integer, Long> e : cntrs.entrySet()) {
-            Long cntr0 = updateCntrs.get(e.getKey());
-            Long cntr1 = e.getValue();
-
-            if (cntr0 == null || cntr1 > cntr0)
-                updateCntrs.put(e.getKey(), cntr1);
-        }
-    }
-
-    /**
-     * @param nodeId Local node ID.
-     * @param cntrs Update counters.
-     */
-    public void addUpdateCounters(UUID nodeId, Map<Integer, Long> cntrs) {
-        addUpdateCounters(cntrs);
-
-        if (updateCntrsPerNode == null)
-            updateCntrsPerNode = new HashMap<>();
-
-        Map<Integer, Long> old = updateCntrsPerNode.put(nodeId, cntrs);
-
-        assert old == null : old;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public DiscoveryCustomMessage ackMessage() {
-        return new StartRoutineAckDiscoveryMessage(routineId, errs, updateCntrs, updateCntrsPerNode);
     }
 
     /** {@inheritDoc} */
