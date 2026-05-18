@@ -31,7 +31,7 @@ SAVEPOINT savepointName
 
 === Description
 
-`SAVEPOINT` can be used only inside an explicit `PESSIMISTIC` transaction.
+`SAVEPOINT` can be used only inside a transaction.
 
 The command records the current transaction state. Later, you can use `ROLLBACK TO SAVEPOINT` to roll back all transaction changes made after the savepoint was created.
 
@@ -52,7 +52,7 @@ ROLLBACK TO SAVEPOINT savepointName
 
 === Description
 
-`ROLLBACK TO SAVEPOINT` can be used only inside an explicit `PESSIMISTIC` transaction.
+`ROLLBACK TO SAVEPOINT` can be used only inside a transaction.
 
 The command rolls back all transaction changes made after the specified savepoint was created. The transaction remains active and can be committed or rolled back later.
 

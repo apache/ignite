@@ -47,8 +47,8 @@ import org.apache.ignite.internal.processors.cache.transactions.TxCrossCacheMapO
 import org.apache.ignite.internal.processors.cache.transactions.TxCrossCacheRemoteMultiplePartitionReservationTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRecoveryConcurrentTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRecoveryWithConcurrentRollbackTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxSavepointItTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxSavepointParameterizedTest;
-import org.apache.ignite.internal.processors.cache.transactions.TxSavepointPessimisticTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxWithKeyContentionSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
@@ -112,7 +112,7 @@ public class IgniteCacheTestSuite12 {
         GridTestUtils.addTestIfNeeded(suite, EvictionWhilePartitionGroupIsReservedTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, DelayedOwningDuringExchangeTest.class, ignoredTests);
 
-        GridTestUtils.addTestIfNeeded(suite, TxSavepointPessimisticTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, TxSavepointItTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, TxSavepointParameterizedTest.class, ignoredTests);
 
         return suite;

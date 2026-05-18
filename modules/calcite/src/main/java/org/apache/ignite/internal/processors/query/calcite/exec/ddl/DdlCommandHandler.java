@@ -68,6 +68,10 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import static org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal.SAVEPOINTS_EXPLICIT_TX_ONLY;
 import static org.apache.ignite.internal.processors.query.QueryUtils.convert;
 import static org.apache.ignite.internal.processors.query.QueryUtils.isDdlOnSchemaSupported;
+import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.KEY_TYPE;
+import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.VALUE_TYPE;
+import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.WRAP_KEY;
+import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.WRAP_VALUE;
 
 /** */
 public class DdlCommandHandler {
@@ -172,6 +176,8 @@ public class DdlCommandHandler {
             throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_EXISTS, cmd.tableName());
         }
 
+        checkKVWrappedParam(cmd);
+
         CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(cmd.tableName());
 
         QueryEntity e = toQueryEntity(cmd);
@@ -214,6 +220,42 @@ public class DdlCommandHandler {
     }
 
     /** */
+    private void checkKVWrappedParam(CreateTableCommand cmd) {
+        Boolean wrapKey = cmd.wrapKey();
+
+        if (wrapKey != null) {
+            if (!wrapKey) {
+                if (cmd.primaryKeyColumns().size() > 1) {
+                    throw new IgniteSQLException(WRAP_KEY + " parameter cannot be \"false\" when composite primary key exists.",
+                        IgniteQueryErrorCode.PARSING);
+                }
+
+                if (!F.isEmpty(cmd.keyTypeName())) {
+                    throw new IgniteSQLException(WRAP_KEY + " parameter cannot be \"false\" when " + KEY_TYPE + " is defined.",
+                        IgniteQueryErrorCode.PARSING);
+                }
+            }
+        }
+        else
+            cmd.wrapKey(!F.isEmpty(cmd.keyTypeName()) || cmd.primaryKeyColumns().size() > 1);
+
+        Boolean wrapVal = cmd.wrapValue();
+
+        if (wrapVal != null && !wrapVal) {
+            if (!cmd.primaryKeyColumns().isEmpty() && cmd.columns().size() - cmd.primaryKeyColumns().size() > 1) {
+                throw new IgniteSQLException(WRAP_VALUE + " parameter cannot be \"false\" with multiple columns.",
+                    IgniteQueryErrorCode.PARSING);
+            }
+
+            if (!F.isEmpty(cmd.valueTypeName())) {
+                throw new IgniteSQLException(WRAP_VALUE + " parameter cannot be \"false\" when " + VALUE_TYPE + " is defined.",
+                    IgniteQueryErrorCode.PARSING);
+            }
+        }
+        // By default, value is always wrapped to allow for ALTER TABLE ADD COLUMN commands.
+    }
+
+    /** */
     private void handle0(DropTableCommand cmd) throws IgniteCheckedException {
         isDdlOnSchemaSupported(cmd.schemaName());
 
@@ -250,7 +292,7 @@ public class DdlCommandHandler {
 
             if (QueryUtils.isSqlType(typeDesc.valueClass())) {
                 throw new SchemaOperationException("Cannot add column(s) because table was created " +
-                    "with WRAP_VALUE=false option.");
+                    "based on cache configured with built-in types or with " + WRAP_VALUE + "=false option.");
             }
 
             List<QueryField> cols = new ArrayList<>(cmd.columns().size());
@@ -412,15 +454,40 @@ public class DdlCommandHandler {
         else if (!F.isEmpty(cmd.primaryKeyColumns()) && cmd.primaryKeyColumns().size() == 1) {
             String pkFieldName = cmd.primaryKeyColumns().get(0);
 
-            keyTypeName = res.getFields().get(pkFieldName);
+            if (cmd.wrapKey()) {
+                res.setKeyFields(Set.copyOf(cmd.primaryKeyColumns()));
 
-            res.setKeyFieldName(pkFieldName);
+                keyTypeName = QueryUtils.createTableKeyTypeName(valTypeName);
+
+                res.setPreserveKeysOrder(true);
+            }
+            else {
+                keyTypeName = res.getFields().get(pkFieldName);
+
+                res.setKeyFieldName(pkFieldName);
+            }
         }
         else {
             // if pk is not explicitly set, we create it ourselves
             keyTypeName = IgniteUuid.class.getName();
 
             res.implicitPk(true);
+        }
+
+        if (cmd.wrapValue() != null && !cmd.wrapValue()) {
+            ColumnDefinition valCol = null;
+
+            for (ColumnDefinition col : cmd.columns()) {
+                if (!cmd.primaryKeyColumns().contains(col.name())) {
+                    valCol = col;
+                    break;
+                }
+            }
+
+            if (valCol != null) {
+                valTypeName = Commons.typeFactory().getResultClass(valCol.type()).getTypeName();
+                res.setValueFieldName(valCol.name());
+            }
         }
 
         res.setValueType(F.isEmpty(cmd.valueTypeName()) ? valTypeName : cmd.valueTypeName());
