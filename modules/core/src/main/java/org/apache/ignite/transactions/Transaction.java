@@ -294,9 +294,8 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
     /**
      * Creates a savepoint in the current transaction.
      * <p>
-     * Savepoints are supported only for explicit transactions with
-     * {@link TransactionConcurrency#PESSIMISTIC} concurrency. The savepoint keeps the current transaction state and can
-     * later be used by {@link #rollbackToSavepoint(String)} to discard changes made after it was created.
+     * Savepoints are supported only for explicit transactions. The savepoint keeps the current transaction state and
+     * can later be used by {@link #rollbackToSavepoint(String)} to discard changes made after it was created.
      *
      * @param name Savepoint name.
      * @throws TransactionException If savepoint with the same name already exists.
@@ -308,9 +307,8 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
     /**
      * Creates a savepoint in the current transaction.
      * <p>
-     * Savepoints are supported only for explicit transactions with
-     * {@link TransactionConcurrency#PESSIMISTIC} concurrency. If {@code overwrite} is {@code true} and a savepoint with
-     * the same name exists, the existing savepoint is replaced with a snapshot of the current transaction state.
+     * Savepoints are supported only for explicit transactions. If {@code overwrite} is {@code true} and a savepoint
+     * with the same name exists, the existing savepoint is replaced with a snapshot of the current transaction state.
      *
      * @param name Savepoint name.
      * @param overwrite Whether to overwrite an existing savepoint with the same name.

@@ -900,6 +900,7 @@ public class GridReduceQueryExecutor {
      * @param cacheIds Cache ids.
      * @param selectQry Select query.
      * @param params SQL parameters.
+     * @param qryInitiatorId Query initiator id.
      * @param enforceJoinOrder Enforce join order of tables.
      * @param pageSize Page size.
      * @param timeoutMillis Timeout.
@@ -914,6 +915,7 @@ public class GridReduceQueryExecutor {
         List<Integer> cacheIds,
         String selectQry,
         Object[] params,
+        String qryInitiatorId,
         boolean enforceJoinOrder,
         int pageSize,
         int timeoutMillis,
@@ -967,6 +969,7 @@ public class GridReduceQueryExecutor {
             .query(selectQry)
             .pageSize(pageSize)
             .parameters(params)
+            .queryInitiatorId(qryInitiatorId)
             .timeout(timeoutMillis)
             .explicitTimeout(true)
             .flags(flags);

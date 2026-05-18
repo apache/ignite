@@ -224,7 +224,7 @@ public abstract class DynamicColumnsAbstractTest extends AbstractIndexingCommonT
      */
     protected void assertThrows(final Ignite node, final String sql, String msg) {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
+            @Override public Object call() {
                 run(node, sql);
 
                 return null;

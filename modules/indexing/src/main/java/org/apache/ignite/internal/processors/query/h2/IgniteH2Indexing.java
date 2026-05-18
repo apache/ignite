@@ -2175,6 +2175,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     distributedPlan.getCacheIds(),
                     qryDesc.sql(),
                     qryParams.arguments(),
+                    qryDesc.queryInitiatorId(),
                     qryDesc.enforceJoinOrder(),
                     qryParams.pageSize(),
                     qryParams.timeout(),
@@ -2203,6 +2204,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 .setEnforceJoinOrder(qryDesc.enforceJoinOrder())
                 .setLocal(qryDesc.local())
                 .setPageSize(qryParams.pageSize())
+                .setQueryInitiatorId(qryDesc.queryInitiatorId())
                 .setTimeout(qryParams.timeout(), TimeUnit.MILLISECONDS);
 
             Iterable<List<?>> cur;

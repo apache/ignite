@@ -78,6 +78,10 @@ SqlLiteral CreateTableOptionKey() :
     <VALUE_TYPE> { return SqlLiteral.createSymbol(IgniteSqlCreateTableOptionEnum.VALUE_TYPE, getPos()); }
 |
     <ENCRYPTED> { return SqlLiteral.createSymbol(IgniteSqlCreateTableOptionEnum.ENCRYPTED, getPos()); }
+|
+    <WRAP_KEY> { return SqlLiteral.createSymbol(IgniteSqlCreateTableOptionEnum.WRAP_KEY, getPos()); }
+|
+    <WRAP_VALUE> { return SqlLiteral.createSymbol(IgniteSqlCreateTableOptionEnum.WRAP_VALUE, getPos()); }
 }
 
 void CreateTableOption(List<SqlNode> list) :

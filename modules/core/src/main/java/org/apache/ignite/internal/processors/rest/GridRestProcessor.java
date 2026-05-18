@@ -122,9 +122,6 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
     /** The default interval used to invalidate sessions, in seconds. */
     public static final int DFLT_SES_TOKEN_INVALIDATE_INTERVAL = 5 * 60;
 
-    /** Index of task name wrapped by VisorGatewayTask */
-    private static final int WRAPPED_TASK_IDX = 1;
-
     /** Protocols. */
     private final Collection<GridRestProtocol> protos = new ArrayList<>();
 
@@ -1102,16 +1099,6 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
          */
         static Session fromClientId(UUID clientId) {
             return new Session(clientId, UUID.randomUUID());
-        }
-
-        /**
-         * Static constructor.
-         *
-         * @param sesTokId Session token ID.
-         * @return New session instance with random client ID and given session ID.
-         */
-        static Session fromSessionToken(UUID sesTokId) {
-            return new Session(UUID.randomUUID(), sesTokId);
         }
 
         /**
