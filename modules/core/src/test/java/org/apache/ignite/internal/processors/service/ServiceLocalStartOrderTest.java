@@ -110,7 +110,7 @@ public class ServiceLocalStartOrderTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public static class OrderedServiceImpl implements OrderedService {
+    private static class OrderedServiceImpl implements OrderedService {
         /** */
         private final int order;
 
@@ -145,13 +145,13 @@ public class ServiceLocalStartOrderTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public interface OrderedService extends Service {
+    private interface OrderedService extends Service {
         /** */
         boolean started();
     }
 
     /** */
-    public static String name(int i) {
+    private static String name(int i) {
         return "Ordered" + i;
     }
 }
