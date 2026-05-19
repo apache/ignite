@@ -54,16 +54,16 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     private final ClassLoader clsLdr;
 
     /** */
-    private UUID localNodeId;
+    private UUID locNodeId;
 
     /** */
-    private final GridIoManager ioManager;
+    private final GridIoManager ioMgr;
 
     /** */
     private QueryTaskExecutor taskExecutor;
 
     /** */
-    private FailureProcessor failureProcessor;
+    private FailureProcessor failureProc;
 
     /** */
     private Map<Class<? extends Message>, MessageListener> lsnrs;
@@ -74,29 +74,29 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
 
         this.ctx = ctx.cache().context();
         clsLdr = U.resolveClassLoader(ctx.config());
-        ioManager = ctx.io();
+        ioMgr = ctx.io();
         msgLsnr = this::onMessage;
     }
 
     /**
-     * @param localNodeId Local node ID.
+     * @param locNodeId Local node ID.
      */
-    public void localNodeId(UUID localNodeId) {
-        this.localNodeId = localNodeId;
+    public void localNodeId(UUID locNodeId) {
+        this.locNodeId = locNodeId;
     }
 
     /**
      * @return Local node ID.
      */
     public UUID localNodeId() {
-        return localNodeId;
+        return locNodeId;
     }
 
     /**
      * @return IO manager.
      */
     public GridIoManager ioManager() {
-        return ioManager;
+        return ioMgr;
     }
 
     /**
@@ -114,17 +114,17 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     }
 
     /**
-     * @param failureProcessor Failure processor.
+     * @param failureProc Failure processor.
      */
-    public void failureProcessor(FailureProcessor failureProcessor) {
-        this.failureProcessor = failureProcessor;
+    public void failureProcessor(FailureProcessor failureProc) {
+        this.failureProc = failureProc;
     }
 
     /**
      * @return Failure processor.
      */
     public FailureProcessor failureProcessor() {
-        return failureProcessor;
+        return failureProc;
     }
 
     /** {@inheritDoc} */
@@ -232,7 +232,7 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
         try {
             prepareUnmarshal(msg);
 
-            MessageListener lsnr = Objects.requireNonNull(lsnrs.get(msg.directType()));
+            MessageListener lsnr = Objects.requireNonNull(lsnrs.get(msg.getClass()));
             lsnr.onMessage(nodeId, msg);
         }
         catch (IgniteCheckedException e) {
