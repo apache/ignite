@@ -50,36 +50,37 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
     /** Owner mapped version, if any. */
     @GridToStringInclude
-    private Map<KeyCacheObject, GridCacheVersion> owned;
+    @Order(2)
+    Map<KeyCacheObject, GridCacheVersion> owned;
 
     /** Array of keys from {@link #owned}. Used during marshalling and unmarshalling. */
-    @Order(2)
+    @Order(3)
     @GridToStringExclude
     KeyCacheObject[] ownedKeys;
 
     /** Array of values from {@link #owned}. Used during marshalling and unmarshalling. */
-    @Order(3)
+    @Order(4)
     @GridToStringExclude
     GridCacheVersion[] ownedValues;
 
     /** Topology version. */
-    @Order(4)
+    @Order(5)
     AffinityTopologyVersion topVer;
 
     /** Task name hash. */
-    @Order(5)
+    @Order(6)
     int taskNameHash;
 
     /** Indexes of keys needed to be preloaded. */
-    @Order(6)
+    @Order(7)
     BitSet preloadKeys;
 
     /** TTL for read operation. */
-    @Order(7)
+    @Order(8)
     long accessTtl;
 
     /** Transaction label. */
-    @Order(8)
+    @Order(9)
     String txLbl;
 
     /**
