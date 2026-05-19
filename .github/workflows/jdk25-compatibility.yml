@@ -1,0 +1,125 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: Verify compatibility with JDK 25 LTS
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - 'ignite-[0-9].[0-9]+.[0-9]+*'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-jdk25:
+    runs-on: ubuntu-latest
+    name: Build and test on JDK 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Install prerequisites
+        run: |
+          sudo apt-get update && sudo apt-get install libnuma-dev
+
+      - name: Setup JDK 11 (compile)
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+
+      - name: Set MAVEN_OPTS for JDK 11
+        run: |
+          echo MAVEN_OPTS='--illegal-access=permit --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED
+          --add-exports=java.base/sun.nio.ch=ALL-UNNAMED
+          --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
+          --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
+          --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
+          -Djdk.tls.client.protocols=TLSv1.2' >> $GITHUB_ENV
+
+      - name: Build and install with JDK 11
+        run: |
+          ./mvnw install -DskipTests -Pall-java,lgpl -B -V
+
+      - name: Setup JDK 25 (run tests)
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '25'
+
+      - name: Set MAVEN_OPTS for JDK 25
+        run: |
+          cat >> $GITHUB_ENV << 'GITHUB_ENV_EOF'
+          MAVEN_OPTS<<MAVEN_EOF
+          -showversion
+          -XX:+UseCompactObjectHeaders
+          -Djdk.tracePinnedThreads=full
+          -XX:+IgnoreUnrecognizedVMOptions
+          --enable-native-access=ALL-UNNAMED
+          --sun-misc-unsafe-memory-access=allow
+          -XX:+UseStringDeduplication
+          -Djava.lang.Integer.IntegerCache.high=9999
+          -XX:+HeapDumpOnOutOfMemoryError
+          -XX:+ExitOnOutOfMemoryError
+          -XX:HeapDumpPath=/tmp/jcrash_%p_%t.hprof
+          -XX:+UnlockDiagnosticVMOptions
+          -XX:+UnlockExperimentalVMOptions
+          -Dfile.encoding=UTF-8
+          -Djava.net.preferIPv4Stack=true
+          -Djava.util.zip.use.nio.for.zip.file.access=true
+          -XX:+EnableDynamicAgentLoading
+          -XX:+AlwaysActAsServerClassMachine
+          --add-opens=java.desktop/java.awt.font=ALL-UNNAMED
+          --add-opens=java.base/java.io=ALL-UNNAMED
+          --add-opens=java.base/java.lang.invoke=ALL-UNNAMED
+          --add-opens=java.base/java.lang.reflect=ALL-UNNAMED
+          --add-opens=java.base/java.lang=ALL-UNNAMED
+          --add-opens=java.base/java.math=ALL-UNNAMED
+          --add-opens=java.base/java.net=ALL-UNNAMED
+          --add-opens=java.base/java.nio=ALL-UNNAMED
+          --add-opens=java.base/java.security=ALL-UNNAMED
+          --add-opens=java.base/java.text=ALL-UNNAMED
+          --add-opens=java.base/java.time=ALL-UNNAMED
+          --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED
+          --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED
+          --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+          --add-opens=java.base/java.util=ALL-UNNAMED
+          --add-opens=java.base/jdk.internal.access=ALL-UNNAMED
+          --add-opens=java.base/jdk.internal.loader=ALL-UNNAMED
+          --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED
+          --add-opens=java.base/sun.nio.ch=ALL-UNNAMED
+          --add-opens=java.base/sun.nio.fs=ALL-UNNAMED
+          --add-opens=java.base/sun.net.util=ALL-UNNAMED
+          --add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
+          --add-opens=java.base/sun.util.calendar=ALL-UNNAMED
+          --add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
+          --add-opens=java.management/sun.management=ALL-UNNAMED
+          --add-opens=java.sql/java.sql=ALL-UNNAMED
+          --add-opens=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED
+          --add-opens=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED
+          --add-opens=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED
+          --add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
+          --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED
+          --add-opens=java.logging/java.util.logging=ALL-UNNAMED
+          MAVEN_EOF
+          GITHUB_ENV_EOF
+
+      - name: Run tests on JDK 25
+        run: |
+          ./mvnw surefire:test -Pall-java,lgpl -B -V
