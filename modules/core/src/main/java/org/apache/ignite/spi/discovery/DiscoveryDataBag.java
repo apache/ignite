@@ -16,12 +16,14 @@
  */
 package org.apache.ignite.spi.discovery;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.GridComponent;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
@@ -59,10 +61,13 @@ public class DiscoveryDataBag {
         UUID joiningNodeId();
 
         /** @return Common for all cluster nodes discovery data that is sent to the joining node. */
-        Message commonData();
+        <T> T commonData();
 
-        /** @return Discovery data that is mapped to the particular cluster node and sent to the joining node. */
-        Map<UUID, Message> nodeSpecificData();
+        /**
+         * @param <T> Type of data.
+         * @return Discovery data that is mapped to the particular cluster node and sent to the joining node.
+         */
+        <T> Map<UUID, T> nodeSpecificData();
     }
 
     /**
@@ -86,7 +91,7 @@ public class DiscoveryDataBag {
         @Override @Nullable public <T> T joiningNodeData() {
             Message dataMsg = joiningNodeData.get(cmpId);
 
-            return dataMsg instanceof ObjectData ? ObjectData.unwrap(dataMsg) : (T)dataMsg;
+            return ObjectData.unwrapIfNecessary(dataMsg);
         }
 
         /**
@@ -114,16 +119,16 @@ public class DiscoveryDataBag {
         }
 
         /** {@inheritDoc} */
-        @Override @Nullable public Message commonData() {
+        @Override @Nullable public <T> T commonData() {
             if (commonData != null)
-                return commonData.get(cmpId);
+                return ObjectData.unwrapIfNecessary(commonData.get(cmpId));
 
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public Map<UUID, Message> nodeSpecificData() {
-            return nodeSpecificData;
+        @Override public <T> Map<UUID, T> nodeSpecificData() {
+            return F.viewReadOnly(nodeSpecificData, ObjectData::unwrapIfNecessary);
         }
 
         /**
@@ -155,7 +160,7 @@ public class DiscoveryDataBag {
     private static final UUID DEFAULT_KEY = null;
 
     /** */
-    private UUID joiningNodeId;
+    private final UUID joiningNodeId;
 
     /**
      * Component IDs with already initialized common discovery data.
@@ -163,13 +168,13 @@ public class DiscoveryDataBag {
     private Set<Integer> cmnDataInitializedCmps;
 
     /** */
-    private Map<Integer, Message> joiningNodeData = new HashMap<>();
+    private final Map<Integer, Message> joiningNodeData = new HashMap<>();
 
     /** */
-    private Map<Integer, Message> commonData = new HashMap<>();
+    private final Map<Integer, Message> commonData = new HashMap<>();
 
     /** */
-    private Map<UUID, Map<Integer, Message>> nodeSpecificData = new LinkedHashMap<>();
+    private final Map<UUID, Map<Integer, Message>> nodeSpecificData = new LinkedHashMap<>();
 
     /** */
     private JoiningNodeDiscoveryDataImpl newJoinerData;
@@ -258,7 +263,15 @@ public class DiscoveryDataBag {
 
     /**
      * @param cmpId Component ID.
-     * @param data Data.
+     * @param data Serializable data.
+     */
+    public void addGridCommonData(Integer cmpId, Serializable data) {
+        commonData.put(cmpId, new ObjectData(data));
+    }
+
+    /**
+     * @param cmpId Component ID.
+     * @param data Message data.
      */
     public void addGridCommonData(Integer cmpId, Message data) {
         commonData.put(cmpId, data);
@@ -266,7 +279,15 @@ public class DiscoveryDataBag {
 
     /**
      * @param cmpId Component ID.
-     * @param data Data.
+     * @param data Serializable data.
+     */
+    public void addNodeSpecificData(Integer cmpId, Serializable data) {
+        addNodeSpecificData(cmpId, new ObjectData(data));
+    }
+
+    /**
+     * @param cmpId Component ID.
+     * @param data Message data.
      */
     public void addNodeSpecificData(Integer cmpId, Message data) {
         if (!nodeSpecificData.containsKey(DEFAULT_KEY))

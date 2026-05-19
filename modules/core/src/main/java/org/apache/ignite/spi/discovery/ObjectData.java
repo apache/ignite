@@ -65,13 +65,25 @@ public class ObjectData implements MarshallableMessage {
     }
 
     /**
-     * @param msg Message.
      * @param <T> Type of data.
      *
      * @return Original data unwrapped from a message.
      */
-    public static <T> T unwrap(@Nullable Message msg) {
-        return msg != null ? (T)(((ObjectData)msg).data) : null;
+    <T> T unwrap() {
+        return (T)(data);
+    }
+
+    /**
+     * @param msg Message.
+     * @param <T> Type of data.
+     *
+     * @return Original message or data unwrapped from an ObjectData wrapper.
+     */
+    static @Nullable <T> T unwrapIfNecessary(@Nullable Message msg) {
+        if (msg == null)
+            return null;
+
+        return msg instanceof ObjectData ? ((ObjectData)msg).unwrap() : (T)msg;
     }
 
     /** {@inheritDoc} */

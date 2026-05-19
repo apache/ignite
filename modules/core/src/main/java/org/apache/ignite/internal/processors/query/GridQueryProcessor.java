@@ -515,7 +515,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
         // Preserve proposals.
-        LinkedHashMap<UUID, SchemaProposeDiscoveryMessage> activeProposals = ObjectData.unwrap(data.commonData());
+        LinkedHashMap<UUID, SchemaProposeDiscoveryMessage> activeProposals = data.commonData();
 
         // Process proposals as if they were received as regular discovery messages.
         if (!F.isEmpty(activeProposals)) {
@@ -529,12 +529,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             Map<String, Integer> indexesInlineSize = secondaryIndexesInlineSize();
 
             if (!F.isEmpty(indexesInlineSize)) {
-                for (UUID nodeId : data.nodeSpecificData().keySet()) {
-                    Map<String, Message> nodeSpecificData = ObjectData.unwrap(data.nodeSpecificData().get(nodeId));
+                for (UUID nodeId :  data.nodeSpecificData().keySet()) {
+                    Object map =  data.nodeSpecificData().get(nodeId);
+
+                    assert map instanceof Map : map;
+
+                    Map<String, InlineSizesData> nodeSpecificData = (Map<String, InlineSizesData>)map;
 
                     if (nodeSpecificData.containsKey(INLINE_SIZES_DISCO_BAG_KEY)) {
                         checkInlineSizes(indexesInlineSize,
-                            ((InlineSizesData)nodeSpecificData.get(INLINE_SIZES_DISCO_BAG_KEY)).sizes(), nodeId);
+                            nodeSpecificData.get(INLINE_SIZES_DISCO_BAG_KEY).sizes(), nodeId);
                     }
                 }
             }

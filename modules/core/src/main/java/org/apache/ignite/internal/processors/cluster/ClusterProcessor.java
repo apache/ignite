@@ -76,7 +76,6 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.mxbean.IgniteClusterMXBean;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
@@ -471,9 +470,9 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
 
     /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
-        dataBag.addNodeSpecificData(CLUSTER_PROC.ordinal(), new ObjectData(getDiscoveryData()));
+        dataBag.addNodeSpecificData(CLUSTER_PROC.ordinal(), getDiscoveryData());
 
-        dataBag.addGridCommonData(CLUSTER_PROC.ordinal(), new ObjectData(new ClusterIdAndTag(cluster.id(), cluster.tag())));
+        dataBag.addGridCommonData(CLUSTER_PROC.ordinal(), new ClusterIdAndTag(cluster.id(), cluster.tag()));
     }
 
     /**
@@ -489,7 +488,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(GridDiscoveryData data) {
-        Map<UUID, Message> nodeSpecData = data.nodeSpecificData();
+        Map<UUID, Map<String, Boolean>> nodeSpecData = data.nodeSpecificData();
 
         if (nodeSpecData != null) {
             Boolean lstFlag = findLastFlag(nodeSpecData.values());
@@ -498,7 +497,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
                 notifyEnabled.set(lstFlag);
         }
 
-        ClusterIdAndTag commonData = ObjectData.unwrap(data.commonData());
+        ClusterIdAndTag commonData = data.commonData();
 
         if (commonData != null) {
             Serializable remoteClusterId = commonData.id();
@@ -524,19 +523,13 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
     /**
      * @param vals collection to seek through.
      */
-    private Boolean findLastFlag(Collection<Message> vals) {
-        Boolean flag = null;
-
-        for (Message msg : vals) {
-            if (msg != null) {
-                Map<String, Object> map = ObjectData.unwrap(msg);
-
-                if (map.containsKey(ATTR_UPDATE_NOTIFIER_STATUS))
-                    flag = (Boolean)map.get(ATTR_UPDATE_NOTIFIER_STATUS);
-            }
+    private Boolean findLastFlag(Collection<Map<String, Boolean>> vals) {
+        for (Map<String, Boolean> map : vals) {
+            if (map != null && map.containsKey(ATTR_UPDATE_NOTIFIER_STATUS))
+                return map.get(ATTR_UPDATE_NOTIFIER_STATUS);
         }
 
-        return flag;
+        return null;
     }
 
     /** {@inheritDoc} */

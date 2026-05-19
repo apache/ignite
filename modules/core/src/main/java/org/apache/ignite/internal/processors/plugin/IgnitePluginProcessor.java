@@ -39,7 +39,6 @@ import org.apache.ignite.plugin.Extension;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.PluginProvider;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
@@ -169,7 +168,7 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
         Serializable pluginsData = getDiscoveryData(dataBag.joiningNodeId());
 
         if (pluginsData != null)
-            dataBag.addNodeSpecificData(PLUGIN.ordinal(), new ObjectData(pluginsData));
+            dataBag.addNodeSpecificData(PLUGIN.ordinal(), pluginsData);
     }
 
     /**
@@ -203,17 +202,14 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(GridDiscoveryData data) {
-        Map<UUID, Message> nodeSpecificData = data.nodeSpecificData();
+        Map<UUID, Map<String, Serializable>> nodeSpecificData = data.nodeSpecificData();
 
         if (nodeSpecificData != null) {
             UUID joiningNodeId = data.joiningNodeId();
 
-            for (Message v : nodeSpecificData.values()) {
-                if (v != null) {
-                    Map<String, Serializable> pluginsData = ObjectData.unwrap(v);
-
+            for (Map<String, Serializable> pluginsData : nodeSpecificData.values()) {
+                if (pluginsData != null)
                     applyPluginsData(joiningNodeId, pluginsData);
-                }
             }
         }
     }
