@@ -17,7 +17,6 @@
 
 package org.apache.ignite.cache.affinity;
 
-import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
@@ -33,7 +32,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.internal.util.worker.IgniteLinkedBlockingQueueProcessor;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -257,20 +256,15 @@ public class PendingExchangeTest extends GridCommonAbstractTest {
         });
     }
 
-    /**
-     * Waiting for exchanges beginning.
-     *
-     * @param ignite Ignite.
-     */
+    /** Waiting for exchanges beginning. */
     private void waitForExchnagesBegin(GridCachePartitionExchangeManager exchangeManager, int exchanges) {
-        GridWorker exchWorker = U.field(exchangeManager, "exchWorker");
-        Queue<CachePartitionExchangeWorkerTask> exchnageQueue = U.field(exchWorker, "futQ");
+        IgniteLinkedBlockingQueueProcessor<CachePartitionExchangeWorkerTask> exchWorker = U.field(exchangeManager, "exchWorker");
 
         try {
             assertTrue(GridTestUtils.waitForCondition(() -> {
                 int exFuts = 0;
 
-                for (CachePartitionExchangeWorkerTask task : exchnageQueue) {
+                for (CachePartitionExchangeWorkerTask task : exchWorker) {
                     if (task instanceof GridDhtPartitionsExchangeFuture)
                         exFuts++;
                 }

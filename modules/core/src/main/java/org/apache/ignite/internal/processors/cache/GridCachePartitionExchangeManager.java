@@ -3001,7 +3001,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 cnt++;
 
-                CachePartitionExchangeWorkerTask task = null;
+                OperationContextAwareWrapper<CachePartitionExchangeWorkerTask> contextualTask = null;
 
                 try {
                     boolean preloadFinished = true;
@@ -3033,16 +3033,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     if (isCancelled())
                         Thread.currentThread().interrupt();
 
-                    OperationContextAwareWrapper<CachePartitionExchangeWorkerTask> contextualTask = pollQueuedElement(
-                        timeout,
-                        MILLISECONDS
-                    );
+                    contextualTask = pollQueuedElement(timeout, MILLISECONDS);
 
                     if (contextualTask == null)
                         continue; // Main while loop.
 
                     try (Scope ignored = OperationContext.restoreSnapshot(contextualTask.contextSnapshot())) {
-                        task = contextualTask.delegate();
+                        CachePartitionExchangeWorkerTask task = contextualTask.delegate();
 
                         if (!isExchangeTask(task)) {
                             processCustomTask(task);
@@ -3330,7 +3327,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to wait for completion of partition map exchange " +
-                        "(preloading will not start): " + task, e);
+                        "(preloading will not start): " + contextualTask == null ? null : contextualTask.delegate(), e);
 
                     throw e;
                 }
