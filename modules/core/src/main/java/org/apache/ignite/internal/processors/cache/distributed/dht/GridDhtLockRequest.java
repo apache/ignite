@@ -20,15 +20,12 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.util.BitSet;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockRequest;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLeanMap;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -53,34 +50,24 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     @Order(2)
     Map<KeyCacheObject, GridCacheVersion> owned;
 
-    /** Array of keys from {@link #owned}. Used during marshalling and unmarshalling. */
-    @Order(3)
-    @GridToStringExclude
-    KeyCacheObject[] ownedKeys;
-
-    /** Array of values from {@link #owned}. Used during marshalling and unmarshalling. */
-    @Order(4)
-    @GridToStringExclude
-    GridCacheVersion[] ownedValues;
-
     /** Topology version. */
-    @Order(5)
+    @Order(3)
     AffinityTopologyVersion topVer;
 
     /** Task name hash. */
-    @Order(6)
+    @Order(4)
     int taskNameHash;
 
     /** Indexes of keys needed to be preloaded. */
-    @Order(7)
+    @Order(5)
     BitSet preloadKeys;
 
     /** TTL for read operation. */
-    @Order(8)
+    @Order(6)
     long accessTtl;
 
     /** Transaction label. */
-    @Order(9)
+    @Order(7)
     String txLbl;
 
     /**
@@ -256,42 +243,6 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     @Nullable public String txLabel() {
         return txLbl;
     }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        if (owned != null && ownedKeys == null) {
-            ownedKeys = new KeyCacheObject[owned.size()];
-            ownedValues = new GridCacheVersion[ownedKeys.length];
-
-            int i = 0;
-
-            for (Map.Entry<KeyCacheObject, GridCacheVersion> entry : owned.entrySet()) {
-                ownedKeys[i] = entry.getKey();
-                ownedValues[i] = entry.getValue();
-                i++;
-            }
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        if (ownedKeys != null) {
-            owned = new GridLeanMap<>(ownedKeys.length);
-
-            for (int i = 0; i < ownedKeys.length; i++) {
-                ownedKeys[i].finishUnmarshal(ctx.cacheContext(cacheId).cacheObjectContext(), ldr);
-                owned.put(ownedKeys[i], ownedValues[i]);
-            }
-
-            ownedKeys = null;
-            ownedValues = null;
-        }
-    }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {
