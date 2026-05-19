@@ -253,11 +253,11 @@ public class MessageSerializerGenerator {
         finish(write, false, false);
         finish(read, true, marshallableMessage());
 
-        generateCacheObjectMarshallMethods(fields);
+        generateMarshallMethods(fields);
     }
 
     /** */
-    private void generateCacheObjectMarshallMethods(List<VariableElement> orderedFields) throws Exception {
+    private void generateMarshallMethods(List<VariableElement> orderedFields) throws Exception {
         imports.add("org.apache.ignite.IgniteCheckedException");
         imports.add("org.apache.ignite.internal.processors.cache.CacheObjectValueContext");
         imports.add("org.apache.ignite.internal.processors.cache.GridCacheSharedContext");
