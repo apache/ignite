@@ -28,6 +28,7 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -282,11 +283,7 @@ public class MessageSerializerGenerator {
             if (!marshall.get(marshall.size() - 1).equals(EMPTY))
                 marshall.add(EMPTY);
             
-            List<String> elemCode = new ArrayList<>();
-            
-            marshall(field.asType(), fieldAccessor(field), elemCode);
-            
-            marshall.addAll(elemCode);
+            marshall.addAll(marshall(field.asType(), fieldAccessor(field)));
         }
 
         if (marshallableMessage())           
@@ -298,11 +295,13 @@ public class MessageSerializerGenerator {
     }
 
     /** */
-    private void marshall(TypeMirror t, String accessor, List<String> code) {
+    private List<String> marshall(TypeMirror t, String accessor) {
         if (t.getKind() == TypeKind.ARRAY) {
             TypeMirror comp = ((ArrayType)t).getComponentType();
 
             if (comp.getKind() == TypeKind.DECLARED) {
+                List<String> code = new ArrayList<>();
+
                 imports.add(((QualifiedNameable)((DeclaredType)comp).asElement()).getQualifiedName().toString());
 
                 code.add(indentedLine("if (%s != null) {", accessor));
@@ -315,7 +314,9 @@ public class MessageSerializerGenerator {
 
                 indent++;
 
-                marshall(comp, el, code);
+                List<String> res = marshall(comp, el);
+
+                code.addAll(res);
 
                 indent--;
 
@@ -324,10 +325,17 @@ public class MessageSerializerGenerator {
                 indent--;
 
                 code.add(indentedLine("}"));
+
+                if (res.isEmpty())
+                    return Collections.emptyList();
+                else
+                    return code;
             }
         }
         else if (t.getKind() == TypeKind.DECLARED) {
             if (isMessage(t)) {
+                List<String> code = new ArrayList<>();
+
                 code.add(indentedLine("if (%s != null)", accessor));
 
                 indent++;
@@ -338,8 +346,12 @@ public class MessageSerializerGenerator {
                     accessor));
 
                 indent--;
+
+                return code;
             }
             else if (isCacheObject(t)) {
+                List<String> code = new ArrayList<>();
+
                 code.add(indentedLine("if (%s != null)", accessor));
 
                 indent++;
@@ -347,6 +359,8 @@ public class MessageSerializerGenerator {
                 code.add(indentedLine("%s.prepareMarshal(ctx != null ? ctx.cacheObjectContext() : null);", accessor));
 
                 indent--;
+
+                return code;
             }
             else if (assignableFrom(erasedType(t), type(Map.class.getName()))) {
                 List<? extends TypeMirror> args = ((DeclaredType)t).getTypeArguments();
@@ -354,13 +368,20 @@ public class MessageSerializerGenerator {
                 TypeMirror keyType = args.get(0);
                 TypeMirror valType = args.get(1);
 
-                String el = "e" + indent;
+                List<String> code = new ArrayList<>();
 
                 code.add(indentedLine("if (%s != null) {", accessor));
 
                 indent++;
 
-                if (keyType.getKind() == TypeKind.DECLARED) {
+                String el = "e" + indent;
+
+                indent++; // Emulating subsequent indent.
+                List<String> keyRes = marshall(keyType, el);
+                List<String> valRes = marshall(valType, el);
+                indent--;
+
+                if (!keyRes.isEmpty() && keyType.getKind() == TypeKind.DECLARED) {
                     imports.add(((QualifiedNameable)((DeclaredType)keyType).asElement()).getQualifiedName().toString());
                     imports.add("java.util.Collection");
 
@@ -370,14 +391,14 @@ public class MessageSerializerGenerator {
 
                     indent++;
 
-                    marshall(keyType, el, code);
+                    code.addAll(keyRes);
 
                     indent--;
 
                     code.add(indentedLine("}"));
                 }
 
-                if (valType.getKind() == TypeKind.DECLARED) {
+                if (!valRes.isEmpty() && valType.getKind() == TypeKind.DECLARED) {
                     imports.add(((QualifiedNameable)((DeclaredType)valType).asElement()).getQualifiedName().toString());
                     imports.add("java.util.Collection");
 
@@ -387,7 +408,7 @@ public class MessageSerializerGenerator {
 
                     indent++;
 
-                    marshall(valType, el, code);
+                    code.addAll(valRes);
 
                     indent--;
 
@@ -397,6 +418,11 @@ public class MessageSerializerGenerator {
                 indent--;
 
                 code.add(indentedLine("}"));
+
+                if (!keyRes.isEmpty() || !valRes.isEmpty())
+                    return Collections.emptyList();
+                else
+                    return code;
             }
             else if (assignableFrom(erasedType(t), type(Collection.class.getName()))) {
                 List<? extends TypeMirror> args = ((DeclaredType)t).getTypeArguments();
@@ -404,6 +430,8 @@ public class MessageSerializerGenerator {
                 TypeMirror arg = args.get(0);
 
                 if (arg.getKind() == TypeKind.DECLARED) {
+                    List<String> code = new ArrayList<>();
+
                     imports.add(((QualifiedNameable)((DeclaredType)arg).asElement()).getQualifiedName().toString());
                     imports.add("java.util.Collection");
 
@@ -419,7 +447,9 @@ public class MessageSerializerGenerator {
 
                     indent++;
 
-                    marshall(arg, el, code);
+                    List<String> res = marshall(arg, el);
+
+                    code.addAll(res);
 
                     indent--;
 
@@ -428,14 +458,16 @@ public class MessageSerializerGenerator {
                     indent--;
 
                     code.add(indentedLine("}"));
+
+                    if (res.isEmpty())
+                        return Collections.emptyList();
+                    else
+                        return code;
                 }
             }
-            else {
-                if (!code.isEmpty())
-                    code.add(indentedLine("// No-op."));
-            }
         }
-        
+
+        return Collections.emptyList();
     }
 
     /** */
