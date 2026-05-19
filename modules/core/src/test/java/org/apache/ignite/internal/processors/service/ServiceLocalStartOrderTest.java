@@ -63,7 +63,8 @@ public class ServiceLocalStartOrderTest extends GridCommonAbstractTest {
             startGrids(gridCnt);
 
             check();
-        } finally {
+        }
+        finally {
             staticConfig = false;
         }
     }
@@ -141,10 +142,6 @@ public class ServiceLocalStartOrderTest extends GridCommonAbstractTest {
         @Override public void init() throws Exception {
             for (int i = order - 1; i >= 0; i--) {
                 OrderedService srvc = ignite.services().service(name(i));
-
-                if (srvc == null) {
-                    Thread.dumpStack();
-                }
 
                 assertNotNull("Must be deployed previously: " + i, srvc);
                 assertTrue(srvc.started());
