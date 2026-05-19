@@ -1096,7 +1096,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             msg.messageId(idGen.incrementAndGet());
 
         if (destNodeId == null || !cctx.localNodeId().equals(destNodeId)) {
-            msg.prepareMarshal(cctx);
+            msg.prepareDeployment(cctx);
             
             MessageSerializer ser = cctx.gridIO().messageFactory().serializer(msg.directType());
 

@@ -124,13 +124,13 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
+    @Override public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        super.prepareDeployment(ctx);
 
         GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
         if (preloadEntries != null)
-            prepareInfos(preloadEntries, cctx.shared(), cctx.cacheObjectContext());
+            prepareInfosDeployment(preloadEntries, cctx.shared(), cctx.cacheObjectContext());
     }
 
     /** {@inheritDoc} */

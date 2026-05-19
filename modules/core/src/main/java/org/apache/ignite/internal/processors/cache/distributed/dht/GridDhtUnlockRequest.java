@@ -71,10 +71,10 @@ public class GridDhtUnlockRequest extends GridNearUnlockRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
+    @Override public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        super.prepareDeployment(ctx);
 
-        prepareCacheObjects(nearKeys, ctx.cacheContext(cacheId));
+        prepareCacheObjectsDeployment(nearKeys, ctx.cacheContext(cacheId));
     }
 
     /** {@inheritDoc} */

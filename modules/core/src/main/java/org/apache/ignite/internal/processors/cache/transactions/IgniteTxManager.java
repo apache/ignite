@@ -2432,7 +2432,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         try {
             if (!cctx.localNodeId().equals(nodeId)) {
-                req.prepareMarshal(cctx);
+                req.prepareDeployment(cctx);
                 
                 MessageSerializer ser = cctx.gridIO().messageFactory().serializer(req.directType());
 
@@ -3368,7 +3368,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                     try {
                         if (!cctx.localNodeId().equals(nodeId)) {
-                            res.prepareMarshal(cctx);
+                            res.prepareDeployment(cctx);
 
                             MessageSerializer ser = cctx.gridIO().messageFactory().serializer(res.directType());
 

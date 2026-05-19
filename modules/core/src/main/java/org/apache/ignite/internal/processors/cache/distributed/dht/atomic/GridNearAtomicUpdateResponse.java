@@ -339,13 +339,13 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
+    @Override public void prepareDeployment(GridCacheSharedContext ctx) throws IgniteCheckedException {
+        super.prepareDeployment(ctx);
 
         GridCacheContext cctx = ctx.cacheContext(cacheId);
 
         if (nearUpdates != null)
-            prepareCacheObjects(nearUpdates.nearValues(), cctx);
+            prepareCacheObjectsDeployment(nearUpdates.nearValues(), cctx);
     }
 
     /** {@inheritDoc} */

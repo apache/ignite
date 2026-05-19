@@ -215,7 +215,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
         assert info.value() != null || historical : info;
 
         // Need to call this method to initialize info properly.
-        prepareInfo(info, ctx, cacheObjCtx);
+        prepareInfoDeployment(info, ctx, cacheObjCtx);
 
         msgSize += info.marshalledSize(cacheObjCtx);
 

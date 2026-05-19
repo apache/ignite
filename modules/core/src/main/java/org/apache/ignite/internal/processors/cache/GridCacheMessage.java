@@ -32,7 +32,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -204,8 +203,8 @@ public abstract class GridCacheMessage implements Message {
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    protected final void prepareObject(@Nullable Object o, GridCacheContext ctx) throws IgniteCheckedException {
-        prepareObject(o, ctx.shared());
+    protected final void prepareObjectDeployment(@Nullable Object o, GridCacheContext ctx) throws IgniteCheckedException {
+        prepareObjectDeployment(o, ctx.shared());
     }
 
     /**
@@ -213,14 +212,14 @@ public abstract class GridCacheMessage implements Message {
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    protected final void prepareObject(@Nullable Object o, GridCacheSharedContext ctx) throws IgniteCheckedException {
+    protected final void prepareObjectDeployment(@Nullable Object o, GridCacheSharedContext ctx) throws IgniteCheckedException {
         assert addDepInfo || forceAddDepInfo;
 
         if (!skipPrepare && o != null) {
             GridDeploymentInfo d = ctx.deploy().globalDeploymentInfo();
 
             if (d != null) {
-                prepare(d);
+                prepareDeployment(d);
 
                 // Global deployment has been injected.
                 skipPrepare = true;
@@ -233,16 +232,16 @@ public abstract class GridCacheMessage implements Message {
                 ClassLoader ldr = U.detectClassLoader(cls);
 
                 if (ldr instanceof GridDeploymentInfo)
-                    prepare((GridDeploymentInfo)ldr);
+                    prepareDeployment((GridDeploymentInfo)ldr);
             }
         }
     }
 
     /**
      * @param depInfo Deployment to set.
-     * @see GridCacheDeployable#prepare(GridDeploymentInfo)
+     * @see GridCacheDeployable#prepareDeployment(GridDeploymentInfo)
      */
-    public final void prepare(GridDeploymentInfo depInfo) {
+    public final void prepareDeployment(GridDeploymentInfo depInfo) {
         if (depInfo != this.depInfo) {
             if (this.depInfo != null && depInfo instanceof GridDeployment)
                 // Make sure not to replace remote deployment with local.
@@ -269,13 +268,13 @@ public abstract class GridCacheMessage implements Message {
      * @param ctx Cache context.
      * @throws IgniteCheckedException If failed.
      */
-    public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+    public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         // No-op.
     }
 
     /**
      * This method is called after the message is deserialized and is responsible for
-     * unmarshalling state marshalled in {@link #prepareMarshal(GridCacheSharedContext)} method.
+     * unmarshalling state marshalled in {@link #prepareDeployment(GridCacheSharedContext)} method.
      *
      * @param ctx Context.
      * @param ldr Class loader.
@@ -291,7 +290,7 @@ public abstract class GridCacheMessage implements Message {
      * @param cacheObjCtx Cache object context.
      * @throws IgniteCheckedException If failed.
      */
-    protected final void prepareInfo(GridCacheEntryInfo info,
+    protected final void prepareInfoDeployment(GridCacheEntryInfo info,
         GridCacheSharedContext ctx,
         CacheObjectContext cacheObjCtx
     ) throws IgniteCheckedException {
@@ -300,14 +299,14 @@ public abstract class GridCacheMessage implements Message {
         if (info != null) {
             if (addDepInfo) {
                 if (info.key() != null)
-                    prepareObject(info.key().value(cacheObjCtx, false), ctx);
+                    prepareObjectDeployment(info.key().value(cacheObjCtx, false), ctx);
 
                 CacheObject val = info.value();
 
                 if (val != null) {
                     val.finishUnmarshal(cacheObjCtx, ctx.deploy().globalLoader());
 
-                    prepareObject(val.value(cacheObjCtx, false), ctx);
+                    prepareObjectDeployment(val.value(cacheObjCtx, false), ctx);
                 }
             }
         }
@@ -333,7 +332,7 @@ public abstract class GridCacheMessage implements Message {
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    protected final void prepareInfos(
+    protected final void prepareInfosDeployment(
         Iterable<? extends GridCacheEntryInfo> infos,
         GridCacheSharedContext ctx,
         CacheObjectContext cacheObjCtx
@@ -342,7 +341,7 @@ public abstract class GridCacheMessage implements Message {
 
         if (infos != null)
             for (GridCacheEntryInfo e : infos)
-                prepareInfo(e, ctx, cacheObjCtx);
+                prepareInfoDeployment(e, ctx, cacheObjCtx);
     }
 
     /**
@@ -366,7 +365,7 @@ public abstract class GridCacheMessage implements Message {
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    protected final void prepareTx(Iterable<IgniteTxEntry> txEntries, GridCacheSharedContext ctx)
+    protected final void prepareTxDeployment(Iterable<IgniteTxEntry> txEntries, GridCacheSharedContext ctx)
         throws IgniteCheckedException {
         assert ctx != null;
 
@@ -378,14 +377,14 @@ public abstract class GridCacheMessage implements Message {
 
                 if (addDepInfo) {
                     if (e.key() != null)
-                        prepareObject(e.key().value(cctx.cacheObjectContext(), false), ctx);
+                        prepareObjectDeployment(e.key().value(cctx.cacheObjectContext(), false), ctx);
 
                     if (e.value() != null)
-                        prepareObject(e.value().value(cctx.cacheObjectContext(), false), ctx);
+                        prepareObjectDeployment(e.value().value(cctx.cacheObjectContext(), false), ctx);
 
                     if (e.entryProcessors() != null) {
                         for (T2<EntryProcessor<Object, Object, Object>, Object[]> entProc : e.entryProcessors())
-                            prepareObject(entProc.get1(), ctx);
+                            prepareObjectDeployment(entProc.get1(), ctx);
                     }
                 }
                 else if (p2pEnabled && e.entryProcessors() != null) {
@@ -393,7 +392,7 @@ public abstract class GridCacheMessage implements Message {
                         forceAddDepInfo = true;
 
                     for (T2<EntryProcessor<Object, Object, Object>, Object[]> entProc : e.entryProcessors())
-                        prepareObject(entProc.get1(), ctx);
+                        prepareObjectDeployment(entProc.get1(), ctx);
                 }
             }
         }
@@ -422,13 +421,12 @@ public abstract class GridCacheMessage implements Message {
 
     /**
      * @param args Arguments to marshal.
-     * @param ctx Context.
+     * @param marsh Marshaller.
      * @return Marshalled collection.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable protected final byte[][] marshalInvokeArguments(@Nullable Object[] args, GridCacheContext ctx)
+    @Nullable protected final byte[][] marshallInvokeArguments(@Nullable Object[] args, Marshaller marsh)
         throws IgniteCheckedException {
-        assert ctx != null;
 
         if (args == null || args.length == 0)
             return null;
@@ -438,15 +436,31 @@ public abstract class GridCacheMessage implements Message {
         for (int i = 0; i < args.length; i++) {
             Object arg = args[i];
 
-            if (addDepInfo)
-                prepareObject(arg, ctx.shared());
-
-            argsBytes[i] = arg == null ? null : CU.marshal(ctx, arg);
+            argsBytes[i] = arg == null ? null : U.marshal(marsh, arg);
         }
 
         return argsBytes;
     }
 
+    /**
+     * @param args Arguments to marshal.
+     * @param ctx Context.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable protected final void prepareInvokeArgumentsDeployment(@Nullable Object[] args, GridCacheContext ctx)
+        throws IgniteCheckedException {
+        assert ctx != null;
+
+        if (args == null)
+            return;
+
+        for (int i = 0; i < args.length; i++) {
+            Object arg = args[i];
+
+            if (addDepInfo)
+                prepareObjectDeployment(arg, ctx.shared());
+        }
+    }
 
     /**
      * @param byteCol Collection to unmarshal.
@@ -476,27 +490,35 @@ public abstract class GridCacheMessage implements Message {
 
     /**
      * @param col Collection to marshal.
-     * @param ctx Context.
+     * @param marsh Marshaller.
      * @return Marshalled collection.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable protected List<byte[]> marshalAndPrepareCollection(@Nullable Collection<?> col,
-        GridCacheContext ctx) throws IgniteCheckedException {
-        assert ctx != null;
-
+    @Nullable protected List<byte[]> marshallCollection(@Nullable Collection<?> col, Marshaller marsh) throws IgniteCheckedException {
         if (col == null)
             return null;
 
         List<byte[]> byteCol = new ArrayList<>(col.size());
 
-        for (Object o : col) {
-            if (addDepInfo)
-                prepareObject(o, ctx.shared());
-
-            byteCol.add(o == null ? null : CU.marshal(ctx, o));
-        }
+        for (Object o : col)
+            byteCol.add(o == null ? null : U.marshal(marsh, o));
 
         return byteCol;
+    }
+
+    /**
+     * @param col Collection to marshal.
+     * @param ctx Context.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable protected void prepareCollectionDeployment(@Nullable Collection<?> col,
+        GridCacheContext ctx) throws IgniteCheckedException {
+        assert ctx != null;
+        
+        for (Object o : col) {
+            if (addDepInfo)
+                prepareObjectDeployment(o, ctx.shared());
+        }
     }
 
     /**
@@ -505,7 +527,7 @@ public abstract class GridCacheMessage implements Message {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    public final void prepareCacheObjects(@Nullable List<? extends CacheObject> col,
+    public final void prepareCacheObjectsDeployment(@Nullable List<? extends CacheObject> col,
         GridCacheContext ctx) throws IgniteCheckedException {
         if (col == null)
             return;
@@ -513,7 +535,7 @@ public abstract class GridCacheMessage implements Message {
         int size = col.size();
 
         for (int i = 0; i < size; i++)
-            prepareCacheObject(col.get(i), ctx);
+            prepareCacheObjectDeployment(col.get(i), ctx);
     }
 
     /**
@@ -521,10 +543,10 @@ public abstract class GridCacheMessage implements Message {
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    public final void prepareCacheObject(CacheObject obj, GridCacheContext ctx) throws IgniteCheckedException {
+    public final void prepareCacheObjectDeployment(CacheObject obj, GridCacheContext ctx) throws IgniteCheckedException {
         if (obj != null) {
             if (addDepInfo)
-                prepareObject(obj.value(ctx.cacheObjectContext(), false), ctx.shared());
+                prepareObjectDeployment(obj.value(ctx.cacheObjectContext(), false), ctx.shared());
         }
     }
 
@@ -533,7 +555,7 @@ public abstract class GridCacheMessage implements Message {
      * @param ctx Cache context.
      * @throws IgniteCheckedException If failed.
      */
-    protected final void prepareCacheObjects(@Nullable Collection<? extends CacheObject> col,
+    protected final void prepareCacheObjectsDeployment(@Nullable Collection<? extends CacheObject> col,
         GridCacheContext ctx) throws IgniteCheckedException {
         if (col == null)
             return;
@@ -541,7 +563,7 @@ public abstract class GridCacheMessage implements Message {
         for (CacheObject obj : col) {
             if (obj != null) {
                 if (addDepInfo)
-                    prepareObject(obj.value(ctx.cacheObjectContext(), false), ctx.shared());
+                    prepareObjectDeployment(obj.value(ctx.cacheObjectContext(), false), ctx.shared());
             }
         }
     }

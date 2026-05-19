@@ -284,8 +284,8 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
      * @param ctx Cache context.
      * @throws IgniteCheckedException If failed.
      */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
+    @Override public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        super.prepareDeployment(ctx);
 
         assert ctx != null;
         assert !F.isEmpty(keys);
@@ -293,7 +293,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
 
         GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
-        prepareCacheObjects(keys, cctx);
+        prepareCacheObjectsDeployment(keys, cctx);
     }
 
     /**

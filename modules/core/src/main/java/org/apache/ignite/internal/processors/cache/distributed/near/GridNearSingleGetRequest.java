@@ -250,14 +250,14 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
+    @Override public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        super.prepareDeployment(ctx);
 
         assert key != null;
 
         GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
-        prepareCacheObject(key, cctx);
+        prepareCacheObjectDeployment(key, cctx);
     }
 
     /** {@inheritDoc} */

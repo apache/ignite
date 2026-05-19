@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
@@ -40,7 +41,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Page of cache query response.
  */
-public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCacheDeployable {
+public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCacheDeployable, MarshallableMessage {
     /** */
     @Order(0)
     boolean finished;
@@ -105,21 +106,21 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
+    @Override public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        super.prepareDeployment(ctx);
 
         GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
         if (dataBytes == null && data != null)
-            dataBytes = marshalAndPrepareCollection(data, cctx);
+            prepareCollectionDeployment(data, cctx);
 
         if (addDepInfo && !F.isEmpty(data)) {
             for (Object o : data) {
                 if (o instanceof Map.Entry) {
                     Map.Entry<?, ?> e = (Map.Entry<?, ?>)o;
 
-                    prepareObject(e.getKey(), cctx);
-                    prepareObject(e.getValue(), cctx);
+                    prepareObjectDeployment(e.getKey(), cctx);
+                    prepareObjectDeployment(e.getValue(), cctx);
                 }
             }
         }
@@ -233,6 +234,16 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
         return fields;
     }
 
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (dataBytes == null && data != null)
+            dataBytes = marshallCollection(data, marsh);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+
+    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

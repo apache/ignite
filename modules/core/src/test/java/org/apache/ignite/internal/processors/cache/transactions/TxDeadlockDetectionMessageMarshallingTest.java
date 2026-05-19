@@ -86,7 +86,7 @@ public class TxDeadlockDetectionMessageMarshallingTest extends GridCommonAbstrac
             TxLocksResponse msg = new TxLocksResponse();
             msg.addKey(cctx.txKey(key));
 
-            msg.prepareMarshal(cctx.shared());
+            msg.prepareDeployment(cctx.shared());
 
             ((IgniteKernal)ignite).context().cache().context().gridIO().sendToCustomTopic(
                 ((IgniteKernal)client).localNode(), TOPIC, msg, GridIoPolicy.PUBLIC_POOL);

@@ -25,6 +25,7 @@ import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
@@ -41,6 +42,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -51,7 +53,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPD
 /**
  * Lite DHT cache update request sent from near node to primary node.
  */
-public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdateRequest {
+public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdateRequest implements MarshallableMessage {
     /** Keys to update. */
     @Order(0)
     @GridToStringInclude
@@ -328,15 +330,15 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
+    @Override public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        super.prepareDeployment(ctx);
 
         GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
         if (expiryPlc != null && expiryPlcBytes == null)
             expiryPlcBytes = CU.marshal(cctx, new IgniteExternalizableExpiryPolicy(expiryPlc));
 
-        prepareCacheObjects(keys, cctx);
+        prepareCacheObjectsDeployment(keys, cctx);
 
         if (filter != null && filter.length == 0)
             filter = null;
@@ -347,13 +349,13 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
                 addDepInfo = true;
 
             if (entryProcessorsBytes == null)
-                entryProcessorsBytes = marshalAndPrepareCollection(entryProcessors, cctx);
+                prepareCollectionDeployment(entryProcessors, cctx);
 
             if (!F.isEmpty(invokeArgs) && invokeArgsBytes == null)
-                invokeArgsBytes = Arrays.asList(marshalInvokeArguments(invokeArgs, cctx));
+                prepareInvokeArgumentsDeployment(invokeArgs, cctx);
         }
         else
-            prepareCacheObjects(vals, cctx);
+            prepareCacheObjectsDeployment(vals, cctx);
     }
 
     /** {@inheritDoc} */
@@ -404,6 +406,21 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
             keys = null;
     }
 
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (operation() == TRANSFORM) {
+            if (entryProcessorsBytes == null)
+                entryProcessorsBytes = marshallCollection(entryProcessors, marsh);
+
+            if (!F.isEmpty(invokeArgs) && invokeArgsBytes == null)
+                invokeArgsBytes = Arrays.asList(marshallInvokeArguments(invokeArgs, marsh));
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+
+    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

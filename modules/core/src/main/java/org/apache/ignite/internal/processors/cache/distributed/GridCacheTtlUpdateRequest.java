@@ -156,14 +156,14 @@ public class GridCacheTtlUpdateRequest extends GridCacheIdMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
+    @Override public void prepareDeployment(GridCacheSharedContext ctx) throws IgniteCheckedException {
+        super.prepareDeployment(ctx);
 
         GridCacheContext cctx = ctx.cacheContext(cacheId);
 
-        prepareCacheObjects(keys, cctx);
+        prepareCacheObjectsDeployment(keys, cctx);
 
-        prepareCacheObjects(nearKeys, cctx);
+        prepareCacheObjectsDeployment(nearKeys, cctx);
     }
 
     /** {@inheritDoc} */

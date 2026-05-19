@@ -161,10 +161,10 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
+    @Override public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        super.prepareDeployment(ctx);
 
-        prepareCacheObjects(vals, ctx.cacheContext(cacheId));
+        prepareCacheObjectsDeployment(vals, ctx.cacheContext(cacheId));
     }
 
     /** {@inheritDoc} */

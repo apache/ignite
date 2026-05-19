@@ -58,8 +58,8 @@ public class AtomicApplicationAttributesAwareRequest extends GridCacheIdMessage 
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        payload.prepareMarshal(ctx);
+    @Override public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        payload.prepareDeployment(ctx);
     }
 
     /** {@inheritDoc} */

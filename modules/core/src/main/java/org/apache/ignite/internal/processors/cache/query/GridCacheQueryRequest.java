@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -29,7 +30,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -45,7 +45,7 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
 /**
  * Query request.
  */
-public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCacheDeployable {
+public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCacheDeployable, MarshallableMessage {
     /** */
     private static final int FLAG_DATA_PAGE_SCAN_DFLT = 0b00;
 
@@ -407,46 +407,36 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
+    @Override public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        super.prepareDeployment(ctx);
 
         GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
         if (keyValFilter != null && keyValFilterBytes == null) {
             if (addDepInfo)
-                prepareObject(keyValFilter, cctx);
-
-            keyValFilterBytes = CU.marshal(cctx, keyValFilter);
+                prepareObjectDeployment(keyValFilter, cctx);
         }
 
         if (rdc != null && rdcBytes == null) {
             if (addDepInfo)
-                prepareObject(rdc, cctx);
-
-            rdcBytes = CU.marshal(cctx, rdc);
+                prepareObjectDeployment(rdc, cctx);
         }
 
         if (trans != null && transBytes == null) {
             if (addDepInfo)
-                prepareObject(trans, cctx);
-
-            transBytes = CU.marshal(cctx, trans);
+                prepareObjectDeployment(trans, cctx);
         }
 
         if (!F.isEmpty(args) && argsBytes == null) {
             if (addDepInfo) {
                 for (Object arg : args)
-                    prepareObject(arg, cctx);
+                    prepareObjectDeployment(arg, cctx);
             }
-
-            argsBytes = CU.marshal(cctx, args);
         }
 
         if (idxQryDesc != null && idxQryDescBytes == null) {
             if (addDepInfo)
-                prepareObject(idxQryDesc, cctx);
-
-            idxQryDescBytes = CU.marshal(cctx, idxQryDesc);
+                prepareObjectDeployment(idxQryDesc, cctx);
         }
     }
 
@@ -654,6 +644,28 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         return part;
     }
 
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (keyValFilter != null && keyValFilterBytes == null)
+            keyValFilterBytes = U.marshal(marsh, keyValFilter);
+
+        if (rdc != null && rdcBytes == null)
+            rdcBytes = U.marshal(marsh, rdc);
+
+        if (trans != null && transBytes == null)
+            transBytes = U.marshal(marsh, trans);
+
+        if (!F.isEmpty(args) && argsBytes == null)
+            argsBytes = U.marshal(marsh, args);
+
+        if (idxQryDesc != null && idxQryDescBytes == null)
+            idxQryDescBytes = U.marshal(marsh, idxQryDesc);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+
+    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

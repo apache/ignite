@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -39,12 +40,13 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * DHT prepare request.
  */
-public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
+public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest implements MarshallableMessage {
     /** Max order. */
     @Order(0)
     UUID nearNodeId;
@@ -320,24 +322,20 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
      *
      * @param ctx
      */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
+    @Override public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        super.prepareDeployment(ctx);
 
         if (owned != null && ownedKeys == null) {
-            ownedKeys = owned.keySet();
-
-            ownedVals = owned.values();
-
-            for (IgniteTxKey key: ownedKeys) {
+            for (IgniteTxKey key: owned.keySet()) {
                 GridCacheContext<?, ?> cctx = ctx.cacheContext(key.cacheId());
 
                 if (addDepInfo)
-                    prepareObject(key, cctx);
+                    prepareObjectDeployment(key, cctx);
             }
         }
 
         if (nearWrites != null)
-            prepareTx(nearWrites, ctx);
+            prepareTxDeployment(nearWrites, ctx);
     }
 
     /** {@inheritDoc} */
@@ -389,7 +387,20 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (owned != null && ownedKeys == null) {
+            ownedKeys = owned.keySet();
 
+            ownedVals = owned.values();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+
+    }
+    
     /** {@inheritDoc} */
     @Override public int partition() {
         return U.safeAbs(version().hashCode());

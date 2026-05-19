@@ -119,14 +119,14 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
+    @Override public void prepareDeployment(GridCacheSharedContext ctx) throws IgniteCheckedException {
+        super.prepareDeployment(ctx);
 
         GridCacheContext cctx = ctx.cacheContext(cacheId);
 
         // Can be null if client near cache was removed, in this case assume do not need prepareMarshal.
         if (cctx != null)
-            prepareCacheObjects(nearEvicted, cctx);
+            prepareCacheObjectsDeployment(nearEvicted, cctx);
     }
 
     /** {@inheritDoc} */

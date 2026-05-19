@@ -563,7 +563,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
         }
 
         /** {@inheritDoc} */
-        @Override public void prepare(GridDeploymentInfo depInfo) {
+        @Override public void prepareDeployment(GridDeploymentInfo depInfo) {
             assert evt instanceof CacheEvent;
 
             this.depInfo = depInfo;

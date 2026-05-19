@@ -82,8 +82,8 @@ public class IncrementalSnapshotAwareMessage extends GridCacheMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
-        payload.prepareMarshal(ctx);
+    @Override public void prepareDeployment(GridCacheSharedContext ctx) throws IgniteCheckedException {
+        payload.prepareDeployment(ctx);
     }
 
     /** {@inheritDoc} */
