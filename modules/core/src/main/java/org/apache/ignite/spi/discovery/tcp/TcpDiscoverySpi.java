@@ -73,7 +73,6 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
@@ -1764,11 +1763,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         assert sock != null;
         assert msg != null;
-
-        MessageSerializer ser = messageFactory().serializer(msg.directType());
-
-        if (ser != null)
-            ser.prepareMarshal(msg, ((IgniteEx)ignite()).context().cache().context(), null);
 
         try (SocketTimeoutObject ignored = startTimer(sock, timeout)) {
             ses.writeMessage(msg);

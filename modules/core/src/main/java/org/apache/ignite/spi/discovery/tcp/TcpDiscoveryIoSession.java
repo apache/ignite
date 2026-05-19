@@ -32,6 +32,7 @@ import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.communication.UnknownMessageException;
@@ -238,8 +239,11 @@ public class TcpDiscoveryIoSession {
      * @param out Output stream to write serialized message.
      * @throws IOException If serialization fails.
      */
-    void serializeMessage(Message m, OutputStream out) throws IOException {
+    void serializeMessage(Message m, OutputStream out) throws IOException, IgniteCheckedException {
         MessageSerializer msgSer = spi.messageFactory().serializer(m.directType());
+
+        if (msgSer != null)
+            msgSer.prepareMarshal(m, ((IgniteEx)spi.ignite()).context().cache().context(), null);
 
         msgWriter.reset();
         msgWriter.setBuffer(msgBuf);
