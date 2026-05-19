@@ -29,38 +29,28 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
  */
 public class CalciteMessageFactory extends AbstractMarshallableMessageFactoryProvider {
     /** */
-    private static CalciteMessageFactory INSTANCE;
-
-    /** */
     public static final short MIN_MESSAGE_TYPE = 300;
 
     /** */
-    private short msgType = MIN_MESSAGE_TYPE;
+    public static final short MAX_MESSAGE_TYPE = 311;
 
     /** {@inheritDoc} */
     @Override public void registerAll(MessageFactory factory) {
-        assert INSTANCE == null : "Calcite message factory is already initialized.";
-
-        register(factory, QueryStartRequest.class, msgType++, schemaAwareMarsh, resolvedClsLdr);
-        register(factory, QueryStartResponse.class, msgType++, dfltMarsh, dftlClsLdr);
-        register(factory, CalciteErrorMessage.class, msgType++, dfltMarsh, resolvedClsLdr);
-        register(factory, QueryBatchMessage.class, msgType++, dfltMarsh, dftlClsLdr);
-        register(factory, QueryBatchAcknowledgeMessage.class, msgType++, dfltMarsh, dftlClsLdr);
-        register(factory, QueryInboxCloseMessage.class, msgType++, dfltMarsh, dftlClsLdr);
-        register(factory, QueryCloseMessage.class, msgType++, dfltMarsh, dftlClsLdr);
-        register(factory, GenericValueMessage.class, msgType++, schemaAwareMarsh, resolvedClsLdr);
-        register(factory, FragmentMapping.class, msgType++, dfltMarsh, dftlClsLdr);
-        register(factory, ColocationGroup.class, msgType++, dfltMarsh, dftlClsLdr);
-        register(factory, FragmentDescription.class, msgType++, dfltMarsh, dftlClsLdr);
-        register(factory, QueryTxEntry.class, msgType++, dfltMarsh, dftlClsLdr);
-
-        INSTANCE = this;
+        register(factory, QueryStartRequest.class, (short)300, schemaAwareMarsh, resolvedClsLdr);
+        register(factory, QueryStartResponse.class, (short)301, dfltMarsh, dftlClsLdr);
+        register(factory, CalciteErrorMessage.class, (short)302, dfltMarsh, resolvedClsLdr);
+        register(factory, QueryBatchMessage.class, (short)303, dfltMarsh, dftlClsLdr);
+        register(factory, QueryBatchAcknowledgeMessage.class, (short)304, dfltMarsh, dftlClsLdr);
+        register(factory, QueryInboxCloseMessage.class, (short)305, dfltMarsh, dftlClsLdr);
+        register(factory, QueryCloseMessage.class, (short)306, dfltMarsh, dftlClsLdr);
+        register(factory, GenericValueMessage.class, (short)307, schemaAwareMarsh, resolvedClsLdr);
+        register(factory, FragmentMapping.class, (short)308, dfltMarsh, dftlClsLdr);
+        register(factory, ColocationGroup.class, (short)309, dfltMarsh, dftlClsLdr);
+        register(factory, FragmentDescription.class, (short)310, dfltMarsh, dftlClsLdr);
+        register(factory, QueryTxEntry.class, (short)311, dfltMarsh, dftlClsLdr);
     }
 
-    /** */
     public static boolean isCalciteMessage(Message msg) {
-        assert INSTANCE != null : "Calcite message factory is not initialized yet.";
-
-        return msg.directType() >= MIN_MESSAGE_TYPE && msg.directType() < INSTANCE.msgType;
+        return msg.directType() >= MIN_MESSAGE_TYPE && msg.directType() <= MAX_MESSAGE_TYPE;
     }
 }
