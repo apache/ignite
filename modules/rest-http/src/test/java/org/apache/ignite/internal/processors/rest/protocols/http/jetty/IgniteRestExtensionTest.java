@@ -63,6 +63,7 @@ public class IgniteRestExtensionTest extends GridCommonAbstractTest {
 
     /** */
     public static class TestRestExtension1 implements IgniteRestExtension {
+        /** */
         @IgniteInstanceResource
         private Ignite ignite;
 
