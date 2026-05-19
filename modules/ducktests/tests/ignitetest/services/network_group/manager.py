@@ -12,6 +12,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import re
+import socket
+import struct
 import sys
 from typing import Dict, List
 
@@ -22,7 +25,9 @@ from ignitetest.services.network_group.tc_rule_args import TcRuleArgs
 
 
 class NetworkGroupManager:
-    def __init__(self, network_group_store: NetworkGroupStore, network_group_registry: Dict[str, List[Service]]):
+    def __init__(self, logger, network_group_store: NetworkGroupStore, network_group_registry: Dict[str, List[Service]]):
+        self.logger = logger
+
         self.network_group_store = network_group_store
         self.network_group_registry = network_group_registry
         self.interface = "eth0"
@@ -30,14 +35,14 @@ class NetworkGroupManager:
     def __enter__(self):
         self.deploy()
 
-        self._log_network()
+        self._log_network("ON_DEPLOY")
 
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.destroy()
 
-        self._log_network()
+        self._log_network("ON_EXIT")
 
     def deploy(self):
         """
@@ -95,16 +100,78 @@ class NetworkGroupManager:
                 for node in svc.nodes:
                     node.account.ssh(clear_cmd)
 
-    def _log_network(self):
-        print("___ Network State ___")
+    def _log_network(self, log_tag: str):
+        """
+        Logs a concise, structured overview of the active traffic control
+        queuing disciplines (qdiscs) and routing filters across all cluster nodes.
+        """
+        self.logger.debug(f"Network State Overview: [START][{log_tag}]")
+
         for group, services in self.network_group_registry.items():
             for svc in services:
                 for node in svc.nodes:
-                    cmd = f"sudo tc qdisc show dev {self.interface}"
-                    output = (
-                        node.account.ssh_output(cmd, allow_fail=False, combine_stderr=False)
-                        .decode(sys.getdefaultencoding())
-                        .splitlines()
-                    )
-                    print(f"{svc.who_am_i(node)}: {output}")
-        print("___ ___")
+                    qdisc_output = self._exec_tc_show_command(node, "qdisc")
+                    filter_output = self._exec_tc_show_command(node, "filter")
+
+                    dst_ips = self._parse_filter_destinations(filter_output)
+                    constraints = self._parse_qdisc_constraints(qdisc_output)
+
+                    targets_str = f" -> to [{', '.join(dst_ips)}]" if dst_ips and constraints != "noqueue" else ""
+                    node_ip = socket.gethostbyname(node.account.externally_routable_ip)
+
+                    self.logger.debug(f"[{group:<4}] {svc.who_am_i(node):<45}[{node_ip}] : {constraints}{targets_str}")
+
+        self.logger.debug(f"Network State Overview: [END][{log_tag}]")
+
+    def _exec_tc_show_command(self, node, sub_system: str) -> List[str]:
+        """
+        Executes a 'tc show' shell query command on a remote node over SSH
+        and decodes the terminal response cleanly into strings.
+        """
+        cmd = f"sudo tc {sub_system} show dev {self.interface}"
+        raw_bytes = node.account.ssh_output(cmd, allow_fail=False)
+
+        return raw_bytes.decode(sys.getdefaultencoding()).splitlines()
+
+    @staticmethod
+    def _parse_filter_destinations(filter_lines: List[str]) -> List[str]:
+        """
+        Parses raw 'tc filter' output lines to extract destination IPs.
+        Converts the internal u32 hexadecimal match filters back to human-readable strings.
+        """
+        dst_ips = []
+
+        for line in filter_lines:
+            match = re.search(r"match\s+([0-9a-fA-F]{8})/ffffffff\s+at\s+16", line)
+            if match:
+                hex_ip = match.group(1)
+                try:
+                    ip_bytes = struct.pack("!I", int(hex_ip, 16))
+                    readable_ip = socket.inet_ntoa(ip_bytes)
+                    dst_ips.append(readable_ip)
+                except (ValueError, struct.error, OSError):
+                    continue
+
+        return dst_ips
+
+    @staticmethod
+    def _parse_qdisc_constraints(qdisc_lines: List[str]) -> str:
+        """
+        Parses raw 'tc qdisc' output lines to identify active traffic impairments.
+        Extracts active netem delay and loss parameters, ignoring verbose system handles.
+        """
+        for line in qdisc_lines:
+            if "qdisc netem" in line:
+                delay_match = re.search(r"delay\s+(\d+\w+)", line)
+                loss_match = re.search(r"loss\s+(\d+%)", line)
+
+                params = []
+                if delay_match:
+                    params.append(f"delay: {delay_match.group(1)}")
+                if loss_match:
+                    params.append(f"loss: {loss_match.group(1)}")
+
+                if params:
+                    return f"netem({', '.join(params)})"
+
+        return "noqueue"

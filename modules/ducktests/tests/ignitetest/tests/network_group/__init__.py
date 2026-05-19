@@ -50,7 +50,7 @@ class NetworkGroupAbstractTest(IgniteTest, ABC):
         grp_registry = self._configure_network_group_registry(**kwargs)
 
         try:
-            with NetworkGroupManager(grp_store, grp_registry):
+            with NetworkGroupManager(self.logger, grp_store, grp_registry):
                 self.logger.debug("Network configuration complete. Starting test logic ...")
 
                 self._run(**kwargs)
