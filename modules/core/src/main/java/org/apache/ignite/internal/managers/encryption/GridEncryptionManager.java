@@ -431,9 +431,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 "Cache group key change is in progress! Node join is rejected.");
         }
 
-        NodeEncryptionKeys nodeEncKeys = (NodeEncryptionKeys)discoData.joiningNodeData();
+        NodeEncryptionKeys nodeEncKeys = discoData.joiningNodeData();
 
-        if (!discoData.hasJoiningNodeData() || nodeEncKeys == null) {
+        if (nodeEncKeys == null) {
             return new IgniteNodeValidationResult(ctx.localNodeId(),
                 "Joining node doesn't have encryption data [node=" + node.id() + "]",
                 "Joining node doesn't have encryption data.");
@@ -522,7 +522,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
     /** {@inheritDoc} */
     @Override public void onJoiningNodeDataReceived(JoiningNodeDiscoveryData data) {
-        NodeEncryptionKeys nodeEncryptionKeys = (NodeEncryptionKeys)data.joiningNodeData();
+        NodeEncryptionKeys nodeEncryptionKeys = data.joiningNodeData();
 
         if (nodeEncryptionKeys == null || nodeEncryptionKeys.newKeys == null || ctx.clientNode())
             return;
@@ -1746,45 +1746,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
             return U.fromBytes(serKeyName);
         });
-    }
-
-    /** */
-    protected static class NodeEncryptionKeys implements Serializable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        NodeEncryptionKeys(
-            HashMap<Integer, List<GroupKeyEncrypted>> knownKeysWithIds,
-            Map<Integer, byte[]> newKeys,
-            byte[] masterKeyDigest
-        ) {
-            this.newKeys = newKeys;
-            this.masterKeyDigest = masterKeyDigest;
-
-            if (F.isEmpty(knownKeysWithIds))
-                return;
-
-            // To be able to join the old cluster.
-            knownKeys = U.newHashMap(knownKeysWithIds.size());
-
-            for (Map.Entry<Integer, List<GroupKeyEncrypted>> entry : knownKeysWithIds.entrySet())
-                knownKeys.put(entry.getKey(), entry.getValue().get(0).key());
-
-            this.knownKeysWithIds = knownKeysWithIds;
-        }
-
-        /** Known i.e. stored in {@code ReadWriteMetastorage} keys from node (in compatible format). */
-        Map<Integer, byte[]> knownKeys;
-
-        /**  New keys i.e. keys for a local statically configured caches. */
-        Map<Integer, byte[]> newKeys;
-
-        /** Master key digest. */
-        byte[] masterKeyDigest;
-
-        /** Known i.e. stored in {@code ReadWriteMetastorage} keys from node. */
-        Map<Integer, List<GroupKeyEncrypted>> knownKeysWithIds;
     }
 
     /** */
