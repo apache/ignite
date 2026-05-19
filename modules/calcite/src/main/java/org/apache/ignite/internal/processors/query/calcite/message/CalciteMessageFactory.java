@@ -50,6 +50,7 @@ public class CalciteMessageFactory extends AbstractMarshallableMessageFactoryPro
         register(factory, QueryTxEntry.class, (short)311, dfltMarsh, dftlClsLdr);
     }
 
+    /** */
     public static boolean isCalciteMessage(Message msg) {
         return msg.directType() >= MIN_MESSAGE_TYPE && msg.directType() <= MAX_MESSAGE_TYPE;
     }
