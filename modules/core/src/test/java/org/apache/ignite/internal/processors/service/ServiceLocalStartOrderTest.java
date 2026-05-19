@@ -27,6 +27,8 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+
 /** */
 public class ServiceLocalStartOrderTest extends GridCommonAbstractTest {
     /** */
@@ -57,9 +59,13 @@ public class ServiceLocalStartOrderTest extends GridCommonAbstractTest {
     public void testStaticConfigDeployment() throws Exception {
         staticConfig = true;
 
-        startGrids(gridCnt);
+        try {
+            startGrids(gridCnt);
 
-        check();
+            check();
+        } finally {
+            staticConfig = false;
+        }
     }
 
     /** */
@@ -79,17 +85,22 @@ public class ServiceLocalStartOrderTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void doTest(IgniteEx deployFrom) {
+    private void doTest(IgniteEx deployFrom) throws Exception {
         deployFrom.services().deployAll(Arrays.asList(serviceConfigs()));
 
         check();
     }
 
     /** */
-    private void check() {
+    private void check() throws Exception {
         for (int i = 0; i < 5; i++) {
-            for (int node = 0; node < gridCnt; node++)
-                assertNotNull(grid(node).services().service(name(i)));
+            for (int node = 0; node < gridCnt; node++) {
+                IgniteEx ign = grid(node);
+
+                String srvcName = name(i);
+
+                assertTrue(waitForCondition(() -> ign.services().service(srvcName) != null, 10_000));
+            }
         }
     }
 
@@ -129,10 +140,14 @@ public class ServiceLocalStartOrderTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void init() throws Exception {
             for (int i = order - 1; i >= 0; i--) {
-                OrderedService srvs = ignite.services().service(name(i));
+                OrderedService srvc = ignite.services().service(name(i));
 
-                assertNotNull("Must be deployed previously: " + i, srvs);
-                assertTrue(srvs.started());
+                if (srvc == null) {
+                    Thread.dumpStack();
+                }
+
+                assertNotNull("Must be deployed previously: " + i, srvc);
+                assertTrue(srvc.started());
             }
 
             started = true;
