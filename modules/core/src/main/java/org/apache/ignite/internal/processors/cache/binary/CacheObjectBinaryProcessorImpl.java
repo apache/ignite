@@ -1394,7 +1394,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         if ((res = validateBinaryConfiguration(rmtNode)) != null)
             return res;
 
-        return validateBinaryMetadata(rmtNode.id(), (Map<Integer, BinaryMetadataVersionInfo>)discoData.joiningNodeData());
+        return validateBinaryMetadata(rmtNode.id(), discoData.joiningNodeData());
     }
 
     /** */
@@ -1418,11 +1418,11 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** */
-    private IgniteNodeValidationResult validateBinaryMetadata(UUID rmtNodeId, Map<Integer, BinaryMetadataVersionInfo> newNodeMeta) {
+    private IgniteNodeValidationResult validateBinaryMetadata(UUID rmtNodeId, BinaryMetadataVersionsData newNodeMeta) {
         if (newNodeMeta == null)
             return null;
 
-        for (Map.Entry<Integer, BinaryMetadataVersionInfo> metaEntry : newNodeMeta.entrySet()) {
+        for (Map.Entry<Integer, BinaryMetadataVersionInfo> metaEntry : newNodeMeta.data.entrySet()) {
             if (!metadataLocCache.containsKey(metaEntry.getKey()))
                 continue;
 
@@ -1470,24 +1470,19 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
-        Map<Integer, BinaryMetadataVersionInfo> res = U.newHashMap(metadataLocCache.size());
-
-        for (Map.Entry<Integer, BinaryMetadataVersionInfo> e : metadataLocCache.entrySet())
-            res.put(e.getKey(), e.getValue());
-
-        dataBag.addJoiningNodeData(BINARY_PROC.ordinal(), (Serializable)res);
+        dataBag.addJoiningNodeData(BINARY_PROC.ordinal(), new BinaryMetadataVersionsData(metadataLocCache));
     }
 
     /** {@inheritDoc} */
     @Override public void onJoiningNodeDataReceived(DiscoveryDataBag.JoiningNodeDiscoveryData data) {
-        Map<Integer, BinaryMetadataVersionInfo> newNodeMeta = (Map<Integer, BinaryMetadataVersionInfo>)data.joiningNodeData();
+        BinaryMetadataVersionsData newNodeMeta = data.joiningNodeData();
 
         if (newNodeMeta == null)
             return;
 
         UUID joiningNode = data.joiningNodeId();
 
-        for (Map.Entry<Integer, BinaryMetadataVersionInfo> metaEntry : newNodeMeta.entrySet()) {
+        for (Map.Entry<Integer, BinaryMetadataVersionInfo> metaEntry : newNodeMeta.data.entrySet()) {
             if (metadataLocCache.containsKey(metaEntry.getKey())) {
                 BinaryMetadataVersionInfo locMetaVerInfo = metadataLocCache.get(metaEntry.getKey());
 

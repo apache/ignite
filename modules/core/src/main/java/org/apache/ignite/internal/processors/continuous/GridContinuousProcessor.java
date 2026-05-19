@@ -521,8 +521,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         if (immutableDiscoCustomMsg) {
             if (data.hasJoiningNodeData()) {
-                ContinuousRoutinesJoiningNodeDiscoveryData nodeData = (ContinuousRoutinesJoiningNodeDiscoveryData)
-                    data.joiningNodeData();
+                ContinuousRoutinesJoiningNodeDiscoveryData nodeData = data.joiningNodeData();
 
                 for (ContinuousRoutineInfo routineInfo : nodeData.startedRoutines) {
                     routinesInfo.addRoutineInfo(routineInfo);
@@ -533,7 +532,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         }
         else {
             if (data.hasJoiningNodeData())
-                onDiscoveryDataReceivedMutable((DiscoveryData)data.joiningNodeData());
+                onDiscoveryDataReceivedMutable(data.joiningNodeData());
         }
     }
 
