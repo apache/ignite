@@ -445,7 +445,7 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * not present in the list of failed services are successfully deployed by the moment of the exception being thrown.
      * Note that if exception is thrown, then partial deployment may have occurred.
      * Note, start order guarantees not provided, by default.
-     * Node local start order can be forced. with the {@link ServiceConfiguration#setLocalStartOrder(int)}.
+     * Node local start order can be forced with the {@link ServiceConfiguration#setLocalStartOrder(int)}.
      *
      * @param cfgs {@link Collection} of service configurations to be deployed.
      * @throws ServiceDeploymentException If failed to deploy services.
@@ -467,7 +467,7 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * services, are successfully deployed by the moment of the exception being thrown. Note that if exception is
      * thrown, then partial deployment may have occurred.
      * Note, start order guarantees not provided, by default.
-     * Node local start order can be forced. with the {@link ServiceConfiguration#setLocalStartOrder(int)}.
+     * Node local start order can be forced with the {@link ServiceConfiguration#setLocalStartOrder(int)}.
      *
      * @param cfgs {@link Collection} of service configurations to be deployed.
      * @return a Future representing pending completion of the operation.
