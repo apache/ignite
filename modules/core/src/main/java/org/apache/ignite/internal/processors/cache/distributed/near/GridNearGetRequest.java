@@ -18,24 +18,18 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionable;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -71,38 +65,39 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
 
     /** */
     @GridToStringInclude
-    private LinkedHashMap<KeyCacheObject, Boolean> keyMap;
-
-    /** */
     @Order(3)
-    List<KeyCacheObject> keys;
+    LinkedHashMap<KeyCacheObject, Boolean> keyMap;
 
     /** */
     @Order(4)
-    List<Boolean> readersFlags;
+    List<KeyCacheObject> keys;
 
     /** */
     @Order(5)
+    List<Boolean> readersFlags;
+
+    /** */
+    @Order(6)
     byte flags;
 
     /** Topology version. */
-    @Order(6)
+    @Order(7)
     AffinityTopologyVersion topVer;
 
     /** Task name hash. */
-    @Order(7)
+    @Order(8)
     int taskNameHash;
 
     /** TTL for read operation. */
-    @Order(8)
+    @Order(9)
     long createTtl;
 
     /** TTL for read operation. */
-    @Order(9)
+    @Order(10)
     long accessTtl;
 
     /** Transaction label. */
-    @Order(10)
+    @Order(11)
     @Nullable String txLbl;
 
     /**
@@ -278,50 +273,6 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
      */
     @Nullable public String txLabel() {
         return txLbl;
-    }
-
-    /**
-     * @param ctx Cache context.
-     * @throws IgniteCheckedException If failed.
-     */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        assert ctx != null;
-        assert !F.isEmpty(keys);
-        assert readersFlags == null || keys.size() == readersFlags.size();
-
-        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
-
-        prepareMarshalCacheObjects(keys, cctx);
-    }
-
-    /**
-     * @param ctx Context.
-     * @param ldr Loader.
-     * @throws IgniteCheckedException If failed.
-     */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
-
-        finishUnmarshalCacheObjects(keys, cctx, ldr);
-
-        assert !F.isEmpty(keys);
-        assert readersFlags == null || keys.size() == readersFlags.size();
-
-        if (keyMap == null) {
-            keyMap = U.newLinkedHashMap(keys.size());
-
-            Iterator<KeyCacheObject> keysIt = keys.iterator();
-
-            for (int i = 0; i < keys.size(); i++) {
-                Boolean addRdr = readersFlags != null ? readersFlags.get(i) : Boolean.FALSE;
-
-                keyMap.put(keysIt.next(), addRdr);
-            }
-        }
     }
 
     /** {@inheritDoc} */
