@@ -60,11 +60,14 @@ public class DiscoveryDataBag {
         /** @return ID fo the joining node. */
         UUID joiningNodeId();
 
-        /** @return Common for all cluster nodes discovery data that is sent to the joining node. */
+        /**
+         * @param <T> Data type.
+         * @return Common for all cluster nodes discovery data that is sent to the joining node.
+         */
         <T> T commonData();
 
         /**
-         * @param <T> Type of data.
+         * @param <T> Data type.
          * @return Discovery data that is mapped to the particular cluster node and sent to the joining node.
          */
         <T> Map<UUID, T> nodeSpecificData();

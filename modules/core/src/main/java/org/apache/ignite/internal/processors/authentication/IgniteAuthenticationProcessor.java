@@ -77,7 +77,6 @@ import org.apache.ignite.plugin.security.SecuritySubject;
 import org.apache.ignite.plugin.security.SecuritySubjectType;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
-import org.apache.ignite.spi.discovery.ObjectData;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.Nullable;
 
@@ -409,7 +408,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                 if (log.isDebugEnabled())
                     log.debug("Collected initial users data: " + d);
 
-                dataBag.addGridCommonData(AUTH_PROC.ordinal(), new ObjectData(d));
+                dataBag.addGridCommonData(AUTH_PROC.ordinal(), d);
             }
         }
     }
@@ -431,7 +430,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
-        initUsrs = ObjectData.unwrap(data.commonData());
+        initUsrs = data.commonData();
     }
 
     /** {@inheritDoc} */

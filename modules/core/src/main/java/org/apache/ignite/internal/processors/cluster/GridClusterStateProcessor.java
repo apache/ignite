@@ -941,7 +941,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         if (!joiningNodeData.hasJoiningNodeData() || compatibilityMode) {
             //compatibility mode: old nodes don't send any data on join, so coordinator of new version
             //doesn't send BaselineTopology history, only its current globalState
-            dataBag.addGridCommonData(STATE_PROC.ordinal(), new ObjectData(globalState));
+            dataBag.addGridCommonData(STATE_PROC.ordinal(), globalState);
 
             return;
         }
@@ -960,12 +960,12 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 historyToSend = bltHist;
         }
 
-        dataBag.addGridCommonData(STATE_PROC.ordinal(), new ObjectData(new BaselineStateAndHistoryData(globalState, historyToSend)));
+        dataBag.addGridCommonData(STATE_PROC.ordinal(), new BaselineStateAndHistoryData(globalState, historyToSend));
     }
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
-        Serializable commonData = ObjectData.unwrap(data.commonData());
+        Serializable commonData = data.commonData();
 
         if (commonData instanceof DiscoveryDataClusterState) {
             if (globalState != null && globalState.baselineTopology() != null)

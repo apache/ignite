@@ -1411,7 +1411,7 @@ public class ClusterCachesInfo {
      */
     public void collectGridNodeData(DiscoveryDataBag dataBag, CacheConfigurationSplitter splitter) {
         if (!dataBag.commonDataCollectedFor(CACHE_PROC.ordinal()))
-            dataBag.addGridCommonData(CACHE_PROC.ordinal(), new ObjectData(collectCommonDiscoveryData(splitter)));
+            dataBag.addGridCommonData(CACHE_PROC.ordinal(), collectCommonDiscoveryData(splitter));
     }
 
     /**
@@ -1504,7 +1504,7 @@ public class ClusterCachesInfo {
         if (data.commonData() == null)
             return;
 
-        CacheNodeCommonDiscoveryData cachesData = ObjectData.unwrap(data.commonData());
+        CacheNodeCommonDiscoveryData cachesData = data.commonData();
 
         assert joinDiscoData != null || disconnectedState();
         assert cachesData instanceof CacheNodeCommonDiscoveryData : data;

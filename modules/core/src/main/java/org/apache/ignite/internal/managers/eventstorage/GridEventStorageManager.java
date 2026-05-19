@@ -67,7 +67,6 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
-import org.apache.ignite.spi.discovery.ObjectData;
 import org.apache.ignite.spi.eventstorage.EventStorageSpi;
 import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
@@ -1180,7 +1179,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         if (ctx.clientNode())
             return;
 
-        GridIntList clusterData = new GridIntList(ObjectData.unwrap(data.commonData()));
+        GridIntList clusterData = new GridIntList(data.commonData());
         GridIntList nodeData = new GridIntList(enabledEvents());
 
         GridIntList toEnable = new GridIntList(clusterData.size());
@@ -1210,7 +1209,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
 
         int[] clusterData = enabledEvents();
 
-        dataBag.addGridCommonData(EVENT_MGR.ordinal(), new ObjectData(clusterData));
+        dataBag.addGridCommonData(EVENT_MGR.ordinal(), clusterData);
     }
 
     /**
