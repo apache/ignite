@@ -12,73 +12,38 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import sys
 from typing import Dict, List
 
 from ducktape.services.service import Service
-from enoslib import NetemHTB, Host
 
 from ignitetest.services.network_group.configuration import NetworkGroupStore
+from ignitetest.services.network_group.tc_rule_args import TcRuleArgs
 
 
 class NetworkGroupManager:
     def __init__(self, network_group_store: NetworkGroupStore, network_group_registry: Dict[str, List[Service]]):
         self.network_group_store = network_group_store
         self.network_group_registry = network_group_registry
-        self.netem = NetemHTB()
-
-    def _build_roles(self) -> Dict[str, List[Host]]:
-        """Converts IgniteAwareService into EnOSlib Host objects."""
-        roles = {}
-
-        for group, services in self.network_group_registry.items():
-            roles[group] = []
-
-            for svc in services:
-                for node in svc.nodes:
-                    roles[group].append(self._to_enos_host(node))
-
-        return roles
-
-    @staticmethod
-    def _to_enos_host(node) -> Host:
-        """
-        Converts IgniteAwareService node into EnOSlib Host object.
-        """
-        cfg = node.account.ssh_config
-
-        enos_host = Host(
-            address=node.account.externally_routable_ip,
-            alias=cfg.host,
-            user=cfg.user,
-            port=cfg.port,
-            extra={
-                "ansible_ssh_pass": cfg.password,
-                "ansible_ssh_private_key_file": cfg.identityfile,
-                "ansible_ssh_common_args": "-o PasswordAuthentication=yes" if cfg.password else "",
-                "ansible_ssh_timeout": cfg.connecttimeout
-            }
-        )
-
-        return enos_host
+        self.interface = "eth0"
 
     def __enter__(self):
         self.deploy()
+
+        self._log_network()
+
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.destroy()
 
+        self._log_network()
+
     def deploy(self):
         """
-        Deploys network impairments across all registered services.
-
-        Raises:
-            Exception: If a configuration is missing for any source-to-destination network group,
-                preventing a complete network simulation.
+        Compiles routing maps and deploys cross-group network constraints.
         """
-        roles = self._build_roles()
-        all_groups = list(roles.keys())
+        all_groups = list(self.network_group_registry.keys())
 
         self.destroy()
 
@@ -87,25 +52,59 @@ class NetworkGroupManager:
                 if src_group == dst_group:
                     continue
 
-                cross_group_cfg = self.network_group_store.get_config(src_group, dst_group)
+                cfg = self.network_group_store.get_config(src_group, dst_group)
 
-                if cross_group_cfg:
-                    src_hosts = roles[src_group]
-                    dst_hosts = roles[dst_group]
+                if not cfg:
+                    raise Exception(f"Group configuration not found for {src_group}-{dst_group}.")
 
-                    self.netem.add_constraints(
-                        src=src_hosts,
-                        dest=dst_hosts,
-                        delay=cross_group_cfg.delay,
-                        loss=cross_group_cfg.loss,
-                        rate=cross_group_cfg.rate
-                    )
-                else:
-                    raise Exception(f"Group configuration not found for {src_group}-{dst_group}. "
-                                    f"Did you forget to add the configuration to NetworkGroupStore?")
+                dst_ips = [
+                    node.account.externally_routable_ip
+                    for svc in self.network_group_registry[dst_group]
+                    for node in svc.nodes
+                ]
 
-        self.netem.deploy()
+                for src_svc in self.network_group_registry[src_group]:
+                    for src_node in src_svc.nodes:
+                        for idx, dst_ip in enumerate(dst_ips):
+                            rule = TcRuleArgs(
+                                interface=self.interface,
+                                dst_host_or_ip=dst_ip,
+                                config=cfg
+                            )
+
+                            # The first tcset cmd should use --overwrite
+                            action = "--overwrite" if idx == 0 else "--add"
+
+                            cmd = rule.to_tcset_cmd(action=action)
+
+                            if cmd:
+                                src_node.account.ssh(cmd)
+                            else:
+                                raise ValueError(
+                                    f"No network constraints defined for traffic traveling from "
+                                    f"{src_svc.who_am_i(src_node)} to destination IP {dst_ip}. "
+                                    f"Ensure CrossNetworkGroupConfiguration is configured in the NetworkGroupStore."
+                                )
 
     def destroy(self):
-        """Restores network to original state."""
-        self.netem.destroy()
+        """Restores network interfaces back to their un-throttled state."""
+        clear_cmd = TcRuleArgs.to_tcdel_all_cmd(self.interface)
+
+        for services in self.network_group_registry.values():
+            for svc in services:
+                for node in svc.nodes:
+                    node.account.ssh(clear_cmd)
+
+    def _log_network(self):
+        print("___ Network State ___")
+        for group, services in self.network_group_registry.items():
+            for svc in services:
+                for node in svc.nodes:
+                    cmd = f"sudo tc qdisc show dev {self.interface}"
+                    output = (
+                        node.account.ssh_output(cmd, allow_fail=False, combine_stderr=False)
+                        .decode(sys.getdefaultencoding())
+                        .splitlines()
+                    )
+                    print(f"{svc.who_am_i(node)}: {output}")
+        print("___ ___")
