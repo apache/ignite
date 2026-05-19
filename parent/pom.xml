@@ -1006,6 +1006,7 @@
                         <version>${maven.compiler.plugin.version}</version>
                         <configuration>
                             <compilerArgs>
+                                <arg>-Xlint:-options</arg>
                                 <arg>--add-exports</arg>
                                 <arg>java.base/jdk.internal.misc=ALL-UNNAMED</arg>
                                 <arg>--add-exports</arg>
@@ -1039,38 +1040,56 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <argLine>
+                                -showversion
+                                -XX:+UseCompactObjectHeaders
+                                -Djdk.tracePinnedThreads=full
+                                -XX:+IgnoreUnrecognizedVMOptions
+                                --enable-native-access=ALL-UNNAMED
+                                --sun-misc-unsafe-memory-access=allow
+                                -XX:+UseStringDeduplication
+                                -Djava.lang.Integer.IntegerCache.high=9999
+                                -XX:+HeapDumpOnOutOfMemoryError
+                                -XX:+ExitOnOutOfMemoryError
+                                -XX:HeapDumpPath=/tmp/jcrash_%p_%t.hprof
+                                -XX:+UnlockDiagnosticVMOptions
+                                -XX:+UnlockExperimentalVMOptions
+                                -Dfile.encoding=UTF-8
+                                -Djava.net.preferIPv4Stack=true
+                                -Djava.util.zip.use.nio.for.zip.file.access=true
+                                -XX:+EnableDynamicAgentLoading
+                                -XX:+AlwaysActAsServerClassMachine
+                                --add-opens=java.desktop/java.awt.font=ALL-UNNAMED
+                                --add-opens=java.base/java.io=ALL-UNNAMED
+                                --add-opens=java.base/java.lang.invoke=ALL-UNNAMED
+                                --add-opens=java.base/java.lang.reflect=ALL-UNNAMED
+                                --add-opens=java.base/java.lang=ALL-UNNAMED
+                                --add-opens=java.base/java.math=ALL-UNNAMED
+                                --add-opens=java.base/java.net=ALL-UNNAMED
+                                --add-opens=java.base/java.nio=ALL-UNNAMED
+                                --add-opens=java.base/java.security=ALL-UNNAMED
+                                --add-opens=java.base/java.text=ALL-UNNAMED
+                                --add-opens=java.base/java.time=ALL-UNNAMED
+                                --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED
+                                --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED
+                                --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+                                --add-opens=java.base/java.util=ALL-UNNAMED
                                 --add-opens=java.base/jdk.internal.access=ALL-UNNAMED
                                 --add-opens=java.base/jdk.internal.loader=ALL-UNNAMED
                                 --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED
-                                --add-opens=java.base/sun.net.util=ALL-UNNAMED
                                 --add-opens=java.base/sun.nio.ch=ALL-UNNAMED
                                 --add-opens=java.base/sun.nio.fs=ALL-UNNAMED
+                                --add-opens=java.base/sun.net.util=ALL-UNNAMED
+                                --add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
                                 --add-opens=java.base/sun.util.calendar=ALL-UNNAMED
                                 --add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
-                                --add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
-                                --add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
-                                --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED
-                                --add-opens=java.base/java.io=ALL-UNNAMED
-                                --add-opens=java.base/java.nio=ALL-UNNAMED
-                                --add-opens=java.base/java.net=ALL-UNNAMED
-                                --add-opens=java.base/java.util=ALL-UNNAMED
-                                --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
-                                --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED
-                                --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED
-                                --add-opens=java.base/java.lang=ALL-UNNAMED
-                                --add-opens=java.base/java.lang.invoke=ALL-UNNAMED
-                                --add-opens=java.base/java.math=ALL-UNNAMED
-                                --add-opens=java.sql/java.sql=ALL-UNNAMED
-                                --add-opens=java.base/java.lang.reflect=ALL-UNNAMED
-                                --add-opens=java.base/java.time=ALL-UNNAMED
-                                --add-opens=java.base/java.text=ALL-UNNAMED
-                                --add-opens=java.base/java.security=ALL-UNNAMED
-                                --add-opens=java.logging/java.util.logging=ALL-UNNAMED
                                 --add-opens=java.management/sun.management=ALL-UNNAMED
-                                --add-opens java.desktop/java.awt.font=ALL-UNNAMED
+                                --add-opens=java.sql/java.sql=ALL-UNNAMED
                                 --add-opens=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED
                                 --add-opens=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED
                                 --add-opens=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED
+                                --add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
+                                --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED
+                                --add-opens=java.logging/java.util.logging=ALL-UNNAMED
                             </argLine>
                         </configuration>
                     </plugin>
