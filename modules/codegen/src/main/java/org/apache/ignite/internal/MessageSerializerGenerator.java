@@ -419,7 +419,7 @@ public class MessageSerializerGenerator {
 
                 code.add(indentedLine("}"));
 
-                if (!keyRes.isEmpty() || !valRes.isEmpty())
+                if (keyRes.isEmpty() && valRes.isEmpty())
                     return Collections.emptyList();
                 else
                     return code;
