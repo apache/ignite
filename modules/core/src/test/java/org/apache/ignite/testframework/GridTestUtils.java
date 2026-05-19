@@ -35,8 +35,11 @@ import java.lang.reflect.Modifier;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.net.ServerSocket;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
@@ -2657,5 +2660,30 @@ public final class GridTestUtils {
         catch (Exception e) {
             throw new RuntimeException("Unable to find serializer for message: " + msgCls, e);
         }
+    }
+
+    /**
+     * Calculates directory size, tolerating files that disappear during traversal.
+     *
+     * @param dir Directory.
+     * @return Size.
+     * @throws IOException If failed.
+     */
+    public static long sizeOfDirectory(File dir) throws IOException {
+        long[] size = {0L};
+
+        Files.walkFileTree(dir.toPath(), new SimpleFileVisitor<Path>() {
+            @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                size[0] += attrs.size();
+
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override public FileVisitResult visitFileFailed(Path file, IOException exc) {
+                return FileVisitResult.CONTINUE;
+            }
+        });
+
+        return size[0];
     }
 }
