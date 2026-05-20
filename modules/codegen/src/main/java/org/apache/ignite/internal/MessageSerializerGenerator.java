@@ -47,6 +47,7 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.type.TypeVariable;
 import javax.lang.model.util.Elements;
 import javax.tools.Diagnostic;
 import javax.tools.FileObject;
@@ -335,7 +336,7 @@ public class MessageSerializerGenerator {
                     return code;
             }
         }
-        else if (t.getKind() == TypeKind.DECLARED) {
+        else if (t.getKind() == TypeKind.DECLARED || t.getKind() == TypeKind.TYPEVAR) {
             if (isMessage(t)) {
                 List<String> code = new ArrayList<>();
 
@@ -384,11 +385,15 @@ public class MessageSerializerGenerator {
                 List<String> valRes = marshall(valType, el);
                 indent--;
 
-                if (!keyRes.isEmpty() && keyType.getKind() == TypeKind.DECLARED) {
-                    imports.add(((QualifiedNameable)((DeclaredType)keyType).asElement()).getQualifiedName().toString());
+                if (!keyRes.isEmpty() && (keyType.getKind() == TypeKind.DECLARED || keyType.getKind() == TypeKind.TYPEVAR)) {
+                    Element elem = keyType.getKind() == TypeKind.DECLARED ?
+                        ((DeclaredType)keyType).asElement() :
+                        ((DeclaredType)((TypeVariable)keyType).getUpperBound()).asElement();
+                    
+                    imports.add(((QualifiedNameable)(elem)).getQualifiedName().toString());
                     imports.add("java.util.Collection");
 
-                    String type = ((DeclaredType)keyType).asElement().getSimpleName().toString();
+                    String type = elem.getSimpleName().toString();
 
                     code.add(indentedLine("for (%s %s : ((Collection<? extends %s>)%s.keySet())) {", type, el, type, accessor));
 
@@ -401,11 +406,15 @@ public class MessageSerializerGenerator {
                     code.add(indentedLine("}"));
                 }
 
-                if (!valRes.isEmpty() && valType.getKind() == TypeKind.DECLARED) {
-                    imports.add(((QualifiedNameable)((DeclaredType)valType).asElement()).getQualifiedName().toString());
-                    imports.add("java.util.Collection");
+                if (!valRes.isEmpty() && (valType.getKind() == TypeKind.DECLARED || valType.getKind() == TypeKind.TYPEVAR)) {
+                    Element elem = valType.getKind() == TypeKind.DECLARED ?
+                        ((DeclaredType)valType).asElement() :
+                        ((DeclaredType)((TypeVariable)valType).getUpperBound()).asElement();
+                    
+                    imports.add(((QualifiedNameable)(elem)).getQualifiedName().toString());
+                    imports.add("java.util.Collection");                    
 
-                    String type = ((DeclaredType)valType).asElement().getSimpleName().toString();
+                    String type = elem.getSimpleName().toString();
 
                     code.add(indentedLine("for (%s %s : ((Collection<? extends %s>)%s.values())) {", type, el, type, accessor));
 
