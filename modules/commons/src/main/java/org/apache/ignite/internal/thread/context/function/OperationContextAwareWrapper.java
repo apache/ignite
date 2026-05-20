@@ -32,6 +32,8 @@ public class OperationContextAwareWrapper<T> implements IgniteInternalWrapper<T>
 
     /** */
     public OperationContextAwareWrapper(T delegate, OperationContextSnapshot snapshot) {
+        assert delegate != null;
+
         this.delegate = delegate;
         this.snapshot = snapshot;
     }

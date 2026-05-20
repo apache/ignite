@@ -37,6 +37,6 @@ public abstract class IgniteLinkedBlockingQueueProcessor<T> extends Asynchronous
 
     /** {@inheritDoc} */
     @Override protected OperationContextAwareWrapper<T> wrapQueueElement(T delegate, OperationContextSnapshot snapshot) {
-        return new OperationContextAwareWrapper<>(delegate, snapshot);
+        return delegate == null ? null : new OperationContextAwareWrapper<>(delegate, snapshot);
     }
 }

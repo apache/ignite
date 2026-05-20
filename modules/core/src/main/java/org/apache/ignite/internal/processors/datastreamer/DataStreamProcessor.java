@@ -105,7 +105,7 @@ public class DataStreamProcessor extends GridProcessorAdapter {
 
         busyLock.block();
 
-        U.interrupt(flusher.runner());
+        U.cancel(flusher);
         U.join(flusher, log);
 
         for (DataStreamerImpl<?, ?> ldr : ldrs) {

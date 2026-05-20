@@ -43,7 +43,7 @@ public abstract class IgniteDelayQueueProcessor<T extends Delayed>
 
     /** {@inheritDoc} */
     @Override protected QueueElementWrapper wrapQueueElement(T delegate, OperationContextSnapshot snapshot) {
-        return new QueueElementWrapper(delegate, snapshot);
+        return delegate == null ? null : new QueueElementWrapper(delegate, snapshot);
     }
 
     /** */
@@ -65,7 +65,15 @@ public abstract class IgniteDelayQueueProcessor<T extends Delayed>
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
-            return delegate.equals(IgniteInternalWrapper.unwrap(o));
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            IgniteDelayQueueProcessor<?>.QueueElementWrapper w = (IgniteDelayQueueProcessor<?>.QueueElementWrapper)o;
+
+            return delegate.equals(w.delegate);
         }
 
         /** {@inheritDoc} */

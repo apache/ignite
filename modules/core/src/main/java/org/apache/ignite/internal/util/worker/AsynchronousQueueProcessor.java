@@ -31,7 +31,6 @@ import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.IgniteInternalWrapper.unwrap;
 import static org.apache.ignite.thread.IgniteThread.GRP_IDX_UNASSIGNED;
 
 /**
@@ -101,12 +100,14 @@ public abstract class AsynchronousQueueProcessor<T, W extends OperationContextAw
 
     /** */
     public boolean addToQueue(@NotNull T t) {
-        return workerQueue.add(wrap(t));
+        assert !OperationContextAwareWrapper.class.isAssignableFrom(t.getClass());
+
+        return workerQueue.add(wrapQueueElement(t, OperationContext.createSnapshot()));
     }
 
     /** */
     public boolean removeQueuedElement(Object o) {
-        return workerQueue.removeIf(w -> o.equals(unwrap(w)));
+        return workerQueue.removeIf(w -> o.equals(w.delegate()));
     }
 
     /** */
@@ -161,7 +162,7 @@ public abstract class AsynchronousQueueProcessor<T, W extends OperationContextAw
             }
 
             @Override public T next() {
-                return (T)unwrap(iter.next());
+                return iter.next().delegate();
             }
         };
     }
@@ -176,15 +177,7 @@ public abstract class AsynchronousQueueProcessor<T, W extends OperationContextAw
             if (element == null)
                 break;
 
-            consumer.accept((T)unwrap(element));
+            consumer.accept(element.delegate());
         }
-    }
-
-    /** */
-    private W wrap(T delegate) {
-        if (delegate == null || delegate instanceof OperationContextAwareWrapper)
-            return (W)delegate;
-
-        return wrapQueueElement(delegate, OperationContext.createSnapshot());
     }
 }
