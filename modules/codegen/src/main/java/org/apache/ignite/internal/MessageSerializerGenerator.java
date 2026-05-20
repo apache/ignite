@@ -286,6 +286,8 @@ public class MessageSerializerGenerator {
             marshall.addAll(marshall(field.asType(), fieldAccessor(field)));
         }
 
+        marshall.add(EMPTY);
+        
         if (marshallableMessage())           
             marshall.add(indentedLine("msg.prepareMarshal(marshaller);"));
 
