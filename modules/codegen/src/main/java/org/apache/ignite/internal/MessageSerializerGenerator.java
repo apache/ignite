@@ -386,9 +386,7 @@ public class MessageSerializerGenerator {
                 indent--;
 
                 if (!keyRes.isEmpty() && (keyType.getKind() == TypeKind.DECLARED || keyType.getKind() == TypeKind.TYPEVAR)) {
-                    Element elem = keyType.getKind() == TypeKind.DECLARED ?
-                        ((DeclaredType)keyType).asElement() :
-                        ((DeclaredType)((TypeVariable)keyType).getUpperBound()).asElement();
+                    Element elem = element(keyType);
                     
                     imports.add(((QualifiedNameable)(elem)).getQualifiedName().toString());
                     imports.add("java.util.Collection");
@@ -407,9 +405,7 @@ public class MessageSerializerGenerator {
                 }
 
                 if (!valRes.isEmpty() && (valType.getKind() == TypeKind.DECLARED || valType.getKind() == TypeKind.TYPEVAR)) {
-                    Element elem = valType.getKind() == TypeKind.DECLARED ?
-                        ((DeclaredType)valType).asElement() :
-                        ((DeclaredType)((TypeVariable)valType).getUpperBound()).asElement();
+                    Element elem = element(valType);
                     
                     imports.add(((QualifiedNameable)(elem)).getQualifiedName().toString());
                     imports.add("java.util.Collection");                    
@@ -441,10 +437,12 @@ public class MessageSerializerGenerator {
 
                 TypeMirror arg = args.get(0);
 
-                if (arg.getKind() == TypeKind.DECLARED) {
+                if ((arg.getKind() == TypeKind.DECLARED || arg.getKind() == TypeKind.TYPEVAR)) {
                     List<String> code = new ArrayList<>();
 
-                    imports.add(((QualifiedNameable)((DeclaredType)arg).asElement()).getQualifiedName().toString());
+                    Element elem = element(arg);
+
+                    imports.add(((QualifiedNameable)(elem)).getQualifiedName().toString());
                     imports.add("java.util.Collection");
 
                     String el = "e" + indent;
@@ -453,7 +451,7 @@ public class MessageSerializerGenerator {
 
                     indent++;
 
-                    String type = ((DeclaredType)arg).asElement().getSimpleName().toString();
+                    String type = elem.getSimpleName().toString();
 
                     code.add(indentedLine("for (%s %s : (Collection<? extends %s>)%s) {", type, el, type, accessor));
 
@@ -502,6 +500,13 @@ public class MessageSerializerGenerator {
         String name = field.getSimpleName().toString();
 
         return "msg." + name;
+    }
+    
+    /** */
+    private Element element(TypeMirror type) {
+        return type.getKind() == TypeKind.DECLARED ?
+            ((DeclaredType)type).asElement() :
+            ((DeclaredType)((TypeVariable)type).getUpperBound()).asElement();
     }
 
     /**
