@@ -181,7 +181,7 @@ public abstract class AsynchronousQueueProcessor<T, W extends OperationContextAw
     }
 
     /** */
-    protected W wrap(T delegate) {
+    private W wrap(T delegate) {
         if (delegate == null || delegate instanceof OperationContextAwareWrapper)
             return (W)delegate;
 
