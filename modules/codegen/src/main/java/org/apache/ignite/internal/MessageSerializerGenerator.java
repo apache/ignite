@@ -285,11 +285,12 @@ public class MessageSerializerGenerator {
             
             marshall.addAll(marshall(field.asType(), fieldAccessor(field)));
         }
-
-        marshall.add(EMPTY);
         
-        if (marshallableMessage())           
+        if (marshallableMessage()) {
+            marshall.add(EMPTY);
+            
             marshall.add(indentedLine("msg.prepareMarshal(marshaller);"));
+        }
 
         indent--;
 
