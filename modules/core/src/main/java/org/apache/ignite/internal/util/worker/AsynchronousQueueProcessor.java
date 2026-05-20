@@ -71,8 +71,8 @@ public abstract class AsynchronousQueueProcessor<T, W extends OperationContextAw
     }
 
     /** */
-    public IgniteThread createWorkerThread() {
-        return new IgniteThread(igniteInstanceName(), "dms-writer-thread", this, GRP_IDX_UNASSIGNED, -1, GridIoPolicy.UNDEFINED);
+    public IgniteThread createWorkerThread(GridWorker worker) {
+        return new IgniteThread(igniteInstanceName(), name(), worker, GRP_IDX_UNASSIGNED, -1, GridIoPolicy.UNDEFINED);
     }
 
     /** */
@@ -81,7 +81,7 @@ public abstract class AsynchronousQueueProcessor<T, W extends OperationContextAw
             if (workerThread != null)
                 return;
 
-            workerThread = createWorkerThread();
+            workerThread = createWorkerThread(this);
 
             Thread.UncaughtExceptionHandler errHnd = uncaughtExceptionHandler();
 

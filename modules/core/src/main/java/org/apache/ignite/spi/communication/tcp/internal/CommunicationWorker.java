@@ -43,6 +43,7 @@ import org.apache.ignite.internal.util.nio.GridNioRecoveryDescriptor;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridTcpNioCommunicationClient;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.IgniteLinkedBlockingQueueProcessor;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.spi.IgniteSpiThread;
@@ -133,10 +134,10 @@ public class CommunicationWorker extends IgniteLinkedBlockingQueueProcessor<Disc
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteThread createWorkerThread() {
+    @Override public IgniteThread createWorkerThread(GridWorker worker) {
         return new IgniteSpiThread(igniteInstanceName(), name(), log) {
             @Override protected void body() {
-                CommunicationWorker.this.run();
+                worker.run();
             }
         };
     }

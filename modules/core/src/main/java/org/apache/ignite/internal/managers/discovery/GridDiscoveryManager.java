@@ -2826,8 +2826,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteThread createWorkerThread() {
-            return new DiscoveryMessageNotifierThread(this);
+        @Override public IgniteThread createWorkerThread(GridWorker worker) {
+            return new DiscoveryMessageNotifierThread(worker);
         }
 
         /** */
