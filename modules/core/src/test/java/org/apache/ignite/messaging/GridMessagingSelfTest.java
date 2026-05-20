@@ -40,7 +40,6 @@ import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.internal.DiscoverySpiTestListener;
 import org.apache.ignite.internal.processors.continuous.StartRoutineDiscoveryMessage;
-import org.apache.ignite.internal.processors.continuous.StartRoutineDiscoveryMessageV2;
 import org.apache.ignite.internal.processors.continuous.StopRoutineDiscoveryMessage;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.P2;
@@ -1051,7 +1050,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
             }
         }, IllegalStateException.class, null);
 
-        lsnr.blockCustomEvent(StartRoutineDiscoveryMessage.class, StartRoutineDiscoveryMessageV2.class);
+        lsnr.blockCustomEvent(StartRoutineDiscoveryMessage.class);
 
         final String topic = "topic";
 
@@ -1149,7 +1148,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
 
         discoSpi.setInternalListener(lsnr);
 
-        lsnr.blockCustomEvent(StartRoutineDiscoveryMessage.class, StartRoutineDiscoveryMessageV2.class);
+        lsnr.blockCustomEvent(StartRoutineDiscoveryMessage.class);
 
         final String topic = "topic";
 
