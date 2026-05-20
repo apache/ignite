@@ -332,7 +332,8 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
         if (!dataBag.commonDataCollectedFor(MARSHALLER_PROC.ordinal()))
-            dataBag.addGridCommonData(MARSHALLER_PROC.ordinal(), marshallerCtx.getCachedMappings());
+            dataBag.addGridCommonData(MARSHALLER_PROC.ordinal(),
+                new MarshallerMappingsData(marshallerCtx.getCachedMappings()));
     }
 
     /** {@inheritDoc} */
@@ -344,9 +345,9 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(GridDiscoveryData data) {
-        List<Map<Integer, MappedName>> mappings = data.commonData();
+        MarshallerMappingsData mappings = data.commonData();
 
-        processIncomingMappings(mappings);
+        processIncomingMappings(mappings.mappings);
     }
 
     /**

@@ -37,4 +37,11 @@ public class MarshallerMappingsData implements Message {
     public MarshallerMappingsData(List<Map<Integer, MappedName>> mappings) {
         this.mappings = mappings;
     }
+
+    /**
+     * @return Mappings.
+     */
+    public List<Map<Integer, MappedName>> mappings() {
+        return mappings;
+    }
 }
