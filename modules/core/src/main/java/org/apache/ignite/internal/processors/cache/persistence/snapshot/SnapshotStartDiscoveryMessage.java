@@ -55,11 +55,6 @@ public class SnapshotStartDiscoveryMessage extends InitMessage<SnapshotOperation
         return needExchange;
     }
 
-    /** */
-    public boolean needAssignPartitions() {
-        return false;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SnapshotStartDiscoveryMessage.class, this, super.toString());

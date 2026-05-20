@@ -15,48 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.continuous;
+package org.apache.ignite.spi.discovery.tcp;
 
-import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 
-/**
- *
- */
-public class StartRoutineDiscoveryMessageV2 extends AbstractContinuousMessage {
+/** */
+public class NotRegisteredMessage extends DiscoveryCustomMessage {
     /** */
     @Order(0)
-    StartRequestData startReqData;
+    String str;
 
     /** */
-    public StartRoutineDiscoveryMessageV2() {}
-
-    /**
-     * @param routineId Routine id.
-     * @param startReqData Start request data.
-     */
-    StartRoutineDiscoveryMessageV2(UUID routineId, StartRequestData startReqData) {
-        super(routineId);
-
-        this.startReqData = startReqData;
+    public NotRegisteredMessage() {
+        // No-op.
     }
 
-    /**
-     * @return Start request data.
-     */
-    public StartRequestData startRequestData() {
-        return startReqData;
+    /** */
+    public NotRegisteredMessage(String str) {
+        super(IgniteUuid.randomUuid());
+
+        this.str = str;
     }
 
     /** {@inheritDoc} */
-    @Override public DiscoveryCustomMessage ackMessage() {
+    @Override public DiscoverySpiCustomMessage ackMessage() {
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(StartRoutineDiscoveryMessageV2.class, this, "routineId", routineId());
     }
 }

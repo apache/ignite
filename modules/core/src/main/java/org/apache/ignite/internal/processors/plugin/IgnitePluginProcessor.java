@@ -194,7 +194,7 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void onJoiningNodeDataReceived(JoiningNodeDiscoveryData data) {
         if (data.hasJoiningNodeData()) {
-            Map<String, Serializable> pluginsData = (Map<String, Serializable>)data.joiningNodeData();
+            Map<String, Serializable> pluginsData = data.joiningNodeData();
 
             applyPluginsData(data.joiningNodeId(), pluginsData);
         }

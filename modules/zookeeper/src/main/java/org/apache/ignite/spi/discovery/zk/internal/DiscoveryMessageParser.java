@@ -31,7 +31,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.makeMessageType;
 
@@ -51,11 +50,11 @@ public class DiscoveryMessageParser {
     }
 
     /** Marshals discovery message to bytes array. */
-    public byte[] marshalZip(DiscoverySpiCustomMessage msg) {
+    public byte[] marshalZip(Message msg) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
         try (DeflaterOutputStream out = new DeflaterOutputStream(baos)) {
-            serializeMessage((Message)msg, out);
+            serializeMessage(msg, out);
         }
         catch (Exception e) {
             throw new IgniteSpiException("Failed to serialize message: " + msg, e);
@@ -65,12 +64,12 @@ public class DiscoveryMessageParser {
     }
 
     /** Unmarshals discovery message from bytes array. */
-    public DiscoverySpiCustomMessage unmarshalZip(byte[] bytes) {
+    public <T extends Message> T unmarshalZip(byte[] bytes) {
         try (
             ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
             InflaterInputStream in = new InflaterInputStream(bais)
         ) {
-            return (DiscoverySpiCustomMessage)deserializeMessage(in);
+            return deserializeMessage(in);
         }
         catch (Exception e) {
             throw new IgniteSpiException("Failed to deserialize message.", e);
@@ -99,7 +98,7 @@ public class DiscoveryMessageParser {
     }
 
     /** */
-    private Message deserializeMessage(InputStream in) throws IOException {
+    private <T extends Message> T deserializeMessage(InputStream in) throws IOException {
         DirectMessageReader msgReader = new DirectMessageReader(msgFactory, null);
         ByteBuffer msgBuf = ByteBuffer.allocate(MSG_BUFFER_SIZE);
 
@@ -127,6 +126,6 @@ public class DiscoveryMessageParser {
         }
         while (!finished);
 
-        return msg;
+        return (T)msg;
     }
 }

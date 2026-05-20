@@ -113,6 +113,8 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResultWithIo;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcSetTxParametersRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcTxEndRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcTxSavepointRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcTxSavepointResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcUpdateBinarySchemaResult;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
@@ -181,6 +183,9 @@ public class JdbcThinConnection implements Connection {
 
     /** No retries. */
     public static final int NO_RETRIES = 0;
+
+    /** Savepoint name generator. */
+    private static final AtomicLong SAVEPOINT_ID_GEN = new AtomicLong();
 
     /** Default isolation level. */
     public static final int DFLT_ISOLATION = TRANSACTION_READ_COMMITTED;
@@ -371,6 +376,11 @@ public class JdbcThinConnection implements Connection {
     /** @return {@code True} if transactions supported by the server, {@code false} otherwise. */
     boolean txSupportedByServer() {
         return isTxAwareQueriesSupported;
+    }
+
+    /** @return {@code True} if savepoints supported by the server, {@code false} otherwise. */
+    boolean savepointsSupportedByServer() {
+        return defaultIo().isSavepointsSupported();
     }
 
     /** @return {@code True} if certain isolation level supported by the server, {@code false} otherwise. */
@@ -810,7 +820,11 @@ public class JdbcThinConnection implements Connection {
         if (autoCommit)
             throw new SQLException("Savepoint cannot be set in auto-commit mode.");
 
-        throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
+        String name = "JDBC_SAVEPOINT_" + SAVEPOINT_ID_GEN.incrementAndGet();
+
+        savepoint(JdbcTxSavepointRequest.SAVEPOINT, name);
+
+        return new JdbcThinSavepoint(name, false);
     }
 
     /** {@inheritDoc} */
@@ -823,7 +837,9 @@ public class JdbcThinConnection implements Connection {
         if (autoCommit)
             throw new SQLException("Savepoint cannot be set in auto-commit mode.");
 
-        throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
+        savepoint(JdbcTxSavepointRequest.SAVEPOINT, name);
+
+        return new JdbcThinSavepoint(name, true);
     }
 
     /** {@inheritDoc} */
@@ -836,7 +852,7 @@ public class JdbcThinConnection implements Connection {
         if (autoCommit)
             throw new SQLException("Auto-commit mode.");
 
-        throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
+        savepoint(JdbcTxSavepointRequest.ROLLBACK_TO_SAVEPOINT, savepointName(savepoint));
     }
 
     /** {@inheritDoc} */
@@ -846,7 +862,9 @@ public class JdbcThinConnection implements Connection {
         if (savepoint == null)
             throw new SQLException("Savepoint cannot be null.");
 
-        throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
+        savepoint(JdbcTxSavepointRequest.RELEASE_SAVEPOINT, savepointName(savepoint));
+
+        ((JdbcThinSavepoint)savepoint).release();
     }
 
     /** {@inheritDoc} */
@@ -1064,6 +1082,52 @@ public class JdbcThinConnection implements Connection {
     /** @return Current transaction id. */
     public int txId() {
         return txCtx == null ? NONE_TX : txCtx.txId;
+    }
+
+    /**
+     * Execute savepoint operation.
+     *
+     * @param op Operation.
+     * @param name Savepoint name.
+     * @throws SQLException If failed.
+     */
+    private void savepoint(byte op, String name) throws SQLException {
+        if (!savepointsSupportedByServer())
+            throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
+
+        if (!txEnabledForConnection()) {
+            logTransactionWarning();
+
+            throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
+        }
+
+        if (txCtx == null && op != JdbcTxSavepointRequest.SAVEPOINT)
+            throw new SQLException("Transaction not found");
+
+        JdbcResultWithIo res = sendRequest(new JdbcTxSavepointRequest(txId(), op, name), null,
+            txCtx == null ? null : txCtx.txIo);
+
+        JdbcTxSavepointResult savepointRes = res.response();
+
+        if (txCtx == null)
+            txCtx = new TxContext(res.cliIo(), savepointRes.txId());
+        else if (txCtx.txId != savepointRes.txId()) {
+            throw new IllegalStateException("Unexpected transaction id for savepoint operation [" +
+                "txCtx.txId=" + txCtx.txId +
+                ", res.txId=" + savepointRes.txId() + ']');
+        }
+    }
+
+    /**
+     * @param savepoint Savepoint.
+     * @return Savepoint name.
+     * @throws SQLException If savepoint is invalid.
+     */
+    private static String savepointName(Savepoint savepoint) throws SQLException {
+        if (!(savepoint instanceof JdbcThinSavepoint))
+            throw new SQLException("Invalid savepoint.");
+
+        return ((JdbcThinSavepoint)savepoint).name();
     }
 
     /**
@@ -2700,6 +2764,59 @@ public class JdbcThinConnection implements Connection {
                 return;
 
             stmts.remove(stmt);
+        }
+    }
+
+    /** JDBC thin savepoint. */
+    private static class JdbcThinSavepoint implements Savepoint {
+        /** Savepoint name. */
+        private final String name;
+
+        /** Named savepoint flag. */
+        private final boolean named;
+
+        /** Released flag. */
+        private boolean released;
+
+        /**
+         * @param name Savepoint name used by Ignite transaction.
+         * @param named Whether savepoint was created as named JDBC savepoint.
+         */
+        private JdbcThinSavepoint(String name, boolean named) {
+            this.name = name;
+            this.named = named;
+        }
+
+        /** @return Savepoint name used by Ignite transaction. */
+        private String name() throws SQLException {
+            if (released)
+                throw new SQLException("Savepoint has been released.");
+
+            return name;
+        }
+
+        /** Mark savepoint as released. */
+        private void release() {
+            released = true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getSavepointId() throws SQLException {
+            if (named)
+                throw new SQLException("Named savepoint does not have an id.");
+
+            if (released)
+                throw new SQLException("Savepoint has been released.");
+
+            return (int)Long.parseLong(name.substring("JDBC_SAVEPOINT_".length()));
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getSavepointName() throws SQLException {
+            if (!named)
+                throw new SQLException("Unnamed savepoint does not have a name.");
+
+            return name();
         }
     }
 

@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.typedef.F;
@@ -43,7 +42,7 @@ public class ServiceDeploymentActions {
     private Map<IgniteUuid, ServiceInfo> servicesToUndeploy;
 
     /** Services deployment topologies. */
-    private Map<IgniteUuid, Map<UUID, Integer>> depTops;
+    private Map<IgniteUuid, ServiceTopology> depTops;
 
     /** Services deployment errors. */
     private Map<IgniteUuid, Collection<Throwable>> depErrors;
@@ -118,15 +117,15 @@ public class ServiceDeploymentActions {
     /**
      * @return Deployment topologies.
      */
-    @NotNull public Map<IgniteUuid, Map<UUID, Integer>> deploymentTopologies() {
+    @NotNull public Map<IgniteUuid, ServiceTopology> deploymentTopologies() {
         return depTops != null ? depTops : Collections.emptyMap();
     }
 
     /**
      * @param depTops Deployment topologies.
      */
-    public void deploymentTopologies(@NotNull Map<IgniteUuid, Map<UUID, Integer>> depTops) {
-        this.depTops = Collections.unmodifiableMap(new HashMap<>(depTops));
+    public void deploymentTopologies(@NotNull Map<IgniteUuid, ServiceTopology> depTops) {
+        this.depTops = Collections.unmodifiableMap(depTops);
     }
 
     /**
@@ -140,6 +139,6 @@ public class ServiceDeploymentActions {
      * @param depErrors Deployment errors.
      */
     public void deploymentErrors(@NotNull Map<IgniteUuid, Collection<Throwable>> depErrors) {
-        this.depErrors = Collections.unmodifiableMap(new HashMap<>(depErrors));
+        this.depErrors = Collections.unmodifiableMap(depErrors);
     }
 }

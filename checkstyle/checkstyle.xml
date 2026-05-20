@@ -224,6 +224,11 @@
             <property name="factoryMethods" value="allOf, anyOf, supplyAsync, runAsync, completedFuture"/>
             <property name="substitutionClassName" value="org.apache.ignite.internal.thread.context.concurrent.IgniteCompletableFuture"/>
         </module>
+
+        <module name="org.apache.ignite.tools.checkstyle.ClassUsageRestrictionRule">
+            <property name="className" value="java.lang.Thread"/>
+            <property name="substitutionClassName" value="org.apache.ignite.thread.IgniteThread"/>
+        </module>
     </module>
 
     <!--
