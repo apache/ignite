@@ -33,7 +33,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpIoTr
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteErrorMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
-import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryBatchAcknowledgeMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryBatchMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryCloseMessage;
@@ -188,10 +187,10 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
 
     /** {@inheritDoc} */
     @Override public void init() {
-        messageService().register((n, m) -> onMessage(n, (QueryInboxCloseMessage)m), MessageType.QUERY_INBOX_CANCEL_MESSAGE);
-        messageService().register((n, m) -> onMessage(n, (QueryBatchAcknowledgeMessage)m), MessageType.QUERY_BATCH_ACKNOWLEDGE_MESSAGE);
-        messageService().register((n, m) -> onMessage(n, (QueryBatchMessage)m), MessageType.QUERY_BATCH_MESSAGE);
-        messageService().register((n, m) -> onMessage(n, (QueryCloseMessage)m), MessageType.QUERY_CLOSE_MESSAGE);
+        messageService().register((n, m) -> onMessage(n, (QueryInboxCloseMessage)m), QueryInboxCloseMessage.class);
+        messageService().register((n, m) -> onMessage(n, (QueryBatchAcknowledgeMessage)m), QueryBatchAcknowledgeMessage.class);
+        messageService().register((n, m) -> onMessage(n, (QueryBatchMessage)m), QueryBatchMessage.class);
+        messageService().register((n, m) -> onMessage(n, (QueryCloseMessage)m), QueryCloseMessage.class);
     }
 
     /** {@inheritDoc} */
