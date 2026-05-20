@@ -1067,10 +1067,11 @@
                                 --add-opens=java.base/java.security=ALL-UNNAMED
                                 --add-opens=java.logging/java.util.logging=ALL-UNNAMED
                                 --add-opens=java.management/sun.management=ALL-UNNAMED
-                                --add-opens java.desktop/java.awt.font=ALL-UNNAMED
+                                --add-opens=java.desktop/java.awt.font=ALL-UNNAMED
                                 --add-opens=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED
                                 --add-opens=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED
                                 --add-opens=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED
+                                --add-opens=java.base/java.util.regex=ALL-UNNAMED
                             </argLine>
                         </configuration>
                     </plugin>
