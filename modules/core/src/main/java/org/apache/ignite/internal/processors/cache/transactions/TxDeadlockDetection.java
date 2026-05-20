@@ -56,7 +56,7 @@ public class TxDeadlockDetection {
     public static final int DFLT_TX_DEADLOCK_DETECTION_TIMEOUT = 60000;
 
     /** Deadlock detection maximum iterations. */
-    private static final int deadLockTimeout =
+    private static final int DEAD_LOCK_TIMEOUT =
         getInteger(IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT, DFLT_TX_DEADLOCK_DETECTION_TIMEOUT);
 
     /** Sequence. */
@@ -234,7 +234,7 @@ public class TxDeadlockDetection {
             this.topVer = topVer;
             this.keys = keys;
 
-            if (deadLockTimeout > 0) {
+            if (DEAD_LOCK_TIMEOUT > 0) {
                 timeoutObj = new DeadlockTimeoutObject();
 
                 cctx.time().addTimeoutObject(timeoutObj);
@@ -542,7 +542,7 @@ public class TxDeadlockDetection {
              * Default constructor.
              */
             DeadlockTimeoutObject() {
-                super(deadLockTimeout);
+                super(DEAD_LOCK_TIMEOUT);
             }
 
             /** {@inheritDoc} */
@@ -551,7 +551,7 @@ public class TxDeadlockDetection {
 
                 IgniteLogger log = cctx.kernalContext().log(this.getClass());
 
-                U.warn(log, "Deadlock detection was timed out [timeout=" + deadLockTimeout + ", fut=" + this + ']');
+                U.warn(log, "Deadlock detection was timed out [timeout=" + DEAD_LOCK_TIMEOUT + ", fut=" + this + ']');
 
                 onDone();
             }

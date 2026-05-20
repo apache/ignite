@@ -38,7 +38,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -46,7 +45,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  *
  */
-@WithSystemProperty(key = IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT, value = "1200000")
 public class TxDeadlockDetectionNoHangsTest extends GridCommonAbstractTest {
     /** Nodes count. */
     private static final int NODES_CNT = 3;
