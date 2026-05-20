@@ -73,7 +73,7 @@ public class DownloadClassPathTask implements Callable<IgniteInternalFuture<Clas
                 }
             });
 
-        res.onDone(new ClassPathDeployToAllResponse());
+        res.onDone(new ClassPathDeployToAllResponse(icp.id()));
 
         return res;
     }

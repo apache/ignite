@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.classpath;
 
+import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
@@ -24,4 +26,13 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  * Class path deploy to all response for {@link DistributedProcess} initiate message.
  */
 public class ClassPathDeployToAllResponse implements Message {
+
+    /** Ignite class path id. */
+    @Order(0)
+    UUID icpId;
+
+    /** */
+    public ClassPathDeployToAllResponse(UUID icpId) {
+        this.icpId = icpId;
+    }
 }

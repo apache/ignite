@@ -89,7 +89,7 @@ public class DeployToAllProcess {
         if (deployToAllFuts.containsKey(req.icpId)) {
             log.info("Upload node skip download [icp=" + icp + ']');
 
-            return new GridFinishedFuture<>(new ClassPathDeployToAllResponse());
+            return new GridFinishedFuture<>(new ClassPathDeployToAllResponse(icp.id()));
         }
 
         log.info("Starting download new classpath [icp=" + icp + ']');
