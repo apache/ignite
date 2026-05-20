@@ -34,6 +34,7 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -43,7 +44,9 @@ import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
 import org.apache.ignite.internal.processors.cache.CacheLazyEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.MapCacheStoreStrategy;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -363,8 +366,19 @@ public class TxWithExceptionalInterceptorTest extends GridCommonAbstractTest {
                 continue;
             }
 
+            Object sqlVal;
+
             // obtain sql results first, kv api can eventually recover results, thus for more clear test - let`s check sql first
-            Object sqlVal = getSqlResultByKey(node, PROC_CACHE_NAME, primaryKey, false);
+            try {
+                sqlVal = getSqlResultByKey(node, PROC_CACHE_NAME, primaryKey, false);
+            }
+            catch (IgniteSQLException ex) {
+                assertTrue(X.hasCause(ex, ClusterTopologyException.class));
+                // Topology can change but affinity change is still in progress, thus sql operations can be mapped erroneously
+                awaitPartitionMapExchange();
+
+                sqlVal = getSqlResultByKey(node, PROC_CACHE_NAME, primaryKey, false);
+            }
 
             if (kvVal == null)
                 kvVal = getKVResultByKey(grid(1), PROC_CACHE_NAME, primaryKey, false);
