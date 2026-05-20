@@ -493,7 +493,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
             catch (IgniteCheckedException e) {
                 // Fail the whole thing.
                 if (e instanceof ClusterTopologyCheckedException)
-                    fut.onNodeLeft();
+                    fut.onNodeLeft(n.id());
                 else {
                     if (msgLog.isDebugEnabled()) {
                         msgLog.debug("DHT finish fut, failed to send request dht [txId=" + tx.nearXidVersion() +

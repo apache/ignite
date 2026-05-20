@@ -125,6 +125,7 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
                     }
                 }, heuristic ? TransactionHeuristicException.class : IgniteException.class);
 
+                // Cause asynced salvage in action
                 assertTrue(
                     waitForCondition(() -> {
                         try {
