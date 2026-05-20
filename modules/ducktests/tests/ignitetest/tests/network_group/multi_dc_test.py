@@ -50,8 +50,12 @@ class MultiDCTest(NetworkGroupAbstractTest):
             peer_class_loading_enabled=False
         )
 
-        self.svc_dc_1 = IgniteService(self.test_context, self.ign_cfg, num_nodes=3)
-        self.svc_dc_2 = IgniteService(self.test_context, self.ign_cfg, num_nodes=1)
+        jvm_opts_dc_1 = [f"-DIGNITE_DATA_CENTER_ID={DC_1_NAME}"]
+        jvm_opts_dc_2 = [f"-DIGNITE_DATA_CENTER_ID={DC_2_NAME}"]
+
+        self.svc_dc_1 = IgniteService(self.test_context, self.ign_cfg, num_nodes=3, jvm_opts=jvm_opts_dc_1)
+        self.svc_dc_2 = IgniteService(self.test_context, self.ign_cfg, num_nodes=1, jvm_opts=jvm_opts_dc_2)
+
 
     def _configure_network_group_registry(self, **kwargs):
         return {
