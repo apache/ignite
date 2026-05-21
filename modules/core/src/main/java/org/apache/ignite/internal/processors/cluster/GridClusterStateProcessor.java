@@ -925,14 +925,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
     /** {@inheritDoc} */
     @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
-        try {
-            byte[] marshalledState = marsh.marshal(globalState);
-
-            dataBag.addJoiningNodeData(discoveryDataType().ordinal(), marshalledState);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+        dataBag.addJoiningNodeData(discoveryDataType().ordinal(), globalState);
     }
 
     /** {@inheritDoc} */
@@ -953,20 +946,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             return;
         }
 
-        DiscoveryDataClusterState joiningNodeState = null;
-
-        try {
-            if (joiningNodeData.joiningNodeData() != null)
-                joiningNodeState = marsh.unmarshal(
-                    (byte[])joiningNodeData.joiningNodeData(),
-                    U.resolveClassLoader(ctx.config())
-                );
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to unmarshal disco data from joining node: " + joiningNodeData.joiningNodeId());
-
-            return;
-        }
+        DiscoveryDataClusterState joiningNodeState = joiningNodeData.joiningNodeData();
 
         BaselineTopologyHistory historyToSend = null;
 
@@ -1251,18 +1231,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             return null;
         }
 
-        DiscoveryDataClusterState joiningNodeState;
-
-        try {
-            joiningNodeState = marsh.unmarshal((byte[])discoData.joiningNodeData(), U.resolveClassLoader(ctx.config()));
-        }
-        catch (IgniteCheckedException e) {
-            String msg = "Error on unmarshalling discovery data " +
-                "from node " + node.consistentId() + ": " + e.getMessage() +
-                "; node is not allowed to join";
-
-            return new IgniteNodeValidationResult(node.id(), msg);
-        }
+        DiscoveryDataClusterState joiningNodeState = discoData.joiningNodeData();
 
         if (joiningNodeState == null || joiningNodeState.baselineTopology() == null)
             return null;

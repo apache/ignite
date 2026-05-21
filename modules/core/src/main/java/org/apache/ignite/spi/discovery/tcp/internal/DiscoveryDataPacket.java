@@ -24,10 +24,11 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.Compress;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -53,10 +54,8 @@ public class DiscoveryDataPacket implements Serializable, Message {
 
     /** */
     @Order(1)
-    Map<Integer, byte[]> joiningNodeData = new HashMap<>();
-
-    /** */
-    private transient Map<Integer, Serializable> unmarshalledJoiningNodeData;
+    @Compress
+    Map<Integer, Message> joiningNodeData = new HashMap<>();
 
     /** */
     @Order(2)
@@ -114,12 +113,10 @@ public class DiscoveryDataPacket implements Serializable, Message {
 
     /**
      * @param bag Bag.
-     * @param marsh Marsh.
-     * @param log Logger.
      */
-    public void marshalJoiningNodeData(DiscoveryDataBag bag, Marshaller marsh,
-        int compressionLevel, IgniteLogger log) {
-        marshalData(bag.joiningNodeData(), joiningNodeData, marsh, compressionLevel, log);
+    public void addJoiningNodeData(DiscoveryDataBag bag) {
+        if (!F.isEmpty(bag.joiningNodeData()))
+            joiningNodeData.putAll(bag.joiningNodeData());
     }
 
     /**
@@ -161,67 +158,13 @@ public class DiscoveryDataPacket implements Serializable, Message {
     }
 
     /**
-     * @param marsh Marsh.
-     * @param clsLdr Class loader.
-     * @param clientNode Client node.
-     * @param log Logger.
-     * @throws IgniteCheckedException If unmarshalling failed.
+     * @return Data bag with joining node data.
      */
-    public DiscoveryDataBag unmarshalJoiningNodeData(
-        Marshaller marsh,
-        ClassLoader clsLdr,
-        boolean clientNode,
-        IgniteLogger log
-    ) throws IgniteCheckedException {
-        return unmarshalJoiningNodeData(marsh, clsLdr, clientNode, log, true);
-    }
-
-    /**
-     * @param marsh Marsh.
-     * @param clsLdr Class loader.
-     * @param clientNode Client node.
-     * @param log Logger.
-     */
-    public DiscoveryDataBag unmarshalJoiningNodeDataSilently(
-        Marshaller marsh,
-        ClassLoader clsLdr,
-        boolean clientNode,
-        IgniteLogger log
-    ) {
-        try {
-            return unmarshalJoiningNodeData(marsh, clsLdr, clientNode, log, false);
-        }
-        catch (IgniteCheckedException impossible) {
-            assert false : impossible;
-
-            log.error("Failed to unmarshal joining node data", impossible);
-
-            throw new IgniteException(impossible);
-        }
-    }
-
-    /**
-     * @param marsh Marsh.
-     * @param clsLdr Class loader.
-     * @param clientNode Client node.
-     * @param log Logger.
-     * @param panic Throw unmarshalling if {@code true}.
-     * @throws IgniteCheckedException If {@code panic} is {@code true} and unmarshalling failed.
-     */
-    private DiscoveryDataBag unmarshalJoiningNodeData(
-        Marshaller marsh,
-        ClassLoader clsLdr,
-        boolean clientNode,
-        IgniteLogger log,
-        boolean panic
-    ) throws IgniteCheckedException {
+    public DiscoveryDataBag bagWithJoiningNodeData() {
         DiscoveryDataBag dataBag = new DiscoveryDataBag(joiningNodeId, joiningNodeClient);
 
-        if (joiningNodeData != null && !joiningNodeData.isEmpty()) {
-            unmarshalledJoiningNodeData = unmarshalData(joiningNodeData, marsh, clsLdr, clientNode, log, panic);
-
-            dataBag.joiningNodeData(unmarshalledJoiningNodeData);
-        }
+        if (!F.isEmpty(joiningNodeData))
+            dataBag.joiningNodeData(joiningNodeData);
 
         return dataBag;
     }
@@ -230,7 +173,7 @@ public class DiscoveryDataPacket implements Serializable, Message {
      *
      */
     public boolean hasJoiningNodeData() {
-        return joiningNodeData != null && !joiningNodeData.isEmpty();
+        return !F.isEmpty(joiningNodeData);
     }
 
     /**
@@ -443,8 +386,8 @@ public class DiscoveryDataPacket implements Serializable, Message {
     public DiscoveryDataBag bagForDataCollection() {
         DiscoveryDataBag dataBag = new DiscoveryDataBag(joiningNodeId, commonData.keySet(), joiningNodeClient);
 
-        if (unmarshalledJoiningNodeData != null)
-            dataBag.joiningNodeData(unmarshalledJoiningNodeData);
+        if (joiningNodeData != null)
+            dataBag.joiningNodeData(joiningNodeData);
 
         return dataBag;
     }
@@ -455,12 +398,4 @@ public class DiscoveryDataPacket implements Serializable, Message {
     public void joiningNodeClient(boolean joiningNodeClient) {
         this.joiningNodeClient = joiningNodeClient;
     }
-
-    /**
-     * Clears {@link #unmarshalledJoiningNodeData}
-     */
-    public void clearUnmarshalledJoiningNodeData() {
-        unmarshalledJoiningNodeData = null;
-    }
-
 }

@@ -3034,7 +3034,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /**
-     * Creates savepoint for a pessimistic transaction.
+     * Creates savepoint for a transaction.
      *
      * @param name      Savepoint name.
      * @param overwrite Whether to overwrite an existing savepoint with the same name.
@@ -3049,9 +3049,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
             if (implicit())
                 throw new IgniteCheckedException(SAVEPOINTS_EXPLICIT_TX_ONLY);
-
-            if (!pessimistic())
-                throw new IgniteCheckedException("Savepoints are supported only for PESSIMISTIC transactions.");
 
             ListIterator<TxSavepoint> spIter = findSavepoint(name);
 
@@ -3086,9 +3083,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
             if (implicit())
                 throw new IgniteCheckedException(SAVEPOINTS_EXPLICIT_TX_ONLY);
-
-            if (!pessimistic())
-                throw new IgniteCheckedException("Savepoints are supported only for PESSIMISTIC transactions.");
 
             ListIterator<TxSavepoint> spIter = findSavepoint(name);
 
@@ -3202,7 +3196,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 entriesToUnlock.add(curEntry);
         }
 
-        unlockTxEntries(entriesToUnlock);
+        if (pessimistic())
+            unlockTxEntries(entriesToUnlock);
     }
 
     /**

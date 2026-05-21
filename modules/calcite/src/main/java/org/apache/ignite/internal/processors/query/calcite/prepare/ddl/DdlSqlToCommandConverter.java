@@ -76,19 +76,49 @@ import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlC
 import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.KEY_TYPE;
 import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.TEMPLATE;
 import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.VALUE_TYPE;
+import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.WRAP_KEY;
+import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.WRAP_VALUE;
 import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.WRITE_SYNCHRONIZATION_MODE;
 import static org.apache.ignite.internal.processors.query.calcite.util.PlanUtils.deriveObjectName;
 import static org.apache.ignite.internal.processors.query.calcite.util.PlanUtils.deriveSchemaName;
 
 /** */
 public class DdlSqlToCommandConverter {
+    /** */
+    private static final String SIMPLE_PREDICATE = "a simple identifier";
+
     /** Processor that validates a value is a Sql Identifier. */
-    private static final BiFunction<IgniteSqlCreateTableOption, PlanningContext, String> VALUE_IS_IDENTIFIER_VALIDATOR = (opt, ctx) -> {
+    private static final BiFunction<IgniteSqlCreateTableOption, PlanningContext, String> VALUE_IS_IDENTIFIER_VALIDATOR =
+        DdlSqlToCommandConverter::paramAsSimpleSqlIdentifier;
+
+    /** Processor that validates that value can be parsed as boolean. */
+    private static final BiFunction<IgniteSqlCreateTableOption, PlanningContext, Boolean> VALUE_IS_BOOL_IDENTIFIER_VALIDATOR =
+        (opt, ctx) -> {
+            SqlNode val = opt.value();
+            if (val instanceof SqlLiteral)
+                return ((SqlLiteral)val).booleanValue();
+
+            String simple = paramAsSimpleSqlIdentifier(opt, ctx);
+
+            if (!"true".equalsIgnoreCase(simple) && !"false".equalsIgnoreCase(simple))
+                throwOptionParsingException(opt, "Unexpected identifier: " + simple, ctx.query());
+
+            return Boolean.valueOf(((SqlIdentifier)val).getSimple());
+        };
+
+    /**
+     * Shortcut for validating that option value is a simple identifier.
+     *
+     * @param opt An option to validate.
+     * @param ctx Planning context.
+     * @throws IgniteSQLException In case the param is not a simple identifier.
+     */
+    private static String paramAsSimpleSqlIdentifier(IgniteSqlCreateTableOption opt, PlanningContext ctx) {
         if (!(opt.value() instanceof SqlIdentifier) || !((SqlIdentifier)opt.value()).isSimple())
-            throwOptionParsingException(opt, "a simple identifier", ctx.query());
+            throwOptionParsingException(opt, SIMPLE_PREDICATE, ctx.query());
 
         return ((SqlIdentifier)opt.value()).getSimple();
-    };
+    }
 
     /** Processor that unconditionally throws an AssertionException. */
     private static final TableOptionProcessor<Void> UNSUPPORTED_OPTION_PROCESSOR = new TableOptionProcessor<>(
@@ -100,17 +130,19 @@ public class DdlSqlToCommandConverter {
 
     /** Map of the supported table option processors. */
     private final Map<IgniteSqlCreateTableOptionEnum, TableOptionProcessor<?>> tblOptionProcessors = Stream.of(
-        new TableOptionProcessor<String>(TEMPLATE, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::templateName),
-        new TableOptionProcessor<String>(AFFINITY_KEY, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::affinityKey),
-        new TableOptionProcessor<String>(CACHE_GROUP, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::cacheGroup),
-        new TableOptionProcessor<String>(CACHE_NAME, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::cacheName),
-        new TableOptionProcessor<String>(DATA_REGION, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::dataRegionName),
-        new TableOptionProcessor<String>(KEY_TYPE, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::keyTypeName),
-        new TableOptionProcessor<String>(VALUE_TYPE, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::valueTypeName),
-        new TableOptionProcessor<CacheAtomicityMode>(ATOMICITY, validatorForEnumValue(CacheAtomicityMode.class), CreateTableCommand::atomicityMode),
-        new TableOptionProcessor<CacheWriteSynchronizationMode>(WRITE_SYNCHRONIZATION_MODE, validatorForEnumValue(CacheWriteSynchronizationMode.class),
+        new TableOptionProcessor<>(TEMPLATE, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::templateName),
+        new TableOptionProcessor<>(AFFINITY_KEY, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::affinityKey),
+        new TableOptionProcessor<>(CACHE_GROUP, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::cacheGroup),
+        new TableOptionProcessor<>(CACHE_NAME, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::cacheName),
+        new TableOptionProcessor<>(DATA_REGION, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::dataRegionName),
+        new TableOptionProcessor<>(KEY_TYPE, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::keyTypeName),
+        new TableOptionProcessor<>(VALUE_TYPE, VALUE_IS_IDENTIFIER_VALIDATOR, CreateTableCommand::valueTypeName),
+        new TableOptionProcessor<>(WRAP_KEY, VALUE_IS_BOOL_IDENTIFIER_VALIDATOR, CreateTableCommand::wrapKey),
+        new TableOptionProcessor<>(WRAP_VALUE, VALUE_IS_BOOL_IDENTIFIER_VALIDATOR, CreateTableCommand::wrapValue),
+        new TableOptionProcessor<>(ATOMICITY, validatorForEnumValue(CacheAtomicityMode.class), CreateTableCommand::atomicityMode),
+        new TableOptionProcessor<>(WRITE_SYNCHRONIZATION_MODE, validatorForEnumValue(CacheWriteSynchronizationMode.class),
             CreateTableCommand::writeSynchronizationMode),
-        new TableOptionProcessor<Integer>(BACKUPS, (opt, ctx) -> {
+        new TableOptionProcessor<>(BACKUPS, (opt, ctx) -> {
             if (opt.value() instanceof SqlIdentifier) {
                 String val = VALUE_IS_IDENTIFIER_VALIDATOR.apply(opt, ctx);
 
@@ -135,7 +167,7 @@ public class DdlSqlToCommandConverter {
 
             return ((SqlLiteral)opt.value()).intValue(true);
         }, CreateTableCommand::backups),
-        new TableOptionProcessor<Boolean>(ENCRYPTED, (opt, ctx) -> {
+        new TableOptionProcessor<>(ENCRYPTED, (opt, ctx) -> {
             if (opt.value() instanceof SqlIdentifier) {
                 String val = VALUE_IS_IDENTIFIER_VALIDATOR.apply(opt, ctx);
 
@@ -453,20 +485,6 @@ public class DdlSqlToCommandConverter {
         alterTblCmd.columns(cols);
 
         return alterTblCmd;
-    }
-
-    /**
-     * Short cut for validating that option value is a simple identifier.
-     *
-     * @param opt An option to validate.
-     * @param ctx Planning context.
-     * @throws IgniteSQLException In case the validation was failed.
-     */
-    private String paramIsSqlIdentifierValidator(IgniteSqlCreateTableOption opt, PlanningContext ctx) {
-        if (!(opt.value() instanceof SqlIdentifier) || !((SqlIdentifier)opt.value()).isSimple())
-            throwOptionParsingException(opt, "a simple identifier", ctx.query());
-
-        return ((SqlIdentifier)opt.value()).getSimple();
     }
 
     /**

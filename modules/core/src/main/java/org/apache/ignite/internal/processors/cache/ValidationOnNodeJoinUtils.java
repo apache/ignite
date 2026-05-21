@@ -124,7 +124,7 @@ public class ValidationOnNodeJoinUtils {
         Function<String, DynamicCacheDescriptor> cacheDescProvider
     ) {
         if (discoData.hasJoiningNodeData() && discoData.joiningNodeData() instanceof CacheJoinNodeDiscoveryData) {
-            CacheJoinNodeDiscoveryData nodeData = (CacheJoinNodeDiscoveryData)discoData.joiningNodeData();
+            CacheJoinNodeDiscoveryData nodeData = discoData.joiningNodeData();
 
             boolean isGridActive = ctx.state().clusterState().active();
 

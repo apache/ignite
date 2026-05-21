@@ -95,9 +95,9 @@
         <log4j2.version>2.25.3</log4j2.version>
         <lucene.version>9.12.3</lucene.version>
         <lz4.version>1.10.1</lz4.version>
-        <maven.bundle.plugin.version>3.5.1</maven.bundle.plugin.version>
-        <maven.checkstyle.plugin.version>3.1.2</maven.checkstyle.plugin.version>
-        <maven.flatten.plugin.version>1.7.1</maven.flatten.plugin.version>
+        <maven.bundle.plugin.version>5.1.9</maven.bundle.plugin.version>
+        <maven.checkstyle.plugin.version>3.6.0</maven.checkstyle.plugin.version>
+        <maven.flatten.plugin.version>1.7.3</maven.flatten.plugin.version>
         <maven.flatten.file.name>pom-installed.xml</maven.flatten.file.name>
         <maven.model.version>3.8.9</maven.model.version>
         <checkstyle.puppycrawl.version>8.45</checkstyle.puppycrawl.version>
@@ -107,7 +107,7 @@
         <slf4j.version>2.0.17</slf4j.version>
         <snappy.version>1.1.10.7</snappy.version>
         <spring.version>5.3.39</spring.version>
-        <surefire.version>3.1.2</surefire.version>
+        <surefire.version>3.5.4</surefire.version>
         <tomcat.version>10.0.27</tomcat.version>
         <yardstick.version>0.8.3</yardstick.version>
         <zookeeper.version>3.9.5</zookeeper.version>
@@ -118,8 +118,24 @@
         <xstream.version>1.4.17</xstream.version>
 
         <!-- Maven plugins versions -->
-        <maven.javadoc.plugin.version>3.6.3</maven.javadoc.plugin.version>
+        <maven.javadoc.plugin.version>3.12.0</maven.javadoc.plugin.version>
         <maven.enforcer.plugin.version>3.6.2</maven.enforcer.plugin.version>
+        <maven.compiler.plugin.version>3.14.1</maven.compiler.plugin.version>
+        <maven.surefire.plugin.version>3.5.4</maven.surefire.plugin.version>
+        <maven.failsafe.plugin.version>3.5.4</maven.failsafe.plugin.version>
+        <maven.shade.plugin.version>3.6.1</maven.shade.plugin.version>
+        <maven.clean.plugin.version>3.5.0</maven.clean.plugin.version>
+        <maven.deploy.plugin.version>3.1.4</maven.deploy.plugin.version>
+        <maven.install.plugin.version>3.1.4</maven.install.plugin.version>
+        <maven.jar.plugin.version>3.5.0</maven.jar.plugin.version>
+        <maven.resources.plugin.version>3.4.0</maven.resources.plugin.version>
+        <maven.site.plugin.version>3.21.0</maven.site.plugin.version>
+        <maven.source.plugin.version>3.4.0</maven.source.plugin.version>
+        <maven.assembly.plugin.version>3.8.0</maven.assembly.plugin.version>
+        <maven.dependency.plugin.version>3.9.0</maven.dependency.plugin.version>
+        <maven.jarsigner.plugin.version>3.1.0</maven.jarsigner.plugin.version>
+        <build.helper.maven.plugin.version>3.6.1</build.helper.maven.plugin.version>
+        <cmake.maven.plugin.version>3.31.5-b1</cmake.maven.plugin.version>
 
         <sonar.organization>apache</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
@@ -257,38 +273,6 @@
                             <version>${ignite.version}</version>
                         </dependency>
                     </dependencies>
-                </plugin>
-
-                <plugin>
-                    <groupId>net.alchim31.maven</groupId>
-                    <artifactId>scala-maven-plugin</artifactId>
-                    <version>3.3.2</version>
-                    <configuration>
-                        <jvmArgs>
-                            <jvmArg>-Xms512m</jvmArg>
-                            <jvmArg>-Xmx1024m</jvmArg>
-                        </jvmArgs>
-                        <args>
-                            <arg>-nobootcp</arg>
-                        </args>
-                    </configuration>
-                    <executions>
-                        <execution>
-                            <id>scala-compile-first</id>
-                            <phase>process-resources</phase>
-                            <goals>
-                                <goal>add-source</goal>
-                                <goal>compile</goal>
-                            </goals>
-                        </execution>
-                        <execution>
-                            <id>scala-test-compile</id>
-                            <phase>process-test-resources</phase>
-                            <goals>
-                                <goal>testCompile</goal>
-                            </goals>
-                        </execution>
-                    </executions>
                 </plugin>
 
                 <plugin>
@@ -477,13 +461,13 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-resources-plugin</artifactId>
-                    <version>3.2.0</version>
+                    <version>${maven.resources.plugin.version}</version>
                 </plugin>
 
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>build-helper-maven-plugin</artifactId>
-                    <version>3.0.0</version>
+                    <version>${build.helper.maven.plugin.version}</version>
                 </plugin>
 
                 <plugin>
@@ -502,13 +486,13 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-antrun-plugin</artifactId>
-                    <version>1.8</version>
+                    <version>3.2.0</version>
                 </plugin>
 
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>exec-maven-plugin</artifactId>
-                    <version>1.3.2</version>
+                    <version>3.6.3</version>
                     <dependencies>
                         <dependency>
                             <groupId>${project.groupId}</groupId>
@@ -576,7 +560,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
-                <version>2.2.1</version>
+                <version>${maven.source.plugin.version}</version>
                 <executions>
                     <execution>
                         <id>source</id>
@@ -613,9 +597,6 @@
                             <updatePomFile>true</updatePomFile>
                             <flattenMode>resolveCiFriendliesOnly</flattenMode>
                             <flattenedPomFilename>${maven.flatten.file.name}</flattenedPomFilename>
-                            <pomElements>
-                                <properties>resolve</properties>
-                            </pomElements>
                         </configuration>
                         <phase>process-resources</phase>
                         <goals>

@@ -1331,11 +1331,8 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         for (IgniteComponentType compType : IgniteComponentType.values()) {
             MessageFactoryProvider f = compType.messageFactory();
 
-            if (f != null) {
-                initProvider(f, resolvedClsLdr);
-
+            if (f != null)
                 compMsgs.add(f);
-            }
         }
 
         DiscoverySpi discoSpi = ctx.config().getDiscoverySpi();
@@ -1343,15 +1340,15 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         if (discoSpi instanceof IgniteDiscoverySpi) {
             MessageFactoryProvider discoMsgs = ((IgniteDiscoverySpi)discoSpi).messageFactoryProvider();
 
-            if (discoMsgs != null) {
-                initProvider(discoMsgs, resolvedClsLdr);
-
+            if (discoMsgs != null)
                 compMsgs.add(discoMsgs);
-            }
         }
 
         if (!compMsgs.isEmpty())
             msgs = F.concat(msgs, compMsgs.toArray(new MessageFactoryProvider[compMsgs.size()]));
+
+        for (MessageFactoryProvider msg : msgs)
+            initProvider(msg, resolvedClsLdr);
 
         msgFactory = new IgniteMessageFactoryImpl(msgs);
     }

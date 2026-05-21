@@ -40,7 +40,6 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
      * @param secSubjId Security subject ID.
      * @param plc Policy.
      * @param topic Communication topic.
-     * @param topicOrd Topic ordinal value.
      * @param msg Message.
      * @param ordered Message ordered flag.
      * @param timeout Timeout.
@@ -50,13 +49,12 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
         UUID secSubjId,
         byte plc,
         Object topic,
-        int topicOrd,
         Message msg,
         boolean ordered,
         long timeout,
         boolean skipOnTimeout
     ) {
-        super(plc, topic, topicOrd, msg, ordered, timeout, skipOnTimeout);
+        super(plc, topic, msg, ordered, timeout, skipOnTimeout);
 
         this.secSubjId = secSubjId;
     }
@@ -64,8 +62,7 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
     /**
      * @return Security subject ID.
      */
-    public UUID securitySubjectId() {
+    UUID securitySubjectId() {
         return secSubjId;
     }
-
 }

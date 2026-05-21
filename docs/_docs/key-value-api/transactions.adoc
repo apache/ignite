@@ -92,10 +92,10 @@ It is critical that an Ignite Transaction should be `closed` regardless of its c
 
 == Transaction Savepoints
 
-Savepoints allow you to mark an intermediate state inside an explicit transaction and later roll back only the changes made after that point.
+Savepoints allow you to mark an intermediate state inside a transaction and later roll back only the changes made after that point.
 They are useful when a transaction contains several logical steps and one of the later steps can be discarded without rolling back the whole transaction.
 
-Ignite supports savepoints only for explicit `PESSIMISTIC` transactions.
+Ignite supports savepoints only for explicit transactions.
 Savepoints are local to the transaction that created them and are removed when the transaction is committed or rolled back.
 
 Use `Transaction.savepoint(name)` to create a savepoint.

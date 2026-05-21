@@ -16,22 +16,27 @@
 */
 package org.apache.ignite.internal.processors.cache.verify;
 
+import java.io.Serializable;
 import java.util.Objects;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.BinaryConfiguration;
+import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.VerifyPartitionContext;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Record containing partition checksum, primary flag and consistent ID of owner.
  */
-public class PartitionHashRecord extends IgniteDataTransferObject {
+public class PartitionHashRecord implements MarshallableMessage, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -48,9 +53,13 @@ public class PartitionHashRecord extends IgniteDataTransferObject {
     boolean isPrimary;
 
     /** Consistent id. */
-    @Order(2)
     @GridToStringInclude
     Object consistentId;
+
+    /** Bytes of {@link #consistentId}. */
+    @Order(2)
+    @GridToStringExclude
+    byte[] consistentIdBytes;
 
     /** Partition entries content hash. */
     @Order(3)
@@ -63,9 +72,13 @@ public class PartitionHashRecord extends IgniteDataTransferObject {
     int partVerHash;
 
     /** Update counter's state. */
-    @Order(5)
     @GridToStringInclude
     Object updateCntr;
+
+    /** Bytes of {@link #updateCntr}. */
+    @Order(5)
+    @GridToStringExclude
+    byte[] updateCntrBytes;
 
     /** Size. */
     @Order(6)
@@ -143,9 +156,10 @@ public class PartitionHashRecord extends IgniteDataTransferObject {
     }
 
     /**
-     * Default constructor for Externalizable.
+     * Default constructor for Externalizable and a {@link MessageFactory}.
      */
     public PartitionHashRecord() {
+        // No-op.
     }
 
     /**
@@ -232,6 +246,27 @@ public class PartitionHashRecord extends IgniteDataTransferObject {
     /** */
     public void hasExpiringEntries(boolean hasExpiringEntries) {
         this.hasExpiringEntries = hasExpiringEntries;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (consistentId != null)
+            consistentIdBytes = U.marshal(marsh, consistentId);
+
+        if (updateCntr != null)
+            updateCntrBytes = U.marshal(marsh, updateCntr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (consistentIdBytes != null)
+            consistentId = U.unmarshal(marsh, consistentIdBytes, clsLdr);
+
+        if (updateCntrBytes != null)
+            updateCntr = U.unmarshal(marsh, updateCntrBytes, clsLdr);
+
+        consistentId = null;
+        updateCntrBytes = null;
     }
 
     /** {@inheritDoc} */

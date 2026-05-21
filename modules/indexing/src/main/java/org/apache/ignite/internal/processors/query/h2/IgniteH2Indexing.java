@@ -1687,7 +1687,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /**
      * @param topic Topic.
-     * @param topicOrd Topic ordinal for {@link GridTopic}.
      * @param nodes Nodes.
      * @param msg Message.
      * @param specialize Optional closure to specialize message for each node.
@@ -1698,7 +1697,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     public boolean send(
         Object topic,
-        int topicOrd,
         Collection<ClusterNode> nodes,
         Message msg,
         @Nullable IgniteBiClosure<ClusterNode, Message, Message> specialize,
@@ -1731,7 +1729,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         ((GridCacheQueryMarshallable)msg).marshall(marshaller);
                 }
 
-                ctx.io().sendGeneric(node, topic, topicOrd, msg, plc);
+                ctx.io().sendGeneric(node, topic, msg, plc);
             }
             catch (IgniteCheckedException e) {
                 ok = false;
@@ -2177,6 +2175,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     distributedPlan.getCacheIds(),
                     qryDesc.sql(),
                     qryParams.arguments(),
+                    qryDesc.queryInitiatorId(),
                     qryDesc.enforceJoinOrder(),
                     qryParams.pageSize(),
                     qryParams.timeout(),
@@ -2205,6 +2204,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 .setEnforceJoinOrder(qryDesc.enforceJoinOrder())
                 .setLocal(qryDesc.local())
                 .setPageSize(qryParams.pageSize())
+                .setQueryInitiatorId(qryDesc.queryInitiatorId())
                 .setTimeout(qryParams.timeout(), TimeUnit.MILLISECONDS);
 
             Iterable<List<?>> cur;

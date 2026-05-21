@@ -69,6 +69,7 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.io.GridByteArrayOutputStream;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -804,7 +805,8 @@ public class ZookeeperDiscoveryImpl {
 
             exchange.collect(discoDataBag);
 
-            ZkJoiningNodeData joinData = new ZkJoiningNodeData(locNode, discoDataBag.joiningNodeData());
+            ZkJoiningNodeData joinData = new ZkJoiningNodeData(locNode,
+                new HashMap<>(F.viewReadOnly(discoDataBag.joiningNodeData(), msgParser::marshalZip)));
 
             byte[] joinDataBytes;
 
@@ -2070,7 +2072,7 @@ public class ZookeeperDiscoveryImpl {
         if (err == null) {
             DiscoveryDataBag joiningNodeBag = new DiscoveryDataBag(node.id(), joiningNodeData.node().isClient());
 
-            joiningNodeBag.joiningNodeData(joiningNodeData.discoveryData());
+            joiningNodeBag.joiningNodeData(F.viewReadOnly(joiningNodeData.discoveryData(), msgParser::unmarshalZip));
 
             err = spi.getSpiContext().validateNode(node, joiningNodeBag);
         }
@@ -2237,7 +2239,7 @@ public class ZookeeperDiscoveryImpl {
 
         DiscoveryDataBag joiningNodeBag = new DiscoveryDataBag(nodeId, joiningNodeData.node().isClient());
 
-        joiningNodeBag.joiningNodeData(joiningNodeData.discoveryData());
+        joiningNodeBag.joiningNodeData(F.viewReadOnly(joiningNodeData.discoveryData(), msgParser::unmarshalZip));
 
         exchange.onExchange(joiningNodeBag);
 
@@ -2873,7 +2875,7 @@ public class ZookeeperDiscoveryImpl {
 
                     DiscoveryDataBag dataBag = new DiscoveryDataBag(joinedEvtData.nodeId, joiningData.node().isClient());
 
-                    dataBag.joiningNodeData(joiningData.discoveryData());
+                    dataBag.joiningNodeData(F.viewReadOnly(joiningData.discoveryData(), msgParser::unmarshalZip));
 
                     exchange.onExchange(dataBag);
                 }

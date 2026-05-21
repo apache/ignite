@@ -1923,10 +1923,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         if (node == null)
             throw new ClusterTopologyCheckedException("Failed to open a new channel to remote node (node left): " + nodeId);
 
-        int topicOrd = topic instanceof GridTopic ? ((Enum<GridTopic>)topic).ordinal() : -1;
-
         GridIoMessage ioMsg = createGridIoMessage(topic,
-            topicOrd,
             initMsg,
             PUBLIC_POOL,
             false,
@@ -1953,7 +1950,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
     /**
      * @param node Destination node.
      * @param topic Topic to send the message to.
-     * @param topicOrd GridTopic enumeration ordinal.
      * @param msg Message to send.
      * @param plc Type of processing.
      * @param ordered Ordered flag.
@@ -1966,7 +1962,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
     private void send(
         ClusterNode node,
         Object topic,
-        int topicOrd,
         Message msg,
         byte plc,
         boolean ordered,
@@ -1979,12 +1974,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         assert topic != null;
         assert msg != null;
         assert !async || msg instanceof GridIoUserMessage : msg; // Async execution was added only for IgniteMessaging.
-        assert topicOrd >= 0 || !(topic instanceof GridTopic) : msg;
 
         try (TraceSurroundings ignored = support(null)) {
             MTC.span().addLog(() -> "Create communication msg - " + traceName(msg));
 
-            GridIoMessage ioMsg = createGridIoMessage(topic, topicOrd, msg, plc, ordered, timeout, skipOnTimeout);
+            GridIoMessage ioMsg = createGridIoMessage(topic, msg, plc, ordered, timeout, skipOnTimeout);
 
             if (locNodeId.equals(node.id())) {
 
@@ -2039,7 +2033,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
      */
     private @NotNull GridIoMessage createGridIoMessage(
         Object topic,
-        int topicOrd,
         Message msg,
         byte plc,
         boolean ordered,
@@ -2052,10 +2045,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             if (!ctx.security().isDefaultContext())
                 secSubjId = ctx.security().securityContext().subject().id();
 
-            return new GridIoSecurityAwareMessage(secSubjId, plc, topic, topicOrd, msg, ordered, timeout, skipOnTimeout);
+            return new GridIoSecurityAwareMessage(secSubjId, plc, topic, msg, ordered, timeout, skipOnTimeout);
         }
 
-        return new GridIoMessage(plc, topic, topicOrd, msg, ordered, timeout, skipOnTimeout);
+        return new GridIoMessage(plc, topic, msg, ordered, timeout, skipOnTimeout);
     }
 
     /**
@@ -2089,7 +2082,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         if (node == null)
             throw new ClusterTopologyCheckedException("Failed to send message to node (has node left grid?): " + nodeId);
 
-        send(node, topic, topic.ordinal(), msg, plc, false, 0, false, null, false);
+        send(node, topic, msg, plc, false, 0, false, null, false);
     }
 
     /**
@@ -2101,7 +2094,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
      */
     public void sendToGridTopic(ClusterNode node, GridTopic topic, Message msg, byte plc)
         throws IgniteCheckedException {
-        send(node, topic, topic.ordinal(), msg, plc, false, 0, false, null, false);
+        send(node, topic, msg, plc, false, 0, false, null, false);
     }
 
     /**
@@ -2113,33 +2106,19 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
      */
     public void sendToCustomTopic(ClusterNode node, Object topic, Message msg, byte plc)
         throws IgniteCheckedException {
-        send(node, topic, -1, msg, plc, false, 0, false, null, false);
+        send(node, topic, msg, plc, false, 0, false, null, false);
     }
 
     /**
      * @param node Destination node.
      * @param topic Topic to send the message to.
-     * @param msg Message to send.
-     * @param plc Type of processing.
-     * @param span Current span for tracing.
-     * @throws IgniteCheckedException Thrown in case of any errors.
-     */
-    public void sendToGridTopic(ClusterNode node, GridTopic topic, Message msg, byte plc, Span span)
-        throws IgniteCheckedException {
-        send(node, topic, topic.ordinal(), msg, plc, false, 0, false, null, false);
-    }
-
-    /**
-     * @param node Destination node.
-     * @param topic Topic to send the message to.
-     * @param topicOrd GridTopic enumeration ordinal.
      * @param msg Message to send.
      * @param plc Type of processing.     *
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public void sendGeneric(ClusterNode node, Object topic, int topicOrd, Message msg, byte plc)
+    public void sendGeneric(ClusterNode node, Object topic, Message msg, byte plc)
         throws IgniteCheckedException {
-        send(node, topic, topicOrd, msg, plc, false, 0, false, null, false);
+        send(node, topic, msg, plc, false, 0, false, null, false);
     }
 
     /**
@@ -2161,7 +2140,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
     ) throws IgniteCheckedException {
         assert timeout > 0 || skipOnTimeout;
 
-        send(node, topic, (byte)-1, msg, plc, true, timeout, skipOnTimeout, null, false);
+        send(node, topic, msg, plc, true, timeout, skipOnTimeout, null, false);
     }
 
     /**
@@ -2178,7 +2157,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         byte plc,
         IgniteInClosure<IgniteException> ackC
     ) throws IgniteCheckedException {
-        send(node, topic, topic.ordinal(), msg, plc, false, 0, false, ackC, false);
+        send(node, topic, msg, plc, false, 0, false, ackC, false);
     }
 
     /**
@@ -2205,7 +2184,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
         for (ClusterNode node : nodes) {
             try {
-                send(node, topic, topic.ordinal(), msg, plc, true, timeout, skipOnTimeout, null, false);
+                send(node, topic, msg, plc, true, timeout, skipOnTimeout, null, false);
             }
             catch (IgniteCheckedException e) {
                 if (err == null)
@@ -2236,7 +2215,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
         for (ClusterNode node : nodes) {
             try {
-                send(node, topic, topic.ordinal(), msg, plc, false, 0, false, null, false);
+                send(node, topic, msg, plc, false, 0, false, null, false);
             }
             catch (IgniteCheckedException e) {
                 if (err == null)
@@ -2271,7 +2250,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
     ) throws IgniteCheckedException {
         assert timeout > 0 || skipOnTimeout;
 
-        send(node, topic, (byte)-1, msg, plc, true, timeout, skipOnTimeout, ackC, false);
+        send(node, topic, msg, plc, true, timeout, skipOnTimeout, ackC, false);
     }
 
     /**
@@ -2339,7 +2318,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         else if (loc) {
             send(F.first(nodes),
                 TOPIC_COMM_USER,
-                TOPIC_COMM_USER.ordinal(),
                 ioMsg,
                 PUBLIC_POOL,
                 false,
@@ -2363,7 +2341,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             if (locNode != null) {
                 send(locNode,
                     TOPIC_COMM_USER,
-                    TOPIC_COMM_USER.ordinal(),
                     ioMsg,
                     PUBLIC_POOL,
                     false,
@@ -3500,8 +3477,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings({"ConstantConditions"
-        })
+        @SuppressWarnings({"ConstantConditions"})
         @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             if (!(msg instanceof GridIoUserMessage)) {
                 U.error(log, "Received unknown message (potentially fatal problem): " + msg);
@@ -4317,7 +4293,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                 try {
                     send(snd,
                         TOPIC_COMM_SYSTEM,
-                        TOPIC_COMM_SYSTEM.ordinal(),
                         new TcpInverseConnectionResponseMessage(connIdx),
                         SYSTEM_POOL,
                         false,
