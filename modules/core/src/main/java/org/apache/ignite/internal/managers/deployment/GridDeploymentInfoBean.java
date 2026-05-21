@@ -17,24 +17,20 @@
 
 package org.apache.ignite.internal.managers.deployment;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.Serializable;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Deployment info bean.
  */
-public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Externalizable {
+public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -50,21 +46,13 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
     @Order(2)
     String userVer;
 
-    /**
-     *  TODO Left for backward compatibility only.
-     *  https://issues.apache.org/jira/browse/IGNITE-28063
-     *  */
-    @Deprecated(forRemoval = true)
-    @Order(3)
-    boolean locDepOwner;
-
     /** Node class loader participant map. */
     @GridToStringInclude
-    @Order(4)
+    @Order(3)
     Map<UUID, IgniteUuid> participants;
 
     /**
-     * Required by {@link Externalizable}.
+     * Empty constructor for a message factory.
      */
     public GridDeploymentInfoBean() {
         /* No-op. */
@@ -119,11 +107,6 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
     }
 
     /** {@inheritDoc} */
-    @Override public boolean localDeploymentOwner() {
-        return locDepOwner;
-    }
-
-    /** {@inheritDoc} */
     @Override public Map<UUID, IgniteUuid> participants() {
         return participants;
     }
@@ -137,25 +120,6 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
     @Override public boolean equals(Object o) {
         return o == this || o instanceof GridDeploymentInfoBean &&
             clsLdrId.equals(((GridDeploymentInfoBean)o).clsLdrId);
-    }
-
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeIgniteUuid(out, clsLdrId);
-        U.writeEnum(out, depMode);
-        U.writeString(out, userVer);
-        out.writeBoolean(locDepOwner);
-        U.writeMap(out, participants);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        clsLdrId = U.readIgniteUuid(in);
-        depMode = DeploymentMode.fromOrdinal(in.readByte());
-        userVer = U.readString(in);
-        locDepOwner = in.readBoolean();
-        participants = U.readMap(in);
     }
 
     /** {@inheritDoc} */
