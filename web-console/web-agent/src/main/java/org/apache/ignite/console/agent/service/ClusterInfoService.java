@@ -53,7 +53,7 @@ public class ClusterInfoService implements ClusterAgentService {
 				if(v instanceof String && v.toString().length()<256) {
 					attr.put(k,v);
 				}
-				else if(v instanceof Number) {
+				else if(v!=null) {
 					attr.put(k,v);
 				}
 			});

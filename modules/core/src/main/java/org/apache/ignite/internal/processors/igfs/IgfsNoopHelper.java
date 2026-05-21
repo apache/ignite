@@ -41,6 +41,7 @@ public class IgfsNoopHelper implements IgfsHelper {
         return false;
     }
     
+    @Override
     public IgnitePredicate<ClusterNode> igfsNodePredicate(String igfsName) {
     	return new IgnitePredicate<ClusterNode>() {
 			@Override

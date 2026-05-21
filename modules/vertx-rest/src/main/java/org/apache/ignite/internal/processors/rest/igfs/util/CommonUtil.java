@@ -34,5 +34,17 @@ public class CommonUtil {
         User user = rc.user();
         return user!=null? user.subject(): "";
     }
+
+
+    public static String removeQuery(String uri) {
+        if (uri == null || uri.isEmpty()) {
+            return uri;
+        }
+        int queryIndex = uri.indexOf('?');
+        if (queryIndex == -1) {
+            return uri; // 没有 ?
+        }
+        return uri.substring(0, queryIndex);
+    }
     
 }

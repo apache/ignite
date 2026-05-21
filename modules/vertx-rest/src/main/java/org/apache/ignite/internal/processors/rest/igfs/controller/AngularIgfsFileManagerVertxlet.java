@@ -68,6 +68,8 @@ import io.vertx.webmvc.Vertxlet;
 import io.vertx.webmvc.annotation.VertxletMapping;
 import io.vertx.webmvc.common.VertxletException;
 
+import static org.apache.ignite.internal.processors.rest.igfs.util.CommonUtil.removeQuery;
+
 
 /**
  * This servlet serve angular-filemanager call<br>
@@ -125,11 +127,9 @@ public class AngularIgfsFileManagerVertxlet extends Vertxlet {
     }
 
     private String REPOSITORY_BASE_PATH = "/tmp";
-    private String DATE_FORMAT = "yyyy-MM-dd hh:mm:ss"; // (2001-07-04 12:08:56)   
-    
+    private String DATE_FORMAT = "yyyy-MM-dd hh:mm:ss"; // (2001-07-04 12:08:56)
     
     private IgfsDatasetPersistenceProvider provider;
-    
     
     @Autowired
     @Qualifier("systemConfig")
@@ -193,12 +193,14 @@ public class AngularIgfsFileManagerVertxlet extends Vertxlet {
     	return this.provider.allFS();
     }
 
+
 	/**
 	 *
 	 * @param webjarsResourceURI
 	 * @return
 	 */
 	private String[] getFileToken(String webjarsResourceURI) {
+        webjarsResourceURI = removeQuery(webjarsResourceURI);
 		while (webjarsResourceURI.startsWith("/")) {
 			webjarsResourceURI = webjarsResourceURI.substring(1);
 		}

@@ -63,20 +63,11 @@ public class IgfsServerManager extends IgfsManager {
             if (ipcCfg == null)
                 ipcCfg = new IgfsIpcEndpointConfiguration();
 
-            bind(ipcCfg, /*management*/false);
+            bind(ipcCfg, /*management*/igfsCfg.getManagementPort() > 0);
+
+            if (bindWorker != null)
+                new IgniteThread(this.igfsCtx.kernalContext().igniteInstanceName(), "IgfsServerManager", bindWorker).start();
         }
-
-        if (igfsCfg.getManagementPort() >= 0) {
-            IgfsIpcEndpointConfiguration mgmtIpcCfg = new IgfsIpcEndpointConfiguration();
-
-            mgmtIpcCfg.setType(TCP);
-            mgmtIpcCfg.setPort(igfsCfg.getManagementPort());
-
-            bind(mgmtIpcCfg, /*management*/true);
-        }
-
-        if (bindWorker != null)
-            new IgniteThread(this.igfsCtx.kernalContext().igniteInstanceName(), "IgfsServerManager", bindWorker).start();
     }
 
     /**

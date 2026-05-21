@@ -3,7 +3,6 @@ package io.vertx.webmvc.creater;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Context;
 import io.vertx.core.Promise;
-import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
@@ -16,7 +15,6 @@ import io.vertx.webmvc.Vertxlet;
 import io.vertx.webmvc.VertxInstanceAware;
 import io.vertx.webmvc.annotation.VertxletMapping;
 import io.vertx.webmvc.creater.handler.InitSingleRouterHandler;
-import io.vertx.webmvc.utils.SpringUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import org.apache.ignite.internal.rest.igfs.util.FileUtil;
@@ -49,7 +47,7 @@ public class WebApiCreater extends AbstractVerticle {
     
     private Properties props = new Properties();
 
-    private InitSingleRouterHandler initSingleRouterHandler = (InitSingleRouterHandler) SpringUtils.getBean(InitSingleRouterHandler.class);
+    private InitSingleRouterHandler initSingleRouterHandler;
     
     private final Map<String, Vertxlet> vertxletMap = new HashMap<>();
     
@@ -161,14 +159,16 @@ public class WebApiCreater extends AbstractVerticle {
         cros(router);
         //将所有的controller转换成router
         try {
+
+            initSingleRouterHandler =  this.springContext.getBean(InitSingleRouterHandler.class);
             // 获取所有beanNames
-            String[] beanNames = SpringUtils.getBeanNamesForType(null);
+            String[] beanNames = this.springContext.getBeanNamesForType((Class)null);
             for (String beanName : beanNames) {
             	try {
-	                RestController restController = SpringUtils.findAnnotationOnBean(beanName, RestController.class);
+	                RestController restController = this.springContext.findAnnotationOnBean(beanName, RestController.class);
 	                //判断该类是否含有RestController注解
 	                if (restController != null) {
-	                    RequestMapping requestMapping = SpringUtils.findAnnotationOnBean(beanName,RequestMapping.class);
+	                    RequestMapping requestMapping = this.springContext.findAnnotationOnBean(beanName,RequestMapping.class);
 	                    String prefixName;
 	                    if (requestMapping == null) {
 	                        prefixName = "";
@@ -176,7 +176,7 @@ public class WebApiCreater extends AbstractVerticle {
 	                        prefixName = "".equals(requestMapping.name()) ? requestMapping.value()[0] : requestMapping.name();
 	                    }
 	                    log.info("[vertx web] prefix:" + prefixName);
-	                    Object newInstance = SpringUtils.getBean(beanName);
+	                    Object newInstance = this.springContext.getBean(beanName);
 	                    if(newInstance instanceof VertxInstanceAware) {
 	                    	VertxInstanceAware vertRestController = (VertxInstanceAware)newInstance;
 	                    	vertRestController.setVertx(vertx);
@@ -189,11 +189,11 @@ public class WebApiCreater extends AbstractVerticle {
 	                    }
 	                }
 	                
-	                VertxletMapping vertxletController = SpringUtils.findAnnotationOnBean(beanName, VertxletMapping.class);
+	                VertxletMapping vertxletController = this.springContext.findAnnotationOnBean(beanName, VertxletMapping.class);
 	                //判断该类是否含有VertxletMapping注解
 	                if (vertxletController != null) {                    
 	                    
-	                	Vertxlet vertxlet = SpringUtils.getBean(beanName,Vertxlet.class);
+	                	Vertxlet vertxlet = this.springContext.getBean(beanName,Vertxlet.class);
 	                	vertxlet.setVertx(vertx);
 	                	vertxlet.setIgniteInstanceName(igniteInstanceName);
 	                    for (String url : vertxlet.getClass().getAnnotation(VertxletMapping.class).url()) {
@@ -260,20 +260,22 @@ public class WebApiCreater extends AbstractVerticle {
         allowedHeaders.add("Content-Type");
         allowedHeaders.add("Accept");
         allowedHeaders.add("X-PINGARUNER");
+        allowedHeaders.add("Authorization");
+        allowedHeaders.add("*");
 
         Set<HttpMethod> allowedMethods = new HashSet<>();
         allowedMethods.add(HttpMethod.GET);
         allowedMethods.add(HttpMethod.POST);
         allowedMethods.add(HttpMethod.OPTIONS);
-        /*
-         * these methods aren't necessary for this sample,
-         * but you may need them for your projects
-         */
         allowedMethods.add(HttpMethod.DELETE);
         allowedMethods.add(HttpMethod.PATCH);
         allowedMethods.add(HttpMethod.PUT);
 
-        router.route().handler(CorsHandler.create().addOrigin("*").allowedHeaders(allowedHeaders).allowedMethods(allowedMethods));
+        router.route().handler(CorsHandler.create()
+                .addOrigin("*")
+                .allowedHeaders(allowedHeaders)
+                .exposedHeader("ETag")
+                .allowedMethods(allowedMethods));
     }
     
     private void initializeVertxlet(Promise<Void> startPromise) {

@@ -79,8 +79,7 @@ public class IgfsDatasetPersistenceProvider {
     	this.region = region;
     	this.systemConfig = systemConfig;
     }
-    
-   
+
     /**
      *  获取fs，使用单一的fs存储所有的buckets
      * @param bucketName

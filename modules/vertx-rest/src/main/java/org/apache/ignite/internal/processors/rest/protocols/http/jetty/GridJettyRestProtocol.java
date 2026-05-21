@@ -73,18 +73,18 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
    
 	private final Properties props = new Properties();
 
+    private static Vertx vertx;
+
+    private static int handlerCount = 0;
+
     private GridCmdRestHandler jettyHnd;
     
     private GridServiceRestHandler serviceHnd;
 
     /** HTTP server. */
     private WebApiCreater httpSrv;
-
-    private static Vertx vertx;
-    
+    private AnnotationConfigApplicationContext context;
     private ServerSocket serverSocketPlaceholder;
-    
-    private static int handlerCount = 0;
 
     /**
      * @param ctx Context.
@@ -263,7 +263,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     private void loadJettyConfiguration(@Nullable URL cfgUrl) throws IgniteCheckedException, IOException {
 
     	// 创建应用上下文并指定要扫描的包
-    	AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+    	context = new AnnotationConfigApplicationContext();
     	context.scan("io.vertx.webmvc","org.apache.ignite.internal.processors.rest.igfs","org.elasticsearch.relay"); // 指定要扫描的包 
 
         if (cfgUrl == null || cfgUrl.getPort()>0) {
@@ -374,6 +374,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
                 try {
                     httpSrv.stop();
                 	httpSrv = null;
+                    context.close();
 
                 }
                 finally {
@@ -392,7 +393,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     @Override public void stop() {
     	handlerCount--;
 
-    	if(httpSrv!=null && httpSrv.isStarted()) {
+    	if(httpSrv!=null) {
             stopJetty();
     		if(handlerCount <= 0 && vertx!=null) {
                 vertx.close();

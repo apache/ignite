@@ -35,7 +35,6 @@ public abstract class RouterStrategy {
         	if(obj!=null && conversionService.canConvert(obj.getClass(), parameter.getType())) {
         		return conversionService.convert(obj, parameter.getType());
         	}
-        	
             return Convert.convertQuietly(parameter.getType(), obj, null);
         } catch (Throwable throwable) {
             throwable.printStackTrace();

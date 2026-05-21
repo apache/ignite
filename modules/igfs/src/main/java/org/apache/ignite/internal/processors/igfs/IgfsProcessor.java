@@ -72,8 +72,8 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     @Override public void start() throws IgniteCheckedException {
         IgniteConfiguration igniteCfg = ctx.config(); 
         
-        //if (igniteCfg.isDaemon())
-        //    return;
+        if (igniteCfg.isClientMode())
+            return;
 
         IgfsUtils.prepareCacheConfigurations(igniteCfg);
         

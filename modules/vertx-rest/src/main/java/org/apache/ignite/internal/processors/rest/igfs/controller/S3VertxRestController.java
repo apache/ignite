@@ -42,7 +42,7 @@ import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.util.*;
 import java.util.stream.Collectors;
-
+import static org.apache.ignite.internal.processors.rest.igfs.util.CommonUtil.removeQuery;
 /*
  * api参考地址 https://docs.aws.amazon.com/AmazonS3/latest/API/
  * @author admin
@@ -347,7 +347,7 @@ public class S3VertxRestController extends VertxInstanceAware{
     @RequestMapping(value = "/:bucketName/*", method = RequestMethod.HEAD)
     public void headObject(@PathVariable String bucketName, HttpServerRequest request, HttpServerResponse response) throws Exception {
         bucketName = URLDecoder.decode(bucketName, "utf-8");
-        String pageUrl = URLDecoder.decode(request.uri(), "utf-8");
+        String pageUrl = URLDecoder.decode(removeQuery(request.uri()), "utf-8");
         
         String objectKey = pageUrl.replace(contextPath + bucketName + "/", "");
         ObjectMetadata metadata = s3Service().headObject(bucketName, objectKey);
@@ -377,7 +377,7 @@ public class S3VertxRestController extends VertxInstanceAware{
     @PutMapping("/:bucketName/*")
     public ResponseEntity<String> putObject(@PathVariable String bucketName, RoutingContext rc, HttpServerRequest request,HttpServerResponse response) throws Exception {
         bucketName = URLDecoder.decode(bucketName, "utf-8");
-        String pageUrl = URLDecoder.decode(request.uri(), "utf-8");
+        String pageUrl = URLDecoder.decode(removeQuery(request.uri()), "utf-8");
         
         String objectKey = pageUrl.replace(contextPath + bucketName + "/", "");
         String copySource = request.getHeader(HEADER_X_AMZ_COPY_SOURCE);
@@ -386,7 +386,8 @@ public class S3VertxRestController extends VertxInstanceAware{
         }        
         
         if (!StringUtils.hasText(copySource)) {
-        	Map<String,String> userMeta = getUserMetadata(request);
+
+            Map<String,String> userMeta = getUserMetadata(request);
         	userMeta.put("ownerName", CommonUtil.getCurrentUser(rc));
         	byte[] bytes = rc.body().buffer().getBytes();
             InputStream inputStream = new ByteArrayInputStream(bytes);
@@ -396,35 +397,23 @@ public class S3VertxRestController extends VertxInstanceAware{
             response.putHeader("Last-Modified", DateUtil.getDateGMTFormat(metadata.getLastModified()));                
             response.putHeader("ETag","\"" + metadata.getETag() + "\"");            
             return ResponseEntity.ok().build();
+
         } else {
-            if (copySource.indexOf("\\?") >= 0) {
-                copySource = copySource.split("\\?")[0];
-            }
+            copySource = removeQuery(copySource);
             if(copySource.startsWith("/")) {
             	copySource = copySource.substring(1);
             }
-            String[] copyList = copySource.split("\\/");
-            String sourceBucketName = "";
-            for (String item : copyList) {
-                if (!StringUtils.isEmpty(item)) {
-                    sourceBucketName = item;
-                    break;
-                }
-            }
-
-            StringBuilder result = new StringBuilder();
-            for (int i = 1; i < copyList.length; i++) {
-                result.append(copyList[i]).append("/");
-            }
-            String sourceObjectKey = result.toString();
+            String[] copyList = copySource.split("\\/",2);
+            String sourceBucketName = copyList[0];
+            String sourceObjectKey = copyList[1];
             s3Service().copyObject(sourceBucketName, sourceObjectKey, bucketName, objectKey);
             ObjectMetadata metadata = s3Service().headObject(bucketName, objectKey);
-            String xml = "";
-            DocumentBuilder builder = documentFactory.newDocumentBuilder();
 
+            DocumentBuilder builder = documentFactory.newDocumentBuilder();
             // 创建 DOM 文档
             Document doc = builder.newDocument();
             Element root = doc.createElement("CopyObjectResult");
+            doc.appendChild(root);
 
             Element lastModified = doc.createElement("LastModified");
             lastModified.setTextContent(DateUtil.getDateIso8601Format(metadata.getLastModified()));
@@ -435,7 +424,7 @@ public class S3VertxRestController extends VertxInstanceAware{
             root.appendChild(lastModified);
             root.appendChild(eTag);
 
-            xml = domToString(doc);
+            String xml = domToString(doc);
             return ResponseEntity.ok().contentType(MediaType.APPLICATION_XML).body(xml);
         }
     }
@@ -445,7 +434,7 @@ public class S3VertxRestController extends VertxInstanceAware{
     		@RequestHeader(value = RANGE, required = false) String rangeStr,
     		HttpServerRequest request, HttpServerResponse response) throws Exception {
         bucketName = URLDecoder.decode(bucketName, "utf-8");
-        String pageUrl = URLDecoder.decode(request.uri(), "utf-8");        
+        String pageUrl = URLDecoder.decode(removeQuery(request.uri()), "utf-8");
         
         String objectKey = pageUrl.replace(contextPath + bucketName + "/", "");
         ObjectMetadata metadata = s3Service().headObject(bucketName, objectKey);
@@ -523,7 +512,7 @@ public class S3VertxRestController extends VertxInstanceAware{
     @DeleteMapping("/:bucketName/*")
     public ResponseEntity<String> deleteObject(@PathVariable String bucketName, HttpServerRequest request) throws Exception {
         bucketName = URLDecoder.decode(bucketName, "utf-8");
-        String pageUrl = URLDecoder.decode(request.uri(), "utf-8");
+        String pageUrl = URLDecoder.decode(removeQuery(request.uri()), "utf-8");
         if (pageUrl.indexOf("\\?") >= 0) {
             pageUrl = pageUrl.split("\\?")[0];
         }
@@ -559,7 +548,7 @@ public class S3VertxRestController extends VertxInstanceAware{
     	Map<String,String> userMeta = getUserMetadata(request);
     	userMeta.put("ownerName", CommonUtil.getCurrentUser(rc));
         bucketName = URLDecoder.decode(bucketName, "utf-8");
-        String pageUrl = URLDecoder.decode(request.uri(), "utf-8");
+        String pageUrl = URLDecoder.decode(removeQuery(request.uri()), "utf-8");
         
         String objectKey = pageUrl.replace(contextPath + bucketName + "/", "");
         InitiateMultipartUploadResult result = s3Service().initiateMultipartUpload(bucketName, objectKey, userMeta);
@@ -597,7 +586,7 @@ public class S3VertxRestController extends VertxInstanceAware{
     @PutMapping(value = "/:bucketName/*", params = {"partNumber", "uploadId"})
     public ResponseEntity<String> uploadPart(@PathVariable String bucketName, RoutingContext rc, HttpServerRequest request, HttpServerResponse response) throws Exception {
         bucketName = URLDecoder.decode(bucketName, "utf-8");
-        String pageUrl = URLDecoder.decode(request.uri(), "utf-8");
+        String pageUrl = URLDecoder.decode(removeQuery(request.uri()), "utf-8");
         
         String contentMD5 = request.getHeader("Content-MD5");
         
@@ -614,7 +603,7 @@ public class S3VertxRestController extends VertxInstanceAware{
    
     public ResponseEntity<String> completeMultipartUpload(@PathVariable String bucketName, RoutingContext rc, HttpServerRequest request) throws Exception {
         bucketName = URLDecoder.decode(bucketName, "utf-8");
-        String pageUrl = URLDecoder.decode(request.uri(), "utf-8");
+        String pageUrl = URLDecoder.decode(removeQuery(request.uri()), "utf-8");
         
         String objectKey = pageUrl.replace(contextPath + bucketName + "/", "");
         String uploadId = request.getParam("uploadId");
