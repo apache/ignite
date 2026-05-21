@@ -28,18 +28,40 @@ import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.transactions.TransactionConcurrency;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 
 /** Savepoint tests for thin JDBC connection. */
+@RunWith(Parameterized.class)
 public class JdbcThinConnectionSavepointTest extends AbstractJdbcTest {
     /** */
     private static final String TBL = "SAVEPOINT_TEST_TABLE";
 
     /** JDBC URL. */
-    private static final String SAVEPOINT_URL = URL + "?queryEngine=" + CalciteQueryEngineConfiguration.ENGINE_NAME +
-        "&transactionConcurrency=PESSIMISTIC";
+    private static final String SAVEPOINT_URL = URL + "?queryEngine=" + CalciteQueryEngineConfiguration.ENGINE_NAME;
+
+    /** Transaction concurrency. */
+    @Parameter
+    public TransactionConcurrency txConcurrency;
+
+    /**
+     * @return Test parameters.
+     */
+    @Parameters(name = "{0}")
+    public static Iterable<Object[]> testData() {
+        return Arrays.asList(new Object[][] {
+            {PESSIMISTIC},
+            {OPTIMISTIC}
+        });
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -242,7 +264,7 @@ public class JdbcThinConnectionSavepointTest extends AbstractJdbcTest {
      * @return Connection.
      */
     private Connection connection() throws SQLException {
-        return DriverManager.getConnection(SAVEPOINT_URL);
+        return DriverManager.getConnection(SAVEPOINT_URL + "&transactionConcurrency=" + txConcurrency);
     }
 
     /**

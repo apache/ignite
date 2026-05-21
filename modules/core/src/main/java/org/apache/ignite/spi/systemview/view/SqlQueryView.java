@@ -81,6 +81,12 @@ public class SqlQueryView {
         return qry.queryInitiatorId();
     }
 
+    /** @return {@code True} if query executes map phase. */
+    @Order(8)
+    public boolean mapQuery() {
+        return qry.mapQuery();
+    }
+
     /** @return {@code True} if query is local. */
     public boolean local() {
         return qry.local();

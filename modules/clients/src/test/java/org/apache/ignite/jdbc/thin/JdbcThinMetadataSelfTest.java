@@ -787,6 +787,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.SQL_QUERIES.DURATION.null",
                 "SYS.SQL_QUERIES.ORIGIN_NODE_ID.null",
                 "SYS.SQL_QUERIES.INITIATOR_ID.null",
+                "SYS.SQL_QUERIES.MAP_QUERY.null",
                 "SYS.SQL_QUERIES.SUBJECT_ID.null",
                 "SYS.SCAN_QUERIES.START_TIME.null",
                 "SYS.SCAN_QUERIES.TRANSFORMER.null",

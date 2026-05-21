@@ -32,6 +32,7 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
@@ -48,6 +49,7 @@ import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
@@ -194,6 +196,18 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
      */
     protected void assertThrows(IgniteEx ignite, String sql, Class<? extends Exception> cls, String msg, Object... args) {
         assertThrowsAnyCause(log, () -> sql(ignite, sql, args), cls, msg);
+    }
+
+    /**
+     * Assert that closure throws an {@link IgniteSQLException}.
+     *
+     * @param query Sql query.
+     * @param args Arguments for the SQL function call.
+     * @param msg Optional message.
+     */
+    @SuppressWarnings("ThrowableNotThrown")
+    protected void assertThrowsSqlException(String query, @Nullable String msg, Object... args) {
+        GridTestUtils.assertThrows(log, () -> sql(query, args), IgniteSQLException.class, msg);
     }
 
     /** */
