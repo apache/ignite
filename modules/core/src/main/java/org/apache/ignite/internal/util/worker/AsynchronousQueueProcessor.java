@@ -65,13 +65,40 @@ public abstract class AsynchronousQueueProcessor<T, W extends OperationContextAw
     protected abstract W wrapQueueElement(T delegate, OperationContextSnapshot snapshot);
 
     /** */
-    public Thread.UncaughtExceptionHandler uncaughtExceptionHandler() {
+    protected Thread.UncaughtExceptionHandler uncaughtExceptionHandler() {
         return null;
     }
 
     /** */
-    public IgniteThread createWorkerThread(GridWorker worker) {
+    protected IgniteThread createWorkerThread(GridWorker worker) {
         return new IgniteThread(igniteInstanceName(), name(), worker, GRP_IDX_UNASSIGNED, -1, GridIoPolicy.UNDEFINED);
+    }
+
+    /** */
+    @Nullable protected OperationContextAwareWrapper<T> takeQueuedElement() throws InterruptedException {
+        blockingSectionBegin();
+
+        try {
+            return workerQueue.take();
+        }
+        finally {
+            blockingSectionEnd();
+        }
+    }
+
+    /** */
+    @Nullable protected OperationContextAwareWrapper<T> pollQueuedElement(
+        long timeout,
+        @NotNull TimeUnit unit
+    ) throws InterruptedException {
+        blockingSectionBegin();
+
+        try {
+            return workerQueue.poll(timeout, unit);
+        }
+        finally {
+            blockingSectionEnd();
+        }
     }
 
     /** */
@@ -123,33 +150,6 @@ public abstract class AsynchronousQueueProcessor<T, W extends OperationContextAw
     /** */
     public boolean isQueueEmpty() {
         return workerQueue.isEmpty();
-    }
-
-    /** */
-    @Nullable protected OperationContextAwareWrapper<T> takeQueuedElement() throws InterruptedException {
-        blockingSectionBegin();
-
-        try {
-            return workerQueue.take();
-        }
-        finally {
-            blockingSectionEnd();
-        }
-    }
-
-    /** */
-    @Nullable protected OperationContextAwareWrapper<T> pollQueuedElement(
-        long timeout,
-        @NotNull TimeUnit unit
-    ) throws InterruptedException {
-        blockingSectionBegin();
-
-        try {
-            return workerQueue.poll(timeout, unit);
-        }
-        finally {
-            blockingSectionEnd();
-        }
     }
 
     /** {@inheritDoc} */
