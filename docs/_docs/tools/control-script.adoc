@@ -689,6 +689,13 @@ Partition instances: [PartitionHashRecord [isPrimary=true, partHash=97595430, up
 All updates should be stopped when `idle_verify` calculates hashes, otherwise it may show false positive error results. It's impossible to compare big datasets in a distributed system if they are being constantly updated​.
 ====
 
+To cancel a running idle_verify process, use the `--cancel` argument:
+
+[source, shell]
+----
+control.sh --cache idle_verify --cancel
+----
+
 === Repairing cache consistency
 [WARNING]
 ====
