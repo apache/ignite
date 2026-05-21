@@ -103,6 +103,8 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
             () -> {
                 Collection<? extends Query<?>> activeQueries = queryProcessor(client).queryRegistry().runningQueries();
 
+                runningSnap.clear();
+
                 if (!activeQueries.isEmpty())
                     runningSnap.addAll(activeQueries);
 
@@ -110,13 +112,15 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
             }, 1_000L);
 
         if (!res) {
-            log.error("Not finished queries found on client:");
+            log.error("Not finished queries found on client: " + runningSnap.size());
 
             for (Query<?> qry : runningSnap) {
                 if (qry instanceof RootQuery) {
                     RootQuery<?> root = (RootQuery<?>)qry;
                     log.error("Not finished: query=[" + root.planningContext().query() + ']');
                 }
+                else
+                    log.error("Not finished: query=[" + qry + ']');
             }
         }
 
