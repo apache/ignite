@@ -82,7 +82,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteAsyncCallback;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -929,11 +928,6 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
      */
     private void prepareEntry(GridCacheContext cctx, UUID nodeId, CacheContinuousQueryEntry entry)
         throws IgniteCheckedException {
-        MessageSerializer ser = cctx.gridIO().messageFactory().serializer(entry.directType());
-
-        if (ser != null)
-            ser.prepareMarshal(entry, cctx.shared(), null);
-        
         if (cctx.kernalContext().config().isPeerClassLoadingEnabled() && cctx.discovery().node(nodeId) != null)
             cctx.deploy().prepare(entry);
     }
