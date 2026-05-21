@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.managers.deployment;
 
+import java.io.Serializable;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.configuration.DeploymentMode;
@@ -29,7 +30,10 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /**
  * Deployment info bean.
  */
-public class GridDeploymentInfoBean implements Message, GridDeploymentInfo {
+public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** */
     @Order(0)
     IgniteUuid clsLdrId;
