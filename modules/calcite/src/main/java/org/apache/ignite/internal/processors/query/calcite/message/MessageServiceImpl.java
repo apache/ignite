@@ -39,7 +39,6 @@ import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 
 /**
  *
@@ -185,14 +184,8 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     /** */
     protected void prepareMarshal(Message msg) throws IgniteCheckedException {
         try {
-            if (msg instanceof CalciteContextMarshallableMessage) {
+            if (msg instanceof CalciteContextMarshallableMessage)
                 ((CalciteContextMarshallableMessage)msg).prepareMarshal(ctx);
-
-                MessageSerializer ser = ctx.gridIO().messageFactory().serializer(msg.directType());
-
-                if (ser != null)
-                    ser.prepareMarshal(msg, ctx, null);
-            }
         }
         catch (Exception e) {
             failureProcessor().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
