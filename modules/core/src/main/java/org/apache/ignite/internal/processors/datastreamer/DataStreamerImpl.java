@@ -205,9 +205,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /** Communication topic for responses. */
     private final Object topic;
 
-    /** */
-    private byte[] topicBytes;
-
     /** {@code True} if data loader has been cancelled. */
     private volatile boolean cancelled;
 
@@ -1947,9 +1944,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                         updaterBytes = U.marshal(ctx, rcvr);
                     }
-
-                    if (topicBytes == null)
-                        topicBytes = U.marshal(ctx, topic);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to marshal.", e);
@@ -1994,7 +1988,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                 DataStreamerRequest req = new DataStreamerRequest(
                     reqId,
-                    topicBytes,
+                    topic,
                     cacheName,
                     updaterBytes,
                     entries,
