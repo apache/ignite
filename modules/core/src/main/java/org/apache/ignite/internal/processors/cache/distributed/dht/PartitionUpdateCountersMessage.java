@@ -137,7 +137,7 @@ public class PartitionUpdateCountersMessage implements Message {
 
     /** Optimizes the memory used after adding counters with {@link #add(int, long, long)}. */
     public void finishUpdating() {
-        if (data != null && data.length != size) {
+        if (data != null && data.length != size * ITEM_SIZE) {
             assert data.length > size;
 
             data = Arrays.copyOf(data, size * ITEM_SIZE);
