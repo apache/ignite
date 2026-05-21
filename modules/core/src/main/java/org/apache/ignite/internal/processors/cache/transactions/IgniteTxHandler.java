@@ -1351,7 +1351,7 @@ public class IgniteTxHandler {
     private void processDhtTxSalvageRequest(GridDhtTxSalvageMessage req) {
         for (IgniteInternalTx active : ctx.tm().activeTransactions()) {
             if (active.nearXidVersion().equals(req.version()) && active instanceof GridDhtTxRemote) {
-                    ctx.tm().salvageTx(active);
+                ctx.tm().salvageTx(active);
             }
         }
     }
