@@ -92,7 +92,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
@@ -1097,11 +1096,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
         if (destNodeId == null || !cctx.localNodeId().equals(destNodeId)) {
             msg.prepareDeployment(cctx);
-            
-            MessageSerializer ser = cctx.gridIO().messageFactory().serializer(msg.directType());
-
-            if (ser != null)
-                ser.prepareMarshal(msg, cctx, null);
 
             if (msg instanceof GridCacheDeployable && msg.addDeploymentInfo())
                 cctx.deploy().prepare((GridCacheDeployable)msg);
