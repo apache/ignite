@@ -51,44 +51,48 @@ jobs:
       - name: Set MAVEN_OPTS
         if: ${{ matrix.java == '17' }}
         run: |
-          echo MAVEN_OPTS='--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED
-          --add-exports=java.base/sun.nio.ch=ALL-UNNAMED
-          --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
-          --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
-          --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
-          --add-opens=java.base/jdk.internal.access=ALL-UNNAMED
-          --add-opens=java.base/jdk.internal.loader=ALL-UNNAMED
-          --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED
-          --add-opens=java.base/sun.net.util=ALL-UNNAMED
-          --add-opens=java.base/sun.nio.ch=ALL-UNNAMED
-          --add-opens=java.base/sun.nio.fs=ALL-UNNAMED
-          --add-opens=java.base/sun.util.calendar=ALL-UNNAMED
-          --add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
-          --add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
-          --add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
-          --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED
-          --add-opens=java.base/java.io=ALL-UNNAMED
-          --add-opens=java.base/java.nio=ALL-UNNAMED
-          --add-opens=java.base/java.net=ALL-UNNAMED
-          --add-opens=java.base/java.util=ALL-UNNAMED
-          --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
-          --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED
-          --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED
-          --add-opens=java.base/java.lang=ALL-UNNAMED
-          --add-opens=java.base/java.lang.invoke=ALL-UNNAMED
-          --add-opens=java.base/java.math=ALL-UNNAMED
-          --add-opens=java.sql/java.sql=ALL-UNNAMED
-          --add-opens=java.base/java.lang.reflect=ALL-UNNAMED
-          --add-opens=java.base/java.time=ALL-UNNAMED
-          --add-opens=java.base/java.text=ALL-UNNAMED
-          --add-opens=java.base/java.security=ALL-UNNAMED
-          --add-opens=java.logging/java.util.logging=ALL-UNNAMED
-          --add-opens=java.management/sun.management=ALL-UNNAMED
-          --add-opens=java.desktop/java.awt.font=ALL-UNNAMED
-          --add-opens=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED
-          --add-opens=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED
-          --add-opens=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED
-          -Djdk.tls.client.protocols=TLSv1.2' >> $GITHUB_ENV
+          {
+            echo 'MAVEN_OPTS<<EOF'
+            echo '--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED'
+            echo '--add-exports=java.base/sun.nio.ch=ALL-UNNAMED'
+            echo '--add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED'
+            echo '--add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED'
+            echo '--add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED'
+            echo '--add-opens=java.base/jdk.internal.access=ALL-UNNAMED'
+            echo '--add-opens=java.base/jdk.internal.loader=ALL-UNNAMED'
+            echo '--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED'
+            echo '--add-opens=java.base/sun.net.util=ALL-UNNAMED'
+            echo '--add-opens=java.base/sun.nio.ch=ALL-UNNAMED'
+            echo '--add-opens=java.base/sun.nio.fs=ALL-UNNAMED'
+            echo '--add-opens=java.base/sun.util.calendar=ALL-UNNAMED'
+            echo '--add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED'
+            echo '--add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED'
+            echo '--add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED'
+            echo '--add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED'
+            echo '--add-opens=java.base/java.io=ALL-UNNAMED'
+            echo '--add-opens=java.base/java.nio=ALL-UNNAMED'
+            echo '--add-opens=java.base/java.net=ALL-UNNAMED'
+            echo '--add-opens=java.base/java.util=ALL-UNNAMED'
+            echo '--add-opens=java.base/java.util.concurrent=ALL-UNNAMED'
+            echo '--add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED'
+            echo '--add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED'
+            echo '--add-opens=java.base/java.lang=ALL-UNNAMED'
+            echo '--add-opens=java.base/java.lang.invoke=ALL-UNNAMED'
+            echo '--add-opens=java.base/java.math=ALL-UNNAMED'
+            echo '--add-opens=java.sql/java.sql=ALL-UNNAMED'
+            echo '--add-opens=java.base/java.lang.reflect=ALL-UNNAMED'
+            echo '--add-opens=java.base/java.time=ALL-UNNAMED'
+            echo '--add-opens=java.base/java.text=ALL-UNNAMED'
+            echo '--add-opens=java.base/java.security=ALL-UNNAMED'
+            echo '--add-opens=java.logging/java.util.logging=ALL-UNNAMED'
+            echo '--add-opens=java.management/sun.management=ALL-UNNAMED'
+            echo '--add-opens=java.desktop/java.awt.font=ALL-UNNAMED'
+            echo '--add-opens=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED'
+            echo '--add-opens=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED'
+            echo '--add-opens=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED'
+            echo '-Djdk.tls.client.protocols=TLSv1.2'
+            echo 'EOF'
+          } >> $GITHUB_ENV
 
       - name: Run codestyle and licenses checks
         run: |
