@@ -128,7 +128,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.emptySet;
@@ -3867,11 +3866,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 msg.idealAffinityDiff(idealAffDiff);
 
             msg.prepareDeployment(cctx);
-
-            MessageSerializer ser = cctx.gridIO().messageFactory().serializer(msg.directType());
-
-            if (ser != null)
-                ser.prepareMarshal(msg, cctx, null);
 
             timeBag.finishGlobalStage("Full message preparing");
 
