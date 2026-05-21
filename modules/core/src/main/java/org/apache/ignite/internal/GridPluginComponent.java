@@ -115,7 +115,7 @@ public class GridPluginComponent implements GridComponent {
     @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node,
         JoiningNodeDiscoveryData discoData) {
         try {
-            Map<String, Serializable> map = (Map<String, Serializable>)discoData.joiningNodeData();
+            Map<String, Serializable> map = discoData.joiningNodeData();
 
             if (map != null)
                 plugin.validateNewNode(node, map.get(plugin.name()));

@@ -62,6 +62,8 @@ The `Service` interface has three methods:
 
 You can deploy your service either programmatically at runtime, or by providing a service configuration as part of the node configuration.
 In the latter case, the service is deployed when the cluster starts.
+If deploying several related services you can specify start order with the `ServiceConfiguration.setLocalStartOrder(int)`.
+Start order applied on node level during service initialization. Services with lower `localStartOrder` will be inited first.
 
 === Deploying Services at Runtime
 

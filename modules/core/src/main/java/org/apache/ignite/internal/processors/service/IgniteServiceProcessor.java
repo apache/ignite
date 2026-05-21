@@ -418,7 +418,9 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         if (data.joiningNodeData() == null)
             return null;
 
-        List<ServiceInfo> svcs = ((ServiceProcessorJoinNodeDiscoveryData)data.joiningNodeData()).services();
+        ServiceProcessorJoinNodeDiscoveryData srvcProcData = data.joiningNodeData();
+
+        List<ServiceInfo> svcs = srvcProcData.services();
 
         if (ctx.security().enabled()) {
             SecurityException err = checkDeployPermissionDuringJoin(node, svcs);
@@ -429,7 +431,10 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
 
         for (ServiceInfo svc : svcs) {
             try {
-                unmarshalNodeFilterIfNeeded(svc.configuration());
+                // Returned value is ignored, because we only need to check possibility of marshalling.
+                // We don't need to save node filter in lazy configuration at this moment.
+                // Filter will be unmarhshalled and saved during adding node to topology (see #onGridDataReceived).
+                unmarshalNodeFilter(svc.configuration());
             }
             catch (IgniteCheckedException e) {
                 return new IgniteNodeValidationResult(node.id(), "Node join is rejected [joiningNodeId=" + node.id() +
@@ -445,7 +450,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         if (data.joiningNodeData() == null)
             return;
 
-        ServiceProcessorJoinNodeDiscoveryData joinData = (ServiceProcessorJoinNodeDiscoveryData)data.joiningNodeData();
+        ServiceProcessorJoinNodeDiscoveryData joinData = data.joiningNodeData();
 
         for (ServiceInfo desc : joinData.services()) {
             assert desc.topologySnapshot().isEmpty();
@@ -1442,12 +1447,17 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         if (cfg.getNodeFilter() != null)
             return;
 
+        cfg.setNodeFilter(unmarshalNodeFilter(cfg));
+    }
+
+    /** @param cfg Lazy service configuration. */
+    private IgnitePredicate<ClusterNode> unmarshalNodeFilter(LazyServiceConfiguration cfg) throws IgniteCheckedException {
         GridDeployment dep = ctx.deploy().getDeployment(cfg.serviceClassName());
 
         ClassLoader clsLdr = U.resolveClassLoader(dep != null ? dep.classLoader() : null, ctx.config());
 
         try {
-            cfg.setNodeFilter(U.unmarshal(marsh, cfg.nodeFilterBytes(), clsLdr));
+            return U.unmarshal(marsh, cfg.nodeFilterBytes(), clsLdr);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Failed to unmarshal class of service node filter [cfg=" + cfg + ']', e);
