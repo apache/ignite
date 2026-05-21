@@ -487,7 +487,14 @@ class BinaryMetadataFileStore {
                     );
                 }
 
-                task.execute(BinaryMetadataFileStore.this);
+                blockingSectionBegin();
+
+                try {
+                    task.execute(BinaryMetadataFileStore.this);
+                }
+                finally {
+                    blockingSectionEnd();
+                }
 
                 finishWriteFuture(task.typeId(), task.typeVersion(), task);
             }
