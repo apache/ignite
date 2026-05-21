@@ -41,7 +41,7 @@ import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.job.GridJobWorker;
 import org.apache.ignite.internal.processors.job.JobWorkerInterruptionTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
-import org.apache.ignite.internal.util.GridConcurrentSkipListSet;
+import org.apache.ignite.internal.thread.context.function.OperationContextAwareWrapper;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.collision.CollisionContext;
@@ -286,7 +286,7 @@ public class InterruptComputeJobTest extends GridCommonAbstractTest {
      * @return Value of {@code GridTimeoutProcessor#timeoutObjs}.
      */
     private static Collection<GridTimeoutObject> timeoutObjects(IgniteEx n) {
-        GridConcurrentSkipListSet<GridTimeoutObject> res = getFieldValue(n.context().timeout(), "timeoutObjs");
+        Collection<OperationContextAwareWrapper<GridTimeoutObject>> res = getFieldValue(n.context().timeout(), "timeoutObjs");
 
         return F.viewReadOnly(res, o -> (GridTimeoutObject)IgniteInternalWrapper.unwrap(o));
     }
