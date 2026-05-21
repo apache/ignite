@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.concurrent.Callable;
 import javax.cache.configuration.Factory;
-import javax.transaction.TransactionManager;
+import jakarta.transaction.TransactionManager;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;

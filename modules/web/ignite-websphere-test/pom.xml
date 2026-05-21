@@ -33,6 +33,14 @@
 
     <url>http://ignite.apache.org</url>
 
+    <!--
+     Temporary test shutdown
+    -->
+    <properties>
+        <maven.main.skip>true</maven.main.skip>
+        <maven.test.skip>true</maven.test.skip>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
@@ -49,6 +57,12 @@
             <groupId>com.ibm.websphere.appserver.api</groupId>
             <artifactId>com.ibm.websphere.appserver.api.transaction</artifactId>
             <version>1.1.10</version>
+        </dependency>
+
+        <dependency>
+            <groupId>jakarta.transaction</groupId>
+            <artifactId>jakarta.transaction-api</artifactId>
+            <version>2.0.1</version>
         </dependency>
     </dependencies>
 

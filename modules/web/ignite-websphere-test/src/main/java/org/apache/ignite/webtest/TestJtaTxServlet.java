@@ -19,8 +19,8 @@ package org.apache.ignite.webtest;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import javax.transaction.RollbackException;
-import javax.transaction.TransactionManager;
+import jakarta.transaction.RollbackException;
+import jakarta.transaction.TransactionManager;
 import com.ibm.tx.jta.TransactionManagerFactory;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;

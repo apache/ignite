@@ -19,10 +19,10 @@ package org.apache.ignite.internal.processors.cache.jta;
 
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.configuration.Factory;
-import javax.transaction.RollbackException;
-import javax.transaction.SystemException;
-import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
+import jakarta.transaction.RollbackException;
+import jakarta.transaction.SystemException;
+import jakarta.transaction.Transaction;
+import jakarta.transaction.TransactionManager;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.jta.CacheTmLookup;
 import org.apache.ignite.configuration.CacheConfiguration;

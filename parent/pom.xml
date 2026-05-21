@@ -46,8 +46,8 @@
     <packaging>pom</packaging>
 
     <properties>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
 
         <revision>2.19.0-SNAPSHOT</revision>
         <!-- Ignite version will be substituted with the flatten-maven-plugin and used as
@@ -107,7 +107,7 @@
         <postgres.connector.version>42.7.3</postgres.connector.version>
         <slf4j.version>2.0.17</slf4j.version>
         <snappy.version>1.1.10.7</snappy.version>
-        <spring.version>5.3.39</spring.version>
+        <spring.version>6.2.18</spring.version>
         <surefire.version>3.5.4</surefire.version>
         <tomcat.version>10.0.27</tomcat.version>
         <yardstick.version>0.8.3</yardstick.version>
@@ -611,7 +611,19 @@
                         <requireMavenVersion>
                             <version>[3.9.6,)</version>
                         </requireMavenVersion>
+                        <bannedDependencies>
+                            <excludes>
+                                <exclude>javax.transaction:jta</exclude>
+                                <exclude>javax.transaction:javax.transaction-api</exclude>
+                                <exclude>jakarta.transaction:jakarta.transaction-api:(,2.0.0)</exclude>
+                            </excludes>
+                            <message>
+                                Use jakarta.transaction:jakarta.transaction-api:2.0.1+ only.
+                                Add &lt;exclusions&gt; to the transitive source if this fails.
+                            </message>
+                        </bannedDependencies>
                     </rules>
+
                 </configuration>
                 <executions>
                     <execution>
