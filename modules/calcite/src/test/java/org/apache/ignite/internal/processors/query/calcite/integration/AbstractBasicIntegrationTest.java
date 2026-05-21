@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
@@ -117,10 +118,9 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
             for (Query<?> qry : runningSnap) {
                 if (qry instanceof RootQuery) {
                     RootQuery<?> root = (RootQuery<?>)qry;
-                    log.error("Not finished: query=[" + root.planningContext().query() + ']');
+                    String active = GridTestUtils.getFieldValue(root.planningContext(), PlanningContext.class, "qry");
+                    log.error("Not finished: query=[" + active + ']');
                 }
-                else
-                    log.error("Not finished: query=[" + qry + ']');
             }
         }
 
