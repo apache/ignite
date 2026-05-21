@@ -27,12 +27,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 public interface CacheEntryPredicate extends IgnitePredicate<GridCacheEntryEx>, Message {
     /**
      * @param ctx Context.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void prepareMarshal(GridCacheContext ctx) throws IgniteCheckedException;
-
-    /**
-     * @param ctx Context.
      * @param ldr Class loader.
      * @throws IgniteCheckedException If failed.
      */

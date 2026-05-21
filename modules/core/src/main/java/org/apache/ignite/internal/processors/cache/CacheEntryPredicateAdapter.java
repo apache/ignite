@@ -124,9 +124,4 @@ public class CacheEntryPredicateAdapter implements CacheEntryPredicate {
         if (type == CacheEntryPredicateType.VALUE)
             val.finishUnmarshal(ctx.cacheObjectContext(), ldr);
     }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheContext ctx) throws IgniteCheckedException {
-    }
-
 }
