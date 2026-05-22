@@ -1880,7 +1880,6 @@ public class QueryUtils {
                         targetFieldType,
                         targetFieldAlias,
                         !contains(target.getNotNullFields(), targetFieldName),
-                        getFromMap(target.getDefaultFieldValues(), targetFieldName),
                         precision == null ? -1 : precision,
                         scale == null ? -1 : scale
                     ));
