@@ -40,11 +40,21 @@ import static org.apache.ignite.internal.processors.rest.protocols.http.jetty.Gr
 public class RestSetupSimpleTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName)
-            .setConnectorConfiguration(new ConnectorConfiguration());
+        IgniteConfiguration configuration = super.getConfiguration(igniteInstanceName);
+
+        configuration.setConnectorConfiguration(new ConnectorConfiguration());
+
+        return configuration;
     }
 
-    /** Runs version command using GridJettyRestProtocol. */
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        startGrid(0);
+    }
+
+    /**
+     * Runs version command using GridJettyRestProtocol.
+     */
     @Test
     public void testVersionCommand() throws Exception {
         startGrid();
