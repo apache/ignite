@@ -393,7 +393,13 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         if (!F.isEmpty(parts) && locParts == null)
             locParts = copyPartitionsMap(parts);
 
-        errMsgs = errs == null ? null : F.viewReadOnly(errs, ErrorMessage::new);
+        if (errs != null) {
+            errMsgs = new HashMap<>();
+
+            for (Map.Entry<UUID, Throwable> entry : errs.entrySet()) {
+                errMsgs.put(entry.getKey(), new ErrorMessage(entry.getValue()));
+            }
+        }
     }
 
     /**
