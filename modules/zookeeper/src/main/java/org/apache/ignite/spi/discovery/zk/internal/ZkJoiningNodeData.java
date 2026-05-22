@@ -38,7 +38,7 @@ class ZkJoiningNodeData implements Serializable {
 
     /** */
     @GridToStringInclude
-    private Map<Integer, Serializable> discoData;
+    private Map<Integer, byte[]> discoData;
 
     /**
      * @param partCnt Number of parts in multi-parts message.
@@ -51,7 +51,7 @@ class ZkJoiningNodeData implements Serializable {
      * @param node Node.
      * @param discoData Discovery data.
      */
-    ZkJoiningNodeData(ZookeeperClusterNode node, Map<Integer, Serializable> discoData) {
+    ZkJoiningNodeData(ZookeeperClusterNode node, Map<Integer, byte[]> discoData) {
         assert node != null && node.id() != null : node;
         assert discoData != null;
 
@@ -76,7 +76,7 @@ class ZkJoiningNodeData implements Serializable {
     /**
      * @return Discovery data.
      */
-    Map<Integer, Serializable> discoveryData() {
+    Map<Integer, byte[]> discoveryData() {
         return discoData;
     }
 
