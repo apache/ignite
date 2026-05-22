@@ -40,7 +40,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Par
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
-import org.apache.ignite.internal.processors.metastorage.persistence.DmsDataWriterWorker;
+import org.apache.ignite.internal.processors.metastorage.persistence.DmsDataWriter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -93,7 +93,7 @@ public class IgniteSnapshotWithMetastorageTest extends AbstractSnapshotSelfTest 
             }
         }, 3, "dms-updater");
 
-        DmsDataWriterWorker worker = GridTestUtils.getFieldValue(ignite.context().distributedMetastorage(),
+        DmsDataWriter worker = GridTestUtils.getFieldValue(ignite.context().distributedMetastorage(),
             DistributedMetaStorageImpl.class, "worker");
 
         RunnableFuture<?> testTask = new FutureTask<>(() -> {

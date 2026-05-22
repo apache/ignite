@@ -49,7 +49,7 @@ import org.apache.ignite.internal.thread.context.function.OperationContextAwareW
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.internal.util.worker.IgniteLinkedBlockingQueueProcessor;
+import org.apache.ignite.internal.util.worker.queue.IgniteAsyncObjectHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -96,7 +96,7 @@ public class ServiceDeploymentManager {
     private final IgniteLogger log;
 
     /** Deployment worker. */
-    private final ServicesDeploymentWorker depWorker;
+    private final ServicesDeploymentTaskHandler depTaskHandler;
 
     /** Default dump operation limit. */
     private final long dfltDumpTimeoutLimit;
@@ -114,7 +114,7 @@ public class ServiceDeploymentManager {
 
         ctx.io().addMessageListener(TOPIC_SERVICES, commLsnr);
 
-        depWorker = new ServicesDeploymentWorker();
+        depTaskHandler = new ServicesDeploymentTaskHandler();
 
         long limit = getLong(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT_LIMIT, 0);
 
@@ -125,9 +125,9 @@ public class ServiceDeploymentManager {
      * Starts processing of services deployments tasks.
      */
     void startProcessing() {
-        assert depWorker.runner() == null : "Method shouldn't be called twice during lifecycle;";
+        assert depTaskHandler.runner() == null : "Method shouldn't be called twice during lifecycle;";
 
-        depWorker.start();
+        depTaskHandler.start();
     }
 
     /**
@@ -143,11 +143,11 @@ public class ServiceDeploymentManager {
 
             ctx.io().removeMessageListener(commLsnr);
 
-            U.cancel(depWorker);
+            U.cancel(depTaskHandler);
 
-            U.join(depWorker, log);
+            U.join(depTaskHandler, log);
 
-            depWorker.clearQueue();
+            depTaskHandler.clearQueue();
 
             pendingEvts.clear();
 
@@ -180,25 +180,25 @@ public class ServiceDeploymentManager {
     }
 
     /**
-     * Invokes {@link GridWorker#blockingSectionBegin()} for service deployment worker.
+     * Invokes {@link GridWorker#blockingSectionBegin()} for service deployment task handler.
      * <p/>
      * Should be called from service deployment worker thread.
      */
     void deployerBlockingSectionBegin() {
-        assert depWorker != null && Thread.currentThread() == depWorker.runner();
+        assert depTaskHandler != null && Thread.currentThread() == depTaskHandler.runner();
 
-        depWorker.blockingSectionBegin();
+        depTaskHandler.blockingSectionBegin();
     }
 
     /**
-     * Invokes {@link GridWorker#blockingSectionEnd()} for service deployment worker.
+     * Invokes {@link GridWorker#blockingSectionEnd()} for service deployment task handler.
      * <p/>
      * Should be called from service deployment worker thread.
      */
     void deployerBlockingSectionEnd() {
-        assert depWorker != null && Thread.currentThread() == depWorker.runner();
+        assert depTaskHandler != null && Thread.currentThread() == depTaskHandler.runner();
 
-        depWorker.blockingSectionEnd();
+        depTaskHandler.blockingSectionEnd();
     }
 
     /**
@@ -254,7 +254,7 @@ public class ServiceDeploymentManager {
 
         task.onEvent(evt, topVer, depActions);
 
-        depWorker.addToQueue(task);
+        depTaskHandler.addToQueue(task);
     }
 
     /**
@@ -440,11 +440,11 @@ public class ServiceDeploymentManager {
     }
 
     /**
-     * Services deployment worker.
+     * Services deployment task handler.
      */
-    private class ServicesDeploymentWorker extends IgniteLinkedBlockingQueueProcessor<ServiceDeploymentTask> {
+    private class ServicesDeploymentTaskHandler extends IgniteAsyncObjectHandler<ServiceDeploymentTask> {
         /** {@inheritDoc} */
-        private ServicesDeploymentWorker() {
+        private ServicesDeploymentTaskHandler() {
             super(ctx.igniteInstanceName(), "services-deployment-worker", ServiceDeploymentManager.this.log, ctx.workersRegistry());
         }
 

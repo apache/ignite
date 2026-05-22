@@ -32,7 +32,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.util.worker.IgniteLinkedBlockingQueueProcessor;
+import org.apache.ignite.internal.util.worker.queue.IgniteAsyncObjectHandler;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -258,7 +258,7 @@ public class PendingExchangeTest extends GridCommonAbstractTest {
 
     /** Waiting for exchanges beginning. */
     private void waitForExchnagesBegin(GridCachePartitionExchangeManager exchangeManager, int exchanges) {
-        IgniteLinkedBlockingQueueProcessor<CachePartitionExchangeWorkerTask> exchWorker = U.field(exchangeManager, "exchWorker");
+        IgniteAsyncObjectHandler<CachePartitionExchangeWorkerTask> exchWorker = U.field(exchangeManager, "exchWorker");
 
         try {
             assertTrue(GridTestUtils.waitForCondition(() -> {

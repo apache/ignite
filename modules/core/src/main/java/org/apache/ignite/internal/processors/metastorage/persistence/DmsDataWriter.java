@@ -35,7 +35,7 @@ import org.apache.ignite.internal.thread.context.concurrent.IgniteCompletableFut
 import org.apache.ignite.internal.thread.context.function.OperationContextAwareWrapper;
 import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.util.worker.IgniteLinkedBlockingQueueProcessor;
+import org.apache.ignite.internal.util.worker.queue.IgniteAsyncObjectHandler;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.COMMON_KEY_PREFIX;
@@ -45,7 +45,7 @@ import static org.apache.ignite.internal.processors.metastorage.persistence.Dist
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.versionKey;
 
 /** */
-public class DmsDataWriterWorker extends IgniteLinkedBlockingQueueProcessor<RunnableFuture<?>> {
+public class DmsDataWriter extends IgniteAsyncObjectHandler<RunnableFuture<?>> {
     /** */
     public static final byte[] DUMMY_VALUE = {};
 
@@ -77,7 +77,7 @@ public class DmsDataWriterWorker extends IgniteLinkedBlockingQueueProcessor<Runn
     private volatile Future<?> suspendFut = IgniteCompletableFuture.completedFuture(AWAIT);
 
     /** */
-    public DmsDataWriterWorker(
+    public DmsDataWriter(
         @Nullable String igniteInstanceName,
         IgniteLogger log,
         DmsLocalMetaStorageLock lock,
@@ -126,7 +126,7 @@ public class DmsDataWriterWorker extends IgniteLinkedBlockingQueueProcessor<Runn
     }
 
     /** */
-    public void update(DistributedMetaStorageHistoryItem histItem) {
+    public void addUpdateTask(DistributedMetaStorageHistoryItem histItem) {
         addToQueue(newDmsTask(() -> {
             metastorage.write(historyItemKey(workerDmsVer.id() + 1), histItem);
 
@@ -140,7 +140,7 @@ public class DmsDataWriterWorker extends IgniteLinkedBlockingQueueProcessor<Runn
     }
 
     /** */
-    public void update(DistributedMetaStorageClusterNodeData fullNodeData) {
+    public void addUpdateTask(DistributedMetaStorageClusterNodeData fullNodeData) {
         assert fullNodeData.fullData != null;
         assert fullNodeData.hist != null;
 

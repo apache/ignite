@@ -47,7 +47,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.util.worker.IgniteLinkedBlockingQueueProcessor;
+import org.apache.ignite.internal.util.worker.queue.IgniteAsyncObjectHandler;
 
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
@@ -390,10 +390,8 @@ class BinaryMetadataFileStore {
         return CU.isPersistenceEnabled(cfg) || CU.isCdcEnabled(cfg);
     }
 
-    /**
-     *
-     */
-    private class BinaryMetadataAsyncWriter extends IgniteLinkedBlockingQueueProcessor<OperationTask> {
+    /** */
+    private class BinaryMetadataAsyncWriter extends IgniteAsyncObjectHandler<OperationTask> {
         /**
          * Write operation tasks prepared for writing (but not yet submitted to execution (actual writing).
          */

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.worker;
+package org.apache.ignite.internal.util.worker.queue;
 
 import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.ignite.IgniteLogger;
@@ -24,9 +24,9 @@ import org.apache.ignite.internal.thread.context.function.OperationContextAwareW
 import org.apache.ignite.internal.worker.WorkersRegistry;
 
 /** */
-public abstract class IgniteLinkedBlockingQueueProcessor<T> extends AsynchronousQueueProcessor<T, OperationContextAwareWrapper<T>> {
+public abstract class IgniteAsyncObjectHandler<T> extends AsyncQueueHandler<T, OperationContextAwareWrapper<T>> {
     /** */
-    protected IgniteLinkedBlockingQueueProcessor(
+    protected IgniteAsyncObjectHandler(
         String igniteInstanceName,
         String workerThreadName,
         IgniteLogger log,

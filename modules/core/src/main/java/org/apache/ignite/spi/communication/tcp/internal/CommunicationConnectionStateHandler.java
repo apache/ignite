@@ -44,7 +44,7 @@ import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridTcpNioCommunicationClient;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.internal.util.worker.IgniteLinkedBlockingQueueProcessor;
+import org.apache.ignite.internal.util.worker.queue.IgniteAsyncObjectHandler;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.communication.tcp.AttributeNames;
@@ -58,7 +58,7 @@ import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpU
 /**
  * Works with connections states.
  */
-public class CommunicationWorker extends IgniteLinkedBlockingQueueProcessor<DisconnectedSessionInfo> {
+public class CommunicationConnectionStateHandler extends IgniteAsyncObjectHandler<DisconnectedSessionInfo> {
     /** Worker name. */
     public static final String WORKER_NAME = "tcp-comm-worker";
 
@@ -106,7 +106,7 @@ public class CommunicationWorker extends IgniteLinkedBlockingQueueProcessor<Disc
      * @param workersRegistry Workers registry.
      * @param spiName Spi name.
      */
-    public CommunicationWorker(
+    public CommunicationConnectionStateHandler(
         String igniteInstanceName,
         IgniteLogger log,
         TcpCommunicationConfiguration cfg,

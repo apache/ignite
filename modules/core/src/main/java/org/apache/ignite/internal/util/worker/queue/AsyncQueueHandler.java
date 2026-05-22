@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.worker;
+package org.apache.ignite.internal.util.worker.queue;
 
 import java.util.Iterator;
 import java.util.concurrent.BlockingQueue;
@@ -27,6 +27,7 @@ import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.OperationContextSnapshot;
 import org.apache.ignite.internal.thread.context.function.OperationContextAwareWrapper;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
@@ -35,14 +36,14 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.thread.IgniteThread.GRP_IDX_UNASSIGNED;
 
 /**
- * Represents a single-threaded, asynchronous queue processor. It automatically captures the {@link OperationContext}
- * attached to the thread that submitted the item for processing and restores it before processing actually begins in the
+ * Represents a single-threaded, asynchronous queue elements handler. It automatically captures the {@link OperationContext}
+ * attached to the thread that submitted the item for handling and restores it before handling actually begins in the
  * worker thread.
  *
  * @param <T> Type of items to be processed.
  * @param <W> Type of wrapper over processing item that are stored in the underlying queue.
  */
-public abstract class AsynchronousQueueProcessor<T, W extends OperationContextAwareWrapper<T>> extends GridWorker {
+abstract class AsyncQueueHandler<T, W extends OperationContextAwareWrapper<T>> extends GridWorker {
     /** */
     private final BlockingQueue<W> workerQueue;
 
@@ -50,7 +51,7 @@ public abstract class AsynchronousQueueProcessor<T, W extends OperationContextAw
     private Thread workerThread;
 
     /** */
-    protected AsynchronousQueueProcessor(
+    protected AsyncQueueHandler(
         @Nullable String igniteInstanceName,
         String workerThreadName,
         IgniteLogger log,

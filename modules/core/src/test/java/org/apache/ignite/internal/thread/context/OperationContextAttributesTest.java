@@ -49,8 +49,8 @@ import org.apache.ignite.internal.thread.pool.IgniteStripedThreadPoolExecutor;
 import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.util.worker.IgniteDelayQueueProcessor;
-import org.apache.ignite.internal.util.worker.IgniteLinkedBlockingQueueProcessor;
+import org.apache.ignite.internal.util.worker.queue.IgniteAsyncObjectHandler;
+import org.apache.ignite.internal.util.worker.queue.IgniteDelayedObjectHandler;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
@@ -737,8 +737,8 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testContextAwareQueue() throws Exception {
-        IgniteLinkedBlockingQueueProcessor<AttributeValueChecker> proc =
-            new IgniteLinkedBlockingQueueProcessor<>("test", "test", log, null) {
+        IgniteAsyncObjectHandler<AttributeValueChecker> proc =
+            new IgniteAsyncObjectHandler<>("test", "test", log, null) {
                 @Override protected void body() throws InterruptedException {
                     while (!isCancelled()) {
                         OperationContextAwareWrapper<AttributeValueChecker> w = pollQueuedElement(100, MILLISECONDS);
@@ -774,7 +774,7 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testContextAwareDelayQueue() throws Exception {
-        IgniteDelayQueueProcessor<TestDelayedObject> proc = new IgniteDelayQueueProcessor<>("test", "test", log, null) {
+        IgniteDelayedObjectHandler<TestDelayedObject> proc = new IgniteDelayedObjectHandler<>("test", "test", log, null) {
             @Override protected void body() {
                 try {
                     while (!isCancelled()) {

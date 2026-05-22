@@ -202,7 +202,7 @@ public class GridNioServerWrapper {
     private final CommunicationListener<Message> lsnr;
 
     /** Recovery and idle clients handler. */
-    private volatile CommunicationWorker commWorker;
+    private volatile CommunicationConnectionStateHandler connStateHnd;
 
     /** Socket channel factory. */
     private volatile ThrowableSupplier<SocketChannel, IOException> socketChannelFactory = SocketChannel::open;
@@ -243,7 +243,7 @@ public class GridNioServerWrapper {
      * @param connectGate Connect gate.
      * @param stateProvider State provider.
      * @param eRegistrySupplier Exception registry supplier.
-     * @param commWorker Communication worker.
+     * @param connStateHnd Communication connection state handler.
      * @param igniteCfg Ignite config.
      * @param srvLsnr Server listener.
      * @param igniteInstanceName Ignite instance name.
@@ -261,7 +261,7 @@ public class GridNioServerWrapper {
         ConnectGateway connectGate,
         ClusterStateProvider stateProvider,
         Supplier<IgniteExceptionRegistry> eRegistrySupplier,
-        CommunicationWorker commWorker,
+        CommunicationConnectionStateHandler connStateHnd,
         IgniteConfiguration igniteCfg,
         GridNioServerListener<Message> srvLsnr,
         String igniteInstanceName,
@@ -280,7 +280,7 @@ public class GridNioServerWrapper {
         this.connectGate = connectGate;
         this.stateProvider = stateProvider;
         this.eRegistrySupplier = eRegistrySupplier;
-        this.commWorker = commWorker;
+        this.connStateHnd = connStateHnd;
         this.igniteCfg = igniteCfg;
         this.srvLsnr = srvLsnr;
         this.igniteInstanceName = igniteInstanceName;
@@ -643,7 +643,7 @@ public class GridNioServerWrapper {
                     connectGate.leave();
                 }
 
-                CommunicationWorker commWorker0 = commWorker;
+                CommunicationConnectionStateHandler commWorker0 = connStateHnd;
 
                 if (commWorker0 != null && commWorker0.runner() == Thread.currentThread())
                     commWorker0.updateHeartbeat();
@@ -1294,10 +1294,10 @@ public class GridNioServerWrapper {
     }
 
     /**
-     * @param commWorker New recovery and idle clients handler.
+     * @param connStateHnd New recovery and idle clients handler.
      */
-    public void communicationWorker(CommunicationWorker commWorker) {
-        this.commWorker = commWorker;
+    public void communicationConnectionStateHnd(CommunicationConnectionStateHandler connStateHnd) {
+        this.connStateHnd = connStateHnd;
     }
 
     /**

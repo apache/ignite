@@ -44,7 +44,7 @@ import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.util.worker.IgniteDelayQueueProcessor;
+import org.apache.ignite.internal.util.worker.queue.IgniteDelayedObjectHandler;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -447,7 +447,7 @@ public class DataStreamProcessor extends GridProcessorAdapter {
     }
 
     /** */
-    private class DataStreamerFlusher extends IgniteDelayQueueProcessor<DataStreamerImpl<?, ?>> {
+    private class DataStreamerFlusher extends IgniteDelayedObjectHandler<DataStreamerImpl<?, ?>> {
         /** */
         public DataStreamerFlusher() {
             super(ctx.igniteInstanceName(), "grid-data-loader-flusher", DataStreamProcessor.this.log, ctx.workersRegistry());

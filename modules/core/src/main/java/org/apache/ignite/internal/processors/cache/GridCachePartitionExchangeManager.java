@@ -129,7 +129,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.internal.util.worker.IgniteLinkedBlockingQueueProcessor;
+import org.apache.ignite.internal.util.worker.queue.IgniteAsyncObjectHandler;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
@@ -212,7 +212,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /** */
     @GridToStringInclude
-    private ExchangeWorker exchWorker;
+    private ExchangeTaskHandler exchTaskHandler;
 
     /** */
     @GridToStringExclude
@@ -379,7 +379,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
 
-        exchWorker = new ExchangeWorker();
+        exchTaskHandler = new ExchangeTaskHandler();
 
         latchMgr = new ExchangeLatchManager(cctx.kernalContext());
 
@@ -633,7 +633,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     cctx.cache().exchangeTaskForCustomDiscoveryMessage(customMsg);
 
                 if (task != null)
-                    exchWorker.addCustomTask(task);
+                    exchTaskHandler.addCustomTask(task);
             }
         }
 
@@ -677,18 +677,18 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         // Notify indexing engine about node leave so that we can re-map coordinator accordingly.
         if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED) {
-            exchWorker.addCustomTask(new SchemaNodeLeaveExchangeWorkerTask(evt.eventNode()));
-            exchWorker.addCustomTask(new WalStateNodeLeaveExchangeTask(evt.eventNode()));
+            exchTaskHandler.addCustomTask(new SchemaNodeLeaveExchangeWorkerTask(evt.eventNode()));
+            exchTaskHandler.addCustomTask(new WalStateNodeLeaveExchangeTask(evt.eventNode()));
         }
     }
 
     /**
-     * @param task Task to run in exchange worker thread.
+     * @param task Task to run in exchange task handler.
      */
     void addCustomTask(CachePartitionExchangeWorkerTask task) {
         assert task != null;
 
-        exchWorker.addCustomTask(task);
+        exchTaskHandler.addCustomTask(task);
     }
 
     /**
@@ -740,7 +740,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         else if (reconnect)
             reconnectExchangeFut.onDone();
 
-        exchWorker.start();
+        exchTaskHandler.start();
 
         if (reconnect) {
             if (fut != null) {
@@ -824,7 +824,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
-        exchWorker.onKernalStop();
+        exchTaskHandler.onKernalStop();
 
         cctx.gridEvents().removeDiscoveryEventListener(discoLsnr);
 
@@ -837,13 +837,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 "Client node disconnected: " + cctx.igniteInstanceName()) :
             new NodeStoppingException("Node is stopping: " + cctx.igniteInstanceName());
 
-        // Stop exchange worker
-        U.cancel(exchWorker);
+        // Stop exchange task handler.
+        U.cancel(exchTaskHandler);
 
         if (log.isDebugEnabled())
-            log.debug("Before joining on exchange worker: " + exchWorker);
+            log.debug("Before joining on exchange worker: " + exchTaskHandler);
 
-        U.join(exchWorker, log);
+        U.join(exchTaskHandler, log);
 
         if (cctx.kernalContext().clientDisconnected())
             cctx.affinity().removeGroupHolders();
@@ -851,7 +851,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         // Finish all exchange futures.
         ExchangeFutureSet exchFuts0 = exchFuts;
 
-        for (CachePartitionExchangeWorkerTask task : exchWorker.queuedElements()) {
+        for (CachePartitionExchangeWorkerTask task : exchTaskHandler.queuedElements()) {
             if (task instanceof GridDhtPartitionsExchangeFuture)
                 ((GridDhtPartitionsExchangeFuture)task).onDone(stopErr);
         }
@@ -1061,14 +1061,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @return {@code True} if pending future queue contains exchange task.
      */
     public boolean hasPendingExchange() {
-        return exchWorker.hasPendingExchange();
+        return exchTaskHandler.hasPendingExchange();
     }
 
     /**
      * @return {@code True} if pending future queue contains server exchange task.
      */
     public boolean hasPendingServerExchange() {
-        return exchWorker.hasPendingServerExchange();
+        return exchTaskHandler.hasPendingServerExchange();
     }
 
     /**
@@ -1128,7 +1128,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param exchId Exchange ID.
      */
     public void forceReassign(GridDhtPartitionExchangeId exchId, GridDhtPartitionsExchangeFuture fut) {
-        exchWorker.forceReassign(exchId, fut);
+        exchTaskHandler.forceReassign(exchId, fut);
     }
 
     /**
@@ -1136,7 +1136,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @return Rebalance future.
      */
     public IgniteInternalFuture<Boolean> forceRebalance(GridDhtPartitionExchangeId exchId) {
-        return exchWorker.forceRebalance(exchId);
+        return exchTaskHandler.forceRebalance(exchId);
     }
 
     /**
@@ -1145,7 +1145,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param rebalanceId Rebalance id.
      */
     public void finishPreloading(AffinityTopologyVersion topVer, int grpId, long rebalanceId) {
-        exchWorker.finishPreloading(topVer, grpId, rebalanceId);
+        exchTaskHandler.finishPreloading(topVer, grpId, rebalanceId);
     }
 
     /**
@@ -1155,7 +1155,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     public IgniteInternalFuture<Void> deferStopCachesOnClientReconnect(Collection<GridCacheAdapter> caches) {
         assert cctx.discovery().localNode().isClient();
 
-        return exchWorker.deferStopCachesOnClientReconnect(caches);
+        return exchTaskHandler.deferStopCachesOnClientReconnect(caches);
     }
 
     /**
@@ -1729,7 +1729,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      */
     private boolean addFuture(GridDhtPartitionsExchangeFuture fut) {
         if (fut.onAdded()) {
-            exchWorker.addExchangeFuture(fut);
+            exchTaskHandler.addExchangeFuture(fut);
 
             return true;
         }
@@ -1916,7 +1916,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         U.warn(diagnosticLog, "Last exchange future: " + lastInitializedFut);
 
-        exchWorker.dumpExchangeDebugInfo();
+        exchTaskHandler.dumpExchangeDebugInfo();
 
         if (!readyFuts.isEmpty()) {
             int warningsLimit = IgniteSystemProperties.getInteger(IGNITE_DIAGNOSTIC_WARN_LIMIT, 5);
@@ -2442,10 +2442,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         throws IgniteInterruptedCheckedException {
         AffinityTopologyVersion resVer = msg.resultTopologyVersion();
 
-        if (exchWorker.waitForExchangeFuture(resVer))
+        if (exchTaskHandler.waitForExchangeFuture(resVer))
             return true;
 
-        for (CachePartitionExchangeWorkerTask task : exchWorker.queuedElements()) {
+        for (CachePartitionExchangeWorkerTask task : exchTaskHandler.queuedElements()) {
             if (task instanceof GridDhtPartitionsExchangeFuture) {
                 GridDhtPartitionsExchangeFuture fut = (GridDhtPartitionsExchangeFuture)task;
 
@@ -2525,7 +2525,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         synchronized (curFut.mutex()) {
             int awaited = 0;
 
-            for (CachePartitionExchangeWorkerTask task : exchWorker.queuedElements()) {
+            for (CachePartitionExchangeWorkerTask task : exchTaskHandler.queuedElements()) {
                 if (task instanceof GridDhtPartitionsExchangeFuture) {
                     GridDhtPartitionsExchangeFuture fut = (GridDhtPartitionsExchangeFuture)task;
 
@@ -2624,7 +2624,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         while (U.currentTimeMillis() < end) {
             boolean found = false;
 
-            for (CachePartitionExchangeWorkerTask task : exchWorker.queuedElements()) {
+            for (CachePartitionExchangeWorkerTask task : exchTaskHandler.queuedElements()) {
                 if (task instanceof GridDhtPartitionsExchangeFuture) {
                     GridDhtPartitionsExchangeFuture fut = (GridDhtPartitionsExchangeFuture)task;
 
@@ -2655,33 +2655,33 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * Invokes {@link GridWorker#updateHeartbeat()} for exchange worker.
+     * Invokes {@link GridWorker#updateHeartbeat()} for exchange task handler.
      */
     public void exchangerUpdateHeartbeat() {
-        exchWorker.updateHeartbeat();
+        exchTaskHandler.updateHeartbeat();
     }
 
     /**
-     * Invokes {@link GridWorker#blockingSectionBegin()} for exchange worker.
+     * Invokes {@link GridWorker#blockingSectionBegin()} for exchange task handler.
      * Should be called from exchange worker thread.
      */
     public void exchangerBlockingSectionBegin() {
         if (currentThreadIsExchanger())
-            exchWorker.blockingSectionBegin();
+            exchTaskHandler.blockingSectionBegin();
     }
 
     /**
-     * Invokes {@link GridWorker#blockingSectionEnd()} for exchange worker.
+     * Invokes {@link GridWorker#blockingSectionEnd()} for exchange task handler.
      * Should be called from exchange worker thread.
      */
     public void exchangerBlockingSectionEnd() {
         if (currentThreadIsExchanger())
-            exchWorker.blockingSectionEnd();
+            exchTaskHandler.blockingSectionEnd();
     }
 
     /** */
     private boolean currentThreadIsExchanger() {
-        return exchWorker != null && Thread.currentThread() == exchWorker.runner();
+        return exchTaskHandler != null && Thread.currentThread() == exchTaskHandler.runner();
     }
 
     /** */
@@ -2743,10 +2743,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * Exchange future thread. All exchanges happen only by one thread and next
+     * Exchange task handler. All exchanges happen only by one thread and next
      * exchange will not start until previous one completes.
      */
-    private class ExchangeWorker extends IgniteLinkedBlockingQueueProcessor<CachePartitionExchangeWorkerTask> {
+    private class ExchangeTaskHandler extends IgniteAsyncObjectHandler<CachePartitionExchangeWorkerTask> {
         /** */
         private AffinityTopologyVersion lastFutVer;
 
@@ -2762,7 +2762,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         /**
          * Constructor.
          */
-        private ExchangeWorker() {
+        private ExchangeTaskHandler() {
             super(
                 cctx.igniteInstanceName(),
                 "exchange-worker",

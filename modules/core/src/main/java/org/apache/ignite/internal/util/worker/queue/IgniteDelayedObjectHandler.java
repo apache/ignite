@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.worker;
+package org.apache.ignite.internal.util.worker.queue;
 
 import java.util.concurrent.DelayQueue;
 import java.util.concurrent.Delayed;
@@ -29,10 +29,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public abstract class IgniteDelayQueueProcessor<T extends Delayed>
-    extends AsynchronousQueueProcessor<T, IgniteDelayQueueProcessor<T>.QueueElementWrapper> {
+public abstract class IgniteDelayedObjectHandler<T extends Delayed>
+    extends AsyncQueueHandler<T, IgniteDelayedObjectHandler<T>.QueueElementWrapper> {
     /** */
-    protected IgniteDelayQueueProcessor(
+    protected IgniteDelayedObjectHandler(
         String igniteInstanceName,
         String workerThreadName,
         IgniteLogger log,
@@ -71,7 +71,7 @@ public abstract class IgniteDelayQueueProcessor<T extends Delayed>
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            IgniteDelayQueueProcessor<?>.QueueElementWrapper w = (IgniteDelayQueueProcessor<?>.QueueElementWrapper)o;
+            IgniteDelayedObjectHandler<?>.QueueElementWrapper w = (IgniteDelayedObjectHandler<?>.QueueElementWrapper)o;
 
             return delegate.equals(w.delegate);
         }
