@@ -26,6 +26,7 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.OperationContextSnapshot;
 import org.apache.ignite.internal.thread.context.function.OperationContextAwareWrapper;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
@@ -41,7 +42,7 @@ import static org.apache.ignite.thread.IgniteThread.GRP_IDX_UNASSIGNED;
  * @param <T> Type of items to be processed.
  * @param <W> Type of wrapper over processing item that are stored in the underlying queue.
  */
-public abstract class AsynchronousQueueProcessor<T, W extends OperationContextAwareWrapper<T>> extends GridWorker implements Iterable<T> {
+public abstract class AsynchronousQueueProcessor<T, W extends OperationContextAwareWrapper<T>> extends GridWorker {
     /** */
     private final BlockingQueue<W> workerQueue;
 
@@ -138,6 +139,15 @@ public abstract class AsynchronousQueueProcessor<T, W extends OperationContextAw
     }
 
     /** */
+    @NotNull public Iterable<T> queuedElements() {
+        return new Iterable<>() {
+            @Override public @NotNull Iterator<T> iterator() {
+                return F.iterator(workerQueue, OperationContextAwareWrapper::delegate, true);
+            }
+        };
+    }
+
+    /** */
     public void clearQueue() {
         workerQueue.clear();
     }
@@ -150,21 +160,6 @@ public abstract class AsynchronousQueueProcessor<T, W extends OperationContextAw
     /** */
     public boolean isQueueEmpty() {
         return workerQueue.isEmpty();
-    }
-
-    /** {@inheritDoc} */
-    @Override public @NotNull Iterator<T> iterator() {
-        Iterator<W> iter = workerQueue.iterator();
-
-        return new Iterator<>() {
-            @Override public boolean hasNext() {
-                return iter.hasNext();
-            }
-
-            @Override public T next() {
-                return iter.next().delegate();
-            }
-        };
     }
 
     /** */

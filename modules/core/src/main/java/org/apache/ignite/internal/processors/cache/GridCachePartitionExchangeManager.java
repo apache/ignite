@@ -851,7 +851,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         // Finish all exchange futures.
         ExchangeFutureSet exchFuts0 = exchFuts;
 
-        for (CachePartitionExchangeWorkerTask task : exchWorker) {
+        for (CachePartitionExchangeWorkerTask task : exchWorker.queuedElements()) {
             if (task instanceof GridDhtPartitionsExchangeFuture)
                 ((GridDhtPartitionsExchangeFuture)task).onDone(stopErr);
         }
@@ -2445,7 +2445,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         if (exchWorker.waitForExchangeFuture(resVer))
             return true;
 
-        for (CachePartitionExchangeWorkerTask task : exchWorker) {
+        for (CachePartitionExchangeWorkerTask task : exchWorker.queuedElements()) {
             if (task instanceof GridDhtPartitionsExchangeFuture) {
                 GridDhtPartitionsExchangeFuture fut = (GridDhtPartitionsExchangeFuture)task;
 
@@ -2525,7 +2525,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         synchronized (curFut.mutex()) {
             int awaited = 0;
 
-            for (CachePartitionExchangeWorkerTask task : exchWorker) {
+            for (CachePartitionExchangeWorkerTask task : exchWorker.queuedElements()) {
                 if (task instanceof GridDhtPartitionsExchangeFuture) {
                     GridDhtPartitionsExchangeFuture fut = (GridDhtPartitionsExchangeFuture)task;
 
@@ -2624,7 +2624,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         while (U.currentTimeMillis() < end) {
             boolean found = false;
 
-            for (CachePartitionExchangeWorkerTask task : exchWorker) {
+            for (CachePartitionExchangeWorkerTask task : exchWorker.queuedElements()) {
                 if (task instanceof GridDhtPartitionsExchangeFuture) {
                     GridDhtPartitionsExchangeFuture fut = (GridDhtPartitionsExchangeFuture)task;
 
@@ -2864,7 +2864,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             if (resVer.compareTo(exchFut.initialVersion()) != 0) {
                 waitForExchangeFuture(resVer);
 
-                for (CachePartitionExchangeWorkerTask task : this) {
+                for (CachePartitionExchangeWorkerTask task : queuedElements()) {
                     if (task instanceof GridDhtPartitionsExchangeFuture) {
                         GridDhtPartitionsExchangeFuture fut0 = (GridDhtPartitionsExchangeFuture)task;
 
@@ -2914,7 +2914,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          */
         boolean hasPendingExchange() {
             if (!isQueueEmpty()) {
-                for (CachePartitionExchangeWorkerTask task : this) {
+                for (CachePartitionExchangeWorkerTask task : queuedElements()) {
                     if (isExchangeTask(task))
                         return true;
                 }
@@ -2928,7 +2928,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          */
         boolean hasPendingServerExchange() {
             if (!isQueueEmpty()) {
-                for (CachePartitionExchangeWorkerTask task : this) {
+                for (CachePartitionExchangeWorkerTask task : queuedElements()) {
                     if (task instanceof GridDhtPartitionsExchangeFuture) {
                         if (((GridDhtPartitionsExchangeFuture)task).changedAffinity())
                             return true;
@@ -2948,7 +2948,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             if (DIAGNOSTIC_WARN_LIMIT > 0) {
                 int cnt = 0;
 
-                for (CachePartitionExchangeWorkerTask task : this) {
+                for (CachePartitionExchangeWorkerTask task : queuedElements()) {
                     if (task instanceof GridDhtPartitionsExchangeFuture) {
                         U.warn(log, ">>> " + ((GridDhtPartitionsExchangeFuture)task).shortInfo());
 

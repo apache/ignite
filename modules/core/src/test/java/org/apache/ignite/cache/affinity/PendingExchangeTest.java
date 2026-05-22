@@ -264,7 +264,7 @@ public class PendingExchangeTest extends GridCommonAbstractTest {
             assertTrue(GridTestUtils.waitForCondition(() -> {
                 int exFuts = 0;
 
-                for (CachePartitionExchangeWorkerTask task : exchWorker) {
+                for (CachePartitionExchangeWorkerTask task : exchWorker.queuedElements()) {
                     if (task instanceof GridDhtPartitionsExchangeFuture)
                         exFuts++;
                 }
