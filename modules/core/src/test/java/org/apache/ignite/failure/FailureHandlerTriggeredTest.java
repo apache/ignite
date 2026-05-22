@@ -54,7 +54,7 @@ public class FailureHandlerTriggeredTest extends GridCommonAbstractTest {
             GridCachePartitionExchangeManager<Object, Object> exchangeMgr = ignite.context().cache().context().exchange();
 
             GridWorker exchangeWorker =
-                GridTestUtils.getFieldValue(exchangeMgr, GridCachePartitionExchangeManager.class, "exchWorker");
+                GridTestUtils.getFieldValue(exchangeMgr, GridCachePartitionExchangeManager.class, "exchTaskHandler");
 
             assertNotNull(exchangeWorker);
 

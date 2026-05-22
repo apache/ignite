@@ -258,7 +258,7 @@ public class PendingExchangeTest extends GridCommonAbstractTest {
 
     /** Waiting for exchanges beginning. */
     private void waitForExchnagesBegin(GridCachePartitionExchangeManager exchangeManager, int exchanges) {
-        IgniteAsyncObjectHandler<CachePartitionExchangeWorkerTask> exchWorker = U.field(exchangeManager, "exchWorker");
+        IgniteAsyncObjectHandler<CachePartitionExchangeWorkerTask> exchWorker = U.field(exchangeManager, "exchTaskHandler");
 
         try {
             assertTrue(GridTestUtils.waitForCondition(() -> {

@@ -94,7 +94,7 @@ public class IgniteSnapshotWithMetastorageTest extends AbstractSnapshotSelfTest 
         }, 3, "dms-updater");
 
         DmsDataWriter worker = GridTestUtils.getFieldValue(ignite.context().distributedMetastorage(),
-            DistributedMetaStorageImpl.class, "worker");
+            DistributedMetaStorageImpl.class, "dataWriter");
 
         RunnableFuture<?> testTask = new FutureTask<>(() -> {
             U.await(latch);
