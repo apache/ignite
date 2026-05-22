@@ -1930,6 +1930,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             false
         );
 
+        MessageSerializer ser = ctx.io().messageFactory().serializer(ioMsg.directType());
+
+        ser.prepareMarshal(ioMsg, ctx.cache().context(), null);
+
         try {
             return ((TcpCommunicationSpi)(CommunicationSpi)getSpi()).openChannel(node, ioMsg);
         }
