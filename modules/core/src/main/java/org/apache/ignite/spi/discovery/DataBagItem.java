@@ -21,18 +21,24 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Objects;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
-/** Wrapper message for serializable data. */
-public class ObjectData implements MarshallableMessage {
+import static org.apache.ignite.Ignition.localIgnite;
+import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CONTINUOUS_PROC;
+
+/** Wrapper message for serializable data in a {@link DiscoveryDataBag}. */
+public class DataBagItem implements MarshallableMessage {
     /** */
     @GridToStringInclude
     private Serializable data;
@@ -42,13 +48,17 @@ public class ObjectData implements MarshallableMessage {
     @Order(0)
     byte[] dataBytes;
 
+    /** Component id. */
+    @Order(1)
+    byte cmpId;
+
     /** */
-    public ObjectData() {}
+    public DataBagItem() {}
 
     /**
      * @param data Original data.
      */
-    public ObjectData(Serializable data) {
+    public DataBagItem(Serializable data) {
         this.data = data;
     }
 
@@ -60,8 +70,24 @@ public class ObjectData implements MarshallableMessage {
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (dataBytes != null)
-            data = U.unmarshal(marsh, dataBytes, clsLdr);
+        if (dataBytes != null) {
+            try {
+                data = U.unmarshal(marsh, dataBytes, clsLdr);
+            } catch (IgniteCheckedException e) {
+                if (CONTINUOUS_PROC.ordinal() == cmpId && X.hasCause(e, ClassNotFoundException.class) &&
+                    localIgnite().configuration().isClientMode()) {
+                    U.warn(localIgnite().log(), "Failed to unmarshal continuous query remote filter on client node. Can be ignored.");
+                }
+                else if (cmpId < GridComponent.DiscoveryDataExchangeType.VALUES.length) {
+                    throw new DataBagUnmarshallException("Failed to unmarshal discovery data for component: " +
+                            GridComponent.DiscoveryDataExchangeType.VALUES[cmpId], e);
+                }
+                else {
+                    throw new DataBagUnmarshallException("Failed to unmarshal discovery data." +
+                        " Component " + cmpId + " is not found.", e);
+                }
+            }
+        }
     }
 
     /**
@@ -77,18 +103,18 @@ public class ObjectData implements MarshallableMessage {
      * @param msg Message.
      * @param <T> Type of data.
      *
-     * @return Original message or data unwrapped from an ObjectData wrapper.
+     * @return Original message or data unwrapped from an DataBagItem wrapper.
      */
     static @Nullable <T> T unwrapIfNecessary(@Nullable Message msg) {
         if (msg == null)
             return null;
 
-        return msg instanceof ObjectData ? ((ObjectData)msg).unwrap() : (T)msg;
+        return msg instanceof DataBagItem ? ((DataBagItem)msg).unwrap() : (T)msg;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(ObjectData.class, this);
+        return S.toString(DataBagItem.class, this);
     }
 
     /** {@inheritDoc} */
@@ -96,8 +122,21 @@ public class ObjectData implements MarshallableMessage {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        ObjectData data1 = (ObjectData)o;
+        DataBagItem data1 = (DataBagItem)o;
 
         return Objects.equals(data, data1.data) || Arrays.equals(dataBytes, data1.dataBytes);
+    }
+
+    /** */
+    public static class DataBagUnmarshallException extends IgniteException {
+        /**
+         * Creates new exception with given error message and optional nested exception.
+         *
+         * @param msg Error message.
+         * @param cause Optional nested exception (can be {@code null}).
+         */
+        public DataBagUnmarshallException(String msg, Throwable cause) {
+            super(msg, cause);
+        }
     }
 }

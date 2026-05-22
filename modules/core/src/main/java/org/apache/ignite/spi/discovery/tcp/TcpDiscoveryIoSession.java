@@ -40,6 +40,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
+import org.apache.ignite.spi.discovery.DataBagItem;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -201,6 +202,9 @@ public class TcpDiscoveryIoSession {
         }
         catch (Exception e) {
             if (e instanceof UnknownMessageException)
+                throw e;
+
+            if (e instanceof DataBagItem.DataBagUnmarshallException)
                 throw e;
 
             // Keep logic similar to `U.marshal(...)`.

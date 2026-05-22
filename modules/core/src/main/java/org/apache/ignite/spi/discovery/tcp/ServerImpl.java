@@ -123,6 +123,7 @@ import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.IgniteSpiThread;
+import org.apache.ignite.spi.discovery.DataBagItem;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryNotification;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
@@ -7446,6 +7447,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                     FailureProcessor failure = ((IgniteEx)spi.ignite()).context().failure();
 
                     failure.process(new FailureContext(SYSTEM_WORKER_TERMINATION, e));
+                }
+            }
+            catch (DataBagItem.DataBagUnmarshallException e) {
+                if (spi.ignite() instanceof IgniteEx) {
+                    FailureProcessor failure = ((IgniteEx)spi.ignite()).context().failure();
+
+                    failure.process(new FailureContext(CRITICAL_ERROR, e));
                 }
             }
             finally {

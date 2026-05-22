@@ -39,7 +39,7 @@ import org.junit.Test;
  */
 public class DiscoveryDataDeserializationFailureHanderTest extends GridCommonAbstractTest {
     /** */
-    private FailureHandler failureHnd;
+    private volatile FailureHandler failureHnd;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

@@ -35,6 +35,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -156,7 +157,7 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
 
         executeContinuousQuery(ignite0.cache(DEFAULT_CACHE_NAME));
 
-        ListeningTestLogger listeningLog = new ListeningTestLogger();
+        ListeningTestLogger listeningLog = new ListeningTestLogger(log());
 
         log = listeningLog;
 
@@ -170,7 +171,12 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
 
         setExternalLoader = false;
 
-        GridTestUtils.assertThrows(log, () -> startGrid(2), IgniteCheckedException.class, "Failed to start");
+        GridTestUtils.assertThrows(
+            log,
+            () -> startGrid(getConfiguration(getTestIgniteInstanceName(2))
+                .setFailureHandler(new StopNodeFailureHandler())),
+            IgniteCheckedException.class,
+            "Failed to start");
 
         assertTrue(lsnr.check());
     }

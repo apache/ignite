@@ -255,7 +255,7 @@ import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage;
 import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
 import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage;
-import org.apache.ignite.spi.discovery.ObjectData;
+import org.apache.ignite.spi.discovery.DataBagItem;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.messages.InetAddressMessage;
@@ -357,7 +357,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(GridCacheVersion.class);
         withNoSchema(GridCacheVersionEx.class);
         withNoSchema(WALPointer.class);
-        withNoSchemaResolvedClassLoader(ObjectData.class);
+        withNoSchemaResolvedClassLoader(DataBagItem.class);
 
         // [5700 - 5900]: Discovery originated messages.
         msgIdx = 5700;
