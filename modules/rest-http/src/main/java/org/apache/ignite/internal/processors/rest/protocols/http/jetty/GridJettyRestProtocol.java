@@ -360,7 +360,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             ServletContextHandler extCtx = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
 
             if (ctx.security().enabled())
-                extCtx.addFilter(new FilterHolder(new AuthenticationFilter(ctx)), "/*", EnumSet.of(DispatcherType.REQUEST));
+                extCtx.addFilter(new FilterHolder(new AuthenticationFilter(ctx)), "/*", EnumSet.allOf(DispatcherType.class));
 
             try {
                 ext.configure(extCtx);
