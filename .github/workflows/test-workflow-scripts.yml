@@ -16,12 +16,8 @@
 name: Test Workflow Scripts
 
 on:
-  push:
-    branches: [ main, master ]
-    paths:
-      - 'scripts/**'
-      - 'tests/**'
   pull_request:
+    branches: [ main, master ]
     paths:
       - 'scripts/**'
       - 'tests/**'
