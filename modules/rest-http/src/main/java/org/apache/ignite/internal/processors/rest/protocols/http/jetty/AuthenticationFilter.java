@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
 import java.io.IOException;
-import java.util.UUID;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -32,6 +31,8 @@ import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyRestHandler.sessionToken;
 
 /**
  * Servlet filter that authenticates REST requests via session token.
@@ -67,18 +68,11 @@ public class AuthenticationFilter implements Filter {
 
     /** @return Security context for given session token, or {@code null} if none found. */
     @Nullable private SecurityContext resolveSession(HttpServletRequest req) {
-        String token = req.getParameter("sessionToken");
+        byte[] token = sessionToken(req.getParameter("sessionToken"));
 
         if (token == null)
             return null;
 
-        try {
-            UUID sesId = U.bytesToUuid(U.hexString2ByteArray(token), 0);
-
-            return ((GridRestProcessor)ctx.rest()).securityContext(sesId);
-        }
-        catch (Exception ignored) {
-            return null;
-        }
+        return ((GridRestProcessor)ctx.rest()).securityContext(U.bytesToUuid(token, 0));
     }
 }
