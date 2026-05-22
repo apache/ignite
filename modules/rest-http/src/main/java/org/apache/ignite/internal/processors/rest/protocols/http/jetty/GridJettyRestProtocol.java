@@ -42,6 +42,8 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -59,9 +61,6 @@ import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
  * Jetty REST protocol implementation.
  */
 public class GridJettyRestProtocol extends GridRestProtocolAdapter {
-    /**
-     *
-     */
     static {
         if (!IgniteSystemProperties.getBoolean(IGNITE_JETTY_LOG_NO_OVERRIDE)) {
             // See also https://www.eclipse.org/jetty/documentation/jetty-9/index.html#configuring-jetty-logging
@@ -155,8 +154,14 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             connector.setPort(port);
 
             if (startJetty()) {
-                if (log.isInfoEnabled())
+                if (log.isInfoEnabled()) {
                     log.info(startInfo());
+
+                    boolean isSsl = connector.getConnectionFactory(SslConnectionFactory.class) != null;
+                    String proto = isSsl ? "https" : "http";
+
+                    log.info("HTTP REST protocol address: " + proto + "://" + host + ":" + port + "/");
+                }
 
                 return;
             }
@@ -312,7 +317,9 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
         assert httpSrv != null;
 
-        httpSrv.setHandler(jettyHnd);
+        WelcomeHandler welcomeHnd = new WelcomeHandler(log);
+
+        httpSrv.setHandler(new HandlerList(jettyHnd, welcomeHnd));
 
         override(getJettyConnector());
     }

@@ -315,7 +315,7 @@ public class DdlCommandHandler {
                 Integer scale = col.scale();
 
                 QueryField field = new QueryField(col.name(), typeName,
-                    col.type().isNullable(), col.defaultValue(),
+                    col.type().isNullable(),
                     precession == null ? -1 : precession, scale == null ? -1 : scale);
 
                 cols.add(field);
