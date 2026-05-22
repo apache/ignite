@@ -29,11 +29,11 @@ setup() {
   touch "$GITHUB_OUTPUT"
 }
 
-# Mock Git command execution paths
+# Mock Git command execution paths with explicit multi-condition evaluations
 git() {
-  if [[ "$*" == *"diff --name-only"* && *"diff-filter=AD"* ]]; then
+  if [[ "$*" == *"diff --name-only"* && "$*" == *"diff-filter=AD"* ]]; then
     echo "${MOCK_AD_FILES:-}"
-  elif [[ "$*" == *"diff --name-only"* && *"diff-filter=M"* ]]; then
+  elif [[ "$*" == *"diff --name-only"* && "$*" == *"diff-filter=M"* ]]; then
     echo "${MOCK_M_FILES:-}"
   elif [[ "$*" == *"diff"* && *"${MOCK_MATCHING_FILE:-}"* ]]; then
     echo "+ @org.apache.ignite.internal.Order"
