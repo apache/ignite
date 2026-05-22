@@ -35,6 +35,11 @@ public class ClassPathDeployToAllRequest implements Message {
     UUID uploadNodeId;
 
     /** */
+    public ClassPathDeployToAllRequest() {
+        // No-op.
+    }
+
+    /** */
     public ClassPathDeployToAllRequest(UUID icpId, UUID uploadNodeId) {
         this.icpId = icpId;
         this.uploadNodeId = uploadNodeId;

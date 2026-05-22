@@ -32,6 +32,11 @@ public class ClassPathDeployToAllResponse implements Message {
     UUID icpId;
 
     /** */
+    public ClassPathDeployToAllResponse() {
+        // No-op.
+    }
+
+    /** */
     public ClassPathDeployToAllResponse(UUID icpId) {
         this.icpId = icpId;
     }
