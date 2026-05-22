@@ -31,7 +31,9 @@ setup() {
 
 # Mock Git command execution paths with explicit multi-condition evaluations
 git() {
-  if [[ "$*" == *"diff --name-only"* && "$*" == *"diff-filter=AD"* ]]; then
+  if [[ "$*" == *"rev-parse --show-toplevel"* ]]; then
+    echo "${BATS_TMPDIR}"
+  elif [[ "$*" == *"diff --name-only"* && "$*" == *"diff-filter=AD"* ]]; then
     echo "${MOCK_AD_FILES:-}"
   elif [[ "$*" == *"diff --name-only"* && "$*" == *"diff-filter=M"* ]]; then
     echo "${MOCK_M_FILES:-}"

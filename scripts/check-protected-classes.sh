@@ -24,6 +24,10 @@ ANNOTATION="${ANNOTATION:-org.apache.ignite.internal.Order}"
 HITS_FILE="${HITS_FILE:-/tmp/protected-hits.txt}"
 GITHUB_OUTPUT="${GITHUB_OUTPUT:-/dev/null}"
 
+# Automatically locate and navigate to the repository root directory
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
 touch "$HITS_FILE"
 
 # 1. Check added/deleted files for the annotation in the diff context
