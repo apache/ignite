@@ -280,6 +280,12 @@ public class MessageSerializerGenerator {
         else
             marshall.add(indentedLine("GridCacheContext<?, ?> ctx = nested;"));
 
+        if (marshallableMessage()) {
+            marshall.add(EMPTY);
+
+            marshall.add(indentedLine("msg.prepareMarshal(marshaller);"));
+        }
+
         for (VariableElement field : orderedFields) {
             List<String> marshalled = marshall(field.asType(), fieldAccessor(field));
 
@@ -289,12 +295,6 @@ public class MessageSerializerGenerator {
 
                 marshall.addAll(marshalled);
             }
-        }
-        
-        if (marshallableMessage()) {
-            marshall.add(EMPTY);
-            
-            marshall.add(indentedLine("msg.prepareMarshal(marshaller);"));
         }
 
         indent--;
