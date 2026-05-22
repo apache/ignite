@@ -242,8 +242,7 @@ public class TcpDiscoveryIoSession {
     void serializeMessage(Message m, OutputStream out) throws IOException, IgniteCheckedException {
         MessageSerializer msgSer = spi.messageFactory().serializer(m.directType());
 
-        if (msgSer != null)
-            msgSer.prepareMarshal(m, ((IgniteEx)spi.ignite()).context().cache().context(), null);
+        msgSer.prepareMarshal(m, ((IgniteEx)spi.ignite()).context().cache().context(), null);
 
         msgWriter.reset();
         msgWriter.setBuffer(msgBuf);
