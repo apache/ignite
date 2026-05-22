@@ -17,9 +17,6 @@
 
 package org.apache.ignite.cluster;
 
-import org.apache.ignite.IgniteCluster;
-import org.apache.ignite.configuration.IgniteConfiguration;
-
 /**
  * This class represents runtime information on a cluster. Apart from obvious
  * statistical value, this information is used for implementation of
