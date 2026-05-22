@@ -425,7 +425,6 @@ public class H2TreeIndex extends H2TreeIndexBase {
      */
     public void send(Collection<ClusterNode> nodes, Message msg) {
         boolean res = getTable().tableDescriptor().indexing().send(msgTopic,
-            -1,
             nodes,
             msg,
             null,

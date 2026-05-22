@@ -80,7 +80,6 @@ public class IgniteSecurityProcessorTest extends AbstractSecurityTest {
             UUID.randomUUID(),
             PUBLIC_POOL,
             TOPIC_CACHE,
-            TOPIC_CACHE.ordinal(),
             new IgniteDiagnosticRequest(),
             false,
             0,

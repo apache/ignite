@@ -233,16 +233,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                 }
             }
 
-            Object topic;
-
-            try {
-                topic = U.unmarshal(marsh, req.responseTopicBytes(), U.resolveClassLoader(null, ctx.config()));
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to unmarshal topic from request: " + req, e);
-
-                return;
-            }
+            Object topic = req.responseTopic();
 
             ClassLoader clsLdr;
 

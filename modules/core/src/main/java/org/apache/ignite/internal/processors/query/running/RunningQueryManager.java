@@ -712,10 +712,8 @@ public class RunningQueryManager {
                                 }
                             }, GridIoPolicy.MANAGEMENT_POOL);
                         }
-                        else {
-                            ctx.io().sendGeneric(node, GridTopic.TOPIC_QUERY, GridTopic.TOPIC_QUERY.ordinal(), req,
-                                GridIoPolicy.MANAGEMENT_POOL);
-                        }
+                        else
+                            ctx.io().sendGeneric(node, GridTopic.TOPIC_QUERY, req, GridIoPolicy.MANAGEMENT_POOL);
                     }
                     catch (IgniteCheckedException e) {
                         cancellationRuns.remove(reqId);
@@ -857,8 +855,7 @@ public class RunningQueryManager {
         }
 
         try {
-            ctx.io().sendGeneric(node, GridTopic.TOPIC_QUERY, GridTopic.TOPIC_QUERY.ordinal(), res,
-                GridIoPolicy.MANAGEMENT_POOL);
+            ctx.io().sendGeneric(node, GridTopic.TOPIC_QUERY, res, GridIoPolicy.MANAGEMENT_POOL);
         }
         catch (IgniteCheckedException e) {
             U.warn(log, "Failed to send message [node=" + node + ", msg=" + res +
