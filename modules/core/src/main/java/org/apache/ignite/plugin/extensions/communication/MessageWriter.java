@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -327,6 +328,16 @@ public interface MessageWriter {
      * @return Whether value was fully written.
      */
     public <K, V> boolean writeMap(Map<K, V> map, MessageMapType type, boolean compress);
+
+    /**
+     * Writes ignite product version.
+     *
+     * @param ver Version.
+     * @return Whether value was fully written.
+     */
+    default boolean writeIgniteProductVersion(IgniteProductVersion ver) {
+        return true;
+    }
 
     /**
      * @return Whether header of current message is already written.
