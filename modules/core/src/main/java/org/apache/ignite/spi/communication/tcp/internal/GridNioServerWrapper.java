@@ -814,10 +814,6 @@ public class GridNioServerWrapper {
                 MessageFactory msgFactory = new MessageFactory() {
                     private MessageFactory impl;
 
-                    @Override public void register(short directType, Supplier<Message> supplier) throws IgniteException {
-                        get().register(directType, supplier);
-                    }
-
                     @Override public void register(short directType, Supplier<Message> supplier,
                         MessageSerializer serializer) throws IgniteException {
                         get().register(directType, supplier, serializer);

@@ -85,7 +85,7 @@ public class MessageProcessor extends AbstractProcessor {
     /** Messages with no fields. A serializer generation intentionally skipped. */
     static final String[] SKIP_MESSAGES = {
         "org.apache.ignite.internal.processors.odbc.ClientMessage",
-        "org.apache.ignite.internal.managers.communication.CompressedMessage",
+        COMPRESSED_MESSAGE_INTERFACE,
         "org.apache.ignite.loadtests.communication.GridTestMessage"
     };
 
