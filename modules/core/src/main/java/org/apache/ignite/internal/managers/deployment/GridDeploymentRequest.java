@@ -19,7 +19,6 @@ package org.apache.ignite.internal.managers.deployment;
 
 import java.util.Collection;
 import java.util.UUID;
-import org.apache.ignite.internal.GridTopicMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -27,13 +26,13 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * Deployment request.
- */
+import static org.apache.ignite.internal.GridTopic.TOPIC_CLASSLOAD;
+
+/** Deployment request. */
 public class GridDeploymentRequest implements Message {
-    /** Response topic message. Response should be sent back to this topic. */
+    /** ID of the node waiting for the response. */
     @Order(0)
-    @Nullable GridTopicMessage topicMsg;
+    @Nullable IgniteUuid resTopicId;
 
     /** Requested class name. */
     @Order(1)
@@ -58,12 +57,12 @@ public class GridDeploymentRequest implements Message {
     /**
      * Creates deploy request.
      *
-     * @param topic Response topic.
+     * @param resTopicId ID of the node waiting for the response.
      * @param ldrId Class loader ID.
      * @param rsrcName Resource name that should be found and sent back.
      */
-    GridDeploymentRequest(Object topic, IgniteUuid ldrId, String rsrcName) {
-        topicMsg = new GridTopicMessage(topic);
+    GridDeploymentRequest(IgniteUuid resTopicId, IgniteUuid ldrId, String rsrcName) {
+        this.resTopicId = resTopicId;
         this.ldrId = ldrId;
         this.rsrcName = rsrcName;
     }
@@ -83,7 +82,7 @@ public class GridDeploymentRequest implements Message {
      * @return Response topic name.
      */
     @Nullable Object responseTopic() {
-        return GridTopicMessage.topic(topicMsg);
+        return TOPIC_CLASSLOAD.topic(resTopicId);
     }
 
     /**
@@ -110,21 +109,15 @@ public class GridDeploymentRequest implements Message {
      * @return Property undeploy.
      */
     boolean undeploy() {
-        return topicMsg == null;
+        return resTopicId == null;
     }
 
-    /**
-     * @return Node IDs chain which is updated as request jumps
-     *      from node to node.
-     */
+    /** @return Node IDs chain which is updated as request jumps from node to node. */
     Collection<UUID> nodeIds() {
         return nodeIds;
     }
 
-    /**
-     * @param nodeIds Node IDs chain which is updated as request jumps
-     *      from node to node.
-     */
+    /** @param nodeIds Node IDs chain which is updated as request jumps from node to node. */
     void nodeIds(Collection<UUID> nodeIds) {
         this.nodeIds = nodeIds;
     }
