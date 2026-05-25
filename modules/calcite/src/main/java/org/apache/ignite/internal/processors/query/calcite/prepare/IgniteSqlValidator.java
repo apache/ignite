@@ -240,8 +240,8 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** {@inheritDoc} */
     @Override protected void validateSelect(SqlSelect select, RelDataType targetRowType) {
-        checkIntegerLimit(select.getFetch(), "fetch / limit");
-        checkIntegerLimit(select.getOffset(), "offset");
+        select.setFetch(checkIntegerLimit(select.getFetch(), "fetch / limit"));
+        select.setOffset(checkIntegerLimit(select.getOffset(), "offset"));
 
         super.validateSelect(select, targetRowType);
     }
@@ -263,29 +263,84 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     /**
      * @param n Node to check limit.
      * @param nodeName Node name.
+     * @return Original node or evaluated literal for expressions.
      */
-    private void checkIntegerLimit(SqlNode n, String nodeName) {
-        if (n instanceof SqlLiteral) {
-            BigDecimal offFetchLimit = ((SqlLiteral)n).bigDecimalValue();
+    private SqlNode checkIntegerLimit(SqlNode n, String nodeName) {
+        if (n == null)
+            return null;
 
-            if (offFetchLimit.compareTo(DEC_INT_MAX) > 0 || offFetchLimit.compareTo(BigDecimal.ZERO) < 0)
-                throw newValidationError(n, IgniteResource.INSTANCE.correctIntegerLimit(nodeName));
+        BigDecimal offFetchLimit = limitValue(n);
+
+        if (offFetchLimit != null && (offFetchLimit.compareTo(DEC_INT_MAX) > 0
+            || offFetchLimit.compareTo(BigDecimal.ZERO) < 0)) {
+            throw newValidationError(n, IgniteResource.INSTANCE.correctIntegerLimit(nodeName));
         }
-        else if (n instanceof SqlDynamicParam) {
-            // will fail in params check.
+
+        if (offFetchLimit != null && n instanceof SqlCall)
+            return SqlLiteral.createExactNumeric(offFetchLimit.toPlainString(), n.getParserPosition());
+
+        return n;
+    }
+
+    /**
+     * @param n Limit node.
+     * @return Limit value, or {@code null} if the expression cannot be evaluated during validation.
+     */
+    @Nullable private BigDecimal limitValue(SqlNode n) {
+        if (n instanceof SqlLiteral)
+            return ((SqlLiteral)n).bigDecimalValue();
+
+        if (n instanceof SqlDynamicParam) {
+            // Will fail in params check.
             if (F.isEmpty(parameters))
-                return;
+                return null;
 
             int idx = ((SqlDynamicParam)n).getIndex();
 
-            if (idx < parameters.length) {
-                Object param = parameters[idx];
-                if (parameters[idx] instanceof Integer) {
-                    if ((Integer)param < 0)
-                        throw newValidationError(n, IgniteResource.INSTANCE.correctIntegerLimit(nodeName));
-                }
+            if (idx >= parameters.length)
+                return null;
+
+            Object param = parameters[idx];
+
+            return param instanceof Number ? new BigDecimal(param.toString()) : null;
+        }
+
+        if (n instanceof SqlCall) {
+            SqlCall call = (SqlCall)n;
+            List<SqlNode> operands = call.getOperandList();
+
+            switch (call.getKind()) {
+                case PLUS:
+                    if (operands.size() == 2) {
+                        BigDecimal left = limitValue(operands.get(0));
+                        BigDecimal right = limitValue(operands.get(1));
+
+                        return left != null && right != null ? left.add(right) : null;
+                    }
+
+                    break;
+
+                case MINUS:
+                    if (operands.size() == 1) {
+                        BigDecimal operand = limitValue(operands.get(0));
+
+                        return operand != null ? operand.negate() : null;
+                    }
+                    else if (operands.size() == 2) {
+                        BigDecimal left = limitValue(operands.get(0));
+                        BigDecimal right = limitValue(operands.get(1));
+
+                        return left != null && right != null ? left.subtract(right) : null;
+                    }
+
+                    break;
+
+                default:
+                    return null;
             }
         }
+
+        return null;
     }
 
     /** {@inheritDoc} */

@@ -1,0 +1,10 @@
+--- javacc/Parser.jj
++++ javacc/Parser.jj
+@@ -754,7 +754,7 @@
+ {
+     // SQL:2008-style syntax. "OFFSET ... FETCH ...".
+     // If you specify both LIMIT and FETCH, FETCH wins.
+-    <FETCH> ( <FIRST> | <NEXT> ) offsetFetch[1] = UnsignedNumericLiteralOrParam()
++    <FETCH> ( <FIRST> | <NEXT> ) offsetFetch[1] = FetchCount()
+     ( <ROW> | <ROWS> ) <ONLY>
+ }
