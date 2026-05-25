@@ -17,15 +17,12 @@
 
 package org.apache.ignite.internal.management;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ArgumentGroup;
 import org.apache.ignite.internal.management.api.Positional;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 @ArgumentGroup(value = {"nodeIds", "nodeId", "allNodes"}, optional = true, onlyOneOf = true)
@@ -34,46 +31,34 @@ public class SystemViewCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** System view name. */
+    @Order(0)
     @Positional
     @Argument(description = "Name of the system view which content should be printed." +
         " Both \"SQL\" and \"Java\" styles of system view name are supported" +
         " (e.g. SQL_TABLES and sql.tables will be handled similarly)")
-    private String systemViewName;
+    String systemViewName;
 
     /** */
+    @Order(1)
     @Argument(
         description = "ID of the node to get the system view from (deprecated. Use --node-ids instead). " +
             "If not set, random node will be chosen"
     )
-    private UUID nodeId;
+    UUID nodeId;
 
     /** ID of the nodes to get the system view content from. */
+    @Order(2)
     @Argument(
         description = "Comma-separated list of nodes IDs to get the system view from. " +
         "If not set, random node will be chosen",
         example = "nodeId1,nodeId2,.."
     )
-    private UUID[] nodeIds;
+    UUID[] nodeIds;
 
     /** Flag to get the system view from all nodes. */
+    @Order(3)
     @Argument(description = "Get the system view from all nodes. If not set, random node will be chosen")
-    private boolean allNodes;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, systemViewName);
-        U.writeUuid(out, nodeId);
-        U.writeArray(out, nodeIds);
-        out.writeBoolean(allNodes);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        systemViewName = U.readString(in);
-        nodeId = U.readUuid(in);
-        nodeIds = U.readArray(in, UUID.class);
-        allNodes = in.readBoolean();
-    }
+    boolean allNodes;
 
     /** */
     public String systemViewName() {

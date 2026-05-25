@@ -23,6 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -161,7 +162,7 @@ public enum GridTopic {
     private static final GridTopic[] VALS = values();
 
     /** Default charset to work with strings. */
-    private static final Charset DFLT_CHARSET = Charset.forName("UTF-8");
+    private static final Charset DFLT_CHARSET = StandardCharsets.UTF_8;
 
     /**
      * Efficiently gets enumerated value from its ordinal.
@@ -225,34 +226,11 @@ public enum GridTopic {
      * @param id3 ID3.
      * @return Grid message topic with specified IDs.
      */
-    public Object topic(String id1, int id2, long id3) {
-        return new T5(this, UUID.nameUUIDFromBytes(id1.getBytes(DFLT_CHARSET)), id2, id3);
-    }
-
-    /**
-     * @param id1 ID1.
-     * @param id2 ID2.
-     * @param id3 ID3.
-     * @return Grid message topic with specified IDs.
-     */
     public Object topic(String id1, UUID id2, long id3) {
         return new T4(this, UUID.nameUUIDFromBytes(id1.getBytes(DFLT_CHARSET)), id2, id3);
     }
 
-    /**
-     * @param id1 ID1.
-     * @param id2 ID2.
-     * @param id3 ID3.
-     * @param id4 ID4.
-     * @return Grid message topic with specified IDs.
-     */
-    public Object topic(String id1, UUID id2, int id3, long id4) {
-        return new T7(this, UUID.nameUUIDFromBytes(id1.getBytes(DFLT_CHARSET)), id2, id3, id4);
-    }
-
-    /**
-     *
-     */
+    /** */
     private static class T1 implements Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
@@ -371,7 +349,7 @@ public enum GridTopic {
         }
 
         /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        @Override public void readExternal(ObjectInput in) throws IOException {
             topic = fromOrdinal(in.readByte());
             id1 = U.readIgniteUuid(in);
             id2 = U.readUuid(in);
@@ -435,7 +413,7 @@ public enum GridTopic {
         }
 
         /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        @Override public void readExternal(ObjectInput in) throws IOException {
             topic = fromOrdinal(in.readByte());
             id1 = U.readUuid(in);
         }
@@ -487,7 +465,7 @@ public enum GridTopic {
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return topic.ordinal() + id1.hashCode() + id2.hashCode() + (int)(id3 ^ (id3 >>> 32));
+            return topic.ordinal() + id1.hashCode() + id2.hashCode() + Long.hashCode(id3);
         }
 
         /** {@inheritDoc} */
@@ -510,7 +488,7 @@ public enum GridTopic {
         }
 
         /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        @Override public void readExternal(ObjectInput in) throws IOException {
             topic = fromOrdinal(in.readByte());
             id1 = U.readUuid(in);
             id2 = U.readUuid(in);
@@ -520,83 +498,6 @@ public enum GridTopic {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(T4.class, this);
-        }
-    }
-
-    /**
-     *
-     */
-    private static class T5 implements Externalizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private GridTopic topic;
-
-        /** */
-        private UUID id1;
-
-        /** */
-        private int id2;
-
-        /** */
-        private long id3;
-
-        /**
-         * No-arg constructor needed for {@link Serializable}.
-         */
-        public T5() {
-            // No-op.
-        }
-
-        /**
-         * @param topic Topic.
-         * @param id1 ID1.
-         * @param id2 ID2.
-         * @param id3 ID3.
-         */
-        private T5(GridTopic topic, UUID id1, int id2, long id3) {
-            this.topic = topic;
-            this.id1 = id1;
-            this.id2 = id2;
-            this.id3 = id3;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return topic.ordinal() + id1.hashCode() + id2 + (int)(id3 ^ (id3 >>> 32));
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object obj) {
-            if (obj.getClass() == T5.class) {
-                T5 that = (T5)obj;
-
-                return topic == that.topic && id1.equals(that.id1) && id2 == that.id2 && id3 == that.id3;
-            }
-
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeByte(topic.ordinal());
-            U.writeUuid(out, id1);
-            out.writeInt(id2);
-            out.writeLong(id3);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            topic = fromOrdinal(in.readByte());
-            id1 = U.readUuid(in);
-            id2 = in.readInt();
-            id3 = in.readLong();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(T5.class, this);
         }
     }
 
@@ -636,7 +537,7 @@ public enum GridTopic {
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return topic.ordinal() + id1.hashCode() + (int)(id2 ^ (id2 >>> 32));
+            return topic.ordinal() + id1.hashCode() + Long.hashCode(id2);
         }
 
         /** {@inheritDoc} */
@@ -658,7 +559,7 @@ public enum GridTopic {
         }
 
         /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        @Override public void readExternal(ObjectInput in) throws IOException {
             topic = fromOrdinal(in.readByte());
             id1 = U.readUuid(in);
             id2 = in.readLong();
@@ -667,91 +568,6 @@ public enum GridTopic {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(T6.class, this);
-        }
-    }
-
-    /**
-     *
-     */
-    private static class T7 implements Externalizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private GridTopic topic;
-
-        /** */
-        private UUID id1;
-
-        /** */
-        private UUID id2;
-
-        /** */
-        private int id3;
-
-        /** */
-        private long id4;
-
-        /**
-         * No-arg constructor needed for {@link Serializable}.
-         */
-        public T7() {
-            // No-op.
-        }
-
-        /**
-         * @param topic Topic.
-         * @param id1 ID1.
-         * @param id2 ID2.
-         * @param id3 ID3.
-         * @param id4 ID4.
-         */
-        private T7(GridTopic topic, UUID id1, UUID id2, int id3, long id4) {
-            this.topic = topic;
-            this.id1 = id1;
-            this.id2 = id2;
-            this.id3 = id3;
-            this.id4 = id4;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return topic.ordinal() + id1.hashCode() + id2.hashCode() + id3 + (int)(id4 ^ (id4 >>> 32));
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object obj) {
-            if (obj.getClass() == T7.class) {
-                T7 that = (T7)obj;
-
-                return topic == that.topic && id1.equals(that.id1) && id2.equals(that.id2) && id3 == that.id3 &&
-                    id4 == that.id4;
-            }
-
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeByte(topic.ordinal());
-            U.writeUuid(out, id1);
-            U.writeUuid(out, id2);
-            out.writeInt(id3);
-            out.writeLong(id4);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            topic = fromOrdinal(in.readByte());
-            id1 = U.readUuid(in);
-            id2 = U.readUuid(in);
-            id3 = in.readInt();
-            id4 = in.readLong();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(T7.class, this);
         }
     }
 
@@ -791,7 +607,7 @@ public enum GridTopic {
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return topic.ordinal() + id1.hashCode() + (int)(id2 ^ (id2 >>> 32));
+            return topic.ordinal() + id1.hashCode() + Long.hashCode(id2);
         }
 
         /** {@inheritDoc} */
@@ -813,7 +629,7 @@ public enum GridTopic {
         }
 
         /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        @Override public void readExternal(ObjectInput in) throws IOException {
             topic = fromOrdinal(in.readByte());
             id1 = U.readIgniteUuid(in);
             id2 = in.readLong();

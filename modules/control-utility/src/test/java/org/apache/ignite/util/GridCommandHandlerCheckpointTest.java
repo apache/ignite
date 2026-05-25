@@ -150,7 +150,7 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
         cacheCli.put(3, 3);
 
         assertEquals(EXIT_CODE_OK, execute("--checkpoint", "--wait-for-finish"));
-        assertTrue(checkpointFinishedLsnr.check());
+        assertTrue(GridTestUtils.waitForCondition(checkpointFinishedLsnr::check, 10_000));
         assertFalse(testOut.toString().contains("persistence disabled"));
     }
 

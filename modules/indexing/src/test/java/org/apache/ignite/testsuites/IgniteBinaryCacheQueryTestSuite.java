@@ -17,16 +17,15 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.cache.AffinityAliasKeyTest;
 import org.apache.ignite.internal.processors.cache.AffinityKeyNameAndValueFieldNameConflictTest;
 import org.apache.ignite.internal.processors.cache.CacheOffheapBatchIndexingMultiTypeTest;
 import org.apache.ignite.internal.processors.cache.CacheQueryBuildValueTest;
 import org.apache.ignite.internal.processors.cache.DdlTransactionIndexingSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheCrossCacheQuerySelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheLazyQueryPartitionsReleaseTest;
 import org.apache.ignite.internal.processors.cache.GridCacheQueryIndexDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheQueryInternalKeysSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheQueryPartitionsReleaseTest;
 import org.apache.ignite.internal.processors.cache.GridCacheQuerySerializationSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteBinaryObjectFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteBinaryObjectLocalQueryArgumentsTest;
@@ -119,8 +118,7 @@ import org.apache.ignite.internal.processors.cache.transaction.DmlInsideTransact
 import org.apache.ignite.internal.processors.client.ClientConnectorConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.database.baseline.IgniteStableBaselineBinObjFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.query.IgniteCachelessQueriesSelfTest;
-import org.apache.ignite.internal.processors.query.IgniteQueryTableLockAndConnectionPoolLazyModeOffTest;
-import org.apache.ignite.internal.processors.query.IgniteQueryTableLockAndConnectionPoolLazyModeOnTest;
+import org.apache.ignite.internal.processors.query.IgniteQueryTableLockAndConnectionPoolSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSchemaIndexingTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSegmentedIndexMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSegmentedIndexSelfTest;
@@ -155,8 +153,6 @@ import org.apache.ignite.sqltests.CheckWarnJoinPartitionedTables;
 import org.apache.ignite.sqltests.PartitionedSqlTest;
 import org.apache.ignite.sqltests.ReplicatedSqlCustomPartitionsTest;
 import org.apache.ignite.sqltests.ReplicatedSqlTest;
-import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -207,7 +203,7 @@ import org.junit.runners.Suite;
     // Misc tests.
     QueryEntityValidationSelfTest.class,
     DuplicateKeyValueClassesSelfTest.class,
-    GridCacheLazyQueryPartitionsReleaseTest.class,
+    GridCacheQueryPartitionsReleaseTest.class,
     StopNodeOnRebuildIndexFailureTest.class,
 
     // Dynamic index create/drop tests.
@@ -232,8 +228,7 @@ import org.junit.runners.Suite;
     IgniteDynamicEnableIndexingRestoreTest.class,
 
     // Queries tests.
-    IgniteQueryTableLockAndConnectionPoolLazyModeOnTest.class,
-    IgniteQueryTableLockAndConnectionPoolLazyModeOffTest.class,
+    IgniteQueryTableLockAndConnectionPoolSelfTest.class,
     IgniteSqlSplitterSelfTest.class,
     SqlPushDownFunctionTest.class,
     IgniteSqlSegmentedIndexSelfTest.class,
@@ -341,9 +336,4 @@ import org.junit.runners.Suite;
 
 })
 public class IgniteBinaryCacheQueryTestSuite {
-    /** Setup lazy mode default. */
-    @BeforeClass
-    public static void setupLazy() {
-        GridTestUtils.setFieldValue(SqlFieldsQuery.class, "DFLT_LAZY", false);
-    }
 }

@@ -21,12 +21,10 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.internal.processors.service.ServiceCallContextImpl;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.lang.IgniteExperimental;
 
 /**
  * Service call context builder.
  */
-@IgniteExperimental
 public class ServiceCallContextBuilder {
     /** Service call context attributes. */
     private final Map<String, Object> attrs = new HashMap<>();

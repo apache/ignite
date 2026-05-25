@@ -210,7 +210,6 @@ namespace Apache.Ignite.Linq.Impl
                 Colocated = _options.Colocated,
                 Local = _options.Local,
                 Arguments = args,
-                Lazy = _options.Lazy,
                 UpdateBatchSize = _options.UpdateBatchSize,
                 Partitions = _options.Partitions
             };

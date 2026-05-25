@@ -43,7 +43,6 @@ import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
@@ -65,7 +64,6 @@ import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
-import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.processors.tracing.SpanTags;
@@ -117,7 +115,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryServerOnlyCustomEventMessage;
-import org.apache.ignite.thread.IgniteThreadFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -132,6 +129,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
+import static org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolExecutor.newSingleThreadScheduledExecutor;
 import static org.apache.ignite.spi.discovery.tcp.ClientImpl.State.CONNECTED;
 import static org.apache.ignite.spi.discovery.tcp.ClientImpl.State.DISCONNECTED;
 import static org.apache.ignite.spi.discovery.tcp.ClientImpl.State.SEGMENTED;
@@ -217,8 +215,7 @@ class ClientImpl extends TcpDiscoveryImpl {
         String instanceName = adapter.ignite() == null || adapter.ignite().name() == null
             ? "client-node" : adapter.ignite().name();
 
-        executorSrvc = Executors.newSingleThreadScheduledExecutor(
-            new IgniteThreadFactory(instanceName, "tcp-discovery-exec"));
+        executorSrvc = newSingleThreadScheduledExecutor("tcp-discovery-exec", instanceName);
     }
 
     /** {@inheritDoc} */
@@ -501,33 +498,28 @@ class ClientImpl extends TcpDiscoveryImpl {
         if (state == STOPPED || state == SEGMENTED || state == STARTING)
             throw new IgniteException("Failed to send custom message: client is " + state.name().toLowerCase() + ".");
 
-        try {
-            TcpDiscoveryCustomEventMessage msg;
+        TcpDiscoveryCustomEventMessage msg;
 
-            if (((CustomMessageWrapper)evt).delegate() instanceof DiscoveryServerOnlyCustomMessage)
-                msg = new TcpDiscoveryServerOnlyCustomEventMessage(getLocalNodeId(), evt,
-                    U.marshal(spi.marshaller(), evt));
-            else
-                msg = new TcpDiscoveryCustomEventMessage(getLocalNodeId(), evt,
-                    U.marshal(spi.marshaller(), evt));
+        DiscoverySpiCustomMessage customMsg = U.unwrapCustomMessage(evt);
 
-            Span rootSpan = tracing.create(TraceableMessagesTable.traceName(msg.getClass()))
-                .addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.ID), () -> getLocalNodeId().toString())
-                .addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.CONSISTENT_ID),
-                    () -> locNode.consistentId().toString())
-                .addTag(SpanTags.MESSAGE_CLASS, () -> ((CustomMessageWrapper)evt).delegate().getClass().getSimpleName())
-                .addLog(() -> "Created");
+        if (customMsg instanceof DiscoveryServerOnlyCustomMessage)
+            msg = new TcpDiscoveryServerOnlyCustomEventMessage(getLocalNodeId(), evt);
+        else
+            msg = new TcpDiscoveryCustomEventMessage(getLocalNodeId(), evt);
 
-            // This root span will be parent both from local and remote nodes.
-            msg.spanContainer().serializedSpanBytes(tracing.serialize(rootSpan));
+        Span rootSpan = tracing.create(TraceableMessagesTable.traceName(msg.getClass()))
+            .addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.ID), () -> getLocalNodeId().toString())
+            .addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.CONSISTENT_ID),
+                () -> locNode.consistentId().toString())
+            .addTag(SpanTags.MESSAGE_CLASS, () -> customMsg.getClass().getSimpleName())
+            .addLog(() -> "Created");
 
-            sockWriter.sendMessage(msg);
+        // This root span will be parent both from local and remote nodes.
+        msg.spanContainer().serializedSpanBytes(tracing.serialize(rootSpan));
 
-            rootSpan.addLog(() -> "Sent").end();
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteSpiException("Failed to marshal custom event: " + evt, e);
-        }
+        sockWriter.sendMessage(msg);
+
+        rootSpan.addLog(() -> "Sent").end();
     }
 
     /** {@inheritDoc} */
@@ -728,6 +720,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 sock = spi.openSocket(addr, timeoutHelper);
 
+                openSock = true;
+
                 TcpDiscoveryIoSession ses = createSession(sock);
 
                 TcpDiscoveryHandshakeRequest req = new TcpDiscoveryHandshakeRequest(locNodeId);
@@ -737,13 +731,15 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 spi.writeMessage(ses, req, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
-                TcpDiscoveryHandshakeResponse res = spi.readMessage(ses, ackTimeout0);
+                TcpDiscoveryHandshakeResponse res = spi.readHandshakeResponse(ses, ackTimeout0);
 
                 // Convert the addresses once.
                 Collection<InetSocketAddress> redirectAddrs = res.redirectAddresses();
 
                 if (redirectAddrs != null) {
                     U.closeQuiet(sock);
+
+                    openSock = false;
 
                     if (log.isInfoEnabled())
                         log.info("Reconnecting to the addresses of a proper DC [addrs=" + redirectAddrs + ']');
@@ -923,7 +919,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
             Collection<ClusterNode> top = topHist.get(topVer);
 
-            assert top != null : "Failed to find topology history [msg=" + msg + ", hist=" + topHist + ']';
+            assert top != null : "Failed to find topology history [top=" + topVer + ", msg=" + msg + ", hist=" + topHist + ']';
 
             return top;
         }
@@ -2235,7 +2231,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         nodeAdded = true;
 
                         if (msg.topologyHistory() != null)
-                            topHist.putAll(msg.topologyHistory());
+                            topHist.putAll(upcast(msg.topologyHistory()));
                     }
                     else {
                         if (log.isDebugEnabled())
@@ -2526,8 +2522,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                     log.debug("Received metrics response: " + msg);
             }
             else {
-                if (msg.hasMetrics())
-                    processMsgCacheMetrics(msg, System.nanoTime());
+                if (!F.isEmpty(msg.serversFullMetricsMessages()))
+                    processCacheMetricsMessage(msg, System.nanoTime());
             }
         }
 
@@ -2590,16 +2586,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                     TcpDiscoveryNode node = nodeId.equals(getLocalNodeId()) ? locNode : rmtNodes.get(nodeId);
 
                     if (node != null && node.visible()) {
-                        try {
-                            DiscoverySpiCustomMessage msgObj = msg.message(spi.marshaller(),
-                                U.resolveClassLoader(spi.ignite().configuration()));
-
-                            notifyDiscovery(
-                                EVT_DISCOVERY_CUSTOM_EVT, topVer, node, allVisibleNodes(), msgObj, msg.spanContainer());
-                        }
-                        catch (Throwable e) {
-                            U.error(log, "Failed to unmarshal discovery custom message.", e);
-                        }
+                        notifyDiscovery(
+                            EVT_DISCOVERY_CUSTOM_EVT, topVer, node, allVisibleNodes(), msg.message(), msg.spanContainer());
                     }
                     else if (log.isDebugEnabled())
                         log.debug("Received metrics from unknown node: " + nodeId);
@@ -2680,14 +2668,14 @@ class ClientImpl extends TcpDiscoveryImpl {
          * @param topVer Topology version.
          * @param node Node.
          * @param top Topology snapshot.
-         * @param data Optional custom message data.
+         * @param customMsg Optional custom message.
          */
         private void notifyDiscovery(
             int type,
             long topVer,
             ClusterNode node,
             Collection<ClusterNode> top,
-            @Nullable DiscoverySpiCustomMessage data,
+            @Nullable DiscoverySpiCustomMessage customMsg,
             SpanContainer spanContainer
         ) {
             DiscoverySpiListener lsnr = spi.lsnr;
@@ -2700,7 +2688,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         ", topVer=" + topVer + ']');
 
                 lsnr.onDiscovery(
-                    new DiscoveryNotification(type, topVer, node, top, new TreeMap<>(topHist), data, spanContainer)
+                    new DiscoveryNotification(type, topVer, node, top, new TreeMap<>(topHist), customMsg, spanContainer)
                 ).get();
             }
             else if (debugLog.isDebugEnabled())

@@ -34,12 +34,9 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAware;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.UUIDCollectionMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.C1;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -68,81 +65,72 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     /** */
     public static final int STORE_WRITE_THROUGH_FLAG_MASK = 0x20;
 
-    /** Collection to message converter. */
-    private static final C1<Collection<UUID>, UUIDCollectionMessage> COL_TO_MSG = UUIDCollectionMessage::new;
-
-    /** Message to collection converter. */
-    private static final C1<UUIDCollectionMessage, Collection<UUID>> MSG_TO_COL = UUIDCollectionMessage::uuids;
-
     /** Thread ID. */
-    @Order(7)
+    @Order(0)
     @GridToStringInclude
-    private long threadId;
+    public long threadId;
 
     /** Transaction concurrency. */
-    @Order(8)
+    @Order(1)
     @GridToStringInclude
-    private TransactionConcurrency concurrency;
+    public TransactionConcurrency concurrency;
 
     /** Transaction isolation. */
-    @Order(9)
+    @Order(2)
     @GridToStringInclude
-    private TransactionIsolation isolation;
+    public TransactionIsolation isolation;
 
     /** Commit version for EC transactions. */
-    @Order(value = 10, method = "writeVersion")
+    @Order(3)
     @GridToStringInclude
-    private GridCacheVersion writeVer;
+    public GridCacheVersion writeVer;
 
     /** Transaction timeout. */
-    @Order(11)
+    @Order(4)
     @GridToStringInclude
-    private long timeout;
+    public long timeout;
 
     /** Transaction read set. */
-    @Order(12)
+    @Order(5)
     @GridToStringInclude
-    private Collection<IgniteTxEntry> reads;
+    public Collection<IgniteTxEntry> reads;
 
     /** Transaction write entries. */
-    @Order(13)
+    @Order(6)
     @GridToStringInclude
-    private Collection<IgniteTxEntry> writes;
+    public Collection<IgniteTxEntry> writes;
 
     /** DHT versions to verify. */
     @GridToStringInclude
     private Map<IgniteTxKey, GridCacheVersion> dhtVers;
 
     /** */
-    @Order(value = 14, method = "dhtVersionKeys")
-    private Collection<IgniteTxKey> dhtVerKeys;
+    @Order(7)
+    public Collection<IgniteTxKey> dhtVerKeys;
 
     /** */
-    @Order(value = 15, method = "dhtVersionValues")
-    private Collection<GridCacheVersion> dhtVerVals;
+    @Order(8)
+    public Collection<GridCacheVersion> dhtVerVals;
 
     /** Expected transaction size. */
-    @Order(16)
-    private int txSize;
+    @Order(9)
+    public int txSize;
 
     /** Transaction nodes mapping (primary node -> related backup nodes). */
-    private Map<UUID, Collection<UUID>> txNodes;
-
-    /** Tx nodes direct marshallable message. */
-    @Order(value = 17, method = "txNodesMessages")
-    private Map<UUID, UUIDCollectionMessage> txNodesMsg;
+    @Order(10)
+    public Map<UUID, Collection<UUID>> txNodes;
 
     /** IO policy. */
-    @Order(value = 18, method = "policy")
-    private byte plc;
+    @Order(11)
+    public byte plc;
 
     /** Transient TX state. */
     private IgniteTxState txState;
 
     /** */
-    @Order(19)
+    @Order(12)
     @GridToStringExclude
-    private byte flags;
+    public byte flags;
 
     /** Application attributes. */
     @GridToStringExclude
@@ -164,7 +152,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
      * @param retVal Return value flag.
      * @param last Last request flag.
      * @param onePhaseCommit One phase commit flag.
-     * @param addDepInfo Deployment info flag.
      */
     public GridDistributedTxPrepareRequest(
         IgniteInternalTx tx,
@@ -174,10 +161,9 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         Map<UUID, Collection<UUID>> txNodes,
         boolean retVal,
         boolean last,
-        boolean onePhaseCommit,
-        boolean addDepInfo
+        boolean onePhaseCommit
     ) {
-        super(tx.xidVersion(), 0, addDepInfo);
+        super(tx.xidVersion(), 0, false);
 
         writeVer = tx.writeVersion();
         threadId = tx.threadId();
@@ -251,13 +237,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     }
 
     /**
-     * @param plc IO policy.
-     */
-    public void policy(byte plc) {
-        this.plc = plc;
-    }
-
-    /**
      * Adds version to be verified on remote node.
      *
      * @param key Key for which version is verified.
@@ -285,24 +264,10 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     }
 
     /**
-     * @param threadId Thread ID.
-     */
-    public void threadId(long threadId) {
-        this.threadId = threadId;
-    }
-
-    /**
      * @return Commit version.
      */
     public GridCacheVersion writeVersion() {
         return writeVer;
-    }
-
-    /**
-     * @param writeVer Commit version.
-     */
-    public void writeVersion(GridCacheVersion writeVer) {
-        this.writeVer = writeVer;
     }
 
     /**
@@ -320,13 +285,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     }
 
     /**
-     * @param timeout Transaction timeout.
-     */
-    public void timeout(long timeout) {
-        this.timeout = timeout;
-    }
-
-    /**
      * @return Concurrency.
      */
     public TransactionConcurrency concurrency() {
@@ -334,24 +292,10 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     }
 
     /**
-     * @param concurrency Concurrency.
-     */
-    public void concurrency(TransactionConcurrency concurrency) {
-        this.concurrency = concurrency;
-    }
-
-    /**
      * @return Isolation level.
      */
     public TransactionIsolation isolation() {
         return isolation;
-    }
-
-    /**
-     * @param isolation Isolation level.
-     */
-    public void isolation(TransactionIsolation isolation) {
-        this.isolation = isolation;
     }
 
     /**
@@ -383,73 +327,10 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     }
 
     /**
-     * @return DHT version keys.
-     */
-    public Collection<IgniteTxKey> dhtVersionKeys() {
-        return dhtVerKeys;
-    }
-
-    /**
-     * @param dhtVerKeys DHT version keys.
-     */
-    public void dhtVersionKeys(Collection<IgniteTxKey> dhtVerKeys) {
-        this.dhtVerKeys = dhtVerKeys;
-    }
-
-    /**
-     * @return DHT version values.
-     */
-    public Collection<GridCacheVersion> dhtVersionValues() {
-        return dhtVerVals;
-    }
-
-    /**
-     * @param dhtVerVals DHT version values.
-     */
-    public void dhtVersionValues(Collection<GridCacheVersion> dhtVerVals) {
-        this.dhtVerVals = dhtVerVals;
-    }
-
-    /**
      * @return Expected transaction size.
      */
     public int txSize() {
         return txSize;
-    }
-
-    /**
-     * @param txSize Expected transaction size.
-     */
-    public void txSize(int txSize) {
-        this.txSize = txSize;
-    }
-
-    /**
-     * @return Tx nodes direct marshallable message.
-     */
-    public Map<UUID, UUIDCollectionMessage> txNodesMessages() {
-        return txNodesMsg;
-    }
-
-    /**
-     * @param txNodesMsg Tx nodes direct marshallable message.
-     */
-    public void txNodesMessages(Map<UUID, UUIDCollectionMessage> txNodesMsg) {
-        this.txNodesMsg = txNodesMsg;
-    }
-
-    /**
-     * @return Flags.
-     */
-    public byte flags() {
-        return flags;
-    }
-
-    /**
-     * @param flags Flags.
-     */
-    public void flags(byte flags) {
-        this.flags = flags;
     }
 
     /**
@@ -510,9 +391,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
             dhtVerKeys = dhtVers.keySet();
             dhtVerVals = dhtVers.values();
         }
-
-        if (txNodesMsg == null)
-            txNodesMsg = F.viewReadOnly(txNodes, COL_TO_MSG);
     }
 
     /** {@inheritDoc} */
@@ -542,9 +420,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
                 dhtVers.put(key, verIt.next());
             }
         }
-
-        if (txNodesMsg != null)
-            txNodes = F.viewReadOnly(txNodesMsg, MSG_TO_COL);
     }
 
     /** {@inheritDoc} */
@@ -577,10 +452,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         return (flags & mask) != 0;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 25;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

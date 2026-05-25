@@ -17,13 +17,10 @@
 
 package org.apache.ignite.internal.management.tx;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.List;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Result for {@link TxTask}.
@@ -33,7 +30,8 @@ public class TxTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private List<TxInfo> infos;
+    @Order(0)
+    List<TxInfo> infos;
 
     /**
      * Default constructor.
@@ -54,16 +52,6 @@ public class TxTaskResult extends IgniteDataTransferObject {
     /** */
     public List<TxInfo> getInfos() {
         return infos;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeCollection(out, infos);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        infos = U.readList(in);
     }
 
     /** {@inheritDoc} */

@@ -21,8 +21,8 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.calcite.plan.Context;
@@ -67,6 +67,8 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ddl.DdlCommandHa
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
+import org.apache.ignite.internal.processors.query.calcite.exec.task.AbstractQueryTaskExecutor;
+import org.apache.ignite.internal.processors.query.calcite.exec.task.QueryBlockingTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.GlobalMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.IoTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.MemoryTracker;
@@ -76,7 +78,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.tracker.Performa
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.QueryMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteErrorMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
-import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryStartRequest;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryStartResponse;
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
@@ -85,7 +86,6 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapp
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RemoteException;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
-import org.apache.ignite.internal.processors.query.calcite.prepare.CacheKey;
 import org.apache.ignite.internal.processors.query.calcite.prepare.DdlPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ExecutionPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ExplainPlan;
@@ -114,6 +114,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.ConvertingClosab
 import org.apache.ignite.internal.processors.query.calcite.util.ListFieldsQueryCursor;
 import org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
+import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -202,6 +203,12 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
     /** */
     private InjectResourcesService injectSvc;
+
+    /** Limit for nested queries, initiated by UDF. */
+    private final AtomicInteger udfQryLimit = new AtomicInteger();
+
+    /** */
+    private final Map<String, FragmentPlan> fragmentPlanCache = new GridBoundedConcurrentLinkedHashMap<>(1024);
 
     /**
      * @param ctx Kernal.
@@ -441,9 +448,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         performanceStatisticsProcessor(ctx.performanceStatistics());
         iteratorsHolder(new ClosableIteratorsHolder(log));
 
-        CalciteQueryProcessor proc = Objects.requireNonNull(
-            Commons.lookupComponent(ctx, CalciteQueryProcessor.class));
-
+        CalciteQueryProcessor proc = queryProcessor(ctx);
         queryPlanCache(proc.queryPlanCache());
         schemaHolder(proc.schemaHolder());
         taskExecutor(proc.taskExecutor());
@@ -465,14 +470,16 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         memoryTracker = cfg.getGlobalMemoryQuota() > 0 ? new GlobalMemoryTracker(cfg.getGlobalMemoryQuota()) :
             NoOpMemoryTracker.INSTANCE;
 
+        udfQryLimit.set(ctx.config().getQueryThreadPoolSize() - 1);
+
         init();
     }
 
     /** {@inheritDoc} */
     @Override public void init() {
-        messageService().register((n, m) -> onMessage(n, (QueryStartRequest)m), MessageType.QUERY_START_REQUEST);
-        messageService().register((n, m) -> onMessage(n, (QueryStartResponse)m), MessageType.QUERY_START_RESPONSE);
-        messageService().register((n, m) -> onMessage(n, (CalciteErrorMessage)m), MessageType.QUERY_ERROR_MESSAGE);
+        messageService().register((n, m) -> onMessage(n, (QueryStartRequest)m), QueryStartRequest.class);
+        messageService().register((n, m) -> onMessage(n, (QueryStartResponse)m), QueryStartResponse.class);
+        messageService().register((n, m) -> onMessage(n, (CalciteErrorMessage)m), CalciteErrorMessage.class);
 
         eventManager().addDiscoveryEventListener(discoLsnr, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
 
@@ -502,7 +509,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private QueryPlan prepareFragment(BaseQueryContext ctx, String jsonFragment) {
+    private FragmentPlan prepareFragment(BaseQueryContext ctx, String jsonFragment) {
         return new FragmentPlan(jsonFragment, fromJson(ctx, jsonFragment));
     }
 
@@ -529,7 +536,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 );
 
             case EXPLAIN:
-                return executeExplain(qry, (ExplainPlan)plan);
+                return executeExplain((ExplainPlan)plan);
 
             case DDL:
                 return executeDdl(qry, (DdlPlan)plan);
@@ -542,7 +549,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     /** */
     private FieldsQueryCursor<List<?>> executeDdl(RootQuery<Row> qry, DdlPlan plan) {
         try {
-            ddlCmdHnd.handle(qry.id(), plan.command());
+            ddlCmdHnd.handle(qry.id(), qry.context(), plan.command());
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + qry.sql() +
@@ -563,7 +570,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         }
         else {
             QueryCursorImpl<List<?>> resCur = new QueryCursorImpl<>(Collections.singletonList(
-                Collections.singletonList(0L)), null, false, false);
+                Collections.singletonList(0L)), null, false);
 
             IgniteTypeFactory typeFactory = qry.context().typeFactory();
 
@@ -572,6 +579,38 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
             return resCur;
         }
+    }
+
+    /**
+     * Checks that query is initiated by UDF.
+     *
+     * @return {@code True} if query is initiated by UDF (in this case UDF query limit is affected).
+     * @throws IgniteSQLException If query execution can lead to deadlocks.
+     */
+    private boolean checkUdfQuery() {
+        if (Thread.currentThread().getName().startsWith(AbstractQueryTaskExecutor.THREAD_PREFIX)) {
+            if (taskExecutor instanceof QueryBlockingTaskExecutor) {
+                if (udfQryLimit.getAndDecrement() <= 0) {
+                    udfQryLimit.getAndIncrement();
+
+                    throw new IgniteSQLException("Detected thread pool starvation by queries initiated by " +
+                        "user-defined functions. Starting more queries from UDF will lead to deadlock. Ensure that " +
+                        "the pool size is properly configured (property IgniteConfiguration.QueryThreadPoolSize). " +
+                        "The pool size should be greater than the maximum number of concurrent queries initiated by UDFs.");
+                }
+
+                return true;
+            }
+            else {
+                throw new IgniteSQLException("Detected query initiated by user-defined function. " +
+                    "When a striped query task executor (the default configuration) is used, tasks for such queries " +
+                    "can be assigned to the same thread as that held by the initial query, which can lead to a " +
+                    "deadlock. To avoid deadlocks switch to a blocking tasks executor (set the parameter: " +
+                    "-DIGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR=true)");
+            }
+        }
+
+        return false;
     }
 
     /** */
@@ -594,203 +633,218 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 checkPermissions(fragment.root());
         }
 
-        // Local execution
-        Fragment fragment = F.first(fragments);
+        boolean udfQry = checkUdfQuery();
 
-        if (U.assertionsEnabled()) {
-            assert fragment != null;
+        try {
+            // Local execution
+            Fragment fragment = F.first(fragments);
 
-            FragmentMapping mapping = execPlan.mapping(fragment);
+            if (U.assertionsEnabled()) {
+                assert fragment != null;
 
-            assert mapping != null;
+                FragmentMapping mapping = execPlan.mapping(fragment);
 
-            List<UUID> nodes = mapping.nodeIds();
+                assert mapping != null;
 
-            assert nodes != null && (nodes.size() == 1 && F.first(nodes).equals(localNodeId()) || nodes.isEmpty())
+                List<UUID> nodes = mapping.nodeIds();
+
+                assert nodes != null && (nodes.size() == 1 && F.first(nodes).equals(localNodeId()) || nodes.isEmpty())
                     : "nodes=" + nodes + ", localNode=" + localNodeId();
-        }
+            }
 
-        long timeout = qry.remainingTime();
+            long timeout = qry.remainingTime();
 
-        if (timeout == 0) {
-            throw new IgniteSQLException("The query was cancelled due to timeout", IgniteQueryErrorCode.QUERY_CANCELED,
-                new QueryCancelledException());
-        }
+            if (timeout == 0) {
+                throw new IgniteSQLException("The query was cancelled due to timeout", IgniteQueryErrorCode.QUERY_CANCELED,
+                    new QueryCancelledException());
+            }
 
-        FragmentDescription fragmentDesc = new FragmentDescription(
-            fragment.fragmentId(),
-            execPlan.mapping(fragment),
-            execPlan.target(fragment),
-            execPlan.remotes(fragment));
-
-        MemoryTracker qryMemoryTracker = qry.createMemoryTracker(memoryTracker, cfg.getQueryMemoryQuota());
-
-        final GridNearTxLocal userTx = Commons.queryTransaction(qry.context(), ctx.cache().context());
-
-        ExecutionContext<Row> ectx = new ExecutionContext<>(
-            qry.context(),
-            taskExecutor(),
-            injectSvc,
-            qry.id(),
-            locNodeId,
-            locNodeId,
-            mapCtx.topologyVersion(),
-            fragmentDesc,
-            handler,
-            qryMemoryTracker,
-            createIoTracker(locNodeId, qry.localQueryId()),
-            timeout,
-            qryParams,
-            userTx == null ? null : ExecutionContext.transactionChanges(userTx.writeEntries()));
-
-        Node<Row> node = new LogicalRelImplementor<>(ectx, partitionService(), mailboxRegistry(),
-            exchangeService(), failureProcessor()).go(fragment.root());
-
-        qry.run(ectx, execPlan, plan.fieldsMetadata(), node);
-
-        Map<UUID, Long> fragmentsPerNode = fragments.stream()
-            .skip(1)
-            .flatMap(f -> f.mapping().nodeIds().stream())
-            .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
-
-        // Start remote execution.
-        for (int i = 1; i < fragments.size(); i++) {
-            fragment = fragments.get(i);
-            fragmentDesc = new FragmentDescription(
+            FragmentDescription fragmentDesc = new FragmentDescription(
                 fragment.fragmentId(),
                 execPlan.mapping(fragment),
                 execPlan.target(fragment),
                 execPlan.remotes(fragment));
 
-            Throwable ex = null;
-            byte[] parametersMarshalled = null;
+            MemoryTracker qryMemoryTracker = qry.createMemoryTracker(memoryTracker, cfg.getQueryMemoryQuota());
 
-            for (UUID nodeId : fragmentDesc.nodeIds()) {
-                if (ex != null)
-                    qry.onResponse(nodeId, fragment.fragmentId(), ex);
-                else {
-                    try {
-                        SessionContextImpl sesCtx = qry.context().unwrap(SessionContextImpl.class);
+            final GridNearTxLocal userTx = Commons.queryTransaction(qry.context(), ctx.cache().context());
 
-                        QueryStartRequest req = new QueryStartRequest(
-                            qry.id(),
-                            qry.localQueryId(),
-                            qry.context().schemaName(),
-                            fragment.serialized(),
-                            ectx.topologyVersion(),
-                            fragmentDesc,
-                            fragmentsPerNode.get(nodeId).intValue(),
-                            qry.parameters(),
-                            parametersMarshalled,
-                            timeout,
-                            ectx.getQryTxEntries(),
-                            sesCtx == null ? null : sesCtx.attributes()
-                        );
+            ExecutionContext<Row> ectx = new ExecutionContext<>(
+                qry.context(),
+                taskExecutor(),
+                injectSvc,
+                qry.id(),
+                locNodeId,
+                locNodeId,
+                mapCtx.topologyVersion(),
+                fragmentDesc,
+                handler,
+                qryMemoryTracker,
+                createIoTracker(locNodeId, qry.localQueryId()),
+                timeout,
+                qryParams,
+                userTx == null ? null : ExecutionContext.transactionChanges(userTx.writeEntries()));
 
-                        messageService().send(nodeId, req);
+            Node<Row> node = new LogicalRelImplementor<>(ectx, partitionService(), mailboxRegistry(),
+                exchangeService(), failureProcessor()).go(fragment.root());
 
-                        // Avoid marshaling of the same parameters for other nodes.
-                        if (parametersMarshalled == null)
-                            parametersMarshalled = req.parametersMarshalled();
-                    }
-                    catch (Throwable e) {
-                        qry.onResponse(nodeId, fragment.fragmentId(), ex = e);
+            qry.run(ectx, execPlan, plan.fieldsMetadata(), node);
+
+            Map<UUID, Long> fragmentsPerNode = fragments.stream()
+                .skip(1)
+                .flatMap(f -> f.mapping().nodeIds().stream())
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+
+            QueryProperties qryProps = qry.context().unwrap(QueryProperties.class);
+            boolean keepBinary = qryProps == null || qryProps.keepBinary();
+
+            // Start remote execution.
+            for (int i = 1; i < fragments.size(); i++) {
+                fragment = fragments.get(i);
+                fragmentDesc = new FragmentDescription(
+                    fragment.fragmentId(),
+                    execPlan.mapping(fragment),
+                    execPlan.target(fragment),
+                    execPlan.remotes(fragment));
+
+                Throwable ex = null;
+                byte[] parametersMarshalled = null;
+
+                for (UUID nodeId : fragmentDesc.nodeIds()) {
+                    if (ex != null)
+                        qry.onResponse(nodeId, fragment.fragmentId(), ex);
+                    else {
+                        try {
+                            SessionContextImpl sesCtx = qry.context().unwrap(SessionContextImpl.class);
+
+                            QueryStartRequest req = new QueryStartRequest(
+                                qry.id(),
+                                qry.localQueryId(),
+                                qry.context().schemaName(),
+                                fragment.serialized(),
+                                ectx.topologyVersion(),
+                                fragmentDesc,
+                                fragmentsPerNode.get(nodeId).intValue(),
+                                qry.parameters(),
+                                parametersMarshalled,
+                                timeout,
+                                ectx.getQryTxEntries(),
+                                sesCtx == null ? null : sesCtx.attributes(),
+                                keepBinary
+                            );
+
+                            messageService().send(nodeId, req);
+
+                            // Avoid marshaling of the same parameters for other nodes.
+                            if (parametersMarshalled == null)
+                                parametersMarshalled = req.parametersMarshalled();
+                        }
+                        catch (Throwable e) {
+                            qry.onResponse(nodeId, fragment.fragmentId(), ex = e);
+                        }
                     }
                 }
             }
-        }
 
-        if (perfStatProc.enabled()) {
-            perfStatProc.queryProperty(
-                GridCacheQueryType.SQL_FIELDS,
-                qry.initiatorNodeId(),
-                qry.localQueryId(),
-                "Query plan",
-                plan.textPlan()
-            );
-        }
-
-        if (ctx.query().runningQueryManager().planHistoryTracker().enabled()) {
-            ctx.query().runningQueryManager().planHistoryTracker().addPlan(
-                plan.textPlan(),
-                qry.sql(),
-                qry.context().schemaName(),
-                qry.context().isLocal(),
-                CalciteQueryEngineConfiguration.ENGINE_NAME
-            );
-        }
-
-        QueryProperties qryProps = qry.context().unwrap(QueryProperties.class);
-
-        Function<Object, Object> fieldConverter = (qryProps == null || qryProps.keepBinary()) ? null :
-            o -> CacheObjectUtils.unwrapBinaryIfNeeded(objValCtx, o, false, true, null);
-
-        HeavyQueriesTracker.ResultSetChecker resultSetChecker = ctx.query().runningQueryManager()
-            .heavyQueriesTracker().resultSetChecker(qry);
-
-        Function<List<Object>, List<Object>> rowConverter;
-
-        // Fire EVT_CACHE_QUERY_OBJECT_READ on initiator node before return result to cursor.
-        if (qryProps != null && qryProps.cacheName() != null && evtMgr.isRecordable(EVT_CACHE_QUERY_OBJECT_READ)) {
-            ClusterNode locNode = ctx.discovery().localNode();
-            UUID subjId = SecurityUtils.securitySubjectId(ctx);
-
-            rowConverter = row -> {
-                evtMgr.record(new CacheQueryReadEvent<>(
-                    locNode,
-                    "SQL fields query result set row read.",
-                    EVT_CACHE_QUERY_OBJECT_READ,
-                    CacheQueryType.SQL_FIELDS.name(),
-                    qryProps.cacheName(),
-                    null,
-                    qry.sql(),
-                    null,
-                    null,
-                    qry.parameters(),
-                    subjId,
-                    null,
-                    null,
-                    null,
-                    null,
-                    row));
-
-                resultSetChecker.checkOnFetchNext();
-
-                return row;
-            };
-        }
-        else {
-            rowConverter = row -> {
-                resultSetChecker.checkOnFetchNext();
-
-                return row;
-            };
-        }
-
-        Runnable onClose = () -> {
             if (perfStatProc.enabled()) {
-                perfStatProc.queryRowsProcessed(
+                perfStatProc.queryProperty(
                     GridCacheQueryType.SQL_FIELDS,
                     qry.initiatorNodeId(),
                     qry.localQueryId(),
-                    "Fetched",
-                    resultSetChecker.fetchedSize()
+                    "Query plan",
+                    plan.textPlan()
                 );
             }
 
-            resultSetChecker.checkOnClose();
-        };
+            if (ctx.query().runningQueryManager().planHistoryTracker().enabled()) {
+                ctx.query().runningQueryManager().planHistoryTracker().addPlan(
+                    plan.textPlan(),
+                    qry.sql(),
+                    qry.context().schemaName(),
+                    qry.context().isLocal(),
+                    CalciteQueryEngineConfiguration.ENGINE_NAME
+                );
+            }
 
-        Iterator<List<?>> it = new ConvertingClosableIterator<>(iteratorsHolder().iterator(qry.iterator()), ectx,
-            fieldConverter, rowConverter, onClose);
+            Function<Object, Object> fieldConverter = keepBinary ? null :
+                o -> CacheObjectUtils.unwrapBinaryIfNeeded(objValCtx, o, false, true, null);
 
-        // Make yet another tracking layer for cursor.getAll(), so tracking hierarchy will look like:
-        // Row tracker -> Cursor memory tracker -> Query memory tracker -> Global memory tracker.
-        // It's required, since query memory tracker can be closed concurrently during getAll() and
-        // tracked data for cursor can be lost without additional tracker.
-        MemoryTracker curMemoryTracker = QueryMemoryTracker.create(qryMemoryTracker, cfg.getQueryMemoryQuota());
+            HeavyQueriesTracker.ResultSetChecker resultSetChecker = ctx.query().runningQueryManager()
+                .heavyQueriesTracker().resultSetChecker(qry);
 
-        return new ListFieldsQueryCursor<>(plan, it, ectx, curMemoryTracker);
+            Function<List<Object>, List<Object>> rowConverter;
+
+            // Fire EVT_CACHE_QUERY_OBJECT_READ on initiator node before return result to cursor.
+            if (qryProps != null && qryProps.cacheName() != null && evtMgr.isRecordable(EVT_CACHE_QUERY_OBJECT_READ)) {
+                ClusterNode locNode = ctx.discovery().localNode();
+                UUID subjId = SecurityUtils.securitySubjectId(ctx);
+
+                rowConverter = row -> {
+                    evtMgr.record(new CacheQueryReadEvent<>(
+                        locNode,
+                        "SQL fields query result set row read.",
+                        EVT_CACHE_QUERY_OBJECT_READ,
+                        CacheQueryType.SQL_FIELDS.name(),
+                        qryProps.cacheName(),
+                        null,
+                        qry.sql(),
+                        null,
+                        null,
+                        qry.parameters(),
+                        subjId,
+                        null,
+                        null,
+                        null,
+                        null,
+                        row));
+
+                    resultSetChecker.checkOnFetchNext();
+
+                    return row;
+                };
+            }
+            else {
+                rowConverter = row -> {
+                    resultSetChecker.checkOnFetchNext();
+
+                    return row;
+                };
+            }
+
+            Runnable onClose = () -> {
+                if (udfQry) // Restore UDF queries limit.
+                    udfQryLimit.getAndIncrement();
+
+                if (perfStatProc.enabled()) {
+                    perfStatProc.queryRowsProcessed(
+                        GridCacheQueryType.SQL_FIELDS,
+                        qry.initiatorNodeId(),
+                        qry.localQueryId(),
+                        "Fetched",
+                        resultSetChecker.fetchedSize()
+                    );
+                }
+
+                resultSetChecker.checkOnClose();
+            };
+
+            Iterator<List<?>> it = iteratorsHolder().iterator(new ConvertingClosableIterator<>(qry.iterator(), ectx,
+                fieldConverter, rowConverter, onClose));
+
+            // Make yet another tracking layer for cursor.getAll(), so tracking hierarchy will look like:
+            // Row tracker -> Cursor memory tracker -> Query memory tracker -> Global memory tracker.
+            // It's required, since query memory tracker can be closed concurrently during getAll() and
+            // tracked data for cursor can be lost without additional tracker.
+            MemoryTracker curMemoryTracker = QueryMemoryTracker.create(qryMemoryTracker, cfg.getQueryMemoryQuota());
+
+            return new ListFieldsQueryCursor<>(plan, it, ectx, curMemoryTracker);
+        }
+        catch (Exception e) {
+            if (udfQry) // Restore UDF queries limit.
+                udfQryLimit.getAndIncrement();
+
+            throw e;
+        }
     }
 
     /** */
@@ -828,7 +882,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private FieldsQueryCursor<List<?>> executeExplain(RootQuery<Row> qry, ExplainPlan plan) {
+    private FieldsQueryCursor<List<?>> executeExplain(ExplainPlan plan) {
         QueryCursorImpl<List<?>> cur = new QueryCursorImpl<>(singletonList(singletonList(plan.plan())));
         cur.fieldsMeta(plan.fieldsMeta().queryFieldsMetadata(Commons.typeFactory()));
 
@@ -881,16 +935,16 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 )
             );
 
+            boolean keepBinaryMode = msg.keepBinaryMode();
+            QueryProperties qryProps = new QueryProperties(null, keepBinaryMode, false);
+
             final BaseQueryContext qctx = createQueryContext(
-                msg.applicationAttributes() == null ? Contexts.empty() : Contexts.of(new SessionContextImpl(msg.applicationAttributes())),
+                msg.applicationAttributes() == null ?
+                    Contexts.of(qryProps) :
+                    Contexts.of(new SessionContextImpl(msg.applicationAttributes()), qryProps),
                 msg.schema());
 
-            QueryPlan qryPlan = queryPlanCache().queryPlan(
-                new CacheKey(msg.schema(), msg.root()),
-                () -> prepareFragment(qctx, msg.root())
-            );
-
-            assert qryPlan.type() == QueryPlan.Type.FRAGMENT;
+            FragmentPlan fragmentPlan = fragmentPlanCache.computeIfAbsent(msg.root(), k -> prepareFragment(qctx, k));
 
             ExecutionContext<Row> ectx = new ExecutionContext<>(
                 qctx,
@@ -909,7 +963,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 msg.queryTransactionEntries()
             );
 
-            executeFragment(qry, (FragmentPlan)qryPlan, ectx);
+            executeFragment(qry, fragmentPlan, ectx);
         }
         catch (Throwable ex) {
             U.error(log, "Failed to start query fragment ", ex);

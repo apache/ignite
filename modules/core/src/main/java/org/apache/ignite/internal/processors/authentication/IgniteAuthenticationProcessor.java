@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadW
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.internal.processors.security.IgniteSecurityProcessor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -77,7 +78,6 @@ import org.apache.ignite.plugin.security.SecuritySubjectType;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -182,7 +182,10 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
         discoMgr.setCustomEventListener(UserAcceptedMessage.class, new UserAcceptedListener());
 
-        discoMgr.localJoinFuture().listen(this::onLocalJoin);
+        discoMgr.localJoinFuture().listen(f -> {
+            if (f.error() == null)
+                onLocalJoin();
+        });
 
         discoLsnr = (evt, discoCache) -> {
             if (ctx.isStopping())
@@ -622,6 +625,9 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                 return crdNode;
             else {
                 ClusterNode res = null;
+
+                if (ctx.discovery().aliveServerNodes().isEmpty())
+                    throw new IgniteException("Failed to get the coordinator node. Topology is empty.");
 
                 for (ClusterNode node : ctx.discovery().aliveServerNodes()) {
                     if (res == null || res.order() > node.order())

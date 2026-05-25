@@ -19,7 +19,6 @@ package org.apache.ignite.internal.management.meta;
 
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.api.HelpCommand;
-import org.apache.ignite.lang.IgniteExperimental;
 
 /** Metadata commands. */
 public class MetaCommand extends CommandRegistryImpl {
@@ -35,7 +34,6 @@ public class MetaCommand extends CommandRegistryImpl {
     }
 
     /** */
-    @IgniteExperimental
     public static class MetaHelpCommand implements HelpCommand {
         /** {@inheritDoc} */
         @Override public String description() {

@@ -18,12 +18,11 @@ package org.apache.ignite.internal.processors.cache.binary;
 
 import java.io.Serializable;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
-
-import static org.apache.ignite.marshaller.Marshallers.jdk;
+import org.apache.ignite.marshaller.Marshaller;
 
 /**
  * Wrapper for {@link BinaryMetadata} which is stored in metadata local cache on each node.
@@ -31,10 +30,7 @@ import static org.apache.ignite.marshaller.Marshallers.jdk;
  * The version refers solely to the internal protocol for updating BinaryMetadata and is unknown externally.
  * It can be updated dynamically from different nodes and threads on the same node.
  */
-public final class BinaryMetadataVersionInfo implements Serializable, Message {
-    /** Type code. */
-    public static final short TYPE_CODE = 505;
-
+public final class BinaryMetadataVersionInfo implements Serializable, MarshallableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -43,21 +39,21 @@ public final class BinaryMetadataVersionInfo implements Serializable, Message {
 
     /** Serialized binary metadata. */
     @Order(0)
-    private transient byte[] metadataBytes;
+    transient byte[] metadataBytes;
 
     /**
      * The version of metadata that has been proposed for update. This represents how many unique updates have been issued
      * for this type. When a metadata update is proposed, this version is incremented.
      */
-    @Order(value = 1, method = "pendingVersion")
-    private int pendingVer;
+    @Order(1)
+    int pendingVer;
 
     /**
      * The version of metadata that has been accepted by the entire cluster.
      * This represents the number of updates that have been confirmed across all nodes.
      */
-    @Order(value = 2, method = "acceptedVersion")
-    private int acceptedVer;
+    @Order(2)
+    int acceptedVer;
 
     /** A flag indicating whether the metadata is currently being removed. */
     private final transient boolean removing;
@@ -120,24 +116,10 @@ public final class BinaryMetadataVersionInfo implements Serializable, Message {
     }
 
     /**
-     * @param pendingVer The version of metadata that has been proposed for update.
-     */
-    public void pendingVersion(int pendingVer) {
-        this.pendingVer = pendingVer;
-    }
-
-    /**
      * @return The version of metadata that has been accepted by the entire cluster.
      */
     public int acceptedVersion() {
         return acceptedVer;
-    }
-
-    /**
-     * @param acceptedVer The version of metadata that has been accepted by the entire cluster.
-     */
-    public void acceptedVersion(int acceptedVer) {
-        this.acceptedVer = acceptedVer;
     }
 
     /**
@@ -147,38 +129,16 @@ public final class BinaryMetadataVersionInfo implements Serializable, Message {
         return removing;
     }
 
-    /**
-     * @return Serialized binary metadata.
-     */
-    public byte[] metadataBytes() {
-        return metadataBytes;
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (metadata != null)
+            metadataBytes = U.marshal(marsh, metadata);
     }
 
-    /**
-     * @param metadataBytes Serialized binary metadata.
-     */
-    public void metadataBytes(byte[] metadataBytes) {
-        this.metadataBytes = metadataBytes;
-    }
-
-    /**
-     * Marshals binary metadata to byte array.
-     *
-     * @throws IgniteCheckedException If failed.
-     */
-    public void marshalMetadata() throws IgniteCheckedException {
-        if (metadataBytes == null)
-            metadataBytes = U.marshal(jdk(), metadata);
-    }
-
-    /**
-     * Unmarshals binary metadata from byte array.
-     *
-     * @throws IgniteCheckedException If failed.
-     */
-    public void unmarshalMetadata() throws IgniteCheckedException {
-        if (metadata == null && metadataBytes != null) {
-            metadata = U.unmarshal(jdk(), metadataBytes, U.gridClassLoader());
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (metadataBytes != null) {
+            metadata = U.unmarshal(marsh, metadataBytes, clsLdr);
 
             // It is not required anymore.
             metadataBytes = null;
@@ -194,8 +154,4 @@ public final class BinaryMetadataVersionInfo implements Serializable, Message {
             "]";
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
 }

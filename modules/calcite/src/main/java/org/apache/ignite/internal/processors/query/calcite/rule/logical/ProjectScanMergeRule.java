@@ -24,6 +24,7 @@ import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.logical.LogicalProject;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
@@ -58,6 +59,7 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
         RelOptCluster cluster,
         T scan,
         RelTraitSet traits,
+        RelDataType rowType,
         List<RexNode> projections,
         RexNode cond,
         ImmutableBitSet requiredColumns
@@ -140,7 +142,7 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
         if (RexUtils.isIdentity(projects, tbl.getRowType(typeFactory, requiredColumns), true))
             projects = null;
 
-        T res = createNode(cluster, scan, traits, projects, cond, requiredColumns);
+        T res = createNode(cluster, scan, traits, relProject.getRowType(), projects, cond, requiredColumns);
 
         if (res == null)
             return;
@@ -167,6 +169,7 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
             RelOptCluster cluster,
             IgniteLogicalTableScan scan,
             RelTraitSet traits,
+            RelDataType rowType,
             List<RexNode> projections,
             RexNode cond,
             ImmutableBitSet requiredColumns
@@ -176,6 +179,7 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
                 traits,
                 scan.getTable(),
                 scan.getHints(),
+                rowType,
                 projections,
                 cond,
                 requiredColumns
@@ -199,6 +203,7 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
             RelOptCluster cluster,
             IgniteLogicalIndexScan scan,
             RelTraitSet traits,
+            RelDataType rowType,
             List<RexNode> projections,
             RexNode cond,
             ImmutableBitSet requiredColumns
@@ -214,6 +219,7 @@ public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableS
                 traits,
                 scan.getTable(),
                 scan.indexName(),
+                rowType,
                 projections,
                 cond, requiredColumns
             );

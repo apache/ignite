@@ -27,7 +27,6 @@ import org.apache.ignite.util.GridCommandHandlerCheckIndexesInlineSizeTest;
 import org.apache.ignite.util.GridCommandHandlerCheckpointTest;
 import org.apache.ignite.util.GridCommandHandlerClusterByClassTest;
 import org.apache.ignite.util.GridCommandHandlerClusterByClassWithSSLTest;
-import org.apache.ignite.util.GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest;
 import org.apache.ignite.util.GridCommandHandlerIncompatibleSslConfigTest;
 import org.apache.ignite.util.GridCommandHandlerIndexingCheckSizeTest;
 import org.apache.ignite.util.GridCommandHandlerIndexingClusterByClassTest;
@@ -80,7 +79,6 @@ import org.junit.runners.Suite;
     BaselineEventsLocalTest.class,
     BaselineEventsRemoteTest.class,
 
-    GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest.class,
     GridCommandHandlerWalTest.class,
     GridCommandHandlerCheckpointTest.class
 })

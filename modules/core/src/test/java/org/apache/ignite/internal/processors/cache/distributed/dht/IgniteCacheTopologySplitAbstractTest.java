@@ -35,7 +35,6 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryIoSession;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -208,8 +207,11 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
         }
 
         /** {@inheritDoc} */
-        @Override protected Socket openSocket(Socket sock, InetSocketAddress remAddr,
-            IgniteSpiOperationTimeoutHelper timeoutHelper) throws IOException, IgniteSpiOperationTimeoutException {
+        @Override protected Socket openSocket(
+            Socket sock,
+            InetSocketAddress remAddr,
+            IgniteSpiOperationTimeoutHelper timeoutHelper
+        ) throws IOException, IgniteCheckedException {
             checkSegmented(remAddr, timeoutHelper.nextTimeoutChunk(getSocketTimeout()));
 
             return super.openSocket(sock, remAddr, timeoutHelper);
@@ -221,7 +223,7 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
             TcpDiscoveryAbstractMessage msg,
             byte[] data,
             long timeout
-        ) throws IOException {
+        ) throws IOException, IgniteCheckedException {
             checkSegmented((InetSocketAddress)sock.getRemoteSocketAddress(), timeout);
 
             super.writeToSocket(sock, msg, data, timeout);
@@ -237,8 +239,12 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res,
-            long timeout) throws IOException {
+        @Override protected void writeToSocket(
+            TcpDiscoveryAbstractMessage msg,
+            Socket sock,
+            int res,
+            long timeout
+        ) throws IOException, IgniteCheckedException {
             checkSegmented((InetSocketAddress)sock.getRemoteSocketAddress(), timeout);
 
             super.writeToSocket(msg, sock, res, timeout);

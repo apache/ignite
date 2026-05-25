@@ -17,11 +17,14 @@
 
 package org.apache.ignite.spi.systemview.view;
 
-import org.apache.ignite.internal.managers.systemview.walker.Order;
+import org.apache.ignite.internal.systemview.Filtrable;
+import org.apache.ignite.internal.systemview.Order;
+import org.apache.ignite.internal.systemview.SystemViewDescriptor;
 
 /**
  * Metastorage key representation for a {@link SystemView}.
  */
+@SystemViewDescriptor
 public class MetastorageView {
     /** */
     private final String name;
@@ -40,6 +43,7 @@ public class MetastorageView {
 
     /** @return Metastorage record name. */
     @Order
+    @Filtrable
     public String name() {
         return name;
     }

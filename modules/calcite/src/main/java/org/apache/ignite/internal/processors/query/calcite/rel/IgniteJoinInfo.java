@@ -26,6 +26,7 @@ import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
+import org.apache.ignite.internal.util.typedef.F;
 
 /** Extended {@link JoinInfo}. */
 public class IgniteJoinInfo extends JoinInfo {
@@ -33,7 +34,7 @@ public class IgniteJoinInfo extends JoinInfo {
     private final ImmutableBitSet allowNulls;
 
     /** */
-    protected IgniteJoinInfo(
+    public IgniteJoinInfo(
         ImmutableIntList leftKeys,
         ImmutableIntList rightKeys,
         ImmutableBitSet allowNulls,
@@ -54,17 +55,21 @@ public class IgniteJoinInfo extends JoinInfo {
         RelOptUtil.splitJoinCondition(join.getLeft(), join.getRight(), join.getCondition(), leftKeys, rightKeys,
             skipNulls, nonEquis);
 
-        ImmutableBitSet.Builder allowNulls = ImmutableBitSet.builder();
+        ImmutableBitSet.Builder allowNulls = null;
 
-        for (int i = 0; i < skipNulls.size(); ++i) {
-            if (!skipNulls.get(i))
-                allowNulls.set(i);
+        if (!F.isEmpty(skipNulls)) {
+            allowNulls = ImmutableBitSet.builder();
+
+            for (int i = 0; i < skipNulls.size(); ++i) {
+                if (!skipNulls.get(i))
+                    allowNulls.set(i);
+            }
         }
 
         return new IgniteJoinInfo(
             ImmutableIntList.copyOf(leftKeys),
             ImmutableIntList.copyOf(rightKeys),
-            allowNulls == null ? ImmutableBitSet.of() : ImmutableBitSet.of(allowNulls.build()),
+            allowNulls == null ? ImmutableBitSet.of() : allowNulls.build(),
             ImmutableList.copyOf(nonEquis)
         );
     }

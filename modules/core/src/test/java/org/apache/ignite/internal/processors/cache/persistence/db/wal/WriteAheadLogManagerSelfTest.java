@@ -218,7 +218,7 @@ public class WriteAheadLogManagerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Checking the absence of a race between the deactivation of the VAL and
+     * Checking the absence of a race between the deactivation of the WAL and
      * automatic archiving, which may lead to a fail of the node.
      *
      * @throws Exception If failed.
@@ -253,7 +253,10 @@ public class WriteAheadLogManagerSelfTest extends GridCommonAbstractTest {
 
             assertTrue(l.await(getTestTimeout(), MILLISECONDS));
 
+            dbMgr(n).forceCheckpoint("test reason");
+            dbMgr(n).enableCheckpoints(false).get(getTestTimeout());
             walMgr(n).onDeActivate(n.context());
+
             stop.set(true);
 
             fut.get(getTestTimeout());

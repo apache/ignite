@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -28,17 +29,22 @@ import org.jetbrains.annotations.Nullable;
 @TcpDiscoveryEnsureDelivery
 @TcpDiscoveryRedirectToClient
 public class TcpDiscoveryNodeFailedMessage extends TcpDiscoveryAbstractTraceableMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** ID of the failed node. */
-    private final UUID failedNodeId;
+    @Order(0)
+    UUID failedNodeId;
 
     /** Internal order of the failed node. */
-    private final long order;
+    @Order(1)
+    long order;
 
     /** */
-    private String warning;
+    @Order(2)
+    String warning;
+
+    /** Constructor. */
+    public TcpDiscoveryNodeFailedMessage() {
+        // No-op.
+    }
 
     /**
      * Constructor.

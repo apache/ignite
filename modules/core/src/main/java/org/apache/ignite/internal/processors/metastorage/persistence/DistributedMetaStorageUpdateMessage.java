@@ -17,53 +17,50 @@
 
 package org.apache.ignite.internal.processors.metastorage.persistence;
 
+import java.io.Serializable;
 import java.util.UUID;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
-
+public class DistributedMetaStorageUpdateMessage extends DiscoveryCustomMessage {
     /** Request ID. */
     @GridToStringInclude
-    private final UUID reqId;
+    @Order(0)
+    UUID reqId;
 
     /** */
     @GridToStringInclude
-    private final String key;
+    @Order(1)
+    String key;
 
     /** */
-    private final byte[] valBytes;
+    private @Nullable Serializable val;
 
     /** */
-    private String errorMsg;
+    @Order(2)
+    byte[] valBytes;
+
+    /** Empty constructor for {@link MessageFactory}. */
+    public DistributedMetaStorageUpdateMessage() {
+        // No-op.
+    }
 
     /** */
-    public DistributedMetaStorageUpdateMessage(UUID reqId, String key, byte[] valBytes) {
+    public DistributedMetaStorageUpdateMessage(UUID reqId, String key, @Nullable Serializable val) {
+        super(IgniteUuid.randomUuid());
+
         this.reqId = reqId;
         this.key = key;
-        this.valBytes = valBytes;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
-    }
-
-    /** */
-    public UUID requestId() {
-        return reqId;
+        this.val = val;
     }
 
     /** */
@@ -72,28 +69,13 @@ class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessage {
     }
 
     /** */
-    public byte[] value() {
+    public byte[] valueBytes() {
         return valBytes;
-    }
-
-    /** */
-    public boolean isAckMessage() {
-        return false;
-    }
-
-    /** */
-    public void errorMessage(String errorMsg) {
-        this.errorMsg = errorMsg;
-    }
-
-    /** */
-    protected String errorMessage() {
-        return errorMsg;
     }
 
     /** {@inheritDoc} */
     @Override @Nullable public DiscoveryCustomMessage ackMessage() {
-        return new DistributedMetaStorageUpdateAckMessage(reqId, errorMsg);
+        return new DistributedMetaStorageUpdateAckMessage(reqId);
     }
 
     /** {@inheritDoc} */
@@ -101,13 +83,15 @@ class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessage {
         return true;
     }
 
-    /** {@inheritDoc} */
-    @Override public DiscoCache createDiscoCache(
-        GridDiscoveryManager mgr,
-        AffinityTopologyVersion topVer,
-        DiscoCache discoCache
-    ) {
-        throw new UnsupportedOperationException("createDiscoCache");
+    /** @param marsh Marshaller. */
+    public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (val != null && valBytes == null)
+            valBytes = U.marshal(marsh, val);
+    }
+
+    /** @param marsh Marshaller. */
+    public void finishUnmarshal(Marshaller marsh) throws IgniteCheckedException {
+        // No-op.
     }
 
     /** {@inheritDoc} */

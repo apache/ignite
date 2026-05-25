@@ -40,7 +40,7 @@ public class PSUStatisticsTypesTest extends StatisticsTypesAbstractTest {
         String[][] wrongHints = new String[1][];
         wrongHints[0] = new String[]{"DTYPES_COL_INDEX"};
 
-        String isNullSql = String.format("select * from dtypes i1 where col_%s is null", name);;
+        String isNullSql = String.format("select * from dtypes i1 where col_%s is null", name);
 
         checkOptimalPlanChosenForDifferentIndexes(grid(0), new String[]{"DTYPES_" + name}, isNullSql, noHints);
 

@@ -19,7 +19,6 @@ package org.apache.ignite.lang;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -54,13 +53,9 @@ public class GridByteArrayListSelfTest extends GridCommonAbstractTest {
 
         list.add((byte)0x01);
 
-        list.allocate(cap);
-
         arr = list.internalArray();
 
         assert arr != null;
-        assert arr.length == (cap + 1);
-
         assert list.size() == 1;
     }
 
@@ -75,13 +70,9 @@ public class GridByteArrayListSelfTest extends GridCommonAbstractTest {
 
         list.add(a);
 
-        assert list.get(0) == a;
+        byte[] data = U.field(list, "data");
 
-        byte b = 0x02;
-
-        list.set(0, b);
-
-        assert list.get(0) == b;
+        assert data[0] == a;
     }
 
     /**
@@ -105,7 +96,9 @@ public class GridByteArrayListSelfTest extends GridCommonAbstractTest {
 
         int num3 = 3;
 
-        list.set(4, num3);
+        byte[] data = U.field(list, "data");
+
+        U.intToBytes(num3, data, 4);
 
         assert list.size() == 8;
 
@@ -116,8 +109,8 @@ public class GridByteArrayListSelfTest extends GridCommonAbstractTest {
 
         assert Arrays.equals(list.array(), arr2);
 
-        assert list.getInt(0) == num;
-        assert list.getInt(4) == num3;
+        assert U.bytesToInt(data, 0) == num;
+        assert U.bytesToInt(data, 4) == num3;
     }
 
     /**
@@ -141,69 +134,6 @@ public class GridByteArrayListSelfTest extends GridCommonAbstractTest {
 
         // Capacity should grow.
         assert list.internalArray().length == arr2.length * 2;
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void testAddByteBuffer() {
-        GridByteArrayList list = new GridByteArrayList(3);
-
-        list.add((byte)0x01);
-
-        ByteBuffer buf = ByteBuffer.allocateDirect(5);
-
-        buf.put(new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05 });
-
-        buf.rewind();
-
-        list.add(buf, 5);
-
-        assert list.size() == 6;
-
-        byte[] arr2 = new byte[] { 0x01, 0x01, 0x02, 0x03, 0x04, 0x05 };
-
-        assert Arrays.equals(list.array(), arr2);
-
-        // Capacity should grow.
-        assert list.internalArray().length == arr2.length * 2;
-    }
-
-    /**
-     *
-     */
-    @SuppressWarnings({"ErrorNotRethrown"})
-    @Test
-    public void testBounds() {
-        GridByteArrayList list = new GridByteArrayList(3);
-
-        try {
-            list.get(0);
-
-            assert false;
-        }
-        catch (AssertionError e) {
-            info("Caught expected error: " + e);
-        }
-
-        try {
-            list.set(0, (byte)0x01);
-
-            assert false;
-        }
-        catch (AssertionError e) {
-            info("Caught expected error: " + e);
-        }
-
-        try {
-            list.getInt(0);
-
-            assert false;
-        }
-        catch (AssertionError e) {
-            info("Caught expected error: " + e);
-        }
     }
 
     /**

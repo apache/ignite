@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.query.calcite.message.CalciteCommun
 import org.apache.ignite.internal.processors.query.calcite.sql.SqlCustomParserTest;
 import org.apache.ignite.internal.processors.query.calcite.sql.SqlReservedWordsTest;
 import org.apache.ignite.internal.processors.tx.SqlTransactionsIsolationTest;
+import org.apache.ignite.internal.processors.tx.SqlTransactionsSavepointTest;
 import org.apache.ignite.internal.processors.tx.SqlTransactionsUnsupportedModesTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -32,23 +33,19 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    PlannerTestSuite.class,
-    ExecutionTestSuite.class,
-    IntegrationTestSuite.class,
     UtilTestSuite.class,
-    JdbcTestSuite.class,
 
     SqlCustomParserTest.class,
     SqlReservedWordsTest.class,
     LogicalRelImplementorTest.class,
 
-    ScriptTestSuite.class,
     CalciteCommunicationMessageSerializationTest.class,
 
     NumericTypesPrecisionsTest.class,
 
     SqlTransactionsIsolationTest.class,
     SqlTransactionsUnsupportedModesTest.class,
+    SqlTransactionsSavepointTest.class,
 })
 public class IgniteCalciteTestSuite {
 }

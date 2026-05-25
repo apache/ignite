@@ -24,10 +24,10 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryField;
+import org.apache.ignite.internal.processors.query.calcite.DistributedCalciteConfiguration;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.schema.AbstractSchemaChangeListener;
 import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
-import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 
 /**
@@ -35,10 +35,7 @@ import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
  */
 public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCache {
     /** */
-    private static final int CACHE_SIZE = 1024;
-
-    /** */
-    private final GridInternalSubscriptionProcessor subscriptionProc;
+    private DistributedCalciteConfiguration distrCfg;
 
     /** */
     private volatile Map<CacheKey, QueryPlan> cache;
@@ -49,20 +46,17 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
     public QueryPlanCacheImpl(GridKernalContext ctx) {
         super(ctx);
 
-        cache = new GridBoundedConcurrentLinkedHashMap<>(CACHE_SIZE);
-        subscriptionProc = ctx.internalSubscriptionProcessor();
+        ctx.internalSubscriptionProcessor().registerSchemaChangeListener(new SchemaListener());
 
-        init();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void init() {
-        subscriptionProc.registerSchemaChangeListener(new SchemaListener());
+        clear(); // Create cache with default size.
     }
 
     /** {@inheritDoc} */
     @Override public void onStart(GridKernalContext ctx) {
-        // No-op.
+        distrCfg = queryProcessor(ctx).distributedConfiguration();
+
+        if (distrCfg.planCacheSize() != DistributedCalciteConfiguration.DFLT_PLAN_CACHE_SIZE)
+            clear(); // Recreate cache with configured size.
     }
 
     /** {@inheritDoc} */
@@ -80,7 +74,9 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
 
     /** {@inheritDoc} */
     @Override public void clear() {
-        cache = new GridBoundedConcurrentLinkedHashMap<>(CACHE_SIZE);
+        cache = new GridBoundedConcurrentLinkedHashMap<>(distrCfg == null
+            ? DistributedCalciteConfiguration.DFLT_PLAN_CACHE_SIZE
+            : distrCfg.planCacheSize());
     }
 
     /** Schema change listener. */

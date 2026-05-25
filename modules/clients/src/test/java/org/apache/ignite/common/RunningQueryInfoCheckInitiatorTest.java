@@ -19,6 +19,7 @@ package org.apache.ignite.common;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
@@ -27,7 +28,6 @@ import java.util.concurrent.Phaser;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -227,10 +227,16 @@ public class RunningQueryInfoCheckInitiatorTest extends JdbcThinAbstractSelfTest
             final UUID grid0NodeId = grid(0).cluster().localNode().id();
 
             GridTestUtils.runAsync(() -> {
-                    try (Connection conn = DriverManager.getConnection(CFG_URL_PREFIX + "lazy=false:nodeId="
+                    try (Connection conn = DriverManager.getConnection(CFG_URL_PREFIX + "nodeId="
                         + grid0NodeId + "@modules/clients/src/test/config/jdbc-security-config.xml")) {
                         try (Statement stmt = conn.createStatement()) {
                             stmt.execute(sql);
+
+                            ResultSet rs = stmt.getResultSet();
+
+                            while (rs != null && rs.next()) {
+                                // No-op.
+                            }
                         }
                     }
                     catch (SQLException e) {
@@ -330,7 +336,7 @@ public class RunningQueryInfoCheckInitiatorTest extends JdbcThinAbstractSelfTest
                 fail("Timeout. Cannot find query with: " + sqlMatch);
 
             List<List<?>> res = node.context().query().querySqlFields(
-                new SqlFieldsQuery("SELECT sql, initiator_id FROM SYS.SQL_QUERIES"), false).getAll();
+                new SqlFieldsQuery("SELECT sql, initiator_id FROM SYS.SQL_QUERIES WHERE MAP_QUERY = FALSE"), false).getAll();
 
             for (List<?> row : res) {
                 if (((String)row.get(0)).toUpperCase().contains(sqlMatch.toUpperCase()))
@@ -350,7 +356,7 @@ public class RunningQueryInfoCheckInitiatorTest extends JdbcThinAbstractSelfTest
 
         while (true) {
             List<List<?>> res = node.context().query().querySqlFields(
-                new SqlFieldsQuery("SELECT * FROM SYS.SQL_QUERIES"), false).getAll();
+                new SqlFieldsQuery("SELECT * FROM SYS.SQL_QUERIES WHERE MAP_QUERY = FALSE"), false).getAll();
 
             res.stream().forEach(System.out::println);
 

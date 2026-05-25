@@ -17,49 +17,45 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.query.calcite.message.MarshalableMessage;
-import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
-import org.apache.ignite.internal.util.UUIDCollectionMessage;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.jetbrains.annotations.Nullable;
 
 /** */
-public class FragmentDescription implements MarshalableMessage {
+public class FragmentDescription implements Message {
     /** */
     @Order(0)
-    private long fragmentId;
+    long fragmentId;
 
     /** */
     @Order(1)
-    private FragmentMapping mapping;
+    FragmentMapping mapping;
 
     /** */
     @Order(2)
-    private Map<Long, UUIDCollectionMessage> remoteSources0;
+    Map<Long, List<UUID>> remoteSources;
 
     /** */
     @Order(3)
-    private ColocationGroup target;
-
-    /** */
-    private Map<Long, List<UUID>> remoteSources;
+    @Nullable ColocationGroup target;
 
     /** */
     public FragmentDescription() {
+        // No-op.
     }
 
     /** */
-    public FragmentDescription(long fragmentId, FragmentMapping mapping, ColocationGroup target,
+    public FragmentDescription(long fragmentId, FragmentMapping mapping, @Nullable ColocationGroup target,
         Map<Long, List<UUID>> remoteSources) {
         this.fragmentId = fragmentId;
         this.mapping = mapping;
-        this.target = target;
         this.remoteSources = remoteSources;
+
+        if (target != null)
+            this.target = target.explicitMapping();
     }
 
     /** */
@@ -78,7 +74,7 @@ public class FragmentDescription implements MarshalableMessage {
     }
 
     /** */
-    public ColocationGroup target() {
+    public @Nullable ColocationGroup target() {
         return target;
     }
 
@@ -100,43 +96,5 @@ public class FragmentDescription implements MarshalableMessage {
     /** */
     public void mapping(FragmentMapping mapping) {
         this.mapping = mapping;
-    }
-
-    /** */
-    public Map<Long, UUIDCollectionMessage> remoteSources0() {
-        return remoteSources0;
-    }
-
-    /** */
-    public void remoteSources0(Map<Long, UUIDCollectionMessage> remoteSources0) {
-        this.remoteSources0 = remoteSources0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public MessageType type() {
-        return MessageType.FRAGMENT_DESCRIPTION;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) {
-        if (target != null)
-            target = target.explicitMapping();
-
-        if (remoteSources0 == null && remoteSources != null) {
-            remoteSources0 = U.newHashMap(remoteSources.size());
-
-            for (Map.Entry<Long, List<UUID>> e : remoteSources.entrySet())
-                remoteSources0.put(e.getKey(), new UUIDCollectionMessage(e.getValue()));
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareUnmarshal(GridCacheSharedContext<?, ?> ctx) {
-        if (remoteSources == null && remoteSources0 != null) {
-            remoteSources = U.newHashMap(remoteSources0.size());
-
-            for (Map.Entry<Long, UUIDCollectionMessage> e : remoteSources0.entrySet())
-                remoteSources.put(e.getKey(), new ArrayList<>(e.getValue().uuids()));
-        }
     }
 }

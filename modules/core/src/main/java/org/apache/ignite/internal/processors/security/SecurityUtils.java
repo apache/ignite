@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteDomainCombiner;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -201,9 +202,9 @@ public class SecurityUtils {
      * context change is needed.
      * Note that this method is safe to use only when it is known to be called in the security context of the local node
      * (e.g. in system workers).
-     * @return {@link OperationSecurityContext} instance if new security context is set, otherwise {@code null}.
+     * @return {@link Scope} instance if new security context is set, otherwise {@code null}.
      */
-    public static OperationSecurityContext withRemoteSecurityContext(GridKernalContext ctx, SecurityContext secCtx) {
+    public static Scope withRemoteSecurityContext(GridKernalContext ctx, SecurityContext secCtx) {
         if (secCtx == null)
             return null;
 

@@ -17,21 +17,17 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.nio.ByteBuffer;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
  */
 public class GridIoSecurityAwareMessage extends GridIoMessage {
-    /** */
-    public static final short TYPE_CODE = 174;
-
-    /** Security subject id that will be used during message processing on an remote node. */
-    private UUID secSubjId;
+    /** Security subject ID that will be used during message processing on a remote node. */
+    @Order(0)
+    UUID secSubjId;
 
     /**
      * Default constructor.
@@ -41,10 +37,9 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
     }
 
     /**
-     * @param secSubjId Security subject id.
+     * @param secSubjId Security subject ID.
      * @param plc Policy.
      * @param topic Communication topic.
-     * @param topicOrd Topic ordinal value.
      * @param msg Message.
      * @param ordered Message ordered flag.
      * @param timeout Timeout.
@@ -54,73 +49,20 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
         UUID secSubjId,
         byte plc,
         Object topic,
-        int topicOrd,
         Message msg,
         boolean ordered,
         long timeout,
         boolean skipOnTimeout
     ) {
-        super(plc, topic, topicOrd, msg, ordered, timeout, skipOnTimeout);
+        super(plc, topic, msg, ordered, timeout, skipOnTimeout);
 
         this.secSubjId = secSubjId;
     }
 
     /**
-     * @return Security subject id.
+     * @return Security subject ID.
      */
-    UUID secSubjId() {
+    UUID securitySubjectId() {
         return secSubjId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 8:
-                if (!writer.writeUuid(secSubjId))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 8:
-                secSubjId = reader.readUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 }

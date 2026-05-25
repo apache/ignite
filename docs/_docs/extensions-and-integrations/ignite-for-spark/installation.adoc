@@ -20,7 +20,7 @@ Shared deployment implies that Apache Ignite nodes are running independently fro
 
 === Standalone Deployment
 
-In the Standalone deployment mode, Ignite nodes should be deployed together with Spark Worker nodes. Instruction on Ignite installation can be found link:installation[here]. After you install Ignite on all worker nodes, start a node on each Spark worker with your config using `ignite.sh` script.
+In the Standalone deployment mode, Ignite nodes should be deployed together with Spark Worker nodes. Instruction on Ignite installation can be found link:installation/installing-using-zip[here]. After you install Ignite on all worker nodes, start a node on each Spark worker with your config using `ignite.sh` script.
 
 
 === Adding Ignite libraries to Spark classpath by default

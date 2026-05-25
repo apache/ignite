@@ -40,9 +40,11 @@ import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.calcite.util.Util.last;
 import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.CNL_JOIN;
+import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.HASH_JOIN;
 import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.MERGE_JOIN;
 import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.NL_JOIN;
 import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.NO_CNL_JOIN;
+import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.NO_HASH_JOIN;
 import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.NO_MERGE_JOIN;
 import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.NO_NL_JOIN;
 
@@ -64,6 +66,7 @@ abstract class AbstractIgniteJoinConverterRule extends AbstractIgniteConverterRu
         HINTS.put(NL_JOIN, NO_NL_JOIN);
         HINTS.put(CNL_JOIN, NO_CNL_JOIN);
         HINTS.put(MERGE_JOIN, NO_MERGE_JOIN);
+        HINTS.put(HASH_JOIN, NO_HASH_JOIN);
 
         ALL_HINTS = Stream.concat(HINTS.keySet().stream(), HINTS.values().stream()).toArray(HintDefinition[]::new);
     }

@@ -19,14 +19,15 @@ package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  *
  */
-public class QueryCloseMessage implements CalciteMessage {
+public class QueryCloseMessage implements Message {
     /** */
-    @Order(value = 0, method = "queryId")
-    private UUID qryId;
+    @Order(0)
+    UUID qryId;
 
     /** */
     public QueryCloseMessage() {
@@ -43,17 +44,5 @@ public class QueryCloseMessage implements CalciteMessage {
      */
     public UUID queryId() {
         return qryId;
-    }
-
-    /**
-     * @param qryId New query ID.
-     */
-    public void queryId(UUID qryId) {
-        this.qryId = qryId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public MessageType type() {
-        return MessageType.QUERY_CLOSE_MESSAGE;
     }
 }

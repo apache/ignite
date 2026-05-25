@@ -38,22 +38,22 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
  * @see ExecutionContext#transactionChanges(int, int[], Function, Comparator)
  * @see QueryStartRequest#queryTransactionEntries()
  */
-public class QueryTxEntry implements CalciteMessage {
+public class QueryTxEntry implements CalciteContextMarshallableMessage {
     /** Cache id. */
     @Order(0)
-    private int cacheId;
+    int cacheId;
 
     /** Entry key. */
     @Order(1)
-    private KeyCacheObject key;
+    KeyCacheObject key;
 
     /** Entry value. */
-    @Order(value = 2, method = "value")
-    private CacheObject val;
+    @Order(2)
+    CacheObject val;
 
     /** Entry version. */
-    @Order(value = 3, method = "version")
-    private GridCacheVersion ver;
+    @Order(3)
+    GridCacheVersion ver;
 
     /**
      * Empty constructor.
@@ -80,23 +80,9 @@ public class QueryTxEntry implements CalciteMessage {
         return cacheId;
     }
 
-    /**
-     * @param cacheId New cache id.
-     */
-    public void cacheId(int cacheId) {
-        this.cacheId = cacheId;
-    }
-
     /** @return Entry key. */
     public KeyCacheObject key() {
         return key;
-    }
-
-    /**
-     * @param key New entry key.
-     */
-    public void key(KeyCacheObject key) {
-        this.key = key;
     }
 
     /** @return Entry value. */
@@ -104,27 +90,13 @@ public class QueryTxEntry implements CalciteMessage {
         return val;
     }
 
-    /**
-     * @param val New entry value.
-     */
-    public void value(CacheObject val) {
-        this.val = val;
-    }
-
     /** @return Entry version. */
     public GridCacheVersion version() {
         return ver;
     }
 
-    /**
-     * @param ver New entry version.
-     */
-    public void version(GridCacheVersion ver) {
-        this.ver = ver;
-    }
-
-    /** */
-    public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         CacheObjectContext coctx = ctx.cacheContext(cacheId).cacheObjectContext();
 
         key.prepareMarshal(coctx);
@@ -133,18 +105,13 @@ public class QueryTxEntry implements CalciteMessage {
             val.prepareMarshal(coctx);
     }
 
-    /** */
-    public void prepareUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    /** {@inheritDoc}  */
+    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         CacheObjectContext coctx = ctx.cacheContext(cacheId).cacheObjectContext();
 
         key.finishUnmarshal(coctx, ldr);
 
         if (val != null)
             val.finishUnmarshal(coctx, ldr);
-    }
-
-    /** {@inheritDoc} */
-    @Override public MessageType type() {
-        return MessageType.QUERY_TX_ENTRY;
     }
 }

@@ -121,13 +121,6 @@ include::code-snippets/cpp/src/scan_query.cpp[tag=set-local,indent=0]
 
 == Executing Index Queries
 
-[WARNING]
-====
-[discrete]
-Experimental API. Introduced since Apache Ignite 2.12. Only Java API is supported. Please send your questions and bug reports
-to user@ignite.apache.org.
-====
-
 Index queries work over distributed indexes and retrieve cache entries that match the specified query. `QueryCursor`
 delivers sorted cache entries by the order defined for queried index. `IndexQuery` can be used if a low amount of data
 matches filtering criteria. For such cases, `ScanQuery` usage is not optimal: it firstly extracts all cache entries and

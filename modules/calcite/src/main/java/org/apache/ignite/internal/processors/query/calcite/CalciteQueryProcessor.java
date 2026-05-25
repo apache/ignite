@@ -47,7 +47,6 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.util.SqlShuttle;
-import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
@@ -83,7 +82,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecuto
 import org.apache.ignite.internal.processors.query.calcite.exec.TimeoutService;
 import org.apache.ignite.internal.processors.query.calcite.exec.TimeoutServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RexExecutorImpl;
-import org.apache.ignite.internal.processors.query.calcite.exec.task.AbstractQueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.exec.task.QueryBlockingTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.exec.task.StripedQueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintsConfig;
@@ -98,6 +96,8 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.CacheKey;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ExplainPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FieldsMetadata;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteConvertletTable;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteSqlCallRewriteTable;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteSqlValidator;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteTypeCoercion;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PrepareServiceImpl;
@@ -190,7 +190,8 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 .withParserFactory(IgniteSqlParserImpl.FACTORY)
                 .withLex(Lex.ORACLE)
                 .withConformance(IgniteSqlConformance.INSTANCE))
-        .sqlValidatorConfig(SqlValidator.Config.DEFAULT
+        .sqlValidatorConfig(IgniteSqlValidator.Config.DFLT
+            .withSqlNodeRewriter(IgniteSqlCallRewriteTable.INSTANCE)
             // TODO Workaround for https://issues.apache.org/jira/browse/CALCITE-6978
             .withCallRewrite(false)
             .withIdentifierExpansion(true)
@@ -269,9 +270,6 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
     /** */
     private final InjectResourcesService injectSvc;
-
-    /** */
-    private final AtomicBoolean udfQryWarned = new AtomicBoolean();
 
     /** */
     private volatile boolean started;
@@ -543,8 +541,6 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     ) throws IgniteSQLException {
         ensureTransactionModeSupported(qryCtx);
 
-        checkUdfQuery();
-
         SchemaPlus schema = schemaHolder.schema(schemaName);
 
         assert schema != null : "Schema not found: " + schemaName;
@@ -700,29 +696,6 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             return;
 
         IgniteTxManager.ensureTransactionModeSupported(ctx.cache().context().tm().tx(ver).isolation());
-    }
-
-    /** Checks that query is initiated by UDF and print message to log if needed. */
-    private void checkUdfQuery() {
-        if (udfQryWarned.get())
-            return;
-
-        if (Thread.currentThread().getName().startsWith(AbstractQueryTaskExecutor.THREAD_PREFIX)
-            && udfQryWarned.compareAndSet(false, true)) {
-            if (taskExecutor instanceof QueryBlockingTaskExecutor) {
-                log.info("Detected query initiated by user-defined function. " +
-                    "In some circumstances, this can lead to thread pool starvation and deadlock. Ensure that " +
-                    "the pool size is properly configured (property IgniteConfiguration.QueryThreadPoolSize). " +
-                    "The pool size should be greater than the maximum number of concurrent queries initiated by UDFs.");
-            }
-            else {
-                log.warning("Detected query initiated by user-defined function. " +
-                    "When a striped query task executor (the default configuration) is used, tasks for such queries " +
-                    "can be assigned to the same thread as that held by the initial query, which can lead to a " +
-                    "deadlock. To switch to a blocking tasks executor, set the following parameter: " +
-                    "-DIGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR=true.");
-            }
-        }
     }
 
     /** */

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
@@ -28,14 +29,18 @@ import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
  * Sent to random node during SPI start. Then forwarded directly to coordinator.
  */
 public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceableMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** New node that wants to join the topology. */
-    private final TcpDiscoveryNode node;
+    @Order(0)
+    TcpDiscoveryNode node;
 
     /** Discovery data container. */
-    private final DiscoveryDataPacket dataPacket;
+    @Order(1)
+    DiscoveryDataPacket dataPacket;
+
+    /** Constructor. */
+    public TcpDiscoveryJoinRequestMessage() {
+        // No-op.
+    }
 
     /**
      * Constructor.
@@ -65,7 +70,7 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceabl
     }
 
     /**
-     * @return {@code true} flag.
+     * @return Responded flag.
      */
     public boolean responded() {
         return getFlag(RESPONDED_FLAG_POS);

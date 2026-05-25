@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.service.GridServiceReassignmentSelf
 import org.apache.ignite.internal.processors.service.GridServiceSerializationSelfTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceCallContextTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceCallInterceptorTest;
+import org.apache.ignite.internal.processors.service.IgniteServiceDeployOnJoinedNodeTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentClassLoadingDefaultMarshallerTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentFailureTest;
@@ -59,8 +60,10 @@ import org.apache.ignite.internal.processors.service.ServiceDeploymentProcessing
 import org.apache.ignite.internal.processors.service.ServiceDeploymentProcessingOnNodesLeftTest;
 import org.apache.ignite.internal.processors.service.ServiceHotRedeploymentViaDeploymentSpiTest;
 import org.apache.ignite.internal.processors.service.ServiceInfoSelfTest;
+import org.apache.ignite.internal.processors.service.ServiceLocalStartOrderTest;
 import org.apache.ignite.internal.processors.service.ServicePredicateAccessCacheTest;
 import org.apache.ignite.internal.processors.service.ServiceReassignmentFunctionSelfTest;
+import org.apache.ignite.internal.processors.service.ServiceRedeploymentOnNodeLeftTest;
 import org.apache.ignite.internal.processors.service.SystemCacheNotConfiguredTest;
 import org.apache.ignite.services.ServiceThreadPoolSelfTest;
 import org.apache.ignite.tools.junit.JUnitTeamcityReporter;
@@ -101,6 +104,7 @@ import org.junit.runners.Suite;
     IgniteServiceDeploymentClassLoadingDefaultMarshallerTest.class,
     IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest.class,
     IgniteServiceDeploymentFailureTest.class,
+    IgniteServiceDeployOnJoinedNodeTest.class,
 
     GridServiceExceptionPropagationTest.class,
     ServiceDeploymentProcessingOnCoordinatorLeftTest.class,
@@ -120,7 +124,9 @@ import org.junit.runners.Suite;
     GridServiceClusterReadOnlyModeTest.class,
     IgniteServiceCallContextTest.class,
     GridServiceMetricsTest.class,
-    IgniteServiceCallInterceptorTest.class
+    IgniteServiceCallInterceptorTest.class,
+    ServiceRedeploymentOnNodeLeftTest.class,
+    ServiceLocalStartOrderTest.class
 })
 public class IgniteServiceGridTestSuite {
     /** */

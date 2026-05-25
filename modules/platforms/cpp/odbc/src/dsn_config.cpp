@@ -150,11 +150,6 @@ namespace ignite
             if (collocated.IsSet() && !config.IsCollocatedSet())
                 config.SetCollocated(collocated.GetValue());
 
-            SettableValue<bool> lazy = ReadDsnBool(dsn, ConnectionStringParser::Key::lazy);
-
-            if (lazy.IsSet() && !config.IsLazySet())
-                config.SetLazy(lazy.GetValue());
-
             SettableValue<bool> skipReducerOnUpdate = ReadDsnBool(dsn, ConnectionStringParser::Key::skipReducerOnUpdate);
 
             if (skipReducerOnUpdate.IsSet() && !config.IsSkipReducerOnUpdateSet())

@@ -302,8 +302,12 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
      */
     private class FailDiscoverySpi extends TcpDiscoverySpi {
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] data,
-            long timeout) throws IOException {
+        @Override protected void writeToSocket(
+            Socket sock,
+            TcpDiscoveryAbstractMessage msg,
+            byte[] data,
+            long timeout
+        ) throws IOException, IgniteCheckedException {
             assertNotFailedNode(sock);
 
             if (isDrop(msg))
@@ -336,8 +340,12 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res,
-            long timeout) throws IOException {
+        @Override protected void writeToSocket(
+            TcpDiscoveryAbstractMessage msg,
+            Socket sock,
+            int res,
+            long timeout
+        ) throws IOException, IgniteCheckedException {
             assertNotFailedNode(sock);
 
             if (isDrop(msg))

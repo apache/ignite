@@ -111,15 +111,6 @@ public class GridRedisMessage implements GridClientMessage {
     }
 
     /**
-     * Gets all message parts.
-     *
-     * @return Message elements.
-     */
-    private List<String> getMsgParts() {
-        return msgParts;
-    }
-
-    /**
      * @return Number of elements in the message.
      */
     public int messageSize() {

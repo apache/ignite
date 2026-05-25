@@ -17,66 +17,59 @@
 
 package org.apache.ignite.internal.processors.cluster;
 
-import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** Node compound metrics message. */
-public final class NodeFullMetricsMessage implements Message {
-    /** */
-    public static final short TYPE_CODE = 138;
-
+public class NodeFullMetricsMessage implements Message {
     /** Node metrics wrapper message. */
     @Order(0)
-    private NodeMetricsMessage nodeMetricsMsg;
+    public NodeMetricsMessage nodeMetricsMsg;
 
     /** Cache metrics wrapper message. */
     @Order(1)
-    private Map<Integer, CacheMetricsMessage> cachesMetrics;
+    public Map<Integer, CacheMetricsMessage> cachesMetricsMsgs;
 
-    /** Empty constructor for {@link GridIoMessageFactory}. */
+    /** Empty constructor for {@link MessageFactory}. */
     public NodeFullMetricsMessage() {
-
+        // No-op.
     }
 
     /** */
     public NodeFullMetricsMessage(ClusterMetrics nodeMetrics, Map<Integer, CacheMetrics> cacheMetrics) {
         nodeMetricsMsg = new NodeMetricsMessage(nodeMetrics);
 
-        cachesMetrics = new HashMap<>(cacheMetrics.size(), 1.0f);
+        cachesMetricsMsgs = U.newHashMap(cacheMetrics.size());
 
-        cacheMetrics.forEach((key, value) -> cachesMetrics.put(key, new CacheMetricsMessage(value)));
+        cacheMetrics.forEach((key, value) -> cachesMetricsMsgs.put(key, new CacheMetricsMessage(value)));
     }
 
     /** */
-    public Map<Integer, CacheMetricsMessage> cachesMetrics() {
-        return cachesMetrics;
+    public Map<Integer, CacheMetricsMessage> cachesMetricsMessages() {
+        return cachesMetricsMsgs;
     }
 
     /** */
-    public void cachesMetrics(Map<Integer, CacheMetricsMessage> cacheMetricsMsg) {
-        cachesMetrics = cacheMetricsMsg;
+    public void cachesMetricsMessages(Map<Integer, CacheMetricsMessage> cacheMetricsMsg) {
+        cachesMetricsMsgs = cacheMetricsMsg;
     }
 
     /** */
-    public NodeMetricsMessage nodeMetricsMsg() {
+    public NodeMetricsMessage nodeMetricsMessage() {
         return nodeMetricsMsg;
     }
 
     /** */
-    public void nodeMetricsMsg(NodeMetricsMessage nodeMetricsMsg) {
+    public void nodeMetricsMessage(NodeMetricsMessage nodeMetricsMsg) {
         this.nodeMetricsMsg = nodeMetricsMsg;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

@@ -17,15 +17,12 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.Positional;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 public class CacheFindGarbageCommandArg extends IgniteDataTransferObject {
@@ -33,24 +30,29 @@ public class CacheFindGarbageCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(0)
     @Positional
     @Argument(optional = true, example = "groupName1,...,groupNameN")
-    private String value;
+    String value;
 
     /** */
+    @Order(1)
     @Positional
     @Argument(optional = true, example = "nodeId")
-    private String value2;
+    String value2;
 
     /** */
-    private String[] groups;
+    @Order(2)
+    String[] groups;
 
     /** */
-    private UUID[] nodeIds;
+    @Order(3)
+    UUID[] nodeIds;
 
     /** */
+    @Order(4)
     @Argument(optional = true)
-    private boolean delete;
+    boolean delete;
 
     /** */
     private void parse(String value) {
@@ -64,24 +66,6 @@ public class CacheFindGarbageCommandArg extends IgniteDataTransferObject {
         }
 
         groups = CommandUtils.parseVal(value, String[].class);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, value);
-        U.writeString(out, value2);
-        U.writeArray(out, groups);
-        U.writeArray(out, nodeIds);
-        out.writeBoolean(delete);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        value = U.readString(in);
-        value2 = U.readString(in);
-        groups = U.readArray(in, String.class);
-        nodeIds = U.readArray(in, UUID.class);
-        delete = in.readBoolean();
     }
 
     /** */

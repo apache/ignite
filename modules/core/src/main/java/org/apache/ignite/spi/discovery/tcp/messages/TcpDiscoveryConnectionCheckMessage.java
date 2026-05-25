@@ -17,9 +17,8 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
-import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 
 /**
@@ -27,12 +26,9 @@ import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
  * The difference from {@link TcpDiscoveryStatusCheckMessage} is that this message is sent to the next node
  * which directly replies to the sender without message re-translation to the coordinator.
  */
-public class TcpDiscoveryConnectionCheckMessage extends TcpDiscoveryAbstractMessage implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class TcpDiscoveryConnectionCheckMessage extends TcpDiscoveryAbstractMessage {
     /**
-     * Default constructor for {@link DiscoveryMessageFactory}.
+     * Default constructor for {@link MessageFactory}.
      */
     public TcpDiscoveryConnectionCheckMessage() {
         // No-op.
@@ -50,11 +46,6 @@ public class TcpDiscoveryConnectionCheckMessage extends TcpDiscoveryAbstractMess
     /** {@inheritDoc} */
     @Override public boolean traceLogLevel() {
         return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 6;
     }
 
     /** {@inheritDoc} */

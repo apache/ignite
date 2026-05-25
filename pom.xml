@@ -63,7 +63,6 @@
         <module>modules/slf4j</module>
         <module>modules/jcl</module>
         <module>modules/codegen</module>
-        <module>modules/codegen2</module>
         <module>modules/zookeeper</module>
         <module>modules/web/ignite-appserver-test</module>
         <module>modules/web/ignite-websphere-test</module>
@@ -113,24 +112,6 @@
             <id>javadoc</id>
             <build>
                 <plugins>
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>build-helper-maven-plugin</artifactId>
-                        <version>3.0.0</version>
-                        <executions>
-                            <execution>
-                                <id>timestamp-property</id>
-                                <goals>
-                                    <goal>timestamp-property</goal>
-                                </goals>
-                                <phase>validate</phase>
-                                <configuration>
-                                    <name>current.year</name>
-                                    <pattern>yyyy</pattern>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-javadoc-plugin</artifactId>
@@ -421,7 +402,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-assembly-plugin</artifactId>
-                        <version>2.4</version>
+                        <version>${maven.assembly.plugin.version}</version>
                         <inherited>false</inherited>
                         <executions>
                             <execution>

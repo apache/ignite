@@ -26,7 +26,6 @@ namespace Apache.Ignite.Core.Services
     /// <summary>
     /// Service call context builder.
     /// </summary>
-    [IgniteExperimental]
     public class ServiceCallContextBuilder
     {
         /** Context attributes. */

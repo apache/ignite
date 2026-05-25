@@ -17,12 +17,9 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Set;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Result of {@link IndexForceRebuildTask}.
@@ -32,13 +29,16 @@ public class IndexForceRebuildTaskRes extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Caches for which indexes rebuild was triggered. */
-    private Set<IndexRebuildStatusInfoContainer> cachesWithStartedRebuild;
+    @Order(0)
+    Set<IndexRebuildStatusInfoContainer> cachesWithStartedRebuild;
 
     /** Caches with indexes rebuild in progress. */
-    private Set<IndexRebuildStatusInfoContainer> cachesWithRebuildInProgress;
+    @Order(1)
+    Set<IndexRebuildStatusInfoContainer> cachesWithRebuildInProgress;
 
     /** Names of caches that were not found. */
-    private Set<String> notFoundCacheNames;
+    @Order(2)
+    Set<String> notFoundCacheNames;
 
     /**
      * Empty constructor required for Serializable.
@@ -56,20 +56,6 @@ public class IndexForceRebuildTaskRes extends IgniteDataTransferObject {
         this.cachesWithStartedRebuild = cachesWithStartedRebuild;
         this.cachesWithRebuildInProgress = cachesWithRebuildInProgress;
         this.notFoundCacheNames = notFoundCacheNames;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeCollection(out, cachesWithStartedRebuild);
-        U.writeCollection(out, cachesWithRebuildInProgress);
-        U.writeCollection(out, notFoundCacheNames);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        cachesWithStartedRebuild = U.readSet(in);
-        cachesWithRebuildInProgress = U.readSet(in);
-        notFoundCacheNames = U.readSet(in);
     }
 
     /** */

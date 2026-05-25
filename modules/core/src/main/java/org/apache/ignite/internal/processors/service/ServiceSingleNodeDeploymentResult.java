@@ -18,16 +18,14 @@
 package org.apache.ignite.internal.processors.service;
 
 import java.io.Serializable;
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Collections;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.jetbrains.annotations.NotNull;
-
-import static org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType.BYTE_ARR;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Service single node deployment result.
@@ -39,15 +37,18 @@ public class ServiceSingleNodeDeploymentResult implements Message, Serializable 
     private static final long serialVersionUID = 0L;
 
     /** Count of service's instances. */
-    private int cnt;
+    @Order(0)
+    int cnt;
 
-    /** Serialized exceptions. */
-    private Collection<byte[]> errors;
+    /** Exceptions. */
+    @Order(1)
+    @Nullable Collection<ErrorMessage> errors;
 
     /**
      * Empty constructor for marshalling purposes.
      */
     public ServiceSingleNodeDeploymentResult() {
+        // No-op.
     }
 
     /**
@@ -65,82 +66,18 @@ public class ServiceSingleNodeDeploymentResult implements Message, Serializable 
     }
 
     /**
-     * @param cnt Count of service's instances.
+     * @return Exceptions.
      */
-    public void count(int cnt) {
-        this.cnt = cnt;
+    public Collection<Throwable> errors() {
+        return F.isEmpty(errors) ? Collections.emptyList() : F.viewReadOnly(errors, em -> ErrorMessage.error(em));
     }
 
     /**
-     * @return Serialized exceptions.
+     * @param errors Exceptions.
      */
-    @NotNull public Collection<byte[]> errors() {
-        return errors != null ? errors : Collections.emptyList();
-    }
-
-    /**
-     * @param errors Serialized exceptions.
-     */
-    public void errors(Collection<byte[]> errors) {
-        this.errors = errors;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeInt(cnt))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeCollection(errors, BYTE_ARR))
-                    return false;
-
-                writer.incrementState();
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                cnt = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                errors = reader.readCollection(BYTE_ARR);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 169;
+    public void errors(@Nullable Collection<Throwable> errors) {
+        if (!F.isEmpty(errors))
+            this.errors = F.viewReadOnly(errors, ErrorMessage::new);
     }
 
     /** {@inheritDoc} */

@@ -28,17 +28,17 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  */
 public class GridCheckpointRequest implements Message {
     /** */
-    @Order(value = 0, method = "sessionId")
-    private IgniteUuid sesId;
+    @Order(0)
+    IgniteUuid sesId;
 
     /** */
     @Order(1)
     @GridToStringInclude(sensitive = true)
-    private String key;
+    String key;
 
     /** */
-    @Order(value = 2, method = "checkpointSpi")
-    private String cpSpi;
+    @Order(2)
+    String cpSpi;
 
     /**
      * Empty constructor.
@@ -70,24 +70,10 @@ public class GridCheckpointRequest implements Message {
     }
 
     /**
-     * @param sesId Session ID.
-     */
-    public void sessionId(IgniteUuid sesId) {
-        this.sesId = sesId;
-    }
-
-    /**
      * @return Checkpoint key.
      */
     public String key() {
         return key;
-    }
-
-    /**
-     * @param key Checkpoint key.
-     */
-    public void key(String key) {
-        this.key = key;
     }
 
     /**
@@ -97,17 +83,6 @@ public class GridCheckpointRequest implements Message {
         return cpSpi;
     }
 
-    /**
-     * @param cpSpi Checkpoint SPI.
-     */
-    public void checkpointSpi(String cpSpi) {
-        this.cpSpi = cpSpi;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 7;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

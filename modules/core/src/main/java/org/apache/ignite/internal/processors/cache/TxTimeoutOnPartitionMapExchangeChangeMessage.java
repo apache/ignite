@@ -18,10 +18,8 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.UUID;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -29,31 +27,35 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Discovery message for changing transaction timeout on partition map exchange.
  */
-public class TxTimeoutOnPartitionMapExchangeChangeMessage implements DiscoveryCustomMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
-
+public class TxTimeoutOnPartitionMapExchangeChangeMessage extends DiscoveryCustomMessage {
     /** Request ID. */
-    private final UUID reqId;
+    @Order(0)
+    UUID reqId;
 
     /** Transaction timeout on partition map exchange in milliseconds. */
-    private final long timeout;
+    @Order(1)
+    long timeout;
 
     /** Init flag. */
-    private final boolean isInit;
+    @Order(2)
+    boolean isInit;
+
+    /** */
+    public TxTimeoutOnPartitionMapExchangeChangeMessage() {
+        // No-op.
+    }
 
     /**
      * Constructor for response.
      *
      * @param req Request message.
      */
-    public TxTimeoutOnPartitionMapExchangeChangeMessage(TxTimeoutOnPartitionMapExchangeChangeMessage req) {
-        this.reqId = req.reqId;
-        this.timeout = req.timeout;
-        this.isInit = false;
+    private TxTimeoutOnPartitionMapExchangeChangeMessage(TxTimeoutOnPartitionMapExchangeChangeMessage req) {
+        super(IgniteUuid.randomUuid());
+
+        reqId = req.reqId;
+        timeout = req.timeout;
+        isInit = false;
     }
 
     /**
@@ -63,30 +65,16 @@ public class TxTimeoutOnPartitionMapExchangeChangeMessage implements DiscoveryCu
      * @param timeout Transaction timeout on partition map exchange in milliseconds.
      */
     public TxTimeoutOnPartitionMapExchangeChangeMessage(UUID reqId, long timeout) {
+        super(IgniteUuid.randomUuid());
+
         this.reqId = reqId;
         this.timeout = timeout;
-        this.isInit = true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
+        isInit = true;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
         return isInit() ? new TxTimeoutOnPartitionMapExchangeChangeMessage(this) : null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer,
-        DiscoCache discoCache) {
-        throw new UnsupportedOperationException();
     }
 
     /**

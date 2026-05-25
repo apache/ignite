@@ -12,11 +12,11 @@
 #
 
 Name:             apache-ignite
-Version:          2.16.0
+Version:          2.18.0
 Release:          1
 Summary:          Apache Ignite In-Memory Computing, Database and Caching Platform
 Group:            Development/System
-License:          ASL 2.0
+License:          ASF 2.0
 URL:              https://ignite.apache.org/
 Source:           %{name}-%{version}-bin.zip
 Requires:         java-11, chkconfig
@@ -260,6 +260,9 @@ ln -sf %{_log}/%{name} %{buildroot}%{_sharedstatedir}/%{name}/log
 #
 # Changelog
 #
+
+* Mon Apr 06 2026 Evgeniy Stanilovskiy <zstan@apache.org> - 2.18.0-1
+- Updated Apache Ignite to version 2.18
 
 * Fri Sep 09 2022 Taras Ledkov <tledkov@apache.org> - 2.13.0-1
 - Updated Apache Ignite to version 2.14.0

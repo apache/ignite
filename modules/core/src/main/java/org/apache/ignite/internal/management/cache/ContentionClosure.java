@@ -36,7 +36,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 
 /**
  */
-public class ContentionClosure implements IgniteCallable<ContentionInfo> {
+public class ContentionClosure implements IgniteCallable<ContentionJobResult> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -60,18 +60,18 @@ public class ContentionClosure implements IgniteCallable<ContentionInfo> {
     }
 
     /** {@inheritDoc} */
-    @Override public ContentionInfo call() throws Exception {
+    @Override public ContentionJobResult call() throws Exception {
         final IgniteTxManager tm = ignite.context().cache().context().tm();
 
         final Collection<IgniteInternalTx> activeTxs = tm.activeTransactions();
 
-        ContentionInfo ci = new ContentionInfo();
+        ContentionJobResult ci = new ContentionJobResult();
 
-        ci.setNode(ignite.localNode());
-        ci.setEntries(new ArrayList<>());
+        ci.node = ignite.localNode();
+        ci.entries = new ArrayList<>();
 
         for (IgniteInternalTx tx : activeTxs) {
-            if (ci.getEntries().size() == maxPrint)
+            if (ci.entries.size() == maxPrint)
                 break;
 
             // Show only primary txs.
@@ -152,7 +152,7 @@ public class ContentionClosure implements IgniteCallable<ContentionInfo> {
 
                     b.append("]]");
 
-                    ci.getEntries().add(b.toString());
+                    ci.entries.add(b.toString());
                 }
             }
         }

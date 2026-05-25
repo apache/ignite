@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -48,15 +49,15 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
     private @Nullable Object[] invokeArgs;
 
     /** Entry processor arguments bytes. */
-    @Order(value = 12, method = "invokeArgumentsBytes")
-    private @Nullable List<byte[]> invokeArgsBytes;
+    @Order(0)
+    @Nullable List<byte[]> invokeArgsBytes;
 
     /** Entry processors. */
     private @Nullable EntryProcessor<Object, Object, Object> entryProc;
 
     /** Entry processors bytes. */
-    @Order(value = 13, method = "entryProcessorBytes")
-    private @Nullable byte[] entryProcBytes;
+    @Order(1)
+    @Nullable byte[] entryProcBytes;
 
     /**
      * Empty constructor.
@@ -77,7 +78,6 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
      * @param invokeArgs Optional arguments for entry processor.
      * @param taskNameHash Task name hash code.
      * @param flags Flags.
-     * @param addDepInfo Deployment info flag.
      */
     GridNearAtomicSingleUpdateInvokeRequest(
         int cacheId,
@@ -88,8 +88,7 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
         GridCacheOperation op,
         @Nullable Object[] invokeArgs,
         int taskNameHash,
-        short flags,
-        boolean addDepInfo
+        short flags
     ) {
         super(
             cacheId,
@@ -99,8 +98,7 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
             syncMode,
             op,
             taskNameHash,
-            flags,
-            addDepInfo
+            flags
         );
 
         assert op == TRANSFORM : op;
@@ -161,26 +159,6 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
         return invokeArgs;
     }
 
-    /** */
-    public @Nullable byte[] entryProcessorBytes() {
-        return entryProcBytes;
-    }
-
-    /** */
-    public void entryProcessorBytes(@Nullable byte[] entryProcBytes) {
-        this.entryProcBytes = entryProcBytes;
-    }
-
-    /** */
-    public @Nullable List<byte[]> invokeArgumentsBytes() {
-        return invokeArgsBytes;
-    }
-
-    /** */
-    public void invokeArgumentsBytes(@Nullable List<byte[]> invokeArgsBytes) {
-        this.invokeArgsBytes = invokeArgsBytes;
-    }
-
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
@@ -199,7 +177,7 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
         }
 
         if (!F.isEmpty(invokeArgs) && invokeArgsBytes == null)
-            invokeArgsBytes = F.asList(marshalInvokeArguments(invokeArgs, cctx));
+            invokeArgsBytes = Arrays.asList(marshalInvokeArguments(invokeArgs, cctx));
     }
 
     /** {@inheritDoc} */
@@ -220,10 +198,6 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
         entryProc = null;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 126;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

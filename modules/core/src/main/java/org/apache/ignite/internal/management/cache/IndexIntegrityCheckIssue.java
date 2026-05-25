@@ -17,13 +17,10 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -33,11 +30,13 @@ public class IndexIntegrityCheckIssue extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cache group name. */
-    private String grpName;
+    @Order(0)
+    String grpName;
 
     /** T. */
+    @Order(1)
     @GridToStringExclude
-    private Throwable t;
+    Throwable t;
 
     /**
      *
@@ -53,18 +52,6 @@ public class IndexIntegrityCheckIssue extends IgniteDataTransferObject {
     public IndexIntegrityCheckIssue(String grpName, Throwable t) {
         this.grpName = grpName;
         this.t = t;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, this.grpName);
-        out.writeObject(t);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        this.grpName = U.readString(in);
-        this.t = (Throwable)in.readObject();
     }
 
     /** {@inheritDoc} */

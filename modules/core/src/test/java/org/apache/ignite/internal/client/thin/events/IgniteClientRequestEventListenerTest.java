@@ -31,6 +31,7 @@ import org.apache.ignite.client.events.RequestSuccessEvent;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.client.thin.AbstractThinClientTest;
 import org.apache.ignite.internal.client.thin.ClientOperation;
+import org.apache.ignite.internal.util.typedef.X;
 import org.junit.Test;
 
 /**
@@ -154,7 +155,7 @@ public class IgniteClientRequestEventListenerTest extends AbstractThinClientTest
             assertEquals(ClientOperation.CACHE_PUT.code(), startEvt.operationCode());
             assertEquals(ClientOperation.CACHE_PUT.name(), startEvt.operationName());
 
-            assertEquals(err, failEvt.throwable());
+            assertTrue(X.getThrowableList(err).contains(failEvt.throwable()));
 
             assertTrue(System.nanoTime() - startTime >= failEvt.elapsedTime(TimeUnit.NANOSECONDS));
         }

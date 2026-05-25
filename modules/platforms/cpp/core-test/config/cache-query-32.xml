@@ -31,20 +31,17 @@
     <import resource="cache-query-default.xml"/>
 
     <bean parent="grid.cfg">
-        <property name="memoryConfiguration">
-            <bean class="org.apache.ignite.configuration.MemoryConfiguration">
-                <property name="systemCacheInitialSize" value="#{10 * 1024 * 1024}"/>
-                <property name="systemCacheMaxSize" value="#{40 * 1024 * 1024}"/>
-                <property name="defaultMemoryPolicyName" value="dfltPlc"/>
+        <property name="dataStorageConfiguration">
+            <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
+                <property name="systemRegionInitialSize" value="#{10 * 1024 * 1024}"/>
+                <property name="systemRegionMaxSize" value="#{40 * 1024 * 1024}"/>
 
-                <property name="memoryPolicies">
-                    <list>
-                        <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
-                            <property name="name" value="dfltPlc"/>
-                            <property name="maxSize" value="#{100 * 1024 * 1024}"/>
-                            <property name="initialSize" value="#{10 * 1024 * 1024}"/>
-                        </bean>
-                    </list>
+                <property name="defaultDataRegionConfiguration">
+                    <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
+                        <property name="name" value="dfltPlc"/>
+                        <property name="maxSize" value="#{100 * 1024 * 1024}"/>
+                        <property name="initialSize" value="#{10 * 1024 * 1024}"/>
+                    </bean>
                 </property>
             </bean>
         </property>

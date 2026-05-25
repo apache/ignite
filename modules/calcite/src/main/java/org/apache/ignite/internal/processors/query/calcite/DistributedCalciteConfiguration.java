@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite;
 
+import java.io.Serializable;
 import java.util.Objects;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteLogger;
@@ -30,7 +31,6 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCach
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.LifecycleAware;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
-import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.setDefaultValue;
 
@@ -39,11 +39,20 @@ public class DistributedCalciteConfiguration extends DistributedSqlConfiguration
     /** Globally disabled rules property name. */
     public static final String DISABLED_RULES_PROPERTY_NAME = "sql.calcite.disabledRules";
 
+    /** Plan cache size property name. */
+    public static final String PLAN_CACHE_SIZE_PROPERTY_NAME = "sql.calcite.planCacheSize";
+
     /** Default value of the disabled rules. */
     public static final String[] DFLT_DISABLED_RULES = new String[0];
 
+    /** Default value of plan cache size. */
+    public static final int DFLT_PLAN_CACHE_SIZE = 1024;
+
     /** Globally disabled rules. */
     private volatile DistributedChangeableProperty<String[]> disabledRules;
+
+    /** Plan cache size. */
+    private volatile DistributedChangeableProperty<Integer> planCacheSize;
 
     /** */
     private QueryPlanCache qryPlanCache;
@@ -72,16 +81,37 @@ public class DistributedCalciteConfiguration extends DistributedSqlConfiguration
      * @see #DISABLED_RULES_PROPERTY_NAME
      */
     public String[] disabledRules() {
-        DistributedChangeableProperty<String[]> disabledRules = this.disabledRules;
+        return getProperty(disabledRules, DFLT_DISABLED_RULES);
+    }
 
-        String[] res = disabledRules == null ? DFLT_DISABLED_RULES : disabledRules.get();
+    /**
+     * @return Plan cache size.
+     */
+    public int planCacheSize() {
+        return getProperty(planCacheSize, DFLT_PLAN_CACHE_SIZE);
+    }
 
-        return res != null ? res : DFLT_DISABLED_RULES;
+    /** */
+    private <T extends Serializable> T getProperty(DistributedChangeableProperty<T> prop, T dflt) {
+        T res = prop == null ? dflt : prop.get();
+
+        return res != null ? res : dflt;
     }
 
     /** {@inheritDoc} */
     @Override protected void onReadyToRegister(DistributedPropertyDispatcher dispatcher) {
         super.onReadyToRegister(dispatcher);
+
+        DistributePropertyListener<Object> planCacheCleaner = (name, oldVal, newVal) -> {
+            if (oldVal != null && !oldVal.equals(newVal)) {
+                if (qryPlanCache != null) {
+                    if (log.isInfoEnabled())
+                        log.info("Cleaning Calcite's cache plan by changing of the property '" + name + "'.");
+
+                    qryPlanCache.clear();
+                }
+            }
+        };
 
         registerProperty(
             dispatcher,
@@ -95,20 +125,21 @@ public class DistributedCalciteConfiguration extends DistributedSqlConfiguration
             log
         );
 
-        disabledRules.addListener(new DistributePropertyListener<>() {
-            @Override public void onUpdate(String name, String[] oldVal, String[] newVal) {
-                if (oldVal != null && F.compareArrays(oldVal, newVal) != 0) {
-                    if (qryPlanCache != null) {
-                        if (log.isInfoEnabled()) {
-                            log.info("Cleaning Calcite's cache plan by changing of the property '"
-                                + DISABLED_RULES_PROPERTY_NAME + "'.");
-                        }
+        disabledRules.addListener(planCacheCleaner);
 
-                        qryPlanCache.clear();
-                    }
-                }
-            }
-        });
+        registerProperty(
+            dispatcher,
+            PLAN_CACHE_SIZE_PROPERTY_NAME,
+            prop -> planCacheSize = prop,
+            () -> new SimpleDistributedProperty<>(
+                PLAN_CACHE_SIZE_PROPERTY_NAME,
+                Integer::parseInt,
+                "Calcite's plan cache size. NOTE: cleans the planning cache on change."
+            ),
+            log
+        );
+
+        planCacheSize.addListener(planCacheCleaner);
     }
 
     /** {@inheritDoc} */
@@ -116,10 +147,6 @@ public class DistributedCalciteConfiguration extends DistributedSqlConfiguration
         super.onReadyToWrite();
 
         setDefaultValue(disabledRules, DFLT_DISABLED_RULES, log);
-    }
-
-    /** */
-    DistributedChangeableProperty<String[]> disabledRulesProperty() {
-        return disabledRules;
+        setDefaultValue(planCacheSize, DFLT_PLAN_CACHE_SIZE, log);
     }
 }

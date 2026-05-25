@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -31,19 +31,19 @@ import org.apache.ignite.lang.IgniteUuid;
  */
 public class GridDistributedTxFinishResponse extends GridCacheMessage {
     /** */
-    @Order(value = 3, method = "xid")
-    private GridCacheVersion txId;
+    @Order(0)
+    public GridCacheVersion txId;
 
     /** Future ID. */
-    @Order(value = 4, method = "futureId")
-    private IgniteUuid futId;
+    @Order(1)
+    public IgniteUuid futId;
 
     /** Partition ID this message is targeted to. */
-    @Order(value = 5, method = "partition")
-    private int part;
+    @Order(2)
+    public int part;
 
     /**
-     * Empty constructor required by {@link GridIoMessageFactory}.
+     * Empty constructor required by {@link CoreMessagesProvider}.
      */
     public GridDistributedTxFinishResponse() {
         /* No-op. */
@@ -63,11 +63,6 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
         this.futId = futId;
     }
 
-    /** Partition ID this message is targeted to. */
-    public void partition(int part) {
-        this.part = part;
-    }
-
     /** {@inheritDoc} */
     @Override public final int partition() {
         return part;
@@ -79,16 +74,6 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
      */
     public GridCacheVersion xid() {
         return txId;
-    }
-
-    /** */
-    public void xid(GridCacheVersion txId) {
-        this.txId = txId;
-    }
-
-    /** */
-    public void futureId(IgniteUuid futId) {
-        this.futId = futId;
     }
 
     /**
@@ -108,10 +93,6 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
         return ctx.txFinishMessageLogger();
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 24;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

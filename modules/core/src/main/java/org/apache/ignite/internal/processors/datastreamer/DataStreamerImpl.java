@@ -134,7 +134,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /** */
     public static final String WRN_INCONSISTENT_UPDATES = "The Data Streamer loads data with 'allowOverwrite' set " +
         "to false. It doesn't guarantee data consistency until successfully finishes. Streamer cancelation or " +
-        "streamer node failure can cause data inconsistency. Concurrently created snapshot may contain inconsistent " +
+        "topology change can cause data inconsistency. Concurrently created snapshot may contain inconsistent " +
         "data and might not be restored entirely.";
 
     /** Per thread buffer size. */
@@ -204,9 +204,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
     /** Communication topic for responses. */
     private final Object topic;
-
-    /** */
-    private byte[] topicBytes;
 
     /** {@code True} if data loader has been cancelled. */
     private volatile boolean cancelled;
@@ -1947,9 +1944,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                         updaterBytes = U.marshal(ctx, rcvr);
                     }
-
-                    if (topicBytes == null)
-                        topicBytes = U.marshal(ctx, topic);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to marshal.", e);
@@ -1994,7 +1988,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                 DataStreamerRequest req = new DataStreamerRequest(
                     reqId,
-                    topicBytes,
+                    topic,
                     cacheName,
                     updaterBytes,
                     entries,
@@ -2091,33 +2085,17 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 return;
             }
 
-            Throwable err = null;
+            Throwable err = res.error();
 
-            byte[] errBytes = res.errorBytes();
+            if (err != null) {
+                final String msg = "DataStreamer request failed [node=" + nodeId + "]";
 
-            if (errBytes != null) {
-                try {
-                    GridPeerDeployAware jobPda0 = jobPda;
-
-                    final Throwable cause = U.unmarshal(
-                        ctx,
-                        errBytes,
-                        U.resolveClassLoader(jobPda0 != null ? jobPda0.classLoader() : null, ctx.config()));
-
-                    final String msg = "DataStreamer request failed [node=" + nodeId + "]";
-
-                    if (cause instanceof ClusterTopologyCheckedException)
-                        err = new ClusterTopologyCheckedException(msg, cause);
-                    else if (X.hasCause(cause, IgniteClusterReadOnlyException.class))
-                        err = new IgniteClusterReadOnlyException(msg, cause);
-                    else
-                        err = new IgniteCheckedException(msg, cause);
-                }
-                catch (IgniteCheckedException e) {
-                    f.onDone(null, new IgniteCheckedException("Failed to unmarshal response.", e));
-
-                    return;
-                }
+                if (err instanceof ClusterTopologyCheckedException)
+                    err = new ClusterTopologyCheckedException(msg, err);
+                else if (X.hasCause(err, IgniteClusterReadOnlyException.class))
+                    err = new IgniteClusterReadOnlyException(msg, err);
+                else
+                    err = new IgniteCheckedException(msg, err);
             }
 
             f.onDone(null, err);

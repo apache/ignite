@@ -17,14 +17,11 @@
 
 package org.apache.ignite.internal.management.metric;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 public class MetricCommandArg extends IgniteDataTransferObject {
@@ -32,25 +29,15 @@ public class MetricCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(0)
     @Argument(description = "Name of the metric")
     @Positional
-    private String name;
+    String name;
 
     /** */
+    @Order(1)
     @Argument(description = "Node id", optional = true)
-    private UUID nodeId;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, name);
-        U.writeUuid(out, nodeId);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        name = U.readString(in);
-        nodeId = U.readUuid(in);
-    }
+    UUID nodeId;
 
     /** */
     public UUID nodeId() {

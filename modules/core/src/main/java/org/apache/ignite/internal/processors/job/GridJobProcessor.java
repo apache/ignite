@@ -67,7 +67,6 @@ import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
-import org.apache.ignite.internal.managers.systemview.walker.ComputeJobViewWalker;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -77,6 +76,7 @@ import org.apache.ignite.internal.processors.configuration.distributed.Distribut
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsSnapshot;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
+import org.apache.ignite.internal.systemview.ComputeJobViewWalker;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
@@ -485,7 +485,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
         // Cancel only if we force grid to stop
         if (cancel) {
             for (GridJobWorker job : activeJobs.values()) {
-                job.onStopping();
+                job.onNodeStopping();
 
                 cancelJob(job, false);
             }
@@ -655,17 +655,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 else {
                     // Sender and message type are fine.
                     res = (GridJobSiblingsResponse)msg;
-
-                    if (res.jobSiblings() == null) {
-                        try {
-                            res.unmarshalSiblings(marsh);
-                        }
-                        catch (IgniteCheckedException e) {
-                            U.error(log, "Failed to unmarshal job siblings.", e);
-
-                            err = e.getMessage();
-                        }
-                    }
                 }
 
                 lock.lock();

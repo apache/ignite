@@ -17,11 +17,12 @@
 
 package org.apache.ignite.internal.management.wal;
 
+import java.util.function.Consumer;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.wal.WalDisableCommand.WalDisableCommandArg;
 
 /** */
-public class WalEnableCommand implements ComputeCommand<WalDisableCommandArg, Void> {
+public class WalEnableCommand implements ComputeCommand<WalDisableCommandArg, WalSetStateTaskResult> {
     /** {@inheritDoc} */
     @Override public Class<WalSetStateTask> taskClass() {
         return WalSetStateTask.class;
@@ -35,6 +36,11 @@ public class WalEnableCommand implements ComputeCommand<WalDisableCommandArg, Vo
     /** {@inheritDoc} */
     @Override public Class<WalEnableCommandArg> argClass() {
         return WalEnableCommandArg.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void printResult(WalDisableCommandArg arg, WalSetStateTaskResult res, Consumer<String> printer) {
+        res.print(true, printer);
     }
 
     /** */

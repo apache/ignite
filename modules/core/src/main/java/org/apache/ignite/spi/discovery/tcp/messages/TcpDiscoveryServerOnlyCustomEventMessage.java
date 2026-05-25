@@ -26,16 +26,18 @@ import org.jetbrains.annotations.NotNull;
  */
 @TcpDiscoveryEnsureDelivery
 public class TcpDiscoveryServerOnlyCustomEventMessage extends TcpDiscoveryCustomEventMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
+    /**
+     * Default constructor.
+     */
+    public TcpDiscoveryServerOnlyCustomEventMessage() {
+        // No-op.
+    }
 
     /**
      * @param creatorNodeId Creator node id.
      * @param msg Message.
-     * @param msgBytes Serialized message.
      */
-    public TcpDiscoveryServerOnlyCustomEventMessage(UUID creatorNodeId, @NotNull DiscoverySpiCustomMessage msg,
-        @NotNull byte[] msgBytes) {
-        super(creatorNodeId, msg, msgBytes);
+    public TcpDiscoveryServerOnlyCustomEventMessage(UUID creatorNodeId, @NotNull DiscoverySpiCustomMessage msg) {
+        super(creatorNodeId, msg);
     }
 }

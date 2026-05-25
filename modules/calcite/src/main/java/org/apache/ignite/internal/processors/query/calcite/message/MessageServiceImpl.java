@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.calcite.message;
 
-import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
@@ -36,7 +36,6 @@ import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -52,48 +51,52 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     private final GridCacheSharedContext<?, ?> ctx;
 
     /** */
-    private UUID localNodeId;
+    private final ClassLoader clsLdr;
 
     /** */
-    private final GridIoManager ioManager;
+    private UUID locNodeId;
+
+    /** */
+    private final GridIoManager ioMgr;
 
     /** */
     private QueryTaskExecutor taskExecutor;
 
     /** */
-    private FailureProcessor failureProcessor;
+    private FailureProcessor failureProc;
 
     /** */
-    private EnumMap<MessageType, MessageListener> lsnrs;
+    private Map<Class<? extends Message>, MessageListener> lsnrs;
 
     /** */
     public MessageServiceImpl(GridKernalContext ctx) {
         super(ctx);
 
         this.ctx = ctx.cache().context();
-        this.ioManager = ctx.io();
+        clsLdr = U.resolveClassLoader(ctx.config());
+        ioMgr = ctx.io();
         msgLsnr = this::onMessage;
     }
 
     /**
-     * @param localNodeId Local node ID.
+     * @param locNodeId Local node ID.
      */
-    public void localNodeId(UUID localNodeId) {
-        this.localNodeId = localNodeId;
+    public void localNodeId(UUID locNodeId) {
+        this.locNodeId = locNodeId;
     }
 
     /**
      * @return Local node ID.
      */
     public UUID localNodeId() {
-        return localNodeId;
+        return locNodeId;
     }
 
     /**
      * @return IO manager.
      */
     public GridIoManager ioManager() {
-        return ioManager;
+        return ioMgr;
     }
 
     /**
@@ -111,24 +114,24 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     }
 
     /**
-     * @param failureProcessor Failure processor.
+     * @param failureProc Failure processor.
      */
-    public void failureProcessor(FailureProcessor failureProcessor) {
-        this.failureProcessor = failureProcessor;
+    public void failureProcessor(FailureProcessor failureProc) {
+        this.failureProc = failureProc;
     }
 
     /**
      * @return Failure processor.
      */
     public FailureProcessor failureProcessor() {
-        return failureProcessor;
+        return failureProc;
     }
 
     /** {@inheritDoc} */
     @Override public void onStart(GridKernalContext ctx) {
         localNodeId(ctx.localNodeId());
 
-        CalciteQueryProcessor proc = Objects.requireNonNull(Commons.lookupComponent(ctx, CalciteQueryProcessor.class));
+        CalciteQueryProcessor proc = queryProcessor(ctx);
 
         taskExecutor(proc.taskExecutor());
         failureProcessor(proc.failureProcessor());
@@ -148,7 +151,7 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     }
 
     /** {@inheritDoc} */
-    @Override public void send(UUID nodeId, CalciteMessage msg) throws IgniteCheckedException {
+    @Override public void send(UUID nodeId, Message msg) throws IgniteCheckedException {
         if (localNodeId().equals(nodeId))
             onMessage(nodeId, msg);
         else {
@@ -159,9 +162,9 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     }
 
     /** {@inheritDoc} */
-    @Override public void register(MessageListener lsnr, MessageType type) {
+    @Override public <T extends Message> void register(MessageListener lsnr, Class<T> type) {
         if (lsnrs == null)
-            lsnrs = new EnumMap<>(MessageType.class);
+            lsnrs = new HashMap<>();
 
         MessageListener old = lsnrs.put(type, lsnr);
 
@@ -181,8 +184,8 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     /** */
     protected void prepareMarshal(Message msg) throws IgniteCheckedException {
         try {
-            if (msg instanceof MarshalableMessage)
-                ((MarshalableMessage)msg).prepareMarshal(ctx);
+            if (msg instanceof CalciteContextMarshallableMessage)
+                ((CalciteContextMarshallableMessage)msg).prepareMarshal(ctx);
         }
         catch (Exception e) {
             failureProcessor().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
@@ -194,8 +197,8 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     /** */
     protected void prepareUnmarshal(Message msg) throws IgniteCheckedException {
         try {
-            if (msg instanceof MarshalableMessage)
-                ((MarshalableMessage)msg).prepareUnmarshal(ctx);
+            if (msg instanceof CalciteContextMarshallableMessage)
+                ((CalciteContextMarshallableMessage)msg).finishUnmarshal(ctx, clsLdr);
         }
         catch (Exception e) {
             failureProcessor().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
@@ -205,7 +208,7 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     }
 
     /** */
-    protected void onMessage(UUID nodeId, CalciteMessage msg) {
+    protected void onMessage(UUID nodeId, Message msg) {
         if (msg instanceof ExecutionContextAware) {
             ExecutionContextAware msg0 = (ExecutionContextAware)msg;
             taskExecutor().execute(msg0.queryId(), msg0.fragmentId(), () -> onMessageInternal(nodeId, msg));
@@ -220,16 +223,16 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
 
     /** */
     private void onMessage(UUID nodeId, Object msg, byte plc) {
-        if (msg instanceof CalciteMessage)
-            onMessage(nodeId, (CalciteMessage)msg);
+        if (msg instanceof Message && CalciteMessageFactory.isCalciteMessage((Message)msg))
+            onMessage(nodeId, (Message)msg);
     }
 
     /** */
-    private void onMessageInternal(UUID nodeId, CalciteMessage msg) {
+    private void onMessageInternal(UUID nodeId, Message msg) {
         try {
             prepareUnmarshal(msg);
 
-            MessageListener lsnr = Objects.requireNonNull(lsnrs.get(msg.type()));
+            MessageListener lsnr = Objects.requireNonNull(lsnrs.get(msg.getClass()));
             lsnr.onMessage(nodeId, msg);
         }
         catch (IgniteCheckedException e) {

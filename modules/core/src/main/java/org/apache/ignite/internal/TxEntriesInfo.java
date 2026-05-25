@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Objects;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -31,14 +30,14 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 public final class TxEntriesInfo extends IgniteDiagnosticRequest.DiagnosticBaseInfo {
     /** */
     @Order(0)
-    private int cacheId;
+    int cacheId;
 
     /** */
     @Order(1)
-    private Collection<KeyCacheObject> keys;
+    Collection<KeyCacheObject> keys;
 
     /**
-     * Empty constructor required by {@link GridIoMessageFactory}.
+     * Empty constructor required by {@link CoreMessagesProvider}.
      */
     public TxEntriesInfo() {
         // No-op.
@@ -53,30 +52,6 @@ public final class TxEntriesInfo extends IgniteDiagnosticRequest.DiagnosticBaseI
         this.keys = new HashSet<>(keys);
     }
 
-    /** */
-    public int cacheId() {
-        return cacheId;
-    }
-
-    /** */
-    public void cacheId(int cacheId) {
-        this.cacheId = cacheId;
-    }
-
-    /** */
-    public Collection<KeyCacheObject> keys() {
-        return keys;
-    }
-
-    /** */
-    public void keys(Collection<KeyCacheObject> keys) {
-        this.keys = keys;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -64;
-    }
 
     /** {@inheritDoc} */
     @Override public void appendInfo(StringBuilder sb, GridKernalContext ctx) {

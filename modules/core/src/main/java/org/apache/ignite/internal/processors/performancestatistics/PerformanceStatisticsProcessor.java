@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.performancestatistics;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EventListener;
@@ -42,6 +41,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage.IGNITE_INTERNAL_KEY_PREFIX;
@@ -75,7 +75,10 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     private final ArrayList<PerformanceStatisticsStateListener> lsnrs = new ArrayList<>();
 
     /** Rotate performance statistics process. */
-    private DistributedProcess<Serializable, Serializable> rotateProc;
+    private DistributedProcess<Message, Message> rotateProc;
+
+    /** Whether performance statistics collection is running. */
+    private volatile boolean isRunning;
 
     /** @param ctx Kernal context. */
     public PerformanceStatisticsProcessor(GridKernalContext ctx) {
@@ -336,7 +339,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
 
     /** @return {@code True} if collecting performance statistics is enabled. */
     public boolean enabled() {
-        return writer != null;
+        return isRunning;
     }
 
     /** {@inheritDoc} */
@@ -365,7 +368,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     private void startWriter() {
         try {
             synchronized (mux) {
-                if (writer != null)
+                if (isRunning)
                     return;
 
                 writer = new FilePerformanceStatisticsWriter(ctx);
@@ -373,6 +376,8 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
 
                 writer.start();
                 U.newThread(sysViewWriter).start();
+
+                isRunning = true;
             }
 
             lsnrs.forEach(PerformanceStatisticsStateListener::onStarted);
@@ -387,7 +392,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     /** Stops performance statistics writer. */
     private void stopWriter() {
         synchronized (mux) {
-            if (writer == null)
+            if (!isRunning)
                 return;
 
             FilePerformanceStatisticsWriter writer = this.writer;
@@ -398,6 +403,8 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
 
             writer.stop();
             U.awaitForWorkersStop(Collections.singleton(sysViewWriter), true, log);
+
+            isRunning = false;
         }
 
         log.info("Performance statistics writer stopped.");
@@ -408,7 +415,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
         FilePerformanceStatisticsWriter oldWriter = null;
 
         synchronized (mux) {
-            if (writer == null)
+            if (!isRunning)
                 return;
 
             FilePerformanceStatisticsWriter newWriter = new FilePerformanceStatisticsWriter(ctx);

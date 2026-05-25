@@ -18,37 +18,29 @@
 package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.util.UUID;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.CoreMessagesProvider;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-class DistributedMetaStorageUpdateAckMessage implements DiscoveryCustomMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
-
+public class DistributedMetaStorageUpdateAckMessage extends DiscoveryCustomMessage {
     /** Request ID. */
-    private final UUID reqId;
+    @Order(0)
+    UUID reqId;
 
-    /** */
-    private final String errorMsg;
-
-    /** */
-    public DistributedMetaStorageUpdateAckMessage(UUID reqId, String errorMsg) {
-        this.reqId = reqId;
-        this.errorMsg = errorMsg;
+    /** Empty constructor of {@link CoreMessagesProvider}. */
+    public DistributedMetaStorageUpdateAckMessage() {
+        // No-op.
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
+    /** */
+    public DistributedMetaStorageUpdateAckMessage(UUID reqId) {
+        super(IgniteUuid.randomUuid());
+
+        this.reqId = reqId;
     }
 
     /** */
@@ -56,28 +48,9 @@ class DistributedMetaStorageUpdateAckMessage implements DiscoveryCustomMessage {
         return reqId;
     }
 
-    /** */
-    public String errorMessage() {
-        return errorMsg;
-    }
-
     /** {@inheritDoc} */
     @Override @Nullable public DiscoveryCustomMessage ackMessage() {
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public DiscoCache createDiscoCache(
-        GridDiscoveryManager mgr,
-        AffinityTopologyVersion topVer,
-        DiscoCache discoCache
-    ) {
-        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */

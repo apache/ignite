@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
@@ -34,22 +33,22 @@ import org.jetbrains.annotations.Nullable;
  */
 public class IgniteDiagnosticRequest implements Message {
     /** */
-    @Order(value = 0, method = "futureId")
-    private long futId;
+    @Order(0)
+    long futId;
 
     /** Originator node id. */
     @Order(1)
-    private UUID nodeId;
+    UUID nodeId;
 
     /** Infos to send to a remote node. */
     @Order(2)
-    private @Nullable Set<DiagnosticBaseInfo> infos;
+    @Nullable Set<DiagnosticBaseInfo> infos;
 
     /** Local message related to remote info. */
     private final Map<Object, List<String>> msgs = new LinkedHashMap<>();
 
     /**
-     * Default constructor required by {@link GridIoMessageFactory}.
+     * Default constructor required by {@link CoreMessagesProvider}.
      */
     public IgniteDiagnosticRequest() {
         // No-op.
@@ -124,11 +123,6 @@ public class IgniteDiagnosticRequest implements Message {
         return nodeId;
     }
 
-    /** */
-    public void nodeId(UUID nodeId) {
-        this.nodeId = nodeId;
-    }
-
     /**
      * @return Future ID.
      */
@@ -136,25 +130,11 @@ public class IgniteDiagnosticRequest implements Message {
         return futId;
     }
 
-    /** */
-    public void futureId(long futId) {
-        this.futId = futId;
-    }
-
     /** @return Compound diagnostic infos. */
     public @Nullable Set<DiagnosticBaseInfo> infos() {
         return infos;
     }
 
-    /** Sets compound diagnostic infos. */
-    public void infos(@Nullable Set<DiagnosticBaseInfo> infos) {
-        this.infos = infos;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -61;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

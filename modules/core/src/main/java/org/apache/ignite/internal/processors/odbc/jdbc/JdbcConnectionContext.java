@@ -82,8 +82,11 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /** Version 2.17.0: adds transaction default parameters. */
     static final ClientListenerProtocolVersion VER_2_17_0 = ClientListenerProtocolVersion.create(2, 17, 0);
 
+    /** Version 2.18.0. */
+    static final ClientListenerProtocolVersion VER_2_18_0 = ClientListenerProtocolVersion.create(2, 18, 0);
+
     /** Current version. */
-    public static final ClientListenerProtocolVersion CURRENT_VER = VER_2_17_0;
+    public static final ClientListenerProtocolVersion CURRENT_VER = VER_2_18_0;
 
     /** Supported versions. */
     private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
@@ -117,6 +120,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
     static {
         SUPPORTED_VERS.add(CURRENT_VER);
+        SUPPORTED_VERS.add(VER_2_17_0);
         SUPPORTED_VERS.add(VER_2_13_0);
         SUPPORTED_VERS.add(VER_2_9_0);
         SUPPORTED_VERS.add(VER_2_8_0);
@@ -173,12 +177,11 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         boolean replicatedOnly = reader.readBoolean();
         boolean autoCloseCursors = reader.readBoolean();
 
-        boolean lazyExec = false;
         boolean skipReducerOnUpdate = false;
         String qryEngine = null;
 
         if (ver.compareTo(VER_2_1_5) >= 0)
-            lazyExec = reader.readBoolean();
+            reader.readBoolean(); // Lazy query flag.
 
         if (ver.compareTo(VER_2_3_0) >= 0)
             skipReducerOnUpdate = reader.readBoolean();
@@ -282,12 +285,10 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         boolean loc = features.contains(JdbcThinFeature.LOCAL_QUERIES);
 
         handler = new JdbcRequestHandler(busyLock, snd, maxCursors, distributedJoins, enforceJoinOrder,
-            collocated, replicatedOnly, autoCloseCursors, lazyExec, loc, skipReducerOnUpdate, qryEngine,
+            collocated, replicatedOnly, autoCloseCursors, loc, skipReducerOnUpdate, qryEngine,
             dataPageScanEnabled, updateBatchSize,
             concurrency, isolation, timeout, lb,
             ver, this);
-
-        handler.start();
     }
 
     /** {@inheritDoc} */

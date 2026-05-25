@@ -131,6 +131,9 @@ public final class ClientCacheConfiguration implements Serializable {
     /** @serial Expiry policy. */
     private ExpiryPolicy expiryPlc;
 
+    /** @serial Affinity configuration. */
+    private ClientAffinityConfiguration affCfg;
+
     /**
      * Root directories where partition files are stored.
      * @see DataStorageConfiguration#setStoragePath(String)
@@ -193,6 +196,7 @@ public final class ClientCacheConfiguration implements Serializable {
         writeSynchronizationMode = ccfg.getWriteSynchronizationMode();
         storagePaths = ccfg.getStoragePaths();
         idxPath = ccfg.getIndexPath();
+        affCfg = ccfg.getAffinityConfiguration();
     }
 
     /**
@@ -789,6 +793,27 @@ public final class ClientCacheConfiguration implements Serializable {
      */
     public ClientCacheConfiguration setExpiryPolicy(ExpiryPolicy expiryPlc) {
         this.expiryPlc = expiryPlc;
+
+        return this;
+    }
+
+    /**
+     * Gets affinity configuration.
+     *
+     * @return Affinity configuration.
+     */
+    public ClientAffinityConfiguration getAffinityConfiguration() {
+        return affCfg;
+    }
+
+    /**
+     * Sets affinity configuration.
+     *
+     * @param affCfg Affinity configuration.
+     * @return {@code this} for chaining.
+     */
+    public ClientCacheConfiguration setAffinityConfiguration(ClientAffinityConfiguration affCfg) {
+        this.affCfg = affCfg;
 
         return this;
     }

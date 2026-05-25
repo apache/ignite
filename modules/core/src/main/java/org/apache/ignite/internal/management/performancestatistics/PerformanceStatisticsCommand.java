@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.management.performancestatistics;
 
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 
@@ -56,15 +54,5 @@ public class PerformanceStatisticsCommand extends CommandRegistryImpl {
     public static class PerformanceStatisticsStatusCommandArg extends IgniteDataTransferObject {
         /** */
         private static final long serialVersionUID = 0;
-
-        /** {@inheritDoc} */
-        @Override protected void writeExternalData(ObjectOutput out) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void readExternalData(ObjectInput in) {
-            // No-op.
-        }
     }
 }

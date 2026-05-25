@@ -59,6 +59,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLock
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTransactionalCache;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
@@ -431,8 +432,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             req.version(),
             req.futureId(),
             req.miniId(),
-            e,
-            ctx.deploymentEnabled());
+            e);
 
         try {
             ctx.io().send(nodeId, res, ctx.ioPolicy());
@@ -465,8 +465,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         boolean cancelled = false;
 
         try {
-            res = new GridDhtLockResponse(ctx.cacheId(), req.version(), req.futureId(), req.miniId(), cnt,
-                ctx.deploymentEnabled());
+            res = new GridDhtLockResponse(ctx.cacheId(), req.version(), req.futureId(), req.miniId(), cnt);
 
             dhtTx = startRemoteTx(nodeId, req, res);
         }
@@ -476,7 +475,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             U.error(log, err, e);
 
             res = new GridDhtLockResponse(ctx.cacheId(), req.version(), req.futureId(), req.miniId(),
-                new IgniteTxRollbackCheckedException(err, e), ctx.deploymentEnabled());
+                new IgniteTxRollbackCheckedException(err, e));
 
             fail = true;
         }
@@ -489,7 +488,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 req.version(),
                 req.futureId(),
                 req.miniId(),
-                new IgniteCheckedException(err, e), ctx.deploymentEnabled());
+                new IgniteCheckedException(err, e));
 
             fail = true;
         }
@@ -581,6 +580,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      */
     private void processDhtUnlockRequest(UUID nodeId, GridDhtUnlockRequest req) {
         clearLocks(nodeId, req);
+
+        if (req.forSavepoint())
+            clearTxEntries(req.version(), req.keys());
 
         if (isNearEnabled(cacheCfg))
             near().clearLocks(nodeId, req);
@@ -1165,7 +1167,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             0,
             null,
             topVer,
-            ctx.deploymentEnabled(),
             false);
 
         try {
@@ -1218,7 +1219,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 entries.size(),
                 err,
                 clienRemapVer,
-                ctx.deploymentEnabled(),
                 clienRemapVer != null);
 
             if (err == null) {
@@ -1329,7 +1329,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 entries.size(),
                 e,
                 null,
-                ctx.deploymentEnabled(),
                 false);
         }
     }
@@ -1493,7 +1492,13 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         assert ctx.affinityNode();
         assert nodeId != null;
 
-        removeLocks(nodeId, req.version(), req.keys(), true);
+        removeLocks(
+            nodeId,
+            req.version(),
+            req.keys(),
+            true,
+            req.forSavepoint()
+        );
     }
 
     /**
@@ -1570,6 +1575,23 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param unmap Flag for un-mapping version.
      */
     public void removeLocks(UUID nodeId, GridCacheVersion ver, Iterable<KeyCacheObject> keys, boolean unmap) {
+        removeLocks(nodeId, ver, keys, unmap, false);
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param ver Version.
+     * @param keys Keys.
+     * @param unmap Flag for un-mapping version.
+     * @param forSavepoint Savepoint rollback flag.
+     */
+    public void removeLocks(
+        UUID nodeId,
+        GridCacheVersion ver,
+        Iterable<KeyCacheObject> keys,
+        boolean unmap,
+        boolean forSavepoint
+    ) {
         assert nodeId != null;
         assert ver != null;
 
@@ -1579,7 +1601,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         // Remove mapped versions.
         GridCacheVersion dhtVer = unmap ? ctx.mvcc().unmapVersion(ver) : ver;
 
-        ctx.mvcc().addRemoved(ctx, ver);
+        if (!forSavepoint)
+            ctx.mvcc().addRemoved(ctx, ver);
 
         Map<ClusterNode, List<KeyCacheObject>> dhtMap = new HashMap<>();
         Map<ClusterNode, List<KeyCacheObject>> nearMap = new HashMap<>();
@@ -1641,6 +1664,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     // as there is no point to reorder relative to the version
                     // we are about to remove.
                     if (entry.removeLock(dhtVer)) {
+                        if (forSavepoint)
+                            clearTxEntry(dhtVer, key);
+
                         // Map to backups and near readers.
                         map(nodeId, topVer, entry, readers, dhtMap, nearMap);
 
@@ -1676,14 +1702,14 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
             List<KeyCacheObject> keyBytes = entry.getValue();
 
-            GridDhtUnlockRequest req = new GridDhtUnlockRequest(ctx.cacheId(), keyBytes.size(),
-                ctx.deploymentEnabled());
+            GridDhtUnlockRequest req = new GridDhtUnlockRequest(ctx.cacheId(), keyBytes.size());
 
             req.version(dhtVer);
+            req.forSavepoint(forSavepoint);
 
             try {
-                for (KeyCacheObject key : keyBytes)
-                    req.addKey(key);
+                for (int i = 0; i < keyBytes.size(); i++)
+                    req.addKey(keyBytes.get(i));
 
                 keyBytes = nearMap.get(n);
 
@@ -1711,10 +1737,10 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             if (!dhtMap.containsKey(n)) {
                 List<KeyCacheObject> keyBytes = entry.getValue();
 
-                GridDhtUnlockRequest req = new GridDhtUnlockRequest(ctx.cacheId(), keyBytes.size(),
-                    ctx.deploymentEnabled());
+                GridDhtUnlockRequest req = new GridDhtUnlockRequest(ctx.cacheId(), keyBytes.size());
 
                 req.version(dhtVer);
+                req.forSavepoint(forSavepoint);
 
                 try {
                     for (KeyCacheObject key : keyBytes)
@@ -1731,6 +1757,47 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to send unlock request to node (will make best effort to complete): " + n, e);
                 }
+            }
+        }
+    }
+
+    /**
+     * @param ver Tx version.
+     * @param keys Keys to clear from remote tx.
+     */
+    private void clearTxEntries(GridCacheVersion ver, List<KeyCacheObject> keys) {
+        if (F.isEmpty(keys))
+            return;
+
+        for (KeyCacheObject key : keys)
+            clearTxEntry(ver, key);
+    }
+
+    /**
+     * @param ver Tx version.
+     * @param key Key.
+     */
+    private void clearTxEntry(GridCacheVersion ver, KeyCacheObject key) {
+        IgniteInternalTx tx = ctx.tm().tx(ver);
+
+        if (tx instanceof GridDhtTxLocal) {
+            ((GridDhtTxLocal)tx).clearEntry(ctx.txKey(key));
+
+            try {
+                if (tx.empty()) {
+                    ((GridDhtTxLocal)tx).rollbackDhtLocal();
+                }
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to remove transaction container during rollback to savepoint: " + tx, e);
+            }
+        }
+        else if (configuration().getNearConfiguration() != null) {
+            try {
+                invalidateNearEntry(key, ver);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to invalidate near entry during rollback to savepoint: " + key, e);
             }
         }
     }

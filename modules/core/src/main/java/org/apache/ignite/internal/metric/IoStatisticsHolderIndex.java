@@ -142,6 +142,16 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
     }
 
     /** {@inheritDoc} */
+    @Override public void trackPageInsertData(long bytes) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void trackPageRemoveData(long bytes) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public long logicalReads() {
         return logicalReadLeafCtr.value() + logicalReadInnerCtr.value();
     }

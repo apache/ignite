@@ -68,6 +68,7 @@ import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
@@ -681,6 +682,84 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         }
     }
 
+    /** Test SELECT and DML map query flags in running queries system view. */
+    @Test
+    public void testMapQueryRunningQueriesView() throws Exception {
+        IgniteEx ignite = startGrids(2);
+
+        IgniteCache<Integer, Integer> cache = createMapQueryTestCache(ignite);
+
+        checkMapQueryView(ignite, cache, "SELECT * FROM Integer WHERE sleep(?) >= 0");
+
+        checkMapQueryView(ignite, cache, "DELETE FROM Integer WHERE sleep(?) >= 0");
+    }
+
+    /** Test map query is unregistered from running queries system view on error. */
+    @Test
+    public void testMapQueryRunningQueriesViewOnError() throws Exception {
+        IgniteEx ignite = startGrids(2);
+
+        IgniteCache<Integer, Integer> cache = createMapQueryTestCache(ignite);
+
+        String initiatorId = UUID.randomUUID().toString();
+
+        GridTestUtils.assertThrows(log,
+            () -> cache.query(new SqlFieldsQuery("SELECT * FROM Integer WHERE can_fail(_key = 0) = 0")
+                .setQueryInitiatorId(initiatorId)).getAll(),
+            CacheException.class,
+            "Exception calling user-defined function");
+
+        assertTrue(waitForCondition(() -> !hasMapQueryView(ignite, initiatorId), 5_000));
+    }
+
+    /** */
+    private void checkMapQueryView(IgniteEx ignite, IgniteCache<Integer, Integer> cache, String sql) throws Exception {
+        String initiatorId = UUID.randomUUID().toString();
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() ->
+            cache.query(new SqlFieldsQuery(sql).setQueryInitiatorId(initiatorId).setArgs(1_000)).getAll()
+        );
+
+        try {
+            assertTrue(waitForCondition(() -> hasMapQueryView(ignite, initiatorId), 5_000));
+        }
+        finally {
+            fut.get();
+        }
+
+        assertTrue(waitForCondition(() -> !hasMapQueryView(ignite, initiatorId), 5_000));
+    }
+
+    /** */
+    private IgniteCache<Integer, Integer> createMapQueryTestCache(IgniteEx ignite) throws Exception {
+        IgniteCache<Integer, Integer> cache = ignite.createCache(
+            new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME)
+                .setCacheMode(CacheMode.PARTITIONED)
+                .setIndexedTypes(Integer.class, Integer.class)
+                .setSqlFunctionClasses(GridTestUtils.SqlTestFunctions.class)
+        );
+
+        cache.put(0, 0);
+
+        awaitPartitionMapExchange();
+
+        return cache;
+    }
+
+    /** */
+    private boolean hasMapQueryView(IgniteEx originNode, String initiatorId) {
+        for (Ignite ignite : G.allGrids()) {
+            SystemView<SqlQueryView> view = ((IgniteEx)ignite).context().systemView().view(SQL_QRY_VIEW);
+
+            for (SqlQueryView qry : view) {
+                if (qry.mapQuery() && originNode.localNode().id().equals(qry.originNodeId()) && initiatorId.equals(qry.initiatorId()))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
     /**
      * Test that we can't use cache tables and system views in the same query.
      */
@@ -1157,9 +1236,14 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         assertEquals(testSnapname0, res.get(0).get(0));
 
-        String expCacheGrps = F.concat(asList(DEFAULT_CACHE_NAME, testCache, METASTORAGE_CACHE_NAME), ",");
+        Set<String> expCacheGrps = Set.of(DEFAULT_CACHE_NAME, testCache, METASTORAGE_CACHE_NAME);
 
-        assertEquals(expCacheGrps, res.get(0).get(1));
+        String cacheGrpRes = (String)res.get(0).get(1);
+
+        Set<String> cacheGrps = Arrays.stream(cacheGrpRes.split(",")).map(String::trim).collect(toSet());
+
+        assertEquals(expCacheGrps.size(), cacheGrps.size());
+        assertTrue(expCacheGrps.containsAll(cacheGrps));
     }
 
     /** {@inheritDoc} */
@@ -1720,7 +1804,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         ClusterMetricsImpl original = getField(node, "metrics");
 
-        setField(node, "metrics", new MockedClusterMetrics(original));;
+        setField(node, "metrics", new MockedClusterMetrics(original));
 
         List<?> durationMetrics = execSql(ign,
             "SELECT " +
@@ -1753,24 +1837,20 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
     /** */
     @Test
     public void testConfigurationView() throws Exception {
-        IgniteConfiguration icfg = new IgniteConfiguration();
-
         long expMaxSize = 10 * MB;
 
         String expName = "my-instance";
 
         String expDrName = "my-dr";
 
-        icfg.setIgniteInstanceName(expName)
-            .setIncludeEventTypes(EVT_CONSISTENCY_VIOLATION);
-        icfg.setDataStorageConfiguration(new DataStorageConfiguration()
-            .setDefaultDataRegionConfiguration(
-                new DataRegionConfiguration()
-                    .setLazyMemoryAllocation(false))
-            .setDataRegionConfigurations(
-                new DataRegionConfiguration()
-                    .setName(expDrName)
-                    .setMaxSize(expMaxSize)));
+        IgniteConfiguration icfg = getConfiguration(expName)
+            .setIncludeEventTypes(EVT_CONSISTENCY_VIOLATION)
+            .setDataStorageConfiguration(new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setLazyMemoryAllocation(false))
+            .setDataRegionConfigurations(new DataRegionConfiguration()
+                .setName(expDrName)
+                .setMaxSize(expMaxSize)));
 
         try (IgniteEx srv = startGrid(icfg)) {
             srv.createCache(DEFAULT_CACHE_NAME);

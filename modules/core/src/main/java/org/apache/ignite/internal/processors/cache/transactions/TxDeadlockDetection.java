@@ -268,14 +268,14 @@ public class TxDeadlockDetection {
             if (topVer == null) // Tx manager already stopped
                 onDone();
             else
-                map(keys, Collections.<IgniteTxKey, TxLockList>emptyMap());
+                map(keys, Collections.emptyMap());
         }
 
         /**
          * @param keys Keys.
          * @param txLocks Tx locks.
          */
-        private void map(@Nullable Set<IgniteTxKey> keys, Map<IgniteTxKey, TxLockList> txLocks) {
+        private void map(@Nullable Set<IgniteTxKey> keys, Map<IgniteTxKey, List<TxLock>> txLocks) {
             mapTxKeys(keys, txLocks);
 
             UUID nodeId = nodesQueue.pollFirst();
@@ -328,9 +328,9 @@ public class TxDeadlockDetection {
          * @param txLocks Tx locks.
          */
         @SuppressWarnings("ForLoopReplaceableByForEach")
-        private void mapTxKeys(@Nullable Set<IgniteTxKey> txKeys, Map<IgniteTxKey, TxLockList> txLocks) {
-            for (Map.Entry<IgniteTxKey, TxLockList> e : txLocks.entrySet()) {
-                List<TxLock> locks = e.getValue().transactionLocks();
+        private void mapTxKeys(@Nullable Set<IgniteTxKey> txKeys, Map<IgniteTxKey, List<TxLock>> txLocks) {
+            for (Map.Entry<IgniteTxKey, List<TxLock>> e : txLocks.entrySet()) {
+                List<TxLock> locks = e.getValue();
 
                 for (int i = 0; i < locks.size(); i++) {
                     TxLock txLock = locks.get(i);
@@ -415,18 +415,18 @@ public class TxDeadlockDetection {
          * @param res Tx locks.
          */
         private void merge(TxLocksResponse res) {
-            Map<IgniteTxKey, TxLockList> txLocks = res.txLocks();
+            Map<IgniteTxKey, List<TxLock>> txLocks = res.txLocks();
 
             if (txLocks == null || txLocks.isEmpty())
                 return;
 
-            for (Map.Entry<IgniteTxKey, TxLockList> e : txLocks.entrySet()) {
+            for (Map.Entry<IgniteTxKey, List<TxLock>> e : txLocks.entrySet()) {
                 IgniteTxKey txKey = e.getKey();
 
-                TxLockList lockList = e.getValue();
+                List<TxLock> lockList = e.getValue();
 
                 if (lockList != null && !lockList.isEmpty()) {
-                    for (TxLock lock : lockList.transactionLocks()) {
+                    for (TxLock lock : lockList) {
                         if (lock.owner() || lock.candiate()) {
                             if (txs.get(lock.txId()) == null)
                                 txs.put(lock.txId(), new T2<>(lock.nearNodeId(), lock.threadId()));
@@ -458,15 +458,15 @@ public class TxDeadlockDetection {
         /**
          * @param txLocks Tx locks.
          */
-        private void updateWaitForGraph(Map<IgniteTxKey, TxLockList> txLocks) {
+        private void updateWaitForGraph(Map<IgniteTxKey, List<TxLock>> txLocks) {
             if (txLocks == null || txLocks.isEmpty())
                 return;
 
-            for (Map.Entry<IgniteTxKey, TxLockList> e : txLocks.entrySet()) {
+            for (Map.Entry<IgniteTxKey, List<TxLock>> e : txLocks.entrySet()) {
 
                 GridCacheVersion txOwner = null;
 
-                for (TxLock lock : e.getValue().transactionLocks()) {
+                for (TxLock lock : e.getValue()) {
                     if (lock.owner() && txOwner == null) {
                         // Actually we can get lock list with more than one owner. In this case ignore all owners
                         // except first because likely the first owner was cause of deadlock.

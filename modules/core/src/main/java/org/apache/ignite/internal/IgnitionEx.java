@@ -38,7 +38,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -61,15 +60,10 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
-import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.ExecutorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
-import org.apache.ignite.configuration.SystemDataRegionConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
@@ -144,10 +138,9 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEMORY_POLICY_MAX_SIZE;
-import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEM_PLC_DEFAULT_NAME;
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
 import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
+import static org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolExecutor.newSingleThreadScheduledExecutor;
 import static org.apache.ignite.internal.util.IgniteUtils.EMPTY_STRS;
 import static org.apache.ignite.internal.util.IgniteUtils.IGNITE_MBEANS_DISABLED;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.RESTART_JVM;
@@ -349,7 +342,7 @@ public class IgnitionEx {
      */
     @Deprecated
     public static boolean stop(@Nullable String name, boolean cancel, boolean stopNotStarted, long timeoutMs) {
-        final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+        final ScheduledExecutorService executor = newSingleThreadScheduledExecutor("ignite-stop-await-worker", name);
 
         // Schedule delayed node killing if graceful stopping will be not finished within timeout.
         executor.schedule(new Runnable() {
@@ -1760,16 +1753,16 @@ public class IgnitionEx {
             // Do NOT set it up only if IGNITE_NO_SHUTDOWN_HOOK=TRUE is provided.
             if (!IgniteSystemProperties.getBoolean(IGNITE_NO_SHUTDOWN_HOOK, false)) {
                 try {
-                    Runtime.getRuntime().addShutdownHook(shutdownHook = new Thread("shutdown-hook") {
-                        @Override public void run() {
-                            if (log.isInfoEnabled())
-                                log.info("Invoking shutdown hook...");
+                    shutdownHook = new IgniteThread(cfg.getIgniteInstanceName(), "shutdown-hook", () -> {
+                        if (log.isInfoEnabled())
+                            log.info("Invoking shutdown hook...");
 
-                            IgniteNamedInstance ignite = IgniteNamedInstance.this;
+                        IgniteNamedInstance ignite = IgniteNamedInstance.this;
 
-                            ignite.stop(true, null);
-                        }
+                        ignite.stop(true, null);
                     });
+
+                    Runtime.getRuntime().addShutdownHook(shutdownHook);
 
                     if (log.isDebugEnabled())
                         log.debug("Shutdown hook is installed.");
@@ -1946,12 +1939,6 @@ public class IgnitionEx {
             DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
 
             if (dsCfg != null) {
-                if (cfg.getMemoryConfiguration() != null || cfg.getPersistentStoreConfiguration() != null) {
-                    throw new IgniteCheckedException("Data storage can be configured with either legacy " +
-                        "(MemoryConfiguration, PersistentStoreConfiguration) or new (DataStorageConfiguration) classes, " +
-                        "but not both.");
-                }
-
                 List<String> extraStorages = F.asList(dsCfg.getExtraStoragePaths());
 
                 if (extraStorages.size() != new HashSet<>(extraStorages).size()
@@ -1973,9 +1960,6 @@ public class IgnitionEx {
                         "[extraSnapshotPaths=" + extraSnapshotStorages + ']');
                 }
             }
-
-            if (cfg.getMemoryConfiguration() != null || cfg.getPersistentStoreConfiguration() != null)
-                convertLegacyDataStorageConfigurationToNew(cfg);
 
             if (!cfg.isClientMode() && cfg.getDataStorageConfiguration() == null)
                 cfg.setDataStorageConfiguration(new DataStorageConfiguration());
@@ -2611,118 +2595,5 @@ public class IgnitionEx {
     public static void initializeDefaultMBeanServer(IgniteConfiguration myCfg) {
         if (myCfg.getMBeanServer() == null && !IGNITE_MBEANS_DISABLED)
             myCfg.setMBeanServer(ManagementFactory.getPlatformMBeanServer());
-    }
-
-    /**
-     * @param cfg Ignite Configuration with legacy data storage configuration.
-     */
-    private static void convertLegacyDataStorageConfigurationToNew(
-        IgniteConfiguration cfg) throws IgniteCheckedException {
-        PersistentStoreConfiguration psCfg = cfg.getPersistentStoreConfiguration();
-
-        boolean persistenceEnabled = psCfg != null;
-
-        DataStorageConfiguration dsCfg = new DataStorageConfiguration();
-
-        MemoryConfiguration memCfg = cfg.getMemoryConfiguration() != null ?
-            cfg.getMemoryConfiguration() : new MemoryConfiguration();
-
-        dsCfg.setConcurrencyLevel(memCfg.getConcurrencyLevel());
-        dsCfg.setPageSize(memCfg.getPageSize());
-
-        dsCfg.setSystemDataRegionConfiguration(
-                new SystemDataRegionConfiguration()
-                        .setInitialSize(memCfg.getSystemCacheInitialSize())
-                        .setMaxSize(memCfg.getSystemCacheMaxSize())
-        );
-
-        List<DataRegionConfiguration> optionalDataRegions = new ArrayList<>();
-
-        boolean customDfltPlc = false;
-
-        if (memCfg.getMemoryPolicies() != null) {
-            for (MemoryPolicyConfiguration mpc : memCfg.getMemoryPolicies()) {
-                DataRegionConfiguration region = new DataRegionConfiguration();
-
-                region.setPersistenceEnabled(persistenceEnabled);
-
-                if (mpc.getInitialSize() != 0L)
-                    region.setInitialSize(mpc.getInitialSize());
-
-                region.setEmptyPagesPoolSize(mpc.getEmptyPagesPoolSize());
-                region.setEvictionThreshold(mpc.getEvictionThreshold());
-                region.setMaxSize(mpc.getMaxSize());
-                region.setName(mpc.getName());
-                region.setPageEvictionMode(mpc.getPageEvictionMode());
-                region.setMetricsRateTimeInterval(mpc.getRateTimeInterval());
-                region.setMetricsSubIntervalCount(mpc.getSubIntervals());
-                region.setSwapPath(mpc.getSwapFilePath());
-                region.setMetricsEnabled(mpc.isMetricsEnabled());
-
-                if (persistenceEnabled)
-                    region.setCheckpointPageBufferSize(psCfg.getCheckpointingPageBufferSize());
-
-                if (mpc.getName() == null) {
-                    throw new IgniteCheckedException(new IllegalArgumentException(
-                        "User-defined MemoryPolicyConfiguration must have non-null and non-empty name."));
-                }
-
-                if (mpc.getName().equals(memCfg.getDefaultMemoryPolicyName())) {
-                    customDfltPlc = true;
-
-                    dsCfg.setDefaultDataRegionConfiguration(region);
-                }
-                else
-                    optionalDataRegions.add(region);
-            }
-        }
-
-        if (!optionalDataRegions.isEmpty())
-            dsCfg.setDataRegionConfigurations(optionalDataRegions.toArray(
-                new DataRegionConfiguration[optionalDataRegions.size()]));
-
-        if (!customDfltPlc) {
-            if (!DFLT_MEM_PLC_DEFAULT_NAME.equals(memCfg.getDefaultMemoryPolicyName())) {
-                throw new IgniteCheckedException(new IllegalArgumentException("User-defined default MemoryPolicy " +
-                    "name must be presented among configured MemoryPolices: " + memCfg.getDefaultMemoryPolicyName()));
-            }
-
-            dsCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setMaxSize(memCfg.getDefaultMemoryPolicySize())
-                .setName(memCfg.getDefaultMemoryPolicyName())
-                .setPersistenceEnabled(persistenceEnabled));
-        }
-        else {
-            if (memCfg.getDefaultMemoryPolicySize() != DFLT_MEMORY_POLICY_MAX_SIZE)
-                throw new IgniteCheckedException(new IllegalArgumentException("User-defined MemoryPolicy " +
-                    "configuration and defaultMemoryPolicySize properties are set at the same time."));
-        }
-
-        if (persistenceEnabled) {
-            dsCfg.setCheckpointFrequency(psCfg.getCheckpointingFrequency());
-            dsCfg.setCheckpointThreads(psCfg.getCheckpointingThreads());
-            dsCfg.setCheckpointWriteOrder(psCfg.getCheckpointWriteOrder());
-            dsCfg.setFileIOFactory(psCfg.getFileIOFactory());
-            dsCfg.setLockWaitTime(psCfg.getLockWaitTime());
-            dsCfg.setStoragePath(psCfg.getPersistentStorePath());
-            dsCfg.setMetricsRateTimeInterval(psCfg.getRateTimeInterval());
-            dsCfg.setMetricsSubIntervalCount(psCfg.getSubIntervals());
-            dsCfg.setWalThreadLocalBufferSize(psCfg.getTlbSize());
-            dsCfg.setWalArchivePath(psCfg.getWalArchivePath());
-            dsCfg.setWalAutoArchiveAfterInactivity(psCfg.getWalAutoArchiveAfterInactivity());
-            dsCfg.setWalFlushFrequency(psCfg.getWalFlushFrequency());
-            dsCfg.setWalFsyncDelayNanos(psCfg.getWalFsyncDelayNanos());
-            dsCfg.setWalHistorySize(psCfg.getWalHistorySize());
-            dsCfg.setWalMode(psCfg.getWalMode());
-            dsCfg.setWalRecordIteratorBufferSize(psCfg.getWalRecordIteratorBufferSize());
-            dsCfg.setWalSegments(psCfg.getWalSegments());
-            dsCfg.setWalSegmentSize(psCfg.getWalSegmentSize());
-            dsCfg.setWalPath(psCfg.getWalStorePath());
-            dsCfg.setAlwaysWriteFullPages(psCfg.isAlwaysWriteFullPages());
-            dsCfg.setMetricsEnabled(psCfg.isMetricsEnabled());
-            dsCfg.setWriteThrottlingEnabled(psCfg.isWriteThrottlingEnabled());
-        }
-
-        cfg.setDataStorageConfiguration(dsCfg);
     }
 }

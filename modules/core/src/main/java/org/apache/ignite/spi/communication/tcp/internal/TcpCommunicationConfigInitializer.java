@@ -35,7 +35,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
@@ -552,7 +551,6 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
     }
 
     /** */
-    @IgniteExperimental
     public void setConnectionRequestor(ConnectionRequestor connectionRequestor) {
         cfg.connectionRequestor(connectionRequestor);
     }
@@ -731,7 +729,6 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
      *
      * @see #setForceClientToServerConnections(boolean)
      */
-    @IgniteExperimental
     public boolean forceClientToServerConnections() {
         return cfg.forceClientToSrvConnections();
     }
@@ -742,7 +739,6 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
      * In this mode, when server needs the connection with client, it uses {@link DiscoverySpi} protocol to notify
      * client about it. After that client opens the required connection from its side.
      */
-    @IgniteExperimental
     @IgniteSpiConfiguration(optional = true)
     public TcpCommunicationSpi setForceClientToServerConnections(boolean forceClientToSrvConnections) {
         cfg.forceClientToSrvConnections(forceClientToSrvConnections);

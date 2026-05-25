@@ -24,6 +24,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingZooKeeperServer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteState;
@@ -45,7 +46,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.zookeeper.ZkTestClientCnxnSocketNIO;
 import org.apache.zookeeper.ZooKeeper;
-import org.apache.zookeeper.server.quorum.QuorumPeer;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -254,10 +254,12 @@ public class ZookeeperDiscoverySegmentationAndConnectionRestoreTest extends Zook
             srvs.get(0).stop();
             srvs.get(1).stop();
 
-            QuorumPeer qp = srvs.get(2).getQuorumPeer();
+            InstanceSpec spec = srvs.get(2).getInstanceSpec();
 
-            // Zookeeper's socket timeout [tickTime * initLimit] + 5 additional seconds for other logic
-            assertTrue(l.await(qp.getTickTime() * qp.getInitLimit() + 5000, TimeUnit.MILLISECONDS));
+            // Conservative upper bound: (tickTime * 10) is a typical initLimit default in ZK quorum configs
+            // + 15 seconds for additional logic
+            assertTrue(l.await((long)spec.getTickTime() * 10 + 15000, TimeUnit.MILLISECONDS));
+
         }
         finally {
             zkCluster.close();

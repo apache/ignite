@@ -22,8 +22,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -36,6 +36,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
+import org.apache.ignite.internal.util.distributed.TestIntegerMessage;
+import org.apache.ignite.internal.util.distributed.TestUuidMessage;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -44,6 +46,8 @@ import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.PluginConfiguration;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.PluginProvider;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.MessagesPluginProvider;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -56,6 +60,9 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
 public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotRestoreBaseTest {
     /** Custom snapshot handlers. */
     private final List<SnapshotHandler<?>> handlers = new ArrayList<>();
+
+    /** Timeout in milliseconds to await for snapshot operation being completed. */
+    protected static final long TIMEOUT = 60_000;
 
     /** Extensions plugin provider. */
     private final PluginProvider<PluginConfiguration> pluginProvider = new AbstractTestPluginProvider() {
@@ -71,12 +78,16 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName).setPluginProviders(pluginProvider);
+        return super.getConfiguration(igniteInstanceName)
+            .setPluginProviders(
+                pluginProvider,
+                new MessagesPluginProvider(TestIntegerMessage.class, TestUuidMessage.class)
+            );
     }
 
     /** {@inheritDoc} */
     @Override protected Function<Integer, Object> valueBuilder() {
-        return Integer::new;
+        return Integer::valueOf;
     }
 
     /**
@@ -90,37 +101,37 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
 
         AtomicReference<UUID> reqIdRef = new AtomicReference<>();
 
-        handlers.add(new SnapshotHandler<UUID>() {
+        handlers.add(new SnapshotHandler<TestUuidMessage>() {
             @Override public SnapshotHandlerType type() {
                 return SnapshotHandlerType.CREATE;
             }
 
-            @Override public UUID invoke(SnapshotHandlerContext ctx) {
-                return ctx.metadata().requestId();
+            @Override public TestUuidMessage invoke(SnapshotHandlerContext ctx) {
+                return new TestUuidMessage(ctx.metadata().requestId());
             }
 
             @Override public void complete(String name,
-                Collection<SnapshotHandlerResult<UUID>> results) throws IgniteCheckedException {
-                for (SnapshotHandlerResult<UUID> res : results) {
-                    if (!reqIdRef.compareAndSet(null, res.data()) && !reqIdRef.get().equals(res.data()))
+                Map<UUID, SnapshotHandlerResult<TestUuidMessage>> results) throws IgniteCheckedException {
+                for (SnapshotHandlerResult<TestUuidMessage> res : results.values()) {
+                    if (!reqIdRef.compareAndSet(null, res.data().value()) && !reqIdRef.get().equals(res.data().value()))
                         throw new IgniteCheckedException("The request ID must be the same on all nodes.");
                 }
             }
         });
 
-        handlers.add(new SnapshotHandler<UUID>() {
+        handlers.add(new SnapshotHandler<TestUuidMessage>() {
             @Override public SnapshotHandlerType type() {
                 return SnapshotHandlerType.RESTORE;
             }
 
-            @Override public UUID invoke(SnapshotHandlerContext ctx) {
-                return ctx.metadata().requestId();
+            @Override public TestUuidMessage invoke(SnapshotHandlerContext ctx) {
+                return new TestUuidMessage(ctx.metadata().requestId());
             }
 
             @Override public void complete(String name,
-                Collection<SnapshotHandlerResult<UUID>> results) throws IgniteCheckedException {
-                for (SnapshotHandlerResult<UUID> res : results) {
-                    if (!reqIdRef.get().equals(res.data()))
+                Map<UUID, SnapshotHandlerResult<TestUuidMessage>> results) throws IgniteCheckedException {
+                for (SnapshotHandlerResult<TestUuidMessage> res : results.values()) {
+                    if (!reqIdRef.get().equals(res.data().value()))
                         throw new IgniteCheckedException(expMsg);
                 }
             }
@@ -134,11 +145,13 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
 
         IgniteFuture<Void> fut = ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null);
 
-        GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), IgniteCheckedException.class, expMsg);
+        runWithLoggedThreadDump(() ->
+            GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), IgniteCheckedException.class, expMsg));
 
         changeMetadataRequestIdOnDisk(reqIdRef.get());
 
-        ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT);
+        runWithLoggedThreadDump(() ->
+            ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT));
 
         assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
     }
@@ -174,12 +187,12 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
         AtomicBoolean failCreateFlag = new AtomicBoolean(true);
         AtomicBoolean failRestoreFlag = new AtomicBoolean(true);
 
-        handlers.add(new SnapshotHandler<Void>() {
+        handlers.add(new SnapshotHandler<>() {
             @Override public SnapshotHandlerType type() {
                 return SnapshotHandlerType.CREATE;
             }
 
-            @Override public Void invoke(SnapshotHandlerContext ctx) throws IgniteCheckedException {
+            @Override public Message invoke(SnapshotHandlerContext ctx) throws IgniteCheckedException {
                 if (failCreateFlag.get())
                     throw new IgniteCheckedException(expMsg);
 
@@ -187,12 +200,12 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
             }
         });
 
-        handlers.add(new SnapshotHandler<Void>() {
+        handlers.add(new SnapshotHandler<>() {
             @Override public SnapshotHandlerType type() {
                 return SnapshotHandlerType.RESTORE;
             }
 
-            @Override public Void invoke(SnapshotHandlerContext ctx) throws IgniteCheckedException {
+            @Override public Message invoke(SnapshotHandlerContext ctx) throws IgniteCheckedException {
                 if (failRestoreFlag.get())
                     throw new IgniteCheckedException(expMsg);
 
@@ -204,7 +217,8 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
 
         IgniteFuture<Void> fut = snp(ignite).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
-        GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), IgniteCheckedException.class, expMsg);
+        runWithLoggedThreadDump(() ->
+            GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), IgniteCheckedException.class, expMsg));
 
         failCreateFlag.set(false);
 
@@ -216,11 +230,13 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
 
         IgniteFuture<Void> fut0 = ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null);
 
-        GridTestUtils.assertThrowsAnyCause(log, () -> fut0.get(TIMEOUT), IgniteCheckedException.class, expMsg);
+        runWithLoggedThreadDump(() ->
+            GridTestUtils.assertThrowsAnyCause(log, () -> fut0.get(TIMEOUT), IgniteCheckedException.class, expMsg));
 
         failRestoreFlag.set(false);
 
-        ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT);
+        runWithLoggedThreadDump(() ->
+            ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT));
 
         assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
     }
@@ -232,12 +248,12 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
      */
     @Test
     public void testClusterSnapshotHandlerConfigurationMismatch() throws Exception {
-        SnapshotHandler<Void> defHnd = new SnapshotHandler<Void>() {
+        SnapshotHandler<Message> defHnd = new SnapshotHandler<>() {
             @Override public SnapshotHandlerType type() {
                 return SnapshotHandlerType.CREATE;
             }
 
-            @Override public Void invoke(SnapshotHandlerContext ctx) {
+            @Override public Message invoke(SnapshotHandlerContext ctx) {
                 return null;
             }
         };
@@ -263,12 +279,12 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
         stopGrid(1);
 
         // Case 2: different handlers are loaded on different nodes.
-        handlers.add(new SnapshotHandler<Void>() {
+        handlers.add(new SnapshotHandler<>() {
             @Override public SnapshotHandlerType type() {
                 return SnapshotHandlerType.CREATE;
             }
 
-            @Nullable @Override public Void invoke(SnapshotHandlerContext ctx) {
+            @Nullable @Override public Message invoke(SnapshotHandlerContext ctx) {
                 return null;
             }
         });
@@ -305,7 +321,7 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
 
     /**
      * Test ensures that the snapshot creation is aborted if node exits while the {@link
-     * SnapshotHandler#complete(String, Collection)} method is executed.
+     * SnapshotHandler#complete(String, Map)} method is executed.
      *
      * @throws Exception If fails.
      */
@@ -313,16 +329,16 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
     public void testCrdChangeDuringHandlerCompleteOnSnapshotCreate() throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
 
-        handlers.add(new SnapshotHandler<Void>() {
+        handlers.add(new SnapshotHandler<>() {
             @Override public SnapshotHandlerType type() {
                 return SnapshotHandlerType.CREATE;
             }
 
-            @Override public Void invoke(SnapshotHandlerContext ctx) {
+            @Override public Message invoke(SnapshotHandlerContext ctx) {
                 return null;
             }
 
-            @Override public void complete(String name, Collection<SnapshotHandlerResult<Void>> results)
+            @Override public void complete(String name, Map<UUID, SnapshotHandlerResult<Message>> results)
                 throws Exception {
                 if (latch.getCount() == 1) {
                     latch.countDown();
@@ -360,12 +376,12 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
         File snpDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "ex_snapshots", true);
         String expFullPath = new File(snpDir, snpName).getAbsolutePath();
 
-        SnapshotHandler<Void> createHnd = new SnapshotHandler<Void>() {
+        SnapshotHandler<Message> createHnd = new SnapshotHandler<>() {
             @Override public SnapshotHandlerType type() {
                 return SnapshotHandlerType.CREATE;
             }
 
-            @Override public Void invoke(SnapshotHandlerContext ctx) {
+            @Override public Message invoke(SnapshotHandlerContext ctx) {
                 if (!expFullPath.equals(ctx.snapshotFileTree().root().getAbsolutePath()))
                     throw new IllegalStateException("Expected " + expFullPath + ", actual " + ctx.snapshotFileTree().root());
 
@@ -373,12 +389,12 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
             }
         };
 
-        SnapshotHandler<Void> restoreHnd = new SnapshotHandler<Void>() {
+        SnapshotHandler<Message> restoreHnd = new SnapshotHandler<>() {
             @Override public SnapshotHandlerType type() {
                 return SnapshotHandlerType.RESTORE;
             }
 
-            @Override public Void invoke(SnapshotHandlerContext ctx) throws Exception {
+            @Override public Message invoke(SnapshotHandlerContext ctx) throws Exception {
                 createHnd.invoke(ctx);
 
                 return null;
@@ -398,7 +414,8 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
             ignite.destroyCache(DEFAULT_CACHE_NAME);
             awaitPartitionMapExchange();
 
-            snpMgr.restoreSnapshot(snpName, snpDir.getAbsolutePath(), null).get(TIMEOUT);
+            runWithLoggedThreadDump(() ->
+                snpMgr.restoreSnapshot(snpName, snpDir.getAbsolutePath(), null).get(TIMEOUT));
         }
         finally {
             U.delete(snpDir);
@@ -411,12 +428,12 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
      */
     @Test
     public void testHandlerExceptionFailSnapshot() throws Exception {
-        handlers.add(new SnapshotHandler<Void>() {
+        handlers.add(new SnapshotHandler<>() {
             @Override public SnapshotHandlerType type() {
                 return SnapshotHandlerType.CREATE;
             }
 
-            @Override public Void invoke(SnapshotHandlerContext ctx) {
+            @Override public Message invoke(SnapshotHandlerContext ctx) {
                 // Someone removes snapshot files during creation.
                 // In this case snapshot must fail.
                 U.delete(ctx.snapshotFileTree().root());

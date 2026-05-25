@@ -20,23 +20,24 @@ package org.apache.ignite.internal.processors.query.calcite.message;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public class QueryStartResponse implements CalciteMessage {
+public class QueryStartResponse implements Message {
     /** */
-    @Order(value = 0, method = "queryId")
-    private UUID qryId;
+    @Order(0)
+    UUID qryId;
 
     /** */
     @Order(1)
-    private long fragmentId;
+    long fragmentId;
 
     /** */
-    @Order(value = 2, method = "errorMessage")
-    private @Nullable ErrorMessage errMsg;
+    @Order(2)
+    @Nullable ErrorMessage errMsg;
 
     /** */
     public QueryStartResponse() {}
@@ -57,11 +58,6 @@ public class QueryStartResponse implements CalciteMessage {
         return qryId;
     }
 
-    /** */
-    public void queryId(UUID qryId) {
-        this.qryId = qryId;
-    }
-
     /**
      * @return Fragment ID.
      */
@@ -69,30 +65,10 @@ public class QueryStartResponse implements CalciteMessage {
         return fragmentId;
     }
 
-    /** */
-    public void fragmentId(long fragmentId) {
-        this.fragmentId = fragmentId;
-    }
-
     /**
      * @return Error.
      */
     public @Nullable Throwable error() {
         return ErrorMessage.error(errMsg);
-    }
-
-    /** */
-    public @Nullable ErrorMessage errorMessage() {
-        return errMsg;
-    }
-
-    /** */
-    public void errorMessage(@Nullable ErrorMessage errMsg) {
-        this.errMsg = errMsg;
-    }
-
-    /** {@inheritDoc} */
-    @Override public MessageType type() {
-        return MessageType.QUERY_START_RESPONSE;
     }
 }

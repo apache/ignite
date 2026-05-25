@@ -49,7 +49,7 @@ public class CacheContentionCommand implements ComputeCommand<CacheContentionCom
     @Override public void printResult(CacheContentionCommandArg arg, ContentionTaskResult res, Consumer<String> printer) {
         CommandUtils.printErrors(res.exceptions(), "Contention check failed on nodes:", printer);
 
-        for (ContentionInfo info : res.getInfos())
-            info.print();
+        for (ContentionJobResult info : res.jobResults())
+            info.print(printer);
     }
 }

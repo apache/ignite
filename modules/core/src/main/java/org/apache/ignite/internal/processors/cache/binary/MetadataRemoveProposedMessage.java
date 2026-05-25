@@ -18,12 +18,9 @@
 package org.apache.ignite.internal.processors.cache.binary;
 
 import java.util.UUID;
-import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -33,48 +30,44 @@ import org.jetbrains.annotations.Nullable;
  * discovery-based protocol for manage {@link BinaryMetadata metadata} describing objects in binary format
  * stored in Ignite caches.
  */
-public final class MetadataRemoveProposedMessage implements DiscoveryCustomMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
-
+public final class MetadataRemoveProposedMessage extends DiscoveryCustomMessage {
     /** Node UUID which initiated metadata update. */
-    private final UUID origNodeId;
+    @Order(0)
+    UUID origNodeId;
 
     /** Metadata type id. */
-    private final int typeId;
-
-    /** Message acceptance status. */
-    private ProposalStatus status = ProposalStatus.SUCCESSFUL;
+    @Order(1)
+    int typeId;
 
     /** Message received on coordinator. */
-    private boolean onCoordinator = true;
+    @Order(2)
+    boolean onCoordinator = true;
 
     /** */
-    private BinaryObjectException err;
+    @Order(3)
+    String errMsg;
+
+    /** Constructor. */
+    public MetadataRemoveProposedMessage() {
+        // No-op.
+    }
 
     /**
      * @param typeId Binary type ID.
      * @param origNodeId ID of node requested update.
      */
     public MetadataRemoveProposedMessage(int typeId, UUID origNodeId) {
+        super(IgniteUuid.randomUuid());
+
         assert origNodeId != null;
 
         this.origNodeId = origNodeId;
-
         this.typeId = typeId;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return (status == ProposalStatus.SUCCESSFUL) ? new MetadataRemoveAcceptedMessage(typeId) : null;
+        return !rejected() ? new MetadataRemoveAcceptedMessage(typeId) : null;
     }
 
     /** {@inheritDoc} */
@@ -82,29 +75,21 @@ public final class MetadataRemoveProposedMessage implements DiscoveryCustomMessa
         return true;
     }
 
-
-    /** {@inheritDoc} */
-    @Nullable @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr,
-        AffinityTopologyVersion topVer, DiscoCache discoCache) {
-        throw new UnsupportedOperationException();
-    }
-
     /**
-     * @param err Error caused this update to be rejected.
+     * @param errMsg Error message caused this update to be rejected.
      */
-    void markRejected(BinaryObjectException err) {
-        status = ProposalStatus.REJECTED;
-        this.err = err;
+    void markRejected(String errMsg) {
+        this.errMsg = errMsg;
     }
 
     /** */
     boolean rejected() {
-        return status == ProposalStatus.REJECTED;
+        return errMsg != null;
     }
 
     /** */
-    BinaryObjectException rejectionError() {
-        return err;
+    String rejectionErrorMessage() {
+        return errMsg;
     }
 
     /** */
@@ -125,15 +110,6 @@ public final class MetadataRemoveProposedMessage implements DiscoveryCustomMessa
     /** */
     public void setOnCoordinator(boolean onCoordinator) {
         this.onCoordinator = onCoordinator;
-    }
-
-    /** Message acceptance status. */
-    private enum ProposalStatus {
-        /** */
-        SUCCESSFUL,
-
-        /** */
-        REJECTED
     }
 
     /** {@inheritDoc} */

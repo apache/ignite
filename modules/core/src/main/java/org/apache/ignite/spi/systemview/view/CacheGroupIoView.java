@@ -17,17 +17,21 @@
 
 package org.apache.ignite.spi.systemview.view;
 
-import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.systemview.Order;
+import org.apache.ignite.internal.systemview.SystemViewDescriptor;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.LongMetric;
 
+import static org.apache.ignite.internal.metric.IoStatisticsHolderCache.INSERTED_BYTES;
 import static org.apache.ignite.internal.metric.IoStatisticsHolderCache.LOGICAL_READS;
 import static org.apache.ignite.internal.metric.IoStatisticsHolderCache.PHYSICAL_READS;
+import static org.apache.ignite.internal.metric.IoStatisticsHolderCache.REMOVED_BYTES;
 
 /**
  * Cache group IO statistics representation for a {@link SystemView}.
  */
+@SystemViewDescriptor
 public class CacheGroupIoView {
     /** Cache group. */
     private final CacheGroupContext grpCtx;
@@ -76,6 +80,26 @@ public class CacheGroupIoView {
     @Order(3)
     public long logicalReads() {
         LongMetric metric = mreg.findMetric(LOGICAL_READS);
+
+        return metric != null ? metric.value() : 0;
+    }
+
+    /**
+     * @return Inserted bytes into store.
+     */
+    @Order(4)
+    public long insertedBytes() {
+        LongMetric metric = mreg.findMetric(INSERTED_BYTES);
+
+        return metric != null ? metric.value() : 0;
+    }
+
+    /**
+     * @return Removed bytes from store.
+     */
+    @Order(5)
+    public long removedBytes() {
+        LongMetric metric = mreg.findMetric(REMOVED_BYTES);
 
         return metric != null ? metric.value() : 0;
     }

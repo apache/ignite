@@ -18,13 +18,20 @@
 package org.apache.ignite.plugin.extensions.communication;
 
 import java.nio.ByteBuffer;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.managers.communication.UnknownMessageException;
 
 /**
  * Base class for all communication messages.
  */
 public interface Message {
     /** Direct type size in bytes. */
-    public int DIRECT_TYPE_SIZE = 2;
+    int DIRECT_TYPE_SIZE = 2;
+
+    /** Registry of message class to direct type mappings, populated during factory initialization. */
+    Map<Class<?>, Short> REGISTRATIONS = new ConcurrentHashMap<>();
 
     /**
      * Writes this message to provided byte buffer.
@@ -35,7 +42,7 @@ public interface Message {
      * @deprecated Use the code-generated {@code MessageSerializer} instead.
      */
     @Deprecated
-    public default boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+    default boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         throw new UnsupportedOperationException();
     }
 
@@ -48,7 +55,7 @@ public interface Message {
      * @deprecated Use the code-generated {@code MessageSerializer} instead.
      */
     @Deprecated
-    public default boolean readFrom(ByteBuffer buf, MessageReader reader) {
+    default boolean readFrom(ByteBuffer buf, MessageReader reader) {
         throw new UnsupportedOperationException();
     }
 
@@ -57,5 +64,29 @@ public interface Message {
      *
      * @return Message type.
      */
-    public short directType();
+    default short directType() {
+        var clazz = getClass();
+        Short type = REGISTRATIONS.get(clazz);
+
+        if (type == null)
+            throw new UnknownMessageException(clazz);
+
+        return type;
+    }
+
+    /**
+     * Registers the direct type for this message class. Called during message factory initialization
+     * to populate the {@link #REGISTRATIONS} map so that {@link #directType()} can resolve types
+     * without requiring each message class to override it.
+     *
+     * @param directType Direct type to register.
+     * @throws IgniteException If this message class is already registered with a different direct type.
+     */
+    default void registerAsDirectType(short directType) {
+        var clazz = getClass();
+        var type = REGISTRATIONS.putIfAbsent(clazz, directType);
+
+        if ((type != null) && (type != directType))
+            throw new IgniteException(clazz.getSimpleName() + " is already registered for direct type " + type);
+    }
 }

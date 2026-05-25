@@ -22,7 +22,6 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteAsyncSupported;
-import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
@@ -445,11 +444,14 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * of failed services will be thrown. It is guaranteed that all services that were provided to this method and are
      * not present in the list of failed services are successfully deployed by the moment of the exception being thrown.
      * Note that if exception is thrown, then partial deployment may have occurred.
+     * Note, start order guarantees not provided, by default.
+     * Node local start order can be forced with the {@link ServiceConfiguration#setLocalStartOrder(int)}.
      *
      * @param cfgs {@link Collection} of service configurations to be deployed.
      * @throws ServiceDeploymentException If failed to deploy services.
      * @see IgniteServices#deploy(ServiceConfiguration)
      * @see IgniteServices#deployAllAsync(Collection)
+     * @see ServiceConfiguration#setLocalStartOrder(int)
      */
     public void deployAll(Collection<ServiceConfiguration> cfgs) throws ServiceDeploymentException;
 
@@ -464,11 +466,14 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * guaranteed that all services, that were provided to this method and are not present in the list of failed
      * services, are successfully deployed by the moment of the exception being thrown. Note that if exception is
      * thrown, then partial deployment may have occurred.
+     * Note, start order guarantees not provided, by default.
+     * Node local start order can be forced with the {@link ServiceConfiguration#setLocalStartOrder(int)}.
      *
      * @param cfgs {@link Collection} of service configurations to be deployed.
      * @return a Future representing pending completion of the operation.
      * @see IgniteServices#deploy(ServiceConfiguration)
      * @see IgniteServices#deployAll(Collection)
+     * @see ServiceConfiguration#setLocalStartOrder(int)
      */
     public IgniteFuture<Void> deployAllAsync(Collection<ServiceConfiguration> cfgs);
 
@@ -631,7 +636,6 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * @throws IgniteException If failed to create service proxy.
      * @see ServiceCallContext
      */
-    @IgniteExperimental
     public <T> T serviceProxy(
         String name,
         Class<? super T> svcItf,
@@ -655,7 +659,6 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * @throws IgniteException If failed to create service proxy.
      * @see ServiceCallContext
      */
-    @IgniteExperimental
     public <T> T serviceProxy(
         String name,
         Class<? super T> svcItf,

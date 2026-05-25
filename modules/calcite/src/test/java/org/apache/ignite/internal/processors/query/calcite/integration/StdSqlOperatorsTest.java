@@ -275,6 +275,9 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
         assertExpression("REGEXP_REPLACE('aAaA', '[Aa]+', 'X', 2)").returns("aX").check();
         assertExpression("REGEXP_REPLACE('aAbaAcaA', '[Aa]+', 'X', 2, 2)").returns("aAbXcaA").check();
         assertExpression("REGEXP_REPLACE('aAbaAcaA', 'a', 'X', 2, 0, 'i')").returns("aXbXXcXX").check();
+        assertExpression("REGEXP_SUBSTR('hello world', 'l.o')").returns("llo").check();
+        assertExpression("REGEXP_SUBSTR('abc123def456', '[0-9]+', 7)").returns("456").check();
+        assertExpression("REGEXP_SUBSTR('123-456-789', '[0-9]+', 1, 3)").returns("789").check();
     }
 
     /** */

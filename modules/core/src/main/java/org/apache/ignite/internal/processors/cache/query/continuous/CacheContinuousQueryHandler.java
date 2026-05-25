@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import javax.cache.configuration.Factory;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryListener;
@@ -69,19 +70,18 @@ import org.apache.ignite.internal.processors.continuous.GridContinuousBatch;
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
 import org.apache.ignite.internal.processors.continuous.GridContinuousQueryBatch;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformContinuousQueryFilter;
+import org.apache.ignite.internal.thread.pool.IgniteStripedThreadPoolExecutor;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteAsyncCallback;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -160,6 +160,30 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     /** Deployable object for filter. */
     private CacheContinuousQueryDeployableObject rmtFilterDep;
 
+    /** Remote filter factory. */
+    private Factory<? extends CacheEntryEventFilter> rmtFilterFactory;
+
+    /** Deployable object for filter factory. */
+    private CacheContinuousQueryDeployableObject rmtFilterFactoryDep;
+
+    /** Remote filter created by {@link #rmtFilterFactory}. */
+    private transient CacheEntryEventFilter rmtFilterFromFactory;
+
+    /** Event types for JCache API. */
+    private byte types;
+
+    /** Remote transformer factory. */
+    private Factory<? extends IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?>> rmtTransFactory;
+
+    /** Deployable object for transformer factory. */
+    private CacheContinuousQueryDeployableObject rmtTransFactoryDep;
+
+    /** Remote transformer created by {@link #rmtTransFactory}. */
+    private transient IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> rmtTrans;
+
+    /** Local listener for transformed events. */
+    private transient EventListener<?> locTransLsnr;
+
     /** Internal flag. */
     private boolean internal;
 
@@ -200,10 +224,10 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     private transient int cacheId;
 
     /** */
-    private transient volatile Map<Integer, T2<Long, Long>> initUpdCntrs;
+    private transient volatile Map<Integer, Long> initUpdCntrs;
 
     /** */
-    private transient volatile Map<UUID, Map<Integer, T2<Long, Long>>> initUpdCntrsPerNode;
+    private transient volatile Map<UUID, Map<Integer, Long>> initUpdCntrsPerNode;
 
     /** */
     private transient volatile AffinityTopologyVersion initTopVer;
@@ -224,7 +248,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     private transient UUID routineId;
 
     /** Local update counters values on listener start. Used for skipping events fired before the listener start. */
-    private transient volatile Map<Integer, T2<Long, Long>> locInitUpdCntrs;
+    private transient volatile Map<Integer, Long> locInitUpdCntrs;
 
     /** */
     private transient GridKernalContext ctx;
@@ -249,6 +273,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
      * @param oldValRequired Old value required flag.
      * @param sync Synchronous flag.
      * @param ignoreExpired Ignore expired events flag.
+     * @param ignoreClsNotFound Ignore class not found flag.
      */
     public CacheContinuousQueryHandler(
         String cacheName,
@@ -271,6 +296,82 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         this.ignoreClsNotFound = ignoreClsNotFound;
 
         cacheId = CU.cacheId(cacheName);
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @param topic Topic for ordered messages.
+     * @param locLsnr Local listener.
+     * @param rmtFilterFactory Remote filter factory.
+     * @param oldValRequired Old value required flag.
+     * @param sync Synchronous flag.
+     * @param ignoreExpired Ignore expired events flag.
+     * @param ignoreClsNotFound Ignore class not found flag.
+     * @param types Event types for JCache API, {@code null} for non-JCache queries.
+     */
+    public CacheContinuousQueryHandler(
+        String cacheName,
+        Object topic,
+        @Nullable CacheEntryUpdatedListener<K, V> locLsnr,
+        @Nullable Factory<? extends CacheEntryEventFilter<K, V>> rmtFilterFactory,
+        boolean oldValRequired,
+        boolean sync,
+        boolean ignoreExpired,
+        boolean ignoreClsNotFound,
+        @Nullable Byte types) {
+        this(cacheName,
+            topic,
+            locLsnr,
+            null,
+            oldValRequired,
+            sync,
+            ignoreExpired,
+            ignoreClsNotFound);
+
+        this.rmtFilterFactory = rmtFilterFactory;
+
+        if (types != null) {
+            assert types != 0;
+
+            this.types = types;
+        }
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @param topic Topic.
+     * @param locTransLsnr Local listener of transformed events
+     * @param rmtFilterFactory Remote filter factory.
+     * @param rmtTransFactory Remote transformer factory.
+     * @param oldValRequired OldValRequired flag.
+     * @param sync Sync flag.
+     * @param ignoreExpired IgnoreExpired flag.
+     * @param ignoreClsNotFound IgnoreClassNotFoundException flag.
+     */
+    public CacheContinuousQueryHandler(
+        String cacheName,
+        Object topic,
+        EventListener<?> locTransLsnr,
+        @Nullable Factory<? extends CacheEntryEventFilter<K, V>> rmtFilterFactory,
+        Factory<? extends IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?>> rmtTransFactory,
+        boolean oldValRequired,
+        boolean sync,
+        boolean ignoreExpired,
+        boolean ignoreClsNotFound) {
+        this(cacheName,
+            topic,
+            null,
+            rmtFilterFactory,
+            oldValRequired,
+            sync,
+            ignoreExpired,
+            ignoreClsNotFound,
+            null);
+
+        assert rmtTransFactory != null;
+
+        this.locTransLsnr = locTransLsnr;
+        this.rmtTransFactory = rmtTransFactory;
     }
 
     /**
@@ -361,15 +462,15 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     }
 
     /** {@inheritDoc} */
-    @Override public void updateCounters(AffinityTopologyVersion topVer, Map<UUID, Map<Integer, T2<Long, Long>>> cntrsPerNode,
-        Map<Integer, T2<Long, Long>> cntrs) {
-        this.initUpdCntrsPerNode = cntrsPerNode;
-        this.initUpdCntrs = cntrs;
-        this.initTopVer = topVer;
+    @Override public void updateCounters(AffinityTopologyVersion topVer, Map<UUID, Map<Integer, Long>> cntrsPerNode,
+        Map<Integer, Long> cntrs) {
+        initUpdCntrsPerNode = cntrsPerNode;
+        initUpdCntrs = cntrs;
+        initTopVer = topVer;
     }
 
     /** {@inheritDoc} */
-    @Override public Map<Integer, T2<Long, Long>> updateCounters() {
+    @Override public Map<Integer, Long> updateCounters() {
         return locInitUpdCntrs;
     }
 
@@ -379,6 +480,12 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         assert nodeId != null;
         assert routineId != null;
         assert ctx != null;
+
+        if (locTransLsnr != null) {
+            ctx.resource().injectGeneric(locTransLsnr);
+
+            asyncCb = U.hasAnnotation(locTransLsnr, IgniteAsyncCallback.class);
+        }
 
         initLocalListener(locLsnr, ctx);
 
@@ -773,6 +880,17 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
      * @return Cache entry event filter.
      */
     protected CacheEntryEventFilter getEventFilter0() {
+        if (rmtFilterFactory != null) {
+            if (rmtFilterFromFactory == null) {
+                rmtFilterFromFactory = rmtFilterFactory.create();
+
+                if (types != 0)
+                    rmtFilterFromFactory = new JCacheQueryRemoteFilter(rmtFilterFromFactory, types);
+            }
+
+            return rmtFilterFromFactory;
+        }
+
         return rmtFilter;
     }
 
@@ -789,14 +907,17 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
      * @return Cache entry event transformer.
      */
     public IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> getTransformer0() {
-        return null;
+        if (rmtTrans == null && rmtTransFactory != null)
+            rmtTrans = rmtTransFactory.create();
+
+        return rmtTrans;
     }
 
     /**
      * @return Local listener of transformed events.
      */
     @Nullable public EventListener<?> localTransformedEventListener() {
-        return null;
+        return locTransLsnr;
     }
 
     /**
@@ -1163,9 +1284,9 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         CacheContinuousQueryPartitionRecovery rec = rcvs.get(partId);
 
         if (rec == null) {
-            T2<Long, Long> partCntrs = null;
+            Long partCntr = null;
 
-            Map<UUID, Map<Integer, T2<Long, Long>>> initUpdCntrsPerNode = this.initUpdCntrsPerNode;
+            Map<UUID, Map<Integer, Long>> initUpdCntrsPerNode = this.initUpdCntrsPerNode;
 
             if (initUpdCntrsPerNode != null) {
                 GridCacheContext<K, V> cctx = cacheContext(ctx);
@@ -1173,22 +1294,21 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 GridCacheAffinityManager aff = cctx.affinity();
 
                 for (ClusterNode node : aff.nodesByPartition(partId, topVer)) {
-                    Map<Integer, T2<Long, Long>> map = initUpdCntrsPerNode.get(node.id());
+                    Map<Integer, Long> map = initUpdCntrsPerNode.get(node.id());
 
                     if (map != null) {
-                        partCntrs = map.get(partId);
+                        partCntr = map.get(partId);
 
                         break;
                     }
                 }
             }
             else if (initUpdCntrs != null)
-                partCntrs = initUpdCntrs.get(partId);
+                partCntr = initUpdCntrs.get(partId);
 
-            T2<Long, Long> partCntrs0 = partCntrs;
+            Long partCntr0 = partCntr;
             CacheContinuousQueryPartitionRecovery oldRec = rcvs.computeIfAbsent(partId, k ->
-                    new CacheContinuousQueryPartitionRecovery(ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY), topVer,
-                            partCntrs0 != null ? partCntrs0.get2() : null));
+                    new CacheContinuousQueryPartitionRecovery(ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY), topVer, partCntr0));
 
             if (oldRec != null)
                 rec = oldRec;
@@ -1267,8 +1387,14 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         assert ctx != null;
         assert ctx.config().isPeerClassLoadingEnabled();
 
-        if (rmtFilter != null && !U.isGrid(rmtFilter.getClass()))
+        if (requiresDeployment(rmtFilter))
             rmtFilterDep = new CacheContinuousQueryDeployableObject(rmtFilter, ctx);
+
+        if (requiresDeployment(rmtFilterFactory))
+            rmtFilterFactoryDep = new CacheContinuousQueryDeployableObject(rmtFilterFactory, ctx);
+
+        if (requiresDeployment(rmtTransFactory))
+            rmtTransFactoryDep = new CacheContinuousQueryDeployableObject(rmtTransFactory, ctx);
     }
 
     /** {@inheritDoc} */
@@ -1280,6 +1406,12 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         if (rmtFilterDep != null)
             rmtFilter = p2pUnmarshal(rmtFilterDep, nodeId, ctx);
 
+        if (rmtFilterFactoryDep != null)
+            rmtFilterFactory = p2pUnmarshal(rmtFilterFactoryDep, nodeId, ctx);
+
+        if (rmtTransFactoryDep != null)
+            rmtTransFactory = p2pUnmarshal(rmtTransFactoryDep, nodeId, ctx);
+
         if (!p2pUnmarshalFut.isDone())
             ((GridFutureAdapter)p2pUnmarshalFut).onDone();
     }
@@ -1288,7 +1420,9 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
      * @return Whether the handler is marshalled for peer class loading.
      */
     public boolean isMarshalled() {
-        return rmtFilter == null || U.isGrid(rmtFilter.getClass()) || rmtFilterDep != null;
+        return (!requiresDeployment(rmtFilter) || rmtFilterDep != null)
+            && (!requiresDeployment(rmtFilterFactory) || rmtFilterFactoryDep != null)
+            && (!requiresDeployment(rmtTransFactory) || rmtTransFactoryDep != null);
     }
 
     /**
@@ -1420,14 +1554,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         U.writeString(out, cacheName);
         out.writeObject(topic);
 
-        boolean b = rmtFilterDep != null;
-
-        out.writeBoolean(b);
-
-        if (b)
-            out.writeObject(rmtFilterDep);
-        else
-            out.writeObject(rmtFilter);
+        writeDeployable(out, rmtFilter, rmtFilterDep);
 
         out.writeBoolean(internal);
         out.writeBoolean(notifyExisting);
@@ -1436,6 +1563,12 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         out.writeBoolean(ignoreExpired);
         out.writeInt(taskHash);
         out.writeBoolean(keepBinary);
+
+        writeDeployable(out, rmtFilterFactory, rmtFilterFactoryDep);
+
+        out.writeByte(types);
+
+        writeDeployable(out, rmtTransFactory, rmtTransFactoryDep);
     }
 
     /** {@inheritDoc} */
@@ -1461,7 +1594,40 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         taskHash = in.readInt();
         keepBinary = in.readBoolean();
 
+        b = in.readBoolean();
+
+        if (b) {
+            rmtFilterFactoryDep = (CacheContinuousQueryDeployableObject)in.readObject();
+
+            if (p2pUnmarshalFut.isDone())
+                p2pUnmarshalFut = new GridFutureAdapter<>();
+        }
+        else
+            rmtFilterFactory = (Factory)in.readObject();
+
+        types = in.readByte();
+
+        b = in.readBoolean();
+
+        if (b) {
+            rmtTransFactoryDep = (CacheContinuousQueryDeployableObject)in.readObject();
+
+            if (p2pUnmarshalFut.isDone())
+                p2pUnmarshalFut = new GridFutureAdapter<>();
+        }
+        else
+            rmtTransFactory = (Factory<? extends IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?>>)in.readObject();
+
         cacheId = CU.cacheId(cacheName);
+    }
+
+    /** */
+    private static void writeDeployable(ObjectOutput out, Object obj, CacheContinuousQueryDeployableObject dep) throws IOException {
+        boolean b = dep != null;
+
+        out.writeBoolean(b);
+
+        out.writeObject(b ? dep : obj);
     }
 
     /**
@@ -1640,5 +1806,10 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     /** */
     Map<Integer, CacheContinuousQueryEventBuffer> partitionContinuesQueryEntryBuffers() {
         return Collections.unmodifiableMap(entryBufs);
+    }
+
+    /** */
+    private static boolean requiresDeployment(@Nullable Object obj) {
+        return obj != null && !U.isGrid(obj.getClass());
     }
 }

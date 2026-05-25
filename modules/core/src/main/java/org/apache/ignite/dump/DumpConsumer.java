@@ -21,7 +21,6 @@ import java.util.Iterator;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.lang.IgniteExperimental;
 
 /**
  * Consumer of a cache dump.
@@ -33,7 +32,6 @@ import org.apache.ignite.lang.IgniteExperimental;
  * </ul>
  *
  */
-@IgniteExperimental
 public interface DumpConsumer {
     /**
      * Starts the consumer.

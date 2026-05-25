@@ -26,13 +26,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import java.util.function.Supplier;
-
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsColumnConfiguration;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.processors.query.stat.task.GatherPartitionStatistics;
-import org.apache.ignite.thread.IgniteThreadPoolExecutor;
+import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 
 /**
  * Process all tasks, related to statistics repository. Mostly - statistics collection,

@@ -16,16 +16,13 @@
 */
 package org.apache.ignite.internal.management.tx;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Encapsulates all verbose info about transaction needed for --tx --info output.
@@ -35,72 +32,52 @@ public class TxVerboseInfo extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Near xid version. */
-    private GridCacheVersion nearXidVer;
+    @Order(0)
+    GridCacheVersion nearXidVer;
 
     /** Local node id. */
-    private UUID locNodeId;
+    @Order(1)
+    UUID locNodeId;
 
     /** Local node consistent id. */
-    private Object locNodeConsistentId;
+    @Order(2)
+    Object locNodeConsistentId;
 
     /** Near node id. */
-    private UUID nearNodeId;
+    @Order(3)
+    UUID nearNodeId;
 
     /** Near node consistent id. */
-    private Object nearNodeConsistentId;
+    @Order(4)
+    Object nearNodeConsistentId;
 
     /** Tx mapping type. */
-    private TxMappingType txMappingType;
+    @Order(5)
+    TxMappingType txMappingType;
 
     /** Dht node id. */
-    private UUID dhtNodeId;
+    @Order(6)
+    UUID dhtNodeId;
 
     /** Dht node consistent id. */
-    private Object dhtNodeConsistentId;
+    @Order(7)
+    Object dhtNodeConsistentId;
 
     /** Used caches. */
-    private Map<Integer, String> usedCaches;
+    @Order(8)
+    Map<Integer, String> usedCaches;
 
     /** Used cache groups. */
-    private Map<Integer, String> usedCacheGroups;
+    @Order(9)
+    Map<Integer, String> usedCacheGroups;
 
     /** Local tx keys. */
-    private List<TxVerboseKey> locTxKeys;
+    @Order(10)
+    List<TxVerboseKey> locTxKeys;
 
     /** Near only tx keys. */
-    private List<TxVerboseKey> nearOnlyTxKeys;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeObject(nearXidVer);
-        U.writeUuid(out, locNodeId);
-        out.writeObject(locNodeConsistentId);
-        U.writeUuid(out, nearNodeId);
-        out.writeObject(nearNodeConsistentId);
-        U.writeEnum(out, txMappingType);
-        U.writeUuid(out, dhtNodeId);
-        out.writeObject(dhtNodeConsistentId);
-        U.writeMap(out, usedCaches);
-        U.writeMap(out, usedCacheGroups);
-        U.writeCollection(out, locTxKeys);
-        U.writeCollection(out, nearOnlyTxKeys);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        nearXidVer = (GridCacheVersion)in.readObject();
-        locNodeId = U.readUuid(in);
-        locNodeConsistentId = in.readObject();
-        nearNodeId = U.readUuid(in);
-        nearNodeConsistentId = in.readObject();
-        txMappingType = TxMappingType.fromOrdinal(in.readByte());
-        dhtNodeId = U.readUuid(in);
-        dhtNodeConsistentId = in.readObject();
-        usedCaches = U.readHashMap(in);
-        usedCacheGroups = U.readHashMap(in);
-        locTxKeys = U.readList(in);
-        nearOnlyTxKeys = U.readList(in);
-    }
+    @Order(11)
+    List<TxVerboseKey> nearOnlyTxKeys;
 
     /**
      * @return Near xid version.

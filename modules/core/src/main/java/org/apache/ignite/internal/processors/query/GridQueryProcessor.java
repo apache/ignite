@@ -496,28 +496,19 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onJoiningNodeDataReceived(DiscoveryDataBag.JoiningNodeDiscoveryData data) {
-        if (data.hasJoiningNodeData() && data.joiningNodeData() instanceof Map) {
-            Map<String, Serializable> nodeSpecificDataMap = (Map<String, Serializable>)data.joiningNodeData();
+        Object joiningNodeData = data.joiningNodeData();
 
-            if (nodeSpecificDataMap.containsKey(INLINE_SIZES_DISCO_BAG_KEY)) {
-                Serializable serializable = nodeSpecificDataMap.get(INLINE_SIZES_DISCO_BAG_KEY);
+        if (joiningNodeData instanceof InlineSizesData) {
+            Map<String, Integer> joiningNodeIndexesInlineSize = ((InlineSizesData)joiningNodeData).sizes;
 
-                assert serializable instanceof Map : serializable;
-
-                Map<String, Integer> joiningNodeIndexesInlineSize = (Map<String, Integer>)serializable;
-
-                checkInlineSizes(secondaryIndexesInlineSize(), joiningNodeIndexesInlineSize, data.joiningNodeId());
-            }
+            checkInlineSizes(secondaryIndexesInlineSize(), joiningNodeIndexesInlineSize, data.joiningNodeId());
         }
     }
 
     /** {@inheritDoc} */
     @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
-        HashMap<String, Serializable> dataMap = new HashMap<>();
-
-        dataMap.put(INLINE_SIZES_DISCO_BAG_KEY, collectSecondaryIndexesInlineSize());
-
-        dataBag.addJoiningNodeData(DiscoveryDataExchangeType.QUERY_PROC.ordinal(), dataMap);
+        dataBag.addJoiningNodeData(DiscoveryDataExchangeType.QUERY_PROC.ordinal(),
+            new InlineSizesData(secondaryIndexesInlineSize()));
     }
 
     /** {@inheritDoc} */
@@ -908,9 +899,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     }
                 }
             }
-
-            // Propose message will be used from exchange thread to
-            msg.proposeMessage(proposeMsg);
 
             if (exchangeReady) {
                 SchemaOperation op = schemaOps.get(proposeMsg.schemaName());
@@ -1930,7 +1918,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public void onCoordinatorFinished(SchemaAbstractOperation op, @Nullable SchemaOperationException err, boolean nop) {
         synchronized (stateMux) {
-            SchemaFinishDiscoveryMessage msg = new SchemaFinishDiscoveryMessage(op, err, nop);
+            SchemaFinishDiscoveryMessage msg = new SchemaFinishDiscoveryMessage(op, nop);
+
+            if (err != null)
+                msg.onError(err);
 
             try {
                 ctx.discovery().sendCustomEvent(msg);

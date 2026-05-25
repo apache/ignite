@@ -58,6 +58,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DefaultCommunicationFailureResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
@@ -76,9 +77,6 @@ import org.apache.ignite.internal.cluster.NodeOrderComparator;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
-import org.apache.ignite.internal.managers.systemview.walker.ClusterNodeViewWalker;
-import org.apache.ignite.internal.managers.systemview.walker.NodeAttributeViewWalker;
-import org.apache.ignite.internal.managers.systemview.walker.NodeMetricsViewWalker;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.ClientCacheChangeDummyDiscoveryMessage;
@@ -93,9 +91,13 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IGridClusterStateProcessor;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
-import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
+import org.apache.ignite.internal.systemview.ClusterNodeViewWalker;
+import org.apache.ignite.internal.systemview.NodeAttributeViewWalker;
+import org.apache.ignite.internal.systemview.NodeMetricsViewWalker;
+import org.apache.ignite.internal.thread.OomExceptionHandler;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -144,7 +146,6 @@ import org.apache.ignite.spi.systemview.view.ClusterNodeView;
 import org.apache.ignite.spi.systemview.view.NodeAttributeView;
 import org.apache.ignite.spi.systemview.view.NodeMetricsView;
 import org.apache.ignite.thread.IgniteThread;
-import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -362,7 +363,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      */
     public void addCacheGroup(CacheGroupDescriptor grpDesc, IgnitePredicate<ClusterNode> filter, CacheMode cacheMode) {
         CacheGroupAffinity old = registeredCacheGrps.put(grpDesc.groupId(),
-            new CacheGroupAffinity(grpDesc.cacheOrGroupName(), filter, cacheMode, grpDesc.persistenceEnabled()));
+            new CacheGroupAffinity(filter, cacheMode, grpDesc.persistenceEnabled()));
 
         assert old == null : old;
     }
@@ -592,8 +593,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 ClusterNode node = notification.getNode();
                 long topVer = notification.getTopVer();
 
-                DiscoveryCustomMessage customMsg = notification.getCustomMsgData() == null ? null
-                    : ((CustomMessageWrapper)notification.getCustomMsgData()).delegate();
+                DiscoveryCustomMessage customMsg = U.unwrapCustomMessage(notification.customMessage() == null ?
+                    null : notification.customMessage());
 
                 if (skipMessage(notification.type(), customMsg))
                     return;
@@ -932,12 +933,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 /** */
                 @Override public void run() {
-                    DiscoverySpiCustomMessage customMsg = notification.getCustomMsgData();
+                    DiscoverySpiCustomMessage customMsg = notification.customMessage();
 
                     if (customMsg instanceof SecurityAwareCustomMessageWrapper) {
                         UUID secSubjId = ((SecurityAwareCustomMessageWrapper)customMsg).securitySubjectId();
 
-                        try (OperationSecurityContext ignored = ctx.security().withContext(secSubjId)) {
+                        try (Scope ignored = ctx.security().withContext(secSubjId)) {
                             super.run();
                         }
                     }
@@ -948,7 +949,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             notification.getNode()
                         );
 
-                        try (OperationSecurityContext ignored = ctx.security().withContext(initiatorNodeSecCtx)) {
+                        try (Scope ignored = ctx.security().withContext(initiatorNodeSecCtx)) {
                             super.run();
                         }
                     }
@@ -1279,6 +1280,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         Boolean locSecurityCompatibilityEnabled = locNode.attribute(ATTR_SECURITY_COMPATIBILITY_MODE);
 
+        WALMode locWalMode = nodeWalMode(locNode);
+
         for (ClusterNode n : nodes) {
             int rmtJvmMajVer = nodeJavaMajorVersion(n);
 
@@ -1382,6 +1385,15 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         ", rmtNodeAddrs=" + U.addressesAsString(n) +
                         ", locNodeId=" + locNode.id() + ", rmtNode=" + U.toShortString(n) + "]");
                 }
+            }
+
+            WALMode rmtWalMode = nodeWalMode(n);
+
+            if (locWalMode != null && rmtWalMode != null && locWalMode != rmtWalMode) {
+                throw new IgniteCheckedException("Remote node has WAL mode different from local " +
+                    "[locId8=" + U.id8(locNode.id()) + ", locWalMode=" + locWalMode +
+                    ", rmtId8=" + U.id8(n.id()) + ", rmtWalMode=" + rmtWalMode +
+                    ", rmtAddrs=" + U.addressesAsString(n) + ", rmtNode=" + U.toShortString(n) + "]");
             }
         }
 
@@ -1901,7 +1913,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      *
      * @return Discovery collection cache.
      */
-    public DiscoCache discoCache() {
+    @Nullable public DiscoCache discoCache() {
         Snapshot cur = topSnap.get();
 
         assert cur != null;
@@ -1918,24 +1930,30 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         return discoCacheHist.get(topVer);
     }
 
-    /** @return All remote nodes in topology. */
+    /** @return All remote nodes in topology or empty collection if topology is not initialized. */
     public Collection<ClusterNode> remoteNodes() {
-        return discoCache().remoteNodes();
+        @Nullable DiscoCache cached = discoCache();
+
+        return cached == null ? List.of() : cached.remoteNodes();
     }
 
-    /** @return All nodes in topology. */
+    /** @return All nodes in topology or empty collection if topology is not initialized. */
     public Collection<ClusterNode> allNodes() {
-        return discoCache().allNodes();
+        @Nullable DiscoCache cached = discoCache();
+
+        return cached == null ? List.of() : discoCache().allNodes();
     }
 
-    /** @return all alive server nodes in topology */
+    /** @return Alive server nodes in topology or empty collection if topology is not initialized. */
     public Collection<ClusterNode> aliveServerNodes() {
-        return discoCache().aliveServerNodes();
+        @Nullable DiscoCache cached = discoCache();
+
+        return cached == null ? List.of() : cached.aliveServerNodes();
     }
 
-    /** @return Full topology size. */
+    /** @return Full topology size, {@code 0} if topology is not initialized. */
     public int size() {
-        return discoCache().allNodes().size();
+        return allNodes().size();
     }
 
     /**
@@ -2174,6 +2192,29 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
+     * Extracts WAL mode from marshalled {@link DataStorageConfiguration} of Cluster node.
+     * @param node Cluster node.
+     * @return WAL mode stored in dsCfg or {@code null} if unmarshalling failed or got {@code null} dsCfg.
+     */
+    private WALMode nodeWalMode(ClusterNode node) {
+        try {
+            DataStorageConfiguration dsCfg = CU.extractDataStorage(
+                node,
+                ctx.marshallerContext().jdkMarshaller(),
+                U.resolveClassLoader(ctx.config())
+            );
+
+            if (dsCfg != null)
+                return dsCfg.getWalMode();
+        }
+        catch (IgniteException e) {
+            U.error(log, "Failed to unmarshal data storage configuration [remoteNode=" + node + "]", e);
+        }
+
+        return null;
+    }
+
+    /**
      * Gets topology by specified version from history storage.
      *
      * @param topVer Topology version.
@@ -2301,7 +2342,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             getSpi().sendCustomEvent(security.enabled()
                 ? new SecurityAwareCustomMessageWrapper(msg, security.securityContext().subject().id())
-                : new CustomMessageWrapper(msg));
+                : msg);
         }
         catch (IgniteClientDisconnectedException e) {
             IgniteFuture<?> reconnectFut = ctx.cluster().clientReconnectFuture();
@@ -2330,7 +2371,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     localNode(),
                     null,
                     Collections.<ClusterNode>emptyList(),
-                    new ClientCacheChangeDummyDiscoveryMessage(remoteSecurityContext(ctx), reqId, startReqs, cachesToClose),
+                    new ClientCacheChangeDummyDiscoveryMessage(reqId, startReqs, cachesToClose),
                     null,
                     remoteSecurityContext(ctx)
                 )
@@ -2906,7 +2947,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         Collection<ClusterNode> topSnapshot;
 
         /** Data. */
-        @Nullable DiscoveryCustomMessage data;
+        @Nullable DiscoveryCustomMessage customMsg;
 
         /** Span container. */
         SpanContainer spanContainer;
@@ -2920,7 +2961,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @param node Node.
          * @param discoCache Disco cache.
          * @param topSnapshot Topology snapshot.
-         * @param data Data.
+         * @param customMsg Data.
          * @param spanContainer Span container.
          */
         public NotificationEvent(
@@ -2929,7 +2970,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             ClusterNode node,
             DiscoCache discoCache,
             Collection<ClusterNode> topSnapshot,
-            @Nullable DiscoveryCustomMessage data,
+            @Nullable DiscoveryCustomMessage customMsg,
             SpanContainer spanContainer,
             SecurityContext secCtx
         ) {
@@ -2938,7 +2979,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             this.node = node;
             this.discoCache = discoCache;
             this.topSnapshot = topSnapshot;
-            this.data = data;
+            this.customMsg = customMsg;
             this.spanContainer = spanContainer;
             this.secCtx = secCtx;
         }
@@ -3027,7 +3068,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     evt.message("Client node reconnected");
 
                 else
-                    assert false : "Unexpected discovery message type: " + type;;
+                    assert false : "Unexpected discovery message type: " + type;
 
                 ctx.event().record(evt, discoCache);
             }
@@ -3037,7 +3078,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @param notificationEvt Notification event.
          */
         void addEvent(NotificationEvent notificationEvt) {
-            assert notificationEvt.node != null : notificationEvt.data;
+            assert notificationEvt.node != null : notificationEvt.customMsg;
 
             if (notificationEvt.type == EVT_CLIENT_NODE_DISCONNECTED)
                 discoWrk.disconnectEvtFut = new GridFutureAdapter();
@@ -3084,7 +3125,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 blockingSectionEnd();
             }
 
-            try (OperationSecurityContext ignored = withRemoteSecurityContext(ctx, evt.secCtx)) {
+            try (Scope ignored = withRemoteSecurityContext(ctx, evt.secCtx)) {
                 int type = evt.type;
 
                 AffinityTopologyVersion topVer = evt.topVer;
@@ -3193,11 +3234,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             customEvt.type(type);
                             customEvt.topologySnapshot(topVer.topologyVersion(), evt.topSnapshot);
                             customEvt.affinityTopologyVersion(topVer);
-                            customEvt.customMessage(evt.data);
+                            customEvt.customMessage(evt.customMsg);
                             customEvt.span(evt.spanContainer != null ? evt.spanContainer.span() : null);
 
                             if (evt.discoCache == null) {
-                                assert discoCache != null : evt.data;
+                                assert discoCache != null : evt.customMsg;
 
                                 evt.discoCache = discoCache;
                             }
@@ -3333,13 +3374,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         /** */
         @GridToStringExclude
-        private final DiscoCache discoCache;
+        @Nullable private final DiscoCache discoCache;
 
         /**
          * @param topVer Topology version.
          * @param discoCache Disco cache.
          */
-        private Snapshot(AffinityTopologyVersion topVer, DiscoCache discoCache) {
+        private Snapshot(AffinityTopologyVersion topVer, @Nullable DiscoCache discoCache) {
             this.topVer = topVer;
             this.discoCache = discoCache;
         }
@@ -3354,9 +3395,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      *
      */
     private static class CacheGroupAffinity {
-        /** */
-        private final String name;
-
         /** Nodes filter. */
         private final IgnitePredicate<ClusterNode> cacheFilter;
 
@@ -3367,17 +3405,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         private final boolean persistentCacheGrp;
 
         /**
-         * @param name Name.
          * @param cacheFilter Node filter.
          * @param cacheMode Cache mode.
          * @param persistentCacheGrp Persistence is configured for cache or not.
          */
-        CacheGroupAffinity(
-                String name,
-                IgnitePredicate<ClusterNode> cacheFilter,
-                CacheMode cacheMode,
-                boolean persistentCacheGrp) {
-            this.name = name;
+        CacheGroupAffinity(IgnitePredicate<ClusterNode> cacheFilter, CacheMode cacheMode, boolean persistentCacheGrp) {
             this.cacheFilter = cacheFilter;
             this.cacheMode = cacheMode;
             this.persistentCacheGrp = persistentCacheGrp;

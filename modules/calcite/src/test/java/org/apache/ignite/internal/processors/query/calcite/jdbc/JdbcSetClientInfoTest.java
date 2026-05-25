@@ -26,6 +26,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlTableFunction;
@@ -38,17 +40,39 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.resources.SessionContextProviderResource;
 import org.apache.ignite.session.SessionContext;
 import org.apache.ignite.session.SessionContextProvider;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
+import static org.junit.Assume.assumeFalse;
 
 /** */
+@RunWith(Parameterized.class)
 public class JdbcSetClientInfoTest extends GridCommonAbstractTest {
     /** */
     private static final String SESSION_ID = "sessionId";
 
     /** */
     private static final String URL = "jdbc:ignite:thin://127.0.0.1";
+
+    /** */
+    @Parameterized.Parameter
+    public boolean runInTx;
+
+    /** */
+    @Parameterized.Parameter(1)
+    public CacheAtomicityMode cacheMode;
+
+    /** */
+    @Parameterized.Parameters(name = "runInTx={0}, mode={1}")
+    public static Collection<Object[]> data() {
+        return GridTestUtils.cartesianProduct(
+            F.asList(false, true),
+            F.asList(CacheAtomicityMode.TRANSACTIONAL, CacheAtomicityMode.ATOMIC));
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
@@ -57,9 +81,22 @@ public class JdbcSetClientInfoTest extends GridCommonAbstractTest {
         cfg.setSqlConfiguration(new SqlConfiguration()
             .setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration().setDefault(true)));
 
+        cfg.getTransactionConfiguration().setTxAwareQueriesEnabled(runInTx);
+
+        QueryEntity entity = new QueryEntity()
+            .setTableName("MYTABLE")
+            .setKeyType(Integer.class.getName())
+            .setValueType(String.class.getName())
+            .addQueryField("id", Integer.class.getName(), null)
+            .addQueryField("sessionId", String.class.getName(), null)
+            .setKeyFieldName("id")
+            .setValueFieldName("sessionId");
+
         cfg.setCacheConfiguration(new CacheConfiguration<>()
             .setName(DEFAULT_CACHE_NAME)
+            .setAtomicityMode(cacheMode)
             .setSqlSchema("PUBLIC")
+            .setQueryEntities(List.of(entity))
             .setSqlFunctionClasses(SessionContextFunctions.class));
 
         return cfg;
@@ -67,9 +104,9 @@ public class JdbcSetClientInfoTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        IgniteEx ign = startGrids(3);
+        assumeFalse(runInTx && cacheMode == CacheAtomicityMode.ATOMIC);
 
-        query(ign, "create table PUBLIC.MYTABLE(id int primary key, sessionId varchar);");
+        startGrids(3);
     }
 
     /** {@inheritDoc} */

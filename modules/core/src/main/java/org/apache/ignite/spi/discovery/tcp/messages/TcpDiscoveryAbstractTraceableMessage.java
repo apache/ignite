@@ -17,20 +17,30 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
-import java.io.Externalizable;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.MarshallableMessage;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessage;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Abstract traceable message for TCP discovery.
  */
-public abstract class TcpDiscoveryAbstractTraceableMessage extends TcpDiscoveryAbstractMessage implements TraceableMessage {
+public abstract class TcpDiscoveryAbstractTraceableMessage extends TcpDiscoveryAbstractMessage
+    implements TraceableMessage, MarshallableMessage {
     /** Container. */
     private SpanContainer spanContainer = new SpanContainer();
 
+    /** Serialization holder of {@link #spanContainer}'s bytes. */
+    @Order(0)
+    @Nullable byte[] spanContainerBytes;
+
     /**
-     * Default no-arg constructor for {@link Externalizable} interface.
+     * Default constructor for {@link MessageFactory}.
      */
     protected TcpDiscoveryAbstractTraceableMessage() {
         // No-op.
@@ -70,5 +80,16 @@ public abstract class TcpDiscoveryAbstractTraceableMessage extends TcpDiscoveryA
     /** {@inheritDoc} */
     @Override public SpanContainer spanContainer() {
         return spanContainer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        spanContainerBytes = spanContainer == null ? null : spanContainer.serializedSpanBytes();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (spanContainerBytes != null)
+            spanContainer.serializedSpanBytes(spanContainerBytes);
     }
 }

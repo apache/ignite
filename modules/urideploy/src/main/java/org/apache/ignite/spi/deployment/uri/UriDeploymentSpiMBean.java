@@ -23,7 +23,11 @@ import org.apache.ignite.spi.IgniteSpiManagementMBean;
 
 /**
  * Management bean for {@link UriDeploymentSpi}.
+ *
+ * @deprecated Will be replaced with the
+ * <a href="https://cwiki.apache.org/confluence/display/IGNITE/IEP-144+IgniteClassPath">IgniteClassPath</a> in the next versions.
  */
+@Deprecated
 @MXBeanDescription("MBean that provides access to URI deployment SPI configuration.")
 public interface UriDeploymentSpiMBean extends IgniteSpiManagementMBean {
     /**

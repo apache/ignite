@@ -38,11 +38,11 @@ public class UpdateErrors implements Message {
     /** Failed keys. */
     @GridToStringInclude
     @Order(0)
-    private List<KeyCacheObject> failedKeys;
+    List<KeyCacheObject> failedKeys;
 
     /** Error message. */
-    @Order(value = 1, method = "errorMessage")
-    private ErrorMessage errMsg;
+    @Order(1)
+    ErrorMessage errMsg;
 
     /**
      *
@@ -75,31 +75,10 @@ public class UpdateErrors implements Message {
     }
 
     /**
-     * @param errMsg New error message.
-     */
-    public void errorMessage(ErrorMessage errMsg) {
-        this.errMsg = errMsg;
-    }
-
-    /**
-     * @return Error message.
-     */
-    public ErrorMessage errorMessage() {
-        return errMsg;
-    }
-
-    /**
      * @return Failed keys.
      */
     public Collection<KeyCacheObject> failedKeys() {
         return failedKeys;
-    }
-
-    /**
-     * @param failedKeys New failed keys.
-     */
-    public void failedKeys(List<KeyCacheObject> failedKeys) {
-        this.failedKeys = failedKeys;
     }
 
     /**
@@ -146,10 +125,6 @@ public class UpdateErrors implements Message {
         msg.finishUnmarshalCacheObjects(failedKeys, cctx, ldr);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -49;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

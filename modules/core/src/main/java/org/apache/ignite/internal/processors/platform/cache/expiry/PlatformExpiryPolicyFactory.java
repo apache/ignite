@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.platform.cache.expiry;
 
 import javax.cache.configuration.Factory;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Platform expiry policy factory.
@@ -72,5 +73,10 @@ public class PlatformExpiryPolicyFactory implements Factory<PlatformExpiryPolicy
     /** {@inheritDoc} */
     @Override public PlatformExpiryPolicy create() {
         return new PlatformExpiryPolicy(create, update, access);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(PlatformExpiryPolicyFactory.class, this);
     }
 }

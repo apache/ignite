@@ -28,15 +28,15 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 public class GridDeploymentResponse implements Message {
     /** Result state. */
     @Order(0)
-    private boolean success;
+    boolean success;
 
     /** */
-    @Order(value = 1, method = "errorMessage")
-    private String errMsg;
+    @Order(1)
+    String errMsg;
 
     /** Raw class/resource/task. */
-    @Order(value = 2, method = "byteSource")
-    private GridByteArrayList byteSrc;
+    @Order(2)
+    GridByteArrayList byteSrc;
 
     /**
      * Default constructor.
@@ -102,10 +102,6 @@ public class GridDeploymentResponse implements Message {
         this.errMsg = errMsg;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 12;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

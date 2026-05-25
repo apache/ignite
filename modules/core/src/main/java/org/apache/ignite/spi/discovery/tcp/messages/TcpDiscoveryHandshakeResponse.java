@@ -21,33 +21,29 @@ import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Handshake response.
  */
-public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage implements Message {
+public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage {
     /** */
-    private static final long serialVersionUID = 0L;
+    @Order(0)
+    long order;
 
     /** */
-    @Order(5)
-    private long order;
-
-    /** */
-    @Order(value = 6, method = "previousNodeAliveFlag")
-    private boolean prevNodeAliveFlag;
+    @Order(1)
+    boolean prevNodeAliveFlag;
 
     /** Redirect addresses messages serialization holder. */
-    @Order(value = 7, method = "redirectAddressesMessages")
-    private @Nullable Collection<InetSocketAddressMessage> redirectAddrsMsgs;
+    @Order(2)
+    @Nullable Collection<InetSocketAddressMessage> redirectAddrsMsgs;
 
     /**
-     * Default constructor for {@link DiscoveryMessageFactory}.
+     * Default constructor for {@link MessageFactory}.
      */
     public TcpDiscoveryHandshakeResponse() {
         // No-op.
@@ -94,15 +90,6 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage i
         return order;
     }
 
-    /**
-     * Sets order of the node sent the response.
-     *
-     * @param order Order of the node sent the response.
-     */
-    public void order(long order) {
-        this.order = order;
-    }
-
     /** @return Socket addresses list for redirect. */
     public @Nullable Collection<InetSocketAddress> redirectAddresses() {
         return F.isEmpty(redirectAddrsMsgs)
@@ -115,31 +102,6 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage i
         redirectAddrsMsgs = sockAddrs == null
             ? null
             : F.viewReadOnly(sockAddrs, addr -> new InetSocketAddressMessage(addr.getAddress(), addr.getPort()));
-    }
-
-    /** @return Collection of {@link InetAddressMessage}. */
-    public @Nullable Collection<InetSocketAddressMessage> redirectAddressesMessages() {
-        return redirectAddrsMsgs;
-    }
-
-    /** @param redirectAddrsMsgs Collection of {@link InetAddressMessage}. */
-    public void redirectAddressesMessages(@Nullable Collection<InetSocketAddressMessage> redirectAddrsMsgs) {
-        this.redirectAddrsMsgs = redirectAddrsMsgs;
-    }
-
-    /** @return Previous node aliveness flag. */
-    public boolean previousNodeAliveFlag() {
-        return prevNodeAliveFlag;
-    }
-
-    /** @param prevNodeAliveFlag Previous node aliveness flag. */
-    public void previousNodeAliveFlag(boolean prevNodeAliveFlag) {
-        this.prevNodeAliveFlag = prevNodeAliveFlag;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 10;
     }
 
     /** {@inheritDoc} */

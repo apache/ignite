@@ -14,8 +14,6 @@
 // limitations under the License.
 = System Views
 
-WARNING: The system views are an experimental feature and can be changed in future releases.
-
 Ignite provides a number of built-in SQL views that contain information about cluster nodes and node metrics.
 The views are available in the SYS schema.
 See the link:SQL/schemas[Understanding Schemas] page for the information on how to access a non-default schema.
@@ -181,7 +179,7 @@ The CACHE_GROUPS view contains information about the link:configuring-caches/cac
 |CACHE_MODE | VARCHAR | The cache mode.
 |DATA_REGION_NAME | VARCHAR | The name of the link:memory-configuration/data-regions[data region].
 |IS_SHARED|BOOLEAN | If this group contains more than one cache.
-|NODE_FILTER | VARCHAR | String representation of the the node filter defined for the cache group.
+|NODE_FILTER | VARCHAR | String representation of the node filter defined for the cache group.
 |PARTITION_LOSS_POLICY | VARCHAR | link:configuring-caches/partition-loss-policy[Partition loss policy].
 |PARTITIONS_COUNT|INT | The number of partitions.
 |REBALANCE_DELAY|LONG | link:data-rebalancing#other-properties[Rebalancing delay].
@@ -499,6 +497,7 @@ This view exposes information about currently running SQL queries.
 |START_TIME | date | Query start time
 |DURATION | long | Query execution duration
 |INITIATOR_ID | string | User defined query initiator ID
+|MAP_QUERY | boolean | True if query is H2 map query
 |LOCAL | boolean | True if local only
 |SCHEMA_NAME | string | Schema name
 |SUBJECT_ID | UUID | The subject ID of the entity that initiated the query
@@ -787,6 +786,21 @@ This view exposes information about the distribution of cache group partitions a
 |NODE_ID | UUID | Node ID
 |STATE | string | Partition state. Possible states: MOVING - partition is being loaded from another node to this node; OWNING - this node is either a primary or backup owner; RENTING - this node is neither primary nor back up owner (is being currently evicted); EVICTED - partition has been evicted; LOST - partition state is invalid, the partition should not be used.
 |IS_PRIMARY | boolean  | Primary partition flag
+|===
+
+== LOCAL_CACHE_GROUPS_IO
+
+This view exposes information about local node IO statistics for cache groups.
+
+[{table_opts}]
+|===
+|Column | Data type |  Description
+|CACHE_GROUP_ID | int| Cache group ID
+|CACHE_GROUP_NAME | string| Cache group name
+|PHYSICAL_READS | long | Count of logical page reads
+|LOGICAL_READS | long | Count of physical page reads
+|INSERTED_BYTES | long | Count of inserted to store bytes
+|REMOVED_BYTES | long | Count of removed from store bytes
 |===
 
 == BINARY_METADATA

@@ -26,10 +26,8 @@ import java.util.function.Consumer;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
-import org.apache.ignite.lang.IgniteExperimental;
 
 /** */
-@IgniteExperimental
 public class MetaRemoveCommand implements ComputeCommand<MetaRemoveCommandArg, MetadataMarshalled> {
     /** {@inheritDoc} */
     @Override public String description() {

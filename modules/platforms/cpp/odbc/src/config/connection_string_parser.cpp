@@ -42,7 +42,6 @@ namespace ignite
             const std::string ConnectionStringParser::Key::pageSize               = "page_size";
             const std::string ConnectionStringParser::Key::replicatedOnly         = "replicated_only";
             const std::string ConnectionStringParser::Key::collocated             = "collocated";
-            const std::string ConnectionStringParser::Key::lazy                   = "lazy";
             const std::string ConnectionStringParser::Key::skipReducerOnUpdate    = "skip_reducer_on_update";
             const std::string ConnectionStringParser::Key::sslMode                = "ssl_mode";
             const std::string ConnectionStringParser::Key::sslKeyFile             = "ssl_key_file";
@@ -350,23 +349,6 @@ namespace ignite
                     }
 
                     cfg.SetCollocated(res == BoolParseResult::AI_TRUE);
-                }
-                else if (lKey == Key::lazy)
-                {
-                    BoolParseResult::Type res = StringToBool(value);
-
-                    if (res == BoolParseResult::AI_UNRECOGNIZED)
-                    {
-                        if (diag)
-                        {
-                            diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
-                                MakeErrorMessage("Unrecognized bool value. Defaulting to 'false'.", key, value));
-                        }
-
-                        return;
-                    }
-
-                    cfg.SetLazy(res == BoolParseResult::AI_TRUE);
                 }
                 else if (lKey == Key::skipReducerOnUpdate)
                 {

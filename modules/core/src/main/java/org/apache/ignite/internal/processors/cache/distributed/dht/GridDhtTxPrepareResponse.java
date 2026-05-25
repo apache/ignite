@@ -40,24 +40,24 @@ import org.jetbrains.annotations.Nullable;
 public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     /** Evicted readers. */
     @GridToStringInclude
-    @Order(9)
-    private @Nullable Collection<IgniteTxKey> nearEvicted;
+    @Order(0)
+    @Nullable Collection<IgniteTxKey> nearEvicted;
 
     /** Future ID.  */
-    @Order(value = 10, method = "futureId")
-    private IgniteUuid futId;
+    @Order(1)
+    IgniteUuid futId;
 
     /** Mini future ID. */
-    @Order(11)
-    private int miniId;
+    @Order(2)
+    int miniId;
 
     /** Invalid partitions by cache ID. */
-    @Order(value = 12, method = "invalidPartitions")
-    private @Nullable Map<Integer, int[]> invalidParts;
+    @Order(3)
+    @Nullable Map<Integer, int[]> invalidParts;
 
     /** Preload entries found on backup node. */
-    @Order(13)
-    private @Nullable List<GridCacheEntryInfo> preloadEntries;
+    @Order(4)
+    @Nullable List<GridCacheEntryInfo> preloadEntries;
 
     /**
      * Empty constructor.
@@ -126,32 +126,14 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
         this.nearEvicted = nearEvicted;
     }
 
-    /**
-     * @return Future ID.
-     */
+    /** @return Future ID. */
     public IgniteUuid futureId() {
         return futId;
     }
 
-    /**
-     * @param futId New future ID.
-     */
-    public void futureId(IgniteUuid futId) {
-        this.futId = futId;
-    }
-
-    /**
-     * @return Mini future ID.
-     */
+    /** @return Mini future ID. */
     public int miniId() {
         return miniId;
-    }
-
-    /**
-     * @param miniId New mini future ID.
-     */
-    public void miniId(int miniId) {
-        this.miniId = miniId;
     }
 
     /**
@@ -168,18 +150,9 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
         this.invalidParts = invalidParts;
     }
 
-    /**
-     * @return Preload entries found on backup node.
-     */
+    /** @return Preload entries found on backup node. */
     public @Nullable Collection<GridCacheEntryInfo> preloadEntries() {
         return preloadEntries;
-    }
-
-    /**
-     * @param preloadEntries New preload entries found on backup node.
-     */
-    public void preloadEntries(@Nullable List<GridCacheEntryInfo> preloadEntries) {
-        this.preloadEntries = preloadEntries;
     }
 
     /**
@@ -240,10 +213,6 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 35;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

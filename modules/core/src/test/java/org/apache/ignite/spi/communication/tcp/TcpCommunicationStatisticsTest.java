@@ -38,13 +38,13 @@ import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.GridTestMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.spi.communication.GridTestMessage.GRID_TEST_MESSAGE_FACTORY;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.COMMUNICATION_METRICS_GROUP_NAME;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.RECEIVED_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_NAME;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.SENT_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_NAME;
@@ -222,11 +222,7 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
-            registry.registerExtension(MessageFactoryProvider.class, new MessageFactoryProvider() {
-                @Override public void registerAll(MessageFactory factory) {
-                    factory.register(GridTestMessage.DIRECT_TYPE, GridTestMessage::new);
-                }
-            });
+            registry.registerExtension(MessageFactoryProvider.class, GRID_TEST_MESSAGE_FACTORY);
         }
     }
 }

@@ -82,9 +82,15 @@ public class IgniteMapSortAggregate extends IgniteMapAggregateBase implements Ig
         RelNode input,
         ImmutableBitSet groupSet,
         List<ImmutableBitSet> groupSets,
-        List<AggregateCall> aggCalls) {
+        List<AggregateCall> aggCalls
+    ) {
+        RelCollation collation = TraitUtils.collation(input.getTraitSet());
+
+        assert collation.satisfies(TraitUtils.collation(traitSet))
+            : "Unexpected collations: input=" + collation + ", traitSet=" + TraitUtils.collation(traitSet);
+
         return new IgniteMapSortAggregate(
-            getCluster(), traitSet, input, groupSet, groupSets, aggCalls, TraitUtils.collation(traitSet));
+            getCluster(), traitSet, input, groupSet, groupSets, aggCalls, collation);
     }
 
     /** {@inheritDoc} */

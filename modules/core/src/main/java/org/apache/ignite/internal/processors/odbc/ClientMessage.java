@@ -206,11 +206,6 @@ public class ClientMessage implements Message, Externalizable {
         return false;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return Short.MIN_VALUE;
-    }
-
     /**
      * @return Message payload.
      */

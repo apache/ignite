@@ -536,14 +536,6 @@ public class IgniteConfiguration {
     private ExecutorConfiguration[] execCfgs;
 
     /** Page memory configuration. */
-    @Deprecated
-    private MemoryConfiguration memCfg;
-
-    /** Persistence store configuration. */
-    @Deprecated
-    private PersistentStoreConfiguration pstCfg;
-
-    /** Page memory configuration. */
     private DataStorageConfiguration dsCfg;
 
     /**
@@ -651,8 +643,6 @@ public class IgniteConfiguration {
         binaryCfg = cfg.getBinaryConfiguration();
         clusterStateOnStart = cfg.getClusterStateOnStart();
         dsCfg = cfg.getDataStorageConfiguration();
-        memCfg = cfg.getMemoryConfiguration();
-        pstCfg = cfg.getPersistentStoreConfiguration();
         cacheCfg = cfg.getCacheConfiguration();
         cacheKeyCfg = cfg.getCacheKeyConfiguration();
         cacheSanityCheckEnabled = cfg.isCacheSanityCheckEnabled();
@@ -2140,7 +2130,10 @@ public class IgniteConfiguration {
      * {@link LocalDeploymentSpi} will be used.
      *
      * @return Grid deployment SPI implementation or {@code null} to use default implementation.
+     * @deprecated Will be replaced with the
+     * <a href="https://cwiki.apache.org/confluence/display/IGNITE/IEP-144+IgniteClassPath">IgniteClassPath</a> in the next versions.
      */
+    @Deprecated
     public DeploymentSpi getDeploymentSpi() {
         return deploySpi;
     }
@@ -2151,7 +2144,10 @@ public class IgniteConfiguration {
      * @param deploySpi Fully configured instance of {@link DeploymentSpi}.
      * @see IgniteConfiguration#getDeploymentSpi()
      * @return {@code this} for chaining.
+     * @deprecated Will be replaced with the
+     * <a href="https://cwiki.apache.org/confluence/display/IGNITE/IEP-144+IgniteClassPath">IgniteClassPath</a> in the next versions.
      */
+    @Deprecated
     public IgniteConfiguration setDeploymentSpi(DeploymentSpi deploySpi) {
         this.deploySpi = deploySpi;
 
@@ -2484,7 +2480,10 @@ public class IgniteConfiguration {
      *
      * @param deployMode Task classes and resources sharing mode.
      * @return {@code this} for chaining.
+     * @deprecated Will be replaced with the
+     * <a href="https://cwiki.apache.org/confluence/display/IGNITE/IEP-144+IgniteClassPath">IgniteClassPath</a> in the next versions.
      */
+    @Deprecated
     public IgniteConfiguration setDeploymentMode(DeploymentMode deployMode) {
         this.deployMode = deployMode;
 
@@ -2496,7 +2495,10 @@ public class IgniteConfiguration {
      * Refer to {@link DeploymentMode} documentation for more information.
      *
      * @return Deployment mode.
+     * @deprecated Will be replaced with the
+     * <a href="https://cwiki.apache.org/confluence/display/IGNITE/IEP-144+IgniteClassPath">IgniteClassPath</a> in the next versions.
      */
+    @Deprecated
     public DeploymentMode getDeploymentMode() {
         return deployMode;
     }
@@ -2630,68 +2632,6 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setDataStorageConfiguration(DataStorageConfiguration dsCfg) {
         this.dsCfg = dsCfg;
-
-        return this;
-    }
-
-    /**
-     * Gets page memory configuration.
-     *
-     * @return Memory configuration.
-     * @deprecated Use {@link DataStorageConfiguration} instead.
-     */
-    @Deprecated
-    public MemoryConfiguration getMemoryConfiguration() {
-        return memCfg;
-    }
-
-    /**
-     * Sets page memory configuration.
-     *
-     * @param memCfg Memory configuration.
-     * @return {@code this} for chaining.
-     * @deprecated Use {@link DataStorageConfiguration} instead.
-     */
-    @Deprecated
-    public IgniteConfiguration setMemoryConfiguration(MemoryConfiguration memCfg) {
-        this.memCfg = memCfg;
-
-        return this;
-    }
-
-    /**
-     * Gets persistence configuration used by Apache Ignite Persistent Store.
-     *
-     * @return Persistence configuration.
-     *
-     * @deprecated Part of old API. Use {@link DataStorageConfiguration} for configuring persistence instead.
-     */
-    @Deprecated
-    public PersistentStoreConfiguration getPersistentStoreConfiguration() {
-        return pstCfg;
-    }
-
-    /**
-     * @return Flag {@code true} if persistence is enabled, {@code false} if disabled.
-     *
-     * @deprecated Part of legacy configuration API. Doesn't work if new configuration API is used.
-     */
-    @Deprecated
-    public boolean isPersistentStoreEnabled() {
-        return pstCfg != null;
-    }
-
-    /**
-     * Sets persistence configuration activating Apache Ignite Persistent Store.
-     *
-     * @param pstCfg Persistence configuration.
-     * @return {@code this} for chaining.
-     *
-     * @deprecated Part of old API. Use {@link DataStorageConfiguration} for configuring persistence instead.
-     */
-    @Deprecated
-    public IgniteConfiguration setPersistentStoreConfiguration(PersistentStoreConfiguration pstCfg) {
-        this.pstCfg = pstCfg;
 
         return this;
     }

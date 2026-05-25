@@ -36,13 +36,12 @@ import org.apache.ignite.internal.GridStopWithCollisionSpiTest;
 import org.apache.ignite.internal.IgniteLocalNodeMapBeforeStartTest;
 import org.apache.ignite.internal.IgniteSlowClientDetectionSelfTest;
 import org.apache.ignite.internal.TransactionsMXBeanImplTest;
+import org.apache.ignite.internal.codegen.IgniteDataTransferObjectProcessorTest;
 import org.apache.ignite.internal.codegen.MessageProcessorTest;
-import org.apache.ignite.internal.managers.communication.CacheEntryPredicateAdapterMessageTest;
-import org.apache.ignite.internal.managers.communication.CacheWriteSynchroizationModeMessageTest;
+import org.apache.ignite.internal.managers.communication.CompressedMessageTest;
 import org.apache.ignite.internal.managers.communication.DefaultEnumMapperTest;
 import org.apache.ignite.internal.managers.communication.ErrorMessageSelfTest;
-import org.apache.ignite.internal.managers.communication.GridCacheOperationModeMessageTest;
-import org.apache.ignite.internal.managers.communication.IndexKeyTypeMessageTest;
+import org.apache.ignite.internal.managers.communication.MessageFactoryMarshallerInitializationTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2Test;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2TestNoOptimizations;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorRendezvousSelfTest;
@@ -52,6 +51,7 @@ import org.apache.ignite.internal.processors.cache.GridLocalIgniteSerializationT
 import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheConcurrentReadWriteTest;
 import org.apache.ignite.internal.processors.cache.SetTxTimeoutOnPartitionMapExchangeTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.EvictPartitionInLogTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.LogEvictionResultsTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionEvictionOrderTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.DiscoveryDataDeserializationFailureHanderTest;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessorRemoteTest;
@@ -151,11 +151,12 @@ import org.junit.runners.Suite;
 
     MessageProcessorTest.class,
     ErrorMessageSelfTest.class,
-    GridCacheOperationModeMessageTest.class,
-    CacheWriteSynchroizationModeMessageTest.class,
-    CacheEntryPredicateAdapterMessageTest.class,
     DefaultEnumMapperTest.class,
-    IndexKeyTypeMessageTest.class
+    IgniteDataTransferObjectProcessorTest.class,
+    CompressedMessageTest.class,
+    MessageFactoryMarshallerInitializationTest.class,
+
+    LogEvictionResultsTest.class,
 })
 public class IgniteBasicTestSuite {
 }

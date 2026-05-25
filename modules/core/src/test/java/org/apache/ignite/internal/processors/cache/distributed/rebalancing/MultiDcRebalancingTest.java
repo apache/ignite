@@ -27,16 +27,13 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -122,8 +119,8 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
 
         resetBaselineTopology();
 
-        waitRebalanceFinished(ignite2);
-        waitRebalanceFinished(ignite3);
+        waitRebalanceFinished(ignite2, DEFAULT_CACHE_NAME);
+        waitRebalanceFinished(ignite3, DEFAULT_CACHE_NAME);
 
         assertTrue(commSPI(ignite2).rebalanceMsgCnt > 0);
         assertTrue(commSPI(ignite3).rebalanceMsgCnt > 0);
@@ -158,7 +155,7 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
 
         IgniteEx ignite2 = startGrid(2, DC1);
 
-        waitRebalanceFinished(ignite2);
+        waitRebalanceFinished(ignite2, DEFAULT_CACHE_NAME);
 
         assertTrue(commSPI(ignite2).rebalanceMsgCnt > 0);
         assertTrue(commSPI(ignite2).historical);
@@ -168,19 +165,6 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
     /** */
     private RebalanceAwareCommSPI commSPI(Ignite ignite) {
         return (RebalanceAwareCommSPI)(ignite.configuration().getCommunicationSpi());
-    }
-
-    /** */
-    private void waitRebalanceFinished(IgniteEx ignite) throws Exception {
-        assertTrue(GridTestUtils.waitForCondition(() -> {
-            IgniteInternalFuture<Boolean> fut = ignite.cachex(DEFAULT_CACHE_NAME).context().preloader().rebalanceFuture();
-
-            GridDhtPartitionDemander.RebalanceFuture rebFut = (GridDhtPartitionDemander.RebalanceFuture)fut;
-
-            return (!rebFut.isInitial() && rebFut.topologyVersion().topologyVersion() == ignite.cluster().topologyVersion());
-        }, 1000));
-
-        assertTrue(ignite.cachex(DEFAULT_CACHE_NAME).context().preloader().rebalanceFuture().get());
     }
 
     /** */

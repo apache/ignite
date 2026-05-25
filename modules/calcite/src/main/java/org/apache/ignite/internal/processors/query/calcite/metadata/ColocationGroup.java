@@ -29,26 +29,26 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessage;
-import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.marshaller.Marshaller;
 
 /** */
-public class ColocationGroup implements CalciteMessage {
+public class ColocationGroup implements MarshallableMessage {
     /** */
-    @Order(value = 0, method = "sourceIds")
-    private long[] srcIds;
+    @Order(0)
+    long[] srcIds;
 
     /** */
     @Order(1)
-    private List<UUID> nodeIds;
+    List<UUID> nodeIds;
 
     /** */
     private List<List<UUID>> assignments;
@@ -61,7 +61,7 @@ public class ColocationGroup implements CalciteMessage {
 
     /** Marshalled assignments serialization call holder. */
     @Order(2)
-    private int[] marshalledAssignments;
+    int[] marshalledAssignments;
 
     /** */
     public static ColocationGroup forNodes(List<UUID> nodeIds) {
@@ -101,6 +101,7 @@ public class ColocationGroup implements CalciteMessage {
 
     /** */
     public ColocationGroup() {
+        // No-op.
     }
 
     /** */
@@ -122,21 +123,6 @@ public class ColocationGroup implements CalciteMessage {
      */
     public List<UUID> nodeIds() {
         return nodeIds == null ? Collections.emptyList() : nodeIds;
-    }
-
-    /** */
-    public void nodeIds(List<UUID> nodeIds) {
-        this.nodeIds = nodeIds;
-    }
-
-    /** */
-    public long[] sourceIds() {
-        return srcIds;
-    }
-
-    /** */
-    public void sourceIds(long[] srcIds) {
-        this.srcIds = srcIds;
     }
 
     /**
@@ -328,14 +314,9 @@ public class ColocationGroup implements CalciteMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public MessageType type() {
-        return MessageType.COLOCATION_GROUP;
-    }
-
-    /** Significantly compacts and fastens UUIDs marshalling. */
-    public @Nullable int[] marshalledAssignments() {
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
         if (assignments == null || primaryAssignment)
-            return null;
+            return;
 
         Map<UUID, Integer> nodeIdxs = new HashMap<>();
 
@@ -358,16 +339,13 @@ public class ColocationGroup implements CalciteMessage {
             }
         }
 
-        return builder.build().buffer();
+        marshalledAssignments = builder.build().buffer();
     }
 
-    /** Significantly compacts and fastens UUIDs unmarshalling. */
-    public void marshalledAssignments(@Nullable int[] marshalledAssignments) {
-        if (F.isEmpty(marshalledAssignments)) {
-            assignments = null;
-
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (F.isEmpty(marshalledAssignments))
             return;
-        }
 
         int bitsPerPart = Integer.SIZE - Integer.numberOfLeadingZeros(nodeIds.size());
 

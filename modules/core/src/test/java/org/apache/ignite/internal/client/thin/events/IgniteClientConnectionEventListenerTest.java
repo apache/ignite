@@ -90,8 +90,7 @@ public class IgniteClientConnectionEventListenerTest extends GridCommonAbstractT
 
                 HandshakeStartEvent hsStartEv = (HandshakeStartEvent)evSet.get(HandshakeStartEvent.class);
 
-                assertEquals(hsStartEv.connectionDescription().protocol(), "ProtocolContext [version=" + ProtocolVersion.LATEST_VER
-                    + ", features=[]]");
+                assertEquals(hsStartEv.connectionDescription().protocol(), "ProtocolContext [version=" + srvVer + ", features=[]]");
                 assertEquals(LOCALHOST, hsStartEv.connectionDescription().remoteAddress().getAddress());
                 assertEquals(SRV_PORT, hsStartEv.connectionDescription().remoteAddress().getPort());
                 assertEquals(LOCALHOST, hsStartEv.connectionDescription().localAddress().getAddress());
@@ -180,6 +179,8 @@ public class IgniteClientConnectionEventListenerTest extends GridCommonAbstractT
         BiConsumer<Event, Throwable> checkEventAction,
         Class<Event> eventCls
     ) {
+        IgniteClient cli = null;
+
         try (FakeIgniteServer srv = srvFactory.get()) {
             srv.start();
 
@@ -191,11 +192,15 @@ public class IgniteClientConnectionEventListenerTest extends GridCommonAbstractT
                 }
 
                 @Override public void onHandshakeFail(HandshakeFailEvent event) {
-                    evSet.put(event.getClass(), event);
+                    // The thin client may attempt to reestablish the connection asynchronously, which may result in
+                    // multiple Handshake Failed events (see ReliableChannelImpl#initAllChannelsAsync).
+                    evSet.putIfAbsent(event.getClass(), event);
                 }
             };
 
-            try (IgniteClient cli = startClient(lsnr)) {
+            try { // We do not close the client using a try with resource block to avoid unexpected events caused by the client stopping.
+                cli = startClient(lsnr);
+
                 clientAction.accept(cli);
             }
             catch (Throwable e) {
@@ -221,6 +226,10 @@ public class IgniteClientConnectionEventListenerTest extends GridCommonAbstractT
         }
         catch (Exception e) {
             throw new RuntimeException("Failed event test", e);
+        }
+        finally {
+            if (cli != null)
+                cli.close();
         }
     }
 

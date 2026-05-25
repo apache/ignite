@@ -282,7 +282,6 @@ public class LazyOnDmlTest extends AbstractIndexingCommonTest {
      */
     private FieldsQueryCursor<List<?>> sql(IgniteEx ign, String sql, Object... args) {
         return ign.context().query().querySqlFields(new SqlFieldsQuery(sql)
-            .setLazy(true)
             .setSchema("TEST")
             .setPageSize(1)
             .setArgs(args), false);

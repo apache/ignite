@@ -17,80 +17,89 @@
 
 package org.apache.ignite.internal.processors.datastreamer;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.configuration.DeploymentMode;
-import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.GridDirectMap;
+import org.apache.ignite.internal.GridTopicMessage;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType.IGNITE_UUID;
 
 /**
  *
  */
 public class DataStreamerRequest implements Message {
     /** */
-    private long reqId;
+    @Order(0)
+    long reqId;
 
     /** */
-    private byte[] resTopicBytes;
+    @Order(1)
+    GridTopicMessage resTopicMsg;
 
     /** Cache name. */
-    private String cacheName;
+    @Order(2)
+    String cacheName;
 
     /** */
-    private byte[] updaterBytes;
+    // TODO: Refactor bytes serialization - IGNITE-27977
+    @Order(3)
+    byte[] updaterBytes;
 
     /** Entries to update. */
-    @GridDirectCollection(DataStreamerEntry.class)
-    private Collection<DataStreamerEntry> entries;
+    @Order(4)
+    Collection<DataStreamerEntry> entries;
 
     /** {@code True} to ignore deployment ownership. */
-    private boolean ignoreDepOwnership;
+    @Order(5)
+    boolean ignoreDepOwnership;
 
     /** */
-    private boolean skipStore;
+    @Order(6)
+    boolean skipStore;
 
     /** Keep binary flag. */
-    private boolean keepBinary;
+    @Order(7)
+    boolean keepBinary;
 
     /** */
-    private DeploymentMode depMode;
+    @Order(8)
+    DeploymentMode depMode;
 
     /** */
-    private String sampleClsName;
+    @Order(9)
+    String sampleClsName;
 
     /** */
-    private String userVer;
+    @Order(10)
+    String userVer;
 
     /** Node class loader participants. */
     @GridToStringInclude
-    @GridDirectMap(keyType = UUID.class, valueType = IgniteUuid.class)
-    private Map<UUID, IgniteUuid> ldrParticipants;
+    @Order(11)
+    Map<UUID, IgniteUuid> ldrParticipants;
 
     /** */
-    private IgniteUuid clsLdrId;
+    @Order(12)
+    IgniteUuid clsLdrId;
 
     /** */
-    private boolean forceLocDep;
+    @Order(13)
+    boolean forceLocDep;
 
     /** Topology version. */
-    private AffinityTopologyVersion topVer;
+    @Order(14)
+    AffinityTopologyVersion topVer;
 
     /** */
-    private int partId;
+    @Order(15)
+    int partId;
 
     /**
      * Empty constructor.
@@ -101,7 +110,7 @@ public class DataStreamerRequest implements Message {
 
     /**
      * @param reqId Request ID.
-     * @param resTopicBytes Response topic.
+     * @param resTopic Response topic.
      * @param cacheName Cache name.
      * @param updaterBytes Cache receiver.
      * @param entries Entries to put.
@@ -119,7 +128,7 @@ public class DataStreamerRequest implements Message {
      */
     public DataStreamerRequest(
         long reqId,
-        byte[] resTopicBytes,
+        Object resTopic,
         @Nullable String cacheName,
         byte[] updaterBytes,
         Collection<DataStreamerEntry> entries,
@@ -138,7 +147,7 @@ public class DataStreamerRequest implements Message {
         assert topVer != null;
 
         this.reqId = reqId;
-        this.resTopicBytes = resTopicBytes;
+        resTopicMsg = new GridTopicMessage(resTopic);
         this.cacheName = cacheName;
         this.updaterBytes = updaterBytes;
         this.entries = entries;
@@ -158,105 +167,105 @@ public class DataStreamerRequest implements Message {
     /**
      * @return Request ID.
      */
-    public long requestId() {
+    long requestId() {
         return reqId;
     }
 
     /**
      * @return Response topic.
      */
-    public byte[] responseTopicBytes() {
-        return resTopicBytes;
+    Object responseTopic() {
+        return GridTopicMessage.topic(resTopicMsg);
     }
 
     /**
      * @return Cache name.
      */
-    public String cacheName() {
+    String cacheName() {
         return cacheName;
     }
 
     /**
      * @return Updater.
      */
-    public byte[] updaterBytes() {
+    byte[] updaterBytes() {
         return updaterBytes;
     }
 
     /**
      * @return Entries to update.
      */
-    public Collection<DataStreamerEntry> entries() {
+    Collection<DataStreamerEntry> entries() {
         return entries;
     }
 
     /**
      * @return {@code True} to ignore ownership.
      */
-    public boolean ignoreDeploymentOwnership() {
+    boolean ignoreDeploymentOwnership() {
         return ignoreDepOwnership;
     }
 
     /**
      * @return Skip store flag.
      */
-    public boolean skipStore() {
+    boolean skipStore() {
         return skipStore;
     }
 
     /**
      * @return Keep binary flag.
      */
-    public boolean keepBinary() {
+    boolean keepBinary() {
         return keepBinary;
     }
 
     /**
      * @return Deployment mode.
      */
-    public DeploymentMode deploymentMode() {
+    DeploymentMode deploymentMode() {
         return depMode;
     }
 
     /**
      * @return Sample class name.
      */
-    public String sampleClassName() {
+    String sampleClassName() {
         return sampleClsName;
     }
 
     /**
      * @return User version.
      */
-    public String userVersion() {
+    String userVersion() {
         return userVer;
     }
 
     /**
      * @return Participants.
      */
-    public Map<UUID, IgniteUuid> participants() {
+    Map<UUID, IgniteUuid> participants() {
         return ldrParticipants;
     }
 
     /**
      * @return Class loader ID.
      */
-    public IgniteUuid classLoaderId() {
+    IgniteUuid classLoaderId() {
         return clsLdrId;
     }
 
     /**
      * @return {@code True} to force local deployment.
      */
-    public boolean forceLocalDeployment() {
+    boolean forceLocalDeployment() {
         return forceLocDep;
     }
 
     /**
      * @return Topology version.
      */
-    public AffinityTopologyVersion topologyVersion() {
+    AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
@@ -270,265 +279,5 @@ public class DataStreamerRequest implements Message {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(DataStreamerRequest.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeString(cacheName))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeIgniteUuid(clsLdrId))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeByte(depMode != null ? (byte)depMode.ordinal() : -1))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
-                if (!writer.writeCollection(entries, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
-                if (!writer.writeBoolean(forceLocDep))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeBoolean(ignoreDepOwnership))
-                    return false;
-
-                writer.incrementState();
-
-            case 6:
-                if (!writer.writeBoolean(keepBinary))
-                    return false;
-
-                writer.incrementState();
-
-            case 7:
-                if (!writer.writeMap(ldrParticipants, MessageCollectionItemType.UUID, IGNITE_UUID))
-                    return false;
-
-                writer.incrementState();
-
-            case 8:
-                if (!writer.writeInt(partId))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
-                if (!writer.writeLong(reqId))
-                    return false;
-
-                writer.incrementState();
-
-            case 10:
-                if (!writer.writeByteArray(resTopicBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 11:
-                if (!writer.writeString(sampleClsName))
-                    return false;
-
-                writer.incrementState();
-
-            case 12:
-                if (!writer.writeBoolean(skipStore))
-                    return false;
-
-                writer.incrementState();
-
-            case 13:
-                if (!writer.writeAffinityTopologyVersion(topVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 14:
-                if (!writer.writeByteArray(updaterBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 15:
-                if (!writer.writeString(userVer))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                cacheName = reader.readString();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                clsLdrId = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                byte depModeOrd;
-
-                depModeOrd = reader.readByte();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                depMode = DeploymentMode.fromOrdinal(depModeOrd);
-
-                reader.incrementState();
-
-            case 3:
-                entries = reader.readCollection(MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 4:
-                forceLocDep = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                ignoreDepOwnership = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 6:
-                keepBinary = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 7:
-                ldrParticipants = reader.readMap(MessageCollectionItemType.UUID, IGNITE_UUID, false);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 8:
-                partId = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
-                reqId = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 10:
-                resTopicBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 11:
-                sampleClsName = reader.readString();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 12:
-                skipStore = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 13:
-                topVer = reader.readAffinityTopologyVersion();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 14:
-                updaterBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 15:
-                userVer = reader.readString();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 62;
     }
 }

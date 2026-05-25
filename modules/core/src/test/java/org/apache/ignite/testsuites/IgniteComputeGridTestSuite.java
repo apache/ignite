@@ -88,7 +88,7 @@ import org.apache.ignite.internal.processors.compute.IgniteComputeCustomExecutor
 import org.apache.ignite.internal.processors.compute.InterruptComputeJobTest;
 import org.apache.ignite.internal.processors.compute.PublicThreadpoolStarvationTest;
 import org.apache.ignite.internal.processors.compute.TaskOptionsPropagationTest;
-import org.apache.ignite.internal.util.StripedExecutorTest;
+import org.apache.ignite.internal.thread.pool.IgniteStripedExecutorTest;
 import org.apache.ignite.p2p.GridMultinodeRedeployContinuousModeSelfTest;
 import org.apache.ignite.p2p.GridMultinodeRedeployIsolatedModeSelfTest;
 import org.apache.ignite.p2p.GridMultinodeRedeployPrivateModeSelfTest;
@@ -169,7 +169,7 @@ import org.junit.runners.Suite;
     TaskNodeRestartTest.class,
     IgniteRoundRobinErrorAfterClientReconnectTest.class,
     PublicThreadpoolStarvationTest.class,
-    StripedExecutorTest.class,
+    IgniteStripedExecutorTest.class,
     GridJobServicesAddNodeTest.class,
     GridCollisionManagerLoggingSelfTest.class,
 

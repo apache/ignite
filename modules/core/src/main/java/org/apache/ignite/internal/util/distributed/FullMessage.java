@@ -17,16 +17,18 @@
 
 package org.apache.ignite.internal.util.distributed;
 
-import java.io.Serializable;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -37,24 +39,27 @@ import org.jetbrains.annotations.Nullable;
  * @see InitMessage
  * @see SingleNodeMessage
  */
-public class FullMessage<R extends Serializable> implements DiscoveryCustomMessage {
-    /** Serial version uid. */
-    private static final long serialVersionUID = 0L;
-
-    /** Custom message ID. */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
-
+public class FullMessage<R extends Message> extends DiscoveryCustomMessage {
     /** Process id. */
-    private final UUID processId;
+    @Order(0)
+    UUID processId;
 
     /** Process type. */
-    private final int type;
+    @Order(1)
+    int type;
 
     /** Results. */
-    private Map<UUID, R> res;
+    @Order(2)
+    Map<UUID, R> res;
 
     /** Errors. */
-    private Map<UUID, Throwable> err;
+    @Order(3)
+    Map<UUID, ErrorMessage> err;
+
+    /** Default constructor for {@link MessageFactory}. */
+    public FullMessage() {
+        // No-op.
+    }
 
     /**
      * @param processId Process id.
@@ -63,30 +68,23 @@ public class FullMessage<R extends Serializable> implements DiscoveryCustomMessa
      * @param err Errors
      */
     public FullMessage(UUID processId, DistributedProcessType type, Map<UUID, R> res, Map<UUID, Throwable> err) {
+        super(IgniteUuid.randomUuid());
+
         this.processId = processId;
         this.type = type.ordinal();
         this.res = res;
-        this.err = err;
-    }
 
-    /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
+        if (err != null) {
+            HashMap<UUID, ErrorMessage> errMsgs = new HashMap<>();
+
+            err.forEach((id, e) -> errMsgs.put(id, new ErrorMessage(e)));
+
+            this.err = errMsgs;
+        }
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer,
-        DiscoCache discoCache) {
         return null;
     }
 
@@ -107,7 +105,7 @@ public class FullMessage<R extends Serializable> implements DiscoveryCustomMessa
 
     /** @return Nodes errors. */
     public Map<UUID, Throwable> error() {
-        return err;
+        return err == null ? null : F.viewReadOnly(err, e -> e.error());
     }
 
     /** {@inheritDoc} */

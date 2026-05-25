@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.util.nio;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -26,16 +25,17 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.nio.ssl.BlockingSslHandler;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.GridAbstractCommunicationSelfTest;
 import org.apache.ignite.spi.communication.TestVolatilePayloadMessage;
+import org.apache.ignite.spi.communication.TestVolatilePayloadMessageSerializer;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper;
 import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage;
@@ -94,8 +94,10 @@ public class TcpCommunicationSpiSslVolatilePayloadTest extends GridAbstractCommu
     }
 
     /** {@inheritDoc} */
-    @Override protected Map<Short, Supplier<Message>> customMessageTypes() {
-        return Collections.singletonMap(TestVolatilePayloadMessage.DIRECT_TYPE, TestVolatilePayloadMessage::new);
+    @Override protected MessageFactoryProvider customMessageFactory() {
+        return f -> f.register(
+            TestVolatilePayloadMessage.DIRECT_TYPE, TestVolatilePayloadMessage::new, new TestVolatilePayloadMessageSerializer()
+        );
     }
 
     /** {@inheritDoc} */

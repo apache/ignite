@@ -18,29 +18,37 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Objects;
 import java.util.UUID;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Message telling that client node is reconnecting to topology.
  */
 @TcpDiscoveryEnsureDelivery
 public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** New router nodeID. */
-    private final UUID routerNodeId;
+    @Order(0)
+    UUID routerNodeId;
 
     /** Last message ID. */
-    private final IgniteUuid lastMsgId;
+    @Order(1)
+    IgniteUuid lastMsgId;
 
-    /** Pending messages. */
-    @GridToStringExclude
-    private Collection<TcpDiscoveryAbstractMessage> msgs;
+    /** Pending messages holder. */
+    @Order(2)
+    @Nullable Collection<TcpDiscoveryAbstractMessage> pendingMsgs;
+
+    /** Constructor for {@link MessageFactory}. */
+    public TcpDiscoveryClientReconnectMessage() {
+        // No-op.
+    }
 
     /**
      * @param creatorNodeId Creator node ID.
@@ -54,44 +62,32 @@ public class TcpDiscoveryClientReconnectMessage extends TcpDiscoveryAbstractMess
         this.lastMsgId = lastMsgId;
     }
 
-    /**
-     * @return New router node ID.
-     */
+    /** @return New router node ID. */
     public UUID routerNodeId() {
         return routerNodeId;
     }
 
-    /**
-     * @return Last message ID.
-     */
+    /** @return Last message ID. */
     public IgniteUuid lastMessageId() {
         return lastMsgId;
     }
 
-    /**
-     * @param msgs Pending messages.
-     */
+    /** @param msgs Pending messages. */
     public void pendingMessages(Collection<TcpDiscoveryAbstractMessage> msgs) {
-        this.msgs = msgs;
+        pendingMsgs = F.isEmpty(msgs) ? null : msgs;
     }
 
-    /**
-     * @return Pending messages.
-     */
+    /** @return Pending messages. */
     public Collection<TcpDiscoveryAbstractMessage> pendingMessages() {
-        return msgs;
+        return pendingMsgs == null ? Collections.emptyList() : pendingMsgs;
     }
 
-    /**
-     * @param success Success flag.
-     */
+    /** @param success Success flag. */
     public void success(boolean success) {
         setFlag(CLIENT_RECON_SUCCESS_FLAG_POS, success);
     }
 
-    /**
-     * @return Success flag.
-     */
+    /** @return Success flag. */
     public boolean success() {
         return getFlag(CLIENT_RECON_SUCCESS_FLAG_POS);
     }

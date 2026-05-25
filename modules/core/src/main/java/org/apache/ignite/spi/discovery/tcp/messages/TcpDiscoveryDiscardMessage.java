@@ -21,23 +21,19 @@ import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Message sent by coordinator when some operation handling is over. All receiving
  * nodes should discard this and all preceding messages in local buffers.
  */
-public class TcpDiscoveryDiscardMessage extends TcpDiscoveryAbstractMessage implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class TcpDiscoveryDiscardMessage extends TcpDiscoveryAbstractMessage {
     /** ID of the message to discard (this and all preceding). */
-    @Order(value = 5, method = "messageId")
-    private IgniteUuid msgId;
+    @Order(0)
+    IgniteUuid msgId;
 
     /** True if this is discard ID for custom event message. */
-    @Order(value = 6, method = "customMessageDiscard")
-    private boolean customMsgDiscard;
+    @Order(1)
+    boolean customMsgDiscard;
 
     /** */
     public TcpDiscoveryDiscardMessage() {
@@ -68,13 +64,6 @@ public class TcpDiscoveryDiscardMessage extends TcpDiscoveryAbstractMessage impl
     }
 
     /**
-     * @param msgId Message ID.
-     */
-    public void messageId(IgniteUuid msgId) {
-        this.msgId = msgId;
-    }
-
-    /**
      * Flag indicating whether the ID to discard is for a custom message or not.
      *
      * @return Custom message flag.
@@ -83,20 +72,8 @@ public class TcpDiscoveryDiscardMessage extends TcpDiscoveryAbstractMessage impl
         return customMsgDiscard;
     }
 
-    /**
-     * @param customMsgDiscard Custom message flag.
-     */
-    public void customMessageDiscard(boolean customMsgDiscard) {
-        this.customMsgDiscard = customMsgDiscard;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpDiscoveryDiscardMessage.class, this, "super", super.toString());
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 9;
     }
 }

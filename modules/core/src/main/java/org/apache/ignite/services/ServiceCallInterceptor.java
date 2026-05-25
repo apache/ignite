@@ -19,7 +19,6 @@ package org.apache.ignite.services;
 
 import java.io.Serializable;
 import java.util.concurrent.Callable;
-import org.apache.ignite.lang.IgniteExperimental;
 
 /**
  * Service call interceptor.
@@ -89,7 +88,6 @@ import org.apache.ignite.lang.IgniteExperimental;
  * @see ServiceCallContext
  * @see ServiceContext
  */
-@IgniteExperimental
 public interface ServiceCallInterceptor extends Serializable {
     /**
      * Intercepts delegated service call.

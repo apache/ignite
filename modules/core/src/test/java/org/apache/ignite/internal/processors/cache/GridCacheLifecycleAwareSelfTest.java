@@ -42,7 +42,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.resources.CacheNameResource;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridAbstractLifecycleAwareSelfTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -268,8 +267,6 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
     @SuppressWarnings("unchecked")
     @Override protected final IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setDiscoverySpi(new TcpDiscoverySpi());
 
         CacheConfiguration ccfg = defaultCacheConfiguration();
 

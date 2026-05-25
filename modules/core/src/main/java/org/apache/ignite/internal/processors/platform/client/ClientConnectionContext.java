@@ -99,7 +99,7 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     private ClientRequestHandler handler;
 
     /** Handle registry. */
-    private final ClientResourceRegistry resReg = new ClientResourceRegistry();
+    private final ClientResourceRegistry resReg;
 
     /** Max cursors. */
     private final int maxCursors;
@@ -151,6 +151,7 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
         this.maxCursors = maxCursors;
         maxActiveTxCnt = thinCfg.getMaxActiveTxPerConnection();
         maxActiveComputeTasks = thinCfg.getMaxActiveComputeTasksPerConnection();
+        resReg = new ClientResourceRegistry(ctx.log(ClientResourceRegistry.class));
     }
 
     /**
@@ -267,7 +268,7 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     }
 
     /**
-     * Increments the cursor count.
+     * Decrement the cursor count.
      */
     public void decrementCursors() {
         curCnt.decrementAndGet();

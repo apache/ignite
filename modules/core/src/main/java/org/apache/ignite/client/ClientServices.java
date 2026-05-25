@@ -18,7 +18,6 @@
 package org.apache.ignite.client;
 
 import java.util.Collection;
-import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.services.ServiceCallContext;
 
 /**
@@ -88,7 +87,6 @@ public interface ClientServices {
      * @return Proxy over remote service.
      * @see ServiceCallContext
      */
-    @IgniteExperimental
     public <T> T serviceProxy(String name, Class<? super T> svcItf, ServiceCallContext callCtx);
 
     /**
@@ -106,6 +104,5 @@ public interface ClientServices {
      * @return Proxy over remote service.
      * @see ServiceCallContext
      */
-    @IgniteExperimental
     public <T> T serviceProxy(String name, Class<? super T> svcItf, ServiceCallContext callCtx, long timeout);
 }

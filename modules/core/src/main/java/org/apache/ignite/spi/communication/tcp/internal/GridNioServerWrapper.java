@@ -48,10 +48,10 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteTooManyOpenFilesException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.codegen.HandshakeWaitMessageSerializer;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.GridManager;
 import org.apache.ignite.internal.managers.tracing.GridTracingManager;
@@ -98,18 +98,17 @@ import org.apache.ignite.spi.TimeoutStrategy;
 import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.tcp.AttributeNames;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage;
+import org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessageSerializer;
 import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
 import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
-import org.apache.ignite.thread.IgniteThreadFactory;
 import org.jetbrains.annotations.Nullable;
 
-import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
+import static org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolExecutor.newSingleThreadScheduledExecutor;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.COMMUNICATION_METRICS_GROUP_NAME;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.CONN_IDX_META;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.CONSISTENT_ID_META;
-import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.HANDSHAKE_WAIT_MSG_TYPE;
 import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils.handshakeTimeoutException;
 import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils.isRecoverableException;
 import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils.nodeAddresses;
@@ -300,9 +299,7 @@ public class GridNioServerWrapper {
         };
         this.tcpHandshakeExecutor = tcpHandshakeExecutor;
 
-        this.handshakeTimeoutExecutorService = newSingleThreadScheduledExecutor(
-            new IgniteThreadFactory(igniteInstanceName, "handshake-timeout-nio")
-        );
+        this.handshakeTimeoutExecutorService = newSingleThreadScheduledExecutor("handshake-timeout-nio", igniteInstanceName);
     }
 
     /**
@@ -832,7 +829,7 @@ public class GridNioServerWrapper {
 
                     @Override public MessageSerializer serializer(short type) {
                         // Enable sending wait message for a communication peer while context isn't initialized.
-                        if (impl == null && type == HANDSHAKE_WAIT_MSG_TYPE)
+                        if (impl == null && type == CoreMessagesProvider.HANDSHAKE_WAIT_MSG_TYPE)
                             return new HandshakeWaitMessageSerializer();
 
                         return get().serializer(type);
@@ -878,7 +875,7 @@ public class GridNioServerWrapper {
                     @Override public MessageWriter writer(GridNioSession ses) throws IgniteCheckedException {
                         // Enable sending wait message for a communication peer while context isn't initialized.
                         if (!stateProvider.spiContextAvailable())
-                            return new DirectMessageWriter(msgFactory);
+                            return new DirectMessageWriter(msgFactory, igniteCfg.getNetworkCompressionLevel());
 
                         final IgniteSpiContext ctx = stateProvider.getSpiContextWithoutInitialLatch();
 

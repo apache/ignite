@@ -19,7 +19,9 @@ package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -96,6 +98,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static java.net.NetworkInterface.getNetworkInterfaces;
+import static java.util.Collections.list;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.events.EventType.EVT_JOB_MAPPED;
@@ -146,6 +150,31 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     public TcpDiscoverySelfTest() throws Exception {
         super(false);
+    }
+
+    /**
+     * Finds a non-loopback, non-point-to-point address suitable for multicast.
+     * Point-to-point interfaces (VPN tunnels) don't support multicast properly on macOS.
+     *
+     * @return Address string or {@code null} if none found.
+     */
+    @Nullable private static String findMulticastAddress() {
+        try {
+            for (NetworkInterface itf : list(getNetworkInterfaces())) {
+                if (!itf.isUp() || itf.isLoopback() || itf.isPointToPoint())
+                    continue;
+
+                for (InetAddress addr : list(itf.getInetAddresses())) {
+                    if (!addr.isLoopbackAddress() && addr.getAddress().length == 4) // IPv4 only.
+                        return addr.getHostAddress();
+                }
+            }
+        }
+        catch (Exception ignored) {
+            // No-op.
+        }
+
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -230,8 +259,16 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             // Loopback multicast discovery is not working on Mac OS
             // (possibly due to http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=7122846).
-            if (U.isMacOs())
-                spi.setLocalAddress(F.first(U.allLocalIps()));
+            if (U.isMacOs()) {
+                String mcastAddr = findMulticastAddress();
+
+                if (mcastAddr != null) {
+                    spi.setLocalAddress(mcastAddr);
+                    finder.setLocalAddress(mcastAddr);
+                }
+                else
+                    spi.setLocalAddress(F.first(U.allLocalIps()));
+            }
         }
         else if (igniteInstanceName.contains("testPingInterruptedOnNodeFailedPingingNode"))
             cfg.setFailureDetectionTimeout(30_000);
@@ -311,10 +348,14 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             assertNotNull(node);
             assertNotNull(node.lastSuccessfulAddress());
 
+            assertTrue(spi2.pingNode(ignite3.localNode().id()));
+
             node = (TcpDiscoveryNode)spi2.getNode(ignite3.localNode().id());
 
             assertNotNull(node);
             assertNotNull(node.lastSuccessfulAddress());
+
+            assertTrue(spi3.pingNode(ignite1.localNode().id()));
 
             node = (TcpDiscoveryNode)spi3.getNode(ignite1.localNode().id());
 
@@ -1901,11 +1942,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                 spi.failSingleMsg = true;
 
-                long order = ignite.cluster().localNode().order();
-
-                long nextOrder = order == NODES ? 1 : order + 1;
-
-                Ignite failingNode = nodes.get(nextOrder);
+                Ignite failingNode = nodes.get(((ServerImpl)spi.impl).ring().nextNode().order());
 
                 assertNotNull(failingNode);
 
@@ -2544,8 +2581,8 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             if (discoData != null && discoData.size() > 1) {
                 int cnt = 0;
 
-                for (Map<Integer, byte[]> map : discoData.values()) {
-                    if (map.containsKey(GridComponent.DiscoveryDataExchangeType.CACHE_PROC.ordinal()))
+                for (Map<Integer, byte[]> data : discoData.values()) {
+                    if (data.containsKey(GridComponent.DiscoveryDataExchangeType.CACHE_PROC.ordinal()))
                         cnt++;
                 }
 
@@ -2606,8 +2643,11 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             if (stopBeforeSndAck) {
                 if (msg instanceof TcpDiscoveryCustomEventMessage) {
                     try {
-                        DiscoveryCustomMessage custMsg = GridTestUtils.getFieldValue(
-                            ((TcpDiscoveryCustomEventMessage)msg).message(marshaller(), U.gridClassLoader()), "delegate");
+                        TcpDiscoveryCustomEventMessage evtMsg = (TcpDiscoveryCustomEventMessage)msg;
+
+                        evtMsg.finishUnmarshal(marshaller(), U.gridClassLoader());
+
+                        DiscoveryCustomMessage custMsg = U.unwrapCustomMessage(evtMsg.message());
 
                         if (custMsg instanceof StartRoutineAckDiscoveryMessage) {
                             log.info("Skip message send and stop node: " + msg);

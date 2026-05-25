@@ -21,17 +21,15 @@ import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 
-/**
- *
- */
-public class CalciteErrorMessage extends ErrorMessage implements CalciteMessage {
+/** */
+public class CalciteErrorMessage extends ErrorMessage {
     /** */
-    @Order(value = 1, method = "queryId")
-    private UUID qryId;
+    @Order(0)
+    UUID qryId;
 
     /** */
-    @Order(2)
-    private long fragmentId;
+    @Order(1)
+    long fragmentId;
 
     /** */
     public CalciteErrorMessage() {
@@ -48,37 +46,13 @@ public class CalciteErrorMessage extends ErrorMessage implements CalciteMessage 
         this.fragmentId = fragmentId;
     }
 
-    /**
-     * @return Query ID.
-     */
+    /** @return Query ID. */
     public UUID queryId() {
         return qryId;
     }
 
-    /** */
-    public void queryId(UUID qryId) {
-        this.qryId = qryId;
-    }
-
-    /**
-     * @return Fragment ID.
-     */
+    /** @return Fragment ID. */
     public long fragmentId() {
         return fragmentId;
-    }
-
-    /** */
-    public void fragmentId(long fragmentId) {
-        this.fragmentId = fragmentId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public MessageType type() {
-        return MessageType.QUERY_ERROR_MESSAGE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return MessageType.QUERY_ERROR_MESSAGE.directType();
     }
 }

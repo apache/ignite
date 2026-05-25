@@ -69,6 +69,7 @@ import org.apache.ignite.internal.management.defragmentation.DefragmentationComm
 import org.apache.ignite.internal.management.encryption.EncryptionChangeCacheKeyCommand;
 import org.apache.ignite.internal.management.encryption.EncryptionChangeMasterKeyCommand;
 import org.apache.ignite.internal.management.encryption.EncryptionCommand;
+import org.apache.ignite.internal.management.event.EventCommand;
 import org.apache.ignite.internal.management.kill.KillCommand;
 import org.apache.ignite.internal.management.meta.MetaCommand;
 import org.apache.ignite.internal.management.meta.MetaRemoveCommand;
@@ -76,8 +77,6 @@ import org.apache.ignite.internal.management.meta.MetaUpdateCommand;
 import org.apache.ignite.internal.management.metric.MetricCommand;
 import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand;
 import org.apache.ignite.internal.management.property.PropertyCommand;
-import org.apache.ignite.internal.management.rollingupgrade.RollingUpgradeCommand;
-import org.apache.ignite.internal.management.rollingupgrade.RollingUpgradeEnableCommand;
 import org.apache.ignite.internal.management.snapshot.SnapshotCommand;
 import org.apache.ignite.internal.management.snapshot.SnapshotRestoreCommand;
 import org.apache.ignite.internal.management.tx.TxCommand;
@@ -518,8 +517,6 @@ public class CommandHandlerParsingTest {
             cmdText = F.concat(cmdText, "masterKeyName1");
         else if (cmd.getClass() == EncryptionChangeCacheKeyCommand.class)
             cmdText = F.concat(cmdText, "cacheGroup1");
-        else if (cmd.getClass() == RollingUpgradeEnableCommand.class)
-            cmdText = F.concat(cmdText, "2.18.0");
         else if (cmd.getClass() == SnapshotRestoreCommand.class)
             cmdText = F.concat(cmdText, "snp1");
         else if (cmd.getClass() == MetaUpdateCommand.class)
@@ -1395,12 +1392,12 @@ public class CommandHandlerParsingTest {
             cmd == MetaCommand.class ||
             cmd == WarmUpCommand.class ||
             cmd == PropertyCommand.class ||
-            cmd == RollingUpgradeCommand.class ||
             cmd == SystemViewCommand.class ||
             cmd == MetricCommand.class ||
             cmd == DefragmentationCommand.class ||
             cmd == PerformanceStatisticsCommand.class ||
             cmd == ConsistencyCommand.class ||
-            cmd == CdcCommand.class;
+            cmd == CdcCommand.class ||
+            cmd == EventCommand.class;
     }
 }

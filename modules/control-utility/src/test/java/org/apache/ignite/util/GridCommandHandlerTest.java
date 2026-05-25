@@ -19,8 +19,6 @@ package org.apache.ignite.util;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.io.RandomAccessFile;
 import java.io.Serializable;
 import java.lang.reflect.Field;
@@ -82,6 +80,7 @@ import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
@@ -4048,19 +4047,19 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /** */
-    public static class OfflineTestCommand implements OfflineCommand<OfflineTestCommandArg, Void> {
+    public static class OfflineTestCommand implements OfflineCommand<TestOfflineTestCommandArg, Void> {
         /** {@inheritDoc} */
         @Override public String description() {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public Class<OfflineTestCommandArg> argClass() {
-            return OfflineTestCommandArg.class;
+        @Override public Class<TestOfflineTestCommandArg> argClass() {
+            return TestOfflineTestCommandArg.class;
         }
 
         /** {@inheritDoc} */
-        @Override public Void execute(OfflineTestCommandArg arg, Consumer<String> printer) {
+        @Override public Void execute(TestOfflineTestCommandArg arg, Consumer<String> printer) {
             printer.accept(arg.input());
 
             return null;
@@ -4068,10 +4067,11 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /** */
-    public static class OfflineTestCommandArg extends IgniteDataTransferObject {
+    public static class TestOfflineTestCommandArg extends IgniteDataTransferObject {
         /** */
         @Argument
-        private String input;
+        @Order(0)
+        String input;
 
         /** */
         public String input() {
@@ -4081,16 +4081,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         /** */
         public void input(String input) {
             this.input = input;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-            U.writeString(out, input);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void readExternalData(ObjectInput in) throws IOException {
-            input = U.readString(in);
         }
     }
 }

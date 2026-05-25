@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.message;
 
-import org.apache.ignite.internal.managers.communication.AbstractMessageSerializationTest;
+import org.apache.ignite.internal.managers.AbstractMessageSerializationTest;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 
 /** */

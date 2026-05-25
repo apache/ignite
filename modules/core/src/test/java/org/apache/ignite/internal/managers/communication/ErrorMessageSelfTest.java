@@ -20,8 +20,10 @@ package org.apache.ignite.internal.managers.communication;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 
+import static org.apache.ignite.marshaller.Marshallers.jdk;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
@@ -31,20 +33,24 @@ import static org.junit.Assert.assertTrue;
 public class ErrorMessageSelfTest {
     /** */
     @Test
-    public void testDirectAndInsverseConversion() {
+    public void testDirectAndInsverseConversion() throws IgniteCheckedException {
         IgniteException e = new IgniteException("Test exception", new IgniteCheckedException("Test cause"));
 
         ErrorMessage msg0 = new ErrorMessage(e);
-        
+
         assertSame(e, msg0.error());
 
-        byte[] errBytes = msg0.errorBytes();
+        msg0.prepareMarshal(jdk());
+
+        byte[] errBytes = msg0.errBytes;
 
         assertNotNull(errBytes);
 
         ErrorMessage msg1 = new ErrorMessage();
-        msg1.errorBytes(errBytes);
-        
+        msg1.errBytes = errBytes;
+
+        msg1.finishUnmarshal(jdk(), U.gridClassLoader());
+
         Throwable t = msg1.error();
         
         assertNotNull(t);
@@ -56,13 +62,13 @@ public class ErrorMessageSelfTest {
     @Test
     public void testNull() {
         assertNull(new ErrorMessage(null).error());
-        assertNull(new ErrorMessage(null).errorBytes());
+        assertNull(new ErrorMessage(null).errBytes);
 
         ErrorMessage msg = new ErrorMessage();
         
-        msg.errorBytes(null);
+        msg.errBytes = null;
         
         assertNull(msg.error());
-        assertNull(msg.errorBytes());
+        assertNull(msg.errBytes);
     }
 }

@@ -37,6 +37,20 @@ public interface IoStatisticsHolder {
     public void trackPhysicalAndLogicalRead(long pageAddr);
 
     /**
+     * Track insert data to the page.
+     *
+     * @param bytes Bytes inserted.
+     */
+    public void trackPageInsertData(long bytes);
+
+    /**
+     * Track remove data from the page.
+     *
+     * @param bytes Bytes removed.
+     */
+    public void trackPageRemoveData(long bytes);
+
+    /**
      * @return Number of logical reads.
      */
     public long logicalReads();

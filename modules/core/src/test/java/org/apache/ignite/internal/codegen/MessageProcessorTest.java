@@ -18,15 +18,24 @@
 package org.apache.ignite.internal.codegen;
 
 import java.io.File;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import javax.annotation.processing.Processor;
 import javax.tools.JavaFileObject;
 import com.google.testing.compile.Compilation;
 import com.google.testing.compile.Compiler;
 import com.google.testing.compile.JavaFileObjects;
+import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.MessageProcessor;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.cache.query.QueryIndexMessage;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -50,7 +59,7 @@ public class MessageProcessorTest {
         assertEquals(1, compilation.generatedSourceFiles().size());
 
         assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.codegen.TestMessageSerializer")
+            .generatedSourceFile("org.apache.ignite.internal.TestMessageSerializer")
             .hasSourceEquivalentTo(javaFile("TestMessageSerializer.java"));
     }
 
@@ -64,7 +73,7 @@ public class MessageProcessorTest {
         assertEquals(1, compilation.generatedSourceFiles().size());
 
         assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.codegen.TestCollectionsMessageSerializer")
+            .generatedSourceFile("org.apache.ignite.internal.TestCollectionsMessageSerializer")
             .hasSourceEquivalentTo(javaFile("TestCollectionsMessageSerializer.java"));
     }
 
@@ -78,7 +87,7 @@ public class MessageProcessorTest {
         assertEquals(1, compilation.generatedSourceFiles().size());
 
         assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.codegen.TestMapMessageSerializer")
+            .generatedSourceFile("org.apache.ignite.internal.TestMapMessageSerializer")
             .hasSourceEquivalentTo(javaFile("TestMapMessageSerializer.java"));
     }
 
@@ -125,7 +134,7 @@ public class MessageProcessorTest {
         assertEquals(1, compilation.generatedSourceFiles().size());
 
         assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.codegen.ChildMessageSerializer")
+            .generatedSourceFile("org.apache.ignite.internal.ChildMessageSerializer")
             .hasSourceEquivalentTo(javaFile("ChildMessageSerializer.java"));
     }
 
@@ -139,11 +148,11 @@ public class MessageProcessorTest {
         assertEquals(2, compilation.generatedSourceFiles().size());
 
         assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.codegen.ChildMessageSerializer")
+            .generatedSourceFile("org.apache.ignite.internal.ChildMessageSerializer")
             .hasSourceEquivalentTo(javaFile("ChildMessageSerializer.java"));
 
         assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.codegen.TestMessageSerializer")
+            .generatedSourceFile("org.apache.ignite.internal.TestMessageSerializer")
             .hasSourceEquivalentTo(javaFile("TestMessageSerializer.java"));
     }
 
@@ -161,6 +170,34 @@ public class MessageProcessorTest {
         Compilation compilation = compile("PojoFieldMessage.java");
 
         assertThat(compilation).failed();
+    }
+
+    /** Tests {@link QueryIndexMessage} that copies {@link QueryIndex}. */
+    @Test
+    public void testQueryIndex() {
+        Field[] fields0 = QueryIndex.class.getDeclaredFields();
+
+        Map<String, Field> fields = CommonUtils.newHashMap(fields0.length);
+
+        for (Field f : fields0) {
+            if (!Modifier.isStatic(f.getModifiers()))
+                fields.put(f.getName(), f);
+        }
+
+        assertEquals(4, fields.size());
+
+        assertEquals(String.class, fields.get("name").getType());
+        assertEquals(LinkedHashMap.class, fields.get("fields").getType());
+        assertEquals(QueryIndexType.class, fields.get("type").getType());
+        assertEquals(int.class, fields.get("inlineSize").getType());
+
+        QueryIndex idx = new QueryIndex("fld0", QueryIndexType.GEOSPATIAL, false, "testIdx");
+
+        QueryIndexMessage msg = new QueryIndexMessage(idx);
+
+        QueryIndex idx1 = QueryIndexMessage.queryIndex(msg);
+
+        assertEquals(idx, idx1);
     }
 
     /** */
@@ -182,7 +219,7 @@ public class MessageProcessorTest {
         assertThat(compilation).succeeded();
 
         assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.codegen.DefaultMapperEnumFieldsMessageSerializer")
+            .generatedSourceFile("org.apache.ignite.internal.DefaultMapperEnumFieldsMessageSerializer")
             .hasSourceEquivalentTo(javaFile("DefaultMapperEnumFieldsMessageSerializer.java"));
     }
 
@@ -222,8 +259,20 @@ public class MessageProcessorTest {
         assertThat(compilation).succeeded();
 
         assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.codegen.CustomMapperEnumFieldsMessageSerializer")
+            .generatedSourceFile("org.apache.ignite.internal.CustomMapperEnumFieldsMessageSerializer")
             .hasSourceEquivalentTo(javaFile("CustomMapperEnumFieldsMessageSerializer.java"));
+    }
+
+    /** */
+    @Test
+    public void testMarshallableMessage() {
+        Compilation compilation = compile("TestMarshallableMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestMarshallableMessageMarshallableSerializer")
+            .hasSourceEquivalentTo(javaFile("TestMarshallableMessageMarshallableSerializer.java"));
     }
 
     /**
@@ -268,8 +317,47 @@ public class MessageProcessorTest {
         assertThat(compilation).succeeded();
     }
 
+    /**
+     * Negative test that verifies the compilation failed if the CompressedMessage type is used in Message.
+     */
+    @Test
+    public void testCompressedMessageExplicitUsageFails() {
+        String errMsg = "CompressedMessage should not be used explicitly. To compress the required field use the @Compress annotation.";
+
+        Compilation compilation = compile("TestCompressedMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining(errMsg);
+
+        compilation = compile("TestCollectionsCompressedMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining(errMsg);
+
+        compilation = compile("TestMapCompressedMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining(errMsg);
+    }
+
+    /**
+     * Negative test that verifies the compilation failed if the Compress annotation is used for unsupported types.
+     */
+    @Test
+    public void testCompressAnnotationFailsForUnsupportedTypes() {
+        Compilation compilation = compile("TestCompressUnsupportedTypeMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("Compress annotation is used for an unsupported type: java.util.List");
+    }
+
     /** */
     private Compilation compile(String... srcFiles) {
+        return compile(new MessageProcessor(), srcFiles);
+    }
+
+    /** */
+    static Compilation compile(Processor proc, String... srcFiles) {
         List<JavaFileObject> input = new ArrayList<>();
 
         for (String srcFile: srcFiles)
@@ -278,20 +366,21 @@ public class MessageProcessorTest {
         File igniteCoreJar = jarForClass(Message.class);
         File igniteCodegenJar = jarForClass(Order.class);
         File igniteBinaryApiJar = jarForClass(IgniteUuid.class);
+        File igniteCommonsJar = jarForClass(CommonUtils.class);
 
         return Compiler.javac()
-            .withClasspath(F.asList(igniteCoreJar, igniteCodegenJar, igniteBinaryApiJar))
-            .withProcessors(new MessageProcessor())
+            .withClasspath(F.asList(igniteCoreJar, igniteCodegenJar, igniteBinaryApiJar, igniteCommonsJar))
+            .withProcessors(proc)
             .compile(input);
     }
 
     /** */
-    private JavaFileObject javaFile(String srcName) {
+    static JavaFileObject javaFile(String srcName) {
         return JavaFileObjects.forResource("codegen/" + srcName);
     }
 
     /** */
-    private File jarForClass(Class<?> clazz) {
+    private static File jarForClass(Class<?> clazz) {
         try {
             URI jar = clazz
                 .getProtectionDomain()

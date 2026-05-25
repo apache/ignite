@@ -36,9 +36,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
@@ -64,6 +64,8 @@ import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
+import static org.apache.ignite.marshaller.Marshallers.jdk;
+import static org.apache.ignite.spi.communication.GridTestMessage.GRID_TEST_MESSAGE_FACTORY;
 
 /**
  * Class for multithreaded {@link TcpCommunicationSpi} test.
@@ -465,10 +467,8 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
 
             GridSpiTestContext ctx = initSpiContext();
 
-            MessageFactoryProvider testMsgFactory = factory -> factory.register(GridTestMessage.DIRECT_TYPE, GridTestMessage::new);
-
             ctx.messageFactory(new IgniteMessageFactoryImpl(
-                    new MessageFactoryProvider[] {new GridIoMessageFactory(), testMsgFactory})
+                    new MessageFactoryProvider[] {new CoreMessagesProvider(jdk(), jdk(), U.gridClassLoader()), GRID_TEST_MESSAGE_FACTORY})
             );
 
             ctx.timeoutProcessor(timeoutProcessor);

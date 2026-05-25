@@ -61,7 +61,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -2587,8 +2586,12 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] msgBytes,
-            long timeout) throws IOException {
+        @Override protected void writeToSocket(
+            Socket sock,
+            TcpDiscoveryAbstractMessage msg,
+            byte[] msgBytes,
+            long timeout
+        ) throws IOException, IgniteCheckedException {
             waitFor(writeLock);
 
             if (!onMessage(sock, msg))
@@ -2633,8 +2636,10 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected Socket openSocket(InetSocketAddress sockAddr,
-            IgniteSpiOperationTimeoutHelper timeoutHelper) throws IOException, IgniteSpiOperationTimeoutException {
+        @Override protected Socket openSocket(
+            InetSocketAddress sockAddr,
+            IgniteSpiOperationTimeoutHelper timeoutHelper
+        ) throws IOException, IgniteCheckedException {
             waitFor(openSockLock);
 
             return super.openSocket(sockAddr, timeoutHelper);
@@ -2670,8 +2675,12 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res, long timeout)
-            throws IOException {
+        @Override protected void writeToSocket(
+            TcpDiscoveryAbstractMessage msg,
+            Socket sock,
+            int res,
+            long timeout
+        ) throws IOException, IgniteCheckedException {
             if (delayJoinAckFor != null && msg instanceof TcpDiscoveryJoinRequestMessage) {
                 TcpDiscoveryJoinRequestMessage msg0 = (TcpDiscoveryJoinRequestMessage)msg;
 

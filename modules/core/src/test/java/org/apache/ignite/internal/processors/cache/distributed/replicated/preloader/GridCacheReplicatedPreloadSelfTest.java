@@ -32,7 +32,6 @@ import javax.cache.event.CacheEntryListener;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteMessaging;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -42,7 +41,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -275,77 +273,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
             assertNotNull(e2.version());
 
             assertEquals(e1.version(), e2.version());
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    /**
-     * @throws Exception If test failed.
-     */
-    @Test
-    public void testDeployment() throws Exception {
-        // TODO GG-11141.
-        if (true)
-            return;
-
-        preloadMode = SYNC;
-
-        try {
-            Ignite g1 = startGrid(1);
-            Ignite g2 = startGrid(2);
-
-            IgniteCache<Integer, Object> cache1 = g1.cache(DEFAULT_CACHE_NAME);
-            IgniteCache<Integer, Object> cache2 = g2.cache(DEFAULT_CACHE_NAME);
-
-            ClassLoader ldr = grid(1).configuration().getClassLoader();
-
-            Object v1 = ldr.loadClass("org.apache.ignite.tests.p2p.CacheDeploymentTestValue3").newInstance();
-
-            cache1.put(1, v1);
-
-            info("Stored value in cache1 [v=" + v1 + ", ldr=" + v1.getClass().getClassLoader() + ']');
-
-            Object v2 = cache2.get(1);
-
-            info("Read value from cache2 [v=" + v2 + ", ldr=" + v2.getClass().getClassLoader() + ']');
-
-            assert v2 != null;
-            assert v2.toString().equals(v1.toString());
-            assert !v2.getClass().getClassLoader().equals(getClass().getClassLoader());
-
-            Object e1 = ldr.loadClass("org.apache.ignite.tests.p2p.CacheDeploymentTestEnumValue").getEnumConstants()[0];
-
-            cache1.put(2, e1);
-
-            Object e2 = cache2.get(2);
-
-            BinaryObject enumObj = (BinaryObject)cache2.withKeepBinary().get(2);
-
-            assertEquals(0, enumObj.enumOrdinal());
-            assertTrue(enumObj.type().isEnum());
-            assertTrue(BinaryUtils.isBinaryEnumObject(enumObj));
-
-            assert e2 != null;
-            assert e2.toString().equals(e1.toString());
-            assert !e2.getClass().getClassLoader().equals(getClass().getClassLoader());
-
-            stopGrid(1);
-
-            Ignite g3 = startGrid(3);
-
-            IgniteCache<Integer, Object> cache3 = g3.cache(DEFAULT_CACHE_NAME);
-
-            Object v3 = cache3.localPeek(1, CachePeekMode.ONHEAP);
-
-            assert v3 != null;
-
-            info("Read value from cache3 [v=" + v3 + ", ldr=" + v3.getClass().getClassLoader() + ']');
-
-            assert v3 != null;
-            assert v3.toString().equals(v1.toString());
-            assert !v3.getClass().getClassLoader().equals(getClass().getClassLoader());
         }
         finally {
             stopAllGrids();

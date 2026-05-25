@@ -25,11 +25,13 @@ import org.apache.ignite.client.ClientAuthenticationException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
 import org.apache.ignite.internal.processors.configuration.distributed.SimpleDistributedProperty;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
@@ -207,7 +209,7 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
      * Steps:
      */
     @Test
-    public void testPropertyDefaultQueryTimeout() {
+    public void testPropertyDefaultQueryTimeout() throws IgniteInterruptedCheckedException {
         int dfltVal = ((IgniteH2Indexing)crd.context().query().getIndexing())
             .distributedConfiguration().defaultQueryTimeout();
 
@@ -217,12 +219,10 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
             Integer.toString(newVal)));
 
         for (Ignite ign : G.allGrids()) {
-            assertEquals(
-                "Invalid default query timeout on node: " + ign.name(),
-                newVal,
-                ((IgniteH2Indexing)((IgniteEx)ign).context().query().getIndexing())
-                    .distributedConfiguration().defaultQueryTimeout()
-            );
+            assertTrue("Invalid default query timeout on node: " + ign.name(),
+                GridTestUtils.waitForCondition(() -> newVal ==
+                    ((IgniteH2Indexing)((IgniteEx)ign).context().query().getIndexing())
+                        .distributedConfiguration().defaultQueryTimeout(), 5_000));
         }
 
         assertEquals(

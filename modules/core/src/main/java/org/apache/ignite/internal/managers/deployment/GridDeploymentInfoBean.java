@@ -17,51 +17,42 @@
 
 package org.apache.ignite.internal.managers.deployment;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.nio.ByteBuffer;
+import java.io.Serializable;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.configuration.DeploymentMode;
-import org.apache.ignite.internal.GridDirectMap;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Deployment info bean.
  */
-public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Externalizable {
+public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private IgniteUuid clsLdrId;
+    @Order(0)
+    IgniteUuid clsLdrId;
 
     /** */
-    private DeploymentMode depMode;
+    @Order(1)
+    DeploymentMode depMode;
 
     /** */
-    private String userVer;
-
-    /** */
-    @Deprecated // Left for backward compatibility only.
-    private boolean locDepOwner;
+    @Order(2)
+    String userVer;
 
     /** Node class loader participant map. */
     @GridToStringInclude
-    @GridDirectMap(keyType = UUID.class, valueType = IgniteUuid.class)
-    private Map<UUID, IgniteUuid> participants;
+    @Order(3)
+    Map<UUID, IgniteUuid> participants;
 
     /**
-     * Required by {@link Externalizable}.
+     * Empty constructor for a message factory.
      */
     public GridDeploymentInfoBean() {
         /* No-op. */
@@ -116,11 +107,6 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
     }
 
     /** {@inheritDoc} */
-    @Override public boolean localDeploymentOwner() {
-        return locDepOwner;
-    }
-
-    /** {@inheritDoc} */
     @Override public Map<UUID, IgniteUuid> participants() {
         return participants;
     }
@@ -134,130 +120,6 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
     @Override public boolean equals(Object o) {
         return o == this || o instanceof GridDeploymentInfoBean &&
             clsLdrId.equals(((GridDeploymentInfoBean)o).clsLdrId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeIgniteUuid(clsLdrId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeByte(depMode != null ? (byte)depMode.ordinal() : -1))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeBoolean(locDepOwner))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
-                if (!writer.writeMap(participants, MessageCollectionItemType.UUID, MessageCollectionItemType.IGNITE_UUID))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
-                if (!writer.writeString(userVer))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                clsLdrId = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                byte depModeOrd;
-
-                depModeOrd = reader.readByte();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                depMode = DeploymentMode.fromOrdinal(depModeOrd);
-
-                reader.incrementState();
-
-            case 2:
-                locDepOwner = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
-                participants = reader.readMap(MessageCollectionItemType.UUID, MessageCollectionItemType.IGNITE_UUID, false);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 4:
-                userVer = reader.readString();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 10;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeIgniteUuid(out, clsLdrId);
-        U.writeEnum(out, depMode);
-        U.writeString(out, userVer);
-        out.writeBoolean(locDepOwner);
-        U.writeMap(out, participants);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        clsLdrId = U.readIgniteUuid(in);
-        depMode = DeploymentMode.fromOrdinal(in.readByte());
-        userVer = U.readString(in);
-        locDepOwner = in.readBoolean();
-        participants = U.readMap(in);
     }
 
     /** {@inheritDoc} */

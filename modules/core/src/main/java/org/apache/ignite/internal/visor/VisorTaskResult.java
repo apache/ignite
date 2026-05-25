@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.visor;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,10 +29,12 @@ public class VisorTaskResult<R> extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Task result. */
-    private @Nullable R res;
+    @Order(0)
+    @Nullable R res;
 
     /** Error. */
-    private @Nullable Exception err;
+    @Order(1)
+    @Nullable Exception err;
 
     /** */
     public VisorTaskResult() {
@@ -59,17 +59,5 @@ public class VisorTaskResult<R> extends IgniteDataTransferObject {
             throw err;
 
         return res;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeObject(res);
-        out.writeObject(err);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        res = (R)in.readObject();
-        err = (Exception)in.readObject();
     }
 }

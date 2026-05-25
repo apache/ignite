@@ -19,14 +19,16 @@ package org.apache.ignite.spi.systemview.view;
 
 import java.util.Date;
 import java.util.UUID;
-import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.query.running.GridRunningQueryInfo;
+import org.apache.ignite.internal.systemview.Order;
+import org.apache.ignite.internal.systemview.SystemViewDescriptor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * SQL query representation for a {@link SystemView}.
  */
+@SystemViewDescriptor
 public class SqlQueryView {
     /** Query. */
     private final GridRunningQueryInfo qry;
@@ -77,6 +79,12 @@ public class SqlQueryView {
     @Order(7)
     public String initiatorId() {
         return qry.queryInitiatorId();
+    }
+
+    /** @return {@code True} if query executes map phase. */
+    @Order(8)
+    public boolean mapQuery() {
+        return qry.mapQuery();
     }
 
     /** @return {@code True} if query is local. */

@@ -72,7 +72,7 @@ public class CancelTest extends GridCommonAbstractTest {
             .setKeyFieldName("id")
             .setValueFieldName("val")
             .addQueryField("id", Integer.class.getName(), null)
-            .addQueryField("val", String.class.getName(), null);;
+            .addQueryField("val", String.class.getName(), null);
 
         return super.getConfiguration(igniteInstanceName)
             .setCacheConfiguration(
@@ -102,7 +102,8 @@ public class CancelTest extends GridCommonAbstractTest {
         cursors.forEach(QueryCursor::close);
 
         GridTestUtils.assertThrows(log, () -> {
-                it.next();
+                while (it.hasNext())
+                    it.next();
 
                 return null;
             },

@@ -69,7 +69,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             "--add-opens=java.base/java.lang=ALL-UNNAMED",
             "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED",
             "--add-opens=java.base/java.math=ALL-UNNAMED",
-            "--add-opens=java.sql/java.sql=ALL-UNNAMED"
+            "--add-opens=java.sql/java.sql=ALL-UNNAMED",
+            "--add-opens=java.logging/java.util.logging=ALL-UNNAMED"
         };
 
         /** */

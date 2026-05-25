@@ -103,7 +103,6 @@ namespace Apache.Ignite.Core.Services
     /// </summary>
     /// <seealso cref="IServiceCallContext"/>
     /// <seealso cref="IServiceContext"/>
-    [IgniteExperimental]
     public interface IServiceCallInterceptor
     {
         /// <summary>

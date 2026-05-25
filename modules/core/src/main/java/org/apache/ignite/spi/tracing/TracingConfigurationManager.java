@@ -20,14 +20,12 @@ package org.apache.ignite.spi.tracing;
 import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.lang.IgniteExperimental;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Allows to configure tracing, read the configuration and restore it to the defaults.
  */
-@IgniteExperimental
 public interface TracingConfigurationManager {
     /** Default SQL tracing configuration. */
     static final TracingConfigurationParameters DEFAULT_SQL_CONFIGURATION =

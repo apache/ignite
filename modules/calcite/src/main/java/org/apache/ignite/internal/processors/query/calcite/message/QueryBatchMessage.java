@@ -17,46 +17,40 @@
 
 package org.apache.ignite.internal.processors.query.calcite.message;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 
-/**
- *
- */
-public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAware {
+/** */
+public class QueryBatchMessage implements ExecutionContextAware {
     /** */
-    @Order(value = 0, method = "queryId")
-    private UUID qryId;
+    @Order(0)
+    UUID qryId;
 
     /** */
     @Order(1)
-    private long fragmentId;
+    long fragmentId;
 
     /** */
     @Order(2)
-    private long exchangeId;
+    long exchangeId;
 
     /** */
     @Order(3)
-    private int batchId;
+    int batchId;
 
     /** */
     @Order(4)
-    private boolean last;
+    boolean last;
 
     /** */
-    private List<Object> rows;
-
-    /** */
-    @Order(value = 5, method = "messageRows")
-    private List<ValueMessage> mRows;
+    @Order(5)
+    List<GenericValueMessage> mRows;
 
     /** */
     public QueryBatchMessage() {
+        // No-op.
     }
 
     /** */
@@ -66,7 +60,8 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
         this.exchangeId = exchangeId;
         this.batchId = batchId;
         this.last = last;
-        this.rows = rows;
+
+        mRows = rows.stream().map(o -> o == null ? null : new GenericValueMessage(o)).collect(Collectors.toList());
     }
 
     /** {@inheritDoc} */
@@ -74,23 +69,9 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
         return qryId;
     }
 
-    /**
-     * @param qryId Query ID.
-     */
-    public void queryId(UUID qryId) {
-        this.qryId = qryId;
-    }
-
     /** {@inheritDoc} */
     @Override public long fragmentId() {
         return fragmentId;
-    }
-
-    /**
-     * @param fragmentId Fragment ID.
-     */
-    public void fragmentId(long fragmentId) {
-        this.fragmentId = fragmentId;
     }
 
     /**
@@ -101,24 +82,10 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
     }
 
     /**
-     * @param exchangeId Exchange ID.
-     */
-    public void exchangeId(long exchangeId) {
-        this.exchangeId = exchangeId;
-    }
-
-    /**
      * @return Batch ID.
      */
     public int batchId() {
         return batchId;
-    }
-
-    /**
-     * @param batchId Batch ID.
-     */
-    public void batchId(int batchId) {
-        this.batchId = batchId;
     }
 
     /**
@@ -129,69 +96,9 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
     }
 
     /**
-     * @param last Last batch flag.
-     */
-    public void last(boolean last) {
-        this.last = last;
-    }
-
-    /**
      * @return Rows.
      */
     public List<Object> rows() {
-        return rows;
-    }
-
-    /**
-     * @return Message rows.
-     */
-    public List<ValueMessage> messageRows() {
-        return mRows;
-    }
-
-    /**
-     * @param mRows Message rows.
-     */
-    public void messageRows(List<ValueMessage> mRows) {
-        this.mRows = mRows;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        if (mRows != null || rows == null)
-            return;
-
-        mRows = new ArrayList<>(rows.size());
-
-        for (Object row : rows) {
-            ValueMessage mRow = CalciteMessageFactory.asMessage(row);
-
-            assert mRow != null;
-
-            mRow.prepareMarshal(ctx);
-
-            mRows.add(mRow);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareUnmarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        if (rows != null || mRows == null)
-            return;
-
-        rows = new ArrayList<>(mRows.size());
-
-        for (ValueMessage mRow : mRows) {
-            assert mRow != null;
-
-            mRow.prepareUnmarshal(ctx);
-
-            rows.add(mRow.value());
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public MessageType type() {
-        return MessageType.QUERY_BATCH_MESSAGE;
+        return mRows.stream().map(GenericValueMessage::value).collect(Collectors.toList());
     }
 }

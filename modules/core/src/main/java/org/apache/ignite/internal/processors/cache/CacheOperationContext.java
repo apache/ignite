@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import javax.cache.expiry.ExpiryPolicy;
@@ -179,6 +180,24 @@ public class CacheOperationContext implements Serializable {
     /** @return Skip read-through cache store. */
     public boolean skipReadThrough() {
         return skipReadThrough;
+    }
+
+    /**
+     * See {@link IgniteInternalCache#withApplicationAttributes(Map)}.
+     *
+     * @return New instance of CacheOperationContext with new application attributes.
+     */
+    public CacheOperationContext withApplicationAttributes(Map<String, String> attrs) {
+        return new CacheOperationContext(
+            skipStore,
+            skipReadThrough,
+            keepBinary,
+            expiryPlc,
+            noRetries,
+            dataCenterId,
+            recovery,
+            readRepairStrategy,
+            Collections.unmodifiableMap(attrs));
     }
 
     /**

@@ -45,7 +45,7 @@ import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecuritySubject;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
-import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
+import org.apache.ignite.spi.discovery.zk.TestZookeeperDiscoverySpi;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiMBean;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.ObjectMetric;
@@ -231,7 +231,7 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
                 IgniteEx grid = grid(i);
 
                 ZookeeperDiscoverySpiMBean bean = getMxBean(grid.context().igniteInstanceName(), "SPIs",
-                    ZookeeperDiscoverySpi.class, ZookeeperDiscoverySpiMBean.class);
+                    TestZookeeperDiscoverySpi.class, ZookeeperDiscoverySpiMBean.class);
 
                 MetricRegistry discoReg = grid.context().metric().registry(DISCO_METRICS);
 
@@ -275,7 +275,7 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
         IgniteEx srv2 = startGrid(2);
 
         ZookeeperDiscoverySpiMBean mbean = getMxBean(srv2.context().igniteInstanceName(), "SPIs",
-                ZookeeperDiscoverySpi.class, ZookeeperDiscoverySpiMBean.class);
+            TestZookeeperDiscoverySpi.class, ZookeeperDiscoverySpiMBean.class);
 
         stopGrid(0);
 

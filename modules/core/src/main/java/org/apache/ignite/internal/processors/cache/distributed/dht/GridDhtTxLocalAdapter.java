@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.F0;
@@ -389,6 +390,23 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     }
 
     /**
+     * Removes tx entry from local DHT transaction state and all DHT/near mappings.
+     *
+     * @param key Tx key.
+     */
+    public void clearEntry(IgniteTxKey key) {
+        IgniteTxEntry txEntry = entry(key);
+
+        if (txEntry == null)
+            return;
+
+        removeEntryFromMappings(txEntry, dhtMap);
+        removeEntryFromMappings(txEntry, nearMap);
+
+        txState().removeEntry(key);
+    }
+
+    /**
      * @param nodeId Node ID.
      * @param entry Entry to remove.
      * @param map Map to remove from.
@@ -416,6 +434,19 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         }
         else
             return map.remove(nodeId) != null;
+    }
+
+    /**
+     * @param txEntry Entry.
+     * @param map Mappings.
+     */
+    private void removeEntryFromMappings(IgniteTxEntry txEntry, Map<UUID, GridDistributedTxMapping> map) {
+        for (Map.Entry<UUID, GridDistributedTxMapping> e : map.entrySet()) {
+            GridDistributedTxMapping mapping = e.getValue();
+
+            if (mapping.removeEntry(txEntry) && mapping.empty())
+                map.remove(e.getKey(), mapping);
+        }
     }
 
     /**

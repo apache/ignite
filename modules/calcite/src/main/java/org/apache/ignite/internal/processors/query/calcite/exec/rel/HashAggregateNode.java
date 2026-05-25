@@ -304,7 +304,7 @@ public class HashAggregateNode<Row> extends AggregateNode<Row> {
 
         /** */
         private GroupKey<Row> key(Row row) {
-            return new GroupKey<>(row, keyGrpRowHnd);
+            return GroupKey.of(row, keyGrpRowHnd);
         }
 
         /** */

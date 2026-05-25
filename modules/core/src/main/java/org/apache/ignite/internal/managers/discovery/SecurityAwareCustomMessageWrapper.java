@@ -18,21 +18,29 @@
 package org.apache.ignite.internal.managers.discovery;
 
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.jetbrains.annotations.Nullable;
 
-/** Extends {@link CustomMessageWrapper} with ID of security subject that initiated the current message. */
-public class SecurityAwareCustomMessageWrapper extends CustomMessageWrapper {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+/** Custom message wrapper with ID of security subject that initiated the current message. */
+public class SecurityAwareCustomMessageWrapper implements DiscoverySpiCustomMessage {
     /** Security subject ID. */
-    private final UUID secSubjId;
+    @Order(0)
+    UUID secSubjId;
+
+    /** Original message. */
+    @Order(1)
+    DiscoveryCustomMessage delegate;
+
+    /** Default constructor for {@link MessageFactory}. */
+    public SecurityAwareCustomMessageWrapper() {
+        // No-op.
+    }
 
     /** */
     public SecurityAwareCustomMessageWrapper(DiscoveryCustomMessage delegate, UUID secSubjId) {
-        super(delegate);
-
+        this.delegate = delegate;
         this.secSubjId = secSubjId;
     }
 
@@ -42,8 +50,25 @@ public class SecurityAwareCustomMessageWrapper extends CustomMessageWrapper {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isMutable() {
+        return delegate().isMutable();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean stopProcess() {
+        return delegate().stopProcess();
+    }
+
+    /**
+     * @return Delegate.
+     */
+    public DiscoveryCustomMessage delegate() {
+        return delegate;
+    }
+
+    /** {@inheritDoc} */
     @Override public @Nullable DiscoverySpiCustomMessage ackMessage() {
-        DiscoveryCustomMessage ack = delegate().ackMessage();
+        DiscoveryCustomMessage ack = (DiscoveryCustomMessage)delegate().ackMessage();
 
         return ack == null ? null : new SecurityAwareCustomMessageWrapper(ack, secSubjId);
     }

@@ -17,8 +17,6 @@
 
 package org.apache.ignite.services;
 
-import org.apache.ignite.lang.IgniteExperimental;
-
 /**
  * Service call context.
  * <p>
@@ -57,7 +55,6 @@ import org.apache.ignite.lang.IgniteExperimental;
  * @see ServiceCallContextBuilder
  * @see ServiceCallInterceptor
  */
-@IgniteExperimental
 public interface ServiceCallContext {
     /**
      * Create a context builder.

@@ -350,7 +350,7 @@ public class CommandProcessor extends SqlCommandProcessor {
 
                         QueryField field = new QueryField(col.columnName(),
                             getTypeClassName(col),
-                            col.column().isNullable(), col.defaultValue(),
+                            col.column().isNullable(),
                             col.precision(), col.scale());
 
                         cols.add(field);
@@ -450,6 +450,7 @@ public class CommandProcessor extends SqlCommandProcessor {
         QueryEntityEx res = new QueryEntityEx();
 
         res.setTableName(createTbl.tableName());
+        res.sql(true);
 
         Set<String> notNullFields = null;
 

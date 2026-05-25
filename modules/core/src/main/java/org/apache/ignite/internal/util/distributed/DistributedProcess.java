@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.util.distributed;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -27,7 +26,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.failure.FailureContext;
@@ -39,11 +37,11 @@ import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CI3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -71,7 +69,7 @@ import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
  * @see InitMessage
  * @see FullMessage
  */
-public class DistributedProcess<I extends Serializable, R extends Serializable> {
+public class DistributedProcess<I extends Message, R extends Message> {
     /** Process type. */
     private final DistributedProcessType type;
 
@@ -152,14 +150,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
                 initCoordinator(p, topVer);
 
             try {
-                IgniteInternalFuture<R> fut;
-
-                if (ctx.rollingUpgrade().enabled()) {
-                    fut = new GridFinishedFuture<>(new IgniteException("Failed to start distributed process "
-                        + type + ": rolling upgrade is enabled"));
-                }
-                else
-                    fut = exec.apply((I)msg.request());
+                IgniteInternalFuture<R> fut = exec.apply((I)msg.request());
 
                 fut.listen(() -> {
                     if (fut.error() != null)

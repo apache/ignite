@@ -30,12 +30,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.MarshallableMessage;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
+import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -44,6 +48,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.Nullable;
@@ -58,27 +63,38 @@ import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
  * <tt>public</tt> due to certain limitations of Java technology.
  */
 public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements IgniteClusterNode,
-    Comparable<TcpDiscoveryNode>, Externalizable {
+    Comparable<TcpDiscoveryNode>, Externalizable, MarshallableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Node ID. */
-    private volatile UUID id;
+    @Order(0)
+    volatile UUID id;
 
     /** Consistent ID. */
     @GridToStringInclude
     private Object consistentId;
 
+    /** Serialized {@link #consistentId}. */
+    @Order(1)
+    byte[] consistentIdBytes;
+
     /** Node attributes. */
     @GridToStringExclude
     private Map<String, Object> attrs;
 
+    /** Serialized {@link #attrs}. */
+    @Order(2)
+    byte[] attrsBytes;
+
     /** Internal discovery addresses as strings. */
     @GridToStringInclude
-    private Collection<String> addrs;
+    @Order(3)
+    Collection<String> addrs;
 
     /** Internal discovery host names as strings. */
-    private Collection<String> hostNames;
+    @Order(4)
+    Collection<String> hostNames;
 
     /** */
     @GridToStringInclude
@@ -86,21 +102,29 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
 
     /** */
     @GridToStringInclude
-    private int discPort;
+    @Order(5)
+    int discPort;
 
     /** Node metrics. */
     @GridToStringExclude
-    private volatile ClusterMetrics metrics;
+    volatile ClusterMetrics metrics;
+
+    /** Node metrics message. */
+    @GridToStringExclude
+    @Order(6)
+    volatile NodeMetricsMessage metricsMsg;
 
     /** Node cache metrics. */
     @GridToStringExclude
     private volatile Map<Integer, CacheMetrics> cacheMetrics;
 
     /** Node order in the topology. */
-    private volatile long order;
+    @Order(7)
+    volatile long order;
 
     /** Node order in the topology (internal). */
-    private volatile long intOrder;
+    @Order(8)
+    volatile long intOrder;
 
     /** The most recent time when metrics update message was received from the node. */
     @GridToStringExclude
@@ -122,7 +146,8 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     private boolean loc;
 
     /** Version. */
-    private IgniteProductVersion ver;
+    @Order(9)
+    IgniteProductVersion ver;
 
     /** Alive check time (used by clients). */
     @GridToStringExclude
@@ -130,7 +155,8 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
 
     /** Client router node ID. */
     @GridToStringExclude
-    private UUID clientRouterNodeId;
+    @Order(10)
+    UUID clientRouterNodeId;
 
     /** */
     @GridToStringExclude
@@ -191,6 +217,33 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         metrics = metricsProvider.metrics();
         cacheMetrics = metricsProvider.cacheMetrics();
         sockAddrs = U.toSocketAddresses(this, discPort);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (attrs != null)
+            attrsBytes = U.marshal(marsh, attrs);
+
+        if (consistentId != null)
+            consistentIdBytes = U.marshal(marsh, consistentId);
+
+        metricsMsg = new NodeMetricsMessage(metrics);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (attrsBytes != null)
+            attrs = U.unmarshal(marsh, attrsBytes, clsLdr);
+
+        if (consistentIdBytes != null)
+            consistentId = U.unmarshal(marsh, consistentIdBytes, clsLdr);
+
+        if (metricsMsg != null)
+            metrics = new ClusterMetricsSnapshot(metricsMsg);
+
+        attrsBytes = null;
+        consistentIdBytes = null;
+        metricsMsg = null;
     }
 
     /**
@@ -304,7 +357,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
 
     /** {@inheritDoc} */
     @Override public void setCacheMetrics(Map<Integer, CacheMetrics> cacheMetrics) {
-        this.cacheMetrics = cacheMetrics != null ? cacheMetrics : Collections.<Integer, CacheMetrics>emptyMap();
+        this.cacheMetrics = cacheMetrics != null ? cacheMetrics : Collections.emptyMap();
     }
 
     /**
@@ -463,7 +516,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     /** {@inheritDoc} */
     @Override public boolean isClient() {
         if (!cacheCliInit) {
-            Boolean clientModeAttr = ((ClusterNode)this).attribute(IgniteNodeAttributes.ATTR_CLIENT_MODE);
+            Boolean clientModeAttr = (Boolean)attrs.get(IgniteNodeAttributes.ATTR_CLIENT_MODE);
 
             cacheCli = clientModeAttr != null && clientModeAttr;
 

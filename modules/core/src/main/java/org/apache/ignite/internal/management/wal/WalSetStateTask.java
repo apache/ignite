@@ -17,37 +17,34 @@
 
 package org.apache.ignite.internal.management.wal;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.management.wal.WalDisableCommand.WalDisableCommandArg;
 import org.apache.ignite.internal.management.wal.WalEnableCommand.WalEnableCommandArg;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorJob;
-import org.apache.ignite.internal.visor.VisorMultiNodeTask;
+import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class WalSetStateTask extends VisorMultiNodeTask<WalDisableCommandArg, Void, Void> {
+public class WalSetStateTask extends VisorOneNodeTask<WalDisableCommandArg, WalSetStateTaskResult> {
     /** */
     private static final long serialVersionUID = 0;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<WalDisableCommandArg, Void> job(WalDisableCommandArg arg) {
-        return new WalDisableJob(arg, false);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected @Nullable Void reduce0(List<ComputeJobResult> res) throws IgniteException {
-        return null;
+    @Override protected VisorJob<WalDisableCommandArg, WalSetStateTaskResult> job(WalDisableCommandArg arg) {
+        return new WalDisableJob(arg, debug);
     }
 
     /** */
-    private static class WalDisableJob extends VisorJob<WalDisableCommandArg, Void> {
+    private static class WalDisableJob extends VisorJob<WalDisableCommandArg, WalSetStateTaskResult> {
         /** */
         private static final long serialVersionUID = 0;
 
@@ -57,22 +54,37 @@ public class WalSetStateTask extends VisorMultiNodeTask<WalDisableCommandArg, Vo
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(@Nullable WalDisableCommandArg arg) throws IgniteException {
-            Set<String> grps = F.isEmpty(arg.groups()) ? null : new HashSet<>(Arrays.asList(arg.groups()));
+        @Override protected WalSetStateTaskResult run(@Nullable WalDisableCommandArg arg) throws IgniteException {
+            Set<String> grps = arg.groups == null ? null : Arrays.stream(arg.groups).collect(Collectors.toSet());
+
+            List<String> successGrps = new ArrayList<>();
+            Map<String, String> failedGrps = new HashMap<>();
 
             for (CacheGroupContext gctx : ignite.context().cache().cacheGroups()) {
                 String grpName = gctx.cacheOrGroupName();
 
-                if (grps != null && !grps.contains(grpName))
+                if (grps != null && !grps.remove(grpName))
                     continue;
 
-                if (arg instanceof WalEnableCommandArg)
-                    ignite.cluster().enableWal(grpName);
-                else
-                    ignite.cluster().disableWal(grpName);
+                try {
+                    if (arg instanceof WalEnableCommandArg)
+                        ignite.cluster().enableWal(grpName);
+                    else
+                        ignite.cluster().disableWal(grpName);
+
+                    successGrps.add(grpName);
+                }
+                catch (IgniteException e) {
+                    failedGrps.put(grpName, e.getMessage());
+                }
             }
 
-            return null;
+            if (!F.isEmpty(grps)) {
+                for (String grp: grps)
+                    failedGrps.put(grp, "Cache group not found");
+            }
+
+            return new WalSetStateTaskResult(successGrps, failedGrps);
         }
     }
 }

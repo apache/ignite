@@ -45,7 +45,7 @@ import org.apache.ignite.resources.SessionContextProviderResource;
  *     cacheCfg.setSqlFunctionClasses(MyTableFunctions.class);
  *
  *     // And use in queries.
- *     cache.query(new SqlFieldsQuery("select S_VAL from MY_TABLE(1, 5.0f, "ext") where F_VAL is not null"));
+ *     cache.query(new SqlFieldsQuery("select S_VAL from TABLE(MY_TABLE(1, 5.0f, "ext")) where F_VAL is not null"));
  * </pre>
  * <p>
  * Table function must return an {@code Iterable} as a row set. Each row can be represented by an {@code Object[]} or

@@ -20,7 +20,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Predicate;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterNode;
@@ -30,6 +29,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteServicesImpl;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDeploymentException;
@@ -179,7 +179,7 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
 
         assertTrue(
             FAILED_SERVICE_SHOULD_NOT_BE_PRESENT_IN_THE_CLUSTER,
-            waitForCondition(() -> noDescriptorInClusterForService(INIT_THROWING_SERVICE_NAME), TIMEOUT)
+            waitForCondition(() -> totalInstancesCount(client, INIT_THROWING_SERVICE_NAME) == 0, TIMEOUT)
         );
 
         assertEquals(
@@ -226,19 +226,27 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
                 new ServiceConfiguration()
                     .setName(INIT_THROWING_SERVICE_NAME)
                     .setService(new InitThrowingService())
+                    .setMaxPerNodeCount(2)
                     .setTotalCount(20)
             )
         );
 
         assertTrue(
-            FAILED_SERVICE_SHOULD_NOT_BE_PRESENT_IN_THE_CLUSTER,
-            waitForCondition(() -> noDescriptorInClusterForService(INIT_THROWING_SERVICE_NAME), TIMEOUT)
+            DEPLOYED_SERVICE_MUST_BE_PRESENTED_IN_CLUSTER,
+            waitForCondition(() -> noopSrvcTotalCnt == totalInstancesCount(ign, NOOP_SERVICE_NAME), TIMEOUT)
         );
 
-        assertEquals(
-            DEPLOYED_SERVICE_MUST_BE_PRESENTED_IN_CLUSTER,
-            noopSrvcTotalCnt,
-            totalInstancesCount(ign, NOOP_SERVICE_NAME)
+        assertTrue(
+            "Service must fail to init on all nodes",
+            totalInstancesCount(ign, INIT_THROWING_SERVICE_NAME) == 0
+        );
+
+        // Must start one instance of InitThrowingService
+        startGrid(getConfiguration("deploy-node"));
+
+        assertTrue(
+            "Service must be deployed on new deploy-node",
+            waitForCondition(() -> totalInstancesCount(ign, INIT_THROWING_SERVICE_NAME) == 2, TIMEOUT)
         );
     }
 
@@ -308,9 +316,14 @@ public class IgniteServiceDeploymentFailureTest extends GridCommonAbstractTest {
      * Service that throws an exception in init.
      */
     private static class InitThrowingService implements Service {
+        /** */
+        @IgniteInstanceResource
+        private IgniteEx ignite;
+
         /** {@inheritDoc} */
         @Override public void init() throws Exception {
-            throw new Exception("Service init exception");
+            if (!"deploy-node".equals(ignite.configuration().getIgniteInstanceName()))
+                throw new Exception("Service init exception");
         }
     }
 

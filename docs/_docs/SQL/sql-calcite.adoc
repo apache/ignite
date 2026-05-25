@@ -20,8 +20,6 @@ Apache Calcite is a dynamic data management framework, which mainly serves for m
 
 The current H2-based SQL engine has a number of fundamental limitations of query execution in a distributed environment. To address these limitations, a new SQL engine was implemented. The new engine uses tools provided by Apache Calcite for parsing and planning queries. It also has a new query execution flow.
 
-CAUTION: The Calcite-based query engine is currently in beta status.
-
 == Calcite Module Libraries
 
 To use a Calcite-based engine, please make sure that the Calcite module libraries are in a classpath.
@@ -123,6 +121,62 @@ QUERY_ENGINE=CALCITE
 ----
 --
 
+== Memory Quotas [[memory-quotas]]
+
+The Calcite-based SQL engine can track and limit heap memory accounted by Calcite query execution operators.
+This is useful for protecting a server node from a single large query or from many concurrent memory-heavy queries.
+
+Two types of quotas can be configured in `CalciteQueryEngineConfiguration`:
+
+* `globalMemoryQuota` - a per-node heap memory quota for all Calcite SQL queries running on the node.
+* `queryMemoryQuota` - a per-node heap memory quota for each Calcite SQL query running on the node.
+
+Both quotas are disabled by default (`0`).
+The quota values are specified in bytes.
+If a quota is exceeded, the query fails with an exception.
+The global quota error message contains `Global memory quota for SQL queries exceeded`, and the per-query quota error message contains `Query quota exceeded`.
+
+The quota is applied to query execution structures that keep rows in heap memory, for example sorting, hash joins, hash aggregates, set operations, collection operations, spools, and result materialization.
+It is not a process memory limit and it does not account for Ignite data regions, direct memory, JVM native memory, or the operating system page cache.
+The quotas are per-node.
+For a distributed query, total memory consumption across the cluster can be higher because the limit is applied independently on every participating node.
+Size these quotas together with `-Xmx` and the expected SQL concurrency.
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean class="org.apache.ignite.configuration.IgniteConfiguration">
+    <property name="sqlConfiguration">
+        <bean class="org.apache.ignite.configuration.SqlConfiguration">
+            <property name="queryEnginesConfiguration">
+                <list>
+                    <bean class="org.apache.ignite.calcite.CalciteQueryEngineConfiguration">
+                        <property name="default" value="true"/>
+                        <property name="globalMemoryQuota" value="#{4L * 1024 * 1024 * 1024}"/>
+                        <property name="queryMemoryQuota" value="#{512L * 1024 * 1024}"/>
+                    </bean>
+                </list>
+            </property>
+        </bean>
+    </property>
+</bean>
+----
+tab:Java[]
+[source,java]
+----
+IgniteConfiguration cfg = new IgniteConfiguration().setSqlConfiguration(
+    new SqlConfiguration().setQueryEnginesConfiguration(
+        new CalciteQueryEngineConfiguration()
+            .setDefault(true)
+            .setGlobalMemoryQuota(4L * 1024 * 1024 * 1024)
+            .setQueryMemoryQuota(512L * 1024 * 1024)
+    )
+);
+----
+--
+
 == SQL Reference
 
 === DDL
@@ -134,6 +188,11 @@ Data definition language (DDL) statements are compliant with the old H2-based en
 The new SQL engine mostly inherits data manipulation language (DML) statements syntax from the Apache Calcite framework. See the Apache Calcite SQL grammar description link:https://calcite.apache.org/docs/reference.html[here, window=_blank].
 
 In most cases, statement syntax is compliant with the old SQL engine. But there are still some differences between DML dialects in H2-based engine and Calcite-based engine. For example, note the `MERGE` statement syntax has changed.
+
+=== Transactions
+
+The Calcite-based SQL engine supports SQL savepoint commands for explicit transactions. See link:sql-reference/transactions[Transactions, window=_blank] for syntax and usage details.
+JDBC connections can also use the standard JDBC savepoint API. See link:SQL/JDBC/jdbc-driver#transaction-savepoints[JDBC Transaction Savepoints, window=_blank] for details.
 
 === Supported Functions
 
@@ -147,7 +206,7 @@ The Calcite-based SQL engine currently supports:
 |`COUNT`, `SUM`, `AVG`, `MIN`, `MAX`, `ANY_VALUE`, `LISTAGG`, `GROUP_CONCAT`, `STRING_AGG`, `ARRAY_AGG`, `ARRAY_CONCAT_AGG`, `EVERY`, `SOME`, `BIT_AND`, `BIT_OR`, `BIT_XOR`
 
 |String functions
-|`UPPER`, `LOWER`, `INITCAP`, `TO_BASE64`, `FROM_BASE64`, `MD5`, `SHA1`, `SUBSTRING`, `LEFT`, `RIGHT`, `REPLACE`, `TRANSLATE`, `CHR`, `CHAR_LENGTH`, `CHARACTER_LENGTH`, `LENGTH`, `CONCAT`, `OVERLAY`, `POSITION`, `ASCII`, `REPEAT`, `SPACE`, `STRCMP`, `SOUNDEX`, `DIFFERENCE`, `REVERSE`, `TRIM`, `LTRIM`, `RTRIM`, `REGEXP_REPLACE`
+|`UPPER`, `LOWER`, `INITCAP`, `TO_BASE64`, `FROM_BASE64`, `MD5`, `SHA1`, `SUBSTRING`, `LEFT`, `RIGHT`, `REPLACE`, `TRANSLATE`, `CHR`, `CHAR_LENGTH`, `CHARACTER_LENGTH`, `LENGTH`, `CONCAT`, `OVERLAY`, `POSITION`, `ASCII`, `REPEAT`, `SPACE`, `STRCMP`, `SOUNDEX`, `DIFFERENCE`, `REVERSE`, `TRIM`, `LTRIM`, `RTRIM`, `REGEXP_REPLACE`, `REGEXP_SUBSTR`
 
 |Math functions
 |`MOD`, `EXP`, `POWER`, `LN`, `LOG10`, `ABS`, `RAND`, `RAND_INTEGER`, `ACOS`, `ACOSH`, `ASIN`, `ASINH`, `ATAN`, `ATANH`, `ATAN2`, `SQRT`, `CBRT`, `COS`, `COSH`, `COT`, `COTH`, `DEGREES`, `RADIANS`, `ROUND`, `SIGN`, `SIN`, `SINH`, `TAN`, `TANH`, `SEC`, `SECH`, `CSC`, `CSCH`, `TRUNCATE`, `PI`, `BITAND`, `BITOR`, `BITXOR`
@@ -371,10 +430,10 @@ SELECT /*+ ENFORCE_JOIN_ORDER */ T1.V1, T2.V1, T2.V2, T3.V1, T3.V2, T3.V3 FROM T
 SELECT t1.v1, t3.v2 FROM TBL1 t1 JOIN TBL3 t3 on t1.v3=t3.v3 WHERE t1.v2 in (SELECT /*+ ENFORCE_JOIN_ORDER */ t2.v2 FROM TBL2 t2 JOIN TBL3 t3 ON t2.v1=t3.v1)
 ----
 
-==== MERGE_JOIN, NL_JOIN, CNL_JOIN
-Forces certain join type: Merge, Nested Loop and Correlated Nested Loop respectively.
+==== MERGE_JOIN, NL_JOIN, CNL_JOIN, HASH_JOIN
+Forces certain join type: Merge, Nested Loop, Correlated Nested Loop and Hash Join respectively.
 
-Every of those has the negation like 'NO_INDEX': CNL_JOIN, NO_CNL_JOIN. The negation hint disables certain join type.
+Every of those has the negation like 'NO_INDEX': CNL_JOIN, NO_CNL_JOIN, NO_HASH_JOIN. The negation hint disables certain join type.
 
 ===== Parameters:
 * Empty. To force or disable certain join type for every join.
@@ -389,7 +448,7 @@ SELECT /*+ NL_JOIN(TBL3,TBL1) */ t4.v1, t2.v2 FROM TBL1 t4 JOIN TBL2 t2 on t1.v3
 
 SELECT t1.v1, t2.v2 FROM TBL2 t1 JOIN TBL1 t2 on t1.v3=t2.v3 WHERE t2.v3 in (SELECT /*+ NO_CNL_JOIN(TBL4) */ t3.v3 FROM TBL3 t3 JOIN TBL4 t4 on t3.v1=t4.v1)
 
-SELECT t4.v1, t2.v2 FROM TBL1 t4 JOIN TBL2 t2 on t1.v3=t2.v3 WHERE t2.v1 in (SELECT t3.v3 FROM TBL3 t3 JOIN TBL1 /*+ NL_JOIN */ t4 on t3.v2=t4.v2)
+SELECT t4.v1, t2.v2 FROM TBL1 t4 JOIN TBL2 t2 on t1.v3=t2.v3 WHERE t2.v1 in (SELECT t3.v3 FROM TBL3 t3 JOIN TBL1 /*+ HASH_JOIN */ t4 on t3.v2=t4.v2)
 ----
 
 ==== EXPAND_DISTINCT_AGG
@@ -425,3 +484,61 @@ Disables certain optimizer rules. This is an optimizer level hint.
 ----
 SELECT /*+ DISABLE_RULE('MergeJoinConverter') */ T1.* FROM TBL1 T1 JOIN TBL2 T2 ON T1.V1=T2.V1 WHERE T2.V2=?
 ----
+
+== Transaction-aware Queries [[transaction-aware-queries]]
+
+The Calcite-based query engine supports SQL transactions with READ_COMMITTED isolation.
+To ensure backward compatibility, transaction support is disabled by default. To enable it, use the following configuration:
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean class="org.apache.ignite.configuration.IgniteConfiguration">
+    <property name="transactionConfiguration">
+        <bean class="org.apache.ignite.configuration.TransactionConfiguration">
+            <property name="txAwareQueriesEnabled" value="true" />
+            ...
+        </bean>
+    </property>
+    ...
+</bean>
+----
+tab:Java[]
+[source,java]
+----
+IgniteConfiguration cfg = new IgniteConfiguration();
+cfg.getTransactionConfiguration().setTxAwareQueriesEnabled(true);
+----
+--
+
+The following API "transactional aware":
+
+* key-value API.
+* SQL queries with Calcite engine.
+* Scan queries.
+
+"Transactional aware" means:
+
+1. ACID in the same way as key-value API.
+2. Any data modified or deleted within a transaction will not be visible to concurrent transactions until it is committed.
+3. Any data modified by a query will be returned with updated values by subsequent queries within the same transaction.
+
+So, when `txAwareQueriesEnabled = true` enabled the usage:
+
+* INSERT, UPDATE, DELETE statements with regular transaction guarantees.
+* Mix key-value, SQL and Scan queries to process same dataset.
+
+
+[NOTE]
+====
+[discrete]
+=== SELECT ... FOR UPDATE
+Currently, no locks are held by the UPDATE or SELECT statements.
+`SELECT ... FOR UPDATE` statement not supported.
+This means lost updates can occur when multiple transactions concurrently modify the same key.
+
+For example, if you execute a query like `SET salary = salary + 50 WHERE id = 1` concurrently across multiple threads,
+note that due to the lost-update anomaly, the final value may not equal the original salary plus 50 multiplied by the number of threads.
+====

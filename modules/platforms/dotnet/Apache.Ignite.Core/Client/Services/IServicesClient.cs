@@ -52,7 +52,6 @@ namespace Apache.Ignite.Core.Client.Services
         /// <param name="serviceName">Service name.</param>
         /// <param name="callCtx">Service call context.</param>
         /// <returns>Proxy object that forwards all member calls to a remote Ignite service.</returns>
-        [IgniteExperimental]
         T GetServiceProxy<T>(string serviceName, IServiceCallContext callCtx) where T : class;
 
         /// <summary>

@@ -24,6 +24,8 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.SoftReference;
 import java.lang.reflect.Field;
@@ -33,8 +35,11 @@ import java.lang.reflect.Modifier;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.net.ServerSocket;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
@@ -94,7 +99,7 @@ import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
+import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -105,7 +110,6 @@ import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFile
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridBusyLock;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -122,11 +126,12 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper;
 import org.apache.ignite.spi.discovery.DiscoveryNotification;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.config.GridTestProperties;
@@ -140,6 +145,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_HOME;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
+import static org.apache.ignite.marshaller.Marshallers.jdk;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_KEY_ALGORITHM;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_STORE_TYPE;
@@ -178,32 +184,12 @@ public final class GridTestUtils {
      */
     public static class DiscoveryHook {
         /**
-         * Handles discovery message before {@link DiscoverySpiListener#onDiscovery} invocation.
-         *
-         * @param msg Intercepted discovery message.
-         */
-        public void beforeDiscovery(DiscoverySpiCustomMessage msg) {
-            if (msg instanceof CustomMessageWrapper)
-                beforeDiscovery(unwrap((CustomMessageWrapper)msg));
-        }
-
-        /**
          * Handles {@link DiscoveryCustomMessage} before {@link DiscoverySpiListener#onDiscovery} invocation.
          *
          * @param customMsg Intercepted {@link DiscoveryCustomMessage}.
          */
         public void beforeDiscovery(DiscoveryCustomMessage customMsg) {
             // No-op.
-        }
-
-        /**
-         * Handles discovery message after {@link DiscoverySpiListener#onDiscovery} completion.
-         *
-         * @param msg Intercepted discovery message.
-         */
-        public void afterDiscovery(DiscoverySpiCustomMessage msg) {
-            if (msg instanceof CustomMessageWrapper)
-                afterDiscovery(unwrap((CustomMessageWrapper)msg));
         }
 
         /**
@@ -220,16 +206,6 @@ public final class GridTestUtils {
          */
         public void ignite(IgniteEx ignite) {
             // No-op.
-        }
-
-        /**
-         * Obtains {@link DiscoveryCustomMessage} from {@link CustomMessageWrapper}.
-         *
-         * @param wrapper Wrapper of {@link DiscoveryCustomMessage}.
-         * @return Unwrapped {@link DiscoveryCustomMessage}.
-         */
-        private DiscoveryCustomMessage unwrap(CustomMessageWrapper wrapper) {
-            return U.field(wrapper, "delegate");
         }
     }
 
@@ -254,11 +230,11 @@ public final class GridTestUtils {
 
         /** {@inheritDoc} */
         @Override public IgniteFuture<?> onDiscovery(DiscoveryNotification notification) {
-            hook.beforeDiscovery(notification.getCustomMsgData());
+            hook.beforeDiscovery(U.unwrapCustomMessage(notification.customMessage()));
 
             IgniteFuture<?> fut = delegate.onDiscovery(notification);
 
-            fut.listen(f -> hook.afterDiscovery(notification.getCustomMsgData()));
+            fut.listen(f -> hook.afterDiscovery(U.unwrapCustomMessage(notification.customMessage())));
 
             return fut;
         }
@@ -1842,14 +1818,13 @@ public final class GridTestUtils {
                 throw new IgniteException("Modification of static final field through reflection.");
 
             if (isFinal && U.majorJavaVersion(U.jdkVersion()) >= 12) {
-                long fieldOffset = GridUnsafe.objectFieldOffset(field);
+                MethodHandles.Lookup lookup = MethodHandles.privateLookupIn(Field.class, MethodHandles.lookup());
 
-                GridUnsafe.putObjectField(obj, fieldOffset, val);
+                VarHandle varHandle = lookup.findVarHandle(Field.class, "modifiers", int.class);
 
-                return;
+                varHandle.set(field, field.getModifiers() & ~Modifier.FINAL);
             }
-
-            if (isFinal) {
+            else if (isFinal) {
                 Field modifiersField = Field.class.getDeclaredField("modifiers");
 
                 modifiersField.setAccessible(true);
@@ -2659,5 +2634,56 @@ public final class GridTestUtils {
         GridNioServer<?> nioSrvr = ((GridNioServerWrapper)U.field(commSpi, "nioSrvWrapper")).nio();
 
         setFieldValue(nioSrvr, "skipRead", skip);
+    }
+
+    /** */
+    public static <T extends Message> MessageSerializer<T> loadSerializer(Class<? extends Message> msgCls,
+        @Nullable Marshaller dfltMarsh, @Nullable ClassLoader dfltClsLdr) {
+        try {
+            boolean isMarshallable = MarshallableMessage.class.isAssignableFrom(msgCls);
+
+            String clsPref = msgCls.getSimpleName() + (isMarshallable ? "Marshallable" : "");
+
+            Class<?> serCls = U.gridClassLoader()
+                .loadClass(msgCls.getPackage().getName() + "." + clsPref + "Serializer");
+
+            Marshaller marsh = dfltMarsh != null ? dfltMarsh : jdk();
+            ClassLoader cldLdr = dfltClsLdr != null ? dfltClsLdr : U.gridClassLoader();
+
+            Object msgSer = isMarshallable ?
+                serCls.getConstructor(Marshaller.class, ClassLoader.class)
+                     .newInstance(marsh, cldLdr) :
+                U.newInstance(serCls);
+
+            return (MessageSerializer<T>)msgSer;
+        }
+        catch (Exception e) {
+            throw new RuntimeException("Unable to find serializer for message: " + msgCls, e);
+        }
+    }
+
+    /**
+     * Calculates directory size, tolerating files that disappear during traversal.
+     *
+     * @param dir Directory.
+     * @return Size.
+     * @throws IOException If failed.
+     */
+    public static long sizeOfDirectory(File dir) throws IOException {
+        long[] size = {0L};
+
+        Files.walkFileTree(dir.toPath(), new SimpleFileVisitor<Path>() {
+            @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                size[0] += attrs.size();
+
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override public FileVisitResult visitFileFailed(Path file, IOException exc) {
+                return FileVisitResult.CONTINUE;
+            }
+        });
+
+        return size[0];
     }
 }

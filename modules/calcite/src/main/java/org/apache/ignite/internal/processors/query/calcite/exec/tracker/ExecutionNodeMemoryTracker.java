@@ -58,15 +58,15 @@ public class ExecutionNodeMemoryTracker<Row> implements RowTracker<Row> {
         long size = sizeCalculator.sizeOf(obj);
 
         size += rowOverhead;
-        long newAllocated = allocated + size;
 
-        if (newAllocated > prevReported) {
-            long newReported = (newAllocated + (BATCH_SIZE - 1)) & -BATCH_SIZE; // Align to batch size.
-            qryMemoryTracker.onMemoryAllocated(newReported - prevReported);
+        allocated += size;
+
+        if (allocated > prevReported) {
+            long newReported = (allocated + (BATCH_SIZE - 1)) & -BATCH_SIZE; // Align to batch size.
+            long diff = newReported - prevReported;
             prevReported = newReported;
+            qryMemoryTracker.onMemoryAllocated(diff);
         }
-
-        allocated = newAllocated;
     }
 
     /** {@inheritDoc} */
@@ -77,22 +77,24 @@ public class ExecutionNodeMemoryTracker<Row> implements RowTracker<Row> {
         size = Math.min(size, allocated);
 
         if (size > 0) {
-            long newAllocated = allocated - size;
+            allocated -= size;
 
-            if (newAllocated <= prevReported - BATCH_SIZE) {
-                long newReported = (newAllocated + (BATCH_SIZE - 1)) & -BATCH_SIZE; // Align to batch size.
-                qryMemoryTracker.onMemoryReleased(prevReported - newReported);
+            if (allocated <= prevReported - BATCH_SIZE) {
+                long newReported = (allocated + (BATCH_SIZE - 1)) & -BATCH_SIZE; // Align to batch size.
+                long diff = prevReported - newReported;
                 prevReported = newReported;
+                qryMemoryTracker.onMemoryReleased(diff);
             }
-
-            allocated = newAllocated;
         }
     }
 
     /** {@inheritDoc} */
     @Override public void reset() {
-        if (prevReported > 0)
+        if (prevReported > 0) {
             qryMemoryTracker.onMemoryReleased(prevReported);
+
+            prevReported = 0;
+        }
 
         allocated = 0;
     }

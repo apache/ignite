@@ -14,8 +14,6 @@
 // limitations under the License.
 = .NET Platform Cache
 
-CAUTION: Experimental API
-
 Ignite.NET provides an additional layer of caching in the link:https://docs.microsoft.com/en-us/dotnet/standard/clr[CLR] heap. The platform cache keeps a deserialized copy of every cache entry that is present on the current node, thus greatly improving cache read performance at the cost of increased memory usage.
 
 [NOTE]

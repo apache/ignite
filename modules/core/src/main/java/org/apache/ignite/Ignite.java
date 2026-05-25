@@ -790,7 +790,6 @@ public interface Ignite extends AutoCloseable {
      * </ul>
      * @return {@link TracingConfigurationManager} instance.
      */
-    @IgniteExperimental
     public @NotNull TracingConfigurationManager tracingConfiguration();
 
     /**

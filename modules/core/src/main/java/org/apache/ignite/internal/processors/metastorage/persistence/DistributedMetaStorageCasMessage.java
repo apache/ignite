@@ -17,32 +17,46 @@
 
 package org.apache.ignite.internal.processors.metastorage.persistence;
 
+import java.io.Serializable;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-class DistributedMetaStorageCasMessage extends DistributedMetaStorageUpdateMessage {
+public class DistributedMetaStorageCasMessage extends DistributedMetaStorageUpdateMessage {
     /** */
-    private static final long serialVersionUID = 0L;
+    private @Nullable Serializable expVal;
 
     /** */
-    private final byte[] expectedVal;
+    @Order(0)
+    byte[] expValBytes;
 
     /** */
-    private boolean matches = true;
+    @Order(1)
+    boolean matches;
 
-    /** */
-    public DistributedMetaStorageCasMessage(UUID reqId, String key, byte[] expValBytes, byte[] valBytes) {
-        super(reqId, key, valBytes);
-
-        expectedVal = expValBytes;
+    /** Empty constructor for {@link MessageFactory}. */
+    public DistributedMetaStorageCasMessage() {
+        // No-op.
     }
 
     /** */
-    public byte[] expectedValue() {
-        return expectedVal;
+    public DistributedMetaStorageCasMessage(UUID reqId, String key, @Nullable Serializable expVal, @Nullable Serializable val) {
+        super(reqId, key, val);
+
+        this.expVal = expVal;
+        matches = true;
+    }
+
+    /** */
+    public Serializable expectedValue() {
+        return expVal;
     }
 
     /** */
@@ -57,7 +71,23 @@ class DistributedMetaStorageCasMessage extends DistributedMetaStorageUpdateMessa
 
     /** {@inheritDoc} */
     @Override @Nullable public DiscoveryCustomMessage ackMessage() {
-        return new DistributedMetaStorageCasAckMessage(requestId(), errorMessage(), matches);
+        return new DistributedMetaStorageCasAckMessage(reqId, matches);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        super.prepareMarshal(marsh);
+
+        if (expVal != null && expValBytes == null)
+            expValBytes = U.marshal(marsh, expVal);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh) throws IgniteCheckedException {
+        super.finishUnmarshal(marsh);
+
+        if (expValBytes != null && expVal == null)
+            expVal = U.unmarshal(marsh, expValBytes, U.gridClassLoader());
     }
 
     /** {@inheritDoc} */

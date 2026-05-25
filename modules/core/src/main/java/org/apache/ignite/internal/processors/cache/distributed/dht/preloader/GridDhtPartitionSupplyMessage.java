@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -26,7 +27,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
@@ -43,33 +43,33 @@ import org.jetbrains.annotations.Nullable;
 @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
 public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage implements GridCacheDeployable {
     /** An unique (per demander) rebalance id. */
-    @Order(4)
-    private long rebalanceId;
+    @Order(0)
+    long rebalanceId;
 
     /** Topology version for which demand message is sent. */
-    @Order(value = 5, method = "topologyVersion")
-    private AffinityTopologyVersion topVer;
+    @Order(1)
+    AffinityTopologyVersion topVer;
 
     /** Partitions that have been fully sent. */
-    @Order(6)
-    private Map<Integer, Long> last;
+    @Order(2)
+    Map<Integer, Long> last;
 
     /** Partitions which were not found. */
     @GridToStringInclude
-    @Order(7)
-    private Collection<Integer> missed;
+    @Order(3)
+    Collection<Integer> missed;
 
     /** Entries. */
-    @Order(8)
-    private Map<Integer, CacheEntryInfoCollection> infos;
+    @Order(4)
+    Map<Integer, List<GridCacheEntryInfo>> infos;
 
     /** Message size. */
-    @Order(value = 9, method = "messageSize")
-    private int msgSize;
+    @Order(5)
+    int msgSize;
 
     /** Supplying process error message. */
-    @Order(value = 10, method = "errorMessage")
-    private @Nullable ErrorMessage errMsg;
+    @Order(6)
+    @Nullable ErrorMessage errMsg;
 
     /**
      * @param rebalanceId Rebalance id.
@@ -131,13 +131,6 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
     }
 
     /**
-     * @param rebalanceId New unique (per demander) rebalance id.
-     */
-    public void rebalanceId(long rebalanceId) {
-        this.rebalanceId = rebalanceId;
-    }
-
-    /**
      * @return Topology version for which demand message is sent.
      */
     @Override public AffinityTopologyVersion topologyVersion() {
@@ -145,24 +138,10 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
     }
 
     /**
-     * @param topVer New topology version for which demand message is sent.
-     */
-    public void topologyVersion(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
-    }
-
-    /**
      * @return Partitions that have been fully sent.
      */
     public Map<Integer, Long> last() {
         return last;
-    }
-
-    /**
-     * @param last New map of partitions that have been fully sent.
-     */
-    public void last(Map<Integer, Long> last) {
-        this.last = last;
     }
 
     /**
@@ -177,7 +156,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
 
             // If partition is empty, we need to add it.
             if (!getInfosSafe().containsKey(p))
-                getInfosSafe().put(p, new CacheEntryInfoCollection());
+                getInfosSafe().put(p, new ArrayList<>());
         }
     }
 
@@ -200,34 +179,13 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
     }
 
     /**
-     * @param missed New partitions which were not found.
-     */
-    public void missed(Collection<Integer> missed) {
-        this.missed = missed;
-    }
-
-    /**
      * @return Entries.
      */
-    public Map<Integer, CacheEntryInfoCollection> getInfosSafe() {
+    public Map<Integer, List<GridCacheEntryInfo>> getInfosSafe() {
         if (infos == null)
             infos = new HashMap<>();
 
         return infos;
-    }
-
-    /**
-     * @return Entries.
-     */
-    public Map<Integer, CacheEntryInfoCollection> infos() {
-        return infos;
-    }
-
-    /**
-     * @param infos New entries.
-     */
-    public void infos(Map<Integer, CacheEntryInfoCollection> infos) {
-        this.infos = infos;
     }
 
     /** Supplying process error. */
@@ -236,31 +194,10 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
     }
 
     /**
-     * @return Supplying process error message.
-     */
-    @Nullable public ErrorMessage errorMessage() {
-        return errMsg;
-    }
-
-    /**
-     * @param errMsg New supplying process error message.
-     */
-    public void errorMessage(@Nullable ErrorMessage errMsg) {
-        this.errMsg = errMsg;
-    }
-
-    /**
      * @return Message size.
      */
     public int messageSize() {
         return msgSize;
-    }
-
-    /**
-     * @param msgSize New message size.
-     */
-    public void messageSize(int msgSize) {
-        this.msgSize = msgSize;
     }
 
     /**
@@ -282,12 +219,12 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
 
         msgSize += info.marshalledSize(cacheObjCtx);
 
-        CacheEntryInfoCollection infoCol = getInfosSafe().get(p);
+        List<GridCacheEntryInfo> infoCol = getInfosSafe().get(p);
 
         if (infoCol == null) {
             msgSize += 4;
 
-            getInfosSafe().put(p, infoCol = new CacheEntryInfoCollection());
+            getInfosSafe().put(p, infoCol = new ArrayList<>());
         }
 
         infoCol.add(info);
@@ -302,9 +239,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
         if (grp == null)
             return;
 
-        for (CacheEntryInfoCollection col : getInfosSafe().values()) {
-            List<GridCacheEntryInfo> entries = col.infos();
-
+        for (List<GridCacheEntryInfo> entries : getInfosSafe().values()) {
             for (int i = 0; i < entries.size(); i++)
                 entries.get(i).unmarshal(grp.cacheObjectContext(), ldr);
         }
@@ -322,10 +257,6 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
         return getInfosSafe().size();
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 114;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.metastorage;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -26,7 +25,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoverySpiDataExchange;
@@ -537,7 +536,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         DiscoverySpiDataExchange exchange = GridTestUtils.getFieldValue(spi, TcpDiscoverySpi.class, "exchange");
 
-        List<Map<Integer, Serializable>> dataBags = new ArrayList<>();
+        List<Map<Integer, Message>> dataBags = new ArrayList<>();
 
         spi.setDataExchange(new DiscoverySpiDataExchange() {
             @Override public DiscoveryDataBag collect(DiscoveryDataBag dataBag) {
@@ -555,11 +554,9 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         assertEquals(1, dataBags.size());
 
-        byte[] joiningNodeDataMarshalled = (byte[])dataBags.get(0).get(META_STORAGE.ordinal());
+        Object joiningNodeData = dataBags.get(0).get(META_STORAGE.ordinal());
 
-        assertNotNull(joiningNodeDataMarshalled);
-
-        Object joiningNodeData = TEST_JDK_MARSHALLER.unmarshal(joiningNodeDataMarshalled, U.gridClassLoader());
+        assertNotNull(joiningNodeData);
 
         Object[] hist = GridTestUtils.getFieldValue(joiningNodeData, "hist");
 

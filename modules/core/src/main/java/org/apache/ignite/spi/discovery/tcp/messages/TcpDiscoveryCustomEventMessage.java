@@ -19,42 +19,37 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.Objects;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
-import org.apache.ignite.internal.managers.discovery.IncompleteDeserializationException;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
- * Wrapped for custom message.
+ * Wrapper for {@link DiscoveryCustomMessage}.
  */
 @TcpDiscoveryRedirectToClient
 @TcpDiscoveryEnsureDelivery
 public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceableMessage {
     /** */
-    private static final long serialVersionUID = 0L;
+    @Order(0)
+    DiscoverySpiCustomMessage msg;
 
-    /** */
-    private transient volatile DiscoverySpiCustomMessage msg;
-
-    /** */
-    private byte[] msgBytes;
+    /**
+     * Constructor for {@link MessageFactory}.
+     */
+    public TcpDiscoveryCustomEventMessage() {
+        // No-op.
+    }
 
     /**
      * @param creatorNodeId Creator node id.
      * @param msg Message.
-     * @param msgBytes Serialized message.
      */
-    public TcpDiscoveryCustomEventMessage(UUID creatorNodeId, @Nullable DiscoverySpiCustomMessage msg,
-        @NotNull byte[] msgBytes) {
+    public TcpDiscoveryCustomEventMessage(UUID creatorNodeId, DiscoverySpiCustomMessage msg) {
         super(creatorNodeId);
 
         this.msg = msg;
-        this.msgBytes = msgBytes;
     }
 
     /**
@@ -64,55 +59,13 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
     public TcpDiscoveryCustomEventMessage(TcpDiscoveryCustomEventMessage msg) {
         super(msg);
 
-        this.msgBytes = msg.msgBytes;
         this.msg = msg.msg;
     }
 
     /**
-     * Clear deserialized form of wrapped message.
+     * @return Original message.
      */
-    public void clearMessage() {
-        msg = null;
-    }
-
-    /**
-     * @return Serialized message.
-     */
-    public byte[] messageBytes() {
-        return msgBytes;
-    }
-
-    /**
-     * @param msg Message.
-     * @param msgBytes Serialized message.
-     */
-    public void message(@Nullable DiscoverySpiCustomMessage msg, @NotNull byte[] msgBytes) {
-        this.msg = msg;
-        this.msgBytes = msgBytes;
-    }
-
-    /**
-     * @param marsh Marshaller.
-     * @param ldr Classloader.
-     * @return Deserialized message,
-     * @throws java.lang.Throwable if unmarshal failed.
-     */
-    @Nullable public DiscoverySpiCustomMessage message(@NotNull Marshaller marsh, ClassLoader ldr) throws Throwable {
-        if (msg == null) {
-            try {
-                msg = U.unmarshal(marsh, msgBytes, ldr);
-            }
-            catch (IgniteCheckedException e) {
-                // Try to resurrect a message in a case of deserialization failure
-                if (e.getCause() instanceof IncompleteDeserializationException)
-                    return new CustomMessageWrapper(((IncompleteDeserializationException)e.getCause()).message());
-
-                throw e;
-            }
-
-            assert msg != null;
-        }
-
+    public DiscoverySpiCustomMessage message() {
         return msg;
     }
 
@@ -120,7 +73,7 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
     @Override public boolean equals(Object obj) {
         return super.equals(obj) &&
             obj instanceof TcpDiscoveryCustomEventMessage &&
-            Objects.equals(((TcpDiscoveryCustomEventMessage)obj).verifierNodeId(), verifierNodeId());
+            Objects.equals(((TcpDiscoveryAbstractMessage)obj).verifierNodeId(), verifierNodeId());
     }
 
     /** {@inheritDoc} */

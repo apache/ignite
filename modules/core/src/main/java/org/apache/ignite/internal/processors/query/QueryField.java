@@ -18,35 +18,43 @@
 package org.apache.ignite.internal.processors.query;
 
 import java.io.Serializable;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Query field metadata.
  */
-public class QueryField implements Serializable {
+public class QueryField implements Serializable, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Field name. */
-    private final String name;
+    @Order(0)
+    String name;
 
     /** Alias. */
-    private final String alias;
+    @Order(1)
+    String alias;
 
     /** Class name for this field's values. */
-    private final String typeName;
+    @Order(2)
+    String typeName;
 
     /** Nullable flag. */
-    private final boolean nullable;
-
-    /** Default value. */
-    private final Object dfltValue;
+    @Order(3)
+    boolean nullable;
 
     /** Precision. */
-    private final int precision;
+    @Order(4)
+    int precision;
 
     /** Scale. */
-    private final int scale;
+    @Order(5)
+    int scale;
+
+    /** */
+    public QueryField() { }
 
     /**
      * @param name Field name.
@@ -54,29 +62,18 @@ public class QueryField implements Serializable {
      * @param nullable Nullable flag.
      */
     public QueryField(String name, String typeName, boolean nullable) {
-        this(name, typeName, nullable, null, -1, -1);
+        this(name, typeName, nullable, -1, -1);
     }
 
     /**
      * @param name Field name.
      * @param typeName Class name for this field's values.
      * @param nullable Nullable flag.
-     * @param dfltValue Default value.
-     */
-    public QueryField(String name, String typeName, boolean nullable, Object dfltValue) {
-        this(name, typeName, nullable, dfltValue, -1, -1);
-    }
-
-    /**
-     * @param name Field name.
-     * @param typeName Class name for this field's values.
-     * @param nullable Nullable flag.
-     * @param dfltValue Default value.
      * @param precision Precision.
      * @param scale Scale.
      */
-    public QueryField(String name, String typeName, boolean nullable, Object dfltValue, int precision, int scale) {
-        this(name, typeName, null, nullable, dfltValue, precision, scale);
+    public QueryField(String name, String typeName, boolean nullable, int precision, int scale) {
+        this(name, typeName, null, nullable, precision, scale);
     }
 
     /**
@@ -84,16 +81,14 @@ public class QueryField implements Serializable {
      * @param typeName Class name for this field's values.
      * @param alias Alias.
      * @param nullable Nullable flag.
-     * @param dfltValue Default value.
      * @param precision Precision.
      * @param scale Scale.
      */
-    public QueryField(String name, String typeName, String alias, boolean nullable, Object dfltValue, int precision, int scale) {
+    public QueryField(String name, String typeName, String alias, boolean nullable, int precision, int scale) {
         this.name = name;
         this.typeName = typeName;
         this.alias = alias;
         this.nullable = nullable;
-        this.dfltValue = dfltValue;
         this.precision = precision;
         this.scale = scale;
     }
@@ -124,13 +119,6 @@ public class QueryField implements Serializable {
      */
     public boolean isNullable() {
         return nullable;
-    }
-
-    /**
-     * @return Default value.
-     */
-    public Object defaultValue() {
-        return dfltValue;
     }
 
     /**

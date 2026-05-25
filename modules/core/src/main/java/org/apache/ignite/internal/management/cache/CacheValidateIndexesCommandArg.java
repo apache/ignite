@@ -17,15 +17,12 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.Positional;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 public class CacheValidateIndexesCommandArg extends IgniteDataTransferObject {
@@ -33,36 +30,44 @@ public class CacheValidateIndexesCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(0)
     @Positional
     @Argument(example = "cacheName1,...,cacheNameN", optional = true)
-    private String value;
+    String value;
 
     /** */
+    @Order(1)
     @Positional
     @Argument(example = "nodeId", optional = true)
-    private String value2;
+    String value2;
 
     /** */
-    private String[] caches;
+    @Order(2)
+    String[] caches;
 
     /** */
-    private UUID[] nodeIds;
+    @Order(3)
+    UUID[] nodeIds;
 
     /** */
+    @Order(4)
     @Argument(example = "N", description = "validate only the first N keys", optional = true)
-    private int checkFirst = -1;
+    int checkFirst = -1;
 
     /** */
+    @Order(5)
     @Argument(example = "K", description = "validate every Kth key", optional = true)
-    private int checkThrough = -1;
+    int checkThrough = -1;
 
     /** */
+    @Order(6)
     @Argument(description = "check the CRC-sum of pages stored on disk", optional = true)
-    private boolean checkCrc;
+    boolean checkCrc;
 
     /** */
+    @Order(7)
     @Argument(description = "check that index size and cache size are the same", optional = true)
-    private boolean checkSizes;
+    boolean checkSizes;
 
     /** */
     private static void ensurePositive(int numVal, String arg) {
@@ -82,30 +87,6 @@ public class CacheValidateIndexesCommandArg extends IgniteDataTransferObject {
         }
 
         caches = CommandUtils.parseVal(value, String[].class);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, value);
-        U.writeString(out, value2);
-        U.writeArray(out, caches);
-        U.writeArray(out, nodeIds);
-        out.writeInt(checkFirst);
-        out.writeInt(checkThrough);
-        out.writeBoolean(checkCrc);
-        out.writeBoolean(checkSizes);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        value = U.readString(in);
-        value2 = U.readString(in);
-        caches = U.readArray(in, String.class);
-        nodeIds = U.readArray(in, UUID.class);
-        checkFirst = in.readInt();
-        checkThrough = in.readInt();
-        checkCrc = in.readBoolean();
-        checkSizes = in.readBoolean();
     }
 
     /** */

@@ -30,9 +30,9 @@ import java.util.UUID;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
-import org.apache.ignite.internal.managers.systemview.walker.MetastorageViewWalker;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.systemview.MetastorageViewWalker;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.systemview.view.MetastorageView;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -41,6 +41,7 @@ import org.junit.Test;
 
 import static java.util.UUID.randomUUID;
 import static java.util.function.Function.identity;
+import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.METASTORE_VIEW;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT_DIR;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.writeString;
@@ -197,6 +198,7 @@ public class PerformanceStatisticsSystemViewTest extends AbstractPerformanceStat
 
             buf.put(OperationType.VERSION.id());
             buf.putShort(FilePerformanceStatisticsWriter.FILE_FORMAT_VERSION);
+            writeString(buf, VER_STR, false);
 
             writeSystemView(buf, "customView", "customWalker", null);
 

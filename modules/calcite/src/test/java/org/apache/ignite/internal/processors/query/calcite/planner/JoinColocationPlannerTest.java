@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
-import java.util.List;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.util.ImmutableIntList;
+import org.apache.ignite.internal.processors.query.calcite.rel.AbstractIgniteJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
@@ -33,11 +33,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.query.calcite.TestUtils.hasSize;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.apache.calcite.sql.type.SqlTypeName.INTEGER;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
 
@@ -45,6 +41,9 @@ import static org.junit.Assert.assertThat;
  * Test suite to verify join colocation.
  */
 public class JoinColocationPlannerTest extends AbstractPlannerTest {
+    /** */
+    private static final String[] DISABLED_RULES = new String[] {"HashJoinConverter", "MergeJoinConverter"};
+
     /**
      * Join of the same tables with a simple affinity is expected to be colocated.
      */
@@ -65,16 +64,13 @@ public class JoinColocationPlannerTest extends AbstractPlannerTest {
             "from TEST_TBL t1 " +
             "join TEST_TBL t2 on t1.id = t2.id";
 
-        RelNode phys = physicalPlan(sql, schema, "NestedLoopJoinConverter", "CorrelatedNestedLoopJoin");
-
-        IgniteMergeJoin join = findFirstNode(phys, byClass(IgniteMergeJoin.class));
-
-        String invalidPlanMsg = "Invalid plan:\n" + RelOptUtil.toString(phys);
-
-        assertThat(invalidPlanMsg, join, notNullValue());
-        assertThat(invalidPlanMsg, join.distribution().function().affinity(), is(true));
-        assertThat(invalidPlanMsg, join.getLeft(), instanceOf(IgniteIndexScan.class));
-        assertThat(invalidPlanMsg, join.getRight(), instanceOf(IgniteIndexScan.class));
+        for (String disabledRule : DISABLED_RULES) {
+            assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(AbstractIgniteJoin.class)
+                .and(join -> join.distribution().function().affinity())
+                .and(input(0, isInstanceOf(IgniteIndexScan.class)))
+                .and(input(1, isInstanceOf(IgniteIndexScan.class)))
+            ), "NestedLoopJoinConverter", "CorrelatedNestedLoopJoin", disabledRule);
+        }
     }
 
     /**
@@ -98,16 +94,13 @@ public class JoinColocationPlannerTest extends AbstractPlannerTest {
             "from TEST_TBL t1 " +
             "join TEST_TBL t2 on t1.id1 = t2.id1 and t1.id2 = t2.id2";
 
-        RelNode phys = physicalPlan(sql, schema, "NestedLoopJoinConverter", "CorrelatedNestedLoopJoin");
-
-        IgniteMergeJoin join = findFirstNode(phys, byClass(IgniteMergeJoin.class));
-
-        String invalidPlanMsg = "Invalid plan:\n" + RelOptUtil.toString(phys);
-
-        assertThat(invalidPlanMsg, join, notNullValue());
-        assertThat(invalidPlanMsg, join.distribution().function().affinity(), is(true));
-        assertThat(invalidPlanMsg, join.getLeft(), instanceOf(IgniteIndexScan.class));
-        assertThat(invalidPlanMsg, join.getRight(), instanceOf(IgniteIndexScan.class));
+        for (String disabledRule : DISABLED_RULES) {
+            assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(AbstractIgniteJoin.class)
+                    .and(join -> join.distribution().function().affinity())
+                    .and(input(0, isInstanceOf(IgniteIndexScan.class)))
+                    .and(input(1, isInstanceOf(IgniteIndexScan.class)))),
+                "NestedLoopJoinConverter", "CorrelatedNestedLoopJoin", disabledRule);
+        }
     }
 
     /**
@@ -143,22 +136,14 @@ public class JoinColocationPlannerTest extends AbstractPlannerTest {
             "from COMPLEX_TBL t1 " +
             "join SIMPLE_TBL t2 on t1.id1 = t2.id";
 
-        RelNode phys = physicalPlan(sql, schema, "NestedLoopJoinConverter", "CorrelatedNestedLoopJoin");
-
-        IgniteMergeJoin join = findFirstNode(phys, byClass(IgniteMergeJoin.class));
-
-        String invalidPlanMsg = "Invalid plan:\n" + RelOptUtil.toString(phys);
-
-        assertThat(invalidPlanMsg, join, notNullValue());
-        assertThat(invalidPlanMsg, join.distribution().function().affinity(), is(true));
-
-        List<IgniteExchange> exchanges = findNodes(phys, node -> node instanceof IgniteExchange
-            && ((IgniteRel)node).distribution().function().affinity());
-
-        assertThat(invalidPlanMsg, exchanges, hasSize(1));
-        assertThat(invalidPlanMsg, exchanges.get(0).getInput(0), instanceOf(IgniteIndexScan.class));
-        assertThat(invalidPlanMsg, exchanges.get(0).getInput(0)
-            .getTable().unwrap(TestTable.class), equalTo(complexTbl));
+        for (String disabledRule : DISABLED_RULES) {
+            assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(AbstractIgniteJoin.class)
+                    .and(hasChildThat(isInstanceOf(IgniteExchange.class)
+                        .and(ex -> ex.distribution().function().affinity())
+                        .and(input(0, isInstanceOf(IgniteIndexScan.class)))
+                        .and(input(0, i -> i.getTable().unwrap(TestTable.class).equals(complexTbl)))))),
+                "NestedLoopJoinConverter", "CorrelatedNestedLoopJoin", disabledRule);
+        }
     }
 
     /**
@@ -192,14 +177,16 @@ public class JoinColocationPlannerTest extends AbstractPlannerTest {
             "from COMPLEX_TBL_DIRECT t1 " +
             "join COMPLEX_TBL_INDIRECT t2 on t1.id1 = t2.id1 and t1.id2 = t2.id2";
 
-        RelNode phys = physicalPlan(sql, schema, "NestedLoopJoinConverter", "CorrelatedNestedLoopJoin");
+        for (String disabledRule : DISABLED_RULES) {
+            RelNode phys = physicalPlan(sql, schema, "NestedLoopJoinConverter", "CorrelatedNestedLoopJoin", disabledRule);
 
-        IgniteMergeJoin exchange = findFirstNode(phys, node -> node instanceof IgniteExchange
-            && ((IgniteRel)node).distribution().function().affinity());
+            IgniteMergeJoin exchange = findFirstNode(phys, node -> node instanceof IgniteExchange
+                && ((IgniteRel)node).distribution().function().affinity());
 
-        String invalidPlanMsg = "Invalid plan:\n" + RelOptUtil.toString(phys);
+            String invalidPlanMsg = "Invalid plan:\n" + RelOptUtil.toString(phys);
 
-        assertThat(invalidPlanMsg, exchange, nullValue());
+            assertThat(invalidPlanMsg, exchange, nullValue());
+        }
     }
 
     /**
@@ -221,6 +208,33 @@ public class JoinColocationPlannerTest extends AbstractPlannerTest {
                         .and(hasChildThat(isTableScan("BROADCAST_TBL")))
                     )
                 )
+        );
+    }
+
+    /**
+     * Re-hashing right hand for merge join.
+     */
+    @Test
+    public void joinMergeJoinAffinityRehash() throws Exception {
+        IgniteSchema schema = createSchema(
+            createTable("ORDERS", IgniteDistributions.affinity(0, "orders", "hash"),
+                "ID", INTEGER, "REGION", INTEGER)
+                .addIndex("ORDER_ID_IDX", 0),
+            createTable("ORDER_ITEMS", IgniteDistributions.affinity(0, "order_items", "hash"),
+                "ID", INTEGER, "ORDER_ID", INTEGER, "AMOUNT", INTEGER)
+                .addIndex("ORDER_ITEMS_ORDER_ID_IDX", 1)
+        );
+
+        String sql = "SELECT sum(amount)" +
+            " FROM order_items i JOIN orders o ON o.id=i.order_id" +
+            " WHERE o.region = ?";
+
+        assertPlan(sql, schema,
+            nodeOrAnyChild(isInstanceOf(IgniteMergeJoin.class))
+                .and(hasChildThat(isIndexScan("ORDERS", "ORDER_ID_IDX")))
+                .and(hasChildThat(isInstanceOf(IgniteExchange.class)
+                    .and(hasDistribution(IgniteDistributions.affinity(0, "orders", "hash")))
+                    .and(hasChildThat(isIndexScan("ORDER_ITEMS", "ORDER_ITEMS_ORDER_ID_IDX")))))
         );
     }
 }

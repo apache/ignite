@@ -289,10 +289,10 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
      * @return {@code true} if the channel is connected, {@code false} otherwise.
      */
     protected boolean isConnected(int chIdx) {
-        List<ReliableChannel.ClientChannelHolder> channelHolders = ((TcpIgniteClient)client).reliableChannel().getChannelHolders();
+        List<ReliableChannelImpl.ClientChannelHolder> channelHolders = ((TcpIgniteClient)client).reliableChannel().getChannelHolders();
         int chPort = DFLT_PORT + chIdx;
 
-        for (ReliableChannel.ClientChannelHolder holder : channelHolders) {
+        for (ReliableChannelImpl.ClientChannelHolder holder : channelHolders) {
             if (holder == null || holder.isClosed()) {
                 continue;
             }

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterTopologyException;
@@ -30,6 +31,8 @@ import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.exec.IndexScan;
 import org.apache.ignite.internal.processors.query.calcite.exec.TableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.junit.Test;
 
@@ -88,18 +91,25 @@ public class PartitionsReservationIntegrationTest extends AbstractBasicIntegrati
     @Test
     public void testIndexScan() throws Exception {
         checkPartitionsReservationRelease(
-            assertQuery("SELECT /*+ FORCE_INDEX */ * FROM Employer")
+            assertQuery("SELECT /*+ FORCE_INDEX */ * FROM Employer WHERE salary::int % 100 = 0")
                 .matches(QueryChecker.containsSubPlan(IndexScan.class.getSimpleName()))
-                .resultSize(KEYS));
+                .resultSize(KEYS / 100));
     }
 
     /** */
     @Test
     public void testTableScan() throws Exception {
+        for (Ignite grid : G.allGrids()) {
+            IgniteCacheTable tbl = (IgniteCacheTable)queryProcessor(grid).schemaHolder()
+                .schema("PUBLIC").tables().get("EMPLOYER");
+
+            tbl.markIndexRebuildInProgress(true);
+        }
+
         checkPartitionsReservationRelease(
-            assertQuery("SELECT * FROM Employer")
+            assertQuery("SELECT * FROM Employer WHERE salary::int % 100 = 0")
                 .matches(QueryChecker.containsSubPlan(TableScan.class.getSimpleName()))
-                .resultSize(KEYS));
+                .resultSize(KEYS / 100));
     }
 
     /** */

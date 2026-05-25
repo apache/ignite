@@ -18,12 +18,14 @@
 package org.apache.ignite.spi.systemview.view;
 
 import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.managers.systemview.walker.Order;
+import org.apache.ignite.internal.systemview.Order;
+import org.apache.ignite.internal.systemview.SystemViewDescriptor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * {@link BinaryMetadata} representation for the {@link SystemView}.
  */
+@SystemViewDescriptor
 public class BinaryMetadataView {
     /** Meta. */
     private final BinaryMetadata meta;

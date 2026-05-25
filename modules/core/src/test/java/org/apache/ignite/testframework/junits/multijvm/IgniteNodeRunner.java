@@ -67,9 +67,48 @@ public class IgniteNodeRunner {
 
         X.println("Starting Ignite Node... Args=" + Arrays.toString(args));
 
+        startParentPipeWatcher();
+        
         IgniteConfiguration cfg = readCfgFromFileAndDeleteFile(args[0]);
 
         ignite = Ignition.start(cfg);
+    }
+
+    /**
+     * Checks that parent process is alive.
+     *
+     * <p>We listen on {@code System.in} because this node runner is started by the parent JVM via
+     * {@link ProcessBuilder}, where {@code System.in} is a pipe from the parent. When the parent process exits,
+     * the write-end of the pipe is closed and {@code System.in.read()} returns EOF. We treat this as a signal
+     * to stop Ignite and terminate the process.</p>
+     */
+    private static void startParentPipeWatcher() {
+        Thread thread = new Thread(() -> {
+            try {
+                while (System.in.read() != -1) {
+                    // No-op
+                }
+            }
+            catch (IOException e) {
+                X.println("Failed to read parent stdin pipe, stopping Ignite node: " + e);
+            }
+
+            X.println("Parent JVM stdin pipe is closed, stopping Ignite node");
+
+            try {
+                if (ignite != null)
+                    Ignition.stop(ignite.name(), true);
+            }
+            catch (Throwable e) {
+                X.println("Failed to stop Ignite node after parent pipe closure: " + e);
+            }
+            finally {
+                System.exit(0);
+            }
+        }, "ignite-parent-pipe-watcher");
+
+        thread.setDaemon(true);
+        thread.start();
     }
 
     /**

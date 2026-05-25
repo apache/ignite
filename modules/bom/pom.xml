@@ -183,7 +183,7 @@
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
-                <artifactId>ignite-codegen2</artifactId>
+                <artifactId>ignite-codegen</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>

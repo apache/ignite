@@ -84,6 +84,7 @@ import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /**
  *
@@ -208,6 +209,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Maintenance registry.
      */
     public MaintenanceRegistry maintenanceRegistry();
+
+    /**
+     * Gets core message factoy.
+     *
+     * @return Core message factory.
+     */
+    public MessageFactory messageFactory();
 
     /**
      * Gets transformation processor.

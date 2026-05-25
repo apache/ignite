@@ -29,8 +29,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class TcpInverseConnectionResponseMessage implements TcpConnectionIndexAwareMessage {
     /** */
-    @Order(value = 0, method = "connectionIndex")
-    private int connIdx;
+    @Order(0)
+    int connIdx;
 
     /** */
     public TcpInverseConnectionResponseMessage() {
@@ -46,17 +46,6 @@ public class TcpInverseConnectionResponseMessage implements TcpConnectionIndexAw
         return connIdx;
     }
 
-    /**
-     * @param connIdx New connection index.
-     */
-    public void connectionIndex(int connIdx) {
-        this.connIdx = connIdx;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 177;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

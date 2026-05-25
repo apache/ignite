@@ -19,17 +19,17 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.net.InetAddress;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** Socket address utility container message. Is not a pure {@link TcpDiscoveryAbstractMessage}. */
 public class InetSocketAddressMessage extends InetAddressMessage {
     /** */
-    @Order(2)
-    private int port;
+    @Order(0)
+    int port;
 
     /**
-     * Default constructor for {@link DiscoveryMessageFactory}.
+     * Default constructor for {@link MessageFactory}.
      */
     public InetSocketAddressMessage() {
         // No-op.
@@ -52,15 +52,6 @@ public class InetSocketAddressMessage extends InetAddressMessage {
         return port;
     }
 
-    /** @param port Port. */
-    public void port(int port) {
-        this.port = port;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -101;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

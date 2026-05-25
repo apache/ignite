@@ -22,7 +22,9 @@ import org.apache.ignite.internal.client.thin.AffinityMetricsTest;
 import org.apache.ignite.internal.client.thin.AtomicLongTest;
 import org.apache.ignite.internal.client.thin.BlockingTxOpsTest;
 import org.apache.ignite.internal.client.thin.CacheAsyncTest;
+import org.apache.ignite.internal.client.thin.CacheConfigurationTest;
 import org.apache.ignite.internal.client.thin.CacheEntryListenersTest;
+import org.apache.ignite.internal.client.thin.CacheExceptionsTest;
 import org.apache.ignite.internal.client.thin.ClusterApiTest;
 import org.apache.ignite.internal.client.thin.ClusterGroupClusterRestartTest;
 import org.apache.ignite.internal.client.thin.ClusterGroupTest;
@@ -108,7 +110,9 @@ import org.junit.runners.Suite;
     InvokeTest.class,
     ExtraColumnInH2RowsTest.class,
     RecoveryModeTest.class,
-    ReliableChannelDuplicationTest.class
+    ReliableChannelDuplicationTest.class,
+    CacheExceptionsTest.class,
+    CacheConfigurationTest.class,
 })
 public class ClientTestSuite {
     // No-op.

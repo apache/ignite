@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.Serializable;
-import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -27,42 +29,39 @@ import org.jetbrains.annotations.Nullable;
  *
  * @param <T> Type of the local processing result.
  */
-public class SnapshotHandlerResult<T> implements Serializable {
-    /** Serial version uid. */
-    private static final long serialVersionUID = 0L;
-
+public class SnapshotHandlerResult<T extends Message> implements Message {
     /** Result of local processing. */
-    private final T data;
+    @Order(0)
+    Message data;
 
     /** Processing error. */
-    private final Exception err;
+    @Order(1)
+    ErrorMessage errMsg;
 
-    /** Processing node. */
-    private final ClusterNode node;
+    /** Default constructor for {@link MessageFactory}. */
+    public SnapshotHandlerResult() {
+        // No-op.
+    }
 
     /**
      * @param data Result of local processing.
      * @param err Processing error.
-     * @param node Processing node.
      */
-    public SnapshotHandlerResult(@Nullable T data, @Nullable Exception err, ClusterNode node) {
+    public SnapshotHandlerResult(@Nullable T data, @Nullable Exception err) {
         this.data = data;
-        this.err = err;
-        this.node = node;
+
+        if (err != null)
+            errMsg = new ErrorMessage(err);
     }
 
     /** @return Result of local processing. */
     public @Nullable T data() {
-        return data;
+        return (T)data;
     }
 
     /** @return Processing error. */
     public @Nullable Exception error() {
-        return err;
+        return (Exception)ErrorMessage.error(errMsg);
     }
 
-    /** @return Processing node. */
-    public ClusterNode node() {
-        return node;
-    }
 }

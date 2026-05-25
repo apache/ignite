@@ -25,7 +25,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestExternalClassLoader;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -39,9 +39,6 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_CLASSLOAD;
  * Tests the processing of deployment request with an attempt to load a class with an unknown class name.
  */
 public class DeploymentRequestOfUnknownClassProcessingTest extends GridCommonAbstractTest {
-    /** */
-    private static final String TEST_TOPIC_NAME = "TEST_TOPIC_NAME";
-
     /** */
     private static final String UNKNOWN_CLASS_NAME = "unknown.UnknownClassName";
 
@@ -101,7 +98,9 @@ public class DeploymentRequestOfUnknownClassProcessingTest extends GridCommonAbs
 
         remNodeLog.registerListener(remNodeLogLsnr);
 
-        locNode.context().io().addMessageListener(TEST_TOPIC_NAME, new GridMessageListener() {
+        Object topic = TOPIC_CLASSLOAD.topic(IgniteUuid.fromUuid(locNode.localNode().id()));
+
+        locNode.context().io().addMessageListener(topic, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 try {
                     assertTrue(msg instanceof GridDeploymentResponse);
@@ -125,10 +124,7 @@ public class DeploymentRequestOfUnknownClassProcessingTest extends GridCommonAbs
             }
         });
 
-        GridDeploymentRequest req = new GridDeploymentRequest(TEST_TOPIC_NAME, locDep.classLoaderId(),
-            UNKNOWN_CLASS_NAME, false);
-
-        req.responseTopicBytes(U.marshal(locNode.context(), req.responseTopic()));
+        GridDeploymentRequest req = new GridDeploymentRequest(topic, locDep.classLoaderId(), UNKNOWN_CLASS_NAME);
 
         locNode.context().io().sendToGridTopic(remNode.localNode(), TOPIC_CLASSLOAD, req, GridIoPolicy.P2P_POOL);
 

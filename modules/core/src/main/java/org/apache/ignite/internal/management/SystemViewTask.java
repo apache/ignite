@@ -21,7 +21,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
@@ -58,21 +57,20 @@ public class SystemViewTask extends VisorMultiNodeTask<SystemViewCommandArg, Sys
     @Override protected @Nullable SystemViewTaskResult reduce0(List<ComputeJobResult> results) throws IgniteException {
         SystemViewTaskResult res = null;
 
-        Map<UUID, List<List<?>>> merged = new TreeMap<>();
+        TreeMap<UUID, List<List<?>>> merged = new TreeMap<>();
 
         for (ComputeJobResult r : results) {
             if (r.getException() != null)
                 throw new IgniteException("Failed to execute job [nodeId=" + r.getNode().id() + ']', r.getException());
 
-            res = r.getData();
+            if (r.getData() != null) {
+                res = r.getData();
 
-            if (res == null)
-                return null;
-
-            merged.putAll(res.rows());
+                merged.putAll(res.rows());
+            }
         }
 
-        return new SystemViewTaskResult(res.attributes(), res.types(), merged);
+        return res == null ? null : new SystemViewTaskResult(res.attributes(), res.types(), merged);
     }
 
     /** */
@@ -175,7 +173,7 @@ public class SystemViewTask extends VisorMultiNodeTask<SystemViewCommandArg, Sys
                 rows.add(attrVals);
             }
 
-            return new SystemViewTaskResult(attrNames, attrTypes, singletonMap(ignite.localNode().id(), rows));
+            return new SystemViewTaskResult(attrNames, attrTypes, new TreeMap<>(singletonMap(ignite.localNode().id(), rows)));
         }
 
         /**

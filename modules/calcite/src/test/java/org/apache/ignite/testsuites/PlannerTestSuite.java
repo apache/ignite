@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.internal.processors.query.calcite.planner.AbstractPlannerUtilityTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.AggregateDistinctPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.AggregatePlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.CorrelatedNestedLoopJoinPlannerTest;
@@ -24,6 +25,7 @@ import org.apache.ignite.internal.processors.query.calcite.planner.CorrelatedSub
 import org.apache.ignite.internal.processors.query.calcite.planner.DataTypesPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.HashAggregatePlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.HashIndexSpoolPlannerTest;
+import org.apache.ignite.internal.processors.query.calcite.planner.HashJoinPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.IndexRebuildPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.IndexSearchBoundsPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.InlineIndexScanPlannerTest;
@@ -76,6 +78,7 @@ import org.junit.runners.Suite;
     JoinCommutePlannerTest.class,
     LimitOffsetPlannerTest.class,
     MergeJoinPlannerTest.class,
+    HashJoinPlannerTest.class,
     StatisticsPlannerTest.class,
     CorrelatedSubqueryPlannerTest.class,
     JoinWithUsingPlannerTest.class,
@@ -88,6 +91,7 @@ import org.junit.runners.Suite;
     RexSimplificationPlannerTest.class,
     SerializationPlannerTest.class,
     UncollectPlannerTest.class,
+    AbstractPlannerUtilityTest.class,
 
     HintsTestSuite.class,
 })

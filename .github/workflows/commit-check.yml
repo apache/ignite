@@ -31,7 +31,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [ '11' ]
+        java: [ '17' ]
     name: Check java code on JDK ${{ matrix.java }}
     steps:
       - uses: actions/checkout@v4
@@ -49,14 +49,50 @@ jobs:
           sudo apt-get update && sudo apt-get install libnuma-dev
 
       - name: Set MAVEN_OPTS
-        if: ${{ matrix.java == '11' }}
+        if: ${{ matrix.java == '17' }}
         run: |
-          echo MAVEN_OPTS='--illegal-access=permit --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED
-          --add-exports=java.base/sun.nio.ch=ALL-UNNAMED
-          --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
-          --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
-          --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
-          -Djdk.tls.client.protocols=TLSv1.2' >> $GITHUB_ENV
+          {
+            echo 'MAVEN_OPTS<<EOF'
+            echo '--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED'
+            echo '--add-exports=java.base/sun.nio.ch=ALL-UNNAMED'
+            echo '--add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED'
+            echo '--add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED'
+            echo '--add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED'
+            echo '--add-opens=java.base/jdk.internal.access=ALL-UNNAMED'
+            echo '--add-opens=java.base/jdk.internal.loader=ALL-UNNAMED'
+            echo '--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED'
+            echo '--add-opens=java.base/sun.net.util=ALL-UNNAMED'
+            echo '--add-opens=java.base/sun.nio.ch=ALL-UNNAMED'
+            echo '--add-opens=java.base/sun.nio.fs=ALL-UNNAMED'
+            echo '--add-opens=java.base/sun.util.calendar=ALL-UNNAMED'
+            echo '--add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED'
+            echo '--add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED'
+            echo '--add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED'
+            echo '--add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED'
+            echo '--add-opens=java.base/java.io=ALL-UNNAMED'
+            echo '--add-opens=java.base/java.nio=ALL-UNNAMED'
+            echo '--add-opens=java.base/java.net=ALL-UNNAMED'
+            echo '--add-opens=java.base/java.util=ALL-UNNAMED'
+            echo '--add-opens=java.base/java.util.concurrent=ALL-UNNAMED'
+            echo '--add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED'
+            echo '--add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED'
+            echo '--add-opens=java.base/java.lang=ALL-UNNAMED'
+            echo '--add-opens=java.base/java.lang.invoke=ALL-UNNAMED'
+            echo '--add-opens=java.base/java.math=ALL-UNNAMED'
+            echo '--add-opens=java.sql/java.sql=ALL-UNNAMED'
+            echo '--add-opens=java.base/java.lang.reflect=ALL-UNNAMED'
+            echo '--add-opens=java.base/java.time=ALL-UNNAMED'
+            echo '--add-opens=java.base/java.text=ALL-UNNAMED'
+            echo '--add-opens=java.base/java.security=ALL-UNNAMED'
+            echo '--add-opens=java.logging/java.util.logging=ALL-UNNAMED'
+            echo '--add-opens=java.management/sun.management=ALL-UNNAMED'
+            echo '--add-opens=java.desktop/java.awt.font=ALL-UNNAMED'
+            echo '--add-opens=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED'
+            echo '--add-opens=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED'
+            echo '--add-opens=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED'
+            echo '-Djdk.tls.client.protocols=TLSv1.2'
+            echo 'EOF'
+          } >> $GITHUB_ENV
 
       - name: Run codestyle and licenses checks
         run: |
@@ -68,7 +104,7 @@ jobs:
 
       - name: Check javadocs.
         run : |
-          ./mvnw -DskipTests install -pl modules/tools,modules/codegen2 -B -V && ./mvnw initialize -Pjavadoc -B -V
+          ./mvnw -DskipTests install -pl modules/tools,modules/codegen -B -V && ./mvnw initialize -Pjavadoc -B -V
 
   check-dotnet:
     name: Сheck .NET code
@@ -97,7 +133,7 @@ jobs:
         cfg:
           - { python: "3.8", toxenv: "py38" }
           - { python: "3.9", toxenv: "py39" }
-          - { python: "3.8", toxenv: "codestyle" }
+          - { python: "3.9", toxenv: "codestyle" }
     steps:
       - uses: actions/checkout@v4
         with:

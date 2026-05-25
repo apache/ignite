@@ -54,7 +54,6 @@ namespace ignite
                     loc(false),
                     distributedJoins(false),
                     enforceJoinOrder(false),
-                    lazy(false),
                     args()
                 {
                     // No-op.
@@ -73,7 +72,6 @@ namespace ignite
                     loc(loc),
                     distributedJoins(false),
                     enforceJoinOrder(false),
-                    lazy(false),
                     args()
                 {
                     // No-op.
@@ -91,7 +89,6 @@ namespace ignite
                     loc(other.loc),
                     distributedJoins(other.distributedJoins),
                     enforceJoinOrder(other.enforceJoinOrder),
-                    lazy(other.lazy),
                     args()
                 {
                     args.reserve(other.args.size());
@@ -147,7 +144,6 @@ namespace ignite
                         swap(loc, other.loc);
                         swap(distributedJoins, other.distributedJoins);
                         swap(enforceJoinOrder, other.enforceJoinOrder);
-                        swap(lazy, other.lazy);
                         swap(args, other.args);
                     }
                 }
@@ -212,38 +208,6 @@ namespace ignite
                 void SetLocal(bool loc)
                 {
                     this->loc = loc;
-                }
-
-                /**
-                 * Gets lazy query execution flag.
-                 *
-                 * See SetLazy(bool) for more information.
-                 *
-                 * @return Lazy flag.
-                 */
-                bool IsLazy() const
-                {
-                    return lazy;
-                }
-
-                /**
-                 * Sets lazy query execution flag.
-                 *
-                 * By default Ignite attempts to fetch the whole query result set to memory and send it to the client.
-                 * For small and medium result sets this provides optimal performance and minimize duration of internal
-                 * database locks, thus increasing concurrency.
-                 *
-                 * If result set is too big to fit in available memory this could lead to excessive GC pauses and even
-                 * OutOfMemoryError. Use this flag as a hint for Ignite to fetch result set lazily, thus minimizing
-                 * memory consumption at the cost of moderate performance hit.
-                 *
-                 * Defaults to @c false, meaning that the whole result set is fetched to memory eagerly.
-                 *
-                 * @param lazy Lazy query execution flag.
-                 */
-                void SetLazy(bool lazy)
-                {
-                    this->lazy = lazy;
                 }
 
                 /**
@@ -376,7 +340,6 @@ namespace ignite
 
                     writer.WriteBool(distributedJoins);
                     writer.WriteBool(enforceJoinOrder);
-                    writer.WriteBool(lazy);
                     writer.WriteInt32(0);       // Timeout, ms
                     writer.WriteBool(false);    // ReplicatedOnly
                     writer.WriteBool(false);    // Colocated
@@ -408,9 +371,6 @@ namespace ignite
 
                 /** Enforce join order flag. */
                 bool enforceJoinOrder;
-
-                /** Lazy flag. */
-                bool lazy;
 
                 /** Arguments. */
                 std::vector<impl::WritableObjectBase*> args;

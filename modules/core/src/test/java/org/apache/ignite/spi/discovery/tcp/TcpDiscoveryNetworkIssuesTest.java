@@ -49,7 +49,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper;
@@ -199,8 +198,10 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
                 return super.readReceipt(sock, timeout);
             }
 
-            @Override protected Socket openSocket(InetSocketAddress sockAddr,
-                IgniteSpiOperationTimeoutHelper timeoutHelper) throws IOException, IgniteSpiOperationTimeoutException {
+            @Override protected Socket openSocket(
+                InetSocketAddress sockAddr,
+                IgniteSpiOperationTimeoutHelper timeoutHelper
+            ) throws IOException, IgniteCheckedException {
                 if (netBroken.get() && sockAddr.getPort() == NODE_4_PORT)
                     throw new SocketTimeoutException("connect timed out");
 
@@ -405,12 +406,15 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
         assertTrue(node1AliveStatus.get());
 
-        // Wait a bit until node0 restore connection node1.
-        U.sleep(failureDetectionTimeout / 2);
-
         // Node 1 must not be kicked.
-        for (Ignite ig : G.allGrids())
-            assertEquals(3, ig.cluster().nodes().size());
+        assertTrue(waitForCondition(() -> {
+            for (Ignite ig : G.allGrids()) {
+                if (ig.cluster().nodes().size() != 3)
+                    return false;
+            }
+
+            return true;
+        }, failureDetectionTimeout * 3));
     }
 
     /**
@@ -598,7 +602,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
             // To make the test stable, we want a loopback paddress of the previous node responds first.
             // We don't need a concurrent ping execution.
             if (impl instanceof ServerImpl)
-                impl = new ServerImpl(this, 1);
+                impl = new ServerImpl(this, 1, DFLT_RMT_DC_PING_POOL_SIZE);
         }
 
         /** */
@@ -617,8 +621,12 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res,
-            long timeout) throws IOException {
+        @Override protected void writeToSocket(
+            TcpDiscoveryAbstractMessage msg,
+            Socket sock,
+            int res,
+            long timeout
+        ) throws IOException, IgniteCheckedException {
             if (dropMsg(sock))
                 return;
 
@@ -644,8 +652,12 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] data,
-            long timeout) throws IOException {
+        @Override protected void writeToSocket(
+            Socket sock,
+            TcpDiscoveryAbstractMessage msg,
+            byte[] data,
+            long timeout
+        ) throws IOException, IgniteCheckedException {
             if (dropMsg(sock))
                 return;
 

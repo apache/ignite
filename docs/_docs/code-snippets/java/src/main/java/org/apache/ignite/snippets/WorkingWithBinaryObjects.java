@@ -142,6 +142,45 @@ public class WorkingWithBinaryObjects {
 
     }
 
+    //tag::keepBinaryWithCacheInterceptor[]
+    public static void cacheWithInterceptorExample() {
+        try (Ignite ignite = Ignition.start()) {
+            CacheConfiguration specConfig = new CacheConfiguration("personSpecCache");
+            ccfg.setInterceptor(new CustomInterceptor(false));
+            IgniteCache<Integer, Person> cache = ignite.createCache(ccfg);
+            cache.put(1, new Person(1, "FirstPerson"));
+
+            CacheConfiguration boConfig = new CacheConfiguration("boSpecCache");
+            ccfg.setInterceptor(new CustomInterceptor(true));
+            IgniteCache<Integer, Person> cache = ignite.createCache(ccfg);
+            cache = cache.withKeepBinary();
+            cache.put(1, new Person(1, "FirstPerson"));
+        }
+    }
+
+    private static class CustomInterceptor implements CacheInterceptor<Object, Object> {
+        boolean keepBinary;
+
+        CustomInterceptor(boolean keepBinary) {
+            this.keepBinary = keepBinary;
+        }
+
+        @Nullable @Override public Object onBeforePut(Cache.Entry<Object, Object> entry, Object newVal) {
+            assert keepBinary == newVal instanceof BinaryObject;
+            // do smth.
+        }
+
+        @Nullable @Override public IgniteBiTuple<Boolean, Object> onBeforeRemove(Cache.Entry<Object, Object> entry) {
+            Object val = entry.getValue();
+
+            if (val != null) {
+                assert keepBinary == entry.getValue() instanceof BinaryObject;
+            }
+            // do smth.
+        }
+    }
+    //end::keepBinaryWithCacheInterceptor[]
+
     private static class MyBinaryNameMapper implements BinaryNameMapper {
 
         @Override

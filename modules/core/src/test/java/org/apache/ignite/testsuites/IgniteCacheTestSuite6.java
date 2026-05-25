@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.SysCacheInconsistencyInternal
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteExchangeLatchManagerCoordinatorFailTest;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteExchangeLatchManagerDiscoHistoryTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheClientsConcurrentStartTest;
+import org.apache.ignite.internal.processors.cache.distributed.CacheExchangeMergeMdcTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheExchangeMergeTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheParallelStartTest;
 import org.apache.ignite.internal.processors.cache.distributed.CachePartitionLossWithRestartsTest;
@@ -70,6 +71,7 @@ import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTime
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutOnePhaseCommitTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTopologyChangeTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxSavepointItTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxStateChangeEventTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxTimeoutOnInitializationTest;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -100,6 +102,7 @@ public class IgniteCacheTestSuite6 {
         GridTestUtils.addTestIfNeeded(suite, IgnitePessimisticTxSuspendResumeTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, CacheExchangeMergeTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheExchangeMergeMdcTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, OnePhaseCommitAndNodeLeftTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, PendingExchangeTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, ExchangeMergeStaleServerNodesTest.class, ignoredTests);
@@ -119,6 +122,7 @@ public class IgniteCacheTestSuite6 {
 
         GridTestUtils.addTestIfNeeded(suite, TxLabelTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, TxRollbackOnIncorrectParamsTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, TxSavepointItTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, TxStateChangeEventTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, TxMultiCacheAsyncOpsTest.class, ignoredTests);

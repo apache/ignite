@@ -811,7 +811,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @return Platform cache configuration or null.
      */
-    @IgniteExperimental
     public PlatformCacheConfiguration getPlatformCacheConfiguration() {
         return platformCfg;
     }
@@ -832,7 +831,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @param platformCfg Platform cache configuration.
      * @return {@code this} for chaining.
      */
-    @IgniteExperimental
     public CacheConfiguration<K, V> setPlatformCacheConfiguration(PlatformCacheConfiguration platformCfg) {
         this.platformCfg = platformCfg;
 

@@ -25,16 +25,13 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 
 /** Wraps atomic updates with application attributes. */
 public class AtomicApplicationAttributesAwareRequest extends GridCacheIdMessage {
-    /** */
-    public static final short TYPE_CODE = 180;
-
     /** Original update message. */
-    @Order(4)
-    private GridNearAtomicAbstractUpdateRequest payload;
+    @Order(0)
+    GridNearAtomicAbstractUpdateRequest payload;
 
     /** Application attributes. */
-    @Order(value = 5, method = "applicationAttributes")
-    private Map<String, String> appAttrs;
+    @Order(1)
+    Map<String, String> appAttrs;
 
     /** */
     public AtomicApplicationAttributesAwareRequest() {
@@ -55,19 +52,9 @@ public class AtomicApplicationAttributesAwareRequest extends GridCacheIdMessage 
         return payload;
     }
 
-    /** @param payload Original update message. */
-    public void payload(GridNearAtomicAbstractUpdateRequest payload) {
-        this.payload = payload;
-    }
-
     /** @return Application attributes. */
     public Map<String, String> applicationAttributes() {
         return appAttrs;
-    }
-
-    /** @param appAttrs Application attributes. */
-    public void applicationAttributes(Map<String, String> appAttrs) {
-        this.appAttrs = appAttrs;
     }
 
     /** {@inheritDoc} */
@@ -85,8 +72,4 @@ public class AtomicApplicationAttributesAwareRequest extends GridCacheIdMessage 
         return false;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
 }

@@ -64,7 +64,6 @@ import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.customName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.fromFullName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
@@ -224,8 +223,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         }).get());
 
         sunOs = sunOperatingSystemMXBeanAccessor();
-
-        ctx.addNodeAttribute(ATTR_PHY_RAM, totalSysMemory());
 
         heap = new MemoryUsageMetrics(SYS_METRICS, metricName("memory", "heap"));
         nonHeap = new MemoryUsageMetrics(SYS_METRICS, metricName("memory", "nonheap"));
@@ -640,18 +637,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             throw new IgniteException("Failed to find registered metric with specified name [metricName=" + name + ']');
     }
 
-    /**
-     * @return Total system memory.
-     */
-    private long totalSysMemory() {
-        try {
-            return sunOs.getTotalPhysicalMemorySize();
-        }
-        catch (RuntimeException ignored) {
-            return -1;
-        }
-    }
-
     /** @return Accessor for {@link com.sun.management.OperatingSystemMXBean}. */
     private SunOperatingSystemMXBeanAccessor sunOperatingSystemMXBeanAccessor() {
         try {
@@ -661,10 +646,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
                 return new SunOperatingSystemMXBeanAccessor() {
                     @Override public long getProcessCpuTime() {
                         return sunOs.getProcessCpuTime();
-                    }
-
-                    @Override public long getTotalPhysicalMemorySize() {
-                        return sunOs.getTotalPhysicalMemorySize();
                     }
                 };
             }
@@ -677,10 +658,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         return new SunOperatingSystemMXBeanAccessor() {
             @Override public long getProcessCpuTime() {
                 return U.<Long>property(os, "processCpuTime");
-            }
-
-            @Override public long getTotalPhysicalMemorySize() {
-                return U.<Long>property(os, "totalPhysicalMemorySize");
             }
         };
     }
@@ -806,9 +783,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     private interface SunOperatingSystemMXBeanAccessor {
         /** @see com.sun.management.OperatingSystemMXBean#getProcessCpuTime() */
         long getProcessCpuTime();
-
-        /** @see com.sun.management.OperatingSystemMXBean#getTotalPhysicalMemorySize() */
-        long getTotalPhysicalMemorySize();
     }
 
     /** Custom metrics impl. */

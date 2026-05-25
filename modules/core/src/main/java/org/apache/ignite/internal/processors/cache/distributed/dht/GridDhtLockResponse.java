@@ -38,17 +38,17 @@ import org.apache.ignite.lang.IgniteUuid;
 @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
 public class GridDhtLockResponse extends GridDistributedLockResponse {
     /** Mini future ID. */
-    @Order(10)
-    private IgniteUuid miniId;
+    @Order(0)
+    IgniteUuid miniId;
 
     /** Invalid partitions. */
     @GridToStringInclude
-    @Order(value = 11, method = "invalidPartitions")
-    private Collection<Integer> invalidParts;
+    @Order(1)
+    Collection<Integer> invalidParts;
 
     /** Preload entries returned from backup. */
-    @Order(12)
-    private List<GridCacheEntryInfo> preloadEntries;
+    @Order(2)
+    List<GridCacheEntryInfo> preloadEntries;
 
     /**
      * Empty constructor.
@@ -62,11 +62,9 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
      * @param futId Future ID.
      * @param miniId Mini future ID.
      * @param cnt Key count.
-     * @param addDepInfo Deployment info.
      */
-    public GridDhtLockResponse(int cacheId, GridCacheVersion lockVer, IgniteUuid futId, IgniteUuid miniId, int cnt,
-        boolean addDepInfo) {
-        super(cacheId, lockVer, futId, cnt, addDepInfo);
+    public GridDhtLockResponse(int cacheId, GridCacheVersion lockVer, IgniteUuid futId, IgniteUuid miniId, int cnt) {
+        super(cacheId, lockVer, futId, cnt);
 
         assert miniId != null;
 
@@ -78,29 +76,19 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
      * @param futId Future ID.
      * @param miniId Mini future ID.
      * @param err Error.
-     * @param addDepInfo Deployment info.
      */
     public GridDhtLockResponse(int cacheId, GridCacheVersion lockVer, IgniteUuid futId, IgniteUuid miniId,
-        Throwable err, boolean addDepInfo) {
-        super(cacheId, lockVer, futId, err, addDepInfo);
+        Throwable err) {
+        super(cacheId, lockVer, futId, err);
 
         assert miniId != null;
 
         this.miniId = miniId;
     }
 
-    /**
-     * @return Mini future ID.
-     */
+    /** @return Mini future ID. */
     public IgniteUuid miniId() {
         return miniId;
-    }
-
-    /**
-     * @param miniId New mini future ID.
-     */
-    public void miniId(IgniteUuid miniId) {
-        this.miniId = miniId;
     }
 
     /**
@@ -113,18 +101,9 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
         invalidParts.add(part);
     }
 
-    /**
-     * @return Invalid partitions.
-     */
+    /** @return Invalid partitions. */
     public Collection<Integer> invalidPartitions() {
         return invalidParts;
-    }
-
-    /**
-     * @param invalidParts New invalid partitions.
-     */
-    public void invalidPartitions(Collection<Integer> invalidParts) {
-        this.invalidParts = invalidParts;
     }
 
     /**
@@ -139,18 +118,9 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
         preloadEntries.add(info);
     }
 
-    /**
-     * @return Preload entries returned from backup.
-     */
+    /** @return Preload entries returned from backup. */
     public Collection<GridCacheEntryInfo> preloadEntries() {
         return preloadEntries;
-    }
-
-    /**
-     * @param preloadEntries New preload entries returned from backup.
-     */
-    public void preloadEntries(List<GridCacheEntryInfo> preloadEntries) {
-        this.preloadEntries = preloadEntries;
     }
 
     /** {@inheritDoc} */
@@ -171,10 +141,6 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
             unmarshalInfos(preloadEntries, ctx.cacheContext(cacheId), ldr);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 31;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

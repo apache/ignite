@@ -20,10 +20,11 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.jetbrains.annotations.Nullable;
@@ -36,37 +37,39 @@ import org.jetbrains.annotations.Nullable;
 @TcpDiscoveryEnsureDelivery
 @TcpDiscoveryRedirectToClient
 public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Added node. */
-    private final TcpDiscoveryNode node;
+    @Order(0)
+    TcpDiscoveryNode node;
 
     /** */
-    private DiscoveryDataPacket dataPacket;
+    @Order(1)
+    DiscoveryDataPacket dataPacket;
 
-    /** Pending messages from previous node. */
-    private Collection<TcpDiscoveryAbstractMessage> msgs;
-
-    /** Discarded message ID. */
-    private IgniteUuid discardMsgId;
-
-    /** Discarded message ID. */
-    private IgniteUuid discardCustomMsgId;
+    /** Pending messages containner. */
+    @Order(2)
+    @Nullable Collection<TcpDiscoveryAbstractMessage> pendingMsgs;
 
     /** Current topology. Initialized by coordinator. */
     @GridToStringInclude
-    private Collection<TcpDiscoveryNode> top;
+    @Order(3)
+    @Nullable Collection<TcpDiscoveryNode> top;
 
     /** */
     @GridToStringInclude
     private transient Collection<TcpDiscoveryNode> clientTop;
 
     /** Topology snapshots history. */
-    private Map<Long, Collection<ClusterNode>> topHist;
+    @Order(4)
+    Map<Long, Collection<TcpDiscoveryNode>> topHist;
 
     /** Start time of the first grid node. */
-    private final long gridStartTime;
+    @Order(5)
+    long gridStartTime;
+
+    /** Constructor for {@link MessageFactory}. */
+    public TcpDiscoveryNodeAddedMessage() {
+        // No-op.
+    }
 
     /**
      * Constructor.
@@ -76,7 +79,8 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      * @param dataPacket container for collecting discovery data across the cluster.
      * @param gridStartTime Start time of the first grid node.
      */
-    public TcpDiscoveryNodeAddedMessage(UUID creatorNodeId,
+    public TcpDiscoveryNodeAddedMessage(
+        UUID creatorNodeId,
         TcpDiscoveryNode node,
         DiscoveryDataPacket dataPacket,
         long gridStartTime
@@ -97,15 +101,13 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     public TcpDiscoveryNodeAddedMessage(TcpDiscoveryNodeAddedMessage msg) {
         super(msg);
 
-        this.node = msg.node;
-        this.msgs = msg.msgs;
-        this.discardMsgId = msg.discardMsgId;
-        this.discardCustomMsgId = msg.discardCustomMsgId;
-        this.top = msg.top;
-        this.clientTop = msg.clientTop;
-        this.topHist = msg.topHist;
-        this.dataPacket = msg.dataPacket;
-        this.gridStartTime = msg.gridStartTime;
+        node = msg.node;
+        pendingMsgs = msg.pendingMsgs;
+        top = msg.top;
+        clientTop = msg.clientTop;
+        topHist = msg.topHist;
+        dataPacket = msg.dataPacket;
+        gridStartTime = msg.gridStartTime;
     }
 
     /**
@@ -122,43 +124,17 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      *
      * @return Pending messages from previous node.
      */
-    @Nullable public Collection<TcpDiscoveryAbstractMessage> messages() {
-        return msgs;
-    }
-
-    /**
-     * Gets discarded message ID.
-     *
-     * @return Discarded message ID.
-     */
-    @Nullable public IgniteUuid discardedMessageId() {
-        return discardMsgId;
-    }
-
-    /**
-     * Gets discarded custom message ID.
-     *
-     * @return Discarded message ID.
-     */
-    @Nullable public IgniteUuid discardedCustomMessageId() {
-        return discardCustomMsgId;
+    public @Nullable Collection<TcpDiscoveryAbstractMessage> messages() {
+        return pendingMsgs == null ? null : pendingMsgs;
     }
 
     /**
      * Sets pending messages to send to new node.
      *
      * @param msgs Pending messages to send to new node.
-     * @param discardMsgId Discarded message ID.
-     * @param discardCustomMsgId Discarded custom message ID.
      */
-    public void messages(
-        @Nullable Collection<TcpDiscoveryAbstractMessage> msgs,
-        @Nullable IgniteUuid discardMsgId,
-        @Nullable IgniteUuid discardCustomMsgId
-    ) {
-        this.msgs = msgs;
-        this.discardMsgId = discardMsgId;
-        this.discardCustomMsgId = discardCustomMsgId;
+    public void messages(@Nullable Collection<TcpDiscoveryAbstractMessage> msgs) {
+        pendingMsgs = F.isEmpty(msgs) ? null : msgs;
     }
 
     /**
@@ -179,18 +155,14 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
         this.top = top;
     }
 
-    /**
-     * @param top Topology at the moment when client joined.
-     */
+    /** @param top Topology at the moment when client joined. */
     public void clientTopology(Collection<TcpDiscoveryNode> top) {
         assert top != null && !top.isEmpty() : top;
 
-        this.clientTop = top;
+        clientTop = top;
     }
 
-    /**
-     * @return Topology at the moment when client joined.
-     */
+    /** @return Topology at the moment when client joined. */
     public Collection<TcpDiscoveryNode> clientTopology() {
         return clientTop;
     }
@@ -200,7 +172,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      *
      * @return Map with topology snapshots history.
      */
-    public Map<Long, Collection<ClusterNode>> topologyHistory() {
+    public Map<Long, Collection<TcpDiscoveryNode>> topologyHistory() {
         return topHist;
     }
 
@@ -209,36 +181,21 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
      *
      * @param topHist Map with topology snapshots history.
      */
-    public void topologyHistory(@Nullable Map<Long, Collection<ClusterNode>> topHist) {
+    public void topologyHistory(@Nullable Map<Long, Collection<TcpDiscoveryNode>> topHist) {
         this.topHist = topHist;
     }
 
-    /**
-     * @return {@link DiscoveryDataPacket} carried by this message.
-     */
+    /** @return {@link DiscoveryDataPacket} carried by this message. */
     public DiscoveryDataPacket gridDiscoveryData() {
         return dataPacket;
     }
 
-    /**
-     * Clears discovery data to minimize message size.
-     */
+    /** Clears discovery data to minimize message size. */
     public void clearDiscoveryData() {
         dataPacket = null;
     }
 
-    /**
-     * Clears unmarshalled discovery data to minimize message size.
-     * These data are used only on "collect" stage and are not part of persistent state.
-     */
-    public void clearUnmarshalledDiscoveryData() {
-        if (dataPacket != null)
-            dataPacket.clearUnmarshalledJoiningNodeData();
-    }
-
-    /**
-     * @return First grid node start time.
-     */
+    /** @return First grid node start time. */
     public long gridStartTime() {
         return gridStartTime;
     }

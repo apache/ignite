@@ -33,8 +33,12 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 public class GridNearUnlockRequest extends GridDistributedBaseMessage {
     /** Keys. */
     @GridToStringInclude
-    @Order(7)
-    private List<KeyCacheObject> keys;
+    @Order(0)
+    public List<KeyCacheObject> keys;
+
+    /** Savepoint rollback flag. */
+    @Order(1)
+    public boolean forSavepoint;
 
     /**
      * Empty constructor.
@@ -46,19 +50,11 @@ public class GridNearUnlockRequest extends GridDistributedBaseMessage {
     /**
      * @param cacheId Cache ID.
      * @param keyCnt Key count.
-     * @param addDepInfo Deployment info flag.
      */
-    public GridNearUnlockRequest(int cacheId, int keyCnt, boolean addDepInfo) {
-        super(keyCnt, addDepInfo);
+    public GridNearUnlockRequest(int cacheId, int keyCnt) {
+        super(keyCnt, false);
 
         this.cacheId = cacheId;
-    }
-
-    /**
-     * Sets the keys
-     */
-    public void keys(List<KeyCacheObject> keys) {
-        this.keys = keys;
     }
 
     /**
@@ -66,6 +62,20 @@ public class GridNearUnlockRequest extends GridDistributedBaseMessage {
      */
     public List<KeyCacheObject> keys() {
         return keys;
+    }
+
+    /**
+     * @return {@code True} if unlock request is sent during rollback to savepoint.
+     */
+    public boolean forSavepoint() {
+        return forSavepoint;
+    }
+
+    /**
+     * @param forSavepoint Savepoint rollback flag.
+     */
+    public void forSavepoint(boolean forSavepoint) {
+        this.forSavepoint = forSavepoint;
     }
 
     /**
@@ -103,10 +113,6 @@ public class GridNearUnlockRequest extends GridDistributedBaseMessage {
         return ctx.txLockMessageLogger();
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 57;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {
