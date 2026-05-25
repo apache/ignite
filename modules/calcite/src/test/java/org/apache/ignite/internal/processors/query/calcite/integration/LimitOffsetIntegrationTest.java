@@ -291,14 +291,64 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
             .returns(1)
             .returns(2)
             .check();
+    }
 
-        // Check another sort order.
+    /** */
+    @Test
+    public void testFetchExpressionAnotherSortOrder() throws Exception {
+        fillCache(cacheRepl, 5);
+
         assertQuery("SELECT id FROM TEST_REPL ORDER BY id DESC FETCH FIRST (1 + (2 - 1) + 1) ROWS ONLY")
             .returns(4)
             .returns(3)
             .returns(2)
             .check();
+    }
 
+    /** */
+    @Test
+    public void testFetchExpressionCachedQuery() throws Exception {
+        fillCache(cacheRepl, 5);
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST (? + 1) ROWS ONLY")
+            .withParams(1)
+            .returns(0)
+            .returns(1)
+            .check();
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST (? + 1) ROWS ONLY")
+            .withParams(2)
+            .returns(0)
+            .returns(1)
+            .returns(2)
+            .check();
+
+        // Check negative param.
+        assertThrows("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST (? + 1) ROWS ONLY",
+            IgniteSQLException.class, "FETCH must not be negative", -2);
+    }
+
+    /** */
+    @Test
+    public void testFetchExpressionCachedQueryAndAnotherSortOrder() throws Exception {
+        fillCache(cacheRepl, 5);
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id DESC FETCH FIRST (? + 1) ROWS ONLY")
+            .withParams(1)
+            .returns(4)
+            .returns(3)
+            .check();
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id DESC FETCH FIRST (? + 1) ROWS ONLY")
+            .withParams(2)
+            .returns(4)
+            .returns(3)
+            .returns(2)
+            .check();
+
+        // Check negative param.
+        assertThrows("SELECT id FROM TEST_REPL ORDER BY id DESC FETCH FIRST (? + 1) ROWS ONLY",
+            IgniteSQLException.class, "FETCH must not be negative", -2);
     }
 
     /**

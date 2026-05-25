@@ -240,8 +240,8 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** {@inheritDoc} */
     @Override protected void validateSelect(SqlSelect select, RelDataType targetRowType) {
-        select.setFetch(checkIntegerLimit(select.getFetch(), "fetch / limit"));
-        select.setOffset(checkIntegerLimit(select.getOffset(), "offset"));
+        checkIntegerLimit(select.getFetch(), "fetch / limit");
+        checkIntegerLimit(select.getOffset(), "offset");
 
         super.validateSelect(select, targetRowType);
     }
@@ -263,11 +263,10 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     /**
      * @param n Node to check limit.
      * @param nodeName Node name.
-     * @return Original node or evaluated literal for expressions.
      */
-    private SqlNode checkIntegerLimit(SqlNode n, String nodeName) {
+    private void checkIntegerLimit(SqlNode n, String nodeName) {
         if (n == null)
-            return null;
+            return;
 
         BigDecimal offFetchLimit = limitValue(n);
 
@@ -275,11 +274,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             || offFetchLimit.compareTo(BigDecimal.ZERO) < 0)) {
             throw newValidationError(n, IgniteResource.INSTANCE.correctIntegerLimit(nodeName));
         }
-
-        if (offFetchLimit != null && n instanceof SqlCall)
-            return SqlLiteral.createExactNumeric(offFetchLimit.toPlainString(), n.getParserPosition());
-
-        return n;
     }
 
     /**
@@ -291,11 +285,18 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             return ((SqlLiteral)n).bigDecimalValue();
 
         if (n instanceof SqlDynamicParam) {
+            RelDataType intType = typeFactory().createTypeWithNullability(
+                typeFactory().createSqlType(SqlTypeName.INTEGER), true);
+            SqlDynamicParam paramNode = (SqlDynamicParam)n;
+
+            if (deriveDynamicParameterType(paramNode, intType) == null)
+                setValidatedNodeType(paramNode, intType);
+
             // Will fail in params check.
             if (F.isEmpty(parameters))
                 return null;
 
-            int idx = ((SqlDynamicParam)n).getIndex();
+            int idx = paramNode.getIndex();
 
             if (idx >= parameters.length)
                 return null;

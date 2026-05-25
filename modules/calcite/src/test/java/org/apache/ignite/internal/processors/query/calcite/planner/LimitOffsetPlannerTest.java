@@ -63,6 +63,15 @@ public class LimitOffsetPlannerTest extends AbstractPlannerTest {
 
     /** */
     @Test
+    public void testFetchExpressionPlanning() throws Exception {
+        IgniteSchema publicSchema = createSchemaWithTable(IgniteDistributions.broadcast());
+
+        physicalPlan("SELECT * FROM TEST FETCH FIRST (2 + 1) ROWS ONLY", publicSchema);
+        physicalPlan("SELECT * FROM TEST FETCH FIRST (? + 1) ROWS ONLY", publicSchema);
+    }
+
+    /** */
+    @Test
     public void testNestedLimitOffsetWithUnion() throws Exception {
         IgniteSchema publicSchema = createSchemaWithTable(IgniteDistributions.random());
 

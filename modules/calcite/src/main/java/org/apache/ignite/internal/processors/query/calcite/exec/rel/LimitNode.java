@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.function.Supplier;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
@@ -57,6 +58,9 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
         offset = offsetNode == null ? 0 : offsetNode.get();
         fetch = fetchNode == null ? 0 : fetchNode.get();
         this.fetchNode = fetchNode;
+
+        if (fetch < 0)
+            throw new IgniteSQLException("FETCH must not be negative");
     }
 
     /** {@inheritDoc} */
