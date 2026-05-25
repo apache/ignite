@@ -182,11 +182,11 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
 
         // Key and value shouldn't be serialized in case an event is filtered.
         assertNull(e1.key());
-        assertNotNull(e0.key());
+        assertNull(e0.key());
         assertNull(e1.oldValue());
-        assertNotNull(e0.oldValue());
+        assertNull(e0.oldValue());
         assertNull(e1.newValue());
-        assertNotNull(e0.newValue());
+        assertNull(e0.newValue());
     }
 
     /**
@@ -207,7 +207,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
         @Override public boolean evaluate(CacheEntryEvent<?, ?> evt) {
             evts.add(evt);
 
-            return false;
+            return true;
         }
     }
 
