@@ -20,16 +20,14 @@ package org.apache.ignite.internal.processors.cache;
 import java.io.Serializable;
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cdc.CdcCacheEvent;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.management.cache.QueryEntity;
 import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
-import org.apache.ignite.internal.processors.query.QueryEntityMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -59,10 +57,10 @@ public class StoredCacheData implements Serializable, CdcCacheEvent, Marshallabl
     @Order(0)
     transient byte[] ccfgBytes;
 
-    /** Query entity messages. */
+    /** Query entities. */
     @Order(1)
     @GridToStringInclude
-    Collection<QueryEntityMessage> entityMsgs;
+    Collection<QueryEntity> qryEntities;
 
     /** SQL flag - {@code true} if cache was created with {@code CREATE TABLE}. */
     @Order(2)
@@ -96,7 +94,7 @@ public class StoredCacheData implements Serializable, CdcCacheEvent, Marshallabl
         A.notNull(ccfg, "ccfg");
 
         this.ccfg = ccfg;
-        entityMsgs = F.viewReadOnly(ccfg.getQueryEntities(), QueryEntityMessage::new);
+        qryEntities = QueryEntity.list(ccfg.getQueryEntities());
     }
 
     /**
@@ -104,7 +102,7 @@ public class StoredCacheData implements Serializable, CdcCacheEvent, Marshallabl
      */
     public StoredCacheData(StoredCacheData cacheData) {
         ccfg = cacheData.ccfg;
-        entityMsgs = cacheData.entityMsgs;
+        qryEntities = cacheData.qryEntities;
         sql = cacheData.sql;
         cacheConfigurationEnrichment = cacheData.cacheConfigurationEnrichment;
         grpKeyEncrypted = cacheData.grpKeyEncrypted;
@@ -127,15 +125,15 @@ public class StoredCacheData implements Serializable, CdcCacheEvent, Marshallabl
     /**
      * @return Query entities.
      */
-    @Override public Collection<QueryEntity> queryEntities() {
-        return F.viewReadOnly(entityMsgs, QueryEntityMessage::queryEntity);
+    @Override public Collection<org.apache.ignite.cache.QueryEntity> queryEntities() {
+        return QueryEntity.unwrapList(qryEntities);
     }
 
     /**
      * @param qryEntities Query entities.
      */
-    public void queryEntities(Collection<QueryEntity> qryEntities) {
-        entityMsgs = F.viewReadOnly(qryEntities, QueryEntityMessage::new);
+    public void queryEntities(Collection<org.apache.ignite.cache.QueryEntity> qryEntities) {
+        this.qryEntities = QueryEntity.list(qryEntities);
     }
 
     /**
