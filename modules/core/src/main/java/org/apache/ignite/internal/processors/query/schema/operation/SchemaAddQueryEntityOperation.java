@@ -19,26 +19,21 @@ package org.apache.ignite.internal.processors.query.schema.operation;
 
 import java.util.Collection;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.internal.processors.query.QueryEntityMessage;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Enabling indexing on cache operation.
  */
-public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation implements MarshallableMessage {
+public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private Collection<QueryEntity> entities;
-
-    /** Serialized form of query entities. */
     @Order(0)
-    transient byte[] qryEntitiesBytes;
+    Collection<QueryEntityMessage> entityMsgs;
 
     /** */
     @Order(1)
@@ -68,7 +63,7 @@ public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation imple
         boolean sqlEscape
     ) {
         super(opId, cacheName, schemaName);
-        this.entities = entities;
+        entityMsgs = F.viewReadOnly(entities, QueryEntityMessage::new);
         this.qryParallelism = qryParallelism;
         this.sqlEscape = sqlEscape;
     }
@@ -77,7 +72,7 @@ public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation imple
      * @return Collection of query entities.
      */
     public Collection<QueryEntity> entities() {
-        return entities;
+        return F.viewReadOnly(entityMsgs, QueryEntityMessage::queryEntity);
     }
 
     /**
@@ -93,20 +88,4 @@ public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation imple
     public boolean isSqlEscape() {
         return sqlEscape;
     }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (entities != null)
-            qryEntitiesBytes = U.marshal(marsh, entities);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (qryEntitiesBytes != null) {
-            entities = U.unmarshal(marsh, qryEntitiesBytes, clsLdr);
-
-            qryEntitiesBytes = null;
-        }
-    }
-
 }

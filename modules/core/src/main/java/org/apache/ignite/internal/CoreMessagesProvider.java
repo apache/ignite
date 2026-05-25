@@ -206,6 +206,7 @@ import org.apache.ignite.internal.processors.metastorage.persistence.Distributed
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUpdateAckMessage;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUpdateMessage;
 import org.apache.ignite.internal.processors.query.InlineSizesData;
+import org.apache.ignite.internal.processors.query.QueryEntityMessage;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
@@ -575,6 +576,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(CacheContinuousQueryBatchAck.class);
         withSchema(CacheContinuousQueryEntry.class);
         withNoSchema(InlineSizesData.class);
+        withNoSchema(QueryEntityMessage.class);
 
         // [11200 - 11300]: Compute, distributed process messages.
         msgIdx = 11200;
