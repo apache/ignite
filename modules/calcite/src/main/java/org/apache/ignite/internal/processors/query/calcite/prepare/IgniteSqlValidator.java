@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -270,29 +271,32 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
         deriveDynamicParameterTypes(n);
 
-        BigDecimal offFetchLimit = limitValue(n);
+        BigDecimal offFetchLimit = limitValue(n, nodeName);
 
-        if (offFetchLimit != null && (offFetchLimit.compareTo(DEC_INT_MAX) > 0
-            || offFetchLimit.compareTo(BigDecimal.ZERO) < 0)) {
-            throw newValidationError(n, IgniteResource.INSTANCE.correctIntegerLimit(nodeName));
+        if (offFetchLimit != null) {
+            offFetchLimit = offFetchLimit.setScale(0, RoundingMode.DOWN);
+
+            if (offFetchLimit.compareTo(DEC_INT_MAX) > 0 || offFetchLimit.compareTo(BigDecimal.ZERO) < 0)
+                throw newValidationError(n, IgniteResource.INSTANCE.correctIntegerLimit(nodeName));
         }
     }
 
     /**
      * @param n Limit node.
+     * @param nodeName Node name.
      * @return Limit value, or {@code null} if the expression cannot be evaluated during validation.
      */
-    @Nullable private BigDecimal limitValue(SqlNode n) {
+    private @Nullable BigDecimal limitValue(SqlNode n, String nodeName) {
         if (n instanceof SqlLiteral)
             return ((SqlLiteral)n).bigDecimalValue();
 
         if (n instanceof SqlDynamicParam) {
-            RelDataType intType = typeFactory().createTypeWithNullability(
+            RelDataType dataType = typeFactory().createTypeWithNullability(
                 typeFactory().createSqlType(SqlTypeName.DECIMAL), true);
             SqlDynamicParam paramNode = (SqlDynamicParam)n;
 
-            if (deriveDynamicParameterType(paramNode, intType) == null)
-                setValidatedNodeType(paramNode, intType);
+            if (deriveDynamicParameterType(paramNode, dataType) == null)
+                setValidatedNodeType(paramNode, dataType);
 
             // Will fail in params check.
             if (F.isEmpty(parameters))
@@ -305,7 +309,14 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
             Object param = parameters[idx];
 
-            return param instanceof Number ? new BigDecimal(param.toString()) : null;
+            if (!(param instanceof Number))
+                return null;
+            else if (param instanceof Double || param instanceof Float) {
+                if (!Double.isFinite(((Number) param).doubleValue()))
+                    throw newValidationError(n, IgniteResource.INSTANCE.correctIntegerLimit(nodeName));
+            }
+
+            return new BigDecimal(param.toString());
         }
 
         if (n instanceof SqlCall) {
@@ -315,8 +326,8 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             switch (call.getKind()) {
                 case PLUS:
                     if (operands.size() == 2) {
-                        BigDecimal left = limitValue(operands.get(0));
-                        BigDecimal right = limitValue(operands.get(1));
+                        BigDecimal left = limitValue(operands.get(0), nodeName);
+                        BigDecimal right = limitValue(operands.get(1), nodeName);
 
                         return left != null && right != null ? left.add(right) : null;
                     }
@@ -325,13 +336,13 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
                 case MINUS:
                     if (operands.size() == 1) {
-                        BigDecimal operand = limitValue(operands.get(0));
+                        BigDecimal operand = limitValue(operands.get(0), nodeName);
 
                         return operand != null ? operand.negate() : null;
                     }
                     else if (operands.size() == 2) {
-                        BigDecimal left = limitValue(operands.get(0));
-                        BigDecimal right = limitValue(operands.get(1));
+                        BigDecimal left = limitValue(operands.get(0), nodeName);
+                        BigDecimal right = limitValue(operands.get(1), nodeName);
 
                         return left != null && right != null ? left.subtract(right) : null;
                     }
@@ -351,12 +362,12 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
      */
     private void deriveDynamicParameterTypes(SqlNode n) {
         if (n instanceof SqlDynamicParam) {
-            RelDataType intType = typeFactory().createTypeWithNullability(
+            RelDataType dataType = typeFactory().createTypeWithNullability(
                 typeFactory().createSqlType(SqlTypeName.DECIMAL), true);
             SqlDynamicParam paramNode = (SqlDynamicParam)n;
 
-            if (deriveDynamicParameterType(paramNode, intType) == null)
-                setValidatedNodeType(paramNode, intType);
+            if (deriveDynamicParameterType(paramNode, dataType) == null)
+                setValidatedNodeType(paramNode, dataType);
         }
         else if (n instanceof SqlCall) {
             for (SqlNode operand : ((SqlCall)n).getOperandList())

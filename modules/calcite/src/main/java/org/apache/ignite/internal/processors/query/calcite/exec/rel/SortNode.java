@@ -58,15 +58,13 @@ public class SortNode<Row> extends MemoryTrackingNode<Row> implements SingleNode
     public SortNode(
         ExecutionContext<Row> ctx, RelDataType rowType,
         Comparator<Row> comp,
-        @Nullable Supplier<Integer> offset,
-        @Nullable Supplier<Integer> fetch
+        @Nullable Supplier<Number> offset,
+        @Nullable Supplier<Number> fetch
     ) {
         super(ctx, rowType);
 
-        assert fetch == null || fetch.get() >= 0;
-        assert offset == null || offset.get() >= 0;
-
-        limit = fetch == null ? -1 : fetch.get() + (offset == null ? 0 : offset.get());
+        limit = fetch == null ?
+            -1 : RelNodeUtils.limitValueWithCheck(fetch, "FETCH") + RelNodeUtils.limitValueWithCheck(offset, "OFFSET");
 
         if (limit < 0)
             rows = new PriorityQueue<>(comp);

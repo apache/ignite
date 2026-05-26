@@ -209,6 +209,15 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
         assertThrows("SELECT * FROM TEST_REPL FETCH FIRST (?) ROWS ONLY",
             SqlValidatorException.class, "Illegal value of fetch / limit", -5);
 
+        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST (?) ROWS ONLY",
+            IgniteSQLException.class, null, NULL_RESULT);
+
+        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST (?) ROWS ONLY",
+            SqlValidatorException.class, "Illegal value of fetch / limit", Double.NaN);
+
+        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST (?) ROWS ONLY",
+            SqlValidatorException.class, "Illegal value of fetch / limit", Double.POSITIVE_INFINITY);
+
         assertThrows("SELECT * FROM TEST_REPL FETCH FIRST (1 + ? - 4) ROWS ONLY",
             SqlValidatorException.class, "Illegal value of fetch / limit", 1);
 
@@ -227,9 +236,6 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
 
         assertThrows("SELECT * FROM TEST_REPL FETCH FIRST (SQRT(?) + 1 + 0) ROWS ONLY",
             IgniteSQLException.class, null, Double.NaN);
-
-        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST (SQRT(?) + 1 + 0) ROWS ONLY",
-            IgniteSQLException.class, null, Double.POSITIVE_INFINITY);
 
         assertThrows("SELECT * FROM TEST_REPL FETCH FIRST (SQRT(?) + 1 + 0) ROWS ONLY",
             IgniteSQLException.class, null, Double.NEGATIVE_INFINITY);
@@ -470,6 +476,20 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
             .withParams(5)
             .returns(0)
             .returns(1)
+            .returns(2)
+            .check();
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST (SQRT(?) + 1 + 0) ROWS ONLY")
+            .withParams(5)
+            .returns(0)
+            .returns(1)
+            .returns(2)
+            .check();
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id DESC FETCH FIRST (SQRT(?) + 1 + 0) ROWS ONLY")
+            .withParams(5)
+            .returns(4)
+            .returns(3)
             .returns(2)
             .check();
     }
