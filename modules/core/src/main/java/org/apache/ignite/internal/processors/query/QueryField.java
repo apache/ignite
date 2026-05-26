@@ -18,17 +18,14 @@
 package org.apache.ignite.internal.processors.query;
 
 import java.io.Serializable;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Query field metadata.
  */
-public class QueryField implements Serializable, MarshallableMessage {
+public class QueryField implements Serializable, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -48,19 +45,12 @@ public class QueryField implements Serializable, MarshallableMessage {
     @Order(3)
     boolean nullable;
 
-    /** Default value. */
-    private Object dfltVal;
-
-    /** Serialized form of 'default value'. */
-    @Order(4)
-    transient byte[] dfltValBytes;
-
     /** Precision. */
-    @Order(5)
+    @Order(4)
     int precision;
 
     /** Scale. */
-    @Order(6)
+    @Order(5)
     int scale;
 
     /** */
@@ -72,29 +62,18 @@ public class QueryField implements Serializable, MarshallableMessage {
      * @param nullable Nullable flag.
      */
     public QueryField(String name, String typeName, boolean nullable) {
-        this(name, typeName, nullable, null, -1, -1);
+        this(name, typeName, nullable, -1, -1);
     }
 
     /**
      * @param name Field name.
      * @param typeName Class name for this field's values.
      * @param nullable Nullable flag.
-     * @param dfltVal Default value.
-     */
-    public QueryField(String name, String typeName, boolean nullable, Object dfltVal) {
-        this(name, typeName, nullable, dfltVal, -1, -1);
-    }
-
-    /**
-     * @param name Field name.
-     * @param typeName Class name for this field's values.
-     * @param nullable Nullable flag.
-     * @param dfltVal Default value.
      * @param precision Precision.
      * @param scale Scale.
      */
-    public QueryField(String name, String typeName, boolean nullable, Object dfltVal, int precision, int scale) {
-        this(name, typeName, null, nullable, dfltVal, precision, scale);
+    public QueryField(String name, String typeName, boolean nullable, int precision, int scale) {
+        this(name, typeName, null, nullable, precision, scale);
     }
 
     /**
@@ -102,16 +81,14 @@ public class QueryField implements Serializable, MarshallableMessage {
      * @param typeName Class name for this field's values.
      * @param alias Alias.
      * @param nullable Nullable flag.
-     * @param dfltVal Default value.
      * @param precision Precision.
      * @param scale Scale.
      */
-    public QueryField(String name, String typeName, String alias, boolean nullable, Object dfltVal, int precision, int scale) {
+    public QueryField(String name, String typeName, String alias, boolean nullable, int precision, int scale) {
         this.name = name;
         this.typeName = typeName;
         this.alias = alias;
         this.nullable = nullable;
-        this.dfltVal = dfltVal;
         this.precision = precision;
         this.scale = scale;
     }
@@ -145,13 +122,6 @@ public class QueryField implements Serializable, MarshallableMessage {
     }
 
     /**
-     * @return Default value.
-     */
-    public Object defaultValue() {
-        return dfltVal;
-    }
-
-    /**
      * @return Precision.
      */
     public int precision() {
@@ -166,23 +136,7 @@ public class QueryField implements Serializable, MarshallableMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (dfltVal != null)
-            dfltValBytes = U.marshal(marsh, dfltVal);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (dfltValBytes != null) {
-            dfltVal = U.unmarshal(marsh, dfltValBytes, clsLdr);
-
-            dfltValBytes = null;
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(QueryField.class, this);
     }
-
 }

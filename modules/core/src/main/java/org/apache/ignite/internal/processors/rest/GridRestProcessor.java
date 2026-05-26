@@ -89,6 +89,7 @@ import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.thread.IgniteThread;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_SECURITY_TOKEN_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_SESSION_TIMEOUT;
@@ -121,9 +122,6 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
 
     /** The default interval used to invalidate sessions, in seconds. */
     public static final int DFLT_SES_TOKEN_INVALIDATE_INTERVAL = 5 * 60;
-
-    /** Index of task name wrapped by VisorGatewayTask */
-    private static final int WRAPPED_TASK_IDX = 1;
 
     /** Protocols. */
     private final Collection<GridRestProtocol> protos = new ArrayList<>();
@@ -235,6 +233,13 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
         finally {
             busyLock.readUnlock();
         }
+    }
+
+    /** @return Security context for given session token, or {@code null} if none found. */
+    @Nullable public SecurityContext securityContext(UUID sesId) {
+        Session ses = sesId2Ses.get(sesId);
+
+        return ses == null ? null : ses.secCtx;
     }
 
     /**
@@ -1102,16 +1107,6 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
          */
         static Session fromClientId(UUID clientId) {
             return new Session(clientId, UUID.randomUUID());
-        }
-
-        /**
-         * Static constructor.
-         *
-         * @param sesTokId Session token ID.
-         * @return New session instance with random client ID and given session ID.
-         */
-        static Session fromSessionToken(UUID sesTokId) {
-            return new Session(UUID.randomUUID(), sesTokId);
         }
 
         /**

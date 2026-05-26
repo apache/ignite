@@ -56,7 +56,7 @@ public class MultiDataCenterRingTest extends GridCommonAbstractTest {
     public void testRing() throws Exception {
         int cnt = 10;
 
-        generateRandomDcOrderCluster(cnt);
+        generateRandomDcOrderCluster(cnt, 1, 2);
 
         assertEquals(cnt, grid(0).cluster().nodes().size());
 
@@ -115,10 +115,28 @@ public class MultiDataCenterRingTest extends GridCommonAbstractTest {
 
     /** */
     private void generateRandomDcOrderCluster(int cnt) throws Exception {
+        generateRandomDcOrderCluster(cnt, -1, -1);
+    }
+
+    /**
+     * @param cnt Nodes count.
+     * @param dc0NodeIdx Node index that should be assigned to {@link #DC_ID_0}, or {@code -1} if not required.
+     * @param dc1NodeIdx Node index that should be assigned to {@link #DC_ID_1}, or {@code -1} if not required.
+     */
+    private void generateRandomDcOrderCluster(int cnt, int dc0NodeIdx, int dc1NodeIdx) throws Exception {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
         for (int i = 0; i < cnt; i++) {
-            System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, rnd.nextBoolean() ? DC_ID_0 : DC_ID_1);
+            String dcId;
+
+            if (i == dc0NodeIdx)
+                dcId = DC_ID_0;
+            else if (i == dc1NodeIdx)
+                dcId = DC_ID_1;
+            else
+                dcId = rnd.nextBoolean() ? DC_ID_0 : DC_ID_1;
+
+            System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, dcId);
 
             startGrid(i);
         }

@@ -490,7 +490,8 @@ public class BinaryContext {
                             for (File file : pkgDir.listFiles()) {
                                 String fileName = file.getName();
 
-                                if (file.isFile() && fileName.toLowerCase().endsWith(".class"))
+                                if (file.isFile() && fileName.toLowerCase().endsWith(".class")
+                                    && !fileName.equalsIgnoreCase("package-info.class"))
                                     clsNames.add(pkgName + '.' + fileName.substring(0, fileName.length() - 6));
                             }
                         }
@@ -507,7 +508,8 @@ public class BinaryContext {
                                 if (entry.startsWith(pkgPath) && entry.endsWith(".class")) {
                                     String clsName = entry.substring(pkgPath.length() + 1, entry.length() - 6);
 
-                                    if (!clsName.contains("/") && !clsName.contains("\\"))
+                                    if (!clsName.contains("/") && !clsName.contains("\\")
+                                        && !clsName.equalsIgnoreCase("package-info"))
                                         clsNames.add(pkgName + '.' + clsName);
                                 }
                             }

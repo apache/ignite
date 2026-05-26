@@ -15,18 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management.rollingupgrade;
+package org.apache.ignite.internal.processors.marshaller;
 
-import org.apache.ignite.internal.management.api.CommandRegistryImpl;
+import java.util.List;
+import java.util.Map;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
-/** Rolling upgrade commands. */
-public class RollingUpgradeCommand extends CommandRegistryImpl {
+/** */
+public class MarshallerMappingsData implements Message {
     /** */
-    public RollingUpgradeCommand() {
-        super(
-            new RollingUpgradeEnableCommand(),
-            new RollingUpgradeDisableCommand(),
-            new RollingUpgradeStatusCommand()
-        );
+    @Order(0)
+    List<Map<Integer, MappedName>> mappings;
+
+    /** */
+    public MarshallerMappingsData() {}
+
+    /**
+     * @param mappings Mappings.
+     */
+    public MarshallerMappingsData(List<Map<Integer, MappedName>> mappings) {
+        this.mappings = mappings;
     }
 }
