@@ -142,7 +142,7 @@ public class DataStreamProcessor extends GridProcessorAdapter {
             throw new IllegalStateException("Failed to create data streamer (grid is stopping).");
 
         try {
-            final DataStreamerImpl<K, V> ldr = new DataStreamerImpl<>(ctx, cacheName);
+            final DataStreamerImpl<K, V> ldr = new DataStreamerImpl<>(ctx, cacheName, flusher);
 
             ldrs.add(ldr);
 
@@ -162,16 +162,6 @@ public class DataStreamProcessor extends GridProcessorAdapter {
         finally {
             busyLock.leaveBusy();
         }
-    }
-
-    /** */
-    public void scheduleAutoFlush(DataStreamerImpl<?, ?> dataStreamer) {
-        flusher.addToQueue(dataStreamer);
-    }
-
-    /** */
-    public void stopAutoFlush(DataStreamerImpl<?, ?> dataStreamer) {
-        flusher.removeQueuedElement(dataStreamer);
     }
 
     /**

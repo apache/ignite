@@ -2857,7 +2857,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             addToQueue(new T2<>(notificationFut, cmd));
         }
 
-        /** Cancel thread execution and completes all notification futures. */
+        /** Cancels thread execution and completes all notification futures. */
         @Override public synchronized void cancel() {
             super.cancel();
 

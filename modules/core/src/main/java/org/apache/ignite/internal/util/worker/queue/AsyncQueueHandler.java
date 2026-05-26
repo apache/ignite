@@ -22,7 +22,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.OperationContextSnapshot;
 import org.apache.ignite.internal.thread.context.function.OperationContextAwareWrapper;
@@ -32,8 +31,6 @@ import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.thread.IgniteThread.GRP_IDX_UNASSIGNED;
 
 /**
  * Represents a single-threaded, asynchronous queue elements handler. It automatically captures the {@link OperationContext}
@@ -73,7 +70,7 @@ abstract class AsyncQueueHandler<T, W extends OperationContextAwareWrapper<T>> e
 
     /** */
     protected IgniteThread createWorkerThread(GridWorker worker) {
-        return new IgniteThread(igniteInstanceName(), name(), worker, GRP_IDX_UNASSIGNED, -1, GridIoPolicy.UNDEFINED);
+        return new IgniteThread(igniteInstanceName(), name(), worker);
     }
 
     /** */

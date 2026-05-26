@@ -112,6 +112,7 @@ import org.apache.ignite.internal.util.typedef.internal.GPC;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.queue.IgniteDelayedObjectHandler;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -270,6 +271,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     private volatile long lastFlushTime = U.currentTimeMillis();
 
     /** */
+    private final IgniteDelayedObjectHandler<DataStreamerImpl<?, ?>> flusher;
+
+    /** */
     private boolean skipStore;
 
     /** */
@@ -296,10 +300,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /**
      * @param ctx Grid kernal context.
      * @param cacheName Cache name.
+     * @param flusher Data Streamer flusher.
      */
     public DataStreamerImpl(
         final GridKernalContext ctx,
-        @Nullable final String cacheName
+        @Nullable final String cacheName,
+        IgniteDelayedObjectHandler<DataStreamerImpl<?, ?>> flusher
     ) {
         assert ctx != null;
 
@@ -319,6 +325,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         }
 
         this.cacheName = cacheName;
+        this.flusher = flusher;
 
         discoLsnr = new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {
@@ -576,9 +583,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             this.autoFlushFreq = autoFlushFreq;
 
             if (autoFlushFreq != 0 && old == 0)
-                ctx.dataStream().scheduleAutoFlush(this);
+                flusher.addToQueue(this);
             else if (autoFlushFreq == 0)
-                ctx.dataStream().stopAutoFlush(this);
+                flusher.removeQueuedElement(this);
         }
     }
 
