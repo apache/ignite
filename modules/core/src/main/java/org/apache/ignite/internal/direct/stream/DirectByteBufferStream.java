@@ -2306,9 +2306,20 @@ public class DirectByteBufferStream {
 
     /** */
     public void writeIgniteProductVersion(IgniteProductVersion ver) {
-        lastFinished = buf.remaining() >= IgniteProductVersion.SIZE_IN_BYTES + Integer.BYTES /* extra 4 byte to store array length. */;
+        if (ver == null) {
+            lastFinished = buf.remaining() >= 1;
+
+            if (lastFinished)
+                buf.put((byte)0);
+
+            return;
+        }
+
+        /* extra 4 byte to store array length. */
+        lastFinished = buf.remaining() >= IgniteProductVersion.SIZE_IN_BYTES + Integer.BYTES;
 
         if (lastFinished) {
+            buf.put((byte)1);
             buf.put(ver.major());
             buf.put(ver.minor());
             buf.put(ver.maintenance());
@@ -2319,19 +2330,36 @@ public class DirectByteBufferStream {
 
     /** */
     public IgniteProductVersion readIgniteProductVersion() {
-        lastFinished = buf.remaining() >= IgniteProductVersion.SIZE_IN_BYTES + Integer.BYTES /* extra 4 byte to store array length. */;
+        if (buf.remaining() < 1) {
+            lastFinished = false;
 
-        if (lastFinished) {
-            return new IgniteProductVersion(
-                buf.get(),
-                buf.get(),
-                buf.get(),
-                buf.getLong(),
-                readByteArray()
-            );
+            return null;
         }
 
-        return null;
+        if (!keyDone && buf.get() == (byte)0) {
+            lastFinished = true;
+
+            return null;
+        }
+
+        // Prevents subsequent null check.
+        keyDone = true;
+
+        /* extra 4 byte to store array length. */
+        lastFinished = buf.remaining() >= IgniteProductVersion.SIZE_IN_BYTES + Integer.BYTES;
+
+        if (!lastFinished)
+            return null;
+
+        keyDone = false;
+
+        return new IgniteProductVersion(
+            buf.get(),
+            buf.get(),
+            buf.get(),
+            buf.getLong(),
+            readByteArray()
+        );
     }
 
     /** {@inheritDoc} */
