@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
+import java.math.BigDecimal;
 import java.util.function.Supplier;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -26,6 +27,9 @@ import org.jetbrains.annotations.Nullable;
 
 /** Offset, fetch|limit support node. */
 public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
+    /** Decimal of Integer.MAX_VALUE for fetch/offset bounding. */
+    private static final BigDecimal DEC_INT_MAX = BigDecimal.valueOf(Integer.MAX_VALUE);
+
     /** Offset if its present, otherwise 0. */
     private final int offset;
 
@@ -36,7 +40,7 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
     private int rowsProcessed;
 
     /** Fetch can be unset, in this case we need all rows. */
-    private @Nullable Supplier<Integer> fetchNode;
+    private final @Nullable Supplier<Number> fetchNode;
 
     /** Waiting results counter. */
     private int waiting;
@@ -50,17 +54,14 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
     public LimitNode(
         ExecutionContext<Row> ctx,
         RelDataType rowType,
-        Supplier<Integer> offsetNode,
-        Supplier<Integer> fetchNode
+        @Nullable Supplier<Number> offsetNode,
+        @Nullable Supplier<Number> fetchNode
     ) {
         super(ctx, rowType);
 
-        offset = offsetNode == null ? 0 : offsetNode.get();
-        fetch = fetchNode == null ? 0 : fetchNode.get();
+        offset = limitValueWithCheck(offsetNode, "OFFSET");
+        fetch = limitValueWithCheck(fetchNode, "FETCH");
         this.fetchNode = fetchNode;
-
-        if (fetch < 0)
-            throw new IgniteSQLException("FETCH must not be negative");
     }
 
     /** {@inheritDoc} */
@@ -135,5 +136,31 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
     /** {@code True} if requested 0 results, or all already processed. */
     private boolean fetchNone() {
         return (fetchNode != null && fetch == 0) || (fetch > 0 && rowsProcessed == fetch + offset);
+    }
+
+    /** */
+    private static int limitValueWithCheck(@Nullable Supplier<Number> s, String name) {
+        if (s == null)
+            return 0;
+
+        Number n = s.get();
+
+        if (n == null)
+            throw new IgniteSQLException(name + " must not be null");
+        else if (n instanceof Double || n instanceof Float) {
+            double v = n.doubleValue();
+
+            if (!Double.isFinite(v))
+                throw new IgniteSQLException(name + " must be an finite number");
+        }
+
+        BigDecimal v = new BigDecimal(n.toString());
+
+        if (v.compareTo(BigDecimal.ZERO) < 0)
+            throw new IgniteSQLException(name + " must not be negative");
+        else if (v.compareTo(DEC_INT_MAX) > 0)
+            throw new IgniteSQLException(name + " must not be greater than " + DEC_INT_MAX);
+
+        return v.intValue();
     }
 }

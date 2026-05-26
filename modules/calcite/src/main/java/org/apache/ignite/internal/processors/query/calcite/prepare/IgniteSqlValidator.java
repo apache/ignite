@@ -268,6 +268,8 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         if (n == null)
             return;
 
+        deriveDynamicParameterTypes(n);
+
         BigDecimal offFetchLimit = limitValue(n);
 
         if (offFetchLimit != null && (offFetchLimit.compareTo(DEC_INT_MAX) > 0
@@ -286,7 +288,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
         if (n instanceof SqlDynamicParam) {
             RelDataType intType = typeFactory().createTypeWithNullability(
-                typeFactory().createSqlType(SqlTypeName.INTEGER), true);
+                typeFactory().createSqlType(SqlTypeName.DECIMAL), true);
             SqlDynamicParam paramNode = (SqlDynamicParam)n;
 
             if (deriveDynamicParameterType(paramNode, intType) == null)
@@ -342,6 +344,24 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         }
 
         return null;
+    }
+
+    /**
+     * @param n Node to check.
+     */
+    private void deriveDynamicParameterTypes(SqlNode n) {
+        if (n instanceof SqlDynamicParam) {
+            RelDataType intType = typeFactory().createTypeWithNullability(
+                typeFactory().createSqlType(SqlTypeName.DECIMAL), true);
+            SqlDynamicParam paramNode = (SqlDynamicParam)n;
+
+            if (deriveDynamicParameterType(paramNode, intType) == null)
+                setValidatedNodeType(paramNode, intType);
+        }
+        else if (n instanceof SqlCall) {
+            for (SqlNode operand : ((SqlCall)n).getOperandList())
+                deriveDynamicParameterTypes(operand);
+        }
     }
 
     /** {@inheritDoc} */
