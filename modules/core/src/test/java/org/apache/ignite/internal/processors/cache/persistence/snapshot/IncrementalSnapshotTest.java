@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cluster.ClusterState;
@@ -52,7 +51,6 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_START;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_INCREMENTAL_SNAPSHOT_START;
-import static org.apache.ignite.marshaller.Marshallers.jdk;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -428,18 +426,8 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
 
                 DistributedProcess.DistributedProcessType stage = failStage.get();
 
-                if (stage != null && stage.ordinal() == singleMsg.type()) {
-                    ErrorMessage em = new ErrorMessage(new IgniteException("Test exception."));
-
-                    try {
-                        em.prepareMarshal(jdk());
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new RuntimeException(e);
-                    }
-
-                    GridTestUtils.setFieldValue(singleMsg, "errMsg", em);
-                }
+                if (stage != null && stage.ordinal() == singleMsg.type())
+                    GridTestUtils.setFieldValue(singleMsg, "errMsg", new ErrorMessage(new IgniteException("Test exception.")));
             }
 
             return false;
