@@ -182,7 +182,7 @@ CAUTION: If you have a cache without partition backups and you stop a node (even
 
 When this property is set, the last node in the cluster will not stop gracefully.
 You will have to terminate the process by sending the `kill -9` signal.
-If you want to shut down the entire cluster, link:control-script#deactivating-cluster[deactivate] it and then stop all the nodes.
+If you want to shut down the entire cluster, link:tools/control-script#deactivating-cluster[deactivate] it and then stop all the nodes.
 Alternatively, you can stop all the nodes non-gracefully (by sending `kill -9`).
 However, the latter option is not recommended for clusters with persistence.
 ////

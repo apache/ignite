@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import javax.management.DynamicMBean;
@@ -64,7 +65,6 @@ import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestO
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectEnum;
 import org.apache.ignite.internal.client.thin.ProtocolVersion;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestPredicate;
-import org.apache.ignite.internal.metric.SystemViewSelfTest.TestRunnable;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestTransformer;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
@@ -1060,36 +1060,31 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
      * @param poolName Executor name.
      */
     private void checkStripeExecutorView(IgniteStripedExecutor execSvc, String viewName, String poolName) throws Exception {
-        CountDownLatch latch = new CountDownLatch(1);
+        assertTrue("At least 2 stripes are required.", execSvc.stripesCount() >= 2);
 
-        execSvc.execute(0, new TestRunnable(latch, 0));
-        execSvc.execute(0, new TestRunnable(latch, 1));
-        execSvc.execute(1, new TestRunnable(latch, 2));
-        execSvc.execute(1, new TestRunnable(latch, 3));
+        CountDownLatch startExecTaskLatch = new CountDownLatch(2);
+        CountDownLatch finishExecTaskLatch = new CountDownLatch(1);
+
+        // Tasks are launched on the same stripes on purpose.
+        execSvc.execute(0, new TestRunnable(0, startExecTaskLatch, finishExecTaskLatch));
+        execSvc.execute(1, new TestRunnable(1, startExecTaskLatch, finishExecTaskLatch));
+        execSvc.execute(0, new TestRunnable(2, startExecTaskLatch, finishExecTaskLatch));
+        execSvc.execute(1, new TestRunnable(3, startExecTaskLatch, finishExecTaskLatch));
 
         try {
-            boolean res = waitForCondition(() -> systemView(viewName).size() == 2, 5_000);
-
-            assertTrue(res);
+            assertTrue(startExecTaskLatch.await(5, TimeUnit.SECONDS));
+            assertTrue(waitForCondition(() -> systemView(viewName).size() >= 2, 5_000));
 
             TabularDataSupport view = systemView(viewName);
 
-            CompositeData row0 = view.get(new Object[] {0});
+            CompositeData row0 = getStripeExecutorView(view, 0);
+            CompositeData row1 = getStripeExecutorView(view, 1);
 
-            assertEquals(0, row0.get("stripeIndex"));
-            assertEquals(TestRunnable.class.getSimpleName() + '1', row0.get("description"));
-            assertEquals(poolName + "-stripe-0", row0.get("threadName"));
-            assertEquals(TestRunnable.class.getName(), row0.get("taskName"));
-
-            CompositeData row1 = view.get(new Object[] {1});
-
-            assertEquals(1, row1.get("stripeIndex"));
-            assertEquals(TestRunnable.class.getSimpleName() + '3', row1.get("description"));
-            assertEquals(poolName + "-stripe-1", row1.get("threadName"));
-            assertEquals(TestRunnable.class.getName(), row1.get("taskName"));
+            checkStripeExecutorView(row0, poolName, 0, 2);
+            checkStripeExecutorView(row1, poolName, 1, 3);
         }
         finally {
-            latch.countDown();
+            finishExecTaskLatch.countDown();
         }
     }
 
@@ -1270,5 +1265,60 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         startGrids(nodeCnt).cluster().state(ClusterState.ACTIVE);
         
         return grid(0);
+    }
+
+    /** */
+    private static CompositeData getStripeExecutorView(TabularDataSupport view, int stripeIdx) {
+        return view.values().stream()
+            .filter(CompositeData.class::isInstance)
+            .map(CompositeData.class::cast)
+            .filter(v -> Objects.equals(stripeIdx, v.get("stripeIndex")))
+            .filter(v -> Objects.equals(TestRunnable.class.getName(), v.get("taskName")))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("Failed to find stripe executor view for stripe index: " + stripeIdx));
+    }
+
+    /** */
+    private static void checkStripeExecutorView(CompositeData view, String poolName, int expStripeIdx, int expTaskId) {
+        assertEquals(expStripeIdx, view.get("stripeIndex"));
+        assertEquals(poolName + "-stripe-" + expStripeIdx, view.get("threadName"));
+        assertEquals(TestRunnable.class.getName(), view.get("taskName"));
+        assertEquals(TestRunnable.class.getSimpleName() + expTaskId, view.get("description"));
+    }
+
+    /** */
+    private static class TestRunnable implements Runnable {
+        /** */
+        private final int idx;
+
+        /** */
+        private final CountDownLatch startExecLatch;
+
+        /** */
+        private final CountDownLatch finishExecLatch;
+
+        /** */
+        private TestRunnable(int idx, CountDownLatch startExecLatch, CountDownLatch finishExecLatch) {
+            this.idx = idx;
+            this.startExecLatch = startExecLatch;
+            this.finishExecLatch = finishExecLatch;
+        }
+
+        /** */
+        @Override public void run() {
+            startExecLatch.countDown();
+
+            try {
+                assertTrue(finishExecLatch.await(5, TimeUnit.SECONDS));
+            }
+            catch (InterruptedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        /** */
+        @Override public String toString() {
+            return getClass().getSimpleName() + idx;
+        }
     }
 }

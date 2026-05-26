@@ -62,6 +62,8 @@ The `Service` interface has three methods:
 
 You can deploy your service either programmatically at runtime, or by providing a service configuration as part of the node configuration.
 In the latter case, the service is deployed when the cluster starts.
+If deploying several related services you can specify start order with the `ServiceConfiguration.setLocalStartOrder(int)`.
+Start order applied on node level during service initialization. Services with lower `localStartOrder` will be inited first.
 
 === Deploying Services at Runtime
 
@@ -235,8 +237,8 @@ tab:C++[]
 // TODO the @ServiceResource annotation
 
 == Service Awareness [[service_awareness]]
-For link:../thin-clients/java-thin-client.adoc#java_thin_client[Java Thin Client] you can activate Service Awareness.
-To do that, enable link:../thin-clients/java-thin-client.adoc#partition_awareness[Partition Awareness].
+For link:thin-clients/java-thin-client#java_thin_client[Java Thin Client] you can activate Service Awareness.
+To do that, enable link:thin-clients/java-thin-client#partition_awareness[Partition Awareness].
 
 Without Service Awareness, the invocation requests are sent to a random node. If it has no service
 instance deployed, the request is redirected to a different node. This additional network hop adds overhead.

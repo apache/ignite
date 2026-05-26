@@ -78,6 +78,10 @@ SqlLiteral CreateTableOptionKey() :
     <VALUE_TYPE> { return SqlLiteral.createSymbol(IgniteSqlCreateTableOptionEnum.VALUE_TYPE, getPos()); }
 |
     <ENCRYPTED> { return SqlLiteral.createSymbol(IgniteSqlCreateTableOptionEnum.ENCRYPTED, getPos()); }
+|
+    <WRAP_KEY> { return SqlLiteral.createSymbol(IgniteSqlCreateTableOptionEnum.WRAP_KEY, getPos()); }
+|
+    <WRAP_VALUE> { return SqlLiteral.createSymbol(IgniteSqlCreateTableOptionEnum.WRAP_VALUE, getPos()); }
 }
 
 void CreateTableOption(List<SqlNode> list) :
@@ -628,6 +632,28 @@ SqlNode SqlRollbackTransaction():
 {
     <ROLLBACK> { s = span(); } (<TRANSACTION>)? {
         return new IgniteSqlRollback(s.end(this));
+    }
+}
+
+SqlNode SqlSavepoint():
+{
+    final Span s;
+    final SqlIdentifier name;
+}
+{
+    <SAVEPOINT> { s = span(); } name = SimpleIdentifier() {
+        return new IgniteSqlSavepoint(s.end(this), name);
+    }
+}
+
+SqlNode SqlRollbackToSavepoint():
+{
+    final Span s;
+    final SqlIdentifier name;
+}
+{
+    <ROLLBACK> { s = span(); } <TO> <SAVEPOINT> name = SimpleIdentifier() {
+        return new IgniteSqlRollbackToSavepoint(s.end(this), name);
     }
 }
 

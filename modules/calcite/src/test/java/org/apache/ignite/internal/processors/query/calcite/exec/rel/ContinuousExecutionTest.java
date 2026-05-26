@@ -27,11 +27,14 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
+import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessageFactory;
 import org.apache.ignite.internal.processors.query.calcite.trait.AllNodes;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runners.Parameterized;
@@ -94,6 +97,9 @@ public class ContinuousExecutionTest extends AbstractExecutionTest {
     @Override public void setup() throws Exception {
         nodesCnt = remoteFragmentsCnt + 1;
         super.setup();
+
+        // Register messages in Message#REGISTRATIONS and avoids failure in Message#directType().
+        new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{new CalciteMessageFactory()});
     }
 
     /** */

@@ -30,19 +30,18 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.query.calcite.message.CalciteMarshalableMessage;
-import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
 
 /** */
-public class ColocationGroup implements CalciteMarshalableMessage {
+public class ColocationGroup implements MarshallableMessage {
     /** */
     @Order(0)
     long[] srcIds;
@@ -102,6 +101,7 @@ public class ColocationGroup implements CalciteMarshalableMessage {
 
     /** */
     public ColocationGroup() {
+        // No-op.
     }
 
     /** */
@@ -314,12 +314,7 @@ public class ColocationGroup implements CalciteMarshalableMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public MessageType type() {
-        return MessageType.COLOCATION_GROUP;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
         if (assignments == null || primaryAssignment)
             return;
 
@@ -348,7 +343,7 @@ public class ColocationGroup implements CalciteMarshalableMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareUnmarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         if (F.isEmpty(marshalledAssignments))
             return;
 

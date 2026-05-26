@@ -56,6 +56,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.managers.communication.UnknownMessageException;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
@@ -71,7 +72,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
@@ -109,6 +109,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAuthFailedMessag
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCheckFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDuplicateIdMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryEnsureDelivery;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeResponse;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
 
@@ -298,6 +299,12 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /** @see IgniteSystemProperties#IGNITE_DISCOVERY_METRICS_QNT_WARN */
     public static final int DFLT_DISCOVERY_METRICS_QNT_WARN = 500;
+
+    /** */
+    public static final int DFLT_UTLITY_POOL_SIZE = 4;
+
+    /** Pool size to ping remote DC at the connection recovery. */
+    public static final int DFLT_RMT_DC_PING_POOL_SIZE = Math.max(8, Runtime.getRuntime().availableProcessors() / 2);
 
     /** Ssl message pattern for StreamCorruptedException. */
     private static Pattern sslMsgPattern = Pattern.compile("invalid stream header: 150\\d0\\d00");
@@ -605,7 +612,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * Sets network addresses for the Discovery SPI.
      * <p>
      * If not provided, the value is resolved from {@link IgniteConfiguration#getLocalHost()}. If the latter is not set
-     * as well, the the node binds to all available IP addresses of an environment it's running on.
+     * as well, the node binds to all available IP addresses of an environment it's running on.
      * If there is no a non-loopback address, then {@link InetAddress#getLocalHost()} is used.
      * <p>
      * <b>NOTE:</b> You should initialize the {@link IgniteConfiguration#getLocalHost()} or
@@ -1695,7 +1702,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      */
     protected void writeToSocket(
         Socket sock,
-        TcpDiscoveryAbstractMessage msg,
+        @Nullable TcpDiscoveryAbstractMessage msg,
         byte[] data,
         long timeout
     ) throws IOException, IgniteCheckedException {
@@ -1704,13 +1711,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         try (SocketTimeoutObject ignored = startTimer(sock, timeout)) {
             OutputStream out = sock.getOutputStream();
-
-            // Write Ignite header without leading byte.
-            if (msg != null) {
-                byte mode = msg instanceof Message ? TcpDiscoveryIoSession.MESSAGE_SERIALIZATION : TcpDiscoveryIoSession.JAVA_SERIALIZATION;
-
-                out.write(mode);
-            }
 
             out.write(data);
 
@@ -2081,11 +2081,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         //marshall collected bag into packet, return packet
         if (dataPacket.joiningNodeId().equals(locNode.id()))
-            dataPacket.marshalJoiningNodeData(
-                dataBag,
-                marshaller(),
-                ignite.configuration().getNetworkCompressionLevel(),
-                log);
+            dataPacket.addJoiningNodeData(dataBag);
         else
             dataPacket.marshalGridNodeData(
                 dataBag,
@@ -2122,7 +2118,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             }
         }
         else
-            dataBag = dataPacket.unmarshalJoiningNodeDataSilently(marshaller(), clsLdr, locNode.clientRouterNodeId() != null, log);
+            dataBag = dataPacket.bagWithJoiningNodeData();
 
         exchange.onExchange(dataBag);
     }
@@ -2165,7 +2161,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             if (sockTimeout == 0)
                 sockTimeout = DFLT_SOCK_TIMEOUT;
 
-            impl = new ServerImpl(this, 4);
+            impl = new ServerImpl(this, DFLT_UTLITY_POOL_SIZE, DFLT_RMT_DC_PING_POOL_SIZE);
         }
 
         metricsUpdateFreq = ignite.configuration().getMetricsUpdateFrequency();
@@ -2442,6 +2438,22 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         marsh.nodeName(igniteInstanceName);
 
         return marsh;
+    }
+
+    /**
+     * On handshake it's OK to receive unknown message.
+     * Wrapping in {@link IgniteCheckedException} allows caller to handle case properly.
+     */
+    TcpDiscoveryHandshakeResponse readHandshakeResponse(
+        TcpDiscoveryIoSession ses,
+        long timeout
+    ) throws IOException, IgniteCheckedException {
+        try {
+            return readMessage(ses, timeout);
+        }
+        catch (UnknownMessageException e) {
+            throw new IgniteCheckedException(e);
+        }
     }
 
     /** {@inheritDoc} */

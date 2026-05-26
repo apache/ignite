@@ -1272,7 +1272,7 @@ public class GridSqlQueryParser {
             res.wrapValue(false);
         }
         else
-            res.wrapValue(true); // By default value is always wrapped to allow for ALTER TABLE ADD COLUMN commands.
+            res.wrapValue(true); // By default, value is always wrapped to allow for ALTER TABLE ADD COLUMN commands.
 
         if (!F.isEmpty(res.valueTypeName()) && Objects.equals(res.keyTypeName(), res.valueTypeName())) {
             throw new IgniteSQLException("Key and value type names " +

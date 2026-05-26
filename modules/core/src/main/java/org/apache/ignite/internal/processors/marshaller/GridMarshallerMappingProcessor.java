@@ -326,7 +326,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
-        dataBag.addJoiningNodeData(MARSHALLER_PROC.ordinal(), marshallerCtx.getCachedMappings());
+        dataBag.addJoiningNodeData(MARSHALLER_PROC.ordinal(), new MarshallerMappingsData(marshallerCtx.getCachedMappings()));
     }
 
     /** {@inheritDoc} */
@@ -337,9 +337,9 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onJoiningNodeDataReceived(DiscoveryDataBag.JoiningNodeDiscoveryData data) {
-        List<Map<Integer, MappedName>> mappings = (List<Map<Integer, MappedName>>)data.joiningNodeData();
+        MarshallerMappingsData mappingsData = data.joiningNodeData();
 
-        processIncomingMappings(mappings);
+        processIncomingMappings(mappingsData.mappings);
     }
 
     /** {@inheritDoc} */

@@ -315,7 +315,7 @@ public class GridSqlCreateTable extends GridSqlStatement {
     }
 
     /**
-     * @param wrapVal Forcefully turn single column value into an Object..
+     * @param wrapVal Forcefully turn single column value into an Object.
      */
     public void wrapValue(boolean wrapVal) {
         this.wrapVal = wrapVal;

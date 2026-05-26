@@ -95,6 +95,7 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
         isStatisticsEnabled = cfg.isStatisticsEnabled();
         interceptors = cfg.getInterceptors();
         this.interceptorsBytes = interceptorsBytes;
+        locStartOrder = cfg.getLocalStartOrder();
     }
 
     /**
