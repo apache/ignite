@@ -191,13 +191,13 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
             SqlValidatorException.class, "Illegal value of fetch / limit");
 
         assertThrows("SELECT * FROM TEST_REPL FETCH FIRST (2 - 3) ROWS ONLY",
-            SqlValidatorException.class, "Illegal value of fetch / limit");
+            IgniteSQLException.class, null);
 
         assertThrows("SELECT * FROM TEST_REPL FETCH FIRST (1 + 2 - 4) ROWS ONLY",
-            SqlValidatorException.class, "Illegal value of fetch / limit");
+            IgniteSQLException.class, null);
 
         assertThrows("SELECT * FROM TEST_REPL FETCH FIRST (10 - (50 - 20)) ROWS ONLY",
-            SqlValidatorException.class, "Illegal value of fetch / limit");
+            IgniteSQLException.class, null);
 
         // Check with parameters.
         assertThrows("SELECT * FROM TEST_REPL FETCH FIRST ? ROWS ONLY",
@@ -219,10 +219,10 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
             SqlValidatorException.class, "Illegal value of fetch / limit", Double.POSITIVE_INFINITY);
 
         assertThrows("SELECT * FROM TEST_REPL FETCH FIRST (1 + ? - 4) ROWS ONLY",
-            SqlValidatorException.class, "Illegal value of fetch / limit", 1);
+            IgniteSQLException.class, null, 1);
 
         assertThrows("SELECT * FROM TEST_REPL FETCH FIRST (? - (50 - 20)) ROWS ONLY",
-            SqlValidatorException.class, "Illegal value of fetch / limit", 2);
+            IgniteSQLException.class, null, 2);
     }
 
     /** */

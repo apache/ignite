@@ -66,7 +66,6 @@ import org.apache.calcite.sql.validate.SqlValidatorNamespace;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.sql.validate.SqlValidatorTable;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
-import org.apache.calcite.util.Static;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
@@ -174,7 +173,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         final SqlValidatorTable targetTable = getCatalogReader().getTable(((SqlIdentifier)table).names);
 
         if (targetTable == null)
-            throw newValidationError(table, Static.RESOURCE.objectNotFound(table.toString()));
+            throw newValidationError(table, RESOURCE.objectNotFound(table.toString()));
 
         if (!targetTable.unwrap(IgniteTable.class).isModifiable())
             throw newValidationError(table, IgniteResource.INSTANCE.modifyTableNotSupported(table.toString()));
@@ -193,7 +192,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         final SqlValidatorTable table = getCatalogReader().getTable(targetTable.names);
 
         if (table == null)
-            throw newValidationError(call, Static.RESOURCE.objectNotFound(targetTable.toString()));
+            throw newValidationError(call, RESOURCE.objectNotFound(targetTable.toString()));
 
         SqlIdentifier alias = call.getAlias() != null ? call.getAlias() :
             new SqlIdentifier(deriveAlias(targetTable, 0), SqlParserPos.ZERO);
@@ -284,25 +283,18 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     /**
      * @param n Limit node.
      * @param nodeName Node name.
-     * @return Limit value, or {@code null} if the expression cannot be evaluated during validation.
+     * @return Limit value, or {@code null} if the node is not an atomic value.
      */
     private @Nullable BigDecimal limitValue(SqlNode n, String nodeName) {
         if (n instanceof SqlLiteral)
             return ((SqlLiteral)n).bigDecimalValue();
 
         if (n instanceof SqlDynamicParam) {
-            RelDataType dataType = typeFactory().createTypeWithNullability(
-                typeFactory().createSqlType(SqlTypeName.DECIMAL), true);
-            SqlDynamicParam paramNode = (SqlDynamicParam)n;
-
-            if (deriveDynamicParameterType(paramNode, dataType) == null)
-                setValidatedNodeType(paramNode, dataType);
-
             // Will fail in params check.
             if (F.isEmpty(parameters))
                 return null;
 
-            int idx = paramNode.getIndex();
+            int idx = ((SqlDynamicParam) n).getIndex();
 
             if (idx >= parameters.length)
                 return null;
@@ -317,41 +309,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             }
 
             return new BigDecimal(param.toString());
-        }
-
-        if (n instanceof SqlCall) {
-            SqlCall call = (SqlCall)n;
-            List<SqlNode> operands = call.getOperandList();
-
-            switch (call.getKind()) {
-                case PLUS:
-                    if (operands.size() == 2) {
-                        BigDecimal left = limitValue(operands.get(0), nodeName);
-                        BigDecimal right = limitValue(operands.get(1), nodeName);
-
-                        return left != null && right != null ? left.add(right) : null;
-                    }
-
-                    break;
-
-                case MINUS:
-                    if (operands.size() == 1) {
-                        BigDecimal operand = limitValue(operands.get(0), nodeName);
-
-                        return operand != null ? operand.negate() : null;
-                    }
-                    else if (operands.size() == 2) {
-                        BigDecimal left = limitValue(operands.get(0), nodeName);
-                        BigDecimal right = limitValue(operands.get(1), nodeName);
-
-                        return left != null && right != null ? left.subtract(right) : null;
-                    }
-
-                    break;
-
-                default:
-                    return null;
-            }
         }
 
         return null;
