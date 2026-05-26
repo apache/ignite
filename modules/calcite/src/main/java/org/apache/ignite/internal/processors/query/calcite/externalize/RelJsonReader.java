@@ -38,6 +38,7 @@ import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.core.Window;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
@@ -49,7 +50,6 @@ import org.apache.calcite.util.Util;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteWindow;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /** */
@@ -300,7 +300,7 @@ public class RelJsonReader {
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteWindow.Group getWindowGroup(String tag) {
+        @Override public Window.Group getWindowGroup(String tag) {
             return relJson.toWindowGroup(this, (Map<String, Object>)get(tag));
         }
 

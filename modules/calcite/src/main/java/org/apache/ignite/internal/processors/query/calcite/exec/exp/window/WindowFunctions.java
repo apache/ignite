@@ -28,6 +28,7 @@ import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
+import org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -75,8 +76,8 @@ public final class WindowFunctions {
         SqlStdOperatorTable.CUME_DIST,
         SqlStdOperatorTable.FIRST_VALUE,
         SqlStdOperatorTable.LAST_VALUE,
-        SqlStdOperatorTable.LAG,
-        SqlStdOperatorTable.LEAD,
+        IgniteOwnSqlOperatorTable.LAG,
+        IgniteOwnSqlOperatorTable.LEAD,
         SqlStdOperatorTable.NTILE,
         SqlStdOperatorTable.NTH_VALUE
     );
@@ -188,7 +189,7 @@ public final class WindowFunctions {
             if (idx < 0 || idx >= frame.size())
                 return getDefault(row);
             else {
-                Row offsetRow = frame.getProjected(idx);
+                Row offsetRow = frame.get(idx);
                 return get(0, offsetRow);
             }
         }
@@ -399,7 +400,7 @@ public final class WindowFunctions {
                 // empty frame
                 return null;
 
-            Row firstRow = frame.getProjected(startIdx);
+            Row firstRow = frame.get(startIdx);
             return get(0, firstRow);
         }
 
@@ -427,7 +428,7 @@ public final class WindowFunctions {
             if (endIdx < 0)
                 return null;
             else {
-                Row lastRow = frame.getProjected(endIdx);
+                Row lastRow = frame.get(endIdx);
                 return get(0, lastRow);
             }
         }
@@ -500,7 +501,7 @@ public final class WindowFunctions {
             if (valIdx > endIdx)
                 return null;
             else {
-                Row valRow = frame.getProjected(valIdx);
+                Row valRow = frame.get(valIdx);
                 return get(0, valRow);
             }
         }

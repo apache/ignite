@@ -91,16 +91,39 @@ public class WindowPlannerTest extends AbstractPlannerTest {
      * @throws Exception if failed
      */
     @Test
-    public void testWindowConstants() throws Exception {
+    public void testProjectWindowConstantsUsedInAggCalls() throws Exception {
         String sql = "SELECT ID, VALUE, " +
             "MAX(2) OVER (PARTITION BY ID ORDER BY VALUE ROWS BETWEEN 10 PRECEDING AND 20 FOLLOWING) " +
             "FROM SINGLE_TBL";
 
         assertPlan(sql, publicSchema,
-            nodeOrAnyChild(isInstanceOf(IgniteWindow.class)
+            isInstanceOf(IgniteProject.class)
+                // The top project should remove constants from the window rel on position 2..4.
+                .and(project -> "[$0, $1, $3]".equals(project.getProjects().toString()))
+                .and(input(isInstanceOf(IgniteWindow.class)
                     .and(it -> it.getGroup().lowerBound.getOffset() instanceof RexLiteral
-                        && it.getGroup().upperBound.getOffset() instanceof RexLiteral
-                    && it.getGroup().aggCalls.get(0).operands.get(0) instanceof RexLiteral)));
+                        && it.getGroup().upperBound.getOffset() instanceof RexLiteral)
+                    .and(hasChildThat(isInstanceOf(IgniteProject.class)
+                        // The bottom project should add agg call constants from the window rel on position 2..4.
+                        .and(project -> "[$0, $1, 2]".equals(project.getProjects().toString())))))),
+            "ProjectTableScanMergeRule", "ProjectTableScanMergeSkipCorrelatedRule", "ProjectMergeRule", "ProjectWindowTransposeRule");
+    }
+
+    /**
+     * @throws Exception if failed
+     */
+    @Test
+    public void testProjectWindowConstantsUnusedInAggCalls() throws Exception {
+        String sql = "SELECT ID, VALUE, " +
+            "MAX(VALUE) OVER (PARTITION BY ID ORDER BY VALUE ROWS BETWEEN 10 PRECEDING AND 20 FOLLOWING) " +
+            "FROM SINGLE_TBL";
+
+        assertPlan(sql, publicSchema,
+            isInstanceOf(IgniteWindow.class)
+                    .and(it -> it.getGroup().lowerBound.getOffset() instanceof RexLiteral
+                        && it.getGroup().upperBound.getOffset() instanceof RexLiteral)
+                    .and(not(hasChildThat(isInstanceOf(IgniteProject.class)))),
+            "ProjectTableScanMergeRule", "ProjectTableScanMergeSkipCorrelatedRule", "ProjectMergeRule", "ProjectWindowTransposeRule");
     }
 
     /**
@@ -212,10 +235,11 @@ public class WindowPlannerTest extends AbstractPlannerTest {
      */
     @Test
     public void testPassThroughCollationWiderThanInputRow() throws Exception {
-        String sql = "SELECT ID, row_number() OVER (ORDER BY ID) FROM RANDOM_TBL ORDER BY 1, 2";
+        String sql = "SELECT ID, VALUE, row_number() OVER (ORDER BY ID) FROM RANDOM_TBL ORDER BY 1, 3, 2";
 
         RelCollation sortCollation = RelCollations.of(
             TraitUtils.createFieldCollation(0, true),
+            TraitUtils.createFieldCollation(2, true),
             TraitUtils.createFieldCollation(1, true)
         );
 
@@ -240,5 +264,17 @@ public class WindowPlannerTest extends AbstractPlannerTest {
             .and(it -> it.distribution().equals(affinity))
             .and(input(isInstanceOf(IgniteSort.class)
                 .and(it -> it.distribution().equals(affinity))))));
+    }
+
+    /**
+     * @throws Exception if failed
+     */
+    @Test
+    public void testConstantsInPartitionByAndOrderBy() throws Exception {
+        String sql = "SELECT MAX(VALUE) OVER (PARTITION BY 1 ORDER BY 2) FROM AFFINITY_TBL";
+
+        assertPlan(sql, publicSchema, nodeOrAnyChild(isInstanceOf(IgniteWindow.class)
+            .and(it -> it.getGroup().keys.isEmpty()
+                && it.getTraitSet().getCollation().getKeys().isEmpty())));
     }
 }

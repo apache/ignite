@@ -155,6 +155,12 @@ public class IgniteOwnSqlOperatorTable extends ReflectiveSqlOperatorTable {
             OperandTypes.family(SqlTypeFamily.INTEGER, SqlTypeFamily.INTEGER),
             SqlFunctionCategory.NUMERIC);
 
+    /** Lead window funtion */
+    public static final SqlFunction LEAD = new SqlLeadLagFunction(SqlKind.LEAD);
+
+    /** Lag window funtion */
+    public static final SqlFunction LAG = new SqlLeadLagFunction(SqlKind.LAG);
+
     /**
      * Returns the Ignite operator table, creating it if necessary.
      */

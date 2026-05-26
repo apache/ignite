@@ -30,6 +30,7 @@ import java.util.function.Supplier;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.Intersect;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.core.Minus;
@@ -961,7 +962,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         assert collation.getFieldCollations().size() >= grpKeys.size();
         Comparator<Row> partCmp = expressionFactory.comparator(TraitUtils.createCollation(grpKeys));
 
-        Supplier<WindowPartition<Row>> frameFactory = expressionFactory.windowPartitionFactory(grp, inputType);
+        List<AggregateCall> calls = grp.getAggregateCalls(rel);
+        Supplier<WindowPartition<Row>> frameFactory = expressionFactory.windowPartitionFactory(grp, calls, inputType);
 
         RowFactory<Row> rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), outType);
 

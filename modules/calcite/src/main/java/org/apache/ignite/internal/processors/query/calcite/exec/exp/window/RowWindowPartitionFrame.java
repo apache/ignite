@@ -53,15 +53,14 @@ final class RowWindowPartitionFrame<Row> extends WindowFunctionFrame<Row> {
     /** Cached frame end offset. */
     private Integer cachedEndOffset;
 
-    /** */
+    /**  */
     RowWindowPartitionFrame(
         List<Row> buf,
-        Function<Row, Row> project,
         ExecutionContext<Row> ctx,
         Window.Group grp,
         RelDataType inputRowType
     ) {
-        super(buf, project);
+        super(buf);
         lowerBoundOffset = rowsBoundToOffset(ctx, grp.lowerBound, inputRowType);
         upperBoundOffset = rowsBoundToOffset(ctx, grp.upperBound, inputRowType);
     }
@@ -108,7 +107,7 @@ final class RowWindowPartitionFrame<Row> extends WindowFunctionFrame<Row> {
         cachedEndRowIdx = -1;
     }
 
-    /** */
+    /**  */
     private static int applyOffset(int rowIdx, int offset, int cap) {
         int idx = Math.addExact(rowIdx, offset);
         return Math.max(Math.min(idx, cap), -1);

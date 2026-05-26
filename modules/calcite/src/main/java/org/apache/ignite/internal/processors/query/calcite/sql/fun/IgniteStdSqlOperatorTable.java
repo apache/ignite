@@ -328,8 +328,6 @@ public class IgniteStdSqlOperatorTable extends ReflectiveSqlOperatorTable {
         register(SqlStdOperatorTable.RANK);
         register(SqlStdOperatorTable.PERCENT_RANK);
         register(SqlStdOperatorTable.CUME_DIST);
-        register(SqlStdOperatorTable.LAG);
-        register(SqlStdOperatorTable.LEAD);
         register(SqlStdOperatorTable.FIRST_VALUE);
         register(SqlStdOperatorTable.LAST_VALUE);
         register(SqlStdOperatorTable.NTILE);

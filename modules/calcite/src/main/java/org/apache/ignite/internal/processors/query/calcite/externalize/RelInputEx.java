@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.query.calcite.externalize;
 import java.util.List;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelInput;
+import org.apache.calcite.rel.core.Window;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteWindow;
 
 /** */
 public interface RelInputEx extends RelInput {
@@ -41,5 +41,5 @@ public interface RelInputEx extends RelInput {
      * @param tag Tag.
      * @return A window group value.
      */
-    IgniteWindow.Group getWindowGroup(String tag);
+    Window.Group getWindowGroup(String tag);
 }

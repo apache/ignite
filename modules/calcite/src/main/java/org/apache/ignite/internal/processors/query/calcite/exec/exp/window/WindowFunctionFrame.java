@@ -19,32 +19,21 @@ package org.apache.ignite.internal.processors.query.calcite.exec.exp.window;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Function;
 
 /** Rows frame for window function. */
 abstract class WindowFunctionFrame<Row> {
     /** Holds immutable refrence to buffered window partition rows. */
     protected final List<Row> buf;
 
-    /** Projection for function evaluation. */
-    protected final Function<Row, Row> project;
-
     /** */
-    WindowFunctionFrame(List<Row> buf, Function<Row, Row> project) {
+    WindowFunctionFrame(List<Row> buf) {
         this.buf = Collections.unmodifiableList(buf);
-        this.project = project;
     }
 
     /** Returns row from partition by index. */
     Row get(int idx) {
         assert idx >= 0 && idx < buf.size() : "Invalid row index";
         return buf.get(idx);
-    }
-
-    /** Returns row from partition by index. */
-    Row getProjected(int idx) {
-        Row row = get(idx);
-        return project.apply(row);
     }
 
     /** Returns start frame index in partition for current row peer. */

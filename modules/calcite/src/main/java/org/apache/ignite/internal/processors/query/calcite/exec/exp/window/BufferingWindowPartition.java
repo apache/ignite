@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
-import java.util.function.Function;
 import org.apache.calcite.rel.core.Window;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -42,12 +41,11 @@ final class BufferingWindowPartition<Row> extends WindowPartitionBase<Row> {
         RowHandler.RowFactory<Row> rowFactory,
         ExecutionContext<Row> ctx,
         Window.Group grp,
-        Function<Row, Row> project,
         RelDataType inputRowType
     ) {
         super(peerCmp, funcFactory, rowFactory);
         buf = new ArrayList<>();
-        frame = createFrame(ctx, grp, peerCmp, project, inputRowType, buf);
+        frame = createFrame(ctx, grp, peerCmp, inputRowType, buf);
     }
 
     /** {@inheritDoc} */
@@ -100,13 +98,12 @@ final class BufferingWindowPartition<Row> extends WindowPartitionBase<Row> {
         ExecutionContext<Row> ctx,
         Window.Group grp,
         Comparator<Row> peerCmp,
-        Function<Row, Row> project,
         RelDataType inputRowType,
         List<Row> buf
     ) {
         if (grp.isRows)
-            return new RowWindowPartitionFrame<>(buf, project, ctx, grp, inputRowType);
+            return new RowWindowPartitionFrame<>(buf, ctx, grp, inputRowType);
         else
-            return new RangeWindowPartitionFrame<>(buf, project, ctx, peerCmp, grp, inputRowType);
+            return new RangeWindowPartitionFrame<>(buf, ctx, peerCmp, grp, inputRowType);
     }
 }

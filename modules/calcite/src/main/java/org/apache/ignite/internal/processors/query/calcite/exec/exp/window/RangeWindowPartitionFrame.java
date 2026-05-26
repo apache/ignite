@@ -74,13 +74,12 @@ final class RangeWindowPartitionFrame<Row> extends WindowFunctionFrame<Row> {
     /** */
     RangeWindowPartitionFrame(
         List<Row> buf,
-        Function<Row, Row> project,
         ExecutionContext<Row> ctx,
         Comparator<Row> peerCmp,
         Window.Group grp,
         RelDataType inputRowType
     ) {
-        super(buf, project);
+        super(buf);
         this.peerCmp = peerCmp;
         lowerBound = rangeBoundToProject(ctx, grp.lowerBound, grp.collation(), inputRowType);
         cacheableLowerBound = isCacheableBound(grp.lowerBound);

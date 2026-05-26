@@ -24,12 +24,14 @@ import java.util.List;
 import java.util.UUID;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.rel.RelCollations;
+import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.Window;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexWindowBound;
 import org.apache.calcite.rex.RexWindowBounds;
 import org.apache.calcite.rex.RexWindowExclusion;
+import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
@@ -237,12 +239,32 @@ public class WindowExecutionTest extends AbstractExecutionTest {
             row(3, 0, 1)
         ));
 
+        List<AggregateCall> calls = new ArrayList<>();
+        for (Window.RexWinAggCall aggCall : testGrp.aggCalls) {
+            SqlAggFunction op = (SqlAggFunction)aggCall.op;
+            ImmutableIntList args = Window.getProjectOrdinals(aggCall.operands);
+            AggregateCall call = AggregateCall.create(
+                op,
+                aggCall.distinct,
+                false,
+                aggCall.ignoreNulls,
+                aggCall.operands,
+                args,
+                -1,
+                null,
+                RelCollations.EMPTY,
+                aggCall.type,
+                null
+            );
+            calls.add(call);
+        }
+
         Comparator<Object[]> partCmp = ctx.expressionFactory().comparator(TraitUtils.createCollation(testGrp.keys.asList()));
         WindowNode<Object[]> window = new WindowNode<>(
             ctx,
             outRowType,
             partCmp,
-            ctx.expressionFactory().windowPartitionFactory(testGrp, inputRowType),
+            ctx.expressionFactory().windowPartitionFactory(testGrp, calls, inputRowType),
             rowFactory()
         );
 

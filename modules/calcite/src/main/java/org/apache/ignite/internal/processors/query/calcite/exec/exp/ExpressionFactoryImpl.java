@@ -150,11 +150,11 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     /** {@inheritDoc} */
     @Override public Supplier<WindowPartition<Row>> windowPartitionFactory(
         Window.Group grp,
+        List<AggregateCall> calls,
         RelDataType rowType
     ) {
-        assert !grp.aggCalls.isEmpty() : "Window aggregate calls should not be empty";
-
-        return new WindowPartitionFactory<>(ctx, grp, rowType);
+        assert !calls.isEmpty() : "Window aggregate calls should not be empty";
+        return new WindowPartitionFactory<>(ctx, grp, calls, rowType);
     }
 
     /** {@inheritDoc} */

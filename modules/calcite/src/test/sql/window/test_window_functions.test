@@ -587,9 +587,9 @@ SELECT id, val,
 FROM t_lag_lead
 ORDER BY id;
 ----
-1	10	999	0
+1	10	999	NULL
 2	NULL	10	30
-3	30	0	999
+3	30	NULL	999
 
 query IIII
 SELECT id, val,
