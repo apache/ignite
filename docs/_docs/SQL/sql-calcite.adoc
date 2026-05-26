@@ -136,7 +136,6 @@ In most cases, statement syntax is compliant with the old SQL engine. But there 
 === Supported Functions
 
 The Calcite-based SQL engine currently supports the following user-facing functions and operators.
-Functions marked as Ignite-specific are provided through Ignite's Calcite operator table.
 
 ==== Aggregate functions
 
@@ -280,6 +279,10 @@ Functions marked as Ignite-specific are provided through Ignite's Calcite operat
 |`CHARACTER_LENGTH(string)`
 |Returns the number of characters in a string.
 
+|`LENGTH`
+|`LENGTH(string)`
+|Alias for `CHAR_LENGTH(string)`.
+
 |`\|\|`
 |`string \|\| string`
 |Concatenates two strings.
@@ -387,6 +390,18 @@ Functions marked as Ignite-specific are provided through Ignite's Calcite operat
 |`MOD`
 |`MOD(numeric1, numeric2)` or `numeric1 % numeric2`
 |Returns the remainder after division.
+
+|`BITAND`
+|`BITAND(integer1, integer2)`
+|Returns the bitwise AND of two integer values.
+
+|`BITOR`
+|`BITOR(integer1, integer2)`
+|Returns the bitwise OR of two integer values.
+
+|`BITXOR`
+|`BITXOR(integer1, integer2)`
+|Returns the bitwise XOR of two integer values.
 
 |`EXP`
 |`EXP(numeric)`
@@ -836,6 +851,10 @@ Functions marked as Ignite-specific are provided through Ignite's Calcite operat
 |`value::type`
 |Converts a value to the specified type using PostgreSQL-style cast syntax.
 
+|`TYPEOF`
+|`TYPEOF(value)`
+|Returns the Ignite SQL type of a value.
+
 |`COALESCE`
 |`COALESCE(value, value[, value]...)`
 |Returns the first non-null value.
@@ -872,37 +891,9 @@ Functions marked as Ignite-specific are provided through Ignite's Calcite operat
 |`OCTET_LENGTH(binary)`
 |Returns the number of bytes in binary data.
 
-|===
-
-==== Ignite-specific functions
-
-[cols="1,2,4",opts="stretch,header"]
-|===
-|Name | Syntax | Description
-
-|`LENGTH`
-|`LENGTH(string)`
-|Ignite-specific alias for `CHAR_LENGTH(string)`.
-
-|`TYPEOF`
-|`TYPEOF(value)`
-|Returns the Ignite SQL type of a value.
-
 |`QUERY_ENGINE`
 |`QUERY_ENGINE()`
 |Returns the name of the query engine used by the query.
-
-|`BITAND`
-|`BITAND(integer1, integer2)`
-|Returns the bitwise AND of two integer values.
-
-|`BITOR`
-|`BITOR(integer1, integer2)`
-|Returns the bitwise OR of two integer values.
-
-|`BITXOR`
-|`BITXOR(integer1, integer2)`
-|Returns the bitwise XOR of two integer values.
 
 |`SYSTEM_RANGE`
 |`TABLE(SYSTEM_RANGE(start, end[, increment]))`
