@@ -93,12 +93,12 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
 
     /** */
     @Test
-    public void testNestedLimitOffsetWithUnion() {
-        sql("INSERT into TEST_REPL VALUES (1, 'a'), (2, 'b'), (3, 'c'), (4, 'd')");
+    public void testNestedLimitOffsetWithUnion() throws Exception {
+        fillCache(cacheRepl, 4);
 
         assertQuery("(SELECT id FROM TEST_REPL WHERE id = 2) UNION ALL " +
             "SELECT id FROM (select id from (SELECT id FROM TEST_REPL OFFSET 2) order by id OFFSET 1)"
-        ).returns(2).returns(4).check();
+        ).returns(2).returns(3).check();
     }
 
     /** Tests correctness of fetch / offset params. */
@@ -252,6 +252,11 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
 
         // With parameters.
         assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST (?) ROWS ONLY")
+            .withParams(1)
+            .returns(0)
+            .check();
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST (?) ROWS ONLY")
             .withParams(2)
             .returns(0)
             .returns(1)
@@ -303,6 +308,36 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
             .returns(3)
             .returns(2)
             .check();
+
+        // With parameters.
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id DESC FETCH FIRST (1 + (2 - 1) + ?) ROWS ONLY")
+            .withParams(2)
+            .returns(4)
+            .returns(3)
+            .returns(2)
+            .returns(1)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testFetchExpressionWithoutSortOrder() throws Exception {
+        fillCache(cacheRepl, 5);
+
+        assertQuery("SELECT id FROM TEST_REPL FETCH FIRST (1 + (2 - 1) + 1) ROWS ONLY")
+            .returns(0)
+            .returns(1)
+            .returns(2)
+            .check();
+
+        // With parameters.
+        assertQuery("SELECT id FROM TEST_REPL FETCH FIRST (1 + (2 - 1) + ?) ROWS ONLY")
+            .withParams(2)
+            .returns(0)
+            .returns(1)
+            .returns(2)
+            .returns(3)
+            .check();
     }
 
     /** */
@@ -349,6 +384,55 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
         // Check negative param.
         assertThrows("SELECT id FROM TEST_REPL ORDER BY id DESC FETCH FIRST (? + 1) ROWS ONLY",
             IgniteSQLException.class, "FETCH must not be negative", -2);
+    }
+
+    /** */
+    @Test
+    public void testFetchExpressionCachedQueryAndWithoutSortOrder() throws Exception {
+        fillCache(cacheRepl, 5);
+
+        assertQuery("SELECT id FROM TEST_REPL FETCH FIRST (? + 1) ROWS ONLY")
+            .withParams(1)
+            .returns(0)
+            .returns(1)
+            .check();
+
+        assertQuery("SELECT id FROM TEST_REPL FETCH FIRST (? + 1) ROWS ONLY")
+            .withParams(2)
+            .returns(0)
+            .returns(1)
+            .returns(2)
+            .check();
+
+        // Check negative param.
+        assertThrows("SELECT id FROM TEST_REPL FETCH FIRST (? + 1) ROWS ONLY",
+            IgniteSQLException.class, "FETCH must not be negative", -2);
+    }
+
+    /** */
+    @Test
+    public void testFetchExpressionNested() throws Exception {
+        fillCache(cacheRepl, 5);
+
+        assertQuery("SELECT id FROM (SELECT id from TEST_REPL FETCH FIRST (? + 3) ROWS ONLY) " +
+            "FETCH NEXT (1 + ?) ROWS ONLY")
+            .withParams(2, 1)
+            .returns(0)
+            .returns(1)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void test() throws Exception {
+        fillCache(cacheRepl, 5);
+
+        assertQuery("SELECT id FROM TEST_REPL FETCH FIRST (SQRT(?)) ROWS ONLY")
+            .withParams(4)
+            .returns(0)
+            .returns(1)
+            .returns(3)
+            .check();
     }
 
     /**
