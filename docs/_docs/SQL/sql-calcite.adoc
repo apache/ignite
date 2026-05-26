@@ -899,10 +899,6 @@ The Calcite-based SQL engine currently supports the following user-facing functi
 |`TABLE(SYSTEM_RANGE(start, end[, increment]))`
 |Returns a table with one `BIGINT` column named `X` and one row for each value in the range.
 
-|===
-
-For more information on standard Calcite functions and syntax variants, please see the link:https://calcite.apache.org/docs/reference.html#operators-and-functions[Apache Calcite SQL language reference, window=_blank].
-
 === Supported Data Types
 
 Below are the data types supported by the Calcite-based SQL engine:
