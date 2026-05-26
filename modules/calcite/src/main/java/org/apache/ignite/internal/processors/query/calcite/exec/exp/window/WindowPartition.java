@@ -22,7 +22,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 
 /** Partition of rows in window function calculation. */
 public interface WindowPartition<Row> {
-
     /** Adding row to the window partition. */
     void add(Row row);
 

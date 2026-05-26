@@ -224,9 +224,8 @@ public class IgniteWindow extends Window implements IgniteRel {
         if (desiredDistribution.satisfies(IgniteDistributions.single()) || desiredDistribution.function().correlated())
             return true;
 
-        if (desiredDistribution.getType() == RelDistribution.Type.HASH_DISTRIBUTED) {
+        if (desiredDistribution.getType() == RelDistribution.Type.HASH_DISTRIBUTED)
             return grp.keys.contains(ImmutableBitSet.of(desiredDistribution.getKeys()));
-        }
 
         return false;
     }
