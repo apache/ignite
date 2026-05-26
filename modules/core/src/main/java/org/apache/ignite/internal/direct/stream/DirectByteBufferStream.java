@@ -42,6 +42,7 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageArrayType;
@@ -2301,6 +2302,36 @@ public class DirectByteBufferStream {
                 uuidLeast = GridUnsafe.getLong(heapArr, off + 8);
             }
         }
+    }
+
+    /** */
+    public void writeIgniteProductVersion(IgniteProductVersion ver) {
+        lastFinished = buf.remaining() >= IgniteProductVersion.SIZE_IN_BYTES + Integer.BYTES /* extra 4 byte to store array length. */;
+
+        if (lastFinished) {
+            buf.put(ver.major());
+            buf.put(ver.minor());
+            buf.put(ver.maintenance());
+            buf.putLong(ver.revisionTimestamp());
+            writeByteArray(ver.revisionHash());
+        }
+    }
+
+    /** */
+    public IgniteProductVersion readIgniteProductVersion() {
+        lastFinished = buf.remaining() >= IgniteProductVersion.SIZE_IN_BYTES + Integer.BYTES /* extra 4 byte to store array length. */;
+
+        if (lastFinished) {
+            return new IgniteProductVersion(
+                buf.get(),
+                buf.get(),
+                buf.get(),
+                buf.getLong(),
+                readByteArray()
+            );
+        }
+
+        return null;
     }
 
     /** {@inheritDoc} */
