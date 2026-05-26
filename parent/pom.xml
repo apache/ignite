@@ -110,6 +110,7 @@
         <spring.version>5.3.39</spring.version>
         <surefire.version>3.5.4</surefire.version>
         <tomcat.version>10.0.27</tomcat.version>
+        <testcontainers.version>2.0.5</testcontainers.version>
         <yardstick.version>0.8.3</yardstick.version>
         <zookeeper.version>3.9.5</zookeeper.version>
         <zstd.version>1.5.7-8</zstd.version>
