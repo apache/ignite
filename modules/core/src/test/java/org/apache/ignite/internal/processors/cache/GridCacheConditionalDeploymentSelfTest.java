@@ -22,11 +22,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.plugin.AbstractTestPluginProvider;
-import org.apache.ignite.plugin.ExtensionRegistry;
-import org.apache.ignite.plugin.PluginContext;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
+import org.apache.ignite.spi.MessagesPluginProvider;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -45,7 +41,7 @@ public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTe
 
         cfg.setCacheConfiguration(cacheConfiguration());
 
-        cfg.setPluginProviders(new TestPluginProvider());
+        cfg.setPluginProviders(new MessagesPluginProvider(TestCacheMessage.class));
 
         return cfg;
     }
@@ -89,7 +85,7 @@ public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTe
     public void testNoDeploymentInfo() throws Exception {
         GridCacheIoManager ioMgr = cacheIoManager();
 
-        TestMessage msg = new TestMessage();
+        TestCacheMessage msg = new TestCacheMessage();
 
         assertNull(msg.deployInfo());
 
@@ -101,55 +97,13 @@ public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTe
     }
 
     /**
-     * @return Cache context.
-     */
-    protected GridCacheContext<?, ?> cacheContext() {
-        return ((IgniteCacheProxy<?, ?>)grid(0).cache(DEFAULT_CACHE_NAME)).context();
-    }
-
-    /**
      * @return IO manager.
      */
     protected GridCacheIoManager cacheIoManager() {
         return grid(0).context().cache().context().io();
     }
 
-    /**
-     * Test message class.
-     */
-    public static class TestMessage extends GridCacheMessage implements GridCacheDeployable {
-        /** */
-        public static final short DIRECT_TYPE = 302;
-
-        /** {@inheritDoc} */
-        @Override public short directType() {
-            return DIRECT_TYPE;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean addDeploymentInfo() {
-            return addDepInfo;
-        }
-    }
-
     /** */
     private static class TestValue {
-    }
-
-    /** */
-    public static class TestPluginProvider extends AbstractTestPluginProvider {
-        /** {@inheritDoc} */
-        @Override public String name() {
-            return "TEST_PLUGIN";
-        }
-
-        /** {@inheritDoc} */
-        @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
-            registry.registerExtension(MessageFactoryProvider.class, new MessageFactoryProvider() {
-                @Override public void registerAll(MessageFactory factory) {
-                    factory.register(TestMessage.DIRECT_TYPE, TestMessage::new);
-                }
-            });
-        }
     }
 }

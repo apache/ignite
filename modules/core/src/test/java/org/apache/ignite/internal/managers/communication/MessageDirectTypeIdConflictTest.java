@@ -17,22 +17,18 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.PluginContext;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.managers.communication.DuplicateDirectTypeIdMessage.DIRECT_TYPE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
@@ -40,9 +36,6 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
  * for which message factory is already registered.
  */
 public class MessageDirectTypeIdConflictTest extends GridCommonAbstractTest {
-    /** Message direct type. Message with this direct type will be registered by {@link CoreMessagesProvider} first. */
-    private static final short MSG_DIRECT_TYPE = CoreMessagesProvider.HANDSHAKE_MSG_TYPE;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -74,7 +67,7 @@ public class MessageDirectTypeIdConflictTest extends GridCommonAbstractTest {
     @SuppressWarnings({"RedundantThrows", "ThrowableNotThrown"})
     public void testRegisterMessageFactoryWithConflictDirectTypeId() throws Exception {
         assertThrows(log, (Callable<Object>)this::startGrid, IgniteCheckedException.class,
-                "Message factory is already registered for direct type: " + MSG_DIRECT_TYPE);
+            "Message factory is already registered for direct type: " + DIRECT_TYPE);
     }
 
     /** */
@@ -88,28 +81,9 @@ public class MessageDirectTypeIdConflictTest extends GridCommonAbstractTest {
         @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
             registry.registerExtension(MessageFactoryProvider.class, new MessageFactoryProvider() {
                 @Override public void registerAll(MessageFactory factory) {
-                    factory.register(MSG_DIRECT_TYPE, TestMessage::new);
+                    factory.register(DIRECT_TYPE, DuplicateDirectTypeIdMessage::new, new DuplicateDirectTypeIdMessageSerializer());
                 }
             });
         }
-    }
-
-    /** Test message with already registered direct type. */
-    private static class TestMessage implements Message {
-        /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public short directType() {
-            return MSG_DIRECT_TYPE;
-        }
-
     }
 }

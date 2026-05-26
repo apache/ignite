@@ -343,8 +343,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
 
         // [5000 - 5500]: Utility messages. Most of them originally come from Discovery.
         msgIdx = 5000;
-        // We don't use the code‑generated serializer for CompressedMessage - serialization is highly customized.
-        factory.register(msgIdx++, CompressedMessage::new);
+        withNoSchema(CompressedMessage.class);
         withNoSchemaResolvedClassLoader(ErrorMessage.class);
         withNoSchema(InetSocketAddressMessage.class);
         withNoSchema(InetAddressMessage.class);

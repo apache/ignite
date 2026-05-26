@@ -55,7 +55,7 @@ import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcess
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.MessageProcessor.COMPRESSED_MESSAGE_INTERFACE;
+import static org.apache.ignite.internal.MessageProcessor.COMPRESSED_MESSAGE_CLASS;
 import static org.apache.ignite.internal.MessageProcessor.MARSHALLABLE_MESSAGE_INTERFACE;
 import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
 
@@ -460,7 +460,7 @@ public class MessageSerializerGenerator {
                 returnFalseIfWriteFailed(write, field, "writer.writeGridLongList", getExpr);
 
             else if (assignableFrom(type, type(MESSAGE_INTERFACE))) {
-                if (sameType(type, COMPRESSED_MESSAGE_INTERFACE))
+                if (sameType(type, COMPRESSED_MESSAGE_CLASS))
                     throw new IllegalArgumentException(COMPRESSED_MSG_ERROR);
 
                 if (compress)
@@ -686,7 +686,7 @@ public class MessageSerializerGenerator {
                 returnFalseIfReadFailed(field, "reader.readGridLongList");
 
             else if (assignableFrom(type, type(MESSAGE_INTERFACE))) {
-                if (sameType(type, COMPRESSED_MESSAGE_INTERFACE))
+                if (sameType(type, COMPRESSED_MESSAGE_CLASS))
                     throw new IllegalArgumentException(COMPRESSED_MSG_ERROR);
 
                 if (compress)
@@ -844,7 +844,7 @@ public class MessageSerializerGenerator {
             if (primitiveType != null)
                 return primitiveType.getKind().toString();
 
-            if (sameType(type, COMPRESSED_MESSAGE_INTERFACE))
+            if (sameType(type, COMPRESSED_MESSAGE_CLASS))
                 throw new IllegalArgumentException(COMPRESSED_MSG_ERROR);
         }
 
