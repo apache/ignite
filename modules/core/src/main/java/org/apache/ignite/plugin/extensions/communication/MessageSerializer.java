@@ -18,8 +18,8 @@
 package org.apache.ignite.plugin.extensions.communication;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 
 /** Message serialization logic. */
 public interface MessageSerializer<M extends Message> {
@@ -47,11 +47,11 @@ public interface MessageSerializer<M extends Message> {
      * non-null when invoking this method; resolution-with-null-skip happens at call sites.
      *
      * @param msg Message instance.
-     * @param sctx Shared context.
+     * @param ctx Kernal context.
      * @param nested Nested context.
      * @throws IgniteCheckedException If marshalling fails.
      */
-    public default void prepareMarshal(M msg, GridCacheSharedContext<?, ?> sctx, GridCacheContext<?, ?> nested)
+    public default void prepareMarshal(M msg, GridKernalContext ctx, GridCacheContext<?, ?> nested)
         throws IgniteCheckedException {
         // No-op by default.
     }

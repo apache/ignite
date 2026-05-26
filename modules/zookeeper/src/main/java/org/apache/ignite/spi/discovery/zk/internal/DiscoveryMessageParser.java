@@ -93,7 +93,7 @@ public class DiscoveryMessageParser {
         MessageSerializer msgSer = msgFactory.serializer(m.directType());
 
         try {
-            msgSer.prepareMarshal(m, ((IgniteEx)spi.ignite()).context().cache().context(), null);
+            msgSer.prepareMarshal(m, ((IgniteEx)spi.ignite()).context(), null);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to marshal joining node data", e);

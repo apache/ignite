@@ -1930,9 +1930,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             false
         );
 
-        MessageSerializer ser = ctx.io().messageFactory().serializer(ioMsg.directType());
+        MessageSerializer ser = ctx.messageFactory().serializer(ioMsg.directType());
 
-        ser.prepareMarshal(ioMsg, ctx.cache().context(), null);
+        ser.prepareMarshal(ioMsg, ctx, null);
 
         try {
             return ((TcpCommunicationSpi)(CommunicationSpi)getSpi()).openChannel(node, ioMsg);
@@ -1983,9 +1983,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
             GridIoMessage ioMsg = createGridIoMessage(topic, msg, plc, ordered, timeout, skipOnTimeout);
 
-            MessageSerializer ser = ctx.io().messageFactory().serializer(ioMsg.directType());
+            MessageSerializer ser = ctx.messageFactory().serializer(ioMsg.directType());
 
-            ser.prepareMarshal(ioMsg, ctx.cache().context(), null);
+            ser.prepareMarshal(ioMsg, ctx, null);
 
             if (locNodeId.equals(node.id())) {
 

@@ -261,7 +261,7 @@ public class MessageSerializerGenerator {
     private void generateMarshallMethods(List<VariableElement> orderedFields) throws Exception {
         imports.add("org.apache.ignite.IgniteCheckedException");
         imports.add("org.apache.ignite.internal.processors.cache.CacheObjectValueContext");
-        imports.add("org.apache.ignite.internal.processors.cache.GridCacheSharedContext");
+        imports.add("org.apache.ignite.internal.GridKernalContext");
         imports.add("org.apache.ignite.internal.processors.cache.GridCacheContext");
 
         indent = 1;
@@ -270,13 +270,13 @@ public class MessageSerializerGenerator {
 
         marshall.add(indentedLine(
             "@Override public void prepareMarshal(" + simpleNameWithGeneric(type) +
-                " msg, GridCacheSharedContext<?,?> sctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {"));
+                " msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {"));
 
         indent++;
 
         if (isCacheIdAwareMessage(type))
             marshall.add(
-                indentedLine("GridCacheContext<?, ?> ctx = nested == null ? sctx.cacheContext(msg.cacheId()) : nested;"));
+                indentedLine("GridCacheContext<?, ?> ctx = nested == null ? kctx.cache().context().cacheContext(msg.cacheId()) : nested;"));
         else
             marshall.add(indentedLine("GridCacheContext<?, ?> ctx = nested;"));
 
@@ -349,7 +349,7 @@ public class MessageSerializerGenerator {
                 indent++;
 
                 code.add(indentedLine(
-                    "sctx.gridIO().messageFactory().serializer(%s.directType()).prepareMarshal(%s, sctx, ctx);",
+                    "kctx.messageFactory().serializer(%s.directType()).prepareMarshal(%s, kctx, ctx);",
                     accessor,
                     accessor));
 
