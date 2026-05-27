@@ -344,7 +344,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(GridDiscoveryData data) {
-        List<Map<Integer, MappedName>> mappings = (List<Map<Integer, MappedName>>)data.commonData();
+        List<Map<Integer, MappedName>> mappings = data.commonData();
 
         processIncomingMappings(mappings);
     }

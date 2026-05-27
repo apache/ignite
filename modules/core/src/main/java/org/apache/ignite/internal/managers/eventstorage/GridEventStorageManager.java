@@ -1179,7 +1179,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         if (ctx.clientNode())
             return;
 
-        GridIntList clusterData = new GridIntList((int[])data.commonData());
+        GridIntList clusterData = new GridIntList(data.commonData());
         GridIntList nodeData = new GridIntList(enabledEvents());
 
         GridIntList toEnable = new GridIntList(clusterData.size());

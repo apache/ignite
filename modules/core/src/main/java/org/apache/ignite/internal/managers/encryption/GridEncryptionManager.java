@@ -571,7 +571,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (ctx.clientNode())
             return;
 
-        Map<Integer, Object> encKeysFromCluster = (Map<Integer, Object>)data.commonData();
+        Map<Integer, Object> encKeysFromCluster = data.commonData();
 
         if (F.isEmpty(encKeysFromCluster))
             return;

@@ -1530,7 +1530,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(GridDiscoveryData data) {
-        Map<Integer, BinaryMetadataVersionInfo> receivedData = (Map<Integer, BinaryMetadataVersionInfo>)data.commonData();
+        Map<Integer, BinaryMetadataVersionInfo> receivedData = data.commonData();
 
         if (receivedData != null) {
             for (Map.Entry<Integer, BinaryMetadataVersionInfo> e : receivedData.entrySet()) {

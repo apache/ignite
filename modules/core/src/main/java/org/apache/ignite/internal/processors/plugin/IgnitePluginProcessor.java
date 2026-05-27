@@ -202,17 +202,14 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(GridDiscoveryData data) {
-        Map<UUID, Serializable> nodeSpecificData = data.nodeSpecificData();
+        Map<UUID, Map<String, Serializable>> nodeSpecificData = data.nodeSpecificData();
 
         if (nodeSpecificData != null) {
             UUID joiningNodeId = data.joiningNodeId();
 
-            for (Serializable v : nodeSpecificData.values()) {
-                if (v != null) {
-                    Map<String, Serializable> pluginsData = (Map<String, Serializable>)v;
-
+            for (Map<String, Serializable> pluginsData : nodeSpecificData.values()) {
+                if (pluginsData != null)
                     applyPluginsData(joiningNodeId, pluginsData);
-                }
             }
         }
     }

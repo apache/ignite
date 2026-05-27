@@ -28,5 +28,6 @@ public class ZkMessageFactory implements MessageFactoryProvider {
         factory.register(401, ZkCommunicationErrorResolveStartMessage::new, new ZkCommunicationErrorResolveStartMessageSerializer());
         factory.register(402, ZkForceNodeFailMessage::new, new ZkForceNodeFailMessageSerializer());
         factory.register(403, ZkNoServersMessage::new, new ZkNoServersMessageSerializer());
+        factory.register(404, ZkDiscoData::new, new ZkDiscoDataSerializer());
     }
 }

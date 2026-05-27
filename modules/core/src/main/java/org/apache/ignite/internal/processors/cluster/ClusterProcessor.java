@@ -488,7 +488,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(GridDiscoveryData data) {
-        Map<UUID, Serializable> nodeSpecData = data.nodeSpecificData();
+        Map<UUID, Map<String, Boolean>> nodeSpecData = data.nodeSpecificData();
 
         if (nodeSpecData != null) {
             Boolean lstFlag = findLastFlag(nodeSpecData.values());
@@ -497,7 +497,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
                 notifyEnabled.set(lstFlag);
         }
 
-        ClusterIdAndTag commonData = (ClusterIdAndTag)data.commonData();
+        ClusterIdAndTag commonData = data.commonData();
 
         if (commonData != null) {
             Serializable remoteClusterId = commonData.id();
@@ -523,19 +523,13 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
     /**
      * @param vals collection to seek through.
      */
-    private Boolean findLastFlag(Collection<Serializable> vals) {
-        Boolean flag = null;
-
-        for (Serializable ser : vals) {
-            if (ser != null) {
-                Map<String, Object> map = (Map<String, Object>)ser;
-
-                if (map.containsKey(ATTR_UPDATE_NOTIFIER_STATUS))
-                    flag = (Boolean)map.get(ATTR_UPDATE_NOTIFIER_STATUS);
-            }
+    private Boolean findLastFlag(Collection<Map<String, Boolean>> vals) {
+        for (Map<String, Boolean> map : vals) {
+            if (map != null && map.containsKey(ATTR_UPDATE_NOTIFIER_STATUS))
+                return map.get(ATTR_UPDATE_NOTIFIER_STATUS);
         }
 
-        return flag;
+        return null;
     }
 
     /** {@inheritDoc} */

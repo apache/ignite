@@ -430,7 +430,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
-        initUsrs = (InitialUsersData)data.commonData();
+        initUsrs = data.commonData();
     }
 
     /** {@inheritDoc} */

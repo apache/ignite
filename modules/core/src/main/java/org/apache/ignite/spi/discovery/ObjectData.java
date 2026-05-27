@@ -18,6 +18,8 @@
 package org.apache.ignite.spi.discovery;
 
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Objects;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
@@ -58,25 +60,44 @@ public class ObjectData implements MarshallableMessage {
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (dataBytes != null) {
+        if (dataBytes != null)
             data = U.unmarshal(marsh, dataBytes, clsLdr);
+    }
 
-            dataBytes = null;
-        }
+    /**
+     * @param <T> Type of data.
+     *
+     * @return Original data unwrapped from a message.
+     */
+    <T> T unwrap() {
+        return (T)(data);
     }
 
     /**
      * @param msg Message.
      * @param <T> Type of data.
      *
-     * @return Original data unwrapped from a message.
+     * @return Original message or data unwrapped from an ObjectData wrapper.
      */
-    public static <T> T unwrap(@Nullable Message msg) {
-        return msg != null ? (T)(((ObjectData)msg).data) : null;
+    static @Nullable <T> T unwrapIfNecessary(@Nullable Message msg) {
+        if (msg == null)
+            return null;
+
+        return msg instanceof ObjectData ? ((ObjectData)msg).unwrap() : (T)msg;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(ObjectData.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        ObjectData data1 = (ObjectData)o;
+
+        return Objects.equals(data, data1.data) || Arrays.equals(dataBytes, data1.dataBytes);
     }
 }

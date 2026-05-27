@@ -15,32 +15,37 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query;
+package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.util.Map;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
-/** */
-public class InlineSizesData implements Message {
+/** Data bag data holder. */
+public class ZkDiscoData implements Message {
     /** */
     @Order(0)
-    Map<String, Integer> sizes;
-
-    /** */
-    public InlineSizesData() {}
+    Map<Integer, Message> data;
 
     /**
-     * @param sizes Inline sizes.
+     * Default constructor for {@link MessageFactory}.
      */
-    public InlineSizesData(Map<String, Integer> sizes) {
-        this.sizes = sizes;
+    public ZkDiscoData() {
+        // No-op.
     }
 
     /**
-     * @return Inline sizes.
+     * @param data Discovery data.
      */
-    public Map<String, Integer> sizes() {
-        return sizes;
+    public ZkDiscoData(Map<Integer, Message> data) {
+        this.data = data;
+    }
+
+    /**
+     * @return Data.
+     */
+    public Map<Integer, Message> data() {
+        return data;
     }
 }

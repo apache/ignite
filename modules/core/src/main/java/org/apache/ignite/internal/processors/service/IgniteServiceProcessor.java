@@ -389,7 +389,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         if (data.commonData() == null)
             return;
 
-        ServiceProcessorCommonDiscoveryData clusterData = (ServiceProcessorCommonDiscoveryData)data.commonData();
+        ServiceProcessorCommonDiscoveryData clusterData = data.commonData();
 
         for (ServiceInfo desc : clusterData.registeredServices()) {
             try {
