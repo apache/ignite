@@ -25,9 +25,11 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Delayed;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -36,19 +38,28 @@ import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.thread.context.concurrent.IgniteCompletableFuture;
+import org.apache.ignite.internal.thread.context.function.OperationContextAwareWrapper;
 import org.apache.ignite.internal.thread.pool.IgniteForkJoinPool;
 import org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolExecutor;
 import org.apache.ignite.internal.thread.pool.IgniteStripedExecutor;
 import org.apache.ignite.internal.thread.pool.IgniteStripedThreadPoolExecutor;
 import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.queue.IgniteAsyncObjectHandler;
+import org.apache.ignite.internal.util.worker.queue.IgniteDelayedObjectHandler;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.thread.IgniteThread;
 import org.junit.Test;
+import org.springframework.lang.NonNull;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
@@ -677,6 +688,127 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
+    public void testTimeoutWorker() throws Exception {
+        startGrid(0);
+
+        GridTimeoutProcessor timeoutProc = grid(0).context().timeout();
+
+        List<GridTimeoutProcessor.CancelableTask> scheduledTasks = new ArrayList<>();
+
+        try {
+            BiConsumerX<String, Integer> checks = (s, i) -> {
+                assertTrue(timeoutProc.addTimeoutObject(AttributeValueChecker.createTimeoutObject(s, i)));
+                scheduledTasks.add(timeoutProc.schedule(new AttributeValueChecker(s, i), 100, 100));
+            };
+
+            execute(checks);
+
+            AttributeValueChecker.assertAllCreatedChecksPassed();
+        }
+        finally {
+            scheduledTasks.forEach(GridTimeoutProcessor.CancelableTask::close);
+        }
+    }
+
+    /** */
+    @Test
+    public void testIgniteThread() throws Exception {
+        List<IgniteThread> threads = new ArrayList<>();
+
+        try {
+            BiConsumerX<String, Integer> checks = (s, i) ->
+                threads.add(new IgniteThread("test", "test", new AttributeValueChecker(s, i)));
+
+            execute(checks);
+
+            threads.forEach(IgniteThread::start);
+
+            AttributeValueChecker.assertAllCreatedChecksPassed();
+        }
+        finally {
+            threads.forEach(IgniteThread::interrupt);
+
+            for (IgniteThread thread : threads)
+                thread.join();
+        }
+    }
+
+    /** */
+    @Test
+    public void testContextAwareQueue() throws Exception {
+        IgniteAsyncObjectHandler<AttributeValueChecker> proc =
+            new IgniteAsyncObjectHandler<>("test", "test", log, null) {
+                @Override protected void body() throws InterruptedException {
+                    while (!isCancelled()) {
+                        OperationContextAwareWrapper<AttributeValueChecker> w = pollQueuedElement(100, MILLISECONDS);
+
+                        if (w == null)
+                            continue;
+
+                        try (Scope ignored0 = OperationContext.set(STR_ATTR, "test", INT_ATTR, 5)) {
+                            try (Scope ignored1 = OperationContext.restoreSnapshot(w.contextSnapshot())) {
+                                w.delegate().run();
+                            }
+
+                            checkAttributeValues("test", 5);
+                        }
+                    }
+
+                }
+            };
+
+        try {
+            proc.start();
+
+            execute((s, i) -> proc.addToQueue(new AttributeValueChecker(s, i)));
+
+            AttributeValueChecker.assertAllCreatedChecksPassed();
+        }
+        finally {
+            U.cancel(proc);
+            U.join(proc);
+        }
+    }
+
+    /** */
+    @Test
+    public void testContextAwareDelayQueue() throws Exception {
+        IgniteDelayedObjectHandler<TestDelayedObject> proc = new IgniteDelayedObjectHandler<>("test", "test", log, null) {
+            @Override protected void body() {
+                try {
+                    while (!isCancelled()) {
+                        OperationContextAwareWrapper<TestDelayedObject> w = takeQueuedElement();
+
+                        try (Scope ignored0 = OperationContext.set(STR_ATTR, "test", INT_ATTR, 5)) {
+                            try (Scope ignored1 = OperationContext.restoreSnapshot(w.contextSnapshot())) {
+                                w.delegate().checker.run();
+                            }
+
+                            checkAttributeValues("test", 5);
+                        }
+                    }
+                }
+                catch (InterruptedException ignored) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        };
+
+        try {
+            proc.start();
+
+            execute((s, i) -> proc.addToQueue(new TestDelayedObject(new AttributeValueChecker(s, i))));
+
+            AttributeValueChecker.assertAllCreatedChecksPassed();
+        }
+        finally {
+            U.cancel(proc);
+            U.join(proc);
+        }
+    }
+
+    /** */
     private void doContextAwareExecutorServiceTest(ExecutorService pool) throws Exception {
         CountDownLatch poolUnblockedLatch = blockPool(pool);
 
@@ -792,8 +924,30 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
         /** */
         static void assertAllCreatedChecksPassed() throws Exception {
             for (AttributeValueChecker check : CHECKS) {
-                check.get(1000, MILLISECONDS);
+                check.get(5_000, MILLISECONDS);
             }
+        }
+
+        /** */
+        static GridTimeoutObject createTimeoutObject(String strAttrVal, int intAttrVal) {
+            AttributeValueChecker checker = new AttributeValueChecker(strAttrVal, intAttrVal);
+
+            IgniteUuid id = IgniteUuid.randomUuid();
+            long endTime = System.currentTimeMillis() + 1000;
+
+            return new GridTimeoutObject() {
+                @Override public IgniteUuid timeoutId() {
+                    return id;
+                }
+
+                @Override public long endTime() {
+                    return endTime;
+                }
+
+                @Override public void onTimeout() {
+                    checker.run();
+                }
+            };
         }
 
         /** */
@@ -895,6 +1049,27 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
             AttributeValueChecker checker = new AttributeValueChecker(strAttrVal, intAttrVal);
 
             return (r, t) -> checker.run();
+        }
+    }
+
+    /** */
+    private static class TestDelayedObject implements Delayed {
+        /** */
+        private final AttributeValueChecker checker;
+
+        /** */
+        private TestDelayedObject(AttributeValueChecker checker) {
+            this.checker = checker;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getDelay(@NonNull TimeUnit unit) {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int compareTo(@NonNull Delayed o) {
+            return 0;
         }
     }
 

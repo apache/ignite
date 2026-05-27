@@ -188,9 +188,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     private final JdkMarshaller marshaller;
 
     /**
-     * Worker that will write data on disk asynchronously. Makes sence for persistent nodes only.
+     * Writer that asynchronously handles tasks of writing data to disk. Makes sense for persistent nodes only.
      */
-    private final DmsDataWriterWorker worker;
+    private final DmsDataWriter dataWriter;
 
     /**
      * @param ctx Kernal context.
@@ -210,9 +210,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
         //noinspection IfMayBeConditional
         if (!isPersistenceEnabled)
-            worker = null;
+            dataWriter = null;
         else {
-            worker = new DmsDataWriterWorker(
+            dataWriter = new DmsDataWriter(
                 ctx.igniteInstanceName(),
                 log,
                 new DmsLocalMetaStorageLock() {
@@ -301,7 +301,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
         if (isPersistenceEnabled) {
             try {
-                worker.cancel(cancel);
+                dataWriter.cancel(cancel);
             }
             catch (InterruptedException e) {
                 log.error("Cannot stop distributed metastorage worker.", e);
@@ -447,9 +447,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         lock.writeLock().lock();
 
         try {
-            worker.setMetaStorage(metastorage);
+            dataWriter.setMetaStorage(metastorage);
 
-            worker.start();
+            dataWriter.start();
         }
         finally {
             lock.writeLock().unlock();
@@ -980,7 +980,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 }
 
                 if (isPersistenceEnabled && nodeData.fullData != null)
-                    worker.update(nodeData);
+                    dataWriter.addUpdateTask(nodeData);
 
                 if (nodeData.updates != null) {
                     for (DistributedMetaStorageHistoryItem update : nodeData.updates)
@@ -1140,7 +1140,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     public Future<?> flush() {
         assert isPersistenceEnabled;
 
-        return worker.flush();
+        return dataWriter.flush();
     }
 
     /**
@@ -1153,7 +1153,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
         try {
             // Read lock taken, so no other distributed updated will be added to the queue.
-            worker.suspend(compFut);
+            dataWriter.suspend(compFut);
         }
         finally {
             lock.readLock().unlock();
@@ -1206,14 +1206,14 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         addToHistoryCache(ver.id(), histItem);
 
         if (isPersistenceEnabled)
-            worker.update(histItem);
+            dataWriter.addUpdateTask(histItem);
 
         // Shrink history so that its estimating size doesn't exceed {@link #histMaxBytes}.
         while (histCache.sizeInBytes() > histMaxBytes && histCache.size() > 1) {
             histCache.removeOldest();
 
             if (isPersistenceEnabled)
-                worker.removeHistItem(ver.id() - histCache.size());
+                dataWriter.removeHistItem(ver.id() - histCache.size());
         }
     }
 

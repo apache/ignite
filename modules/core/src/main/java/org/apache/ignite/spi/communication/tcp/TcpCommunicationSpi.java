@@ -68,14 +68,13 @@ import org.apache.ignite.spi.IgniteSpiConsistencyChecked;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
-import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.internal.ClusterStateProvider;
+import org.apache.ignite.spi.communication.tcp.internal.CommunicationConnectionStateHandler;
 import org.apache.ignite.spi.communication.tcp.internal.CommunicationDiscoveryEventListener;
 import org.apache.ignite.spi.communication.tcp.internal.CommunicationListenerEx;
 import org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils;
-import org.apache.ignite.spi.communication.tcp.internal.CommunicationWorker;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectGateway;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectionKey;
@@ -326,7 +325,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
     private volatile ConnectionClientPool clientPool;
 
     /** Recovery and idle clients handler. */
-    private volatile CommunicationWorker commWorker;
+    private volatile CommunicationConnectionStateHandler conStateHnd;
 
     /** Server listener. */
     private volatile InboundConnectionHandler srvLsnr;
@@ -607,7 +606,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             locNodeSupplier,
             stateProvider,
             clientPool,
-            commWorker,
+            conStateHnd,
             connectGate,
             failureProcSupplier,
             attributeNames,
@@ -644,7 +643,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             connectGate,
             stateProvider,
             this::getExceptionRegistry,
-            commWorker,
+            conStateHnd,
             ignite.configuration(),
             this.srvLsnr,
             igniteInstanceName,
@@ -758,7 +757,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
 
         nioSrvWrapper.start();
 
-        this.commWorker = new CommunicationWorker(
+        this.conStateHnd = new CommunicationConnectionStateHandler(
             igniteInstanceName,
             log,
             cfg,
@@ -773,14 +772,10 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             getName()
         );
 
-        this.srvLsnr.communicationWorker(commWorker);
-        this.nioSrvWrapper.communicationWorker(commWorker);
+        this.srvLsnr.communicationConnectionStateHandler(conStateHnd);
+        this.nioSrvWrapper.communicationConnectionStateHnd(conStateHnd);
 
-        new IgniteSpiThread(igniteInstanceName, commWorker.name(), log) {
-            @Override protected void body() {
-                commWorker.run();
-            }
-        }.start();
+        conStateHnd.start();
 
         // Ack start.
         if (log.isDebugEnabled())
@@ -844,10 +839,10 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         if (nioSrvWrapper != null)
             nioSrvWrapper.stop();
 
-        if (commWorker != null) {
-            commWorker.stop();
-            U.cancel(commWorker);
-            U.join(commWorker, log);
+        if (conStateHnd != null) {
+            conStateHnd.stop();
+            U.cancel(conStateHnd);
+            U.join(conStateHnd, log);
         }
 
         if (srvLsnr != null)
@@ -1148,10 +1143,10 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         if (nioSrvWrapper.nio() != null)
             nioSrvWrapper.nio().stop();
 
-        if (commWorker != null)
-            U.interrupt(commWorker.runner());
+        if (conStateHnd != null)
+            U.interrupt(conStateHnd.runner());
 
-        U.join(commWorker, log);
+        U.join(conStateHnd, log);
 
         clientPool.forceClose();
     }
