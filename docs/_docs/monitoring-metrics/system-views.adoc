@@ -294,7 +294,7 @@ Each row in this view represents a transaction object on the node where the view
 |OTHER_NODE_ID | UUID | ID of an additional node involved in the transaction
 |SUBJECT_ID | UUID | ID of the subject that initiated the transaction
 |SYSTEM | boolean | `True` if the transaction was started for a system cache
-|THREAD_ID | long | ID of the thread in which the transaction started
+|THREAD_ID | long | ID of the thread started the transaction
 |TIMEOUT | long | Transaction timeout in milliseconds
 |TOP_VER | string | Topology version assigned to the transaction. If not assigned explicitly, it is a topology version of the latest partition exchange.
 |===
