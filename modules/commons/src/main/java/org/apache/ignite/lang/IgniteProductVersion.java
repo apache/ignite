@@ -25,9 +25,8 @@ import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.IgniteVersionUtils;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -254,7 +253,7 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
         out.writeByte(minor);
         out.writeByte(maintenance);
         out.writeLong(revTs);
-        U.writeByteArray(out, revHash);
+        CommonUtils.writeByteArray(out, revHash);
     }
 
     /** {@inheritDoc} */
@@ -263,14 +262,14 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
         minor = in.readByte();
         maintenance = in.readByte();
         revTs = in.readLong();
-        revHash = U.readByteArray(in);
+        revHash = CommonUtils.readByteArray(in);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         String revTsStr = IgniteVersionUtils.formatBuildTimeStamp(revTs * 1000);
 
-        String hash = U.byteArray2HexString(revHash).toLowerCase();
+        String hash = CommonUtils.byteArray2HexString(revHash).toLowerCase();
 
         hash = hash.length() > 8 ? hash.substring(0, 8) : hash;
 
@@ -310,7 +309,7 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
                 byte[] revHash = null;
 
                 if (match.group(9) != null)
-                    revHash = U.decodeHex(match.group(10).toCharArray());
+                    revHash = CommonUtils.decodeHex(match.group(10).toCharArray());
 
                 return new IgniteProductVersion(major, minor, maintenance, stage, revTs, revHash);
             }
