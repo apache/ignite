@@ -18,25 +18,21 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Exchange task to handle node leave for WAL state manager.
  */
-public class WalStateNodeLeaveExchangeTask extends AbstractCachePartitionExchangeWorkerTask {
+public class WalStateNodeLeaveExchangeTask implements CachePartitionExchangeWorkerTask {
     /** Node that has left the grid. */
     private final ClusterNode node;
 
     /**
      * Constructor.
      *
-     * @param secCtx Security context in which current task must be executed.
      * @param node Node that has left the grid.
      */
-    public WalStateNodeLeaveExchangeTask(SecurityContext secCtx, ClusterNode node) {
-        super(secCtx);
-
+    public WalStateNodeLeaveExchangeTask(ClusterNode node) {
         assert node != null;
 
         this.node = node;

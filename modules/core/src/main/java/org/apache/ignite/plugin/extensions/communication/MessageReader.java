@@ -272,9 +272,7 @@ public interface MessageReader {
     public <M extends Map<?, ?>> M readMap(MessageMapType type, boolean compress);
 
     /** @return Ignite product version. */
-    default IgniteProductVersion readIgniteProductVersion() {
-        return null;
-    }
+    IgniteProductVersion readIgniteProductVersion();
 
     /**
      * Tells whether last invocation of any of {@code readXXX(...)}

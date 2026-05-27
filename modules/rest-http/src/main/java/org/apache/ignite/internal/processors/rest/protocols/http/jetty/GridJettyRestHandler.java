@@ -95,7 +95,7 @@ import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS
  */
 public class GridJettyRestHandler extends AbstractHandler {
     /** */
-    private static final String IGNITE_CMD_PATH = "/ignite";
+    public static final String IGNITE_CMD_PATH = "/ignite";
 
     /** */
     private static final String FAILED_TO_PARSE_FORMAT = "Failed to parse parameter of %s type [%s=%s]";
@@ -829,20 +829,7 @@ public class GridJettyRestHandler extends AbstractHandler {
             // Don't fail - try to execute locally.
         }
 
-        String sesTokStr = params.get("sessionToken");
-
-        try {
-            if (sesTokStr != null) {
-                // Token is a UUID encoded as 16 bytes as HEX.
-                byte[] bytes = U.hexString2ByteArray(sesTokStr);
-
-                if (bytes.length == 16)
-                    restReq.sessionToken(bytes);
-            }
-        }
-        catch (IllegalArgumentException ignored) {
-            // Ignore invalid session token.
-        }
+        restReq.sessionToken(sessionToken(params.get("sessionToken")));
 
         return restReq;
     }
@@ -907,6 +894,25 @@ public class GridJettyRestHandler extends AbstractHandler {
 
         if (obj instanceof String[] && ((String[])obj).length > 0)
             return ((String[])obj)[0];
+
+        return null;
+    }
+
+    /** @return Bytes representation of the session token. */
+    public static byte[] sessionToken(String sesToken) {
+        if (sesToken == null)
+            return null;
+
+        try {
+            // Token is a UUID encoded as 16 bytes as HEX.
+            byte[] token = U.hexString2ByteArray(sesToken);
+
+            if (token.length == 16)
+                return token;
+        }
+        catch (IllegalArgumentException ignored) {
+            // Ignore invalid session token.
+        }
 
         return null;
     }
