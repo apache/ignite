@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Collection;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -27,28 +25,21 @@ import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.verify.TransactionsHashRecord;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** */
-public class IncrementalSnapshotVerifyResult implements MarshallableMessage {
+public class IncrementalSnapshotVerifyResult implements Message {
     /** Transaction hashes collection. */
-    private Collection<TransactionsHashRecord> txHashRes;
-
-    /** */
     @Order(0)
-    byte[] txHashResBytes;
+    Collection<TransactionsHashRecord> txHashRes;
 
     /**
      * Partition hashes collection. Value is a hash of data entries {@link DataEntry} from WAL segments included
      * into the incremental snapshot.
      */
-    private Collection<PartitionHashRecord> partHashRes;
-
-    /** */
     @Order(1)
-    byte[] partHashResBytes;
+    Collection<PartitionHashRecord> partHashRes;
 
     /** Partially committed transactions' collection. */
     @Order(2)
@@ -90,20 +81,4 @@ public class IncrementalSnapshotVerifyResult implements MarshallableMessage {
     public Collection<GridCacheVersion> partiallyCommittedTxs() {
         return partiallyCommittedTxs;
     }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        txHashResBytes = U.marshal(marsh, txHashRes);
-        partHashResBytes = U.marshal(marsh, partHashRes);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (txHashResBytes != null)
-            txHashRes = U.unmarshal(marsh, txHashResBytes, clsLdr);
-
-        if (partHashResBytes != null)
-            partHashRes = U.unmarshal(marsh, partHashResBytes, clsLdr);
-    }
-
 }

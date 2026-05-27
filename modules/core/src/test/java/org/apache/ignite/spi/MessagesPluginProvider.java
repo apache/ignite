@@ -26,8 +26,9 @@ import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
-import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
+
+import static org.apache.ignite.testframework.GridTestUtils.loadSerializer;
 
 /**
  * Plugin provider for registering test messages in the communication and discovery protocols.
@@ -52,7 +53,7 @@ public class MessagesPluginProvider extends AbstractTestPluginProvider {
                     }
                 };
 
-                f.register(directType, msgSupp, loadSerializer(msg));
+                f.register(directType, msgSupp, loadSerializer(msg, null, null));
 
                 directType++;
             }
@@ -75,19 +76,6 @@ public class MessagesPluginProvider extends AbstractTestPluginProvider {
         // Register messages into the discovery protocol.
         TestTcpDiscoverySpi discoSpi = (TestTcpDiscoverySpi)ctx.igniteConfiguration().getDiscoverySpi();
 
-        discoSpi.messageFactory(msgFactoryProvider);
-    }
-
-    /** */
-    private MessageSerializer<? extends Message> loadSerializer(Class<? extends Message> msgCls) {
-        try {
-            Class<?> serCls = U.gridClassLoader()
-                .loadClass(msgCls.getPackage().getName() + "." + msgCls.getSimpleName() + "Serializer");
-
-            return (MessageSerializer<? extends Message>)U.newInstance(serCls);
-        }
-        catch (Exception e) {
-            throw new RuntimeException("Unable to find serializer for message: " + msgCls, e);
-        }
+        discoSpi.messageFactory(msgFactoryProvider, ctx.igniteConfiguration());
     }
 }

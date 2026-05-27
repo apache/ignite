@@ -69,7 +69,7 @@ public interface SortedSegmentedIndex extends Index {
      * Finds first index row for specified tree segment and cache filter.
      *
      * @param segment Number of tree segment to find.
-     * @param qryCtx External index qyery context.
+     * @param qryCtx External index query context.
      * @return Cursor of found index rows.
      */
     public GridCursor<IndexRow> findFirst(int segment, IndexQueryContext qryCtx)
@@ -79,7 +79,7 @@ public interface SortedSegmentedIndex extends Index {
      * Finds last index row for specified tree segment and cache filter.
      *
      * @param segment Number of tree segment to find.
-     * @param qryCtx External index qyery context.
+     * @param qryCtx External index query context.
      * @return Cursor of found index rows.
      */
     public GridCursor<IndexRow> findLast(int segment, IndexQueryContext qryCtx)
@@ -88,7 +88,7 @@ public interface SortedSegmentedIndex extends Index {
     /**
      * Takes only one first or last index record.
      *
-     * @param qryCtx External index qyery context.
+     * @param qryCtx External index query context.
      * @param first {@code True} to take first index value. {@code False} to take last index value.
      */
     public GridCursor<IndexRow> findFirstOrLast(IndexQueryContext qryCtx, boolean first) throws IgniteCheckedException;

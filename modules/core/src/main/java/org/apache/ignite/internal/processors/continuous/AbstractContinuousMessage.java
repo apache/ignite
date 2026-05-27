@@ -25,14 +25,10 @@ import org.apache.ignite.lang.IgniteUuid;
 /**
  *
  */
-public abstract class AbstractContinuousMessage implements DiscoveryCustomMessage {
+public abstract class AbstractContinuousMessage extends DiscoveryCustomMessage {
     /** Routine ID. */
     @Order(0)
     UUID routineId;
-
-    /** Custom message ID. */
-    @Order(1)
-    IgniteUuid id;
 
     /** */
     protected AbstractContinuousMessage() {
@@ -43,13 +39,9 @@ public abstract class AbstractContinuousMessage implements DiscoveryCustomMessag
      * @param id Id.
      */
     protected AbstractContinuousMessage(UUID id) {
-        routineId = id;
-        this.id = IgniteUuid.randomUuid();
-    }
+        super(IgniteUuid.randomUuid());
 
-    /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
+        routineId = id;
     }
 
     /**

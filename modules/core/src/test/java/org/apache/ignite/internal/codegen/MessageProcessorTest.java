@@ -18,16 +18,23 @@
 package org.apache.ignite.internal.codegen;
 
 import java.io.File;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import javax.annotation.processing.Processor;
 import javax.tools.JavaFileObject;
 import com.google.testing.compile.Compilation;
 import com.google.testing.compile.Compiler;
 import com.google.testing.compile.JavaFileObjects;
+import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.MessageProcessor;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.cache.query.QueryIndexMessage;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteUuid;
@@ -163,6 +170,34 @@ public class MessageProcessorTest {
         Compilation compilation = compile("PojoFieldMessage.java");
 
         assertThat(compilation).failed();
+    }
+
+    /** Tests {@link QueryIndexMessage} that copies {@link QueryIndex}. */
+    @Test
+    public void testQueryIndex() {
+        Field[] fields0 = QueryIndex.class.getDeclaredFields();
+
+        Map<String, Field> fields = CommonUtils.newHashMap(fields0.length);
+
+        for (Field f : fields0) {
+            if (!Modifier.isStatic(f.getModifiers()))
+                fields.put(f.getName(), f);
+        }
+
+        assertEquals(4, fields.size());
+
+        assertEquals(String.class, fields.get("name").getType());
+        assertEquals(LinkedHashMap.class, fields.get("fields").getType());
+        assertEquals(QueryIndexType.class, fields.get("type").getType());
+        assertEquals(int.class, fields.get("inlineSize").getType());
+
+        QueryIndex idx = new QueryIndex("fld0", QueryIndexType.GEOSPATIAL, false, "testIdx");
+
+        QueryIndexMessage msg = new QueryIndexMessage(idx);
+
+        QueryIndex idx1 = QueryIndexMessage.queryIndex(msg);
+
+        assertEquals(idx, idx1);
     }
 
     /** */

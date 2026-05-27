@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -44,8 +45,11 @@ public class DiscoveryDataBag {
         /** @return Whether joining node provided discovery data. */
         boolean hasJoiningNodeData();
 
-        /** @return Joining node data. */
-        Serializable joiningNodeData();
+        /**
+         * @param <T> Data type.
+         * @return Joining node data.
+         */
+        <T> T joiningNodeData();
     }
 
     /**
@@ -80,8 +84,10 @@ public class DiscoveryDataBag {
         }
 
         /** {@inheritDoc} */
-        @Override @Nullable public Serializable joiningNodeData() {
-            return joiningNodeData.get(cmpId);
+        @Override @Nullable public <T> T joiningNodeData() {
+            Message dataMsg = joiningNodeData.get(cmpId);
+
+            return dataMsg instanceof ObjectData ? ObjectData.unwrap(dataMsg) : (T)dataMsg;
         }
 
         /**
@@ -158,7 +164,7 @@ public class DiscoveryDataBag {
     private Set<Integer> cmnDataInitializedCmps;
 
     /** */
-    private Map<Integer, Serializable> joiningNodeData = new HashMap<>();
+    private Map<Integer, Message> joiningNodeData = new HashMap<>();
 
     /** */
     private Map<Integer, Serializable> commonData = new HashMap<>();
@@ -237,9 +243,17 @@ public class DiscoveryDataBag {
 
     /**
      * @param cmpId Component ID.
-     * @param data Data.
+     * @param data Serializable data.
      */
     public void addJoiningNodeData(Integer cmpId, Serializable data) {
+        joiningNodeData.put(cmpId, new ObjectData(data));
+    }
+
+    /**
+     * @param cmpId Component ID.
+     * @param data Message data.
+     */
+    public void addJoiningNodeData(Integer cmpId, Message data) {
         joiningNodeData.put(cmpId, data);
     }
 
@@ -275,7 +289,7 @@ public class DiscoveryDataBag {
     /**
      * @param joinNodeData Joining node data.
      */
-    public void joiningNodeData(Map<Integer, Serializable> joinNodeData) {
+    public void joiningNodeData(Map<Integer, Message> joinNodeData) {
         joiningNodeData.putAll(joinNodeData);
     }
 
@@ -294,7 +308,7 @@ public class DiscoveryDataBag {
     }
 
     /** @return Discovery data for each Ignite component that is sent to the cluster nodes by joining node. */
-    public Map<Integer, Serializable> joiningNodeData() {
+    public Map<Integer, Message> joiningNodeData() {
         return joiningNodeData;
     }
 

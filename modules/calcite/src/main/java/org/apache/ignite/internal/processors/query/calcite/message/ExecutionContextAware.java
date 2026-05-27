@@ -18,11 +18,12 @@
 package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.util.UUID;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Execution context is used to determine a stripe where to process a message.
  */
-public interface ExecutionContextAware extends CalciteMessage {
+public interface ExecutionContextAware extends Message {
     /**
      * @return Query ID.
      */

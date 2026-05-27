@@ -55,24 +55,28 @@ public class ErrorMessage implements MarshallableMessage {
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (err == null)
+            return;
+
         try {
-            if (err != null)
-                errBytes = U.marshal(marsh, err);
+            errBytes = U.marshal(marsh, err);
         }
-        catch (IgniteCheckedException e) {
-            IgniteCheckedException wrappedErr = new IgniteCheckedException(err.getMessage());
-
-            wrappedErr.setStackTrace(err.getStackTrace());
-            wrappedErr.addSuppressed(e);
-
-            errBytes = U.marshal(marsh, wrappedErr);
+        catch (Throwable e) {
+            errBytes = U.marshal(marsh, wrapError(true, e));
         }
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (errBytes != null)
+        if (errBytes == null)
+            return;
+
+        try {
             err = U.unmarshal(marsh, errBytes, clsLdr);
+        }
+        catch (Throwable e) {
+            err = wrapError(false, e);
+        }
     }
 
     /** */
@@ -88,9 +92,26 @@ public class ErrorMessage implements MarshallableMessage {
         return errorMsg == null ? null : errorMsg.error();
     }
 
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(ErrorMessage.class, this);
+    }
+
+    /** */
+    private static Throwable wrapError(boolean marshall, Throwable e) {
+        String errStr = "Failed to " + (marshall ? "marshall" : "unmarshall") + " an exception.";
+
+        if (e.getCause() != null && e.getCause() != e) {
+            errStr += " Original cause: \"" + e.getCause().getMessage() + "\", the stack head: \""
+                + e.getCause().getStackTrace()[0].toString() + "\".";
+        }
+
+        IgniteCheckedException wrappedErr = new IgniteCheckedException(errStr);
+
+        wrappedErr.setStackTrace(e.getStackTrace());
+
+        wrappedErr.addSuppressed(e);
+
+        return wrappedErr;
     }
 }
