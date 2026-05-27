@@ -520,8 +520,25 @@ public class DirectByteBufferStreamImplByteOrderSelfTest {
     /** */
     @Test
     public void testIgniteProductVersion() {
-        readWriteIgniteProductVersion(new IgniteProductVersion((byte)0, (byte)22, (byte)8, 1984, new byte[REV_HASH_SIZE]));
-        readWriteIgniteProductVersion(null);
+        try {
+            IgniteProductVersion ver = new IgniteProductVersion((byte)0, (byte)22, (byte)8, 1984, new byte[REV_HASH_SIZE]);
+
+            readWriteIgniteProductVersion(ver);
+            readWriteIgniteProductVersion(null);
+
+            buff.limit(1);
+
+            readWriteIgniteProductVersion(ver);
+            readWriteIgniteProductVersion(null);
+
+            buff.limit(0);
+
+            readWriteIgniteProductVersion(ver);
+            readWriteIgniteProductVersion(null);
+        }
+        finally {
+            buff.limit(buff.capacity());
+        }
     }
 
     /** */
@@ -529,16 +546,46 @@ public class DirectByteBufferStreamImplByteOrderSelfTest {
         DirectByteBufferStream writeStream = createStream(buff);
         DirectByteBufferStream readStream = createStream(buff);
 
-        writeStream.writeIgniteProductVersion(ver);
+        int startLimit = buff.limit();
+        int iter = 0;
 
-        assertTrue(writeStream.lastFinished());
+        do {
+            writeStream.writeIgniteProductVersion(ver);
+
+            if (iter == 0 && buff.limit() < buff.capacity())
+                buff.limit(buff.limit() + 4);
+            else if (iter == 1 && buff.limit() < buff.capacity())
+                buff.limit(buff.limit() + 10);
+            else
+                buff.limit(buff.capacity());
+
+            assertTrue("Must be done earlier", iter++ < 10);
+        } while (!writeStream.lastFinished());
 
         buff.rewind();
+        buff.limit(startLimit);
 
-        assertEquals(ver, readStream.readIgniteProductVersion());
-        assertTrue(readStream.lastFinished());
+        IgniteProductVersion ver1;
+
+        iter = 0;
+
+        do {
+            ver1 = readStream.readIgniteProductVersion();
+
+            if (iter == 0 && buff.limit() < buff.capacity())
+                buff.limit(buff.limit() + 4);
+            else if (iter == 1 && buff.limit() < buff.capacity())
+                buff.limit(buff.limit() + 10);
+            else
+                buff.limit(buff.capacity());
+
+            assertTrue("Must be done earlier", iter++ < 10);
+        } while(!readStream.lastFinished());
+
+        assertEquals(ver, ver1);
 
         buff.rewind();
+        buff.limit(startLimit);
     }
 
     /**
