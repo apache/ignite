@@ -8,7 +8,6 @@ import org.apache.calcite.sql.type.SqlTypeTransforms;
 
 /** {@link SqlLeadLagAggFunction}, with enforced return type nullability. */
 public class SqlLeadLagFunction extends SqlLeadLagAggFunction {
-
     /** */
     SqlLeadLagFunction(SqlKind kind) {
         super(kind);

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
-import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -49,7 +48,6 @@ import static org.apache.ignite.internal.processors.query.calcite.metadata.cost.
 import static org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost.AVERAGE_FIELD_SIZE;
 import static org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost.ROW_COMPARISON_COST;
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
-import static org.apache.ignite.internal.processors.query.calcite.util.Commons.maxPrefix;
 
 /**
  * A relational expression representing a set of window aggregates.
@@ -64,13 +62,13 @@ import static org.apache.ignite.internal.processors.query.calcite.util.Commons.m
  * {@link org.apache.calcite.rex.RexOver} objects.
  */
 public class IgniteWindow extends Window implements IgniteRel {
-    /**  */
+    /** */
     private final Group grp;
 
-    /**  */
+    /** */
     private final boolean streaming;
 
-    /**  */
+    /** */
     public IgniteWindow(
         RelOptCluster cluster,
         RelTraitSet traitSet,
@@ -96,12 +94,12 @@ public class IgniteWindow extends Window implements IgniteRel {
             false);
     }
 
-    /**  */
+    /** */
     public Group getGroup() {
         return grp;
     }
 
-    /**  */
+    /** */
     public boolean isStreaming() {
         return streaming;
     }
@@ -196,15 +194,13 @@ public class IgniteWindow extends Window implements IgniteRel {
             // So, we should truncate required collation to input row type.
             // We do not need any additional range checks, since current collation keys is a prefix to required collation keys.
             // Therefore, only additional keys in suffix can be removed here.
-            ImmutableBitSet inputColls = ImmutableBitSet.range(input.getRowType().getFieldCount());
-
-            List<Integer> newCollationColls = maxPrefix(requiredCollation.getKeys(), inputColls.asSet());
-            List<RelFieldCollation> newCollationFields = requiredCollation.getFieldCollations()
-                .stream().filter(k -> newCollationColls.contains(k.getFieldIndex())).collect(Collectors.toList());
-
-            RelCollation newCollation = RelCollations.of(newCollationFields);
-
-            traits = traits.replace(newCollation);
+            List<RelFieldCollation> requiredCollationFields = requiredCollation.getFieldCollations();
+            for (int i = 0; i < requiredCollationFields.size(); i++) {
+                if (requiredCollationFields.get(i).getFieldIndex() >= input.getRowType().getFieldCount()) {
+                    traits = traits.replace(RelCollations.of(requiredCollationFields.subList(0, i)));
+                    break;
+                }
+            }
         }
 
         IgniteDistribution distribution = TraitUtils.distribution(target);

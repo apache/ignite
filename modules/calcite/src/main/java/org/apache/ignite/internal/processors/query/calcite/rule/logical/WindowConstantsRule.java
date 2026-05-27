@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
@@ -39,6 +38,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.tools.RelBuilder;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.collection.BitSetIntSet;
 import org.immutables.value.Value;
 
@@ -52,15 +52,15 @@ import org.immutables.value.Value;
  */
 @Value.Enclosing
 public class WindowConstantsRule extends RelRule<WindowConstantsRule.Config> implements TransformationRule {
-    /**  */
+    /** */
     public static final WindowConstantsRule INSTANCE = new WindowConstantsRule(WindowConstantsRule.Config.DEFAULT);
 
-    /**  */
+    /** */
     private WindowConstantsRule(Config cfg) {
         super(cfg);
     }
 
-    /**  */
+    /** */
     @Override public void onMatch(RelOptRuleCall call) {
         LogicalWindow window = call.rel(0);
 
@@ -188,9 +188,7 @@ public class WindowConstantsRule extends RelRule<WindowConstantsRule.Config> imp
     private ImmutableList<RexWinAggCall> traverseAggregateCalls(List<RexWinAggCall> aggCalls, RexShuttle visitor) {
         ImmutableList.Builder<RexWinAggCall> builder = ImmutableList.builderWithExpectedSize(aggCalls.size());
         for (RexWinAggCall call : aggCalls) {
-            List<RexNode> newOperands = call.getOperands().stream()
-                .map(arg -> arg.accept(visitor))
-                .collect(Collectors.toList());
+            List<RexNode> newOperands = Commons.transform(call.getOperands(), arg -> arg.accept(visitor));
             RexWinAggCall newCall = new RexWinAggCall(
                 (SqlAggFunction)call.getOperator(),
                 call.getType(),
@@ -207,7 +205,6 @@ public class WindowConstantsRule extends RelRule<WindowConstantsRule.Config> imp
 
     /** Collects constants, used in visited {@link RexNode}. */
     private static final class ConstantRefCollector extends RexShuttle {
-
         /** */
         private final int inputFldCnt;
 
@@ -283,11 +280,10 @@ public class WindowConstantsRule extends RelRule<WindowConstantsRule.Config> imp
         }
     }
 
-
     /** Rule configuration. */
     @Value.Immutable
     public interface Config extends RelRule.Config {
-        /**  */
+        /** */
         WindowConstantsRule.Config DEFAULT = ImmutableWindowConstantsRule.Config.of()
             .withOperandSupplier(b -> b.operand(LogicalWindow.class)
                 .predicate(it -> !it.constants.isEmpty())

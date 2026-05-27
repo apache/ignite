@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
+import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -237,20 +238,16 @@ public class WindowPlannerTest extends AbstractPlannerTest {
     public void testPassThroughCollationWiderThanInputRow() throws Exception {
         String sql = "SELECT ID, VALUE, row_number() OVER (ORDER BY ID) FROM RANDOM_TBL ORDER BY 1, 3, 2";
 
-        RelCollation sortCollation = RelCollations.of(
-            TraitUtils.createFieldCollation(0, true),
-            TraitUtils.createFieldCollation(2, true),
-            TraitUtils.createFieldCollation(1, true)
-        );
+        RelCollation sortCollation = TraitUtils.createCollation(F.asList(0, 2, 1));
 
-        RelCollation derivedCollation = RelCollations.of(
-            TraitUtils.createFieldCollation(0, true)
-        );
+        RelCollation derivedCollation = TraitUtils.createCollation(F.asList(0));
 
         assertPlan(sql, publicSchema, nodeOrAnyChild(isInstanceOf(IgniteSort.class)
             .and(it -> it.collation().equals(sortCollation))
             .and(input(isInstanceOf(IgniteWindow.class)
-                .and(it -> it.collation().equals(derivedCollation))))));
+                .and(it -> it.collation().equals(derivedCollation))
+                .and(input(nodeOrAnyChild(isInstanceOf(IgniteSort.class)
+                    .and(it -> it.collation().equals(derivedCollation)))))))));
     }
 
     /**
@@ -275,6 +272,7 @@ public class WindowPlannerTest extends AbstractPlannerTest {
 
         assertPlan(sql, publicSchema, nodeOrAnyChild(isInstanceOf(IgniteWindow.class)
             .and(it -> it.getGroup().keys.isEmpty()
-                && it.getTraitSet().getCollation().getKeys().isEmpty())));
+                && it.collation().getKeys().isEmpty())
+            .and(not(input(nodeOrAnyChild(isInstanceOf(IgniteProject.class)))))));
     }
 }
