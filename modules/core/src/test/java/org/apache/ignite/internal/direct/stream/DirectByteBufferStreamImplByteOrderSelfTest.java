@@ -26,6 +26,7 @@ import java.util.function.Supplier;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
@@ -39,6 +40,7 @@ import static org.apache.ignite.GridTestIoUtils.getFloatByByteLE;
 import static org.apache.ignite.GridTestIoUtils.getIntByByteLE;
 import static org.apache.ignite.GridTestIoUtils.getLongByByteLE;
 import static org.apache.ignite.GridTestIoUtils.getShortByByteLE;
+import static org.apache.ignite.lang.IgniteProductVersion.REV_HASH_SIZE;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -513,6 +515,30 @@ public class DirectByteBufferStreamImplByteOrderSelfTest {
             revertByteOrder(resArr, baseOff, typeSize);
 
         assertEquals(toList(srcArr), toList(resArr));
+    }
+
+    /** */
+    @Test
+    public void testIgniteProductVersion() {
+        readWriteIgniteProductVersion(new IgniteProductVersion((byte)0, (byte)22, (byte)8, 1984, new byte[REV_HASH_SIZE]));
+        readWriteIgniteProductVersion(null);
+    }
+
+    /** */
+    private void readWriteIgniteProductVersion(IgniteProductVersion ver) {
+        DirectByteBufferStream writeStream = createStream(buff);
+        DirectByteBufferStream readStream = createStream(buff);
+
+        writeStream.writeIgniteProductVersion(ver);
+
+        assertTrue(writeStream.lastFinished());
+
+        buff.rewind();
+
+        assertEquals(ver, readStream.readIgniteProductVersion());
+        assertTrue(readStream.lastFinished());
+
+        buff.rewind();
     }
 
     /**

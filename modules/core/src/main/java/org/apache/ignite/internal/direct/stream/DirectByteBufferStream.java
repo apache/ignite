@@ -2307,11 +2307,10 @@ public class DirectByteBufferStream {
     /** */
     public void writeIgniteProductVersion(IgniteProductVersion ver) {
         if (ver == null) {
-            if (buf.remaining() < 1) {
-                lastFinished = false;
+            lastFinished = buf.remaining() >= 1;
 
+            if (!lastFinished)
                 return;
-            }
 
             buf.put((byte)0);
 
