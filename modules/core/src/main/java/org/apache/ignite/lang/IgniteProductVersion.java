@@ -53,22 +53,22 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
         Pattern.compile("(\\d+)\\.(\\d+)\\.(\\d+)([-.]([^0123456789][^-]+)(-SNAPSHOT)?)?(-(\\d+))?(-([\\da-f]+))?");
 
     /** Major version number. */
-    private byte major;
+    protected byte major;
 
     /** Minor version number. */
-    private byte minor;
+    protected byte minor;
 
     /** Maintenance version number. */
-    private byte maintenance;
+    protected byte maintenance;
 
     /** Stage of development. */
     private transient String stage;
 
     /** Revision timestamp. */
-    private long revTs;
+    protected long revTs;
 
     /** Revision hash. */
-    private byte[] revHash;
+    protected byte[] revHash;
 
     /**
      * Empty constructor required by {@link Externalizable} and {@link CoreMessagesProvider}.

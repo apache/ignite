@@ -2307,7 +2307,7 @@ public class DirectByteBufferStream {
     /** */
     public void writeIgniteProductVersion(IgniteProductVersion ver) {
         if (ver == null) {
-            lastFinished = buf.remaining() >= 1;
+            lastFinished = buf.remaining() > 0;
 
             if (lastFinished)
                 buf.put((byte)0);
@@ -2315,16 +2315,35 @@ public class DirectByteBufferStream {
             return;
         }
 
-        /* extra 4 byte to store array length. */
-        lastFinished = buf.remaining() >= IgniteProductVersion.SIZE_IN_BYTES + Integer.BYTES;
+        if (!msgTypeDone) {
+            if (buf.remaining() < 4) {
+                lastFinished = false;
 
-        if (lastFinished) {
+                return;
+            }
+
             buf.put((byte)1);
             buf.put(ver.major());
             buf.put(ver.minor());
             buf.put(ver.maintenance());
-            buf.putLong(ver.revisionTimestamp());
-            writeByteArray(ver.revisionHash());
+
+            msgTypeDone = true;
+        }
+
+        if (!keyDone) {
+            writeLong(ver.revisionTimestamp());
+
+            if (!lastFinished)
+                return;
+
+            keyDone = true;
+        }
+
+        writeByteArray(ver.revisionHash());
+
+        if (lastFinished) {
+            msgTypeDone = false;
+            keyDone = false;
         }
     }
 
@@ -2336,30 +2355,56 @@ public class DirectByteBufferStream {
             return null;
         }
 
-        if (!keyDone && buf.get() == (byte)0) {
-            lastFinished = true;
+        if (cur == NULL || cur == null) {
+            if (buf.get() == (byte)0) {
+                lastFinished = true;
 
-            return null;
+                return null;
+            }
+
+            cur = new IgniteProductVersionEx();
         }
 
-        // Prevents subsequent null check.
-        keyDone = true;
+        if (!msgTypeDone) {
+            if (buf.remaining() < 3) {
+                lastFinished = false;
 
-        /* extra 4 byte to store array length. */
-        lastFinished = buf.remaining() >= IgniteProductVersion.SIZE_IN_BYTES + Integer.BYTES;
+                return null;
+            }
+
+            ((IgniteProductVersionEx)cur).version(buf.get(), buf.get(), buf.get());
+
+            msgTypeDone = true;
+        }
+
+        if (!keyDone) {
+            long revTs = readLong();
+
+            if (!lastFinished) {
+                return null;
+            }
+
+            keyDone = true;
+
+            ((IgniteProductVersionEx)cur).revisionTimestamp(revTs);
+        }
+
+        byte[] revHash = readByteArray();
 
         if (!lastFinished)
             return null;
 
-        keyDone = false;
 
-        return new IgniteProductVersion(
-            buf.get(),
-            buf.get(),
-            buf.get(),
-            buf.getLong(),
-            readByteArray()
-        );
+        IgniteProductVersionEx res = (IgniteProductVersionEx)cur;
+
+        res.revisionHash(revHash);
+
+        msgTypeDone = false;
+        keyDone = false;
+        cur = NULL;
+
+
+        return res;
     }
 
     /** {@inheritDoc} */
