@@ -17,26 +17,35 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.exp.window;
 
-import java.util.ArrayList;
+import java.util.ArrayDeque;
 import java.util.Comparator;
+import java.util.Deque;
 import java.util.List;
-import java.util.function.Consumer;
 import org.apache.calcite.rel.core.Window;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
-import org.apache.ignite.internal.processors.query.calcite.exec.tracker.RowTracker;
+import org.jetbrains.annotations.Nullable;
 
 /** Buffering implementation of the ROWS / RANGE window partition. */
-final class BufferingWindowPartition<Row> extends WindowPartitionBase<Row> {
-    /** Rows in partition. */
-    private final List<Row> buf;
-
-    /** Frame within partition. */
-    private final WindowPartitionFrame<Row> frame;
+public final class BufferingWindowPartition<Row> extends WindowPartitionBase<Row> {
+    /** */
+    private final ExecutionContext<Row> ctx;
 
     /** */
-    private RowTracker<Row> memoryTracker;
+    private final Window.Group grp;
+
+    /** */
+    private final RelDataType inputRowType;
+
+    /** Slices in partition. */
+    private final Deque<FrameHolder> frames;
+
+    /** Number of rows, can be evaluted right now. */
+    private int ready;
+
+    /** Current frame for row evaluation. */
+    private FrameHolder currFrame;
 
     /** */
     BufferingWindowPartition(
@@ -48,60 +57,58 @@ final class BufferingWindowPartition<Row> extends WindowPartitionBase<Row> {
         RelDataType inputRowType
     ) {
         super(peerCmp, funcFactory, rowFactory);
-        buf = new ArrayList<>();
-        frame = createFrame(ctx, grp, peerCmp, inputRowType, buf);
+        this.ctx = ctx;
+        this.grp = grp;
+        this.inputRowType = inputRowType;
+        frames = new ArrayDeque<>();
     }
 
-    /** {@inheritDoc} */
-    @Override public void add(Row row) {
-        buf.add(row);
-        onRowAdded(row);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void evalTo(RowHandler.RowFactory<Row> factory, Consumer<Row> output) {
+    /**
+     * Appends rows to the partition.
+     * Important: the buffer must not be modified after being passed to this method.
+     **/
+    public void appendPartition(List<Row> buf, Runnable onBufRemoved) {
         if (buf.isEmpty())
             return;
 
-        List<WindowFunctionWrapper<Row>> accumulators = createWrappers();
-        Object[] accResults = new Object[accumulators.size()];
+        WindowPartitionFrame<Row> frame = createFrame(ctx, grp, peerCmp, inputRowType, buf);
+        ready += frame.size();
+        frames.add(new FrameHolder(frame, onBufRemoved));
+    }
 
-        int size = buf.size();
-        Row prevRow = null;
-        int peerIdx = -1;
-        for (int rowIdx = 0; rowIdx < size; rowIdx++) {
-            Row currRow = buf.get(rowIdx);
-            if (isNewPeer(currRow, prevRow))
-                peerIdx++;
-
-            int accIdx = 0;
-            for (WindowFunctionWrapper<Row> acc : accumulators) {
-                Object accResult = acc.callBuffering(currRow, rowIdx, peerIdx, frame);
-                accResults[accIdx++] = accResult;
-            }
-
-            Row resultRow = createResultRow(factory, currRow, accResults);
-            output.accept(resultRow);
-
-            prevRow = currRow;
+    /**
+     * Evaluates next row in the window partition.
+     * @return Result row or {@code null} if there are no more rows.
+     */
+    public @Nullable Row nextRow(RowHandler.RowFactory<Row> factory) {
+        if (currFrame == null || currFrame.consumed()) {
+            if (currFrame != null)
+                currFrame.release();
+            currFrame = frames.pollFirst();
         }
+
+        if (currFrame == null) {
+            assert ready == 0;
+            return null;
+        }
+
+        assert ready > 0;
+        Row resultRow = currFrame.nextRow(factory);
+        ready--;
+        return resultRow;
+    }
+
+    /** Returns the number of rows can be evaluted. */
+    public int ready() {
+        return ready;
     }
 
     /** {@inheritDoc} */
     @Override public void reset() {
-        buf.forEach(this::onRowRemoved);
-        buf.clear();
-        frame.reset();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isStreaming() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void attachMemoryTracker(RowTracker<Row> memoryTracker) {
-        this.memoryTracker = memoryTracker;
+        FrameHolder holder;
+        while ((holder = frames.poll()) != null)
+            holder.release();
+        ready = 0;
     }
 
     /** Creates frame for partition. */
@@ -118,15 +125,70 @@ final class BufferingWindowPartition<Row> extends WindowPartitionBase<Row> {
             return new RangeWindowPartitionFrame<>(buf, ctx, peerCmp, grp, inputRowType);
     }
 
-    /** Adds row to memory tracker. */
-    private void onRowAdded(Row row) {
-        if (memoryTracker != null)
-            memoryTracker.onRowAdded(row);
-    }
+    /** */
+    private final class FrameHolder {
+        /** */
+        private final WindowPartitionFrame<Row> frame;
 
-    /** Removes row from memory tracker. */
-    private void onRowRemoved(Row row) {
-        if (memoryTracker != null)
-            memoryTracker.onRowRemoved(row);
+        /** */
+        private final Runnable onFrameRemoved;
+
+        /** Index of the current row in the frame. */
+        private int rowIdx;
+
+        /** Index of the current peer in the frame. */
+        private int peerIdx = -1;
+
+        /** */
+        private Row prevRow;
+
+        /** */
+        private List<WindowFunctionWrapper<Row>> accumulators;
+
+        /** */
+        private Object[] accResults;
+
+        /** */
+        private FrameHolder(WindowPartitionFrame<Row> frame, Runnable removed) {
+            this.frame = frame;
+            onFrameRemoved = removed;
+        }
+
+        /** */
+        Row nextRow(RowHandler.RowFactory<Row> factory) {
+            assert !consumed();
+
+            if (accumulators == null) {
+                accumulators = createWrappers();
+                accResults = new Object[accumulators.size()];
+            }
+
+            Row currRow = frame.get(rowIdx);
+            if (isNewPeer(currRow, prevRow))
+                peerIdx++;
+
+            int accIdx = 0;
+            for (WindowFunctionWrapper<Row> acc : accumulators) {
+                Object accResult = acc.callBuffering(currRow, rowIdx, peerIdx, currFrame.frame);
+                accResults[accIdx++] = accResult;
+            }
+
+            Row resultRow = createResultRow(factory, currRow, accResults);
+
+            rowIdx++;
+            prevRow = currRow;
+
+            return resultRow;
+        }
+
+        /** */
+        boolean consumed() {
+            return rowIdx == frame.size();
+        }
+
+        /** */
+        void release() {
+            onFrameRemoved.run();
+        }
     }
 }

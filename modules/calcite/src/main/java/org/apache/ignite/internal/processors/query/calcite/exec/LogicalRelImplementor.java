@@ -51,9 +51,12 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFa
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType;
-import org.apache.ignite.internal.processors.query.calcite.exec.exp.window.WindowPartition;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.window.BufferingWindowPartition;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.window.StreamingWindowPartition;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.window.WindowFunctions;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.window.WindowPartitionFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.AbstractSetOpNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.BufferingWindowNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.CollectNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.CorrelatedNestedLoopJoinNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.FilterNode;
@@ -73,12 +76,13 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.ProjectNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanStorageNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanTableRowNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.SingleNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortAggregateNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.StreamingWindowNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.TableSpoolNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.UncollectNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.UnionAllNode;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.WindowNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
@@ -961,18 +965,28 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         assert collation.getFieldCollations().size() >= grpKeys.size();
         Comparator<Row> partCmp = expressionFactory.comparator(TraitUtils.createCollation(grpKeys));
 
-        List<AggregateCall> calls = grp.getAggregateCalls(rel);
-        Supplier<WindowPartition<Row>> partFactory = new WindowPartitionFactory<>(ctx, grp, calls, inputType);
-
         RowFactory<Row> rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), outType);
 
-        WindowNode<Row> node = new WindowNode<>(ctx, outType, partCmp, partFactory, rowFactory);
+        List<AggregateCall> calls = grp.getAggregateCalls(rel);
+        assert !calls.isEmpty() : "Window aggregate calls should not be empty";
+
+        WindowPartitionFactory<Row> factory = new WindowPartitionFactory<>(ctx);
+
+        SingleNode<Row> windowNode;
+        if (WindowFunctions.streamable(grp)) {
+            StreamingWindowPartition<Row> partition = factory.newStreamingPartition(grp, calls, inputType);
+            windowNode = new StreamingWindowNode<>(ctx, outType, partCmp, partition, rowFactory);
+        }
+        else {
+            BufferingWindowPartition<Row> partition = factory.newBufferingPartition(grp, calls, inputType);
+            windowNode = new BufferingWindowNode<>(ctx, outType, partCmp, partition, rowFactory);
+        }
 
         Node<Row> input = visit(rel.getInput());
 
-        node.register(input);
+        windowNode.register(input);
 
-        return node;
+        return windowNode;
     }
 
     /** {@inheritDoc} */

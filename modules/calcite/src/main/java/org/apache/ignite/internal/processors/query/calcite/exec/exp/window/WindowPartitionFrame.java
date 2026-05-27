@@ -17,17 +17,16 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.exp.window;
 
-import java.util.Collections;
 import java.util.List;
 
 /** Rows frame within window partition. */
 abstract class WindowPartitionFrame<Row> {
     /** Holds immutable refrence to buffered window partition rows. */
-    protected final List<Row> buf;
+    private final List<Row> buf;
 
     /** */
     WindowPartitionFrame(List<Row> buf) {
-        this.buf = Collections.unmodifiableList(buf);
+        this.buf = buf;
     }
 
     /** Returns row from partition by index. */
@@ -56,7 +55,4 @@ abstract class WindowPartitionFrame<Row> {
     final int size() {
         return buf.size();
     }
-
-    /** Resets current frame. */
-    protected abstract void reset();
 }
