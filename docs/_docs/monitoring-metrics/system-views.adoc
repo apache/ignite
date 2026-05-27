@@ -267,10 +267,12 @@ methods. The parameter is empty, if you use `IgniteCompute` APIs that don't targ
 
 This view exposes information about currently running transactions.
 
+Each row in this view represents a transaction object on the node where the view is queried. A distributed transaction can be represented by several transaction objects on different nodes, such as near, DHT-local, and DHT-remote transaction objects. Therefore, rows for the same distributed transaction can differ from node to node.
+
 [{table_opts}]
 |===
 |NAME | TYPE |    DESCRIPTION
-|ORIGINATING_NODE_ID | UUID | ID of the node that directly started the transaction
+|ORIGINATING_NODE_ID | UUID | |ORIGINATING_NODE_ID | UUID | ID of the node that initiated the current transaction object. For a transaction object mapped to a primary partition, this is the transaction initiator node; for a transaction object mapped to a backup partition, this is the node that owns the primary partition
 |STATE | string | Current transaction state
 |XID | UUID | Unique transaction identifier
 |LABEL | string | Transaction label
@@ -280,12 +282,12 @@ This view exposes information about currently running transactions.
 |KEYS_COUNT | int | Number of cache keys participating in the transaction
 |CACHE_IDS | string | Comma-separated IDs of caches participating in the transaction
 |COLOCATED | boolean | `True` if the transaction is DHT colocated
-|DHT | boolean | `True` if the transaction is DHT
+|DHT | boolean | `True` if current node has data for this transaction
 |DURATION | long | Transaction duration in milliseconds
 |IMPLICIT | boolean | `True` if the transaction was started implicitly
 |IMPLICIT_SINGLE | boolean | `True` if the transaction is implicit with only one key
-|INTERNAL | boolean | `True` if the transaction has at least one internal entry
-|LOCAL | boolean | `True` if the transaction is local, `false` if it is remote
+|INTERNAL | boolean | `True` if transaction operates with keys related to Ignite internal data structures
+|LOCAL | boolean | `True` if this transaction object is on the initiator side or mapped to a primary partition, `false` if it is mapped to a backup partition
 |LOCAL_NODE_ID | UUID | Local node ID
 |NEAR | boolean | `True` if the transaction is near
 |ONE_PHASE_COMMIT | boolean | `True` if the transaction is a one-phase-commit transaction
@@ -294,7 +296,7 @@ This view exposes information about currently running transactions.
 |SYSTEM | boolean | `True` if the transaction was started for a system cache
 |THREAD_ID | long | ID of the thread in which the transaction started
 |TIMEOUT | long | Transaction timeout in milliseconds
-|TOP_VER | string | Topology version
+|TOP_VER | string | Topology version assigned to the transaction. If not assigned explicitly, it is a topology version of the latest partition exchange.
 |===
 
 == NODES
