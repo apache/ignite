@@ -355,12 +355,12 @@ public class TypeUtils {
     }
 
     /** */
-    public static Object toInternal(DataContext ctx, Object val) {
+    public static @Nullable Object toInternal(DataContext ctx, Object val) {
         return val == null ? null : toInternal(ctx, val, val.getClass());
     }
 
     /** */
-    public static Object toInternal(DataContext ctx, Object val, Type storageType) {
+    public static @Nullable Object toInternal(DataContext ctx, Object val, Type storageType) {
         if (val == null)
             return null;
         else if (storageType == java.sql.Date.class)
