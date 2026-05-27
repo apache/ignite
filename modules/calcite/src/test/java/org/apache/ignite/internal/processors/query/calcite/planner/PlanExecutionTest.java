@@ -364,7 +364,10 @@ public class PlanExecutionTest extends AbstractPlannerTest {
             NoOpIoTracker.INSTANCE,
             0,
             Commons.parametersMap(ctx.parameters()),
-            null
+            null,
+            obj -> {
+                throw new UnsupportedOperationException("Unexpected method call.");
+            }
         );
 
         return new LogicalRelImplementor<>(ectx, c -> r -> 0, mailboxRegistry, exchangeSvc,

@@ -395,7 +395,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
     }
 
     /** */
-    private Object newVal(String typeName) throws IgniteCheckedException {
+    private Object newVal(String typeName) {
         GridCacheContext<?, ?> cctx = cacheContext();
 
         BinaryObjectBuilder builder = cctx.grid().binary().builder(typeName);

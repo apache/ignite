@@ -364,7 +364,10 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
             NoOpIoTracker.INSTANCE,
             0,
             ImmutableMap.of(),
-            null
+            null,
+            obj -> {
+                throw new UnsupportedOperationException("Unexpected method call.");
+            }
         );
     }
 
