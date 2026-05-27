@@ -580,7 +580,7 @@ public class DirectByteBufferStreamImplByteOrderSelfTest {
                 buff.limit(buff.capacity());
 
             assertTrue("Must be done earlier", iter++ < 10);
-        } while(!readStream.lastFinished());
+        } while (!readStream.lastFinished());
 
         assertEquals(ver, ver1);
 
