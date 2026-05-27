@@ -459,6 +459,9 @@ public class MessageSerializerGenerator {
             else if (assignableFrom(type, type("org.apache.ignite.internal.util.GridLongList")))
                 returnFalseIfWriteFailed(write, field, "writer.writeGridLongList", getExpr);
 
+            else if (assignableFrom(type, type("org.apache.ignite.lang.IgniteProductVersion")))
+                returnFalseIfWriteFailed(write, field, "writer.writeIgniteProductVersion", getExpr);
+
             else if (assignableFrom(type, type(MESSAGE_INTERFACE))) {
                 if (sameType(type, COMPRESSED_MESSAGE_CLASS))
                     throw new IllegalArgumentException(COMPRESSED_MSG_ERROR);
@@ -684,6 +687,9 @@ public class MessageSerializerGenerator {
 
             else if (assignableFrom(type, type("org.apache.ignite.internal.util.GridLongList")))
                 returnFalseIfReadFailed(field, "reader.readGridLongList");
+
+            else if (assignableFrom(type, type("org.apache.ignite.lang.IgniteProductVersion")))
+                returnFalseIfReadFailed(field, "reader.readIgniteProductVersion");
 
             else if (assignableFrom(type, type(MESSAGE_INTERFACE))) {
                 if (sameType(type, COMPRESSED_MESSAGE_CLASS))
