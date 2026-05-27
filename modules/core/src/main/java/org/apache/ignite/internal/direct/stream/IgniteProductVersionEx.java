@@ -26,6 +26,9 @@ import org.apache.ignite.lang.IgniteProductVersion;
  */
 public class IgniteProductVersionEx extends IgniteProductVersion {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     public void version(byte major, byte minor, byte maintenance) {
         this.major = major;
         this.minor = minor;
