@@ -2536,6 +2536,66 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
+     * @param t Throwable.
+     */
+    private void stopOnError(Throwable t) {
+        if (!spi.isNodeStopping0() && spiStateCopy() != DISCONNECTING) {
+            final Ignite ignite = spi.ignite();
+
+            if (ignite != null) {
+                U.error(log, "TcpDiscoverSpi's message worker thread failed abnormally. " +
+                    "Stopping the node in order to prevent cluster wide instability.", t);
+
+                new IgniteThread(ignite.name(), "node-stop-thread", () -> {
+                    try {
+                        IgnitionEx.stop(ignite.name(), true, ShutdownPolicy.IMMEDIATE, true);
+
+                        U.log(log, "Stopped the node successfully in response to TcpDiscoverySpi's " +
+                            "message worker thread abnormal termination.");
+                    }
+                    catch (Throwable nodeStopErr) {
+                        U.error(log, "Failed to stop the node in response to TcpDiscoverySpi's " +
+                            "message worker thread abnormal termination.", nodeStopErr);
+                    }
+                }).start();
+            }
+        }
+    }
+
+    /**
+     * Segment local node on failed message send.
+     */
+    private void segmentLocalNodeOnSendFail(List<TcpDiscoveryNode> failedNodes) {
+        String failedNodesStr = failedNodes == null ? "" : (", failedNodes=" + failedNodes);
+
+        synchronized (mux) {
+            if (spiState == CONNECTING) {
+                U.warn(log, "Unable to connect to next nodes in a ring, it seems local node is experiencing " +
+                    "connectivity issues or the rest of the cluster is undergoing massive restarts. Failing " +
+                    "local node join to avoid case when one node fails a big part of cluster. To disable" +
+                    " this behavior set TcpDiscoverySpi.setConnectionRecoveryTimeout() to 0. " +
+                    "[connRecoveryTimeout=" + spi.connRecoveryTimeout + ", effectiveConnRecoveryTimeout="
+                    + spi.getEffectiveConnectionRecoveryTimeout() + failedNodesStr + ']');
+
+                spiState = RING_FAILED;
+
+                mux.notifyAll();
+
+                return;
+            }
+        }
+
+        U.warn(log, "Unable to connect to next nodes in a ring, " +
+            "it seems local node is experiencing connectivity issues. Segmenting local node " +
+            "to avoid case when one node fails a big part of cluster. To disable" +
+            " this behavior set TcpDiscoverySpi.setConnectionRecoveryTimeout() to 0. " +
+            "[connRecoveryTimeout=" + spi.connRecoveryTimeout + ", effectiveConnRecoveryTimeout="
+            + spi.getEffectiveConnectionRecoveryTimeout() + failedNodesStr + ']');
+
+        notifyDiscovery(EVT_NODE_SEGMENTED, ring.topologyVersion(), locNode);
+    }
+
+    /**
      * Discovery messages history used for client reconnect.
      */
     private class EnsuredMessageHistory {
@@ -3100,27 +3160,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 throw e;
             }
             catch (Throwable e) {
-                if (!spi.isNodeStopping0() && spiStateCopy() != DISCONNECTING) {
-                    final Ignite ignite = spi.ignite();
-
-                    if (ignite != null) {
-                        U.error(log, "TcpDiscoverSpi's message worker thread failed abnormally. " +
-                            "Stopping the node in order to prevent cluster wide instability.", e);
-
-                        new IgniteThread(igniteInstanceName(), "node-stop-thread", () -> {
-                            try {
-                                IgnitionEx.stop(ignite.name(), true, ShutdownPolicy.IMMEDIATE, true);
-
-                                U.log(log, "Stopped the node successfully in response to TcpDiscoverySpi's " +
-                                    "message worker thread abnormal termination.");
-                            }
-                            catch (Throwable nodeStopErr) {
-                                U.error(log, "Failed to stop the node in response to TcpDiscoverySpi's " +
-                                    "message worker thread abnormal termination.", nodeStopErr);
-                            }
-                        }).start();
-                    }
-                }
+                stopOnError(e);
 
                 err = e;
 
@@ -4080,39 +4120,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                         ", pendingMsg=" + pendingMsg + ']');
                 }
             }
-        }
-
-        /**
-         * Segment local node on failed message send.
-         */
-        private void segmentLocalNodeOnSendFail(List<TcpDiscoveryNode> failedNodes) {
-            String failedNodesStr = failedNodes == null ? "" : (", failedNodes=" + failedNodes);
-
-            synchronized (mux) {
-                if (spiState == CONNECTING) {
-                    U.warn(log, "Unable to connect to next nodes in a ring, it seems local node is experiencing " +
-                        "connectivity issues or the rest of the cluster is undergoing massive restarts. Failing " +
-                        "local node join to avoid case when one node fails a big part of cluster. To disable" +
-                        " this behavior set TcpDiscoverySpi.setConnectionRecoveryTimeout() to 0. " +
-                        "[connRecoveryTimeout=" + spi.connRecoveryTimeout + ", effectiveConnRecoveryTimeout="
-                        + spi.getEffectiveConnectionRecoveryTimeout() + failedNodesStr + ']');
-
-                    spiState = RING_FAILED;
-
-                    mux.notifyAll();
-
-                    return;
-                }
-            }
-
-            U.warn(log, "Unable to connect to next nodes in a ring, " +
-                "it seems local node is experiencing connectivity issues. Segmenting local node " +
-                "to avoid case when one node fails a big part of cluster. To disable" +
-                " this behavior set TcpDiscoverySpi.setConnectionRecoveryTimeout() to 0. " +
-                "[connRecoveryTimeout=" + spi.connRecoveryTimeout + ", effectiveConnRecoveryTimeout="
-                + spi.getEffectiveConnectionRecoveryTimeout() + failedNodesStr + ']');
-
-            notifyDiscovery(EVT_NODE_SEGMENTED, ring.topologyVersion(), locNode);
         }
 
         /**
@@ -6803,6 +6810,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             boolean srvSock;
 
+            boolean cancelTcpSrvr = false;
+
             try {
                 try {
                     // Set socket options.
@@ -7449,12 +7458,16 @@ class ServerImpl extends TcpDiscoveryImpl {
                     failure.process(new FailureContext(SYSTEM_WORKER_TERMINATION, e));
                 }
             }
-            catch (DataBagItem.DataBagUnmarshallException e) {
+            catch (DataBagItem.UnmarshallException e) {
                 if (spi.ignite() instanceof IgniteEx) {
                     FailureProcessor failure = ((IgniteEx)spi.ignite()).context().failure();
 
                     failure.process(new FailureContext(CRITICAL_ERROR, e));
                 }
+
+//                segmentLocalNodeOnSendFail(null);
+
+                cancelTcpSrvr = true;
             }
             finally {
                 if (clientMsgWrk != null) {
@@ -7476,6 +7489,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 if (isLocalNodeCoordinator() && !ring.hasRemoteServerNodes())
                     U.enhanceThreadName(msgWorkerThread, "crd");
+
+                // Critical failure. We should not accept new incoming connections.
+                if (cancelTcpSrvr)
+                    tcpSrvr.cancel();
             }
         }
 

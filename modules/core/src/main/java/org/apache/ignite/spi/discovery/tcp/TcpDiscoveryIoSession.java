@@ -204,7 +204,7 @@ public class TcpDiscoveryIoSession {
             if (e instanceof UnknownMessageException)
                 throw e;
 
-            if (e instanceof DataBagItem.DataBagUnmarshallException)
+            if (e instanceof DataBagItem.UnmarshallException)
                 throw e;
 
             // Keep logic similar to `U.marshal(...)`.

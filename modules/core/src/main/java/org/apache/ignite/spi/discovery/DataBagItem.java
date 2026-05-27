@@ -79,11 +79,11 @@ public class DataBagItem implements MarshallableMessage {
                     U.warn(localIgnite().log(), "Failed to unmarshal continuous query remote filter on client node. Can be ignored.");
                 }
                 else if (cmpId < GridComponent.DiscoveryDataExchangeType.VALUES.length) {
-                    throw new DataBagUnmarshallException("Failed to unmarshal discovery data for component: " +
+                    throw new UnmarshallException("Failed to unmarshal discovery data for component: " +
                             GridComponent.DiscoveryDataExchangeType.VALUES[cmpId], e);
                 }
                 else {
-                    throw new DataBagUnmarshallException("Failed to unmarshal discovery data." +
+                    throw new UnmarshallException("Failed to unmarshal discovery data." +
                         " Component " + cmpId + " is not found.", e);
                 }
             }
@@ -128,14 +128,14 @@ public class DataBagItem implements MarshallableMessage {
     }
 
     /** */
-    public static class DataBagUnmarshallException extends IgniteException {
+    public static class UnmarshallException extends IgniteException {
         /**
          * Creates new exception with given error message and optional nested exception.
          *
          * @param msg Error message.
          * @param cause Optional nested exception (can be {@code null}).
          */
-        public DataBagUnmarshallException(String msg, Throwable cause) {
+        public UnmarshallException(String msg, Throwable cause) {
             super(msg, cause);
         }
     }
