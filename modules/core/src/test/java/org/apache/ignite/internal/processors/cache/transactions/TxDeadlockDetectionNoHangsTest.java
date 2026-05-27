@@ -58,7 +58,7 @@ public class TxDeadlockDetectionNoHangsTest extends GridCommonAbstractTest {
     private final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
     /** */
-    private static LogListener lsnr = LogListener.matches(s -> s.contains("Deadlock detection was timed out")).build();
+    private static final LogListener DEAD_LOCK_LSNR = LogListener.matches(s -> s.contains("Deadlock detection was timed out")).build();
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -74,7 +74,9 @@ public class TxDeadlockDetectionNoHangsTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(ccfg);
 
-        listeningLog.registerListener(lsnr);
+        assertFalse(DEAD_LOCK_LSNR.check());
+
+        listeningLog.registerListener(DEAD_LOCK_LSNR);
         cfg.setGridLogger(listeningLog);
 
         return cfg;
@@ -91,7 +93,7 @@ public class TxDeadlockDetectionNoHangsTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        assertFalse(lsnr.check());
+        assertFalse(DEAD_LOCK_LSNR.check());
 
         stopAllGrids();
     }
