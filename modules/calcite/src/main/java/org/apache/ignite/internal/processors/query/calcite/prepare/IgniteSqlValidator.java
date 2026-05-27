@@ -294,7 +294,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             if (F.isEmpty(parameters))
                 return null;
 
-            int idx = ((SqlDynamicParam) n).getIndex();
+            int idx = ((SqlDynamicParam)n).getIndex();
 
             if (idx >= parameters.length)
                 return null;
@@ -304,7 +304,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             if (!(param instanceof Number))
                 return null;
             else if (param instanceof Double || param instanceof Float) {
-                if (!Double.isFinite(((Number) param).doubleValue()))
+                if (!Double.isFinite(((Number)param).doubleValue()))
                     throw newValidationError(n, IgniteResource.INSTANCE.correctIntegerLimit(nodeName));
             }
 
