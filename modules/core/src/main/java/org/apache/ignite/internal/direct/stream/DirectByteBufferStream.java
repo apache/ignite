@@ -2307,10 +2307,13 @@ public class DirectByteBufferStream {
     /** */
     public void writeIgniteProductVersion(IgniteProductVersion ver) {
         if (ver == null) {
-            lastFinished = buf.remaining() > 0;
+            if (buf.remaining() < 1) {
+                lastFinished = false;
 
-            if (lastFinished)
-                buf.put((byte)0);
+                return;
+            }
+
+            buf.put((byte)0);
 
             return;
         }
@@ -2341,10 +2344,11 @@ public class DirectByteBufferStream {
 
         writeByteArray(ver.revisionHash());
 
-        if (lastFinished) {
-            msgTypeDone = false;
-            keyDone = false;
-        }
+        if (!lastFinished)
+            return;
+
+        msgTypeDone = false;
+        keyDone = false;
     }
 
     /** */
@@ -2380,9 +2384,8 @@ public class DirectByteBufferStream {
         if (!keyDone) {
             long revTs = readLong();
 
-            if (!lastFinished) {
+            if (!lastFinished)
                 return null;
-            }
 
             keyDone = true;
 
@@ -2394,15 +2397,13 @@ public class DirectByteBufferStream {
         if (!lastFinished)
             return null;
 
-
         IgniteProductVersionEx res = (IgniteProductVersionEx)cur;
 
         res.revisionHash(revHash);
 
+        cur = NULL;
         msgTypeDone = false;
         keyDone = false;
-        cur = NULL;
-
 
         return res;
     }
