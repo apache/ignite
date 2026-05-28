@@ -146,7 +146,7 @@ public class TcpDiscoveryIoSession {
      * @return Deserialized message instance.
      * @throws IgniteCheckedException If deserialization fails.
      */
-    <T> T readMessage() throws IgniteCheckedException, IOException {
+    <T extends Message> T readMessage() throws IgniteCheckedException, IOException {
         try {
             byte b0 = (byte)in.read();
             byte b1 = (byte)in.read();
