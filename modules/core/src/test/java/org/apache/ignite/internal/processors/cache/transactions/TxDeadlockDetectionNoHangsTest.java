@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -33,7 +34,6 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
-import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -57,8 +57,14 @@ public class TxDeadlockDetectionNoHangsTest extends GridCommonAbstractTest {
     /** Log listener. */
     private final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
+    /** Deadlock timeout, it`s unexpected during these tests. */
+    private static final AtomicBoolean DEAD_LOCK_FLAG = new AtomicBoolean();
+
     /** */
-    private static final LogListener DEAD_LOCK_LSNR = LogListener.matches(s -> s.contains("Deadlock detection was timed out")).build();
+    private static final Consumer<String> DEAD_LOCK_LSNR = s -> {
+        if (s.contains("Deadlock detection was timed out"))
+            DEAD_LOCK_FLAG.set(true);
+    };
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -74,7 +80,7 @@ public class TxDeadlockDetectionNoHangsTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(ccfg);
 
-        assertFalse(DEAD_LOCK_LSNR.check());
+        assertFalse(DEAD_LOCK_FLAG.get());
 
         listeningLog.registerListener(DEAD_LOCK_LSNR);
         cfg.setGridLogger(listeningLog);
@@ -93,7 +99,7 @@ public class TxDeadlockDetectionNoHangsTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        assertFalse(DEAD_LOCK_LSNR.check());
+        assertFalse(DEAD_LOCK_FLAG.get());
 
         stopAllGrids();
     }
