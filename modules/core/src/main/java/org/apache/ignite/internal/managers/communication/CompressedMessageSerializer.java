@@ -27,6 +27,10 @@ import static org.apache.ignite.internal.managers.communication.CompressedMessag
 
 /** Message serializer for compressed message. */
 public class CompressedMessageSerializer implements MessageSerializer<CompressedMessage> {
+    /** */
+    public CompressedMessageSerializer(ClassLoader clsLdr) {
+    }
+
     /** {@inheritDoc} */
     @Override public boolean writeTo(CompressedMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
