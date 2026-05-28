@@ -210,7 +210,7 @@ public class NodeSecurityContextPropagationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private Object discoveryRingMessageWorker(IgniteEx ignite) {
+    public static Object discoveryRingMessageWorker(IgniteEx ignite) {
         DiscoverySpi[] discoverySpis = U.field(ignite.context().discovery(), "spis");
 
         Object impl = U.field(discoverySpis[0], "impl");
