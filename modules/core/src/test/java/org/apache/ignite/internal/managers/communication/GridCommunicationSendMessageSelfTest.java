@@ -153,7 +153,8 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
             registry.registerExtension(MessageFactoryProvider.class, new MessageFactoryProvider() {
                 @Override public void registerAll(MessageFactory factory) {
                     factory.register(DIRECT_TYPE, TestValidByteIdMessage::new, new TestValidByteIdMessageSerializer(U.gridClassLoader()));
-                    factory.register(DIRECT_TYPE_OVER_BYTE, TestOverByteIdMessage::new, new TestOverByteIdMessageSerializer(U.gridClassLoader()));
+                    factory.register(DIRECT_TYPE_OVER_BYTE, 
+                        TestOverByteIdMessage::new, new TestOverByteIdMessageSerializer(U.gridClassLoader()));
                 }
             });
         }
