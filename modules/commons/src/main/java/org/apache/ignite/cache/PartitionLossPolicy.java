@@ -17,7 +17,6 @@
 
 package org.apache.ignite.cache;
 
-import java.util.Collection;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -27,14 +26,14 @@ import org.jetbrains.annotations.Nullable;
  * A partition is considered <em>lost</em> if all owning nodes had left a topology.
  * <p>
  * All <code>*_SAFE</code> policies prevent a user from interaction with partial data in lost partitions until
- * {@link Ignite#resetLostPartitions(Collection)} method is called. <code>*_ALL</code> policies allow working with
+ * {@ignitelink org.apache.ignite.Ignite#resetLostPartitions(Collection)} method is called. <code>*_ALL</code> policies allow working with
  * partial data in lost partitions.
  * <p>
  * <code>READ_ONLY_*</code> and <code>READ_WRITE_*</code> policies do not automatically change partition state
  * and thus do not change rebalancing assignments for such partitions.
  *
- * @see Ignite#resetLostPartitions(Collection)
- * @see IgniteCache#lostPartitions()
+ * @see {@ignitelink org.apache.ignite.Ignite#resetLostPartitions(Collection)}
+ * @see {@ignitelink org.apache.ignite.IgniteCache#lostPartitions()}
  */
 public enum PartitionLossPolicy {
     /**

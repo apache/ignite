@@ -90,7 +90,7 @@ public class ClientTransactionConfiguration implements Serializable {
      * Default value is defined by {@link #DFLT_TX_ISOLATION}.
      *
      * @return Default transaction isolation.
-     * @see Transaction
+     * @see {@ignitelink org.apache.ignite.transactions.Transaction}
      */
     public TransactionIsolation getDefaultTxIsolation() {
         return dfltIsolation;

@@ -261,8 +261,8 @@ public class QueryIndex implements Serializable {
      *     <li>positive value - fixed index inline</li>
      * </ul>
      * When set to {@code -1}, Ignite will try to detect inline size automatically. It will be no more than
-     * {@link CacheConfiguration#getSqlIndexMaxInlineSize()}. Index inline will be enabled for all fixed-length types,
-     * but <b>will not be enabled</b> for {@code String}.
+     * {@ignitelink org.apache.ignite.configuration.CacheConfiguration#getSqlIndexMaxInlineSize()}.
+     * Index inline will be enabled for all fixed-length types, but <b>will not be enabled</b> for {@code String}.
      *
      * @return Index inline size in bytes.
      */
@@ -281,8 +281,8 @@ public class QueryIndex implements Serializable {
      *     <li>positive value - fixed index inline</li>
      * </ul>
      * When set to {@code -1}, Ignite will try to detect inline size automatically. It will be no more than
-     * {@link CacheConfiguration#getSqlIndexMaxInlineSize()}. Index inline will be enabled for all fixed-length types,
-     * but <b>will not be enabled</b> for {@code String}.
+     * {@ignitelink org.apache.ignite.configuration.CacheConfiguration#getSqlIndexMaxInlineSize()}.
+     * Index inline will be enabled for all fixed-length types, but <b>will not be enabled</b> for {@code String}.
      *
      * @param inlineSize Inline size.
      * @return {@code this} for chaining.

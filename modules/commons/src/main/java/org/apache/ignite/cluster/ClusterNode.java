@@ -18,7 +18,6 @@
 package org.apache.ignite.cluster;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.IgniteNodeAttributes;
@@ -30,13 +29,13 @@ import org.jetbrains.annotations.Nullable;
  * Interface representing a single cluster node. Use {@link #attribute(String)} or
  * {@link #metrics()} to get static and dynamic information about cluster nodes.
  * {@code ClusterNode} list, which includes all nodes within task topology, is provided
- * to {@link org.apache.ignite.compute.ComputeTask#map(List, Object)} method.
+ * to {@ignitelink org.apache.ignite.compute.ComputeTask#map(List, Object)} method.
  * <p>
  * <h1 class="header">Cluster Node Attributes</h1>
  * You can use cluster node attributes to provide static information about a node.
  * This information is initialized once within a cluster, during the node startup, and
  * remains the same throughout the lifetime of a node. Use
- * {@link IgniteConfiguration#getUserAttributes()} method to initialize your custom
+ * {@ignitelink org.apache.ignite.configuration.IgniteConfiguration#getUserAttributes()} method to initialize your custom
  * node attributes at startup. Here is an example of how to assign an attribute to a node at startup:
  * <pre name="code" class="xml">
  * &lt;bean class="org.apache.ignite.configuration.IgniteConfiguration"&gt;
@@ -58,14 +57,14 @@ import org.jetbrains.annotations.Nullable;
  * <li>{@code org.apache.ignite.jit.name} - Name of JIT compiler used.</li>
  * <li>{@code org.apache.ignite.net.itf.name} - Name of network interface.</li>
  * <li>{@code org.apache.ignite.user.name} - Operating system user name.</li>
- * <li>{@code org.apache.ignite.ignite.name} - Ignite name (see {@link Ignite#name()}).</li>
+ * <li>{@code org.apache.ignite.ignite.name} - Ignite name (see {@ignitelink org.apache.ignite.Ignite#name()}).</li>
  * <li>
  *      {@code spiName.org.apache.ignite.spi.class} - SPI implementation class for every SPI,
- *      where {@code spiName} is the name of the SPI (see {@link org.apache.ignite.spi.IgniteSpi#getName()}.
+ *      where {@code spiName} is the name of the SPI (see {@ignitelink org.apache.ignite.spi.IgniteSpi#getName()}.
  * </li>
  * <li>
  *      {@code spiName.org.apache.ignite.spi.ver} - SPI version for every SPI,
- *      where {@code spiName} is the name of the SPI (see {@link org.apache.ignite.spi.IgniteSpi#getName()}.
+ *      where {@code spiName} is the name of the SPI (see {@ignitelink org.apache.ignite.spi.IgniteSpi#getName()}.
  * </li>
  * </ul>
  * <p>
@@ -84,13 +83,13 @@ import org.jetbrains.annotations.Nullable;
  * <h1 class="header">Cluster Node Metrics</h1>
  * Cluster node metrics (see {@link #metrics()}) are updated frequently for all nodes
  * and can be used to get dynamic information about a node. The frequency of update
- * is controlled by  {@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsUpdateFrequency()} parameter.
+ * is controlled by  {@ignitelink org.apache.ignite.configuration.IgniteConfiguration#getMetricsUpdateFrequency()} parameter.
  * The metrics data will be updated every {@code 2} seconds by default.
  * <p>
  * Grid node metrics provide information that can frequently change,
  * such as Heap and Non-Heap memory utilization, CPU load, number of active and waiting
  * grid jobs, etc... This information can become useful during job collision resolution or
- * {@link org.apache.ignite.compute.ComputeTask#map(List, Object)} operation when jobs are
+ * {@ignitelink org.apache.ignite.compute.ComputeTask#map(List, Object)} operation when jobs are
  * assigned to remote nodes for execution.
  * <p>
  * Local node metrics are registered as {@code MBean} and can be accessed from
@@ -116,7 +115,7 @@ public interface ClusterNode extends BaselineNode {
 
     /**
      * Gets a node attribute. Attributes are assigned to nodes at startup
-     * via {@link IgniteConfiguration#getUserAttributes()} method.
+     * via {@ignitelink org.apache.ignite.configuration.IgniteConfiguration#getUserAttributes()} method.
      * <p>
      * The system adds the following attributes automatically:
      * <ul>
@@ -138,12 +137,12 @@ public interface ClusterNode extends BaselineNode {
      * Gets metrics snapshot for this node. Note that node metrics are constantly updated
      * and provide up to date information about nodes. For example, you can get
      * an idea about CPU load on remote node via {@link ClusterMetrics#getCurrentCpuLoad()}
-     * method and use it during {@link org.apache.ignite.compute.ComputeTask#map(List, Object)} or during collision
+     * method and use it during {@ignitelink org.apache.ignite.compute.ComputeTask#map(List, Object)} or during collision
      * resolution.
      * <p>
      * Node metrics are updated with some delay which is controlled by
-     * {@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsUpdateFrequency()} parameter.
-     * By default the update will happen every {@code 2} seconds.
+     * {@ignitelink org.apache.ignite.configuration.IgniteConfiguration#getMetricsUpdateFrequency()} parameter.
+     * By default, the update will happen every {@code 2} seconds.
      *
      * @return Runtime metrics snapshot for this node.
      */
@@ -151,7 +150,7 @@ public interface ClusterNode extends BaselineNode {
 
     /**
      * Gets all node attributes. Attributes are assigned to nodes at startup
-     * via {@link IgniteConfiguration#getUserAttributes()} method.
+     * via {@ignitelink org.apache.ignite.configuration.IgniteConfiguration#getUserAttributes()} method.
      * <p>
      * The system adds the following attributes automatically:
      * <ul>
@@ -188,8 +187,8 @@ public interface ClusterNode extends BaselineNode {
     /**
      * Gets collection of addresses this node is known by.
      * <p>
-     * If {@link IgniteConfiguration#getLocalHost()} value isn't {@code null} node will try to use that
-     * address for all communications and returned collection will contain only that address.
+     * If {@ignitelink org.apache.ignite.configuration.IgniteConfiguration#getLocalHost()} value isn't {@code null}
+     * node will try to use that address for all communications and returned collection will contain only that address.
      * If it is {@code null} then local wildcard address will be used, and Ignite
      * will make the best effort to supply all addresses of that node in returned collection.
      *
@@ -200,13 +199,13 @@ public interface ClusterNode extends BaselineNode {
     /**
      * Gets collection of host names this node is known by.
      * <p>
-     * If {@link IgniteConfiguration#getLocalHost()} value isn't {@code null} node will try to use
+     * If {@ignitelink org.apache.ignite.configuration.IgniteConfiguration#getLocalHost()} value isn't {@code null} node will try to use
      * the host name of that resolved address for all communications and
      * returned collection will contain only that host name.
      * If that host name can not be resolved then ip address returned by method {@link #addresses()} is used.
      * <p>
-     * If {@link IgniteConfiguration#getLocalHost()} value is {@code null} then local wildcard address will be used,
-     * and this method returns host names of all addresses of that node.
+     * If {@ignitelink org.apache.ignite.configuration.IgniteConfiguration#getLocalHost()} value is {@code null}
+     * then local wildcard address will be used, and this method returns host names of all addresses of that node.
      * <p>
      * Note: the loopback address will be omitted in results.
      *
@@ -243,11 +242,11 @@ public interface ClusterNode extends BaselineNode {
     public boolean isLocal();
 
     /**
-     * Whether this node is cache client (see {@link IgniteConfiguration#isClientMode()}).
+     * Whether this node is cache client (see {@ignitelink org.apache.ignite.configuration.IgniteConfiguration#isClientMode()}).
      *
      * @return {@code True if client}.
      *
-     * @see IgniteConfiguration#isClientMode()
+     * @see {@ignitelink org.apache.ignite.configuration.IgniteConfiguration#isClientMode()}
      */
     public boolean isClient();
 }

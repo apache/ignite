@@ -31,14 +31,14 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * <li><b>SQL Fields query.</b>Provides SQL way with full syntax to access cache data.
  * See {@link SqlFieldsQuery} for details.</li>
  * <li><b>Full-text query.</b> Uses full-text search engine based on Apache Lucene engine.
- * See {@link TextQuery} for details.</li>
+ * See {@ignitelink org.apache.ignite.cache.query.TextQuery} for details.</li>
  * <li><b>Scan query.</b> Provides effective and flexible way to full cache\partition scan.
  * See {@link ScanQuery} for details.</li>
  * <li><b>Continuous query.</b> Provides flexible way to process all existed cache data and all future cache updates as well.
  * See {@link ContinuousQuery} for details.</li>
  * </ul>
  *
- * @see IgniteCache#query(Query)
+ * @see {@ignitelink org.apache.ignite.IgniteCache#query(Query)}
  */
 public abstract class Query<R> implements Serializable {
     /** */

@@ -89,7 +89,7 @@ public class ClientAtomicConfiguration {
     }
 
     /**
-     * Gets default number of sequence values reserved for {@link IgniteAtomicSequence} instances. After
+     * Gets default number of sequence values reserved for {@ignitelink org.apache.ignite.IgniteAtomicSequence} instances. After
      * a certain number has been reserved, consequent increments of sequence will happen locally,
      * without communication with other nodes, until the next reservation has to be made.
      * <p>
@@ -102,7 +102,7 @@ public class ClientAtomicConfiguration {
     }
 
     /**
-     * Sets default number of sequence values reserved for {@link IgniteAtomicSequence} instances. After a certain
+     * Sets default number of sequence values reserved for {@ignitelink org.apache.ignite.IgniteAtomicSequence} instances. After a certain
      * number has been reserved, consequent increments of sequence will happen locally, without communication with other
      * nodes, until the next reservation has to be made.
      *

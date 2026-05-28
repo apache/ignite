@@ -26,7 +26,7 @@ import javax.cache.event.EventType;
  * Base class for continuous query.
  *
  * @see ContinuousQuery
- * @see ContinuousQueryWithTransformer
+ * @see {@ignitelink org.apache.ignite.cache.query.ContinuousQueryWithTransformer}
  */
 public abstract class AbstractContinuousQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /**
@@ -92,13 +92,14 @@ public abstract class AbstractContinuousQuery<K, V> extends Query<Cache.Entry<K,
      * (e.g., synchronization or transactional cache operations), should be executed asynchronously
      * without blocking the thread that called the filter. Otherwise, you can get deadlocks.
      * <p>
-     * If remote filter are annotated with {@link IgniteAsyncCallback} then it is executed in async callback
-     * pool (see {@link IgniteConfiguration#getAsyncCallbackPoolSize()}) that allow to perform a cache operations.
+     * If remote filter are annotated with {@ignitelink org.apache.ignite.lang.IgniteAsyncCallback} then it is executed in async callback
+     * pool (see {@ignitelink org.apache.ignite.configuration.IgniteConfiguration#getAsyncCallbackPoolSize()})
+     * that allow to perform a cache operations.
      *
      * @param rmtFilterFactory Key-value filter factory.
      * @return {@code this} for chaining.
-     * @see IgniteAsyncCallback
-     * @see IgniteConfiguration#getAsyncCallbackPoolSize()
+     * @see {@ignitelink org.apache.ignite.lang.IgniteAsyncCallback}
+     * @see {@ignitelink org.apache.ignite.configuration.IgniteConfiguration#getAsyncCallbackPoolSize()}
      */
     public AbstractContinuousQuery<K, V> setRemoteFilterFactory(
         Factory<? extends CacheEntryEventFilter<K, V>> rmtFilterFactory) {

@@ -23,8 +23,9 @@ package org.apache.ignite.client;
  * The thin client will update all 'partitions-to-node' mappings on every cluster topology change and the 'key-to-partition'
  * mapping will be calculated on the client side.
  * <p>
- * The case described above will not be possible (and in turn partition awareness won't work) when a custom {@link AffinityFunction} or
- * a {@link AffinityKeyMapper} was previously used for a cache creation. The partition awareness mapper factory is used to solve this
+ * The case described above will not be possible (and in turn partition awareness won't work) when a custom
+ * {@ignitelink org.apache.ignite.cache.affinity.AffinityFunction} or a {@ignitelink org.apache.ignite.cache.affinity.AffinityKeyMapper}
+ * was previously used for a cache creation. The partition awareness mapper factory is used to solve this
  * issue. All 'partition-to-node' mappings will still be requested and received from a server node, however, if a custom AffinityFunction
  * or a custom AffinityKeyMapper was used a ClientPartitionAwarenessMapper produced by this factory will calculate mapping a key to
  * a partition.
@@ -32,7 +33,7 @@ package org.apache.ignite.client;
  * These key to partition mapping functions produced by the factory are used only for local calculations, they will not be passed
  * to a server node.
  *
- * @see AffinityFunction
+ * @see {@ignitelink org.apache.ignite.cache.affinity.AffinityFunction}
  * @since 2.14
  */
 public interface ClientPartitionAwarenessMapperFactory {

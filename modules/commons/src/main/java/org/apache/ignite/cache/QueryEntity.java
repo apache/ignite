@@ -46,7 +46,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Query entity is a description of {@link org.apache.ignite.IgniteCache cache} entry (composed of key and value)
+ * Query entity is a description of {@ignitelink org.apache.ignite.IgniteCache cache} entry (composed of key and value)
  * in a way of how it must be indexed and can be queried.
  */
 public class QueryEntity implements Serializable {

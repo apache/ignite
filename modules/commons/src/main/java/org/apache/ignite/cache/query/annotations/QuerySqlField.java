@@ -25,9 +25,9 @@ import java.lang.annotation.Target;
 import org.apache.ignite.cache.QueryIndex;
 
 /**
- * Annotates fields for SQL queries. All fields that will be involved in SQL clauses must have
- * this annotation. For more information about cache queries see {@link CacheQuery} documentation.
- * @see CacheQuery
+ * Annotates fields for SQL queries. All fields that will be involved in SQL clauses must have this annotation.
+ * For more information about cache queries see {@ignitelink org.apache.ignite.internal.processors.cache.query.CacheQuery} documentation.
+ * @see {@ignitelink org.apache.ignite.internal.processors.cache.query.CacheQuery}
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
@@ -118,9 +118,9 @@ public @interface QuerySqlField {
      *     <li>{@code 0} - index inline is disabled (not recommended)</li>
      *     <li>positive value - fixed index inline</li>
      * </ul>
-     * When set to {@code -1}, Ignite will try to detect inline size automatically. It will be no more than
-     * {@link CacheConfiguration#getSqlIndexMaxInlineSize()}. Index inline will be enabled for all fixed-length types,
-     * but <b>will not be enabled</b> for {@code String}.
+     * When set to {@code -1}, Ignite will try to detect inline size automatically.
+     * It will be no more than {@ignitelink org.apache.ignite.configuration.CacheConfiguration#getSqlIndexMaxInlineSize()}.
+     * Index inline will be enabled for all fixed-length types, but <b>will not be enabled</b> for {@code String}.
      * <p>
      * When index group is used, inline size must be defined in {@link QueryGroupIndex#inlineSize()}. Any value
      * except of {@code -1} defined on a specific column will lead to exception.

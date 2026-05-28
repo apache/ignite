@@ -22,7 +22,7 @@ import org.apache.ignite.platform.PlatformType;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Descriptor of {@link Service}.
+ * Descriptor of {@ignitelink org.apache.ignite.services.Service}.
  */
 public interface ClientServiceDescriptor {
     /**

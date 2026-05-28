@@ -70,7 +70,7 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
     protected byte[] revHash;
 
     /**
-     * Empty constructor required by {@link Externalizable} and {@link CoreMessagesProvider}.
+     * Empty constructor required by {@link Externalizable} and {@ignitelink org.apache.ignite.internal.CoreMessagesProvider}.
      */
     public IgniteProductVersion() {
         // No-op.
