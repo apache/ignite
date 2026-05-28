@@ -10,7 +10,7 @@ updates:
       interval: "weekly"
     open-pull-requests-limit: 3
     cooldown:
-      deafult-days: 10
+      default-days: 10
     ignore:
       - dependency-name: "org.apache.calcite:calcite-core"
       - dependency-name: "org.apache.calcite:calcite-linq4j"
