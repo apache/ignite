@@ -19,7 +19,6 @@ package org.apache.ignite.cache.query;
 
 import java.io.Serializable;
 import java.util.Arrays;
-import org.apache.ignite.configuration.CacheConfigurationDefaults;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -126,7 +125,7 @@ public abstract class Query<R> implements Serializable {
                 else if (sorted)
                     validateDups(parts[i], parts[i + 1]);
 
-            A.ensure(0 <= parts[i] && parts[i] < CacheConfigurationDefaults.MAX_PARTITIONS_COUNT, "Illegal partition");
+            A.ensure(0 <= parts[i] && parts[i] < 65000, "Illegal partition");
         }
 
         // Sort and validate again.
