@@ -67,7 +67,6 @@ public class GridCommandHandlerManagementPoolTest extends GridCommandHandlerClus
             assertEquals(EXIT_CODE_OK, execute("--state")); // Native command.
             assertEquals(EXIT_CODE_OK, execute("--checkpoint")); // Multi-node task command.
 
-
             TestSqlFunctions.latch.countDown();
 
             fut.get(TIMEOUT, TimeUnit.MILLISECONDS);
