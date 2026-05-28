@@ -171,10 +171,10 @@ public class MessageSerializerGenerator {
 
     /** Generates full code for a serializer class. */
     private String generateSerializerCode(String serClsName) throws IOException {
-        if (marshallableMessage()) {
+        if (marshallableMessage())
             fields.add("private final Marshaller marshaller;");
-            fields.add("private final ClassLoader clsLdr;");
-        }
+
+        fields.add("private final ClassLoader clsLdr;");
 
         try (Writer writer = new StringWriter()) {
             writeClassHeader(writer, env.getElementUtils().getPackageOf(type).toString(), serClsName);
@@ -210,21 +210,25 @@ public class MessageSerializerGenerator {
 
     /** */
     private void writeConstructor(Writer writer, String serClsName) throws IOException {
-        if (!marshallableMessage())
-            return;
-
         ++indent;
 
         writer.write(indentedLine(METHOD_JAVADOC));
         writer.write(NL);
-        writer.write(indentedLine("public " + serClsName + "(Marshaller marshaller, ClassLoader clsLdr) {"));
+
+        if (marshallableMessage())
+            writer.write(indentedLine("public " + serClsName + "(Marshaller marshaller, ClassLoader clsLdr) {"));
+        else
+            writer.write(indentedLine("public " + serClsName + "(ClassLoader clsLdr) {"));
 
         writer.write(NL);
 
         ++indent;
 
-        writer.write(indentedLine("this.marshaller = marshaller;"));
-        writer.write(NL);
+        if (marshallableMessage()) {
+            writer.write(indentedLine("this.marshaller = marshaller;"));
+            writer.write(NL);
+        }
+        
         writer.write(indentedLine("this.clsLdr = clsLdr;"));
 
         --indent;
@@ -251,14 +255,15 @@ public class MessageSerializerGenerator {
 
         indent--;
 
-        finish(write, false, false);
-        finish(read, true, marshallableMessage());
+        finish(write);
+        finish(read);
 
         generateMarshallMethods(fields);
+        generateUnmarshallMethods(fields);
     }
 
     /** */
-    private void generateMarshallMethods(List<VariableElement> orderedFields) throws Exception {
+    private void generateMarshallMethods(List<VariableElement> orderedFields){
         imports.add("org.apache.ignite.IgniteCheckedException");
         imports.add("org.apache.ignite.internal.processors.cache.CacheObjectValueContext");
         imports.add("org.apache.ignite.internal.GridKernalContext");
@@ -287,7 +292,7 @@ public class MessageSerializerGenerator {
         }
 
         for (VariableElement field : orderedFields) {
-            List<String> marshalled = marshall(field.asType(), fieldAccessor(field));
+            List<String> marshalled = marshall(field.asType(), fieldAccessor(field), false);
 
             if (!marshalled.isEmpty()) {
                 if (!marshall.get(marshall.size() - 1).equals(EMPTY))
@@ -303,7 +308,49 @@ public class MessageSerializerGenerator {
     }
 
     /** */
-    private List<String> marshall(TypeMirror t, String accessor) {
+    private void generateUnmarshallMethods(List<VariableElement> orderedFields){
+        marshall.add(EMPTY);
+
+        indent = 1;
+
+        marshall.add(indentedLine(METHOD_JAVADOC));
+
+        marshall.add(indentedLine(
+            "@Override public void finishUnmarshal(" + simpleNameWithGeneric(type) +
+                " msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {"));
+
+        indent++;
+
+        if (isCacheIdAwareMessage(type))
+            marshall.add(
+                indentedLine("GridCacheContext<?, ?> ctx = nested == null ? kctx.cache().context().cacheContext(msg.cacheId()) : nested;"));
+        else
+            marshall.add(indentedLine("GridCacheContext<?, ?> ctx = nested;"));
+
+        for (VariableElement field : orderedFields) {
+            List<String> unmarshalled = marshall(field.asType(), fieldAccessor(field), true);
+
+            if (!unmarshalled.isEmpty()) {
+                if (!marshall.get(marshall.size() - 1).equals(EMPTY))
+                    marshall.add(EMPTY);
+
+                marshall.addAll(unmarshalled);
+            }
+        }
+
+        if (marshallableMessage()) {
+            marshall.add(EMPTY);
+
+            marshall.add(indentedLine("msg.finishUnmarshal(marshaller, clsLdr);"));
+        }
+
+        indent--;
+
+        marshall.add(indentedLine("}"));
+    }
+
+    /** */
+    private List<String> marshall(TypeMirror t, String accessor, boolean unmarshall) {
         if (t.getKind() == TypeKind.ARRAY) {
             TypeMirror comp = ((ArrayType)t).getComponentType();
 
@@ -322,7 +369,7 @@ public class MessageSerializerGenerator {
 
                 indent++;
 
-                List<String> res = marshall(comp, el);
+                List<String> res = marshall(comp, el, unmarshall);
 
                 code.addAll(res);
 
@@ -348,10 +395,16 @@ public class MessageSerializerGenerator {
 
                 indent++;
 
-                code.add(indentedLine(
-                    "kctx.messageFactory().serializer(%s.directType()).prepareMarshal(%s, kctx, ctx);",
-                    accessor,
-                    accessor));
+                if (!unmarshall)
+                    code.add(indentedLine(
+                        "kctx.messageFactory().serializer(%s.directType()).prepareMarshal(%s, kctx, ctx);",
+                        accessor,
+                        accessor));
+                else
+                    code.add(indentedLine(
+                        "kctx.messageFactory().serializer(%s.directType()).finishUnmarshal(%s, kctx, ctx);",
+                        accessor,
+                        accessor));
 
                 indent--;
 
@@ -364,7 +417,10 @@ public class MessageSerializerGenerator {
 
                 indent++;
 
-                code.add(indentedLine("%s.prepareMarshal(ctx != null ? ctx.cacheObjectContext() : null);", accessor));
+                if (!unmarshall)
+                    code.add(indentedLine("%s.prepareMarshal(ctx != null ? ctx.cacheObjectContext() : null);", accessor));
+                else
+                    code.add(indentedLine("%s.finishUnmarshal(ctx != null ? ctx.cacheObjectContext() : null, clsLdr);", accessor));
 
                 indent--;
 
@@ -385,8 +441,8 @@ public class MessageSerializerGenerator {
                 String el = "e" + indent;
 
                 indent++; // Emulating subsequent indent.
-                List<String> keyRes = marshall(keyType, el);
-                List<String> valRes = marshall(valType, el);
+                List<String> keyRes = marshall(keyType, el, unmarshall);
+                List<String> valRes = marshall(valType, el, unmarshall);
                 indent--;
 
                 if (!keyRes.isEmpty() && (keyType.getKind() == TypeKind.DECLARED || keyType.getKind() == TypeKind.TYPEVAR)) {
@@ -461,7 +517,7 @@ public class MessageSerializerGenerator {
 
                     indent++;
 
-                    List<String> res = marshall(arg, el);
+                    List<String> res = marshall(arg, el, unmarshall);
 
                     code.addAll(res);
 
@@ -1180,7 +1236,7 @@ public class MessageSerializerGenerator {
     }
 
     /** */
-    private void finish(List<String> code, boolean read, boolean marshallable) {
+    private void finish(List<String> code) {
         String lastLine = code.get(code.size() - 1);
 
         if (EMPTY.equals(lastLine))
@@ -1188,32 +1244,6 @@ public class MessageSerializerGenerator {
 
         code.add(indentedLine("}"));
         code.add(EMPTY);
-
-        if (read && marshallable) {
-            imports.add("org.apache.ignite.IgniteCheckedException");
-            imports.add("org.apache.ignite.IgniteException");
-
-            code.add(indentedLine("try {"));
-
-            indent++;
-
-            code.add(indentedLine("msg.finishUnmarshal(marshaller, clsLdr);"));
-
-            indent--;
-
-            code.add(indentedLine("}"));
-            code.add(indentedLine("catch (IgniteCheckedException e) {"));
-
-            indent++;
-
-            code.add(indentedLine("throw new IgniteException(\"Failed to unmarshal object \" + msg.getClass().getSimpleName(), e);"));
-
-            indent--;
-
-            code.add(indentedLine("}"));
-
-            code.add(EMPTY);
-        }
 
         code.add(indentedLine("return true;"));
     }

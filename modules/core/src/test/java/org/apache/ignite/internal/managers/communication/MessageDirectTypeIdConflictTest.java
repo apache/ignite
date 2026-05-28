@@ -20,6 +20,7 @@ package org.apache.ignite.internal.managers.communication;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.PluginContext;
@@ -81,7 +82,8 @@ public class MessageDirectTypeIdConflictTest extends GridCommonAbstractTest {
         @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
             registry.registerExtension(MessageFactoryProvider.class, new MessageFactoryProvider() {
                 @Override public void registerAll(MessageFactory factory) {
-                    factory.register(DIRECT_TYPE, DuplicateDirectTypeIdMessage::new, new DuplicateDirectTypeIdMessageSerializer());
+                    factory.register(DIRECT_TYPE, 
+                        DuplicateDirectTypeIdMessage::new, new DuplicateDirectTypeIdMessageSerializer(U.gridClassLoader()));
                 }
             });
         }

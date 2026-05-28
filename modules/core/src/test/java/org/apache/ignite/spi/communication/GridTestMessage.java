@@ -20,6 +20,7 @@ package org.apache.ignite.spi.communication;
 import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 
@@ -32,7 +33,7 @@ public class GridTestMessage implements Message {
 
     /** */
     public static final MessageFactoryProvider GRID_TEST_MESSAGE_FACTORY = f -> f.register(
-        GridTestMessage.DIRECT_TYPE, GridTestMessage::new, new GridTestMessageSerializer());
+        GridTestMessage.DIRECT_TYPE, GridTestMessage::new, new GridTestMessageSerializer(U.gridClassLoader()));
 
     /** */
     @Order(0)

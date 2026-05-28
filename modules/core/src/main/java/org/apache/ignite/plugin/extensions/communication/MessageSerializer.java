@@ -42,17 +42,26 @@ public interface MessageSerializer<M extends Message> {
     public boolean readFrom(M msg, MessageReader reader);
 
     /**
-     * Runs {@code CacheObject.prepareMarshal} for {@code @Order} cache-object fields on the user thread, so the NIO
-     * worker never does it. Default is a no-op. The caller is responsible for guaranteeing that {@code ctx} is
-     * non-null when invoking this method; resolution-with-null-skip happens at call sites.
+     * Marshalls cache-object fields on the user thread.
      *
      * @param msg Message instance.
-     * @param ctx Kernal context.
+     * @param kctx Kernal context.
      * @param nested Nested context.
      * @throws IgniteCheckedException If marshalling fails.
      */
-    public default void prepareMarshal(M msg, GridKernalContext ctx, GridCacheContext<?, ?> nested)
-        throws IgniteCheckedException {
+    public default void prepareMarshal(M msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {
+        // No-op by default.
+    }
+
+    /**
+     * Unmarshalls cache-object fields on the user thread.
+     *
+     * @param msg Message instance.
+     * @param kctx Kernal context.
+     * @param nested Nested context.
+     * @throws IgniteCheckedException If unmarshalling fails.
+     */
+    public default void finishUnmarshal(M msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {
         // No-op by default.
     }
 }
