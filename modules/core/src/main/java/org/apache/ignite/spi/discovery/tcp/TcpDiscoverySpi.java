@@ -383,6 +383,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     private Marshaller marsh;
 
     /** Statistics. */
+    @GridToStringExclude
     protected final TcpDiscoveryStatistics stats = new TcpDiscoveryStatistics();
 
     /** Local port which node uses. */

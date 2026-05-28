@@ -18,6 +18,7 @@ package org.apache.ignite.configuration;
 
 import java.io.Serializable;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * This class allows defining system data region configuration with various parameters for Apache Ignite
@@ -89,5 +90,10 @@ public class SystemDataRegionConfiguration implements Serializable {
         this.maxSize = maxSize;
 
         return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(SystemDataRegionConfiguration.class, this);
     }
 }
