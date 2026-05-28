@@ -37,12 +37,11 @@ import org.apache.ignite.cache.query.annotations.QueryTextField;
 import org.apache.ignite.internal.processors.cache.query.QueryEntityClassProperty;
 import org.apache.ignite.internal.processors.cache.query.QueryEntityTypeDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
-import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -493,7 +492,7 @@ public class QueryEntity implements Serializable {
         entity.setValueType(desc.valueClass().getName());
 
         for (QueryEntityClassProperty prop : desc.properties().values())
-            entity.addQueryField(prop.fullName(), U.box(prop.type()).getName(), prop.alias());
+            entity.addQueryField(prop.fullName(), CommonUtils.box(prop.type()).getName(), prop.alias());
 
         entity.setKeyFields(desc.keyProperties());
 
@@ -539,10 +538,10 @@ public class QueryEntity implements Serializable {
 
                 txtIdx.setIndexType(QueryIndexType.FULLTEXT);
 
-                txtIdx.setFieldNames(Arrays.asList(QueryUtils.VAL_FIELD_NAME), true);
+                txtIdx.setFieldNames(Arrays.asList(CommonUtils.VAL_FIELD_NAME), true);
             }
             else
-                txtIdx.getFields().put(QueryUtils.VAL_FIELD_NAME, true);
+                txtIdx.getFields().put(CommonUtils.VAL_FIELD_NAME, true);
         }
 
         if (txtIdx != null)
@@ -590,14 +589,14 @@ public class QueryEntity implements Serializable {
      */
     private static void processAnnotationsInClass(boolean key, Class<?> cls, QueryEntityTypeDescriptor type,
         @Nullable QueryEntityClassProperty parent) {
-        if (U.isJdk(cls) || U.isGeometryClass(cls)) {
-            if (parent == null && !key && QueryUtils.isSqlType(cls)) { // We have to index primitive _val.
-                String idxName = cls.getSimpleName() + "_" + QueryUtils.VAL_FIELD_NAME + "_idx";
+        if (CommonUtils.isJdk(cls) || CommonUtils.isGeometryClass(cls)) {
+            if (parent == null && !key && CommonUtils.isSqlType(cls)) { // We have to index primitive _val.
+                String idxName = cls.getSimpleName() + "_" + CommonUtils.VAL_FIELD_NAME + "_idx";
 
-                type.addIndex(idxName, U.isGeometryClass(cls) ?
+                type.addIndex(idxName, CommonUtils.isGeometryClass(cls) ?
                     QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED, QueryIndex.DFLT_INLINE_SIZE);
 
-                type.addFieldToIndex(idxName, QueryUtils.VAL_FIELD_NAME, 0, false);
+                type.addFieldToIndex(idxName, CommonUtils.VAL_FIELD_NAME, 0, false);
             }
 
             return;
@@ -673,7 +672,7 @@ public class QueryEntity implements Serializable {
                 if (cls != curCls)
                     idxName = cls.getSimpleName() + "_" + idxName;
 
-                desc.addIndex(idxName, U.isGeometryClass(prop.type()) ?
+                desc.addIndex(idxName, CommonUtils.isGeometryClass(prop.type()) ?
                     QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED, sqlAnn.inlineSize());
 
                 desc.addFieldToIndex(idxName, prop.fullName(), 0, sqlAnn.descending());
