@@ -27,7 +27,6 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfigurationDefaults;
-import org.apache.ignite.configuration.IgniteConfigurationDefaults;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.jetbrains.annotations.Nullable;
@@ -64,11 +63,17 @@ public final class ClientCacheConfiguration implements Serializable {
     /** @serial Read from backup. */
     private boolean readFromBackup = CacheConfigurationDefaults.DFLT_READ_FROM_BACKUP;
 
-    /** @serial Rebalance batch size. */
-    private int rebalanceBatchSize = IgniteConfigurationDefaults.DFLT_REBALANCE_BATCH_SIZE;
+    /**
+     * @serial Rebalance batch size.
+     * {@ignitelink org.apache.ignite.configuration.IgniteConfiguration#DFLT_REBALANCE_BATCH_SIZE}
+     */
+    private int rebalanceBatchSize = 512 * 1024; // 512K
 
-    /** @serial Rebalance batches prefetch count. */
-    private long rebalanceBatchesPrefetchCnt = IgniteConfigurationDefaults.DFLT_REBALANCE_BATCHES_PREFETCH_COUNT;
+    /**
+     * @serial Rebalance batches prefetch count.
+     * {@ignitelink org.apache.ignite.configuration.IgniteConfiguration#DFLT_REBALANCE_BATCHES_PREFETCH_COUNT}
+     */
+    private long rebalanceBatchesPrefetchCnt = 3;
 
     /** @serial Rebalance delay. */
     private long rebalanceDelay = 0;
@@ -79,11 +84,17 @@ public final class ClientCacheConfiguration implements Serializable {
     /** @serial Rebalance order. */
     private int rebalanceOrder = 0;
 
-    /** @serial Rebalance throttle. */
-    private long rebalanceThrottle = IgniteConfigurationDefaults.DFLT_REBALANCE_THROTTLE;
+    /**
+     * @serial Rebalance throttle.
+     * {@ignitelink org.apache.ignite.configuration.IgniteConfiguration#DFLT_REBALANCE_THROTTLE}
+     */
+    private long rebalanceThrottle = 0;
 
-    /** @serial Rebalance timeout. */
-    private long rebalanceTimeout = IgniteConfigurationDefaults.DFLT_REBALANCE_TIMEOUT;
+    /**
+     * @serial Rebalance timeout.
+     * {@ignitelink org.apache.ignite.configuration.IgniteConfiguration#DFLT_REBALANCE_TIMEOUT}
+     */
+    private long rebalanceTimeout = 10000;
 
     /** @serial Write synchronization mode. */
     private CacheWriteSynchronizationMode writeSynchronizationMode = CacheWriteSynchronizationMode.PRIMARY_SYNC;
