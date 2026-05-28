@@ -272,7 +272,7 @@ Each row in this view represents a transaction object on the node where the view
 [{table_opts}]
 |===
 |NAME | TYPE |    DESCRIPTION
-|ORIGINATING_NODE_ID | UUID | |ORIGINATING_NODE_ID | UUID | ID of the node that initiated the current transaction object. For a transaction object mapped to a primary partition, this is the transaction initiator node; for a transaction object mapped to a backup partition, this is the node that owns the primary partition
+|ORIGINATING_NODE_ID | UUID | ID of the node that initiated the current transaction object. For a transaction object mapped to a primary partition, this is the transaction initiator node; for a transaction object mapped to a backup partition, this is the node that owns the primary partition
 |STATE | string | Current transaction state
 |XID | UUID | Unique transaction identifier
 |LABEL | string | Transaction label
