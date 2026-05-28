@@ -184,7 +184,6 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
             if (checkExpiryPlc)
                 ccfg.setExpiryPolicy(new PlatformExpiryPolicy(10, 20, 30));
 
-            //X.println(">>> Cache config: " + ccfg);
             client.createCache(ccfg);
 
             ClientCacheConfiguration ccfg1 = client.cache(cacheName).getConfiguration();
