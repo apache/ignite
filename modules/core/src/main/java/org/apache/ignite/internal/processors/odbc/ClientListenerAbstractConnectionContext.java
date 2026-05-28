@@ -32,6 +32,7 @@ import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.MANAGEMENT_CLIENT_ATTR;
 import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_CLIENT;
 
 /**
@@ -55,6 +56,9 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
 
     /** User attributes. */
     protected Map<String, String> userAttrs;
+
+    /** If client is management. */
+    private volatile Boolean managementClient;
 
     /**
      * Describes the client connection:
@@ -195,5 +199,13 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
     /** {@inheritDoc} */
     @Override public Map<String, String> attributes() {
         return F.isEmpty(userAttrs) ? Collections.emptyMap() : Collections.unmodifiableMap(userAttrs);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean managementClient() {
+        if (managementClient == null)
+            managementClient = Boolean.parseBoolean(attributes().get(MANAGEMENT_CLIENT_ATTR));
+
+        return managementClient;
     }
 }
