@@ -198,6 +198,8 @@ public class TcpDiscoveryIoSession {
             }
             while (!finished);
 
+            msgSer.finishUnmarshal(msg, ((IgniteEx)spi.ignite()).context(), null);
+
             return (T)msg;
         }
         catch (Exception e) {
