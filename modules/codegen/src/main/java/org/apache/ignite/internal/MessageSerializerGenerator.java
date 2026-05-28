@@ -263,7 +263,7 @@ public class MessageSerializerGenerator {
     }
 
     /** */
-    private void generateMarshallMethods(List<VariableElement> orderedFields){
+    private void generateMarshallMethods(List<VariableElement> orderedFields) {
         imports.add("org.apache.ignite.IgniteCheckedException");
         imports.add("org.apache.ignite.internal.processors.cache.CacheObjectValueContext");
         imports.add("org.apache.ignite.internal.GridKernalContext");
@@ -308,7 +308,7 @@ public class MessageSerializerGenerator {
     }
 
     /** */
-    private void generateUnmarshallMethods(List<VariableElement> orderedFields){
+    private void generateUnmarshallMethods(List<VariableElement> orderedFields) {
         marshall.add(EMPTY);
 
         indent = 1;
