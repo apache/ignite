@@ -22,6 +22,7 @@ import java.math.RoundingMode;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -111,6 +112,9 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** */
     private final RelDataType nullType;
+
+    /** Dynamic parameter types by parameter index. */
+    private final Map<Integer, RelDataType> dynamicParamTypeByIdx = new HashMap<>();
 
     /**
      * Creates a validator.
@@ -286,8 +290,12 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
      * @return Limit value, or {@code null} if the node is not an atomic value.
      */
     private @Nullable BigDecimal limitValue(SqlNode n, String nodeName) {
-        if (n instanceof SqlLiteral)
+        if (n instanceof SqlLiteral) {
+            if (((SqlLiteral)n).getTypeName().getFamily() != SqlTypeFamily.NUMERIC)
+                throw newValidationError(n, IgniteResource.INSTANCE.correctIntegerLimit(nodeName));
+
             return ((SqlLiteral)n).bigDecimalValue();
+        }
 
         if (n instanceof SqlDynamicParam) {
             // Will fail in params check.
@@ -323,8 +331,10 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
                 typeFactory().createSqlType(SqlTypeName.DECIMAL), true);
             SqlDynamicParam paramNode = (SqlDynamicParam)n;
 
-            if (deriveDynamicParameterType(paramNode, dataType) == null)
+            if (deriveDynamicParameterType(paramNode, dataType) == null) {
                 setValidatedNodeType(paramNode, dataType);
+                dynamicParamTypeByIdx.put(paramNode.getIndex(), dataType);
+            }
         }
         else if (n instanceof SqlCall) {
             for (SqlNode operand : ((SqlCall)n).getOperandList())
@@ -613,9 +623,28 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         return super.deriveType(scope, expr);
     }
 
+    /** {@inheritDoc} */
+    @Override public @Nullable RelDataType getValidatedNodeTypeIfKnown(SqlNode node) {
+        RelDataType type = super.getValidatedNodeTypeIfKnown(node);
+
+        if (type == null && node instanceof SqlDynamicParam) {
+            SqlDynamicParam param = (SqlDynamicParam)node;
+
+            type = dynamicParamTypeByIdx.get(param.getIndex());
+
+            if (type == null)
+                type = dynamicParameterType(param, nullType);
+        }
+
+        return type;
+    }
+
     /** @return A derived type or {@code null} if unable to determine. */
     @Nullable private RelDataType deriveDynamicParameterType(SqlDynamicParam node, RelDataType nullValType) {
-        RelDataType type = getValidatedNodeTypeIfKnown(node);
+        RelDataType type = super.getValidatedNodeTypeIfKnown(node);
+
+        if (type == null)
+            type = dynamicParamTypeByIdx.get(node.getIndex());
 
         // Do not clarify the widest type for any value.
         if (type instanceof OtherType)
@@ -629,11 +658,28 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         if (val == null && type != null)
             return type;
 
-        type = val == null
+        type = dynamicParameterType(node, nullValType);
+
+        if (type == null)
+            return null;
+
+        setValidatedNodeType(node, type);
+
+        return type;
+    }
+
+    /** @return Dynamic parameter type derived from parameter value, or {@code null} if unable to determine. */
+    @Nullable private RelDataType dynamicParameterType(SqlDynamicParam node, RelDataType nullValType) {
+        if (parameters == null || node.getIndex() >= parameters.length)
+            return null;
+
+        Object val = parameters[node.getIndex()];
+
+        RelDataType type = val == null
             ? typeFactory().createTypeWithNullability(nullValType, true)
             : typeFactory().createTypeWithNullability(typeFactory().toSql(typeFactory().createType(val.getClass())), true);
 
-        setValidatedNodeType(node, type);
+        dynamicParamTypeByIdx.put(node.getIndex(), type);
 
         return type;
     }

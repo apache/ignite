@@ -199,6 +199,9 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
         assertThrows("SELECT * FROM TEST_REPL FETCH FIRST (10 - (50 - 20)) ROWS ONLY",
             IgniteSQLException.class, null);
 
+        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST ('abc') ROWS ONLY",
+            SqlValidatorException.class, "Illegal value of fetch / limit");
+
         // Check with parameters.
         assertThrows("SELECT * FROM TEST_REPL FETCH FIRST ? ROWS ONLY",
             SqlValidatorException.class, "Illegal value of fetch / limit", bigInt());
@@ -211,6 +214,9 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
 
         assertThrows("SELECT * FROM TEST_REPL FETCH FIRST (?) ROWS ONLY",
             IgniteSQLException.class, null, NULL_RESULT);
+
+        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST (?) ROWS ONLY",
+            IgniteSQLException.class, null, "abc");
 
         assertThrows("SELECT * FROM TEST_REPL FETCH FIRST (?) ROWS ONLY",
             SqlValidatorException.class, "Illegal value of fetch / limit", Double.NaN);
@@ -490,6 +496,25 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
             .withParams(5)
             .returns(4)
             .returns(3)
+            .returns(2)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testFetchExpressionWithRewrite() throws Exception {
+        fillCache(cacheRepl, 5);
+
+        assertQuery("SELECT id FROM TEST_REPL FETCH FIRST (1 + NVL(?, 10000)) ROWS ONLY")
+            .withParams(1)
+            .returns(0)
+            .returns(1)
+            .check();
+
+        assertQuery("SELECT id FROM TEST_REPL FETCH FIRST (1 + NVL(?, 10000)) ROWS ONLY")
+            .withParams(2)
+            .returns(0)
+            .returns(1)
             .returns(2)
             .check();
     }
