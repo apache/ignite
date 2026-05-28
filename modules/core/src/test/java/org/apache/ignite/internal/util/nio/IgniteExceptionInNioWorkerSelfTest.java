@@ -91,6 +91,7 @@ public class IgniteExceptionInNioWorkerSelfTest extends GridCommonAbstractTest {
         /** */
         private boolean fail = true;
 
+        /** */
         @Override public boolean writeTo(BrokenMessage msg, MessageWriter writer) {
             if (!writer.isHeaderWritten()) {
                 if (!writer.writeHeader(msg.directType()))
@@ -108,6 +109,7 @@ public class IgniteExceptionInNioWorkerSelfTest extends GridCommonAbstractTest {
             return true;
         }
 
+        /** */
         @Override public boolean readFrom(BrokenMessage msg, MessageReader reader) {
             return true;
         }
