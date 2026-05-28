@@ -17,21 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.internal.processors.security.SecurityContext;
-import org.jetbrains.annotations.Nullable;
-
-/** */
-public abstract class AbstractCachePartitionExchangeWorkerTask implements CachePartitionExchangeWorkerTask {
-    /** Security context in which current task must be executed. */
-    @Nullable private final SecurityContext secCtx;
-
-    /** */
-    protected AbstractCachePartitionExchangeWorkerTask(@Nullable SecurityContext secCtx) {
-        this.secCtx = secCtx;
-    }
-
+/** Test cache message. */
+public class TestCacheMessage extends GridCacheMessage implements GridCacheDeployable {
     /** {@inheritDoc} */
-    @Override @Nullable public SecurityContext securityContext() {
-        return secCtx;
+    @Override public boolean addDeploymentInfo() {
+        return addDepInfo;
     }
 }

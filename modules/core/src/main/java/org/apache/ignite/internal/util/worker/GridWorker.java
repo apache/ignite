@@ -49,7 +49,7 @@ public abstract class GridWorker implements Runnable, WorkProgressDispatcher {
     /** Finish mark. */
     private volatile boolean finished;
 
-    /** Whether or not this runnable is cancelled. */
+    /** Whether this runnable is canceled. */
     protected final AtomicBoolean isCancelled = new AtomicBoolean();
 
     /** Actual thread runner. */

@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
@@ -38,10 +36,10 @@ import static org.apache.ignite.internal.processors.metastorage.persistence.Dist
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.localKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.versionKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageVersion.INITIAL_VERSION;
-import static org.apache.ignite.internal.processors.metastorage.persistence.DmsDataWriterWorker.DUMMY_VALUE;
+import static org.apache.ignite.internal.processors.metastorage.persistence.DmsDataWriter.DUMMY_VALUE;
 
 /** */
-public class DmsDataWriterWorkerTest extends GridCommonAbstractTest {
+public class DmsDataWriterTest extends GridCommonAbstractTest {
     /** */
     private Thread testThread;
 
@@ -52,7 +50,7 @@ public class DmsDataWriterWorkerTest extends GridCommonAbstractTest {
     private MyReadWriteMetaStorageMock metastorage;
 
     /** */
-    private DmsDataWriterWorker worker;
+    private DmsDataWriter dmsDataWriter;
 
     /** */
     private final AtomicReference<Throwable> errHnd = new AtomicReference<>();
@@ -66,20 +64,20 @@ public class DmsDataWriterWorkerTest extends GridCommonAbstractTest {
 
         metastorage = new MyReadWriteMetaStorageMock();
 
-        worker = new DmsDataWriterWorker(
-            DmsDataWriterWorkerTest.class.getSimpleName(),
+        dmsDataWriter = new DmsDataWriter(
+            DmsDataWriterTest.class.getSimpleName(),
             log,
             lock,
             errHnd::set
         );
 
-        worker.setMetaStorage(metastorage);
+        dmsDataWriter.setMetaStorage(metastorage);
     }
 
     /** */
     @After
     public void after() throws InterruptedException {
-        worker.cancel(true);
+        dmsDataWriter.cancel(true);
     }
 
     /** */
@@ -102,7 +100,7 @@ public class DmsDataWriterWorkerTest extends GridCommonAbstractTest {
 
         startWorker();
 
-        worker.cancel(false);
+        dmsDataWriter.cancel(false);
 
         assertEquals(1, metastorage.cache.size());
         assertEquals(INITIAL_VERSION, metastorage.read(versionKey()));
@@ -156,7 +154,7 @@ public class DmsDataWriterWorkerTest extends GridCommonAbstractTest {
         startWorker();
 
         write("key1", "val1");
-        worker.removeHistItem(1);
+        dmsDataWriter.removeHistItem(1);
 
         stopWorker();
 
@@ -205,7 +203,7 @@ public class DmsDataWriterWorkerTest extends GridCommonAbstractTest {
 
         DistributedMetaStorageVersion ver = INITIAL_VERSION.nextVersion(update);
 
-        worker.update(new DistributedMetaStorageClusterNodeData(
+        dmsDataWriter.addUpdateTask(new DistributedMetaStorageClusterNodeData(
             ver,
             new DistributedMetaStorageKeyValuePair[] {toKeyValuePair(update)},
             new DistributedMetaStorageHistoryItem[] {update},
@@ -290,17 +288,14 @@ public class DmsDataWriterWorkerTest extends GridCommonAbstractTest {
     public void testHalt() throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
 
-        LinkedBlockingQueue<RunnableFuture<?>> queue = GridTestUtils.getFieldValue(worker, DmsDataWriterWorker.class,
-            "updateQueue");
-
         metastorage = new MyReadWriteMetaStorageMock() {
             @Override public void writeRaw(String key, byte[] data) {
                 try {
-                    assertTrue(GridTestUtils.waitForCondition(() -> queue.size() == 3, getTestTimeout()));
+                    assertTrue(GridTestUtils.waitForCondition(() -> dmsDataWriter.queueSize() == 3, getTestTimeout()));
 
                     latch.countDown();
 
-                    assertTrue(GridTestUtils.waitForCondition(() -> queue.size() == 1, getTestTimeout()));
+                    assertTrue(GridTestUtils.waitForCondition(() -> dmsDataWriter.queueSize() == 1, getTestTimeout()));
                 }
                 catch (Exception ignore) {
                 }
@@ -309,18 +304,18 @@ public class DmsDataWriterWorkerTest extends GridCommonAbstractTest {
             }
         };
 
-        worker.setMetaStorage(metastorage);
+        dmsDataWriter.setMetaStorage(metastorage);
 
         startWorker();
 
-        worker.update(histItem("key1", "val1"));
-        worker.update(histItem("key2", "val2"));
-        worker.update(histItem("key3", "val3"));
-        worker.update(histItem("key4", "val4"));
+        dmsDataWriter.addUpdateTask(histItem("key1", "val1"));
+        dmsDataWriter.addUpdateTask(histItem("key2", "val2"));
+        dmsDataWriter.addUpdateTask(histItem("key3", "val3"));
+        dmsDataWriter.addUpdateTask(histItem("key4", "val4"));
 
         latch.await();
 
-        worker.cancel(true);
+        dmsDataWriter.cancel(true);
 
         assertNull(errHnd.get());
 
@@ -343,7 +338,7 @@ public class DmsDataWriterWorkerTest extends GridCommonAbstractTest {
 
     /** */
     private void write(String key, String val) throws IgniteCheckedException {
-        worker.update(histItem(key, val));
+        dmsDataWriter.addUpdateTask(histItem(key, val));
     }
 
     /** */
@@ -353,11 +348,11 @@ public class DmsDataWriterWorkerTest extends GridCommonAbstractTest {
 
     /** */
     private IgniteThread startWorker() throws InterruptedException {
-        IgniteThread workerThread = U.newThread(worker);
+        IgniteThread workerThread = U.newThread(dmsDataWriter);
 
         workerThread.start();
 
-        while (workerThread.isAlive() && worker.runner() == null) {
+        while (workerThread.isAlive() && dmsDataWriter.runner() == null) {
             //noinspection BusyWait
             Thread.sleep(0);
         }
@@ -367,7 +362,7 @@ public class DmsDataWriterWorkerTest extends GridCommonAbstractTest {
 
     /** */
     private void stopWorker() throws InterruptedException {
-        worker.cancel(false);
+        dmsDataWriter.cancel(false);
     }
 
     /** */

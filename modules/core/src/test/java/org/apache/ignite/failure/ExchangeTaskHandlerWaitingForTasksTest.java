@@ -32,7 +32,7 @@ import org.junit.Test;
  * system thread worker blocked timeout and exchange task is fast (few milliseconds),
  * exchange thread, waiting for tasks from queue, should not be considered as blocked.
  */
-public class ExchangeWorkerWaitingForTaskTest extends GridCommonAbstractTest {
+public class ExchangeTaskHandlerWaitingForTasksTest extends GridCommonAbstractTest {
     /** */
     private static final long SYSTEM_WORKER_BLOCKED_TIMEOUT = 3000;
 
