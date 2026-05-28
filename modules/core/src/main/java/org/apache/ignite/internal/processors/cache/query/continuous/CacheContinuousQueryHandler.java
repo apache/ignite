@@ -1067,8 +1067,6 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                     }
                 }
 
-                e.unmarshal(cctx, ldr);
-
                 Collection<CacheEntryEvent<? extends K, ? extends V>> evts = handleEvent(ctx, e);
 
                 if (evts != null && !evts.isEmpty())

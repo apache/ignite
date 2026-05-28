@@ -166,15 +166,7 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
 
         prepareCacheObjectsDeployment(vals, ctx.cacheContext(cacheId));
     }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        finishUnmarshalCacheObjects(vals, ctx.cacheContext(cacheId), ldr);
-    }
-
-
+    
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDistributedLockResponse.class, this,

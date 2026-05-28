@@ -18,12 +18,10 @@
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import javax.cache.event.EventType;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -288,24 +286,6 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message, 
     }
 
     /**
-     * @param cctx Cache context.
-     * @param ldr Class loader.
-     * @throws IgniteCheckedException In case of error.
-     */
-    void unmarshal(GridCacheContext cctx, @Nullable ClassLoader ldr) throws IgniteCheckedException {
-        if (!isFiltered()) {
-            if (key != null)
-                key.finishUnmarshal(cctx.cacheObjectContext(), ldr);
-
-            if (newVal != null)
-                newVal.finishUnmarshal(cctx.cacheObjectContext(), ldr);
-
-            if (oldVal != null)
-                oldVal.finishUnmarshal(cctx.cacheObjectContext(), ldr);
-        }
-    }
-
-    /**
      * @return Key.
      */
     KeyCacheObject key() {
@@ -335,8 +315,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message, 
     @Override public GridDeploymentInfo deployInfo() {
         return depInfo;
     }
-
-
+    
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheContinuousQueryEntry.class, this);

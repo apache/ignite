@@ -21,11 +21,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -168,28 +165,6 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
 
         preloadEntries.add(info);
     }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        if (nearEvicted != null) {
-            for (IgniteTxKey key : nearEvicted) {
-                GridCacheContext<?, ?> cctx = ctx.cacheContext(key.cacheId());
-
-                key.finishUnmarshal(cctx, ldr);
-            }
-        }
-
-        if (preloadEntries != null) {
-            for (GridCacheEntryInfo info : preloadEntries) {
-                GridCacheContext<?, ?> cctx = ctx.cacheContext(info.cacheId());
-
-                info.unmarshal(cctx, ldr);
-            }
-        }
-    }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

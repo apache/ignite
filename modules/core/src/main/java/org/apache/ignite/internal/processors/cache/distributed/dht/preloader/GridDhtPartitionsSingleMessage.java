@@ -21,12 +21,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Compress;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -289,33 +286,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     public void exchangeStartTime(long exchangeStartTime) {
         this.exchangeStartTime = exchangeStartTime;
     }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        if (dupPartsData != null) {
-            assert parts != null;
-
-            for (Map.Entry<Integer, Integer> e : dupPartsData.entrySet()) {
-                GridDhtPartitionMap map1 = parts.get(e.getKey());
-
-                assert map1 != null : e.getKey();
-                assert F.isEmpty(map1.map());
-                assert !map1.hasMovingPartitions();
-
-                GridDhtPartitionMap map2 = parts.get(e.getValue());
-
-                assert map2 != null : e.getValue();
-                assert map2.map() != null;
-
-                for (Map.Entry<Integer, GridDhtPartitionState> e0 : map2.map().entrySet())
-                    map1.put(e0.getKey(), e0.getValue());
-            }
-        }
-    }
-
-
+    
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtPartitionsSingleMessage.class, this, super.toString());

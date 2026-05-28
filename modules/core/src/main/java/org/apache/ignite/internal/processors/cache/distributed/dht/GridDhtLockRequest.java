@@ -24,7 +24,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockRequest;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -259,23 +258,6 @@ public class GridDhtLockRequest extends GridDistributedLockRequest implements Ma
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        if (ownedKeys != null) {
-            owned = new GridLeanMap<>(ownedKeys.length);
-
-            for (int i = 0; i < ownedKeys.length; i++) {
-                ownedKeys[i].finishUnmarshal(ctx.cacheContext(cacheId).cacheObjectContext(), ldr);
-                owned.put(ownedKeys[i], ownedValues[i]);
-            }
-
-            ownedKeys = null;
-            ownedValues = null;
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
         if (owned != null && ownedKeys == null) {
             ownedKeys = new KeyCacheObject[owned.size()];
@@ -293,7 +275,15 @@ public class GridDhtLockRequest extends GridDistributedLockRequest implements Ma
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (ownedKeys != null) {
+            owned = new GridLeanMap<>(ownedKeys.length);
 
+            for (int i = 0; i < ownedKeys.length; i++)
+                owned.put(ownedKeys[i], ownedValues[i]);
+
+            ownedKeys = null;
+            ownedValues = null;
+        }
     }
 
     /** {@inheritDoc} */

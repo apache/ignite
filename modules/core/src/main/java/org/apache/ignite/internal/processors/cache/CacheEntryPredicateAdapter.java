@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Objects;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -117,11 +116,5 @@ public class CacheEntryPredicateAdapter implements CacheEntryPredicate {
         }
 
         throw new IllegalStateException("Unknown cache entry predicate type: " + type);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        if (type == CacheEntryPredicateType.VALUE)
-            val.finishUnmarshal(ctx.cacheObjectContext(), ldr);
     }
 }

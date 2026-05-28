@@ -22,7 +22,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
@@ -441,37 +440,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        Marshaller mrsh = ctx.marshaller();
-
-        ClassLoader clsLdr = U.resolveClassLoader(ldr, ctx.gridConfig());
-
-        if (keyValFilterBytes != null && keyValFilter == null)
-            keyValFilter = U.unmarshal(mrsh, keyValFilterBytes, clsLdr);
-
-        if (rdcBytes != null && rdc == null)
-            rdc = U.unmarshal(mrsh, rdcBytes, ldr);
-
-        if (transBytes != null && trans == null)
-            trans = U.unmarshal(mrsh, transBytes, clsLdr);
-
-        if (argsBytes != null && args == null)
-            args = U.unmarshal(mrsh, argsBytes, clsLdr);
-
-        if (idxQryDescBytes != null && idxQryDesc == null)
-            idxQryDesc = U.unmarshal(mrsh, idxQryDescBytes, clsLdr);
-
-        if (!F.isEmpty(skipKeys)) {
-            CacheObjectContext objCtx = ctx.cacheObjectContext(cacheId);
-
-            for (KeyCacheObject k : skipKeys)
-                k.finishUnmarshal(objCtx, ldr);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return addDepInfo;
     }
@@ -664,7 +632,20 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (keyValFilterBytes != null && keyValFilter == null)
+            keyValFilter = U.unmarshal(marsh, keyValFilterBytes, clsLdr);
 
+        if (rdcBytes != null && rdc == null)
+            rdc = U.unmarshal(marsh, rdcBytes, clsLdr);
+
+        if (transBytes != null && trans == null)
+            trans = U.unmarshal(marsh, transBytes, clsLdr);
+
+        if (argsBytes != null && args == null)
+            args = U.unmarshal(marsh, argsBytes, clsLdr);
+
+        if (idxQryDescBytes != null && idxQryDesc == null)
+            idxQryDesc = U.unmarshal(marsh, idxQryDescBytes, clsLdr);
     }
 
     /** {@inheritDoc} */

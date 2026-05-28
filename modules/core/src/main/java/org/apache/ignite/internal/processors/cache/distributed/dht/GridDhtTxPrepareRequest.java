@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
@@ -339,9 +338,16 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest imp
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (owned != null && ownedKeys == null) {
+            ownedKeys = owned.keySet();
 
+            ownedVals = owned.values();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         if (ownedKeys != null) {
             assert ownedKeys.size() == ownedVals.size();
 
@@ -354,51 +360,9 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest imp
             while (keyIter.hasNext()) {
                 IgniteTxKey key = keyIter.next();
 
-                GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(key.cacheId());
-
-                if (cacheCtx != null) {
-                    key.finishUnmarshal(cacheCtx, ldr);
-
-                    owned.put(key, valIter.next());
-                }
+                owned.put(key, valIter.next());
             }
         }
-
-        if (nearWrites != null) {
-            for (Iterator<IgniteTxEntry> it = nearWrites.iterator(); it.hasNext();) {
-                IgniteTxEntry e = it.next();
-
-                GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(e.cacheId());
-
-                if (cacheCtx == null) {
-                    it.remove();
-
-                    if (nearWritesCacheMissed == null)
-                        nearWritesCacheMissed = new ArrayList<>();
-
-                    nearWritesCacheMissed.add(e.txKey());
-                }
-                else {
-                    e.context(cacheCtx);
-
-                    e.unmarshal(ctx, true, ldr);
-                }
-            }
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (owned != null && ownedKeys == null) {
-            ownedKeys = owned.keySet();
-
-            ownedVals = owned.values();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-
     }
     
     /** {@inheritDoc} */

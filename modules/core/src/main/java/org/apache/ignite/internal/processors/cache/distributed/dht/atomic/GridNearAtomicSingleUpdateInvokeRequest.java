@@ -180,17 +180,6 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        if (entryProcBytes != null && entryProc == null)
-            entryProc = U.unmarshal(ctx, entryProcBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-
-        if (invokeArgsBytes != null && invokeArgs == null)
-            invokeArgs = unmarshalInvokeArguments(invokeArgsBytes.toArray(new byte[invokeArgsBytes.size()][]), ctx, ldr);
-    }
-
-    /** {@inheritDoc} */
     @Override public void cleanup(boolean clearKey) {
         super.cleanup(clearKey);
 
@@ -208,7 +197,11 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (entryProcBytes != null && entryProc == null)
+            entryProc = U.unmarshal(marsh, entryProcBytes, clsLdr);
 
+        if (invokeArgsBytes != null && invokeArgs == null)
+            invokeArgs = unmarshalInvokeArguments(invokeArgsBytes.toArray(new byte[invokeArgsBytes.size()][]), marsh, clsLdr);
     }
 
     /** {@inheritDoc} */

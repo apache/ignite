@@ -28,7 +28,9 @@ public interface CalciteContextMarshallableMessage extends Message {
      *
      * @param ctx Cache shared context.
      */
-    void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException;
+    default void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        // No-op.
+    }
 
     /**
      * Prepares the message before processing.
@@ -36,5 +38,7 @@ public interface CalciteContextMarshallableMessage extends Message {
      * @param ctx Cache shared context.
      * @param clsLdr Class loader.
      */
-    void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader clsLdr) throws IgniteCheckedException;
+    default void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader clsLdr) throws IgniteCheckedException {
+        // No-op.
+    }
 }

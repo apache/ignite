@@ -167,18 +167,6 @@ public class GridCacheTtlUpdateRequest extends GridCacheIdMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr)
-        throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
-
-        finishUnmarshalCacheObjects(keys, cctx, ldr);
-
-        finishUnmarshalCacheObjects(nearKeys, cctx, ldr);
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return false;
     }

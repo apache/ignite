@@ -27,7 +27,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -139,41 +138,6 @@ public class TxLocksResponse extends GridCacheMessage implements MarshallableMes
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        try {
-            super.finishUnmarshal(ctx, ldr);
-
-            if (nearTxKeysArr != null) {
-                for (int i = 0; i < nearTxKeysArr.length; i++) {
-                    IgniteTxKey txKey = nearTxKeysArr[i];
-
-                    txKey.key().finishUnmarshal(ctx.cacheObjectContext(txKey.cacheId()), ldr);
-
-                    txLocks().put(txKey, locksArr[i]);
-                }
-
-                nearTxKeysArr = null;
-                locksArr = null;
-            }
-
-            if (txKeysArr != null) {
-                txKeys = U.newHashSet(txKeysArr.length);
-
-                for (IgniteTxKey txKey : txKeysArr) {
-                    txKey.key().finishUnmarshal(ctx.cacheObjectContext(txKey.cacheId()), ldr);
-
-                    txKeys.add(txKey);
-                }
-
-                txKeysArr = null;
-            }
-        }
-        catch (Exception e) {
-            throw new IgniteCheckedException(e);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
         if (nearTxKeyLocks != null && !nearTxKeyLocks.isEmpty()) {
             int len = nearTxKeyLocks.size();
@@ -205,6 +169,24 @@ public class TxLocksResponse extends GridCacheMessage implements MarshallableMes
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (nearTxKeysArr != null) {
+            for (int i = 0; i < nearTxKeysArr.length; i++) {
+                IgniteTxKey txKey = nearTxKeysArr[i];
 
+                txLocks().put(txKey, locksArr[i]);
+            }
+
+            nearTxKeysArr = null;
+            locksArr = null;
+        }
+
+        if (txKeysArr != null) {
+            txKeys = U.newHashSet(txKeysArr.length);
+
+            for (IgniteTxKey txKey : txKeysArr)
+                txKeys.add(txKey);
+
+            txKeysArr = null;
+        }
     }
 }

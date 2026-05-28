@@ -142,26 +142,10 @@ public class GridDhtForceKeysResponse extends GridCacheIdMessage implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
-
-        if (missedKeys != null)
-            finishUnmarshalCacheObjects(missedKeys, cctx, ldr);
-
-        if (infos != null) {
-            for (GridCacheEntryInfo info : infos)
-                info.unmarshal(cctx.cacheObjectContext(), ldr);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return addDepInfo;
     }
-
-
+    
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtForceKeysResponse.class, this, super.toString());

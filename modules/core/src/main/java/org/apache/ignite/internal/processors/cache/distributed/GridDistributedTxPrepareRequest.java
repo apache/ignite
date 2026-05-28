@@ -384,35 +384,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        if (writes != null)
-            unmarshalTx(writes, ctx, ldr);
-
-        if (reads != null)
-            unmarshalTx(reads, ctx, ldr);
-
-        if (dhtVerKeys != null && dhtVers == null) {
-            assert dhtVerVals != null;
-            assert dhtVerKeys.size() == dhtVerVals.size();
-
-            Iterator<IgniteTxKey> keyIt = dhtVerKeys.iterator();
-            Iterator<GridCacheVersion> verIt = dhtVerVals.iterator();
-
-            dhtVers = U.newHashMap(dhtVerKeys.size());
-
-            while (keyIt.hasNext()) {
-                IgniteTxKey key = keyIt.next();
-
-                key.finishUnmarshal(ctx.cacheContext(key.cacheId()), ldr);
-
-                dhtVers.put(key, verIt.next());
-            }
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return addDepInfo || forceAddDepInfo;
     }
@@ -452,7 +423,21 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (dhtVerKeys != null && dhtVers == null) {
+            assert dhtVerVals != null;
+            assert dhtVerKeys.size() == dhtVerVals.size();
 
+            Iterator<IgniteTxKey> keyIt = dhtVerKeys.iterator();
+            Iterator<GridCacheVersion> verIt = dhtVerVals.iterator();
+
+            dhtVers = U.newHashMap(dhtVerKeys.size());
+
+            while (keyIt.hasNext()) {
+                IgniteTxKey key = keyIt.next();
+
+                dhtVers.put(key, verIt.next());
+            }
+        }
     }
 
     /** {@inheritDoc} */

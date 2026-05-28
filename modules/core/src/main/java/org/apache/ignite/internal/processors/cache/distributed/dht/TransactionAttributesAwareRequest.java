@@ -63,11 +63,6 @@ public class TransactionAttributesAwareRequest extends GridCacheMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        payload.finishUnmarshal(ctx, ldr);
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return false;
     }

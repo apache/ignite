@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -91,21 +90,6 @@ public class TxLocksRequest extends GridCacheMessage implements MarshallableMess
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        txKeys = U.newHashSet(txKeysArr.length);
-
-        for (IgniteTxKey key : txKeysArr) {
-            key.finishUnmarshal(ctx.cacheContext(key.cacheId()), ldr);
-
-            txKeys.add(key);
-        }
-
-        txKeysArr = null;
-    }
-
-    /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
         txKeysArr = new IgniteTxKey[txKeys.size()];
 
@@ -117,6 +101,9 @@ public class TxLocksRequest extends GridCacheMessage implements MarshallableMess
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        txKeys = U.newHashSet(txKeysArr.length);
 
+        for (IgniteTxKey key : txKeysArr) 
+            txKeys.add(key);
     }
 }

@@ -335,9 +335,6 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
         GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
-        if (expiryPlc != null && expiryPlcBytes == null)
-            expiryPlcBytes = CU.marshal(cctx, new IgniteExternalizableExpiryPolicy(expiryPlc));
-
         prepareCacheObjectsDeployment(keys, cctx);
 
         if (filter != null && filter.length == 0)
@@ -356,35 +353,6 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         }
         else
             prepareCacheObjectsDeployment(vals, cctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
-
-        if (expiryPlcBytes != null && expiryPlc == null)
-            expiryPlc = U.unmarshal(ctx, expiryPlcBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-
-        finishUnmarshalCacheObjects(keys, cctx, ldr);
-
-        if (filter != null) {
-            for (CacheEntryPredicate p : filter) {
-                if (p != null)
-                    p.finishUnmarshal(cctx, ldr);
-            }
-        }
-
-        if (operation() == TRANSFORM) {
-            if (entryProcessors == null)
-                entryProcessors = unmarshalCollection(entryProcessorsBytes, ctx, ldr);
-
-            if (invokeArgsBytes != null && invokeArgs == null)
-                invokeArgs = unmarshalInvokeArguments(invokeArgsBytes.toArray(new byte[invokeArgsBytes.size()][]), ctx, ldr);
-        }
-        else
-            finishUnmarshalCacheObjects(vals, cctx, ldr);
     }
 
     /** {@inheritDoc} */
@@ -408,6 +376,9 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (expiryPlc != null && expiryPlcBytes == null)
+            expiryPlcBytes = U.marshal(marsh, new IgniteExternalizableExpiryPolicy(expiryPlc));
+        
         if (operation() == TRANSFORM) {
             if (entryProcessorsBytes == null)
                 entryProcessorsBytes = marshallCollection(entryProcessors, marsh);
@@ -419,7 +390,16 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (expiryPlcBytes != null && expiryPlc == null)
+            expiryPlc = U.unmarshal(marsh, expiryPlcBytes, clsLdr);
 
+        if (operation() == TRANSFORM) {
+            if (entryProcessors == null)
+                entryProcessors = unmarshalCollection(entryProcessorsBytes, marsh, clsLdr);
+
+            if (invokeArgsBytes != null && invokeArgs == null)
+                invokeArgs = unmarshalInvokeArguments(invokeArgsBytes.toArray(new byte[invokeArgsBytes.size()][]), marsh, clsLdr);
+        }
     }
 
     /** {@inheritDoc} */

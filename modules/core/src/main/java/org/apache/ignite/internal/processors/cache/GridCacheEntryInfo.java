@@ -176,16 +176,6 @@ public class GridCacheEntryInfo implements MarshallableMessage, CacheIdAware {
     }
 
     /**
-     * @param ctx Context.
-     * @param ldr Loader.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void unmarshalValue(GridCacheContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        if (val != null)
-            val.finishUnmarshal(ctx.cacheObjectContext(), ldr);
-    }
-
-    /**
      * @param ctx Cache object context.
      * @return Marshalled size.
      * @throws IgniteCheckedException If failed.
@@ -215,32 +205,6 @@ public class GridCacheEntryInfo implements MarshallableMessage, CacheIdAware {
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-    }
-
-    /**
-     * Unmarshalls entry.
-     *
-     * @param ctx Cache context.
-     * @param clsLdr Class loader.
-     * @throws IgniteCheckedException If unmarshalling failed.
-     */
-    public void unmarshal(GridCacheContext ctx, ClassLoader clsLdr) throws IgniteCheckedException {
-        unmarshal(ctx.cacheObjectContext(), clsLdr);
-    }
-
-    /**
-     * Unmarshalls entry.
-     *
-     * @param ctx Cache context.
-     * @param clsLdr Class loader.
-     * @throws IgniteCheckedException If unmarshalling failed.
-     */
-    public void unmarshal(CacheObjectContext ctx, ClassLoader clsLdr) throws IgniteCheckedException {
-        key.finishUnmarshal(ctx, clsLdr);
-
-        if (val != null)
-            val.finishUnmarshal(ctx, clsLdr);
-
         long remaining = expireTime;
 
         expireTime = remaining < 0 ? 0 : U.currentTimeMillis() + remaining;
@@ -249,7 +213,7 @@ public class GridCacheEntryInfo implements MarshallableMessage, CacheIdAware {
         if (expireTime < 0)
             expireTime = 0;
     }
-
+    
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheEntryInfo.class, this);

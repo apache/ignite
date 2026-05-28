@@ -17,10 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -116,16 +114,6 @@ public class TxEntryValueHolder implements Message {
      */
     public boolean hasReadValue() {
         return hasReadVal;
-    }
-
-    /**
-     * @param ctx Cache context.
-     * @param ldr Class loader.
-     * @throws IgniteCheckedException If unmarshalling failed.
-     */
-    public void unmarshal(CacheObjectValueContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        if (hasWriteVal && val != null)
-            val.finishUnmarshal(ctx, ldr);
     }
 
     /** {@inheritDoc} */

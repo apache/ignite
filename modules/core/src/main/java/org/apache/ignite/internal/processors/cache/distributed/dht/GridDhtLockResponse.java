@@ -132,16 +132,7 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
         if (preloadEntries != null)
             prepareInfosDeployment(preloadEntries, cctx.shared(), cctx.cacheObjectContext());
     }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        if (preloadEntries != null)
-            unmarshalInfos(preloadEntries, ctx.cacheContext(cacheId), ldr);
-    }
-
-
+    
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtLockResponse.class, this, super.toString());

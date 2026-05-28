@@ -17,24 +17,19 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
 
@@ -127,57 +122,6 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        if (data == null)
-            data = unmarshalCollection0(dataBytes, ctx, ldr);
-    }
-
-    /**
-     * @param byteCol Collection to unmarshal.
-     * @param ctx Context.
-     * @param ldr Loader.
-     * @return Unmarshalled collection.
-     * @throws IgniteCheckedException If failed.
-     */
-    @Nullable protected <T> List<T> unmarshalCollection0(@Nullable Collection<byte[]> byteCol,
-        GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        assert ldr != null;
-        assert ctx != null;
-
-        if (byteCol == null)
-            return null;
-
-        List<T> col = new ArrayList<>(byteCol.size());
-
-        Marshaller marsh = ctx.marshaller();
-
-        ClassLoader ldr0 = U.resolveClassLoader(ldr, ctx.gridConfig());
-
-        CacheObjectContext cacheObjCtx = null;
-
-        for (byte[] bytes : byteCol) {
-            Object obj = bytes == null ? null : marsh.<T>unmarshal(bytes, ldr0);
-
-            if (obj instanceof Map.Entry) {
-                Object key = ((Map.Entry)obj).getKey();
-
-                if (key instanceof KeyCacheObject) {
-                    if (cacheObjCtx == null)
-                        cacheObjCtx = ctx.cacheContext(cacheId).cacheObjectContext();
-
-                    ((KeyCacheObject)key).finishUnmarshal(cacheObjCtx, ldr0);
-                }
-            }
-
-            col.add((T)obj);
-        }
-
-        return col;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return addDepInfo;
     }
@@ -236,13 +180,14 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (dataBytes == null && data != null)
+        if (data != null)
             dataBytes = marshallCollection(data, marsh);
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-
+        if (dataBytes != null)
+            data = unmarshalCollection(dataBytes, marsh, clsLdr);
     }
 
     /** {@inheritDoc} */

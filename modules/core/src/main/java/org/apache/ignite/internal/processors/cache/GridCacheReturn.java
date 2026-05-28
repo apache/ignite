@@ -335,16 +335,10 @@ public class GridCacheReturn implements Message, CacheIdAware {
     public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         loc = true;
 
-        if (cacheObj != null) {
-            cacheObj.finishUnmarshal(ctx.cacheObjectContext(), ldr);
-
+        if (cacheObj != null) 
             v = ctx.cacheObjectContext().unwrapBinaryIfNeeded(cacheObj, true, false, ldr);
-        }
 
         if (invokeRes && invokeResCol != null) {
-            for (CacheInvokeDirectResult res : invokeResCol)
-                res.finishUnmarshal(ctx, ldr);
-
             Map<Object, CacheInvokeResult> map0 = U.newHashMap(invokeResCol.size());
 
             for (CacheInvokeDirectResult res : invokeResCol) {

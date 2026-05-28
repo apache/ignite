@@ -24,7 +24,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -153,22 +152,6 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
 
             if (res instanceof CacheObject)
                 prepareCacheObjectDeployment((CacheObject)res, cctx);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        if (res != null) {
-            GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId());
-
-            if (res instanceof CacheObject)
-                ((CacheObject)res).finishUnmarshal(cctx.cacheObjectContext(), ldr);
-            else if (res instanceof CacheVersionedValue)
-                ((CacheVersionedValue)res).finishUnmarshal(cctx, ldr);
-            else if (res instanceof GridCacheEntryInfo)
-                ((GridCacheEntryInfo)res).unmarshal(cctx, ldr);
         }
     }
 

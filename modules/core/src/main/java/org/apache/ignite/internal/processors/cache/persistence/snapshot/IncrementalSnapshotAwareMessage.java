@@ -85,13 +85,7 @@ public class IncrementalSnapshotAwareMessage extends GridCacheMessage {
     @Override public void prepareDeployment(GridCacheSharedContext ctx) throws IgniteCheckedException {
         payload.prepareDeployment(ctx);
     }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        payload.finishUnmarshal(ctx, ldr);
-    }
-
-
+    
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return false;
