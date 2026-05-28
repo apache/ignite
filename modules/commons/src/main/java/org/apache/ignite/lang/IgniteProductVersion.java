@@ -241,6 +241,11 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
         return Integer.compare(maintenance, o.maintenance);
     }
 
+    /** @return String representation of the current version as a three-part version number. */
+    public String semanticName() {
+        return major + "." + minor + "." + maintenance;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
@@ -291,11 +296,7 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
 
         hash = hash.length() > 8 ? hash.substring(0, 8) : hash;
 
-        StringBuilder sb = new StringBuilder();
-
-        sb.append(major)
-            .append(".").append(minor)
-            .append(".").append(maintenance);
+        StringBuilder sb = new StringBuilder(semanticName());
 
         if (!F.isEmpty(stage))
             sb.append("-").append(stage);

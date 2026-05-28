@@ -499,6 +499,21 @@ public class DistributedProcess<I extends Message, R extends Message> {
         /**
          * Snapshot partitions validation.
          */
-        CHECK_SNAPSHOT_PARTS
+        CHECK_SNAPSHOT_PARTS,
+
+        /**
+         * Cluster version Rolling Upgrade enable process.
+         */
+        RU_ENABLE,
+
+        /**
+         * Cluster version finalization prepare phase.
+         */
+        RU_PREPARE_VERSION_FINALIZATION,
+
+        /**
+         * Cluster version finalization complete phase.
+         */
+        RU_COMPLETE_VERSION_FINALIZATION
     }
 }

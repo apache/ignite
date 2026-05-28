@@ -663,7 +663,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(NodeEncryptionKeys.class);
         withNoSchema(EncryptionDataBagItem.class);
 
-        // [13000 - 13300]: Control, configuration, diagnostincs and other messages.
+        // [13000 - 13300]: Control, configuration, diagnostics and other messages.
         msgIdx = 13000;
         withSchema(GridEventStorageMessage.class);
         withNoSchema(ChangeGlobalStateMessage.class);
