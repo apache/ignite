@@ -78,7 +78,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.reader.Standa
 import org.apache.ignite.internal.processors.cacheobject.NoOpBinary;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.tracing.configuration.NoopTracingConfigurationManager;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -478,9 +477,9 @@ public class IgniteMock implements IgniteEx {
                 bcfg.getIdMapper(),
                 bcfg.getNameMapper(),
                 bcfg.getTypeConfigurations(),
-                CU.affinityFields(configuration().getCacheKeyConfiguration()),
+                BinaryUtils.affinityFields(configuration().getCacheKeyConfiguration()),
                 bcfg.isCompactFooter(),
-                CU::affinityFieldName,
+                BinaryUtils::affinityFieldName,
                 NullLogger.INSTANCE
             ) {
                 @Override public int typeId(String typeName) {

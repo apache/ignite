@@ -27,6 +27,7 @@ import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.lang.reflect.Array;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -62,13 +63,21 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCommonsSystemProperties;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryCollectionFactory;
+import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryMapFactory;
+import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.cache.CacheKeyConfiguration;
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.util.CommonUtils;
@@ -175,6 +184,10 @@ public class BinaryUtils {
 
     /** FNV1 hash prime. */
     private static final int FNV1_PRIME = 0x01000193;
+
+    /** For tests. */
+    @SuppressWarnings("PublicField")
+    public static boolean useTestBinaryCtx;
 
     /** */
     public static final BinariesFactory binariesFactory;
@@ -3065,6 +3078,169 @@ public class BinaryUtils {
             hash = 31 * hash + data[i];
 
         return hash;
+    }
+
+    /** @return Empty binary context instance. */
+    public static BinaryContext binaryContext(
+        BinaryMetadataHandler metaHnd,
+        BinaryMarshaller marsh,
+        BinaryConfiguration bcfg,
+        String igniteInstanceName,
+        ClassLoader clsLdr,
+        CacheKeyConfiguration[] cacheKeyCfgs,
+        IgniteLogger log
+    ) {
+        return useTestBinaryCtx
+            ? new TestBinaryContext(
+            metaHnd,
+            marsh,
+            igniteInstanceName,
+            clsLdr,
+            bcfg.getSerializer(),
+            bcfg.getIdMapper(),
+            bcfg.getNameMapper(),
+            bcfg.getTypeConfigurations(),
+            affinityFields(cacheKeyCfgs),
+            bcfg.isCompactFooter(),
+            BinaryUtils::affinityFieldName,
+            log
+        )
+            : new BinaryContext(
+                metaHnd,
+                marsh,
+                igniteInstanceName,
+                clsLdr,
+                bcfg.getSerializer(),
+                bcfg.getIdMapper(),
+                bcfg.getNameMapper(),
+                bcfg.getTypeConfigurations(),
+                affinityFields(cacheKeyCfgs),
+                bcfg.isCompactFooter(),
+                BinaryUtils::affinityFieldName,
+                log
+            );
+    }
+
+    /**
+     * @param keyCfgs Key configurations.
+     * @return Type name to affinity key field name mapping.
+     */
+    public static Map<String, String> affinityFields(CacheKeyConfiguration[] keyCfgs) {
+        Map<String, String> affFields = new HashMap<>();
+
+        if (F.isEmpty(keyCfgs))
+            return affFields;
+
+        for (CacheKeyConfiguration keyCfg : keyCfgs)
+            affFields.put(keyCfg.getTypeName(), keyCfg.getAffinityKeyFieldName());
+
+        return affFields;
+    }
+
+    /**
+     * @param cls Class to get affinity field for.
+     * @return Affinity field name or {@code null} if field name was not found.
+     */
+    public static String affinityFieldName(Class cls) {
+        for (; cls != Object.class && cls != null; cls = cls.getSuperclass()) {
+            for (Field f : cls.getDeclaredFields()) {
+                if (f.getAnnotation(AffinityKeyMapped.class) != null)
+                    return f.getName();
+            }
+        }
+
+        return null;
+    }
+
+    /** */
+    @SuppressWarnings("PublicInnerClass")
+    public static class TestBinaryContext extends BinaryContext {
+        /** */
+        private List<TestBinaryContextListener> listeners;
+
+        /** */
+        public TestBinaryContext(
+            BinaryMetadataHandler metaHnd,
+            @Nullable BinaryMarshaller marsh,
+            @Nullable String igniteInstanceName,
+            @Nullable ClassLoader clsLdr,
+            @Nullable BinarySerializer dfltSerializer,
+            @Nullable BinaryIdMapper idMapper,
+            @Nullable BinaryNameMapper nameMapper,
+            @Nullable Collection<BinaryTypeConfiguration> typeCfgs,
+            Map<String, String> affFlds,
+            boolean compactFooter,
+            Function<Class<?>, String> affFldNameProvider,
+            IgniteLogger log
+        ) {
+            super(
+                metaHnd,
+                marsh,
+                igniteInstanceName,
+                clsLdr,
+                dfltSerializer,
+                idMapper,
+                nameMapper,
+                typeCfgs,
+                affFlds,
+                compactFooter,
+                affFldNameProvider,
+                log
+            );
+        }
+
+
+        /** {@inheritDoc} */
+        @Nullable @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
+            BinaryType metadata = super.metadata(typeId);
+
+            if (listeners != null) {
+                for (TestBinaryContextListener listener : listeners)
+                    listener.onAfterMetadataRequest(typeId, metadata);
+            }
+
+            return metadata;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void updateMetadata(int typeId, BinaryMetadata meta, boolean failIfUnregistered) throws BinaryObjectException {
+            if (listeners != null) {
+                for (TestBinaryContextListener listener : listeners)
+                    listener.onBeforeMetadataUpdate(typeId, meta);
+            }
+
+            super.updateMetadata(typeId, meta, failIfUnregistered);
+        }
+
+        /** */
+        public interface TestBinaryContextListener {
+            /**
+             * @param typeId Type id.
+             * @param type Type.
+             */
+            void onAfterMetadataRequest(int typeId, BinaryType type);
+
+            /**
+             * @param typeId Type id.
+             * @param metadata Metadata.
+             */
+            void onBeforeMetadataUpdate(int typeId, BinaryMetadata metadata);
+        }
+
+        /** @param lsnr Listener. */
+        public void addListener(TestBinaryContextListener lsnr) {
+            if (listeners == null)
+                listeners = new ArrayList<>();
+
+            if (!listeners.contains(lsnr))
+                listeners.add(lsnr);
+        }
+
+        /** */
+        public void clearAllListener() {
+            if (listeners != null)
+                listeners.clear();
+        }
     }
 
     /**
