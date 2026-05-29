@@ -18,8 +18,11 @@
 package org.apache.ignite.internal.processors.rest.handlers.redis;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
@@ -28,6 +31,7 @@ import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.handlers.redis.exception.GridRedisGenericException;
 import org.apache.ignite.internal.processors.rest.handlers.redis.exception.GridRedisTypeException;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
@@ -75,13 +79,13 @@ public abstract class GridRedisRestCommandHandler implements GridRedisCommandHan
                         GridRestResponse restRes = f.get();
 
                         if (restRes.getSuccessStatus() == GridRestResponse.STATUS_SUCCESS)
-                            msg.setResponse(makeResponse(restRes, msg.auxMKeys()));
+                            msg.setResponse(makeResponse(restRes, msg, msg.auxMKeys()));
                         else
                             msg.setResponse(GridRedisProtocolParser.toGenericError("Operation error"));
 
                         return msg;
                     }
-                }, ctx.pools().getRestExecutorService());
+                });
         }
         catch (IgniteCheckedException e) {
             if (e instanceof GridRedisTypeException)
@@ -135,6 +139,10 @@ public abstract class GridRedisRestCommandHandler implements GridRedisCommandHan
      */
     public abstract GridRestRequest asRestRequest(GridRedisMessage msg) throws IgniteCheckedException;
 
+    public ByteBuffer makeResponse(GridRestResponse resp, GridRedisMessage msg,List<String> params){
+        return makeResponse(resp,params);
+    }
+
     /**
      * Prepares a response according to the request.
      *
@@ -142,5 +150,23 @@ public abstract class GridRedisRestCommandHandler implements GridRedisCommandHan
      * @param params Auxiliary parameters.
      * @return Response for the command.
      */
-    public abstract ByteBuffer makeResponse(GridRestResponse resp, List<String> params);
+    public ByteBuffer makeResponse(GridRestResponse resp, List<String> params){
+        if (resp.getError()!=null && !resp.getError().isEmpty())
+            return GridRedisProtocolParser.toGenericError(resp.getError());
+
+        if (resp.getResponse() == null)
+            return GridRedisProtocolParser.nil();
+
+        if (resp.getResponse() instanceof String)
+            return GridRedisProtocolParser.toBulkString(resp.getResponse());
+        else if (resp.getResponse() instanceof Number)
+            return GridRedisProtocolParser.toInteger(resp.getResponse().toString());
+        else if (resp.getResponse() instanceof Map)
+            return GridRedisProtocolParser.toOrderedArray((Map<Object, Object>)resp.getResponse(), params);
+        else if (resp.getResponse() instanceof Collection)
+            return GridRedisProtocolParser.toArray((Collection)resp.getResponse());
+        else
+            throw new UnsupportedOperationException();
+
+    }
 }

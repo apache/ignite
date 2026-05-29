@@ -54,7 +54,6 @@ const DFLT_IGFS = {
     streamBufferSize: 65536,
     maxSpaceSize: 0,
     maximumTaskRangeLength: 0,
-    managementPort: 11400,
     perNodeBatchSize: 100,
     perNodeParallelBatchCount: 8,
     prefetchBlocks: 0,

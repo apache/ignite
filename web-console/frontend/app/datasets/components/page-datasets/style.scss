@@ -13,33 +13,6 @@ page-datasets {
         }
     }
 
-    .pc-form-actions-panel {
-        display: flex;
-        flex-direction: row;
-        padding: 10px 20px 10px 30px;
-        box-shadow: 0 0 4px 0 rgba(0, 0, 0, 0.2), 0 3px 4px -1px rgba(0, 0, 0, 0.2);
-        position: -webkit-sticky;
-        position: sticky;
-        bottom: 0;
-        // margin: 20px -30px -30px;
-        background: white;
-        border-radius: 0 0 4px 4px;
-        z-index: 10;
-
-        &>*+* {
-            margin-left: 10px;
-        }
-
-        .link-primary + .link-primary {
-            margin-left: 40px;
-        }
-
-        .pc-form-actions-panel__right-after {
-            width: 0;
-            margin-left: auto;
-        }
-    }
-
     .pc-hide-tooltips {
         .tipField:not(.fa-remove), .icon-help, [ignite-icon='info'] {
             display: none;

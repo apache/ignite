@@ -86,9 +86,8 @@ export default class CacheEditFormController {
                 enableFiltering: false,
                 minWidth: 200
             },
-        ]; 
-        
-        // TODO: Do we really need this?
+        ];
+
         this.$scope.ui = this.IgniteFormUtils.formUI();
 
         this.formActions = [
@@ -105,7 +104,7 @@ export default class CacheEditFormController {
     }
 
     $onDestroy() {
-        this.subscription.unsubscribe();
+  
     }
 
     $onChanges(changes) {
@@ -189,9 +188,9 @@ export default class CacheEditFormController {
     }    
     
     addCache() {
-        const newFlow = this.TaskFlows.getBlankTaskFlow()
-        newFlow.target = this.cache.name
-        newFlow.targetCluster = this.clusterId                
+        const newFlow = this.TaskFlows.getBlankTaskFlow();
+        newFlow.target = this.cache.name;
+        newFlow.targetCluster = this.clusterId;
         this.cacheDataProvider.push(newFlow);
     }
     

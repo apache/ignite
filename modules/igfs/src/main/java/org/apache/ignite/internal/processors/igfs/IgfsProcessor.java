@@ -78,8 +78,8 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
         IgfsUtils.prepareCacheConfigurations(igniteCfg);
         
         FileSystemConfiguration[] cfgs = igniteCfg.getFileSystemConfiguration();
-        
-        
+
+        IgfsServerManager serverManager = new IgfsServerManager(igfsCache);
         assert cfgs != null && cfgs.length > 0;
 
         // Start IGFS instances.
@@ -110,8 +110,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
                 ctx,
                 cfg0,
                 new IgfsMetaManager(cfg0.isRelaxedConsistency(), metaClient),
-                new IgfsDataManager(),
-                new IgfsServerManager(),
+                new IgfsDataManager(), serverManager,
                 new IgfsFragmentizerManager());
 
             // Start managers first.

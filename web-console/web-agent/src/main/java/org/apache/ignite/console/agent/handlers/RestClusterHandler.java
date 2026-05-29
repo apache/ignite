@@ -75,6 +75,7 @@ public class RestClusterHandler extends AbstractClusterHandler {
     }
     
     public static void registerNodeUrl(String clusterId,String clusterName,String url) {
+        if(url==null) return;
     	List<String> urls = clusterUrlMap.get(clusterId);
     	if(urls==null) {
     		urls = new ArrayList<>(1);

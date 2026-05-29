@@ -114,7 +114,6 @@ public class GridRedisConnectionCommandHandler implements GridRedisCommandHandle
                     CacheConfiguration<String,String> ccfg0 = ctx.cache().cacheConfiguration(GridRedisMessage.DFLT_CACHE_NAME);
                     CacheConfiguration<String,String> ccfg = new CacheConfiguration<>(ccfg0);
                     ccfg.setName(cacheName);
-                    
 
                     IgniteCache<String, String> cache = ctx.grid().getOrCreateCache(ccfg);
 
@@ -145,7 +144,6 @@ public class GridRedisConnectionCommandHandler implements GridRedisCommandHandle
 					
 				} 
 				catch (Exception e) {
-					
 					ctx.log(getClass()).warning("auth default user name is igniteInstanceName");
 					e.printStackTrace();
 				}
@@ -181,11 +179,12 @@ public class GridRedisConnectionCommandHandler implements GridRedisCommandHandle
             	
             	StringBuilder sb = new StringBuilder();
             	if(section.equals("server") || section.equals("default") || section.equals("everything")) {
+					long pid = ProcessHandle.current().pid();
             		sb.append("\n# Server");
-            		sb.append("\nredis_version:6.0.0");
+            		sb.append("\nredis_version:5.0.0");
             		sb.append("\nredis_mode:standalone");
             		sb.append("\nos:"+System.getenv("os.name"));
-            		sb.append("\nprocess_id:"+1);
+            		sb.append("\nprocess_id:"+pid);
             	}
             	if(section.equals("memory") || section.equals("default")  || section.equals("everything")) {
             		sb.append("\n# Memory");

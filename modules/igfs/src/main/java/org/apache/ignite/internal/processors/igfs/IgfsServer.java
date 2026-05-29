@@ -24,6 +24,7 @@ import org.apache.ignite.igfs.IgfsIpcEndpointType;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.igfs.common.*;
+import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.ipc.IpcEndpoint;
 import org.apache.ignite.internal.util.ipc.IpcServerEndpoint;
 import org.apache.ignite.internal.util.ipc.loopback.IpcServerTcpEndpoint;
@@ -38,6 +39,8 @@ import org.jsr166.ConcurrentLinkedDeque8;
 import java.io.BufferedOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
 
@@ -47,7 +50,7 @@ import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
 public class IgfsServer {
     /** IGFS context. */
     private final IgfsContext igfsCtx;
-
+    private final ConcurrentMap<String, IgfsContext> igfsCtxs;
     /** Logger. */
     private final IgniteLogger log;
 
@@ -60,9 +63,6 @@ public class IgfsServer {
     /** Server endpoint. */
     private IpcServerEndpoint srvEndpoint;
 
-    /** Server message handler. */
-    private IgfsServerHandler hnd;
-
     /** Accept worker. */
     private AcceptWorker acceptWorker;
 
@@ -72,18 +72,21 @@ public class IgfsServer {
     /** Flag indicating if this a management endpoint. */
     private final boolean mgmt;
 
+    private IgniteThreadPoolExecutor pool;
+
     /**
      * Constructs igfs server manager.
-     * @param igfsCtx IGFS context.
+     * @param igfsCtxs IGFS context.
      * @param endpointCfg Endpoint configuration to start.
      * @param mgmt Management flag - if true, server is intended to be started for Visor.
      */
-    public IgfsServer(IgfsContext igfsCtx, IgfsIpcEndpointConfiguration endpointCfg, boolean mgmt) {
-        assert igfsCtx != null;
+    public IgfsServer(IgfsContext igfsCtx, ConcurrentMap<String, IgfsContext> igfsCtxs, IgfsIpcEndpointConfiguration endpointCfg, boolean mgmt) {
+        assert igfsCtxs != null;
         assert endpointCfg != null;
 
         this.endpointCfg = endpointCfg;
         this.igfsCtx = igfsCtx;
+        this.igfsCtxs = igfsCtxs;
         this.mgmt = mgmt;
 
         log = igfsCtx.kernalContext().log(IgfsServer.class);
@@ -126,10 +129,10 @@ public class IgfsServer {
         srvEndpoint.start();
 
         // IpcServerEndpoint.getPort contract states return -1 if there is no port to be registered.
-        if (srvEndpoint.getPort() >= 0)
+        if (srvEndpoint.getPort() >= 0) {
             igfsCtx.kernalContext().ports().registerPort(srvEndpoint.getPort(), TCP, srvEndpoint.getClass());
-
-        hnd = new IgfsIpcHandler(igfsCtx, endpointCfg, mgmt);
+            igfsCtx.kernalContext().addNodeAttribute("igfs.IpcServerEndpoint.port",srvEndpoint.getPort());
+        }
 
         // Start client accept worker.
         acceptWorker = new AcceptWorker();
@@ -171,6 +174,14 @@ public class IgfsServer {
      * Callback that is invoked when kernal is ready.
      */
     public void onKernalStart() {
+        // Create thread pool for request handling.
+        int threadCnt = endpointCfg.getThreadCount();
+
+        String prefix = "igfs-" + (mgmt ? "mgmt-" : "") + "-ipc";
+
+        pool = new IgniteThreadPoolExecutor(prefix, igfsCtx.kernalContext().igniteInstanceName(), threadCnt, threadCnt,
+                Long.MAX_VALUE, new LinkedBlockingQueue<Runnable>());
+
         // Accept connections only when grid is ready.
         if (srvEndpoint != null)
             new IgniteThread(igfsCtx.kernalContext().igniteInstanceName(),"IgfsServer", acceptWorker).start();
@@ -191,9 +202,17 @@ public class IgfsServer {
 
         U.join(acceptWorker, log);
 
+        U.shutdownNow(getClass(), pool, log);
+
         // Stop server handler, no more requests on existing connections will be processed.
         try {
-            hnd.stop();
+            for(IgfsContext fsctx : igfsCtxs.values()){
+                if(fsctx.hnd!=null) {
+                    fsctx.hnd.stop();
+                    fsctx.hnd = null;
+                }
+            }
+
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to stop IGFS server handler (will close client connections anyway).", e);
@@ -242,6 +261,8 @@ public class IgfsServer {
         /** Queue node for fast unlink. */
         private ConcurrentLinkedDeque8.Node<ClientWorker> node;
 
+        private IgfsContext currentIgfsCtx = null;
+
         /**
          * Creates client worker.
          *
@@ -282,15 +303,24 @@ public class IgfsServer {
 
                             return;
                         }
-
                         first = false;
                     }
 
                     final IgfsIpcCommand cmd = IgfsIpcCommand.valueOf(ordinal);
 
                     IgfsMessage msg = marsh.unmarshall(cmd, hdr, dis);
+                    if(cmd == IgfsIpcCommand.HANDSHAKE){
+                        IgfsHandshakeRequest hands = (IgfsHandshakeRequest)msg;
+                        currentIgfsCtx = igfsCtxs.get(hands.igfsName());
+                        if(currentIgfsCtx==null){
+                            log.warning("IGFS IPC handshake failed! igfs " + hands.igfsName() + " not find in " + igfsCtx.kernalContext().igniteInstanceName());
+                            return;
+                        }
+                        if(currentIgfsCtx.hnd==null)
+                            currentIgfsCtx.hnd = new IgfsIpcHandler(currentIgfsCtx, endpointCfg, mgmt, pool);
+                    }
 
-                    IgniteInternalFuture<IgfsMessage> fut = hnd.handleAsync(ses, msg, dis);
+                    IgniteInternalFuture<IgfsMessage> fut = currentIgfsCtx.hnd.handleAsync(ses, msg, dis);
 
                     // If fut is null, no response is required.
                     if (fut != null) {
@@ -403,7 +433,7 @@ public class IgfsServer {
 
             // Finally, remove from queue.
             if (clientWorkers.unlinkx(node))
-                hnd.onClosed(ses);
+                currentIgfsCtx.hnd.onClosed(ses);
         }
     }
 

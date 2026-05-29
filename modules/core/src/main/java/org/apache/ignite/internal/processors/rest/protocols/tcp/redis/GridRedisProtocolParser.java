@@ -17,16 +17,22 @@
 
 package org.apache.ignite.internal.processors.rest.protocols.tcp.redis;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
 
 /**
  * Parser to decode/encode Redis protocol (RESP) requests.
@@ -94,6 +100,96 @@ public class GridRedisProtocolParser {
     }
 
     /**
+     * Reads an array into {@link GridRedisMessage}.
+     *
+     * @param buf Buffer.
+     * @return {@link GridRedisMessage}.
+     * @throws IgniteCheckedException
+     */
+    public static GridRedisMessage readArray(ByteBuffer buf) throws IgniteCheckedException {
+        byte b = buf.get();
+
+        if (b != ARRAY)
+            throw new IgniteCheckedException("Invalid request byte! " + b);
+
+        int arrLen = readInt(buf);
+
+        GridRedisMessage msg = new GridRedisMessage(arrLen);
+
+        for (int i = 0; i < arrLen; i++)
+            msg.append(readBulkStr(buf));
+
+        return msg;
+    }
+
+    /**
+     * A validation method to check packet completeness.
+     * return true if and only if
+     * 1. First byte is ARRAY (43)
+     * 2. Last two bytes are CR(13) LF(10)
+     *
+     * Otherwise, return false representing this is an incomplete packet with three possible scenarios:
+     * 1. A beginning packet with leading ARRAY byte
+     * 2. A continual packet with ending CRLF bytes.
+     * 3. A continual packet with neither conditions above.
+     */
+    public static boolean isCompletePacket(ByteBuffer buf) {
+        return validatePacketHeader(buf) && validatePacketFooter(buf);
+    }
+
+    /**
+     * @param buf Buffer containing not parsed bytes.
+     */
+    public static boolean validatePacketHeader(ByteBuffer buf) {
+        boolean result = true;
+
+        //mark at initial position
+        buf.mark();
+
+        if (buf.get() != ARRAY)
+            result = false;
+
+        //reset to initial position
+        buf.reset();
+
+        return result;
+    }
+
+    /**
+     * @param buf Buffer containing not parsed bytes.
+     */
+    public static boolean validatePacketFooter(ByteBuffer buf) {
+        boolean result = true;
+
+        //mark at initial position
+        buf.mark();
+
+        int limit = buf.limit();
+
+        assert limit > 2;
+
+        //check the final CR(last -2 ) and LF(last -1) byte
+        if (buf.get(limit - 2) != CR || buf.get(limit - 1) != LF)
+            result = false;
+
+        //reset to initial position
+        buf.reset();
+
+        return result;
+    }
+
+    /**
+     * 严格模式：遇到非法 UTF-8 时抛出异常
+     */
+    public static String decodeStrict(byte[] bytes) throws CharacterCodingException {
+        CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
+        decoder.onMalformedInput(CodingErrorAction.REPORT);    // 报告畸形输入
+        decoder.onUnmappableCharacter(CodingErrorAction.REPORT); // 报告不可映射字符
+
+        return decoder.decode(ByteBuffer.wrap(bytes)).toString();
+    }
+
+    /**
      * Checks first byte is {@link #ARRAY}.
      * @param buf Buffer.
      * @return {@code False} if no data available in buffer.
@@ -118,13 +214,16 @@ public class GridRedisProtocolParser {
      * @return Bulk string.
      * @throws IgniteCheckedException If failed.
      */
-    public static String readBulkStr(ByteBuffer buf) throws IgniteCheckedException {        
-
+    public static String readBulkStr(ByteBuffer buf) throws IgniteCheckedException {
         byte[] bulkStr = readBulkBytes(buf);
         if (bulkStr==null)
             return null;
-        
-        return new String(bulkStr,StandardCharsets.ISO_8859_1);
+
+        try {
+            return decodeStrict(bulkStr);
+        } catch (CharacterCodingException e) {
+            return new String(bulkStr,StandardCharsets.ISO_8859_1);
+        }
     }
     
     /**
@@ -391,7 +490,7 @@ public class GridRedisProtocolParser {
     /**
      * Converts a resultant object to a bulk string.
      *
-     * @param val Object.
+     * @param multResult Object.
      * @return Bulk string.
      */
     public static ByteBuffer toBulkList(Collection<Object[]> multResult) {
@@ -432,7 +531,7 @@ public class GridRedisProtocolParser {
      */
     public static ByteBuffer toArray(Map<Object, Object> vals,List<String> params) {
     	ArrayList<Object> values = new ArrayList<>(vals.size()*2);
-    	if(params!=null && params.size()>0) { //add@byron    		
+    	if(params!=null && !params.isEmpty()) { //add@byron
     		params.forEach((k)->values.add(vals.get(k)));    		
     	} 
     	else {    		

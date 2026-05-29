@@ -67,16 +67,6 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                 })
             .pc-form-grid-col-30
                 +form-field__number({
-                    label: 'Management port:',
-                    model: `${model}.managementPort`,
-                    name: '"managementPort"',
-                    placeholder: '11400',
-                    min: '0',
-                    max: '65535',
-                    tip: 'Port number for management endpoint'
-                })
-            .pc-form-grid-col-30
-                +form-field__number({
                     label: 'Per node batch size:',
                     model: `${model}.perNodeBatchSize`,
                     name: '"perNodeBatchSize"',

@@ -8,11 +8,9 @@ pc-items-table(
     actions-menu='$ctrl.tableActions$|async:this'
     selected-row-id='$ctrl.selectionManager.selectedItemIDs$|async:this'
     one-way-selection='::true'
-    on-selection-change='$ctrl.selectedRows$.next($event)'
+    on-selection-change='$ctrl.selectedRows$.next($event);$ctrl.openDrawer = true'
     on-filter-changed='$ctrl.filterChanges$.next($event)'   
 )
-    footer-slot(ng-if='($ctrl.serviceList$|async:this).length' style='font-style: italic')
-        button.btn.dropdown-toggle(ng-click="$ctrl.openDrawer = true") 打开操作面板
 
 app-drawer(
   is-open="$ctrl.openDrawer && ($ctrl.isBlocked$|async:this)"

@@ -3,10 +3,13 @@
 package org.apache.ignite.console.dto;
 
 import java.util.UUID;
+
+import io.vertx.core.json.JsonArray;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 
 import org.apache.ignite.console.messages.WebConsoleMessageSource;
+import org.apache.ignite.internal.util.typedef.F;
 import org.springframework.context.support.MessageSourceAccessor;
 
 import io.vertx.core.json.JsonObject;
@@ -21,6 +24,8 @@ import static org.apache.ignite.console.utils.Utils.toJson;
 public class Cache extends DataObject {
     /** */
     private String name;
+
+    private String comment;
 
     /** */
     private CacheMode cacheMode;
@@ -42,9 +47,27 @@ public class Cache extends DataObject {
         if (id == null)
             throw new IllegalStateException(messages.getMessage("err.cache-id-not-found"));
 
+        String comment = null;
+        JsonArray domains = json.getJsonArray("domains");
+        if(!F.isEmpty(domains)){
+            for(int i=0;i<domains.size();i++){
+                UUID uuid = UUID.fromString(domains.getString(i));
+                String tableComment = Model.commentsMap.get(uuid);
+                if(tableComment!=null){
+                    if(comment==null){
+                        comment = tableComment;
+                    }
+                    else{
+                        comment +="; " + tableComment;
+                    }
+                }
+            }
+        }
+
         return new Cache(
             id,
             json.getString("name"),
+            comment,
             CacheMode.valueOf(json.getString("cacheMode", PARTITIONED.name())),
             CacheAtomicityMode.valueOf(json.getString("atomicityMode", ATOMIC.name())),
             json.getInteger("backups", 0),
@@ -62,6 +85,7 @@ public class Cache extends DataObject {
     public Cache(
         UUID id,
         String name,
+        String comment,
         CacheMode cacheMode,
         CacheAtomicityMode atomicityMode,
         int backups,
@@ -70,6 +94,7 @@ public class Cache extends DataObject {
         super(id, json);
 
         this.name = name;
+        this.comment = comment;
         this.cacheMode = cacheMode;
         this.atomicityMode = atomicityMode;
         this.backups = backups;
@@ -108,6 +133,7 @@ public class Cache extends DataObject {
         return new JsonObject()
             .put("id", getId())
             .put("name", name)
+            .put("comment", comment)
             .put("cacheMode", cacheMode)
             .put("atomicityMode", atomicityMode)
             .put("backups", backups);

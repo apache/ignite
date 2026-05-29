@@ -35,7 +35,7 @@ export default class TaskFlows {
             name: '',
             sourceCluster: null,
             source: null,
-            targetCluster: null,
+            targetCluster: '',
             target: null,
             group: null,
             existingMode: 'REPLACE_EXISTING',

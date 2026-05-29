@@ -63,6 +63,18 @@ export default class CacheServiceController {
             minWidth: 165
         },
         {
+            name: 'comment',
+            displayName: 'Comment',
+            field: 'comment',
+            enableHiding: false,
+            sort: {direction: 'asc', priority: 0},
+            filter: {
+                placeholder: 'Filter by comment…'
+            },
+            sortingAlgorithm: naturalCompare,
+            minWidth: 165
+        },
+        {
             name: 'cacheMode',
             displayName: 'Mode',
             field: 'cacheMode',
@@ -204,7 +216,7 @@ export default class CacheServiceController {
     }
 
     getCacheSize(cache) {
-        const m = cache && this.cacheMetrics[cache.name];
+        const m = cache && this.cacheMetrics && this.cacheMetrics[cache.name];
         if(m){
             return ''+m.cacheSize+'/'+ m.offHeapAllocatedSize;
         }             
@@ -212,8 +224,9 @@ export default class CacheServiceController {
             return '';
         }
     }
+
     getCacheMetrics(cache) {
-        const m = cache && this.cacheMetrics[cache.name];
+        const m = cache && this.cacheMetrics && this.cacheMetrics[cache.name];
         if(m){
             return new CacheMetrics(cache,m);
         }             

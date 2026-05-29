@@ -104,7 +104,7 @@ public class GridRedisSetCommandHandler extends GridRedisRestCommandHandler {
         
         
         if(cmd == SETEX) {   	
-        	restReq.ttl(Long.valueOf(msg.aux(2)) * 1000);
+        	restReq.ttl(Long.parseLong(msg.aux(2)) * 1000);
         	restReq.value(msg.aux(3));
         }
         else {

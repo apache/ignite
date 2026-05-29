@@ -153,7 +153,7 @@ public class GridTcpRestParser implements GridNioParser {
                 break;
 
             case REDIS:
-                res = parseRedisPacket(buf, state);
+                res = parseRedisPacket0(buf, state);
 
                 break;
 
@@ -243,6 +243,35 @@ public class GridTcpRestParser implements GridNioParser {
         }
     }
 
+    static GridClientMessage parseRedisPacket(ByteBuffer buf, ParserState state)
+            throws IOException, IgniteCheckedException {
+        assert state.packetType() == GridClientPacketType.REDIS;
+        if(GridRedisProtocolParser.isCompletePacket(buf)){
+            return GridRedisProtocolParser.readArray(buf);
+        }
+        else if (GridRedisProtocolParser.validatePacketFooter(buf)) { //Scenario 2
+            ByteArrayOutputStream tmp = state.buffer();
+            int fullLength = tmp.size() + buf.limit();
+
+            ByteBuffer fullPacket = ByteBuffer.allocate(fullLength);
+
+            fullPacket.put(tmp.toByteArray());
+            fullPacket = fullPacket.put(buf);
+            fullPacket.flip();
+
+            tmp.reset();
+
+            return GridRedisProtocolParser.readArray(fullPacket);
+        } else { //Scenario 1 or 3
+            ByteArrayOutputStream tmp = state.buffer();
+            byte[] data = new byte[buf.limit()];
+            buf.get(data);
+            tmp.write(data);
+
+            return null;
+        }
+    }
+
     /**
      * Parses redis protocol message.
      *
@@ -252,7 +281,7 @@ public class GridTcpRestParser implements GridNioParser {
      * @throws IOException If packet cannot be parsed.
      * @throws IgniteCheckedException If deserialization error occurred.
      */
-    static GridClientMessage parseRedisPacket(
+    static GridClientMessage parseRedisPacket0(
         ByteBuffer buf,
         ParserState state
     ) throws IOException, IgniteCheckedException {

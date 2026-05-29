@@ -2563,7 +2563,6 @@ export default class IgniteConfigurationGenerator {
             cfg.intProperty('streamBufferSize', 'bufferSize');
 
         cfg.longProperty('maximumTaskRangeLength')
-            .intProperty('managementPort')
             .intProperty('perNodeBatchSize')
             .intProperty('perNodeParallelBatchCount')
             .intProperty('prefetchBlocks')

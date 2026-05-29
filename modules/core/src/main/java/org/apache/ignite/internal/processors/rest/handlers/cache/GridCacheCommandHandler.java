@@ -1759,22 +1759,23 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
             return ctx.closure().callLocalSafe(new GridPlainCallable<Object>() {
                 @Override public Object call() throws Exception {
-                    EntryProcessorResult<Boolean> res = c.invoke(key, new EntryProcessor<Object, Object, Boolean>() {
-                        @Override public Boolean process(MutableEntry<Object, Object> entry,
-                            Object... objects) throws EntryProcessorException {
+                    EntryProcessorResult<Long> res = c.invoke(key, new EntryProcessor<Object, Object, Long>() {
+                        @Override public Long process(MutableEntry<Object, Object> entry,Object... objects) throws EntryProcessorException {
                             GridCacheEntryEx ex = ((CacheInvokeEntry)entry).entry();
 
                             if (entry.getValue() == null)
-                                return false;
-
+                                return -2L;
+                            Long old = -1L;
                             try {
-                                ex.updateTtl(ex.version(), ttl);
+                                old = ex.ttl();
+                                if(ttl!=Long.MIN_VALUE) {
+                                    ex.updateTtl(ex.version(), ttl);
+                                }
                             }
                             catch (GridCacheEntryRemovedException e) {
                                 throw new EntryProcessorException(e.getCause());
                             }
-
-                            return true;
+                            return old;
                         }
                     });
 

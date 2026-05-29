@@ -7,15 +7,13 @@ pc-items-table(
     actions-menu='$ctrl.tableActions$|async:this'
     selected-row-id='$ctrl.selectionManager.selectedItemIDs$|async:this'
     one-way-selection='::true'
-    on-selection-change='$ctrl.selectedRows$.next($event)'
+    on-selection-change='$ctrl.selectedRows$.next($event);$ctrl.openDrawer = true'
     on-filter-changed='$ctrl.filterChanges$.next($event)'
     on-visible-rows-change='$ctrl.visibleRows$.next($event)'
 )
     footer-slot
         div(style='font-style: italic' ng-hide='($ctrl.shortItems$|async:this).length')
             | You have no models. #[a.link-success(ui-sref='base.configuration.edit.advanced.models.model({modelID: "new"})') Create one?]
-        
-        button.btn.dropdown-toggle(ng-click="$ctrl.openDrawer = true") 打开操作面板
 
 
 app-drawer(

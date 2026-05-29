@@ -4,10 +4,10 @@ pc-items-table(
     max-rows-to-show='8'
     column-defs='$ctrl.cachesColumnDefs'
     items='$ctrl.shortCaches$|async:this'
-    actions-menu='$ctrl.tableActions$|async:this'
+    actions-menu='$ctrl.tableActions$|async:this'    
     selected-row-id='$ctrl.selectionManager.selectedItemIDs$|async:this'
     one-way-selection='::true'
-    on-selection-change='$ctrl.selectedRows$.next($event)'
+    on-selection-change='$ctrl.selectedRows$.next($event);$ctrl.openDrawer = true'
     on-filter-changed='$ctrl.filterChanges$.next($event)'
     on-visible-rows-change='$ctrl.visibleRows$.next($event)'
 )
@@ -17,10 +17,7 @@ pc-items-table(
             a.link-success(
                 ui-sref='base.configuration.edit.advanced.caches.cache({cacheID: "new"})'
                 ui-sref-opts='{location: "replace"}'
-            ) Create one?           
-        
-        button.btn.dropdown-toggle(ng-click="$ctrl.openDrawer = true") 打开操作面板
-
+            ) Create one? 
 
 app-drawer(
   is-open="$ctrl.openDrawer && ($ctrl.isBlocked$|async:this)"
@@ -42,7 +39,7 @@ app-drawer(
         form-ui-can-exit-guard
     )
 
-cluster-task-flow-overview(ng-hide='($ctrl.isBlocked$|async:this)'
+cluster-task-flow-overview(ng-hide='($ctrl.isBlocked$|async:this && ($ctrl.selectedRows$|async:this).length>1)'
     cluster-id='$ctrl.clusterID$|async:this'
     cluster='$ctrl.originalCluster$|async:this'
     target-caches='$ctrl.selectedRows$'

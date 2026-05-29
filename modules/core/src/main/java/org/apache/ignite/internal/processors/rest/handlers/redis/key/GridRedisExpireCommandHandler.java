@@ -35,8 +35,7 @@ import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_UPDATE_TLL;
-import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.EXPIRE;
-import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.PEXPIRE;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.*;
 
 /**
  * Redis EXPIRE/PEXPIRE command handler.
@@ -44,8 +43,7 @@ import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.Gri
 public class GridRedisExpireCommandHandler extends GridRedisRestCommandHandler {
     /** Supported commands. */
     private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
-        EXPIRE,
-        PEXPIRE
+        EXPIRE, PEXPIRE, TTL, PTTL, PERSIST
     );
 
     /** TTL position in Redis message. */
@@ -73,8 +71,6 @@ public class GridRedisExpireCommandHandler extends GridRedisRestCommandHandler {
 
         if (msg.messageSize() < 2)
             throw new GridRedisGenericException("Wrong number of arguments (key is missing)");
-        else if (msg.messageSize() < 3)
-            throw new GridRedisGenericException("Wrong number of arguments (timeout value is missing)");
 
         GridRestCacheRequest restReq = new GridRestCacheRequest();
 
@@ -85,19 +81,40 @@ public class GridRedisExpireCommandHandler extends GridRedisRestCommandHandler {
 
         switch (msg.command()) {
             case EXPIRE:
+                if (msg.messageSize() < 3)
+                    throw new GridRedisGenericException("Wrong number of arguments (timeout value is missing)");
                 restReq.ttl(Long.valueOf(msg.aux(TTL_POS)) * 1000);
                 break;
-            default:
+            case PEXPIRE:
+                if (msg.messageSize() < 3)
+                    throw new GridRedisGenericException("Wrong number of arguments (timeout value is missing)");
                 // PEXPIRE
                 restReq.ttl(Long.valueOf(msg.aux(TTL_POS)));
+                break;
+            case TTL:
+            case PTTL:
+                // no ttl update
+                restReq.ttl(Long.MIN_VALUE);
+                break;
+            default:
+                // PERSIST
+                restReq.ttl(Long.MAX_VALUE);
         }
 
         return restReq;
     }
 
     /** {@inheritDoc} */
-    @Override public ByteBuffer makeResponse(final GridRestResponse restRes, List<String> params) {
-        return ((Boolean)restRes.getResponse() ? GridRedisProtocolParser.toInteger("1")
-            : GridRedisProtocolParser.toInteger("0"));
+    @Override
+    public ByteBuffer makeResponse(final GridRestResponse restRes, GridRedisMessage msg, List<String> params) {
+        Long res = (Long)restRes.getResponse();
+        if (params.size()==2 || msg.command()==PERSIST){
+            return res>0? GridRedisProtocolParser.toInteger("1")
+            : GridRedisProtocolParser.toInteger("0");
+        }
+        else{
+            return msg.command()==TTL ? GridRedisProtocolParser.toInteger(String.valueOf(res/1000))
+                    : GridRedisProtocolParser.toInteger(res.toString());
+        }
     }
 }

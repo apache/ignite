@@ -78,7 +78,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
      * @param endpointCfg Endpoint configuration.
      * @param mgmt Management flag.
      */
-    IgfsIpcHandler(IgfsContext igfsCtx, IgfsIpcEndpointConfiguration endpointCfg, boolean mgmt) {
+    IgfsIpcHandler(IgfsContext igfsCtx, IgfsIpcEndpointConfiguration endpointCfg, boolean mgmt, IgniteThreadPoolExecutor pool) {
         assert igfsCtx != null;
 
         ctx = igfsCtx.kernalContext();
@@ -87,23 +87,14 @@ class IgfsIpcHandler implements IgfsServerHandler {
         // Keep buffer size multiple of block size so no extra byte array copies is performed.
         bufSize = igfsCtx.configuration().getBlockSize() * 2;
 
-        // Create thread pool for request handling.
-        int threadCnt = endpointCfg.getThreadCount();
-
-        String prefix = "igfs-" + igfsCtx.igfs().name() + (mgmt ? "mgmt-" : "") + "-ipc";
-
-        pool = new IgniteThreadPoolExecutor(prefix, igfsCtx.kernalContext().igniteInstanceName(), threadCnt, threadCnt,
-            Long.MAX_VALUE, new LinkedBlockingQueue<Runnable>());
-
         log = ctx.log(IgfsIpcHandler.class);
+
+        this.pool = pool;
     }
 
     /** {@inheritDoc} */
     @Override public void stop() throws IgniteCheckedException {
         stopping = true;
-
-        U.shutdownNow(getClass(), pool, log);
-
         pool = null;
     }
 

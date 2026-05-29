@@ -51,31 +51,30 @@ import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.Gri
  * No key expiration is currently supported.
  */
 public class GridRedisSortedSetsCommandHandler implements GridRedisCommandHandler {
-    
 
 	/** Supported commands. */
     private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
-    		ZRANK,ZREVRANK,ZRANGE,ZREVRANGE,ZRANGEBYSCORE,ZREVRANGEBYSCORE,ZSCAN,ZCARD 
+			ZADD,ZRANK,ZREVRANK,ZRANGE,ZREVRANGE,ZRANGEBYSCORE,ZREVRANGEBYSCORE,ZSCAN,ZCARD
     );
-
 
     /** Logger. */
     protected final IgniteLogger log;
 
     /** Kernel context. */
-    protected final GridKernalContext ctx;    
-    
+    protected final GridKernalContext ctx;
 
+	protected CollectionConfiguration cfg = new CollectionConfiguration();
     /**
      * Handler constructor.
      *
      * @param log Logger to use.
-     * @param hnd Rest handler.
      * @param ctx Kernal context.
      */
     public GridRedisSortedSetsCommandHandler(IgniteLogger log, GridKernalContext ctx) {
         this.log = log;
         this.ctx = ctx;
+		cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+		cfg.setBackups(1);
     }
 
     /** {@inheritDoc} */
@@ -83,17 +82,29 @@ public class GridRedisSortedSetsCommandHandler implements GridRedisCommandHandle
         return SUPPORTED_COMMANDS;
     }
 
-   
-
 	@Override
 	public IgniteInternalFuture<GridRedisMessage> handleAsync(GridNioSession ses, GridRedisMessage msg) {
 		assert msg != null;
         
         GridRedisCommand cmd = msg.command();
             
-        String queueName = msg.cacheName()+"-"+msg.key(); 
-        
-        IgniteSet<ScoredItem<String>> list = ctx.grid().set(queueName,null);
+        String queueName = msg.cacheName()+"-"+msg.key();
+
+		if(cmd == ZADD) {
+			IgniteSet<ScoredItem<String>> list = ctx.grid().set(queueName,cfg);
+
+			List<String> params = msg.aux();
+			for(int i=0;i<params.size();i+=2) {
+				double score = Double.parseDouble(params.get(i));
+				String value = params.get(i+1);
+				ScoredItem<String> entry = new ScoredItem<>(value,score);
+				list.add(entry);
+			}
+			msg.setResponse(GridRedisProtocolParser.toInteger(list.size()));
+			return new GridFinishedFuture<>(msg);
+		}
+
+		IgniteSet<ScoredItem<String>> list = ctx.grid().set(queueName,null);
         if(list==null && cmd != ZCARD) {
     		msg.setResponse(GridRedisProtocolParser.nil());
     		return new GridFinishedFuture<>(msg);

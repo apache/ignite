@@ -38,13 +38,14 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.console.agent.code.CrudUICodeGenerator;
+
 import org.apache.ignite.console.agent.handlers.RestClusterHandler;
 import org.apache.ignite.console.agent.handlers.StringStreamHandler;
 import org.apache.ignite.console.agent.service.*;
 import org.apache.ignite.console.json.JsonBinarySerializer;
 import org.apache.ignite.console.utils.BeanMerger;
 import org.apache.ignite.console.utils.Utils;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgnitionEx;
@@ -80,8 +81,6 @@ public class IgniteClusterLauncher implements StartNodeCallable{
 
     /** */
     private static final AtomicBoolean initGuard = new AtomicBoolean();
-
-    private static final AtomicInteger basePort = new AtomicInteger(20700);
 
     /** */
     private static final int WAL_SEGMENTS = 5;
@@ -142,11 +141,6 @@ public class IgniteClusterLauncher implements StartNodeCallable{
         	cfg.setEventStorageSpi(new MemoryEventStorageSpi());
         }
         
-        if(cfg.getConnectorConfiguration().getPort()==ConnectorConfiguration.DFLT_TCP_PORT) {
-        	int port = basePort.getAndAdd(10);
-        	cfg.getConnectorConfiguration().setPort(port);
-        }
-        
         if(cfg.getBinaryConfiguration()==null) {
         	BinaryConfiguration binConf = new BinaryConfiguration();
         	binConf.setTypeConfigurations(new ArrayList<>());
@@ -176,42 +170,24 @@ public class IgniteClusterLauncher implements StartNodeCallable{
 	        cfg.setDiscoverySpi(discoSpi);
         }
         
-        cfg.setFailureHandler(new StopNodeFailureHandler());
+        cfg.setFailureHandler(new NoOpFailureHandler());
         cfg.setMetricsLogFrequency(0);
         return cfg;
     }
 
-    /**
-     * Starts read and write from cache in background.
-     *
-     * @param services Distributed services on the grid.
-     */
-    public static void deployServices(IgniteServices services) {    	
-
-        services.deployNodeSingleton("CacheMetricsService", new CacheMetricsService());
-        services.deployNodeSingleton("CacheLoadDataService", new CacheLoadDataService());
-        services.deployNodeSingleton("CacheSaveDataService", new CacheSaveDataService());
-        services.deployNodeSingleton("CacheClearDataService", new CacheClearDataService());
-        services.deployNodeSingleton("CacheDestroyService", new CacheDestroyService());
-        services.deployNodeSingleton("CacheDeleteTableService", new CacheDeleteTableService());
-        
-        services.deployNodeSingleton("CacheCopyDataService", new CacheCopyDataService());        
-        services.deployNodeSingleton("ComputeTaskLoadService", new ComputeTaskLoadService());
-        
-        services.deployClusterSingleton("serviceManager", new ClusterAgentServiceManager());
-        services.deployClusterSingleton("verticleManager", new ClusterAgentVerticleManager());
-        services.deployClusterSingleton("ClusterInfoService", new ClusterInfoService());        
-        
-        //String cacheName = "default";
-        //services.deployKeyAffinitySingleton("loadDataKeyAffinityService",new ClusterLoadDataService(), cacheName, "id");
-    }
 
 	public static String getNodeRestUrl(Ignite ignite) {
 		ClusterNode node = ignite.cluster().localNode();
+		if(node.isClient()){
+			node = ignite.cluster().forServers().node();
+		}
 
 		Collection<String> jettyAddrs = node.attribute(ATTR_REST_JETTY_ADDRS);
 
 		if (jettyAddrs == null) {
+			if(ignite.configuration().isClientMode()) {
+				return null;
+			}
 			throw new IgniteException("Cluster: Failed to start Jetty REST server on embedded node");
 		}
 
@@ -258,7 +234,7 @@ public class IgniteClusterLauncher implements StartNodeCallable{
      * Start ignite node with cacheEmployee and populate it with data.
      * @throws IgniteCheckedException 
      */
-    public static Ignite trySingleStart(String clusterId,String clusterName,int nodeIndex,boolean isLastNode,String cfgFile) throws IgniteCheckedException {
+    public static Ignite trySingleStart(String clusterId,String clusterName,int nodeIndex,int isLastNode,String cfgFile) throws IgniteCheckedException {
     	
         return trySingleStart(clusterId,clusterName,nodeIndex,isLastNode,cfgFile,null);
     }
@@ -267,7 +243,7 @@ public class IgniteClusterLauncher implements StartNodeCallable{
      * Start ignite node with cacheEmployee and populate it with data.
      * @throws IgniteCheckedException 
      */
-    public static Ignite trySingleStart(String clusterId,String clusterName,int nodeIndex,boolean isLastNode,String cfgFile,String preCfgFile) throws IgniteCheckedException {
+    public static Ignite trySingleStart(String clusterId,String clusterName,int nodeIndex,int isLastNode,String cfgFile,String preCfgFile) throws IgniteCheckedException {
     	Ignite ignite = null;    	
     	
     	// 基于Instance Name 查找ignite
@@ -305,13 +281,13 @@ public class IgniteClusterLauncher implements StartNodeCallable{
 			IgniteConfiguration cfg = cfgWorkMap.get1().iterator().next();			
 
 			// 最后一个节点： clusterID和nodeID相同
-			if(isLastNode) {				
+			if(isLastNode>0) {
 				if(cfg.getConsistentId()==null)
 					cfg.setConsistentId(clusterId+"_"+nodeIndex);
 				
 			}
 			else {
-				//-cfg.setClusterStateOnStart(ClusterState.INACTIVE);
+				cfg.setClusterStateOnStart(ClusterState.INACTIVE);
 				if(cfg.getConsistentId()==null)
 					cfg.setConsistentId(clusterId+"_"+nodeIndex);		
 			}
@@ -325,7 +301,7 @@ public class IgniteClusterLauncher implements StartNodeCallable{
 			
         }
         
-        if(cfgMap!=null && cfgMap.get1().size()>1) {
+        if(cfgMap!=null && !cfgMap.get1().isEmpty()) {
 			// other ignite instance
 			Collection<IgniteConfiguration> cfgList = cfgMap.get1();
 			for(IgniteConfiguration cfg: cfgList) {
@@ -345,18 +321,18 @@ public class IgniteClusterLauncher implements StartNodeCallable{
 			}
 		}
         
-        if(isLastNode && ignite!=null) {
+        if(isLastNode>0 && ignite!=null) {
         	try {
-				Thread.sleep(1000L*nodeIndex);
-				while(ignite.cluster().nodes().size()<nodeIndex) {
+				while(ignite.cluster().nodes().size()<isLastNode) {
             		Thread.sleep(1000L);
             	}
 			} catch (InterruptedException e) {				
 				e.printStackTrace();
 			}
         	
-			ignite.cluster().state(ClusterState.ACTIVE);			
-			deployServices(ignite.services(ignite.cluster().forServers()));			
+			ignite.cluster().state(ClusterState.ACTIVE);
+
+			ServiceDeployment.deployServices(ignite.services(ignite.cluster()));
 		}
         return ignite;
     }
@@ -435,11 +411,15 @@ public class IgniteClusterLauncher implements StartNodeCallable{
 	        
         	ClusterNode node = ignite.cluster().localNode();
 	        Collection<String> tcpAddrs = node.addresses();
-	        String host = tcpAddrs.iterator().next();
-	        if(host!=null && !host.isBlank()) {
-		        argsList.add("--host");
-		        argsList.add(host);
-	        }
+	        String host = "127.0.0.1";
+			for(String ip: tcpAddrs) {
+				if(ip.indexOf(":")<0) {
+					host = ip;
+					break;
+				}
+			}
+			argsList.add("--host");
+			argsList.add(host);
 	        argsList.add("--port");
 	        Object tcpPort = node.attribute("clientListenerPort");
 	        argsList.add(""+tcpPort);
@@ -511,7 +491,6 @@ public class IgniteClusterLauncher implements StartNodeCallable{
         stat.put("code",code);
         javaLogger.flush();
         if(code==CommandHandler.EXIT_CODE_OK) {
-        	stat.put("result", hnd.getLastOperationResult());
         	stat.put("message", outHandder.getOutput());
         }
         else {

@@ -64,7 +64,7 @@ public class GremlinExecutor implements AutoCloseable {
     
 
     /**
-     * @param sslCtxFactory Ssl context factory.
+     * @param addr ip.
      */
     public GremlinExecutor(String addr, int gremlinPort) {
     	engine = new GremlinGroovyScriptEngine();
@@ -223,7 +223,7 @@ public class GremlinExecutor implements AutoCloseable {
     				dataArray.add(row);
     			}
     		}
-    		if(items.size()>0) {
+    		if(!items.isEmpty()) {
 	            queryResult.put("rows", dataArray); 
 	            queryResult.put("columns", metaDataArray);
 	            
@@ -379,7 +379,7 @@ public class GremlinExecutor implements AutoCloseable {
     }
 
     /**
-     * @param script Groovy script.
+     * @param context Groovy script context.
      * @param params Request parameters.
      * @return Request result.
      * @throws IOException If failed to parse REST result.
@@ -428,8 +428,7 @@ public class GremlinExecutor implements AutoCloseable {
         }
     }
     
-    /**
-     * @param script Groovy script.
+    /**    .
      * @param params Request parameters.
      * @return Request result.
      * @throws IOException If failed to parse REST result.

@@ -156,8 +156,9 @@ export default class ClusterControlController {
     
     callCommand(cmdName: string, args) {
         let clusterID = this.clusterID;
+        let clusterName = this.cluster.name;
         return new Promise((resolve,reject) => {
-           this.AgentManager.callClusterCommand({id:clusterID},cmdName,args).then((data) => {                
+           this.AgentManager.callClusterCommand({id:clusterID,name:clusterName},cmdName,args).then((data) => {
                 if(data.message){   
                     this.message = data.message;                    
                 }
@@ -202,6 +203,6 @@ export default class ClusterControlController {
     }
 
     onCall({name, args}) {
-        return {id: this.clusterID, cmdName:name};
+        return {id: this.clusterID, name:this.cluster.name, cmdName:name};
     }
 }

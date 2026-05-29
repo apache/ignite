@@ -1,11 +1,10 @@
 package org.apache.ignite.internal.processors.rest.handlers.redis.list;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+
+import java.io.Serializable;
 
 
-public class ScoredItem<V> implements java.lang.Comparable<ScoredItem<V>>,Cloneable{
+public class ScoredItem<V> implements java.lang.Comparable<ScoredItem<V>>,Cloneable,Serializable {
 	/** */
     private static final long serialVersionUID = 1L;
     
@@ -19,8 +18,8 @@ public class ScoredItem<V> implements java.lang.Comparable<ScoredItem<V>>,Clonea
     /**
      * Fully initializes this tuple.
      *
-     * @param val1 First value.
-     * @param val2 Second value.
+     * @param value First value.
+     * @param score Second value.
      */
     public ScoredItem(V value, double score) {
         this.value = value;

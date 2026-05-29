@@ -33,9 +33,8 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
-
-import static org.apache.ignite.igfs.IgfsIpcEndpointType.TCP;
 
 /**
  * IGFS server manager.
@@ -52,6 +51,12 @@ public class IgfsServerManager extends IgfsManager {
 
     /** Kernal start latch. */
     private CountDownLatch kernalStartLatch = new CountDownLatch(1);
+
+    private final ConcurrentMap<String, IgfsContext> igfsCache;
+
+    public IgfsServerManager(ConcurrentMap<String, IgfsContext> igfsCache) {
+        this.igfsCache = igfsCache;
+    }
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
@@ -82,7 +87,7 @@ public class IgfsServerManager extends IgfsManager {
         if (srvrs == null)
             srvrs = new ConcurrentLinkedQueue<>();
 
-        IgfsServer ipcSrv = new IgfsServer(igfsCtx, endpointCfg, mgmt);
+        IgfsServer ipcSrv = new IgfsServer(this.igfsCtx, igfsCache, endpointCfg, mgmt);
 
         try {
             ipcSrv.start();
@@ -181,7 +186,7 @@ public class IgfsServerManager extends IgfsManager {
                 while (it.hasNext()) {
                     IgniteBiTuple<IgfsIpcEndpointConfiguration, Boolean> cfg = it.next();
 
-                    IgfsServer ipcSrv = new IgfsServer(igfsCtx, cfg.get1(), cfg.get2());
+                    IgfsServer ipcSrv = new IgfsServer(igfsCtx,igfsCache, cfg.get1(), cfg.get2());
 
                     try {
                         ipcSrv.start();

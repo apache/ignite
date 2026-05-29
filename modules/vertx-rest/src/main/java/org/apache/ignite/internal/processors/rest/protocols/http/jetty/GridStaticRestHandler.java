@@ -64,12 +64,12 @@ public class GridStaticRestHandler extends Vertxlet {
     /** Favicon. */
     private volatile byte[] favicon;
 
+    private volatile byte[] logo;
+
     
     /**
      * Creates new HTTP requests handler.
      *
-     * @param hnd Handler.
-     * @param authChecker Authentication checking closure.
      * @param ctx Kernal context.
      */
     GridStaticRestHandler(GridKernalContext ctx) {
@@ -84,9 +84,6 @@ public class GridStaticRestHandler extends Vertxlet {
         // Init default page and favicon.
         try {
             initDefaultPage();
-
-            if (log.isDebugEnabled())
-                log.debug("Initialized default page.");
         }
         catch (IOException e) {
             U.warn(log, "Failed to initialize default page: " + e.getMessage());
@@ -94,12 +91,10 @@ public class GridStaticRestHandler extends Vertxlet {
 
         try {
             initFavicon();
-
-            if (log.isDebugEnabled())
-                log.debug(favicon != null ? "Initialized favicon, size: " + favicon.length : "Favicon is null.");
+            initLogo();
         }
         catch (IOException e) {
-            U.warn(log, "Failed to initialize favicon: " + e.getMessage());
+            U.warn(log, "Failed to initialize favicon.ico or logo.svg: " + e.getMessage());
         }
     }
 
@@ -143,15 +138,12 @@ public class GridStaticRestHandler extends Vertxlet {
 
         if (in != null) {
             BufferedInputStream bis = new BufferedInputStream(in);
-
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
             try {
                 byte[] buf = new byte[2048];
-
                 while (true) {
                     int n = bis.read(buf);
-
                     if (n == -1)
                         break;
 
@@ -159,6 +151,31 @@ public class GridStaticRestHandler extends Vertxlet {
                 }
 
                 favicon = bos.toByteArray();
+            }
+            finally {
+                U.closeQuiet(bis);
+            }
+        }
+    }
+
+    private void initLogo() throws IOException {
+        assert favicon == null;
+
+        InputStream in = getClass().getResourceAsStream("/logo.svg");
+
+        if (in != null) {
+            BufferedInputStream bis = new BufferedInputStream(in);
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+
+            try {
+                byte[] buf = new byte[2048];
+                while (true) {
+                    int n = bis.read(buf);
+                    if (n == -1)
+                        break;
+                    bos.write(buf, 0, n);
+                }
+                logo = bos.toByteArray();
             }
             finally {
                 U.closeQuiet(bis);
@@ -183,36 +200,43 @@ public class GridStaticRestHandler extends Vertxlet {
        if (target.startsWith("/favicon.ico")) {
             if (favicon == null) {
                 res.setStatusCode(404);
-
                 rc.end();
-
                 return;
             }
 
             res.setStatusCode(200);
             res.putHeader("Content-Type", "image/x-icon");
             res.putHeader("Content-Length", String.valueOf(favicon.length));
-            res.write(Buffer.buffer(favicon));            
+            res.write(Buffer.buffer(favicon));
+            rc.end();
+        }
+        if (target.startsWith("/logo.svg")) {
+            if (logo == null) {
+                res.setStatusCode(404);
+                rc.end();
+                return;
+            }
 
+            res.setStatusCode(200);
+            res.putHeader("Content-Type", "image/x-icon");
+            res.putHeader("Content-Length", String.valueOf(logo.length));
+            res.write(Buffer.buffer(logo));
             rc.end();
         }
         else if(target.equals("/")){  //modify@byron 
             if (dfltPage == null) {
                 res.setStatusCode(404);
-               
                 rc.end();
-
                 return;
             }
 
             res.setStatusCode(200);
             res.putHeader("Content-Type", "text/html");
-            
             res.end(dfltPage);
 
         }
         else{ // continue
-        	res.setStatusCode(404).end();
+        	// res.setStatusCode(404).end();
         }
     }
 

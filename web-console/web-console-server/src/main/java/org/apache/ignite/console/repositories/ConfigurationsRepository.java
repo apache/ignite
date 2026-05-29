@@ -2,11 +2,8 @@
 
 package org.apache.ignite.console.repositories;
 
-import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.UUID;
+import java.util.*;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.console.db.OneToManyIndex;
 import org.apache.ignite.console.db.Table;
@@ -66,6 +63,7 @@ public class ConfigurationsRepository {
 
     /** */
     private OneToManyIndex<ConfigurationKey, UUID> cfgIdx;
+
 
     /**
      * @param ignite Ignite.
@@ -481,9 +479,8 @@ public class ConfigurationsRepository {
     public void saveAdvancedCluster(ConfigurationKey key, JsonObject json) {
         txMgr.doInTransaction(() -> {
             Cluster cluster = saveCluster(key, json);
-
-            saveCaches(key, cluster, json, false);
             saveModels(key, cluster, json);
+            saveCaches(key, cluster, json, false);
             saveIGFSs(key, cluster, json);
         });
     }

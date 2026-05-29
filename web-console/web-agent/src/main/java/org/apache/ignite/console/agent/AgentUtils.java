@@ -359,10 +359,10 @@ public class AgentUtils {
     }
 
     /**
-           * 解压zip文件
+     * 解压zip文件
      * 
-     * @param zipFile目标文件
-     * @param descDir解压后存放的位置
+     * @param zipFile 目标文件
+     * @param descDir 解压后存放的位置
      * @return true/false
      * @throws IOException 
      */

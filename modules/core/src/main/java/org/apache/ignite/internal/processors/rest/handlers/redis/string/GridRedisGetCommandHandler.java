@@ -91,7 +91,7 @@ public class GridRedisGetCommandHandler extends GridRedisRestCommandHandler {
                 return GridRedisProtocolParser.nil();
             }
 
-            return GridRedisProtocolParser.toBulkString(val);
+            return GridRedisProtocolParser.toBulkString(String.valueOf(val));
         }
 
         if (restRes.getResponse() instanceof String)

@@ -13,7 +13,6 @@ import {
 } from 'app/configuration/store/actionCreators';
 
 import {Confirm} from 'app/services/Confirm.service';
-
 import ConfigureState from '../../../configuration/services/ConfigureState';
 import ConfigSelectors from '../../../configuration/store/selectors';
 import Caches from '../../../configuration/services/Caches';
@@ -32,30 +31,6 @@ export default class PageConfigureBasicController {
     static $inject = [
         'Confirm', '$uiRouter', 'ConfigureState', 'ConfigSelectors', 'Clusters', 'Caches', 'IgniteLegacyUtils', '$element', 'IgniteFormUtils', 'AgentManager', '$scope'
     ];
-
-    constructor(
-        private Confirm: Confirm,
-        private $uiRouter: UIRouter,
-        private ConfigureState: ConfigureState,
-        private ConfigSelectors: ConfigSelectors,
-        private Clusters: Clusters,
-        private Caches: Caches,
-        private LegacyUtils: ReturnType<typeof LegacyUtilsFactory>,
-        private $element: JQLite,        
-        private IgniteFormUtils: ReturnType<typeof FormUtils>,
-        private AgentManager: AgentManager,      
-        private $scope: ng.IScope
-    ) {
-
-        this.formActionsMenu.push({
-            text: 'Ctl Cluster',
-            click: () => this.callService('CacheMetricsService'),
-            icon: 'checkmark'
-        })
-        
-        this.$scope.formActionsMenu = this.formActionsMenu;        
-        this.$scope.currentNode = -1;
-    }
     
     formActionsMenu:Array<any> = [];
     kvColumnDefs = [
@@ -85,6 +60,23 @@ export default class PageConfigureBasicController {
     nodesAttrs = [];
     nodeList = [];
     nodeAttrs = [];
+
+    constructor(
+        private Confirm: Confirm,
+             private $uiRouter: UIRouter,
+             private ConfigureState: ConfigureState,
+             private ConfigSelectors: ConfigSelectors,
+             private Clusters: Clusters,
+             private Caches: Caches,
+             private LegacyUtils: ReturnType<typeof LegacyUtilsFactory>,
+             private $element: JQLite,
+             private IgniteFormUtils: ReturnType<typeof FormUtils>,
+             private AgentManager: AgentManager,
+             private $scope: ng.IScope
+         ) {
+             this.$scope.currentNode = -1;
+             this.buildFormActionsMenu();
+         }
 
     $onDestroy() {
         this.subscription.unsubscribe();        
@@ -152,7 +144,7 @@ export default class PageConfigureBasicController {
         ).subscribe();
 
         this.$scope.ui = this.IgniteFormUtils.formUI();
-        this.$scope.ui.loadedPanels = [];        
+        this.$scope.ui.loadedPanels = [];
 
     }    
 
@@ -219,7 +211,7 @@ export default class PageConfigureBasicController {
                 icon: 'refresh'
             })
         }
-        this.$scope.formActionsMenu = formActionsMenu;
+        this.formActionsMenu = formActionsMenu;
         return formActionsMenu;
     }    
     

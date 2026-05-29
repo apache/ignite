@@ -5,8 +5,9 @@
         .pc-form-grid-col-30
             +form-field__text({
                 label: 'Catalog Name:',
-                model: `${model}.catalogName`,               
+                model: `${model}.name`,
                 name: '"name"',
+                disabled: 'true',
                 placeholder: ''
             })
 
@@ -23,7 +24,7 @@
                 label: 'Mongo URL:',
                 model: `${model}.jdbcUrl`,
                 name: '"jdbcUrl"',                    
-                placeholder: 'mongodb://127.0.0.1:2701/admin'
+                placeholder: 'mongodb://127.0.0.1:27017/admin'
             })    
           
         .pc-form-grid-col-30
@@ -31,7 +32,7 @@
                 label: 'Mongo Admin URL:',
                 model: `${model}.crudui_web_url`,
                 name: '"crudui_web_url"',                        
-                placeholder: 'http://127.0.0.1:3000/mongoAdmin/queryDocuments#admin'
+                placeholder: '/mongoAdmin/queryDocuments#admin'
             })         
             
         .pc-form-grid-col-30

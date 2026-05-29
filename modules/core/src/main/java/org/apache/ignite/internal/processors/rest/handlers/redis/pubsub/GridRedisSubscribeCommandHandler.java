@@ -119,7 +119,6 @@ public class GridRedisSubscribeCommandHandler implements GridRedisCommandHandler
      * Handler constructor.
      *
      * @param log Logger to use.
-     * @param hnd Rest handler.
      * @param ctx Kernal context.
      */
     public GridRedisSubscribeCommandHandler(IgniteLogger log, GridKernalContext ctx) {

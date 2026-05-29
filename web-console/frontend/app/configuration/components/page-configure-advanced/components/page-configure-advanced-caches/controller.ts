@@ -53,6 +53,18 @@ export default class Controller {
             minWidth: 165
         },
         {
+            name: 'comment',
+            displayName: 'Comment',
+            field: 'comment',
+            enableHiding: false,
+            sort: {direction: 'asc', priority: 0},
+            filter: {
+                placeholder: 'Filter by comment…'
+            },
+            sortingAlgorithm: naturalCompare,
+            minWidth: 165
+        },
+        {
             name: 'cacheMode',
             displayName: 'Mode',
             field: 'cacheMode',

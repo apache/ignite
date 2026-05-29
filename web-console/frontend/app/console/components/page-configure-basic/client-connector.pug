@@ -1,14 +1,14 @@
 
 -var form = 'clientConnector'
 -var connectionModel = `${model}.clientConnectorConfiguration`
--var connectionEnabled = `${connectionModel}.enabled`
+-var connectionEnabled = `false`
 -var sslEnabled = `${connectionEnabled} && ${connectionModel}.sslEnabled`
 -var sslFactoryEnabled = `${sslEnabled} && !${connectionModel}.useIgniteSslContextFactory`
 
 panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
-    panel-title Client connector
+    panel-title Client Connector
     panel-description 
-        | Configure client properties and associate your cluster with thin client api.
+        | client properties and associate your cluster with thin client api.
     panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
         .pca-form-column-12.pc-form-grid-row            
             .pc-form-grid-col-30
@@ -22,7 +22,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
             .pc-form-grid-col-30
                 +form-field__number({
                     label: 'Port:',
-                    model: `${connectionModel}.port`,
+                    model: `${nodeAttr}['clientListenerPort'] || ${connectionModel}.port`,
                     name: '"ClientConnectorPort"',
                     disabled: `!(${connectionEnabled})`,
                     placeholder: '10800',

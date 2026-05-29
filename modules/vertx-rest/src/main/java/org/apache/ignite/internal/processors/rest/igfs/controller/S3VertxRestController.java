@@ -65,6 +65,7 @@ public class S3VertxRestController extends VertxInstanceAware{
 	private static final String HEADER_X_AMZ_COPY_SOURCE = "x-amz-copy-source";
 	
 	private static final String contextPath = "/s3/";
+    public static final byte[] BYTES = new byte[0];
 
     // 创建 DocumentBuilderFactory 和 DocumentBuilder
     private DocumentBuilderFactory documentFactory = DocumentBuilderFactory.newInstance();
@@ -389,7 +390,11 @@ public class S3VertxRestController extends VertxInstanceAware{
 
             Map<String,String> userMeta = getUserMetadata(request);
         	userMeta.put("ownerName", CommonUtil.getCurrentUser(rc));
-        	byte[] bytes = rc.body().buffer().getBytes();
+        	Buffer buffer = rc.body().buffer();
+            byte[] bytes = BYTES;
+            if(buffer!=null)
+                bytes = buffer.getBytes();
+
             InputStream inputStream = new ByteArrayInputStream(bytes);
         	s3Service().putObject(bucketName, objectKey, inputStream, userMeta);
         	ObjectMetadata metadata = s3Service().headObject(bucketName, objectKey);
@@ -593,7 +598,11 @@ public class S3VertxRestController extends VertxInstanceAware{
         String objectKey = pageUrl.replace(contextPath + bucketName + "/", "");
         int partNumber = ConvertOp.convert2Int(request.getParam("partNumber"));
         String uploadId = request.getParam("uploadId");
-        byte[] bytes = rc.body().buffer().getBytes();
+        Buffer buffer = rc.body().buffer();
+        byte[] bytes = BYTES;
+        if(buffer!=null)
+            bytes = buffer.getBytes();
+
         InputStream inputStream = new ByteArrayInputStream(bytes);
         PartETag eTag = s3Service().uploadPart(bucketName, objectKey, partNumber, uploadId, inputStream);
         response.putHeader("ETag", "\""+eTag.geteTag()+"\"");
@@ -609,7 +618,11 @@ public class S3VertxRestController extends VertxInstanceAware{
         String uploadId = request.getParam("uploadId");
         List<PartETag> partETags = new ArrayList<>();
 
-        byte[] bytes = rc.body().buffer().getBytes();
+        Buffer buffer = rc.body().buffer();
+        byte[] bytes = BYTES;
+        if(buffer!=null)
+            bytes = buffer.getBytes();
+
         InputStream inputStream = new ByteArrayInputStream(bytes);
 
 

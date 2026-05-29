@@ -28,6 +28,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.console.agent.IgniteClusterLauncher;
+import org.apache.ignite.console.agent.ServiceDeployment;
 import org.apache.ignite.console.agent.handlers.RestClusterHandler;
 
 
@@ -69,15 +70,15 @@ public class CommandsProviderExtImpl implements CommandsProvider {
         /** {@inheritDoc} */
         @Override public Boolean execute(@Nullable IgniteClient client, Ignite ignite0, NodeStartCommandArg arg, Consumer<String> printer) {
             printer.accept("Start Node: "+ arg.instanceName() + ", cfg: " + arg.cfgPath());            
-            boolean isLastNode = !F.isEmpty(arg.clusterId());
+            int isLastNode = !F.isEmpty(arg.clusterId())? 1:0;
 			// 启动一个独立的node，jvm内部的node之间相互隔离
 			Ignite ignite;
 			try {
 				ignite = IgniteClusterLauncher.trySingleStart(arg.clusterId(), arg.instanceName(), 0, isLastNode, arg.cfgPath());
-				if(ignite!=null && isLastNode) {
+				if(ignite!=null && isLastNode>0) {
 					String nodeRestUrl = IgniteClusterLauncher.getNodeRestUrl(ignite);
                     RestClusterHandler.registerNodeUrl(arg.clusterId(),arg.instanceName(),nodeRestUrl);
-					IgniteClusterLauncher.deployServices(ignite.services(ignite.cluster().forServers()));
+                    ServiceDeployment.deployServices(ignite.services(ignite.cluster()));
 		        	return true;
 				}
 				else {

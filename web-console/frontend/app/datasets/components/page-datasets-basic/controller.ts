@@ -65,7 +65,10 @@ export default class PageDatasetsBasicComponent implements OnInit, AfterViewInit
         
         this.originalCluster$.subscribe((c:Cluster) =>{
             this.clonedCluster = cloneDeep(c);
-            let jndi_url  = 'mongodb://127.0.0.1:2701/'+this.clonedCluster.name;          
+            let jndi_url  = 'mongodb://127.0.0.1:27017/'+this.clonedCluster.name;
+            if (this.clonedCluster.jdbcUrl){
+                jndi_url = this.clonedCluster.jdbcUrl;
+            }
             this.setCookie('currentDatasetUrl',jndi_url,30);
             if (this.clonedCluster.crudui_web_url){
                 this.url = this.clonedCluster.crudui_web_url;

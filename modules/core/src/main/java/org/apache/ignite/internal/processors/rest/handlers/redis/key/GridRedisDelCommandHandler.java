@@ -21,8 +21,8 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
+
+import org.apache.ignite.*;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
@@ -35,7 +35,9 @@ import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_REMOVE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_REMOVE_ALL;
+import static org.apache.ignite.internal.processors.rest.handlers.redis.list.GridRedisStreamCommandHandler.combineToLong;
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.*;
 
 /**
@@ -44,7 +46,7 @@ import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.Gri
 public class GridRedisDelCommandHandler extends GridRedisRestCommandHandler {
     /** Supported commands. */
     private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
-        DEL,HDEL
+        DEL,HDEL,XDEL
     );
 
     /**
@@ -66,7 +68,7 @@ public class GridRedisDelCommandHandler extends GridRedisRestCommandHandler {
     /** {@inheritDoc} */
     @Override public GridRestRequest asRestRequest(GridRedisMessage msg) throws IgniteCheckedException {
         assert msg != null;
-
+        GridRedisCommand cmd = msg.command();
         if (msg.messageSize() < 2)
             throw new GridRedisGenericException("Wrong number of arguments");
 
@@ -74,25 +76,68 @@ public class GridRedisDelCommandHandler extends GridRedisRestCommandHandler {
 
         restReq.clientId(msg.clientId());
         restReq.key(msg.key());
-        restReq.command(CACHE_REMOVE_ALL);
+        restReq.command(CACHE_REMOVE);
         restReq.cacheName(msg.cacheName());
 
-        List<String> keys = msg.auxMKeys();
+        if(cmd==XDEL){
+            List<String> keys = msg.aux();
+            if(keys.size()>1) {
+                restReq.command(CACHE_REMOVE_ALL);
+                Map<Object, Object> mget = U.newHashMap(keys.size());
+                for (String key : keys)
+                    mget.put(combineToLong(key), key);
 
-        Map<Object, Object> mget = U.newHashMap(keys.size());
+                restReq.values(mget);
+            }
+            else if(keys.size()==1){
+                restReq.key(combineToLong(msg.key()));
+            }
+        }
+        else{
+            List<String> keys = msg.auxMKeys();
+            if(keys.size()>1) {
+                restReq.command(CACHE_REMOVE_ALL);
+                Map<Object, Object> mget = U.newHashMap(keys.size());
+                for (String key : keys)
+                    mget.put(key, key);
 
-        for (String key : keys)
-            mget.put(key, null);
-
-        restReq.values(mget);
-
+                restReq.values(mget);
+            }
+        }
         return restReq;
     }
 
     /** {@inheritDoc} */
-    @Override public ByteBuffer makeResponse(final GridRestResponse restRes, List<String> params) {
-        // It has to respond with the number of removed entries...
-        return (restRes.getResponse() == null ? GridRedisProtocolParser.toInteger("0")
-            : GridRedisProtocolParser.toInteger(String.valueOf(params.size())));
+    @Override public ByteBuffer makeResponse(final GridRestResponse restRes, GridRedisMessage msg, List<String> params) {
+        if(restRes.getResponse() == null || restRes.getResponse().equals(Boolean.FALSE)) {
+            if(msg.command()==HDEL || msg.command()==XDEL){
+                if(params.isEmpty()){
+                    ctx.grid().destroyCache(msg.cacheName());
+                    return GridRedisProtocolParser.toInteger("1");
+                }
+                return GridRedisProtocolParser.toInteger("0");
+            }
+            IgniteAtomicLong l = ctx.grid().atomicLong(msg.key(), 0, false);
+            if (l != null) {
+                l.close();
+                return GridRedisProtocolParser.toInteger("1");
+            }
+            String queueName = msg.cacheName()+"-"+msg.key();
+            IgniteQueue list = ctx.grid().queue(queueName,0,null);
+            if (list != null) {
+                list.close();
+                return GridRedisProtocolParser.toInteger("1");
+            }
+            IgniteSet set = ctx.grid().set(queueName,null);
+            if (set != null) {
+                set.close();
+                return GridRedisProtocolParser.toInteger("1");
+            }
+            return GridRedisProtocolParser.toInteger("0");
+        }
+        else{
+            // It has to respond with the number of removed entries...
+            return GridRedisProtocolParser.toInteger(String.valueOf(params.size()));
+        }
     }
 }

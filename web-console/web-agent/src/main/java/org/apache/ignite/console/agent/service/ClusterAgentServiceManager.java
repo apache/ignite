@@ -22,7 +22,7 @@ import io.swagger.annotations.ApiOperation;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
-@ApiOperation(value = "Deploy Service to the cluster", notes = "列出、部署、卸载Service到ignite集群中。")
+@ApiOperation(nickname="serviceManager", value = "Deploy Service to the cluster", notes = "列出、部署、卸载Service到ignite集群中。")
 public class ClusterAgentServiceManager implements ClusterAgentService {
    
 	@IgniteInstanceResource

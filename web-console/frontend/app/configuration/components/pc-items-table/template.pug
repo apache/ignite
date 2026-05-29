@@ -11,7 +11,7 @@ include /app/helpers/jade/mixins
         div(ng-show='$ctrl.gridAPI.selection.getSelectedCount()')
             grid-item-selected(grid-api='$ctrl.gridAPI')
 
-        div
+        div            
             +ignite-form-field-bsdropdown({
                 label: 'Actions',
                 name: 'action',

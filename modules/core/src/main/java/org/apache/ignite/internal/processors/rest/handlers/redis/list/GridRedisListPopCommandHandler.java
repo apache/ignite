@@ -64,7 +64,6 @@ public class GridRedisListPopCommandHandler implements GridRedisCommandHandler {
      * Handler constructor.
      *
      * @param log Logger to use.
-     * @param hnd Rest handler.
      * @param ctx Kernal context.
      */
     public GridRedisListPopCommandHandler(IgniteLogger log, GridKernalContext ctx) {

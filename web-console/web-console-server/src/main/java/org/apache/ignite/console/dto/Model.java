@@ -2,6 +2,8 @@
 
 package org.apache.ignite.console.dto;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import org.apache.ignite.console.messages.WebConsoleMessageSource;
@@ -17,6 +19,7 @@ import static org.apache.ignite.console.utils.Utils.toJson;
  * DTO for cluster model.
  */
 public class Model extends DataObject {
+    public static Map<UUID,String> commentsMap = new HashMap<>();
     /** */
     private boolean hasIdx;
 
@@ -71,6 +74,9 @@ public class Model extends DataObject {
         this.keyType = keyType;
         this.valType = valType;
         this.tableComment = tableComment;
+        if(tableComment!=null && !tableComment.isBlank()){
+            commentsMap.put(id,tableComment);
+        }
     }
 
     /**

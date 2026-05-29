@@ -38,7 +38,7 @@ export default class PageDatasetsController {
 
         this.catalogName$ = combineLatest(cluster$, isNew$, (cluster, isNew) => {
             return `${isNew ? 'Create' : 'Edit'} DataSets configuration 
-            ${isNew ? '' : `‘${get(cluster, 'catalogName','{}')}’`}`;
+            ${isNew ? '' : `‘${get(cluster, 'name','{}')}’`}`;
         });
     }
 

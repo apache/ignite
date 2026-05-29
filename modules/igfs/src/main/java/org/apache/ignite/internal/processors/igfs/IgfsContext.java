@@ -71,6 +71,9 @@ public class IgfsContext {
     /** Logger. */
     protected IgniteLogger log;
 
+    /** Server message handler. */
+    protected IgfsIpcHandler hnd;
+
     /**
      * @param ctx Kernal context.
      * @param cfg IGFS configuration.

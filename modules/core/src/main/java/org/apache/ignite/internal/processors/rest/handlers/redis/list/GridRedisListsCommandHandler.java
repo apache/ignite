@@ -67,7 +67,6 @@ public class GridRedisListsCommandHandler implements GridRedisCommandHandler {
      * Handler constructor.
      *
      * @param log Logger to use.
-     * @param hnd Rest handler.
      * @param ctx Kernal context.
      */
     public GridRedisListsCommandHandler(IgniteLogger log, GridKernalContext ctx) {
@@ -80,8 +79,6 @@ public class GridRedisListsCommandHandler implements GridRedisCommandHandler {
         return SUPPORTED_COMMANDS;
     }
 
-   
-
 	@Override
 	public IgniteInternalFuture<GridRedisMessage> handleAsync(GridNioSession ses, GridRedisMessage msg) {
 		assert msg != null;
@@ -93,7 +90,7 @@ public class GridRedisListsCommandHandler implements GridRedisCommandHandler {
     	if(list==null && cmd != LLEN) {
     		msg.setResponse(GridRedisProtocolParser.nil());
     		return new GridFinishedFuture<>(msg);
-    	}   
+    	}
     	if(cmd == LPOS) {         	
         	String value = msg.aux(2);        	 	
         	Iterator<String> it = list.iterator();

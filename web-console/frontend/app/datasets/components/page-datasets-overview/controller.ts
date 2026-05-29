@@ -95,18 +95,6 @@ export default class PageDatasourceOverviewController {
                 sortingAlgorithm: naturalCompare,
                 cellTemplate: cellTemplate('base.configuration.edit.basic'),
                 minWidth: 240
-            },            
-            {
-                name: 'catalogName',
-                displayName: 'Catalog Name',
-                field: 'catalogName',
-                filter: {
-                    placeholder: 'Filter by catalog…'
-                },
-                sort: {direction: 'asc', priority: 0},
-                sortingAlgorithm: naturalCompare,
-                type: 'string',             
-                width: 200
             },
             {
                 name: 'id',

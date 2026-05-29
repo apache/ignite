@@ -19,6 +19,7 @@ import org.xml.sax.SAXException;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 
 
 @Component
@@ -99,13 +100,13 @@ public class JettyCustomizer implements WebServerFactoryCustomizer<JettyServletW
     }
 
     private RewriteHandler checkRewriteRule(WebAppContext webapp ){
-        File rewriteXml = new File(webapp.getWar(),"WEB_INF/rewrite.xml");
+        File rewriteXml = new File(webapp.getWar(),"WEB-INF/rewrite.xml");
         if(rewriteXml.exists()) {
             RewriteHandler rewriteHandler = new RewriteHandler();
             rewriteHandler.setOriginalPathAttribute("requestedPath");
 
             // 添加重写规则
-            String appName = webapp.getClassPath();
+            String appName = webapp.getContextPath();
             RewriteRegexRule rewriteRule = new RewriteRegexRule();
             rewriteRule.setRegex("^"+appName+"/([a-zA-Z0-9-_]*)$");
             rewriteRule.setReplacement(appName+"/index.php?q=$1");

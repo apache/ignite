@@ -49,7 +49,7 @@ import io.vertx.spi.cluster.ignite.IgniteClusterManager;
  */
 public class IgniteVertxPluginProvider implements PluginProvider<PluginConfiguration> {
 
-	private static int counter = 0;
+	private static volatile int counter = 0;
 
 	private IgniteVertxPlugin plugin;
 

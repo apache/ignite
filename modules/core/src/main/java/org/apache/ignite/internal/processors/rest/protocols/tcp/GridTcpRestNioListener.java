@@ -210,9 +210,9 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
 
         if (e != null) {
             if (e instanceof RuntimeException)
-                U.error(log, "Failed to process request from remote client: " + ses, e);
+                U.error(log, "Failed to process request from remote client: " + ses.remoteAddress() , e);
             else
-                U.warn(log, "Closed client session due to exception [ses=" + ses + ", msg=" + e.getMessage() + ']');
+                U.warn(log, "Closed client session due to exception [ses.remoteAddress=" + ses.remoteAddress() + ", msg=" + e.getMessage() + ']');
         }
     }
 

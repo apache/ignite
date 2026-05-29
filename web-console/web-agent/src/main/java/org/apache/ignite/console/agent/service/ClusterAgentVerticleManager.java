@@ -26,7 +26,7 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.spi.VerticleFactory;
 
-@ApiOperation(value = "Deploy Verticle to the cluster", notes = "部署Verticle到vertx集群中。参数(op:list|deploy|undeploy|cancel,verticles:deploymentIds)")
+@ApiOperation(nickname="verticleManager", value = "Deploy Verticle to the cluster", notes = "部署Verticle到vertx集群中。参数(op:list|deploy|undeploy|cancel,verticles:deploymentIds)")
 public class ClusterAgentVerticleManager implements ClusterAgentService {
 
 	@IgniteInstanceResource

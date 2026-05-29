@@ -574,12 +574,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return Cache name.
      */
     public String getComment() {
-    	if(this.qryEntities!=null && this.qryEntities.size()>0) {
+    	if(this.qryEntities!=null && !this.qryEntities.isEmpty()) {
     		String comment="";
     		for(QueryEntity entity: this.qryEntities) {
     			if(entity.getTableComment()!=null) {
     				if(!comment.isEmpty()) {
-    					comment+=',';
+    					comment+="; ";
     				}
     				comment+=entity.getTableComment();
     			}

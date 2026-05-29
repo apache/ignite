@@ -18,12 +18,7 @@
 package org.apache.ignite.internal.processors.rest.handlers.redis.list;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.PriorityQueue;
+import java.util.*;
 
 
 import org.apache.ignite.IgniteLogger;
@@ -54,7 +49,7 @@ public class GridRedisListAddCommandHandler implements GridRedisCommandHandler {
 
 	/** Supported commands. */
     private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
-        LPUSH,LPUSHX,RPUSH,RPUSHX,SADD,ZADD
+        LPUSH,LPUSHX,RPUSH,RPUSHX,LSET
     );
     
     /** Logger. */
@@ -70,7 +65,6 @@ public class GridRedisListAddCommandHandler implements GridRedisCommandHandler {
      * Handler constructor.
      *
      * @param log Logger to use.
-     * @param hnd Rest handler.
      * @param ctx Kernal context.
      */
     public GridRedisListAddCommandHandler(IgniteLogger log, GridKernalContext ctx) {
@@ -107,7 +101,7 @@ public class GridRedisListAddCommandHandler implements GridRedisCommandHandler {
         		list.addFirst(data);
         	}
             msg.setResponse(GridRedisProtocolParser.toInteger(list.size()));
-            return new GridFinishedFuture<>(msg);
+
         }
         else if(cmd == RPUSH || cmd == RPUSHX) {        	
         	IgniteQueue<String> list = ctx.grid().queue(queueName,0,cfg);
@@ -115,31 +109,30 @@ public class GridRedisListAddCommandHandler implements GridRedisCommandHandler {
         	List<String> params = msg.aux();
             list.addAll(params);   
             msg.setResponse(GridRedisProtocolParser.toInteger(list.size()));
-            return new GridFinishedFuture<>(msg);
+
         }
-        else if(cmd == SADD) {
-        	IgniteSet<String> list = ctx.grid().set(queueName, cfg);
-        	
-        	List<String> params = msg.aux();
-            list.addAll(params);      
-            msg.setResponse(GridRedisProtocolParser.toInteger(list.size()));
-            return new GridFinishedFuture<>(msg);
+        else if(cmd == LSET) {
+            int pos = Integer.parseInt(msg.aux(2));
+            String value = msg.aux(3);
+            IgniteQueue<String> list = ctx.grid().queue(queueName,0,cfg);
+            if(pos<0) {
+                pos = list.size() + pos;
+            }
+            Iterator<String> it = list.iterator();
+            int n = 0;
+            while(it.hasNext()) {
+                String key = it.next();
+                if(n==pos) {
+                    throw new UnsupportedOperationException("LSET not supported for ignite queue!");
+                }
+                n++;
+            }
+            msg.setResponse(GridRedisProtocolParser.toInteger(n));
+
         }
-        else if(cmd == ZADD) {
-        	IgniteSet<ScoredItem<String>> list = ctx.grid().set(queueName,cfg);
-        	
-        	List<String> params = msg.aux();        	
-        	for(int i=0;i<params.size();i+=2) {
-        		double score = Double.parseDouble(params.get(i));
-        		String value = params.get(i+1);
-        		ScoredItem<String> entry = new ScoredItem<>(value,score);
-        		list.add(entry);
-        	}  
-            msg.setResponse(GridRedisProtocolParser.toInteger(list.size()));
-            return new GridFinishedFuture<>(msg);
-        }    
-       
-        msg.setResponse(GridRedisProtocolParser.nil());
+        else {
+            msg.setResponse(GridRedisProtocolParser.nil());
+        }
         return new GridFinishedFuture<>(msg);
 	}
 }

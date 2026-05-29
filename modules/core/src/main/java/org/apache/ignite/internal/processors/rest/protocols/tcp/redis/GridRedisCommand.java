@@ -75,6 +75,10 @@ public enum GridRedisCommand {
     EXPIRE("EXPIRE"),
     /** PEXPIRE. */
     PEXPIRE("PEXPIRE"),
+
+    PERSIST("PERSIST"),
+    TTL("TTL"),
+    PTTL("PTTL"),
     
     // add@byron
     
@@ -175,7 +179,13 @@ public enum GridRedisCommand {
     ZRANGEBYSCORE, // 返回有序集 key 中， score 值介于max和min之间的所有的成员。有序集成员按 score 值递增的次序排列。
     ZREVRANGEBYSCORE, // 返回有序集 key 中， score 值介于max和min之间的所有的成员。有序集成员按 score 值递减(从大到小)的次序排列。
     
-   
+   // stream 命令
+    XADD,
+    XDEL,
+    XLEN,
+    XREAD,
+    XRANGE,
+    XREVRANGE,
     
     // 发布订阅命令
  	PSUBSCRIBE,	// 订阅一个或多个符合给定模式的频道。

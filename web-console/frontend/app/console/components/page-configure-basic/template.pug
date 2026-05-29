@@ -5,6 +5,7 @@ include /app/configuration/mixins
 
 - const model = '$ctrl.clonedCluster'
 - const modelDiscoveryKind = `${model}.discovery.kind`
+- const nodeAttr = `$ctrl.nodesAttrs && $ctrl.nodesAttrs[0]`
 - let basicForm = '$ctrl.form'
 - basicForm.ngDisabled=true
 
@@ -84,13 +85,11 @@ form(novalidate name=basicForm)
         .pca-form-column-6.pc-form-grid-row.pcb-form-grid-row    
             .pc-form-grid-col-120    
                 .panel-group
-                    //- Since ignite 2.3
                     include ./client-connector
         .pca-form-column-6.pc-form-grid-row.pcb-form-grid-row    
             .pc-form-grid-col-120 
                 .panel-group
-                    //- Since ignite 2.3
-                    include ./communication
+                    include ./rest-connector
 
     h2.pcb-section-header.pcb-inner-padding(style='margin-top:30px')
     
@@ -110,7 +109,7 @@ form(novalidate name=basicForm)
                     
 
     .pc-form-actions-panel        
-        span.message {{ $ctrl.$scope.message }}
+        span.message {{ $message }}
         .pc-form-actions-panel__right-after
         
-        pc-split-button(actions=`formActionsMenu`)
+        pc-split-button(actions=`::$ctrl.formActionsMenu`)

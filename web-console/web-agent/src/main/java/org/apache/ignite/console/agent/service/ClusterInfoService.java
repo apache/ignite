@@ -50,10 +50,13 @@ public class ClusterInfoService implements ClusterAgentService {
 			attr.put("node.hostNames", node.hostNames());
 			
 			node.attributes().forEach((k,v)->{
-				if(v instanceof String && v.toString().length()<256) {
+				if(v instanceof CharSequence && v.toString().length()<1024) {
 					attr.put(k,v);
 				}
-				else if(v!=null) {
+				else if(v instanceof Number) {
+					attr.put(k,v);
+				}
+				else if(v!=null && v.getClass().getName().startsWith("java.")) {
 					attr.put(k,v);
 				}
 			});

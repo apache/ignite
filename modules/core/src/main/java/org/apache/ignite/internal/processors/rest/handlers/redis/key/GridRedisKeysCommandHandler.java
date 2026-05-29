@@ -128,5 +128,4 @@ public class GridRedisKeysCommandHandler extends GridRedisRestCommandHandler {
         return  GridRedisProtocolParser.toArray(list);
     }
     
-    
 }

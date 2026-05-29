@@ -180,7 +180,6 @@ public class IgfsMarshaller {
 
                 case MODE_RESOLVER: {
                     out.write(hdr);
-
                     break;
                 }
 
@@ -303,7 +302,6 @@ public class IgfsMarshaller {
 
                 case MODE_RESOLVER: {
                     msg = new IgfsModeResolverRequest();
-
                     break;
                 }
 

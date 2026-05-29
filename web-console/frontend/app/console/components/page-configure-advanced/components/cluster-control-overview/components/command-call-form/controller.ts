@@ -78,9 +78,10 @@ export default class ServiceCallFormController {
     
     callCommandForGrid(serviceName:string,params) {
         let args = this.onCall({$event:{name: serviceName,args: params}});
-        let clusterId = args['id'];  
+        let clusterId = args['id'];
+        let clusterName = args['name'];
         this.$scope.message = ''
-        this.AgentManager.callClusterCommand({id: clusterId},serviceName,params).then((data) => {  
+        this.AgentManager.callClusterCommand({id: clusterId,name: clusterName},serviceName,params).then((data) => {
             this.$scope.status = data.status;
             if(data.message){
                 this.$scope.message = data.message;

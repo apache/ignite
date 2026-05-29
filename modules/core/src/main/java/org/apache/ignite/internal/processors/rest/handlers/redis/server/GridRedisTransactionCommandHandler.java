@@ -65,7 +65,6 @@ public class GridRedisTransactionCommandHandler implements GridRedisCommandHandl
      * Handler constructor.
      *
      * @param log Logger to use.
-     * @param hnd Rest handler.
      * @param ctx Kernal context.
      */
     public GridRedisTransactionCommandHandler(IgniteLogger log, GridKernalContext ctx, Map<GridRedisCommand, GridRedisCommandHandler> handlers) {
@@ -130,10 +129,15 @@ public class GridRedisTransactionCommandHandler implements GridRedisCommandHandl
     		ses.removeMeta(SESS_TX_QUEUED_META_KEY);
     		
     		try {
+				List<IgniteInternalFuture<GridRedisMessage>> steps = new ArrayList<>(queued.size());
+				for(GridRedisMessage msgPart: queued) {
+					IgniteInternalFuture<GridRedisMessage> res = handlers.get(msgPart.command()).handleAsync(ses, msgPart);
+					steps.add(res);
+				}
+
     			List<ByteBuffer> resps = new ArrayList<>(queued.size());
-    			
-	    		for(GridRedisMessage msgPart: queued) {
-	    			GridRedisMessage res = handlers.get(msgPart.command()).handleAsync(ses, msgPart).get();	    			
+	    		for(IgniteInternalFuture<GridRedisMessage> msgPart: steps) {
+	    			GridRedisMessage res = msgPart.get();
 					resps.add(res.getResponse());					
 	    		}
 	    		

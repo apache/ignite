@@ -46,30 +46,25 @@ public class GridRedisListRemCommandHandler implements GridRedisCommandHandler {
 
 	/** Supported commands. */
     private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
-    		LSET,LREM,SREM,ZREM
+    		LREM,SREM,ZREM
     );
-
 
     /** Logger. */
     protected final IgniteLogger log;
 
     /** Kernel context. */
     protected final GridKernalContext ctx;
-    
-    protected CollectionConfiguration cfg = new CollectionConfiguration();
+
 
     /**
      * Handler constructor.
      *
      * @param log Logger to use.
-     * @param hnd Rest handler.
      * @param ctx Kernal context.
      */
     public GridRedisListRemCommandHandler(IgniteLogger log, GridKernalContext ctx) {
         this.log = log;
         this.ctx = ctx;
-        cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-        cfg.setBackups(1);
     }
 
     /** {@inheritDoc} */
@@ -88,32 +83,16 @@ public class GridRedisListRemCommandHandler implements GridRedisCommandHandler {
         
         GridRedisCommand cmd = msg.command();
             
-        String queueName = msg.cacheName()+"-"+msg.key();        
+        String queueName = msg.cacheName()+"-"+msg.key();
         
-        if(cmd == LSET) { 
-        	int pos = Integer.parseInt(msg.aux(2));
-        	String value = msg.aux(3);
-        	IgniteQueue<String> list = ctx.grid().queue(queueName,0,cfg);
-        	if(pos<0) {
-        		pos = list.size() + pos;
-        	}    	
-        	Iterator<String> it = list.iterator();
-        	int n = 0;
-        	while(it.hasNext()) {
-        		String key = it.next(); 
-        		if(n==pos) {
-        			throw new UnsupportedOperationException("LSET not supported for ignite queue!");         			
-        		}
-        		n++;
-        	}        	
-        	msg.setResponse(GridRedisProtocolParser.toInteger(n));
-        	
-        }
-        
-        else if(cmd == LREM) { 
+        if(cmd == LREM) {
         	int count = Integer.parseInt(msg.aux(2));
         	String value = msg.aux(3);
-        	IgniteQueue<String> list = ctx.grid().queue(queueName,0,cfg);
+        	IgniteQueue<String> list = ctx.grid().queue(queueName,0,null);
+			if(list==null) {
+				msg.setResponse(GridRedisProtocolParser.nil());
+				return new GridFinishedFuture<>(msg);
+			}
         	Iterator<String> it = list.iterator();
         	int n = 0;
         	while(it.hasNext()) {
@@ -129,7 +108,11 @@ public class GridRedisListRemCommandHandler implements GridRedisCommandHandler {
         }        
         else if(cmd == SREM) {
         	List<String> keys = msg.aux();
-        	IgniteSet<String> list = ctx.grid().set(queueName, cfg);
+        	IgniteSet<String> list = ctx.grid().set(queueName, null);
+			if(list==null) {
+				msg.setResponse(GridRedisProtocolParser.nil());
+				return new GridFinishedFuture<>(msg);
+			}
         	Iterator<String> it = list.iterator();
         	int n = 0;
         	while(it.hasNext()) {
@@ -143,7 +126,11 @@ public class GridRedisListRemCommandHandler implements GridRedisCommandHandler {
         }
         else if(cmd == ZREM) {
         	List<String> keys = msg.aux();
-        	IgniteSet<ScoredItem<String>> list = ctx.grid().set(queueName,cfg);        	
+        	IgniteSet<ScoredItem<String>> list = ctx.grid().set(queueName,null);
+			if(list==null) {
+				msg.setResponse(GridRedisProtocolParser.nil());
+				return new GridFinishedFuture<>(msg);
+			}
         	Iterator<ScoredItem<String>> it = list.iterator();
         	int n = 0;
         	while(it.hasNext()) {

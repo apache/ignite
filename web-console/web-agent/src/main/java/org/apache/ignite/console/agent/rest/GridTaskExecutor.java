@@ -144,9 +144,6 @@ public class GridTaskExecutor {
     /**
      * Creates new Task requests handler.
      *
-     * @param hnd Handler.
-     * @param authChecker Authentication checking closure.
-     * @param ctx Kernal context.
      */
     public GridTaskExecutor() {           
             
@@ -285,8 +282,8 @@ public class GridTaskExecutor {
      * Process HTTP request.
      *
      * @param act Action.
-     * @param req Http request.
-     * @param res Http response.
+     * @param hnd Http hnd.
+     * @param params Http params.
      */
     private GridRestResponse processRequest(GridRestProtocolHandler hnd, String act, JsonObject params) {        
 
@@ -347,7 +344,6 @@ public class GridTaskExecutor {
      *
      * @param cmd Command.
      * @param params Parameters.
-     * @param req Servlet request.
      * @return REST request.
      * @throws IgniteCheckedException If creation failed.
      */

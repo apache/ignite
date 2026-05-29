@@ -102,6 +102,10 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     @Override public void start(GridRestProtocolHandler hnd) throws IgniteCheckedException {
         assert ctx.config().getConnectorConfiguration() != null;
 
+        if(ctx.config().isClientMode()){
+            return;
+        }
+
         jettyHnd = new GridCmdRestHandler(hnd, new C1<String, Boolean>() {
             @Override public Boolean apply(String tok) {
                 return F.isEmpty(secretKey) || authenticate(tok);
@@ -129,7 +133,9 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     
     /** {@inheritDoc} */
     @Override public void onKernalStart() {
-
+        if(ctx.config().isClientMode()){
+            return;
+        }
         // first start instance
         handlerCount++;
     	
@@ -391,6 +397,9 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
     /** {@inheritDoc} */
     @Override public void stop() {
+        if(ctx.config().isClientMode()){
+            return;
+        }
     	handlerCount--;
 
     	if(httpSrv!=null) {

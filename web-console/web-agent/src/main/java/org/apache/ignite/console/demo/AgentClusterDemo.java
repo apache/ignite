@@ -23,6 +23,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.console.agent.IgniteClusterLauncher;
+import org.apache.ignite.console.agent.ServiceDeployment;
 import org.apache.ignite.console.agent.handlers.DemoClusterHandler;
 import org.apache.ignite.console.demo.service.DemoCachesLoadService;
 import org.apache.ignite.console.demo.service.DemoComputeLoadService;
@@ -169,6 +170,8 @@ public class AgentClusterDemo {
      * @param services Distributed services on the grid.
      */
     private static void deployServices(IgniteServices services) {
+        ServiceDeployment.deployServices(services);
+
         services.deployMultiple("Demo service: Multiple instances", new DemoServiceMultipleInstances(), 7, 3);
         services.deployNodeSingleton("Demo service: Node singleton", new DemoServiceNodeSingleton());
         services.deployClusterSingleton("Demo service: Cluster singleton", new DemoServiceClusterSingleton());
@@ -186,7 +189,7 @@ public class AgentClusterDemo {
         return demoUrl;
     }
 
-    public static Ignite tryStart(String clusterName, String cfgFile, int idx, boolean lastNode) throws IgniteCheckedException {
+    public static Ignite tryStart(String clusterName, String cfgFile, int idx, int lastNode) throws IgniteCheckedException {
         File configWorkFile = new File(cfgFile);
         Ignite ignite = null;
         IgniteConfiguration icfg = new IgniteConfiguration();
@@ -215,7 +218,7 @@ public class AgentClusterDemo {
     /**
      * Start ignite node with cacheEmployee and populate it with data.
      */
-    public static Ignite tryStart(IgniteConfiguration cfg, int idx, boolean lastNode,GridSpringResourceContext springCtx) {
+    public static Ignite tryStart(IgniteConfiguration cfg, int idx, int lastNode,GridSpringResourceContext springCtx) {
         if (initGuard.compareAndSet(false, true)) {
             log.info("DEMO: Starting embedded nodes for demo...");
 
@@ -235,7 +238,7 @@ public class AgentClusterDemo {
             try {
                 igniteConfiguration(cfg, port, idx, false);
 
-                if (lastNode) {
+                if (lastNode>0) {
                     U.delete(Paths.get(cfg.getWorkDirectory()));
 
                     U.resolveWorkDirectory(
@@ -258,7 +261,7 @@ public class AgentClusterDemo {
                 }                    
             }
             catch (Throwable e) {
-                if (lastNode) {
+                if (lastNode>0) {
                     basePort.getAndAdd(50);
 
                     log.warn("DEMO: Failed to start embedded node.", e);
@@ -267,15 +270,14 @@ public class AgentClusterDemo {
                     log.error("DEMO: Failed to start embedded node.", e);
             }
             finally {
-                if (lastNode && ignite != null) {
-                    try {    
-                    	Thread.sleep(1000L*idx);
-                    	while(ignite.cluster().nodes().size()<idx) {
+                if (lastNode>0 && ignite != null) {
+                    try {
+                    	while(ignite.cluster().nodes().size()<lastNode) {
                     		Thread.sleep(1000L);
                     	}                       
                     	ignite.cluster().state(ClusterState.ACTIVE);
 
-                        deployServices(ignite.services(ignite.cluster().forServers()));
+                        deployServices(ignite.services(ignite.cluster()));
 
                         log.info("DEMO: All embedded nodes for demo successfully started");
                     }

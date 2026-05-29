@@ -462,8 +462,12 @@ public class WebSocketRouter implements AutoCloseable {
         
         JsonObject stat = new JsonObject();
         JsonObject json = fromJson(evt.getPayload());
-        
-        boolean isLastNode = evt.getRequestId().endsWith("-lastNode");
+        int isLastNode = 0;
+        boolean hasLastNode = evt.getRequestId().endsWith("-lastNode");
+        if(hasLastNode) {
+            String[] parts = evt.getRequestId().split("-");
+            isLastNode = 1+Integer.parseInt(parts[parts.length - 2]);
+        }
         String clusterId = json.getString("id");
         String clusterName = Utils.escapeFileName(json.getString("name"));
         if(clusterId.equals(DEMO_CLUSTER_ID) || DEMO_CLUSTER_NAME.equals(clusterName)) {
@@ -514,7 +518,7 @@ public class WebSocketRouter implements AutoCloseable {
 				File configFile = new File(U.getIgniteHome()+ "/config/clusters/"+clusterName+"-config.xml");
 				
 				if(startIniFile.exists()) {
-					if(isLastNode) {
+					if(isLastNode>0) {
 						try {						
 			        		ignite = Ignition.allGrids().get(0);
                             Collection<ClusterStartNodeResult> results = ignite.cluster().startNodes(startIniFile, restart, 60*1000, 1);
@@ -552,8 +556,8 @@ public class WebSocketRouter implements AutoCloseable {
 					
 					if(ignite!=null) {
                         String nodeRestUrl = IgniteClusterLauncher.getNodeRestUrl(ignite);
-                        RestClusterHandler.registerNodeUrl(clusterId,clusterName,nodeRestUrl);
-						
+                        RestClusterHandler.registerNodeUrl(clusterId, clusterName, nodeRestUrl);
+
 			        	stat.put("status", "started");
 			        	stat.put("message","Ignite started successfully.");
 					}

@@ -7,7 +7,7 @@ pc-items-table(
     actions-menu='$ctrl.tableActions$|async:this'
     selected-row-id='$ctrl.selectionManager.selectedItemIDs$|async:this'
     one-way-selection='::true'
-    on-selection-change='$ctrl.selectedRows$.next($event)'
+    on-selection-change='$ctrl.selectedRows$.next($event);$ctrl.openDrawer = true'
     on-filter-changed='$ctrl.filterChanges$.next($event)'
     on-visible-rows-change='$ctrl.visibleRows$.next($event)'
 )
@@ -18,8 +18,6 @@ pc-items-table(
                 ui-sref='base.configuration.edit.advanced.caches.cache({cacheID: "new"})'
                 ui-sref-opts='{location: "replace"}'
             ) Create one? 
-
-        button.btn.dropdown-toggle(ng-click="$ctrl.openDrawer = true") 打开操作面板
 
 
 app-drawer(

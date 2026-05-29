@@ -155,13 +155,11 @@ public class GridRedisIncrDecrCommandHandler extends GridRedisRestCommandHandler
             case INCRBY:
             case HINCRBY:
                 restReq.command(ATOMIC_INCREMENT);
-
                 break;
 
             case DECR:
             case DECRBY:
                 restReq.command(ATOMIC_DECREMENT);
-
                 break;
 
             default:

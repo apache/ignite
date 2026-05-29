@@ -82,9 +82,4 @@ public class GridRedisDbSizeCommandHandler extends GridRedisRestCommandHandler {
         return restReq;
     }
 
-    /** {@inheritDoc} */
-    @Override public ByteBuffer makeResponse(final GridRestResponse restRes, List<String> params) {
-        return (restRes.getResponse() == null ? GridRedisProtocolParser.nil()
-            : GridRedisProtocolParser.toInteger(String.valueOf(restRes.getResponse())));
-    }
 }

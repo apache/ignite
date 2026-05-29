@@ -55,7 +55,7 @@ public class GridRedisSetsCommandHandler implements GridRedisCommandHandler {
 
 	/** Supported commands. */
     private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
-    		SISMEMBER,SMEMBERS,SDIFF,SINTER,SSCAN,SCARD
+			SADD,SISMEMBER,SMEMBERS,SDIFF,SINTER,SSCAN,SCARD
     );
 
 
@@ -71,7 +71,6 @@ public class GridRedisSetsCommandHandler implements GridRedisCommandHandler {
      * Handler constructor.
      *
      * @param log Logger to use.
-     * @param hnd Rest handler.
      * @param ctx Kernal context.
      */
     public GridRedisSetsCommandHandler(IgniteLogger log, GridKernalContext ctx) {
@@ -94,14 +93,22 @@ public class GridRedisSetsCommandHandler implements GridRedisCommandHandler {
         
         GridRedisCommand cmd = msg.command();
             
-        String queueName = msg.cacheName()+"-"+msg.key();        
+        String queueName = msg.cacheName()+"-"+msg.key();
+		if(cmd == SADD) {
+			IgniteSet<String> list = ctx.grid().set(queueName, cfg);
+
+			List<String> params = msg.aux();
+			list.addAll(params);
+			msg.setResponse(GridRedisProtocolParser.toInteger(list.size()));
+			return new GridFinishedFuture<>(msg);
+		}
+
         IgniteSet<String> list = ctx.grid().set(queueName, null);
         if(list==null && cmd != SCARD) {
     		msg.setResponse(GridRedisProtocolParser.nil());
     		return new GridFinishedFuture<>(msg);
     	}
-        
-        if(cmd == SISMEMBER) {
+        else if(cmd == SISMEMBER) {
         	String query = msg.aux(2);
         	
         	if(list.contains(query)) {
