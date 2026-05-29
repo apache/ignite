@@ -1,5 +1,6 @@
 package org.apache.ignite.configuration;
 
+import java.util.regex.Pattern;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -7,8 +8,6 @@ import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
-
-import java.util.regex.Pattern;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
 
@@ -39,7 +38,7 @@ public class IgniteConfigurationTest extends GridCommonAbstractTest {
                 .atLeast(1)
                 .build();
         listeningLog.registerListener(igniteConfigurationLogListener);
-        try (IgniteEx ignored = startGrid(0)){
+        try (IgniteEx ignored = startGrid(0)) {
             Assert.assertTrue(ASSERTION_ERROR_MESSAGE, igniteConfigurationLogListener.check());
         }
     }
