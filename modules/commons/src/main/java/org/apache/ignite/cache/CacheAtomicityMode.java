@@ -26,14 +26,14 @@ import org.jetbrains.annotations.Nullable;
  * used whenever transactions and explicit locking are not needed. Note that in {@link #ATOMIC}
  * mode cache will still maintain full data consistency across all cache nodes.
  * <p>
- * Cache atomicity may be set via {@link org.apache.ignite.configuration.CacheConfiguration#getAtomicityMode()}
+ * Cache atomicity may be set via {@ignitelink org.apache.ignite.configuration.CacheConfiguration#getAtomicityMode()}
  * configuration property.
  */
 public enum CacheAtomicityMode {
     /**
      * Enables fully {@code ACID}-compliant transactional cache behavior for the key-value API.
      * <p>
-     * See {@link Transaction} for more information about transactions.
+     * See {@ignitelink org.apache.ignite.transactions.Transaction} for more information about transactions.
      */
     TRANSACTIONAL,
 
@@ -45,7 +45,7 @@ public enum CacheAtomicityMode {
      * In addition to transactions and locking, one of the main differences in {@code ATOMIC} mode
      * is that bulk writes, such as {@code putAll(...)}, {@code removeAll(...)}, and {@code transformAll(...)}
      * methods, become simple batch operations which can partially fail. In case of partial
-     * failure {@link CachePartialUpdateException} will be thrown
+     * failure {@ignitelink org.apache.ignite.cache.CachePartialUpdateException} will be thrown
      * which will contain a list of keys for which the update failed. It is recommended that bulk writes are used
      * whenever multiple keys need to be inserted or updated in cache, as they reduce number of network trips and
      * provide better performance.
@@ -75,7 +75,7 @@ public enum CacheAtomicityMode {
      *     <li>
      *         For operations {@code putIfAbsent(K, V)}, {@code replace(K, V, V)} and {@code remove(K, V)} return
      *         value on primary node crash may be incorrect because of the automatic retries. It is recommended
-     *         to disable retries with {@link IgniteCache#withNoRetries()} and manually restore primary-backup
+     *         to disable retries with {@ignitelink org.apache.ignite.IgniteCache#withNoRetries()} and manually restore primary-backup
      *         consistency in case of update failure.
      *     </li>
      * </ul>
@@ -85,7 +85,7 @@ public enum CacheAtomicityMode {
      * <p>
      * Note! Consistency behavior of atomic cache will be improved in future releases.
      *
-     * @see IgniteCache#withNoRetries()
+     * @see {@ignitelink org.apache.ignite.IgniteCache#withNoRetries()}
      */
     ATOMIC;
 

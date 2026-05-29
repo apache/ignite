@@ -1,4 +1,4 @@
-Apache Ignite Binary API Module
+Apache Ignite Thin Client API Module
 ------------------------
 
 ignite-thin-client-api module is internal module to separate thin-client API and implementation.

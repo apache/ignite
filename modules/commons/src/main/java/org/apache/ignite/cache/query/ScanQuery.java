@@ -25,7 +25,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Scan query over cache entries. Will accept all the entries if no predicate was set.
  *
- * @see IgniteCache#query(Query)
+ * @see {@ignitelink org.apache.ignite.IgniteCache#query(Query)}
  */
 public final class ScanQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** */

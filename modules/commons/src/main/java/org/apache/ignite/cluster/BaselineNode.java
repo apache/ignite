@@ -34,7 +34,7 @@ public interface BaselineNode {
 
     /**
      * Gets a node attribute. Attributes are assigned to nodes at startup
-     * via {@link IgniteConfiguration#getUserAttributes()} method.
+     * via {@ignitelink org.apache.ignite.configuration.IgniteConfiguration#getUserAttributes()} method.
      * <p>
      * The system adds the following attributes automatically:
      * <ul>
@@ -55,7 +55,7 @@ public interface BaselineNode {
 
     /**
      * Gets all node attributes. Attributes are assigned to nodes at startup
-     * via {@link IgniteConfiguration#getUserAttributes()} method.
+     * via {@ignitelink org.apache.ignite.configuration.IgniteConfiguration#getUserAttributes()} method.
      * <p>
      * The system adds the following attributes automatically:
      * <ul>

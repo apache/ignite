@@ -26,8 +26,8 @@ import java.lang.annotation.Target;
 /**
  * Annotation for fields to be indexed for full text
  * search using Lucene. For more information
- * refer to {@link CacheQuery} documentation.
- * @see CacheQuery
+ * refer to {@ignitelink org.apache.ignite.internal.processors.cache.query.CacheQuery} documentation.
+ * @see {@ignitelink org.apache.ignite.internal.processors.cache.query.CacheQuery}
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

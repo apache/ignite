@@ -30,9 +30,9 @@ import org.apache.ignite.transactions.TransactionIsolation;
  * Transactions are {@link AutoCloseable}, so they will automatically rollback unless explicitly committed.
  * <p>
  * Default values for transaction isolation level, concurrency and timeout can be configured via
- * {@link ClientConfiguration#setTransactionConfiguration(ClientTransactionConfiguration)} property.
+ * {@ignitelink org.apache.ignite.configuration.ClientConfiguration#setTransactionConfiguration(ClientTransactionConfiguration)} property.
  *
- * @see ClientTransactionConfiguration
+ * @see {@ignitelink org.apache.ignite.configuration.ClientConfiguration}
  */
 public interface ClientTransactions {
     /**

@@ -41,7 +41,7 @@ import org.jetbrains.annotations.Nullable;
  * the remote nodes and bring back only the small data set specified within the 'limit' clause,
  * instead of the whole query result as would happen in a non-collocated execution.
  *
- * @see IgniteCache#query(Query)
+ * @see {@ignitelink org.apache.ignite.IgniteCache#query(Query)}
  */
 public class SqlFieldsQuery extends Query<List<?>> {
     /** */

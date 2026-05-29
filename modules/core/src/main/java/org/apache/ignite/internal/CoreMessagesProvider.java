@@ -336,14 +336,13 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
 
         this.factory = factory;
 
-        // [-44, 0..2, 42, 200..204, 210, 302] - Use in tests.
-        // [300..307, 350..352] - CalciteMessageFactory.
+        // [-44, 0..2, 42, 200..204, 210] - Use in tests.
+        // [300 - 500] - CalciteMessageFactory.
         // [-4..-22, -30..-35, -54..-57] - SQL
 
         // [5000 - 5500]: Utility messages. Most of them originally come from Discovery.
         msgIdx = 5000;
-        // We don't use the code‑generated serializer for CompressedMessage - serialization is highly customized.
-        factory.register(msgIdx++, CompressedMessage::new);
+        withNoSchema(CompressedMessage.class);
         withNoSchemaResolvedClassLoader(ErrorMessage.class);
         withNoSchema(InetSocketAddressMessage.class);
         withNoSchema(InetAddressMessage.class);

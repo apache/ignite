@@ -15,23 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.managers.communication;
 
-import org.apache.ignite.internal.processors.security.SecurityContext;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
-/** */
-public abstract class AbstractCachePartitionExchangeWorkerTask implements CachePartitionExchangeWorkerTask {
-    /** Security context in which current task must be executed. */
-    @Nullable private final SecurityContext secCtx;
+/** Test message with correct direct type. */
+public class TestValidByteIdMessage implements Message {
+    /** Direct type. */
+    static final short DIRECT_TYPE = -127;
 
     /** */
-    protected AbstractCachePartitionExchangeWorkerTask(@Nullable SecurityContext secCtx) {
-        this.secCtx = secCtx;
-    }
+    @Order(0)
+    int val;
 
     /** {@inheritDoc} */
-    @Override @Nullable public SecurityContext securityContext() {
-        return secCtx;
+    @Override public short directType() {
+        return DIRECT_TYPE;
     }
 }

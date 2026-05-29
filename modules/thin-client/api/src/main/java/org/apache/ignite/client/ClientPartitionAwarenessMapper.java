@@ -20,17 +20,19 @@ package org.apache.ignite.client;
 /**
  * This function calculates the cache key to a partition mapping for each cache key. It is used only for local calculation on a client side.
  * <p>
- * When the {@link ClientConfiguration#isPartitionAwarenessEnabled()} and the cache was created with a custom {@link AffinityFunction}
- * or a {@link AffinityKeyMapper} this function will be used to calculate mappings. Be sure that a key maps to the same partition
- * produced by the {@link AffinityFunction#partition(Object)} method.
+ * When the {@ignitelink org.apache.ignite.configuration.ClientConfiguration#isPartitionAwarenessEnabled()}
+ * and the cache was created with a custom {@ignitelink org.apache.ignite.cache.affinity.AffinityFunction}
+ * or a {@ignitelink org.apache.ignite.cache.affinity.AffinityKeyMapper} this function will be used to calculate mappings.
+ * Be sure that a key maps to the same partition
+ * produced by the {@ignitelink org.apache.ignite.cache.affinity.AffinityFunction#partition(Object)} method.
  *
- * @see AffinityFunction#partition(Object)
+ * @see {@ignitelink org.apache.ignite.cache.affinity.AffinityFunction#partition(Object)}
  * @since 2.14
  */
 public interface ClientPartitionAwarenessMapper {
     /**
      * Gets a partition number for a given key starting from {@code 0}. Be sure that a key maps to the same partition
-     * produced by the {@link AffinityFunction#partition(Object)} method.
+     * produced by the {@ignitelink org.apache.ignite.cache.affinity.AffinityFunction#partition(Object)} method.
      *
      * @param key Key to get partition for.
      * @return Partition number for a given key.

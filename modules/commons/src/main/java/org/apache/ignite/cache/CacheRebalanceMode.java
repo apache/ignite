@@ -22,11 +22,11 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Cache rebalance mode. When rebalancing is enabled (i.e. has value other than {@link #NONE}), distributed caches
  * will attempt to rebalance all necessary values from other grid nodes. This enumeration is used to configure
- * rebalancing via {@link org.apache.ignite.configuration.CacheConfiguration#getRebalanceMode()} configuration property. If not configured
- * explicitly, then {@link org.apache.ignite.configuration.CacheConfiguration#DFLT_REBALANCE_MODE} is used.
+ * rebalancing via {@ignitelink org.apache.ignite.configuration.CacheConfiguration#getRebalanceMode()} configuration property.
+ * If not configured explicitly, then {@ignitelink org.apache.ignite.configuration.CacheConfiguration#DFLT_REBALANCE_MODE} is used.
  * <p>
  * Replicated caches will try to load the full set of cache entries from other nodes (or as defined by
- * pluggable {@link AffinityFunction}), while partitioned caches will only load the entries for which
+ * pluggable {@ignitelink org.apache.ignite.cache.affinity.AffinityFunction}), while partitioned caches will only load the entries for which
  * current node is primary or back up.
  * <p>
  * Note that rebalance mode only makes sense for {@link CacheMode#REPLICATED} and {@link CacheMode#PARTITIONED}

@@ -27,7 +27,8 @@ import org.jetbrains.annotations.Nullable;
  * Note that regardless of write synchronization mode, cache data will always remain fully
  * consistent across all participating nodes.
  * <p>
- * Write synchronization mode may be configured via {@link org.apache.ignite.configuration.CacheConfiguration#getWriteSynchronizationMode()}
+ * Write synchronization mode may be configured via
+ * {@ignitelink org.apache.ignite.configuration.CacheConfiguration#getWriteSynchronizationMode()}
  * configuration property.
  */
 public enum CacheWriteSynchronizationMode {
@@ -41,7 +42,7 @@ public enum CacheWriteSynchronizationMode {
     /**
      * Flag indicating that Ignite will not wait for write or commit responses from participating nodes,
      * which means that remote nodes may get their state updated a bit after any of the cache write methods
-     * complete, or after {@link Transaction#commit()} method completes.
+     * complete, or after {@ignitelink org.apache.ignite.transactions.Transaction#commit()} method completes.
      */
     FULL_ASYNC,
 

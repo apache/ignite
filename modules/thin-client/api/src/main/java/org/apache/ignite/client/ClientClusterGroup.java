@@ -92,7 +92,7 @@ public interface ClientClusterGroup {
      * specified in user attributes.
      * <p>
      * User attributes for every node are optional and can be specified in
-     * grid node configuration. See {@link IgniteConfiguration#getUserAttributes()}
+     * grid node configuration. See {@ignitelink org.apache.ignite.configuration.IgniteConfiguration#getUserAttributes()}
      * for more information.
      *
      * @param name Name of the attribute.
@@ -104,8 +104,8 @@ public interface ClientClusterGroup {
     /**
      * Creates a cluster group of nodes started in server mode.
      *
-     * @see Ignition#setClientMode(boolean)
-     * @see IgniteConfiguration#setClientMode(boolean)
+     * @see {@ignitelink org.apache.ignite.Ignition#setClientMode(boolean)}
+     * @see {@ignitelink org.apache.ignite.configuration.IgniteConfiguration#setClientMode(boolean)}
      * @return Cluster group of nodes started in server mode.
      */
     public ClientClusterGroup forServers();
@@ -113,8 +113,8 @@ public interface ClientClusterGroup {
     /**
      * Creates a cluster group of nodes started in client mode.
 
-     * @see Ignition#setClientMode(boolean)
-     * @see IgniteConfiguration#setClientMode(boolean)
+     * @see {@ignitelink org.apache.ignite.Ignition#setClientMode(boolean)}
+     * @see {@ignitelink org.apache.ignite.configuration.IgniteConfiguration#setClientMode(boolean)}
      * @return Cluster group of nodes started in client mode.
      */
     public ClientClusterGroup forClients();

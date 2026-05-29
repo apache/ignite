@@ -34,7 +34,7 @@ public interface ClientCompute {
 
     /**
      * Executes given task within the cluster group. For step-by-step explanation of task execution process
-     * refer to {@link ComputeTask} documentation.
+     * refer to {@ignitelink org.apache.ignite.compute.ComputeTask} documentation.
      *
      * @param taskName Name of the task to execute.
      * @param arg Optional argument of task execution, can be {@code null}.
@@ -43,13 +43,13 @@ public interface ClientCompute {
      * @return Task result.
      * @throws ClientException If task failed.
      * @throws InterruptedException If the wait for task completion was interrupted.
-     * @see ComputeTask for information about task execution.
+     * @see {@ignitelink org.apache.ignite.compute.ComputeTask} for information about task execution.
      */
     public <T, R> R execute(String taskName, @Nullable T arg) throws ClientException, InterruptedException;
 
     /**
      * Executes given task asynchronously within the cluster group. For step-by-step explanation of task execution
-     * process refer to {@link ComputeTask} documentation.
+     * process refer to {@ignitelink org.apache.ignite.compute.ComputeTask} documentation.
      *
      * @param taskName Name of the task to execute.
      * @param arg Optional argument of task execution, can be {@code null}.
@@ -57,7 +57,7 @@ public interface ClientCompute {
      * @param <R> Type of the task result.
      * @return A Future representing pending completion of the task.
      * @throws ClientException If task failed.
-     * @see ComputeTask for information about task execution.
+     * @see {@ignitelink org.apache.ignite.compute.ComputeTask} for information about task execution.
      * @deprecated Use {@link #executeAsync2(String, Object)} instead.
      * This method calls {@link #executeAsync2(String, Object)} internally, but returns a more limited
      * Future interface.
@@ -67,7 +67,7 @@ public interface ClientCompute {
 
     /**
      * Executes given task asynchronously within the cluster group. For step-by-step explanation of task execution
-     * process refer to {@link ComputeTask} documentation.
+     * process refer to {@ignitelink org.apache.ignite.compute.ComputeTask} documentation.
      *
      * @param taskName Name of the task to execute.
      * @param arg Optional argument of task execution, can be {@code null}.
@@ -75,7 +75,7 @@ public interface ClientCompute {
      * @param <R> Type of the task result.
      * @return A Future representing pending completion of the task.
      * @throws ClientException If task failed.
-     * @see ComputeTask for information about task execution.
+     * @see {@ignitelink org.apache.ignite.compute.ComputeTask} for information about task execution.
      */
     public <T, R> IgniteClientFuture<R> executeAsync2(String taskName, @Nullable T arg) throws ClientException;
 
@@ -90,7 +90,7 @@ public interface ClientCompute {
     /**
      * Sets no-failover flag for tasks executed by returned {@code ClientCompute} instance.
      * If flag is set, job will be never failed over even if remote node crashes or rejects execution.
-     * See {@link ComputeTask} documentation for more information about jobs failover.
+     * See {@ignitelink org.apache.ignite.compute.ComputeTask} documentation for more information about jobs failover.
      *
      * @return {@code ClientCompute} instance with no-failover flag.
      */
@@ -98,7 +98,7 @@ public interface ClientCompute {
 
     /**
      * Disables result caching for tasks executed by returned {@code ClientCompute} instance.
-     * See {@link ComputeTask} documentation for more information tasks result caching.
+     * See {@ignitelink org.apache.ignite.compute.ComputeTask} documentation for more information tasks result caching.
      *
      * @return {@code ClientCompute} instance with "no result cache" flag.
      */

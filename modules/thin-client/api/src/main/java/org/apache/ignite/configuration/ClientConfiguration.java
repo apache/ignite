@@ -40,7 +40,7 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * {@link TcpIgniteClient} configuration.
+ * {@ignitelink org.apache.ignite.internal.client.thin.TcpIgniteClient} configuration.
  */
 @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
 public final class ClientConfiguration implements Serializable {
@@ -188,7 +188,8 @@ public final class ClientConfiguration implements Serializable {
     /**
      * Set addresses of Ignite server nodes within a cluster. An address can be IPv4 address or hostname, with or
      * without port. If port is not set then Ignite will generate multiple addresses for default port range. See
-     * {@link ClientConnectorConfiguration#DFLT_PORT}, {@link ClientConnectorConfiguration#DFLT_PORT_RANGE}.
+     * {@ignitelink org.apache.ignite.internal.client.thin.ClientConnectorConfiguration#DFLT_PORT},
+     * {@ignitelink org.apache.ignite.internal.client.thin.ClientConnectorConfiguration#DFLT_PORT_RANGE}.
      *
      * @param addrs Host addresses.
      * @return {@code this} for chaining.
@@ -604,7 +605,8 @@ public final class ClientConfiguration implements Serializable {
      * <ul>
      *     <li>1. Single-key operations API, like put(), get(), etc. However, the functionality has no effect on those
      *     operations within explicit transactions {@link ClientTransactions#txStart()}.</li>
-     *     <li>2. {@link ScanQuery#setPartition(Integer)} and {@link IndexQuery#setPartition(Integer)} accept a
+     *     <li>2. {@link ScanQuery#setPartition(Integer)} and
+     *     {@ignitelink org.apache.ignite.cache.query.IndexQuery#setPartition(Integer)} accept a
      *     partition number as a parameter with which the query is routed to a particular server node that stores
      *     the requested data.</li>
      * </ul>
@@ -625,7 +627,8 @@ public final class ClientConfiguration implements Serializable {
      * <ul>
      *     <li>1. Single-key operations API, like put(), get(), etc. However, the functionality has no effect on
      *     those operations within explicit transactions {@link ClientTransactions#txStart()}.</li>
-     *     <li>2. {@link ScanQuery#setPartition(Integer)} and {@link IndexQuery#setPartition(Integer)} accept
+     *     <li>2. {@link ScanQuery#setPartition(Integer)} and
+     *     {@ignitelink org.apache.ignite.cache.query.IndexQuery#setPartition(Integer)} accept
      *     a partition number as a parameter with which the query is routed to a particular server node that stores
      *     the requested data.</li>
      * </ul>
@@ -771,8 +774,8 @@ public final class ClientConfiguration implements Serializable {
      * Sets user attributes which can be used to send additional info to the server nodes.
      *
      * Sent attributes can be accessed on server nodes from
-     * {@link org.apache.ignite.internal.processors.rest.request.GridRestRequest GridRestRequest} or
-     * {@link org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext
+     * {@ignitelink org.apache.ignite.internal.processors.rest.request.GridRestRequest GridRestRequest} or
+     * {@ignitelink org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext
      * ClientListenerAbstractConnectionContext} (depends on client type).
      *
      * @param userAttrs User attributes.
@@ -853,8 +856,8 @@ public final class ClientConfiguration implements Serializable {
     /**
      * Gets the heartbeat message interval, in milliseconds. Default is <code>30_000</code>.
      * <p />
-     * When server-side {@link ClientConnectorConfiguration#getIdleTimeout()} is not zero, effective heartbeat
-     * interval is set to <code>min(heartbeatInterval, idleTimeout / 3)</code>.
+     * When server-side {@ignitelink org.apache.ignite.configuration.ClientConnectorConfiguration#getIdleTimeout()} is not zero,
+     * effective heartbeat interval is set to <code>min(heartbeatInterval, idleTimeout / 3)</code>.
      * <p />
      * When thin client connection is idle (no operations are performed), heartbeat messages are sent periodically
      * to keep the connection alive and detect potential half-open state.     *
@@ -868,8 +871,8 @@ public final class ClientConfiguration implements Serializable {
     /**
      * Sets the heartbeat message interval, in milliseconds. Default is <code>30_000</code>.
      * <p />
-     * When server-side {@link ClientConnectorConfiguration#getIdleTimeout()} is not zero, effective heartbeat
-     * interval is set to <code>min(heartbeatInterval, idleTimeout / 3)</code>.
+     * When server-side {@ignitelink org.apache.ignite.configuration.ClientConnectorConfiguration#getIdleTimeout()} is not zero,
+     * effective heartbeat interval is set to <code>min(heartbeatInterval, idleTimeout / 3)</code>.
      * <p />
      * When thin client connection is idle (no operations are performed), heartbeat messages are sent periodically
      * to keep the connection alive and detect potential half-open state.     *

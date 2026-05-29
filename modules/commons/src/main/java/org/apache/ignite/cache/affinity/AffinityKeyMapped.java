@@ -37,7 +37,7 @@ import java.util.concurrent.Callable;
  * otherwise known as {@code Collocation Of Computations And Data}.
  * <p>
  * <h1 class="header">Mapping Cache Keys</h1>
- * The default implementation of {@link AffinityKeyMapper}, which will be used
+ * The default implementation of {@ignitelink org.apache.ignite.cache.affinity.AffinityKeyMapper}, which will be used
  * if no explicit affinity mapper is specified in cache configuration, will first look
  * for any field annotated with {@code @AffinityKeyMapped} annotation.
  * If such field is not found, then the cache key itself will be used for
@@ -74,8 +74,8 @@ import java.util.concurrent.Callable;
  * </pre>
  * <p>
  * <h2 class="header">AffinityKey</h2>
- * For convenience, you can also optionally use {@link AffinityKey} class. Here is how a
- * {@code PersonKey} defined above would look using {@link AffinityKey}:
+ * For convenience, you can also optionally use {@ignitelink org.apache.ignite.cache.affinity.AffinityKey} class. Here is how a
+ * {@code PersonKey} defined above would look using {@ignitelink org.apache.ignite.cache.affinity.AffinityKey}:
  * <pre name="code" class="java">
  * Object personKey1 = new AffinityKey("myPersonId1", "myCompanyId");
  * Object personKey2 = new AffinityKey("myPersonId2", "myCompanyId");
@@ -90,21 +90,21 @@ import java.util.concurrent.Callable;
  * It is also possible to route computations to the nodes where the data is cached. This concept
  * is otherwise known as {@code Collocation Of Computations And Data}. In this case,
  * {@code @AffinityKeyMapped} annotation allows to specify a routing affinity key for a
- * {@link org.apache.ignite.compute.ComputeJob} or any other grid computation, such as {@link Runnable},
+ * {@ignitelink org.apache.ignite.compute.ComputeJob} or any other grid computation, such as {@link Runnable},
  * {@link Callable}, or {@link org.apache.ignite.lang.IgniteClosure}. It should be attached to a field
  * that provides affinity key for the computation. Only one annotation per class is allowed.
- * Whenever such annotation is detected, then {@link org.apache.ignite.spi.loadbalancing.LoadBalancingSpi}
+ * Whenever such annotation is detected, then {@ignitelink org.apache.ignite.spi.loadbalancing.LoadBalancingSpi}
  * will be bypassed, and computation will be routed to the grid node where the specified affinity key is cached.
  * <p>
- * For more information about cache affinity also see {@link AffinityKeyMapper} and
- * {@link AffinityFunction} documentation.
+ * For more information about cache affinity also see {@ignitelink org.apache.ignite.cache.affinity.AffinityKeyMapper} and
+ * {@ignitelink org.apache.ignite.cache.affinity.AffinityFunction} documentation.
  * Affinity for a key can be found from any node, regardless of whether it has cache started
  * or not. If cache is not started, affinity function will be fetched from the remote node
  * which does have the cache running.
  *
- * @see AffinityFunction
- * @see AffinityKeyMapper
- * @see AffinityKey
+ * @see {@ignitelink org.apache.ignite.cache.affinity.AffinityFunction}
+ * @see {@ignitelink org.apache.ignite.cache.affinity.AffinityKeyMapper}
+ * @see {@ignitelink org.apache.ignite.cache.affinity.AffinityKey}
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

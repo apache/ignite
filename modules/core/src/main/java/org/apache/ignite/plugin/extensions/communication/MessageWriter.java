@@ -335,9 +335,7 @@ public interface MessageWriter {
      * @param ver Version.
      * @return Whether value was fully written.
      */
-    default boolean writeIgniteProductVersion(IgniteProductVersion ver) {
-        return true;
-    }
+    public boolean writeIgniteProductVersion(IgniteProductVersion ver);
 
     /**
      * @return Whether header of current message is already written.

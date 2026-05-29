@@ -42,6 +42,7 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageArrayType;
@@ -2301,6 +2302,109 @@ public class DirectByteBufferStream {
                 uuidLeast = GridUnsafe.getLong(heapArr, off + 8);
             }
         }
+    }
+
+    /** */
+    public void writeIgniteProductVersion(IgniteProductVersion ver) {
+        if (ver == null) {
+            lastFinished = buf.remaining() >= 1;
+
+            if (!lastFinished)
+                return;
+
+            buf.put((byte)0);
+
+            return;
+        }
+
+        if (!msgTypeDone) {
+            if (buf.remaining() < 4) {
+                lastFinished = false;
+
+                return;
+            }
+
+            buf.put((byte)1);
+            buf.put(ver.major());
+            buf.put(ver.minor());
+            buf.put(ver.maintenance());
+
+            msgTypeDone = true;
+        }
+
+        if (!keyDone) {
+            writeLong(ver.revisionTimestamp());
+
+            if (!lastFinished)
+                return;
+
+            keyDone = true;
+        }
+
+        writeByteArray(ver.revisionHash());
+
+        if (!lastFinished)
+            return;
+
+        msgTypeDone = false;
+        keyDone = false;
+    }
+
+    /** */
+    public IgniteProductVersion readIgniteProductVersion() {
+        if (buf.remaining() < 1) {
+            lastFinished = false;
+
+            return null;
+        }
+
+        if (cur == NULL || cur == null) {
+            if (buf.get() == (byte)0) {
+                lastFinished = true;
+
+                return null;
+            }
+
+            cur = new IgniteProductVersionEx();
+        }
+
+        if (!msgTypeDone) {
+            if (buf.remaining() < 3) {
+                lastFinished = false;
+
+                return null;
+            }
+
+            ((IgniteProductVersionEx)cur).version(buf.get(), buf.get(), buf.get());
+
+            msgTypeDone = true;
+        }
+
+        if (!keyDone) {
+            long revTs = readLong();
+
+            if (!lastFinished)
+                return null;
+
+            keyDone = true;
+
+            ((IgniteProductVersionEx)cur).revisionTimestamp(revTs);
+        }
+
+        byte[] revHash = readByteArray();
+
+        if (!lastFinished)
+            return null;
+
+        IgniteProductVersionEx res = (IgniteProductVersionEx)cur;
+
+        res.revisionHash(revHash);
+
+        cur = NULL;
+        msgTypeDone = false;
+        keyDone = false;
+
+        return res;
     }
 
     /** {@inheritDoc} */

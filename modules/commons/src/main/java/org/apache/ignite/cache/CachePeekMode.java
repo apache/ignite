@@ -21,10 +21,10 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Enumeration of all supported cache peek modes. Peek modes can be passed
- * into {@link IgniteCache#localPeek(Object, CachePeekMode...)},
- * {@link IgniteCache#localEntries(CachePeekMode...)},
- * {@link IgniteCache#localSize(CachePeekMode...)} and
- * {@link IgniteCache#size(CachePeekMode...)} methods.
+ * into {@ignitelink org.apache.ignite.IgniteCache#localPeek(Object, CachePeekMode...)},
+ * {@ignitelink org.apache.ignite.IgniteCache#localEntries(CachePeekMode...)},
+ * {@ignitelink org.apache.ignite.IgniteCache#localSize(CachePeekMode...)} and
+ * {@ignitelink org.apache.ignite.IgniteCache#size(CachePeekMode...)} methods.
  * <p>
  * The following modes are supported:
  * <ul>

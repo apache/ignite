@@ -34,7 +34,7 @@ import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
  * Query can be of any type (SQL, TEXT or SCAN) and can be set via {@link #setInitialQuery(Query)}
  * method.
  * <p>
- * Query can be executed either on all nodes in topology using {@link IgniteCache#query(Query)}
+ * Query can be executed either on all nodes in topology using {@ignitelink org.apache.ignite.IgniteCache#query(Query)}
  * method, or only on the local node, if {@link Query#setLocal(boolean)} parameter is set to {@code true}.
  * Note that if the query is distributed and a new node joins, it will get the remote
  * filter for the query during discovery process before it actually joins a topology,
@@ -92,16 +92,16 @@ import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
  * be empty in this case, but it will still unregister listeners when {@link QueryCursor#close()}
  * is called.
  * <p>
- * {@link IgniteAsyncCallback} annotation is supported for {@link CacheEntryEventFilter}
+ * {@ignitelink org.apache.ignite.lang.IgniteAsyncCallback} annotation is supported for {@link CacheEntryEventFilter}
  * (see {@link #setRemoteFilterFactory(Factory)}) and {@link CacheEntryUpdatedListener}
  * (see {@link #setLocalListener(CacheEntryUpdatedListener)}).
- * If a filter and/or listener are annotated with {@link IgniteAsyncCallback} then the annotated callback
- * is executed in an async callback pool (see {@link IgniteConfiguration#getAsyncCallbackPoolSize()})
+ * If a filter and/or listener are annotated with {@ignitelink org.apache.ignite.lang.IgniteAsyncCallback} then the annotated callback
+ * is executed in an async callback pool (see {@ignitelink org.apache.ignite.configuration.IgniteConfiguration#getAsyncCallbackPoolSize()})
  * and a notification order is kept the same as an update order for a given cache key.
  *
- * @see ContinuousQueryWithTransformer
- * @see IgniteAsyncCallback
- * @see IgniteConfiguration#getAsyncCallbackPoolSize()
+ * @see {@ignitelink org.apache.ignite.cache.query.ContinuousQueryWithTransformer}
+ * @see {@ignitelink org.apache.ignite.lang.IgniteAsyncCallback}
+ * @see {@ignitelink org.apache.ignite.configuration.IgniteConfiguration#getAsyncCallbackPoolSize()}
  */
 public final class ContinuousQuery<K, V> extends AbstractContinuousQuery<K, V> {
     /** */
@@ -137,14 +137,16 @@ public final class ContinuousQuery<K, V> extends AbstractContinuousQuery<K, V> {
      * synchronization or transactional cache operations), should be executed asynchronously without
      * blocking the thread that called the callback. Otherwise, you can get deadlocks.
      * <p>
-     * If local listener are annotated with {@link IgniteAsyncCallback} then it is executed in an async callback pool
-     * (see {@link IgniteConfiguration#getAsyncCallbackPoolSize()}) that allow to perform a cache operations.
+     * If local listener are annotated with {@ignitelink org.apache.ignite.lang.IgniteAsyncCallback} then
+     * it is executed in an async callback pool
+     * (see {@ignitelink org.apache.ignite.configuration.IgniteConfiguration#getAsyncCallbackPoolSize()}
+     * that allow to perform a cache operations.
      *
      * @param locLsnr Local callback.
      * @return {@code this} for chaining.
-     * @see IgniteAsyncCallback
-     * @see IgniteConfiguration#getAsyncCallbackPoolSize()
-     * @see ContinuousQueryWithTransformer#setLocalListener(EventListener)
+     * @see {@ignitelink org.apache.ignite.lang.IgniteAsyncCallback}
+     * @see {@ignitelink org.apache.ignite.configuration.IgniteConfiguration#getAsyncCallbackPoolSize()}
+     * @see {@ignitelink org.apache.ignite.cache.query.ContinuousQueryWithTransformer#setLocalListener(EventListener)}
      */
     public ContinuousQuery<K, V> setLocalListener(CacheEntryUpdatedListener<K, V> locLsnr) {
         this.locLsnr = locLsnr;
@@ -166,15 +168,17 @@ public final class ContinuousQuery<K, V> extends AbstractContinuousQuery<K, V> {
      * (e.g., synchronization or transactional cache operations), should be executed asynchronously
      * without blocking the thread that called the filter. Otherwise, you can get deadlocks.
      * <p>
-     * If remote filter are annotated with {@link IgniteAsyncCallback} then it is executed in async callback
-     * pool (see {@link IgniteConfiguration#getAsyncCallbackPoolSize()}) that allow to perform a cache operations.
+     * If remote filter are annotated with {@ignitelink org.apache.ignite.lang.IgniteAsyncCallback}
+     * then it is executed in async callback
+     * pool (see {@ignitelink org.apache.ignite.configuration.IgniteConfiguration#getAsyncCallbackPoolSize()})
+     * that allow to perform a cache operations.
      *
      * @param rmtFilter Key-value filter.
      * @return {@code this} for chaining.
      *
      * @deprecated Use {@link #setRemoteFilterFactory(Factory)} instead.
-     * @see IgniteAsyncCallback
-     * @see IgniteConfiguration#getAsyncCallbackPoolSize()
+     * @see {@ignitelink org.apache.ignite.lang.IgniteAsyncCallback}
+     * @see {@ignitelink org.apache.ignite.configuration.IgniteConfiguration#getAsyncCallbackPoolSize()}
      */
     @Deprecated
     public ContinuousQuery<K, V> setRemoteFilter(CacheEntryEventSerializableFilter<K, V> rmtFilter) {
