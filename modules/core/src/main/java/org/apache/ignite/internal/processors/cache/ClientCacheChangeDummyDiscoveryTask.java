@@ -17,21 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /** Client cache change dummy task for exchange worker. */
-public class ClientCacheChangeDummyDiscoveryTask extends AbstractCachePartitionExchangeWorkerTask {
+public class ClientCacheChangeDummyDiscoveryTask implements CachePartitionExchangeWorkerTask {
     /** Discovery message. */
     private final ClientCacheChangeDummyDiscoveryMessage msg;
 
-    /**
-     * @param secCtx Security context in which current task must be executed.
-     * @param msg Message.
-     */
-    public ClientCacheChangeDummyDiscoveryTask(SecurityContext secCtx, ClientCacheChangeDummyDiscoveryMessage msg) {
-        super(secCtx);
-
+    /** @param msg Message. */
+    public ClientCacheChangeDummyDiscoveryTask(ClientCacheChangeDummyDiscoveryMessage msg) {
         assert msg != null;
 
         this.msg = msg;

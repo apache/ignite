@@ -215,15 +215,27 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
                 try {
                     if (h) { // Hashsets
                         ccfg0 = ctx.cache().getConfigFromTemplate(GridRedisMessage.DFLT_HASH_CACHE_NAME);
+                        if(ccfg0==null && ctx.cache().cacheDescriptor(GridRedisMessage.DFLT_HASH_CACHE_NAME)!=null){
+                            ccfg0 = ctx.cache().cacheConfiguration(GridRedisMessage.DFLT_HASH_CACHE_NAME);
+                        }
                     } else if (x) { // Streams
                         ccfg0 = ctx.cache().getConfigFromTemplate(GridRedisMessage.DFLT_STREAM_CACHE_NAME);
+                        if(ccfg0==null && ctx.cache().cacheDescriptor(GridRedisMessage.DFLT_STREAM_CACHE_NAME)!=null){
+                            ccfg0 = ctx.cache().cacheConfiguration(GridRedisMessage.DFLT_STREAM_CACHE_NAME);
+                        }
                     } else {
                         ccfg0 = ctx.cache().cacheConfiguration(GridRedisMessage.DFLT_CACHE_NAME);
                     }
                 }
-                catch (IgniteCheckedException e){
+                catch (IgniteCheckedException | IllegalStateException e){
                     log.warning("Failed to get redis cache tempalte.",e);
-                    ccfg0 = null;
+                    try {
+                        ccfg0 = ctx.cache().cacheConfiguration(GridRedisMessage.DFLT_CACHE_NAME);
+                    }
+                    catch (IllegalStateException e2){
+                        log.warning("Failed to get redis cache tempalte.",e);
+                        ccfg0 = null;
+                    }
                 }
         		CacheConfiguration<String,?> ccfg = new CacheConfiguration<>(ccfg0);
         		ccfg.setName(msg.cacheName());

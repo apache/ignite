@@ -15,18 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management.rollingupgrade;
+package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.internal.management.api.CommandRegistryImpl;
-
-/** Rolling upgrade commands. */
-public class RollingUpgradeCommand extends CommandRegistryImpl {
-    /** */
-    public RollingUpgradeCommand() {
-        super(
-            new RollingUpgradeEnableCommand(),
-            new RollingUpgradeDisableCommand(),
-            new RollingUpgradeStatusCommand()
-        );
+/** Test cache message. */
+public class TestCacheMessage extends GridCacheMessage implements GridCacheDeployable {
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return addDepInfo;
     }
 }

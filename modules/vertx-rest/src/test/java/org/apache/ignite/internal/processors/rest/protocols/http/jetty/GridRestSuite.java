@@ -25,7 +25,7 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     RestProcessorAuthorizationTest.class,
-    RestSetupSimpleTest.class
+    RestSetupSimpleTest.class,
 })
 public class GridRestSuite {
 }

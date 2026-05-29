@@ -27,9 +27,7 @@ import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.IgniteVersionUtils;
-import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -40,7 +38,7 @@ import org.jetbrains.annotations.NotNull;
  * Two versions are compared in the following order: major number,
  * minor number, maintenance number, revision timestamp.
  */
-public class IgniteProductVersion implements Comparable<IgniteProductVersion>, Externalizable, Message {
+public class IgniteProductVersion implements Comparable<IgniteProductVersion>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -55,28 +53,22 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
         Pattern.compile("(\\d+)\\.(\\d+)\\.(\\d+)([-.]([^0123456789][^-]+)(-SNAPSHOT)?)?(-(\\d+))?(-([\\da-f]+))?");
 
     /** Major version number. */
-    @Order(0)
-    byte major;
+    protected byte major;
 
     /** Minor version number. */
-    @Order(1)
-    byte minor;
+    protected byte minor;
 
     /** Maintenance version number. */
-    @Order(2)
-    byte maintenance;
+    protected byte maintenance;
 
     /** Stage of development. */
-    @Order(3)
-    String stage;
+    private transient String stage;
 
     /** Revision timestamp. */
-    @Order(4)
-    long revTs;
+    protected long revTs;
 
     /** Revision hash. */
-    @Order(5)
-    byte[] revHash;
+    protected byte[] revHash;
 
     /**
      * Empty constructor required by {@link Externalizable} and {@link CoreMessagesProvider}.

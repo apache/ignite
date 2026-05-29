@@ -89,6 +89,7 @@ import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.thread.IgniteThread;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_SECURITY_TOKEN_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_SESSION_TIMEOUT;
@@ -232,6 +233,13 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
         finally {
             busyLock.readUnlock();
         }
+    }
+
+    /** @return Security context for given session token, or {@code null} if none found. */
+    @Nullable public SecurityContext securityContext(UUID sesId) {
+        Session ses = sesId2Ses.get(sesId);
+
+        return ses == null ? null : ses.secCtx;
     }
 
     /**

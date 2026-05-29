@@ -36,7 +36,6 @@ import org.apache.ignite.internal.management.metric.MetricCommand;
 import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand;
 import org.apache.ignite.internal.management.persistence.PersistenceCommand;
 import org.apache.ignite.internal.management.property.PropertyCommand;
-import org.apache.ignite.internal.management.rollingupgrade.RollingUpgradeCommand;
 import org.apache.ignite.internal.management.snapshot.SnapshotCommand;
 import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand;
 import org.apache.ignite.internal.management.tx.TxCommand;
@@ -71,7 +70,6 @@ public class IgniteCommandRegistry extends CommandRegistryImpl<NoArg, Void> {
             new TracingConfigurationCommand(),
             new WarmUpCommand(),
             new PropertyCommand(),
-            new RollingUpgradeCommand(),
             new SystemViewCommand(),
             new MetricCommand(),
             new PersistenceCommand(),

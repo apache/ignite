@@ -472,7 +472,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> DataStreamProcessor<K, V> dataStream() {
+    @Override public DataStreamProcessor dataStream() {
         return null;
     }
 	

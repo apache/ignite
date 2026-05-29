@@ -196,36 +196,771 @@ JDBC connections can also use the standard JDBC savepoint API. See link:SQL/JDBC
 
 === Supported Functions
 
-The Calcite-based SQL engine currently supports:
+The Calcite-based SQL engine currently supports the following user-facing functions and operators.
 
-[cols="1,3",opts="stretch,header"]
+==== Aggregate functions
+
+[cols="1,2,4",opts="stretch,header"]
 |===
-|Group | Functions list
+|Name | Syntax | Description
 
-|Aggregate functions
-|`COUNT`, `SUM`, `AVG`, `MIN`, `MAX`, `ANY_VALUE`, `LISTAGG`, `GROUP_CONCAT`, `STRING_AGG`, `ARRAY_AGG`, `ARRAY_CONCAT_AGG`, `EVERY`, `SOME`, `BIT_AND`, `BIT_OR`, `BIT_XOR`
+|`COUNT`
+|`COUNT([ALL \| DISTINCT] value)` or `COUNT(*)`
+|Returns the number of input rows or non-null input values.
 
-|String functions
-|`UPPER`, `LOWER`, `INITCAP`, `TO_BASE64`, `FROM_BASE64`, `MD5`, `SHA1`, `SUBSTRING`, `LEFT`, `RIGHT`, `REPLACE`, `TRANSLATE`, `CHR`, `CHAR_LENGTH`, `CHARACTER_LENGTH`, `LENGTH`, `CONCAT`, `OVERLAY`, `POSITION`, `ASCII`, `REPEAT`, `SPACE`, `STRCMP`, `SOUNDEX`, `DIFFERENCE`, `REVERSE`, `TRIM`, `LTRIM`, `RTRIM`, `REGEXP_REPLACE`, `REGEXP_SUBSTR`
+|`SUM`
+|`SUM([ALL \| DISTINCT] numeric)`
+|Returns the sum of numeric input values.
 
-|Math functions
-|`MOD`, `EXP`, `POWER`, `LN`, `LOG10`, `ABS`, `RAND`, `RAND_INTEGER`, `ACOS`, `ACOSH`, `ASIN`, `ASINH`, `ATAN`, `ATANH`, `ATAN2`, `SQRT`, `CBRT`, `COS`, `COSH`, `COT`, `COTH`, `DEGREES`, `RADIANS`, `ROUND`, `SIGN`, `SIN`, `SINH`, `TAN`, `TANH`, `SEC`, `SECH`, `CSC`, `CSCH`, `TRUNCATE`, `PI`, `BITAND`, `BITOR`, `BITXOR`
+|`AVG`
+|`AVG([ALL \| DISTINCT] numeric)`
+|Returns the average value of numeric input values.
 
-|Date and time functions
-|`EXTRACT`, `FLOOR`, `CEIL`, `TIMESTAMPADD`, `TIMESTAMPDIFF`, `LAST_DATE`, `DAYNAME`, `MONTHNAME`, `DAYOFMONTH`, `DAYOFWEEK`, `DAYOFYEAR`, `YEAR`, `QUARTER`, `MONTH`, `WEEK`, `HOUR`, `MINUTE`, `SECOND`, `TIMESTAMP_SECONDS`, `TIMESTAMP_MILLIS`, `TIMESTAMP_MICROS`, `UNIX_SECONDS`, `UNIX_MILLIS`, `UNIX_MICROS`, `UNIX_DATE`, `DATE_FROM_UNIX_DATE`, `DATE`, `TIME`, `DATETIME`, `CURRENT_TIME`, `CURRENT_TIMESTAMP`, `CURRENT_DATE`, `LOCALTIME`, `LOCALTIMESTAMP`, `TO_CHAR`, `TO_DATE`, `TO_TIMESTAMP`
+|`MIN`
+|`MIN([ALL \| DISTINCT] value)`
+|Returns the minimum input value.
 
-|XML functions
-|`EXTRACTVALUE`, `XMLTRANSFORM`, `EXTRACT`, `EXISTSNODE`
+|`MAX`
+|`MAX([ALL \| DISTINCT] value)`
+|Returns the maximum input value.
 
-|JSON functions
-|`JSON_VALUE`, `JSON_QUERY`, `JSON_TYPE`, `JSON_EXISTS`, `JSON_DEPTH`, `JSON_KEYS`, `JSON_PRETTY`, `JSON_LENGTH`, `JSON_REMOVE`, `JSON_STORAGE_SIZE`, `JSON_OBJECT`, `JSON_ARRAY`
+|`ANY_VALUE`
+|`ANY_VALUE([ALL \| DISTINCT] value)`
+|Returns one arbitrary input value.
 
-|Other functions
-|`ROW`, `CAST`, `COALESCE`, `NVL`, `NULLIF`, `CASE`, `DECODE`, `LEAST`, `GREATEST`, `COMPRESS`, `OCTET_LENGTH`, `TYPEOF`, `QUERY_ENGINE`
+|`LISTAGG`
+|`LISTAGG(value[, separator]) WITHIN GROUP (ORDER BY sortExpr)`
+|Concatenates values from a group in the requested order.
+
+|`GROUP_CONCAT`
+|`GROUP_CONCAT(value[, separator] [ORDER BY sortExpr])`
+|Concatenates values from a group, optionally using a separator and ordering.
+
+|`STRING_AGG`
+|`STRING_AGG(value, separator [ORDER BY sortExpr])`
+|Concatenates string values from a group using a separator.
+
+|`ARRAY_AGG`
+|`ARRAY_AGG(value [ORDER BY sortExpr])`
+|Collects input values into an array.
+
+|`ARRAY_CONCAT_AGG`
+|`ARRAY_CONCAT_AGG(arrayValue [ORDER BY sortExpr])`
+|Concatenates arrays from input rows into one array.
+
+|`EVERY`
+|`EVERY(condition)`
+|Returns `TRUE` if every input condition is `TRUE`.
+
+|`SOME`
+|`SOME(condition)`
+|Returns `TRUE` if at least one input condition is `TRUE`.
+
+|`BIT_AND`
+|`BIT_AND(integer)`
+|Aggregates integer values using bitwise AND.
+
+|`BIT_OR`
+|`BIT_OR(integer)`
+|Aggregates integer values using bitwise OR.
+
+|`BIT_XOR`
+|`BIT_XOR(integer)`
+|Aggregates integer values using bitwise XOR.
+
+|Aggregate `FILTER` clause
+|`aggregateFunction(...) FILTER (WHERE condition)`
+|Applies an aggregate function only to input rows that satisfy the condition.
 
 |===
 
-For more information on these functions, please see the link:https://calcite.apache.org/docs/reference.html#operators-and-functions[Apache Calcite SQL language reference, window=_blank].
+==== String functions and predicates
+
+[cols="1,2,4",opts="stretch,header"]
+|===
+|Name | Syntax | Description
+
+|`UPPER`
+|`UPPER(string)`
+|Converts a string to uppercase.
+
+|`LOWER`
+|`LOWER(string)`
+|Converts a string to lowercase.
+
+|`INITCAP`
+|`INITCAP(string)`
+|Converts each word to initial uppercase followed by lowercase characters.
+
+|`TO_BASE64`
+|`TO_BASE64(string)`
+|Encodes a string using Base64.
+
+|`FROM_BASE64`
+|`FROM_BASE64(string)`
+|Decodes a Base64 string.
+
+|`MD5`
+|`MD5(string)`
+|Returns the MD5 hash of a string as a hexadecimal string.
+
+|`SHA1`
+|`SHA1(string)`
+|Returns the SHA-1 hash of a string as a hexadecimal string.
+
+|`SUBSTRING`
+|`SUBSTRING(string FROM start [FOR length])`
+|Returns a substring starting at the specified position.
+
+|`LEFT`
+|`LEFT(string, length)`
+|Returns the leftmost characters of a string.
+
+|`RIGHT`
+|`RIGHT(string, length)`
+|Returns the rightmost characters of a string.
+
+|`REPLACE`
+|`REPLACE(string, search[, replacement])`
+|Replaces occurrences of a search string.
+
+|`TRANSLATE`
+|`TRANSLATE(string, fromString, toString)`
+|Replaces characters from one set with the corresponding characters from another set.
+
+|`CHR`
+|`CHR(integer)`
+|Returns the character for the specified code point.
+
+|`CHAR_LENGTH`
+|`CHAR_LENGTH(string)`
+|Returns the number of characters in a string.
+
+|`CHARACTER_LENGTH`
+|`CHARACTER_LENGTH(string)`
+|Returns the number of characters in a string.
+
+|`LENGTH`
+|`LENGTH(string)`
+|Alias for `CHAR_LENGTH(string)`.
+
+|`\|\|`
+|`string \|\| string`
+|Concatenates two strings.
+
+|`CONCAT`
+|`CONCAT(string, string)` or `CONCAT(string[, string]...)`
+|Concatenates strings.
+
+|`OVERLAY`
+|`OVERLAY(string1 PLACING string2 FROM start [FOR length])`
+|Replaces part of a string with another string.
+
+|`POSITION`
+|`POSITION(substring IN string [FROM start])`
+|Returns the position of the first occurrence of a substring.
+
+|`ASCII`
+|`ASCII(string)`
+|Returns the code point of the first character of a string.
+
+|`REPEAT`
+|`REPEAT(string, count)`
+|Returns a string repeated the specified number of times.
+
+|`SPACE`
+|`SPACE(count)`
+|Returns a string that contains the specified number of spaces.
+
+|`STRCMP`
+|`STRCMP(string1, string2)`
+|Compares two strings and returns an integer comparison result.
+
+|`SOUNDEX`
+|`SOUNDEX(string)`
+|Returns the phonetic representation of a string.
+
+|`DIFFERENCE`
+|`DIFFERENCE(string1, string2)`
+|Returns a similarity score for the `SOUNDEX` values of two strings.
+
+|`REVERSE`
+|`REVERSE(string)`
+|Returns a string with characters in reverse order.
+
+|`TRIM`
+|`TRIM([{BOTH \| LEADING \| TRAILING} chars FROM] string)`
+|Removes characters from the start, end, or both ends of a string.
+
+|`LTRIM`
+|`LTRIM(string)`
+|Removes spaces from the start of a string.
+
+|`RTRIM`
+|`RTRIM(string)`
+|Removes spaces from the end of a string.
+
+|`LIKE`
+|`string LIKE pattern [ESCAPE escapeChar]`
+|Checks whether a string matches a SQL `LIKE` pattern.
+
+|`SIMILAR TO`
+|`string SIMILAR TO pattern [ESCAPE escapeChar]`
+|Checks whether a string matches a SQL regular expression pattern.
+
+|===
+
+==== Regular expression functions and operators
+
+[cols="1,2,4",opts="stretch,header"]
+|===
+|Name | Syntax | Description
+
+|`~`
+|`string ~ pattern`
+|Checks whether a string matches a case-sensitive POSIX regular expression.
+
+|`~*`
+|`string ~* pattern`
+|Checks whether a string matches a case-insensitive POSIX regular expression.
+
+|`!~`
+|`string !~ pattern`
+|Checks whether a string does not match a case-sensitive POSIX regular expression.
+
+|`!~*`
+|`string !~* pattern`
+|Checks whether a string does not match a case-insensitive POSIX regular expression.
+
+|`REGEXP_REPLACE`
+|`REGEXP_REPLACE(string, regexp, replacement[, position[, occurrence[, matchType]]])`
+|Replaces substrings that match a regular expression.
+
+|`REGEXP_SUBSTR`
+|`REGEXP_SUBSTR(string, regexp[, position[, occurrence]])`
+|Returns the substring that matches a regular expression.
+
+|===
+
+==== Numeric and math functions
+
+[cols="1,2,4",opts="stretch,header"]
+|===
+|Name | Syntax | Description
+
+|`MOD`
+|`MOD(numeric1, numeric2)` or `numeric1 % numeric2`
+|Returns the remainder after division.
+
+|`BITAND`
+|`BITAND(integer1, integer2)`
+|Returns the bitwise AND of two integer values.
+
+|`BITOR`
+|`BITOR(integer1, integer2)`
+|Returns the bitwise OR of two integer values.
+
+|`BITXOR`
+|`BITXOR(integer1, integer2)`
+|Returns the bitwise XOR of two integer values.
+
+|`EXP`
+|`EXP(numeric)`
+|Returns Euler's number raised to a power.
+
+|`POWER`
+|`POWER(numeric1, numeric2)`
+|Returns one numeric value raised to the power of another.
+
+|`LN`
+|`LN(numeric)`
+|Returns the natural logarithm.
+
+|`LOG10`
+|`LOG10(numeric)`
+|Returns the base-10 logarithm.
+
+|`ABS`
+|`ABS(numeric)`
+|Returns the absolute value.
+
+|`RAND`
+|`RAND([seed])`
+|Returns a random double value.
+
+|`RAND_INTEGER`
+|`RAND_INTEGER([seed,] bound)`
+|Returns a random integer from `0` inclusive to `bound` exclusive.
+
+|`ACOS`
+|`ACOS(numeric)`
+|Returns the arc cosine.
+
+|`ACOSH`
+|`ACOSH(numeric)`
+|Returns the inverse hyperbolic cosine.
+
+|`ASIN`
+|`ASIN(numeric)`
+|Returns the arc sine.
+
+|`ASINH`
+|`ASINH(numeric)`
+|Returns the inverse hyperbolic sine.
+
+|`ATAN`
+|`ATAN(numeric)`
+|Returns the arc tangent.
+
+|`ATANH`
+|`ATANH(numeric)`
+|Returns the inverse hyperbolic tangent.
+
+|`ATAN2`
+|`ATAN2(numeric1, numeric2)`
+|Returns the angle from rectangular coordinates.
+
+|`SQRT`
+|`SQRT(numeric)`
+|Returns the square root.
+
+|`CBRT`
+|`CBRT(numeric)`
+|Returns the cube root.
+
+|`COS`
+|`COS(numeric)`
+|Returns the cosine.
+
+|`COSH`
+|`COSH(numeric)`
+|Returns the hyperbolic cosine.
+
+|`COT`
+|`COT(numeric)`
+|Returns the cotangent.
+
+|`COTH`
+|`COTH(numeric)`
+|Returns the hyperbolic cotangent.
+
+|`DEGREES`
+|`DEGREES(numeric)`
+|Converts radians to degrees.
+
+|`RADIANS`
+|`RADIANS(numeric)`
+|Converts degrees to radians.
+
+|`ROUND`
+|`ROUND(numeric[, scale])`
+|Rounds a numeric value to the specified scale.
+
+|`SIGN`
+|`SIGN(numeric)`
+|Returns the sign of a numeric value.
+
+|`SIN`
+|`SIN(numeric)`
+|Returns the sine.
+
+|`SINH`
+|`SINH(numeric)`
+|Returns the hyperbolic sine.
+
+|`TAN`
+|`TAN(numeric)`
+|Returns the tangent.
+
+|`TANH`
+|`TANH(numeric)`
+|Returns the hyperbolic tangent.
+
+|`SEC`
+|`SEC(numeric)`
+|Returns the secant.
+
+|`SECH`
+|`SECH(numeric)`
+|Returns the hyperbolic secant.
+
+|`CSC`
+|`CSC(numeric)`
+|Returns the cosecant.
+
+|`CSCH`
+|`CSCH(numeric)`
+|Returns the hyperbolic cosecant.
+
+|`TRUNCATE`
+|`TRUNCATE(numeric[, scale])`
+|Truncates a numeric value to the specified scale.
+
+|`PI`
+|`PI`
+|Returns an approximation of pi.
+
+|===
+
+==== Date and time functions
+
+[cols="1,2,4",opts="stretch,header"]
+|===
+|Name | Syntax | Description
+
+|`EXTRACT`
+|`EXTRACT(timeUnit FROM datetime)`
+|Returns the specified field from a date, time, or timestamp value.
+
+|`FLOOR`
+|`FLOOR(datetime TO timeUnit)`
+|Rounds a date, time, or timestamp value down to the specified unit.
+
+|`CEIL`
+|`CEIL(datetime TO timeUnit)`
+|Rounds a date, time, or timestamp value up to the specified unit.
+
+|`TIMESTAMPADD`
+|`TIMESTAMPADD(timeUnit, interval, datetime)`
+|Adds an interval to a timestamp.
+
+|`TIMESTAMPDIFF`
+|`TIMESTAMPDIFF(timeUnit, datetime1, datetime2)`
+|Returns the number of time-unit boundaries between two datetime values.
+
+|`LAST_DAY`
+|`LAST_DAY(date)`
+|Returns the date of the last day of the month.
+
+|`DAYNAME`
+|`DAYNAME(datetime)`
+|Returns the name of the day of the week.
+
+|`MONTHNAME`
+|`MONTHNAME(datetime)`
+|Returns the name of the month.
+
+|`DAYOFMONTH`
+|`DAYOFMONTH(datetime)`
+|Returns the day of the month.
+
+|`DAYOFWEEK`
+|`DAYOFWEEK(datetime)`
+|Returns the day of the week.
+
+|`DAYOFYEAR`
+|`DAYOFYEAR(datetime)`
+|Returns the day of the year.
+
+|`YEAR`
+|`YEAR(datetime)`
+|Returns the year.
+
+|`QUARTER`
+|`QUARTER(datetime)`
+|Returns the quarter of the year.
+
+|`MONTH`
+|`MONTH(datetime)`
+|Returns the month number.
+
+|`WEEK`
+|`WEEK(datetime)`
+|Returns the week number.
+
+|`HOUR`
+|`HOUR(datetime)`
+|Returns the hour.
+
+|`MINUTE`
+|`MINUTE(datetime)`
+|Returns the minute.
+
+|`SECOND`
+|`SECOND(datetime)`
+|Returns the second.
+
+|`TIMESTAMP_SECONDS`
+|`TIMESTAMP_SECONDS(integer)`
+|Converts seconds since `1970-01-01 00:00:00` to a timestamp.
+
+|`TIMESTAMP_MILLIS`
+|`TIMESTAMP_MILLIS(integer)`
+|Converts milliseconds since `1970-01-01 00:00:00` to a timestamp.
+
+|`TIMESTAMP_MICROS`
+|`TIMESTAMP_MICROS(integer)`
+|Converts microseconds since `1970-01-01 00:00:00` to a timestamp.
+
+|`UNIX_SECONDS`
+|`UNIX_SECONDS(timestamp)`
+|Returns seconds since `1970-01-01 00:00:00`.
+
+|`UNIX_MILLIS`
+|`UNIX_MILLIS(timestamp)`
+|Returns milliseconds since `1970-01-01 00:00:00`.
+
+|`UNIX_MICROS`
+|`UNIX_MICROS(timestamp)`
+|Returns microseconds since `1970-01-01 00:00:00`.
+
+|`UNIX_DATE`
+|`UNIX_DATE(date)`
+|Returns the number of days since `1970-01-01`.
+
+|`DATE_FROM_UNIX_DATE`
+|`DATE_FROM_UNIX_DATE(integer)`
+|Converts days since `1970-01-01` to a date.
+
+|`DATE`
+|`DATE(value)` or `DATE(year, month, day)`
+|Converts a value to a date or creates a date from date fields.
+
+|`TIME`
+|`TIME(value)` or `TIME(hour, minute, second)`
+|Converts a value to a time or creates a time from time fields.
+
+|`DATETIME`
+|`DATETIME(value)` or `DATETIME(year, month, day, hour, minute, second)`
+|Converts a value to a timestamp or creates a timestamp from date and time fields.
+
+|`CURRENT_TIME`
+|`CURRENT_TIME`
+|Returns the current time.
+
+|`CURRENT_TIMESTAMP`
+|`CURRENT_TIMESTAMP`
+|Returns the current timestamp.
+
+|`CURRENT_DATE`
+|`CURRENT_DATE`
+|Returns the current date.
+
+|`LOCALTIME`
+|`LOCALTIME`
+|Returns the current local time.
+
+|`LOCALTIMESTAMP`
+|`LOCALTIMESTAMP`
+|Returns the current local timestamp.
+
+|JDBC current time escape functions
+|`{fn CURDATE()}`, `{fn CURTIME()}`, `{fn NOW()}`
+|JDBC escape aliases for the current date, current time, and current timestamp.
+
+|`TO_CHAR`
+|`TO_CHAR(datetime, format)`
+|Formats a date, time, or timestamp value.
+
+|`TO_DATE`
+|`TO_DATE(string, format)`
+|Parses a date from a string.
+
+|`TO_TIMESTAMP`
+|`TO_TIMESTAMP(string, format)`
+|Parses a timestamp from a string.
+
+|===
+
+==== XML functions
+
+[cols="1,2,4",opts="stretch,header"]
+|===
+|Name | Syntax | Description
+
+|`EXTRACTVALUE`
+|`EXTRACTVALUE(xml, xpath)`
+|Returns the text selected by an XPath expression.
+
+|`XMLTRANSFORM`
+|`XMLTRANSFORM(xml, xslt)`
+|Transforms XML with an XSLT stylesheet.
+
+|`EXTRACT`
+|`"EXTRACT"(xml, xpath)`
+|Returns the XML fragment selected by an XPath expression. Quote the name when needed to distinguish it from date/time `EXTRACT`.
+
+|`EXISTSNODE`
+|`EXISTSNODE(xml, xpath)`
+|Returns `1` if an XPath expression selects at least one XML node; otherwise returns `0`.
+
+|===
+
+==== JSON functions and predicates
+
+[cols="1,2,4",opts="stretch,header"]
+|===
+|Name | Syntax | Description
+
+|`FORMAT JSON`
+|`value FORMAT JSON`
+|Marks a value as JSON-formatted input.
+
+|`JSON_VALUE`
+|`JSON_VALUE(jsonValue, path)`
+|Extracts a scalar SQL value from JSON using a JSON path expression.
+
+|`JSON_QUERY`
+|`JSON_QUERY(jsonValue, path)`
+|Extracts a JSON object or array from JSON using a JSON path expression.
+
+|`JSON_TYPE`
+|`JSON_TYPE(jsonValue)`
+|Returns the type of a JSON value.
+
+|`JSON_EXISTS`
+|`JSON_EXISTS(jsonValue, path)`
+|Returns whether JSON satisfies the specified path expression.
+
+|`JSON_DEPTH`
+|`JSON_DEPTH(jsonValue)`
+|Returns the depth of a JSON value.
+
+|`JSON_KEYS`
+|`JSON_KEYS(jsonValue[, path])`
+|Returns the keys from a JSON object.
+
+|`JSON_PRETTY`
+|`JSON_PRETTY(jsonValue)`
+|Returns formatted JSON.
+
+|`JSON_LENGTH`
+|`JSON_LENGTH(jsonValue[, path])`
+|Returns the length of a JSON value.
+
+|`JSON_REMOVE`
+|`JSON_REMOVE(jsonValue, path[, path]...)`
+|Removes data selected by path expressions and returns the updated JSON.
+
+|`JSON_STORAGE_SIZE`
+|`JSON_STORAGE_SIZE(jsonValue)`
+|Returns the number of bytes used by the JSON binary representation.
+
+|`JSON_OBJECT`
+|`JSON_OBJECT(jsonKey : jsonValue[, jsonKey : jsonValue]...)`
+|Builds a JSON object from key-value pairs.
+
+|`JSON_ARRAY`
+|`JSON_ARRAY([jsonValue[, jsonValue]...])`
+|Builds a JSON array from values.
+
+|`IS JSON`
+|`value IS [NOT] JSON [VALUE]`
+|Checks whether a value is, or is not, JSON.
+
+|`IS JSON OBJECT`
+|`value IS [NOT] JSON OBJECT`
+|Checks whether a value is, or is not, a JSON object.
+
+|`IS JSON ARRAY`
+|`value IS [NOT] JSON ARRAY`
+|Checks whether a value is, or is not, a JSON array.
+
+|`IS JSON SCALAR`
+|`value IS [NOT] JSON SCALAR`
+|Checks whether a value is, or is not, a JSON scalar value.
+
+|===
+
+==== Collection functions and operators
+
+[cols="1,2,4",opts="stretch,header"]
+|===
+|Name | Syntax | Description
+
+|`ARRAY`
+|`ARRAY[value[, value]...]` or `ARRAY(query)`
+|Creates an array from values or from a query result.
+
+|`MAP`
+|`MAP[key, value[, key, value]...]` or `MAP(query)`
+|Creates a map from key-value pairs or from a query result.
+
+|`ITEM`
+|`array[index]` or `map[key]`
+|Returns an item from an array or map.
+
+|`CARDINALITY`
+|`CARDINALITY(collection)`
+|Returns the number of elements in a collection.
+
+|`IS EMPTY`
+|`collection IS EMPTY`
+|Checks whether a collection has no elements.
+
+|`IS NOT EMPTY`
+|`collection IS NOT EMPTY`
+|Checks whether a collection has at least one element.
+
+|===
+
+==== Other functions and operators
+
+[cols="1,2,4",opts="stretch,header"]
+|===
+|Name | Syntax | Description
+
+|`ROW`
+|`ROW(value[, value]...)`
+|Creates a row value.
+
+|`CAST`
+|`CAST(value AS type)`
+|Converts a value to the specified type.
+
+|Infix cast
+|`value::type`
+|Converts a value to the specified type using PostgreSQL-style cast syntax.
+
+|`TYPEOF`
+|`TYPEOF(value)`
+|Returns the Ignite SQL type of a value.
+
+|`COALESCE`
+|`COALESCE(value, value[, value]...)`
+|Returns the first non-null value.
+
+|`NVL`
+|`NVL(value1, value2)`
+|Returns `value1` when it is not null; otherwise returns `value2`.
+
+|`NULLIF`
+|`NULLIF(value1, value2)`
+|Returns `NULL` when the values are equal; otherwise returns `value1`.
+
+|`CASE`
+|`CASE WHEN condition THEN result [ELSE result] END`
+|Returns a result selected by conditional branches.
+
+|`DECODE`
+|`DECODE(value, search, result[, search, result]...[, default])`
+|Compares a value with search values and returns the matching result.
+
+|`LEAST`
+|`LEAST(value[, value]...)`
+|Returns the least value from the arguments.
+
+|`GREATEST`
+|`GREATEST(value[, value]...)`
+|Returns the greatest value from the arguments.
+
+|`COMPRESS`
+|`COMPRESS(string)`
+|Compresses a string and returns binary data.
+
+|`OCTET_LENGTH`
+|`OCTET_LENGTH(binary)`
+|Returns the number of bytes in binary data.
+
+|`QUERY_ENGINE`
+|`QUERY_ENGINE()`
+|Returns the name of the query engine used by the query.
+
+|`SYSTEM_RANGE`
+|`TABLE(SYSTEM_RANGE(start, end[, increment]))`
+|Returns a table with one `BIGINT` column named `X` and one row for each value in the range.
+
+|===
 
 === Supported Data Types
 

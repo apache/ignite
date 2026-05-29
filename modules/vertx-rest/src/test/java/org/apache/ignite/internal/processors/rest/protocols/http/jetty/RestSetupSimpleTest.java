@@ -17,14 +17,17 @@
 
 package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
-import java.io.InputStreamReader;
-import java.net.URL;
-import java.net.URLConnection;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.Map;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.GridStringBuilder;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -32,9 +35,6 @@ import org.junit.Test;
  * Integration test for Grid REST functionality; Jetty is under the hood.
  */
 public class RestSetupSimpleTest extends GridCommonAbstractTest {
-    /** Jetty port. */
-    private static final int JETTY_PORT = 8080;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration configuration = super.getConfiguration(igniteInstanceName);
@@ -54,20 +54,40 @@ public class RestSetupSimpleTest extends GridCommonAbstractTest {
      */
     @Test
     public void testVersionCommand() throws Exception {
-        URLConnection conn = new URL("http://localhost:" + JETTY_PORT + "/ignite?cmd=version").openConnection();
+        startGrid();
 
-        conn.connect();
+        String res = execute("/ignite", new T2<>("cmd", "version"));
 
-        try (InputStreamReader streamReader = new InputStreamReader(conn.getInputStream())) {
-            ObjectMapper objMapper = new ObjectMapper();
-            Map<String, Object> myMap = objMapper.readValue(streamReader,
-                new TypeReference<Map<String, Object>>() {
-                });
+        Map<String, Object> val = new ObjectMapper().readValue(res, new TypeReference<>() {});
 
-            log.info("Version command response is: " + myMap);
+        log.info("Version command response is: " + val);
 
-            assertTrue(myMap.containsKey("response"));
-            assertEquals(0, myMap.get("successStatus"));
-        }
+        assertTrue(val.containsKey("response"));
+        assertEquals(0, val.get("successStatus"));
+    }
+
+    /** */
+    @SafeVarargs
+    public static String execute(String path, T2<String, String>... params) throws Exception {
+        return execute(200, path, params);
+    }
+
+    /** */
+    @SafeVarargs
+    public static String execute(int expCode, String path, T2<String, String>... params) throws Exception {
+        GridStringBuilder url = new GridStringBuilder("http://localhost:" + 8887 + path + "?");
+
+        for (T2<String, String> p : params)
+            url.a(p.get1()).a("=").a(p.get2()).a("&");
+
+        HttpRequest req = HttpRequest.newBuilder()
+            .uri(URI.create(url.toString()))
+            .build();
+
+        HttpResponse<String> res = HttpClient.newHttpClient().send(req, HttpResponse.BodyHandlers.ofString());
+
+        assertEquals(expCode, res.statusCode());
+
+        return res.body();
     }
 }

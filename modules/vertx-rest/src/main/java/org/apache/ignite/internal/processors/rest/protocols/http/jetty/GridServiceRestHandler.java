@@ -281,7 +281,6 @@ public class GridServiceRestHandler extends Vertxlet {
             catch (IllegalArgumentException ignored) {
                 // Ignore invalid session token.
             }
-            
 
             if (sesTok != null)
                 cmdRes.setSessionToken(U.byteArray2HexString(sesTok));
@@ -328,7 +327,6 @@ public class GridServiceRestHandler extends Vertxlet {
     /**
      * Creates REST request.
      *
-     * @param cmd Command.
      * @param params Parameters.
      * @param req Servlet request.
      * @return REST request.
