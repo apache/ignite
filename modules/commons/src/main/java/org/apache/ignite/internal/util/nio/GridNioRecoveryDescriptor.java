@@ -41,7 +41,7 @@ public class GridNioRecoveryDescriptor {
 
     /** Timeout for outgoing recovery descriptor reservation. */
     private static final long DESC_RESERVATION_TIMEOUT = Math.max(1_000,
-        IgniteSystemProperties.getLong(IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT,
+        IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT,
             DFLT_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT));
 
     /** Number of acknowledged messages. */

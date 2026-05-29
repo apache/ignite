@@ -68,6 +68,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerNioListener;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientFlag;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -217,7 +218,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             catch (ClientConnectionException e) {
                 log.info("Can't establish connection with " + addr);
 
-                connectionEx = U.addSuppressed(connectionEx, e);
+                connectionEx = CommonUtils.addSuppressed(connectionEx, e);
 
                 continue;
             }

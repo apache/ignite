@@ -19,6 +19,7 @@ package org.apache.ignite;
 
 import java.io.Serializable;
 import org.apache.ignite.internal.util.GridLogThrottle;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.util.CommonUtils.DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE;
@@ -152,6 +153,37 @@ public class IgniteCommonsSystemProperties {
     @SystemProperty("Force Ignite to fill memory block with some recognisable pattern right before this " +
         "memory block is released. This will help to recognize cases when already released memory is accessed")
     public static final String IGNITE_OFFHEAP_SAFE_RELEASE = "IGNITE_OFFHEAP_SAFE_RELEASE";
+
+    /** Human-readable ID of a data center where the node is running. */
+    @IgniteExperimental
+    @SystemProperty(value = "Data Center ID where local node is running. Not required for a single Data Center deployments",
+        type = String.class)
+    public static final String IGNITE_DATA_CENTER_ID = "IGNITE_DATA_CENTER_ID";
+
+    /**
+     * If this parameter is set to true, Ignite will automatically configure an ObjectInputFilter instance for the
+     * current JVM it is running in.
+     * Default value is {@code true}.
+     */
+    @SystemProperty(
+        value = "If this parameter is set to true, Ignite will automatically configure an ObjectInputFilter" +
+            " instance for the current JVM it is running in. Filtering is based on class lists defined by the" +
+            " `IGNITE_MARSHALLER_WHITELIST` and `IGNITE_MARSHALLER_BLACKLIST` system properties or their default values." +
+            " Disabling it is not recommended because the Ignite host may be vulnerable to RCE attacks based on Java" +
+            " serialization mechanisms",
+        defaults = "true"
+    )
+    public static final String IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION = "IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION";
+
+    /** Defines path to the file that contains list of classes allowed to safe deserialization.*/
+    @SystemProperty(value = "Path to the file that contains list of classes allowed to safe deserialization",
+        type = String.class)
+    public static final String IGNITE_MARSHALLER_WHITELIST = "IGNITE_MARSHALLER_WHITELIST";
+
+    /** Defines path to the file that contains list of classes disallowed to safe deserialization.*/
+    @SystemProperty(value = "Path to the file that contains list of classes disallowed to safe deserialization",
+        type = String.class)
+    public static final String IGNITE_MARSHALLER_BLACKLIST = "IGNITE_MARSHALLER_BLACKLIST";
 
     /**
      * @param enumCls Enum type.

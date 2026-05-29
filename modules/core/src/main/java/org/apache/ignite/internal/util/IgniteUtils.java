@@ -192,7 +192,6 @@ import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
-import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -4853,49 +4852,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * Unwraps closure exceptions.
-     *
-     * @param t Exception.
-     * @return Unwrapped exception.
-     */
-    public static Exception unwrap(Throwable t) {
-        assert t != null;
-
-        while (true) {
-            if (t instanceof Error)
-                throw (Error)t;
-
-            if (t instanceof GridClosureException) {
-                t = ((GridClosureException)t).unwrap();
-
-                continue;
-            }
-
-            return (Exception)t;
-        }
-    }
-
-    /**
-     * Casts the passed {@code Throwable t} to {@link IgniteCheckedException}.<br>
-     * If {@code t} is a {@link GridClosureException}, it is unwrapped and then cast to {@link IgniteCheckedException}.
-     * If {@code t} is an {@link IgniteCheckedException}, it is returned.
-     * If {@code t} is not a {@link IgniteCheckedException}, a new {@link IgniteCheckedException} caused by {@code t}
-     * is returned.
-     *
-     * @param t Throwable to cast.
-     * @return {@code t} cast to {@link IgniteCheckedException}.
-     */
-    public static IgniteCheckedException cast(Throwable t) {
-        assert t != null;
-
-        t = unwrap(t);
-
-        return t instanceof IgniteCheckedException
-            ? (IgniteCheckedException)t
-            : new IgniteCheckedException(t);
-    }
-
-    /**
      * Checks if class loader is an internal P2P class loader.
      *
      * @param ldr Class loader to check.
@@ -7235,31 +7191,6 @@ public abstract class IgniteUtils extends CommonUtils {
         }
 
         return results;
-    }
-
-    /**
-     * Utility method to add the given throwable error to the given throwable root error. If the given
-     * suppressed throwable is an {@code Error}, but the root error is not, will change the root to the {@code Error}.
-     *
-     * @param root Root error to add suppressed error to.
-     * @param err Error to add.
-     * @return New root error.
-     */
-    public static <T extends Throwable> T addSuppressed(T root, T err) {
-        assert err != null;
-
-        if (root == null)
-            return err;
-
-        if (err instanceof Error && !(root instanceof Error)) {
-            err.addSuppressed(root);
-
-            root = err;
-        }
-        else
-            root.addSuppressed(err);
-
-        return root;
     }
 
     /**

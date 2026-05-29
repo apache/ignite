@@ -71,6 +71,7 @@ import org.apache.ignite.internal.client.thin.TcpClientTransactions.TcpClientTra
 import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -792,7 +793,7 @@ public class TcpIgniteClient implements IgniteClient {
          */
         public ClientMarshallerContext() {
             try {
-                MarshallerUtils.processSystemClasses(U.gridClassLoader(), null, sysTypes::add);
+                MarshallerUtils.processSystemClasses(CommonUtils.gridClassLoader(), null, sysTypes::add);
             }
             catch (IOException e) {
                 throw new IllegalStateException("Failed to initialize marshaller context.", e);
@@ -858,7 +859,7 @@ public class TcpIgniteClient implements IgniteClient {
         @Override public Class getClass(int typeId, ClassLoader ldr)
             throws ClassNotFoundException, IgniteCheckedException {
 
-            return U.forName(getClassName(MarshallerPlatformIds.JAVA_ID, typeId), ldr, null);
+            return CommonUtils.forName(getClassName(MarshallerPlatformIds.JAVA_ID, typeId), ldr, null);
         }
 
         /** {@inheritDoc} */

@@ -31,14 +31,13 @@ import java.util.Enumeration;
 import java.util.Objects;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCommonsSystemProperties;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.ClassSet;
 import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_MARSHALLER_BLACKLIST;
+import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION;
 
 /**
  * Utility marshaller methods.
@@ -81,7 +80,7 @@ public class MarshallerUtils {
      * @throws IgniteCheckedException if autoconfiguration failed.
      */
     public static void autoconfigureObjectInputFilter(IgniteMarshallerClassFilter clsFilter) throws IgniteCheckedException {
-        if (!IgniteSystemProperties.getBoolean(IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION, true))
+        if (!IgniteCommonsSystemProperties.getBoolean(IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION, true))
             return;
 
         synchronized (MUX) {
@@ -116,7 +115,7 @@ public class MarshallerUtils {
     private static ClassSet classWhiteList(ClassLoader clsLdr) throws IgniteCheckedException {
         ClassSet clsSet = null;
 
-        String fileName = IgniteSystemProperties.getString(IgniteSystemProperties.IGNITE_MARSHALLER_WHITELIST);
+        String fileName = IgniteCommonsSystemProperties.getString(IgniteCommonsSystemProperties.IGNITE_MARSHALLER_WHITELIST);
 
         if (fileName != null) {
             clsSet = new ClassSet();
@@ -139,7 +138,7 @@ public class MarshallerUtils {
 
         addClassNames(DEFAULT_BLACKLIST_CLS_NAMES_FILE, clsSet, clsLdr);
 
-        String blackListFileName = IgniteSystemProperties.getString(IGNITE_MARSHALLER_BLACKLIST);
+        String blackListFileName = IgniteCommonsSystemProperties.getString(IgniteCommonsSystemProperties.IGNITE_MARSHALLER_BLACKLIST);
 
         if (blackListFileName != null)
             addClassNames(blackListFileName, clsSet, clsLdr);
