@@ -250,6 +250,12 @@ public abstract class CommonUtils {
     /** Default key manager / trust manager algorithm. Specifying different trust manager algorithm is not supported. */
     public static final String DFLT_KEY_ALGORITHM = System.getProperty("ssl.KeyManagerFactory.algorithm", "SunX509");
 
+    /** */
+    public static final String DEFAULT_DS_GROUP_NAME = "default-ds-group";
+
+    /** Atomics system cache name. */
+    public static final String ATOMICS_CACHE_NAME = "ignite-sys-atomic-cache";
+
     /** Byte bit-mask. */
     private static final int MASK = 0xf;
 
@@ -1139,6 +1145,21 @@ public abstract class CommonUtils {
                 warn(log, "Failed to close resource: " + e.getMessage());
             }
         }
+    }
+
+    /**
+     * Quietly closes given resource ignoring possible checked exception.
+     *
+     * @param rsrc Resource to close. If it's {@code null} - it's no-op.
+     */
+    public static void closeQuiet(@Nullable AutoCloseable rsrc) {
+        if (rsrc != null)
+            try {
+                rsrc.close();
+            }
+            catch (Exception ignored) {
+                // No-op.
+            }
     }
 
     /**
@@ -2332,6 +2353,30 @@ public abstract class CommonUtils {
             throw new IgniteCheckedException("Illegal hexadecimal character " + ch + " at index " + idx);
 
         return digit;
+    }
+
+    /**
+     * Gets absolute value for integer. If integer is {@link Integer#MIN_VALUE}, then {@code 0} is returned.
+     *
+     * @param i Integer.
+     * @return Absolute value.
+     */
+    public static int safeAbs(int i) {
+        i = Math.abs(i);
+
+        return i < 0 ? 0 : i;
+    }
+
+    /**
+     * Gets absolute value for long. If argument is {@link Long#MIN_VALUE}, then {@code 0} is returned.
+     *
+     * @param i Argument.
+     * @return Absolute value.
+     */
+    public static long safeAbs(long i) {
+        i = Math.abs(i);
+
+        return i < 0 ? 0 : i;
     }
 
     /**

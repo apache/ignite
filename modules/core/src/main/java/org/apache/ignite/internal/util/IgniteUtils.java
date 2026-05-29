@@ -2797,21 +2797,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * Quietly closes given resource ignoring possible checked exception.
-     *
-     * @param rsrc Resource to close. If it's {@code null} - it's no-op.
-     */
-    public static void closeQuiet(@Nullable AutoCloseable rsrc) {
-        if (rsrc != null)
-            try {
-                rsrc.close();
-            }
-            catch (Exception ignored) {
-                // No-op.
-            }
-    }
-
-    /**
      * Quietly closes given {@link Socket} ignoring possible checked exception.
      *
      * @param sock Socket to close. If it's {@code null} - it's no-op.
@@ -5649,30 +5634,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * Gets absolute value for integer. If integer is {@link Integer#MIN_VALUE}, then {@code 0} is returned.
-     *
-     * @param i Integer.
-     * @return Absolute value.
-     */
-    public static int safeAbs(int i) {
-        i = Math.abs(i);
-
-        return i < 0 ? 0 : i;
-    }
-
-    /**
-     * Gets absolute value for long. If argument is {@link Long#MIN_VALUE}, then {@code 0} is returned.
-     *
-     * @param i Argument.
-     * @return Absolute value.
-     */
-    public static long safeAbs(long i) {
-        i = Math.abs(i);
-
-        return i < 0 ? 0 : i;
-    }
-
-    /**
      * When {@code long} value given is positive returns that value, otherwise returns provided default value.
      *
      * @param i Input value.
@@ -7906,7 +7867,7 @@ public abstract class IgniteUtils extends CommonUtils {
                 bcfg.getIdMapper(),
                 bcfg.getNameMapper(),
                 bcfg.getTypeConfigurations(),
-                CU.affinityFields(cfg),
+                CU.affinityFields(cfg.getCacheKeyConfiguration()),
                 bcfg.isCompactFooter(),
                 CU::affinityFieldName,
                 log
@@ -7920,7 +7881,7 @@ public abstract class IgniteUtils extends CommonUtils {
                 bcfg.getIdMapper(),
                 bcfg.getNameMapper(),
                 bcfg.getTypeConfigurations(),
-                CU.affinityFields(cfg),
+                CU.affinityFields(cfg.getCacheKeyConfiguration()),
                 bcfg.isCompactFooter(),
                 CU::affinityFieldName,
                 log

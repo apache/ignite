@@ -2190,16 +2190,16 @@ public class GridCacheUtils {
     }
 
     /**
-     * @param cfg Ignite configuration.
+     * @param keyCfgs Key configurations.
      * @return Type name to affinity key field name mapping.
      */
-    public static Map<String, String> affinityFields(@Nullable IgniteConfiguration cfg) {
+    public static Map<String, String> affinityFields(CacheKeyConfiguration[] keyCfgs) {
         Map<String, String> affFields = new HashMap<>();
 
-        if (cfg == null || F.isEmpty(cfg.getCacheKeyConfiguration()))
+        if (F.isEmpty(keyCfgs))
             return affFields;
 
-        for (CacheKeyConfiguration keyCfg : cfg.getCacheKeyConfiguration())
+        for (CacheKeyConfiguration keyCfg : keyCfgs)
             affFields.put(keyCfg.getTypeName(), keyCfg.getAffinityKeyFieldName());
 
         return affFields;

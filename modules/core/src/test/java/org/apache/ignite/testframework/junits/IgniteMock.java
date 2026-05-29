@@ -478,7 +478,7 @@ public class IgniteMock implements IgniteEx {
                 bcfg.getIdMapper(),
                 bcfg.getNameMapper(),
                 bcfg.getTypeConfigurations(),
-                CU.affinityFields(configuration()),
+                CU.affinityFields(configuration().getCacheKeyConfiguration()),
                 bcfg.isCompactFooter(),
                 CU::affinityFieldName,
                 NullLogger.INSTANCE

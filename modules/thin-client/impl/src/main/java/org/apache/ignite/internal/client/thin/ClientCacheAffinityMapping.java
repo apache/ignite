@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 import org.apache.ignite.IgniteBinary;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionHelper;
 import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
 import org.apache.ignite.client.ClientPartitionAwarenessMapper;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
@@ -34,8 +34,8 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.ALL_AFFINITY_MAPPINGS;
 import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.DC_AWARE;
@@ -211,7 +211,7 @@ public class ClientCacheAffinityMapping {
                 int cachesCnt = in.readInt();
 
                 if (applicable) { // Partition awareness is applicable for these caches.
-                    Map<Integer, Map<Integer, Integer>> cacheKeyCfg = U.newHashMap(cachesCnt);
+                    Map<Integer, Map<Integer, Integer>> cacheKeyCfg = CommonUtils.newHashMap(cachesCnt);
 
                     for (int j = 0; j < cachesCnt; j++)
                         cacheKeyCfg.put(in.readInt(), readCacheKeyConfiguration(in));
@@ -264,7 +264,7 @@ public class ClientCacheAffinityMapping {
     private static Map<Integer, Integer> readCacheKeyConfiguration(BinaryReaderEx in) {
         int keyCfgCnt = in.readInt();
 
-        Map<Integer, Integer> keyCfg = U.newHashMap(keyCfgCnt);
+        Map<Integer, Integer> keyCfg = CommonUtils.newHashMap(keyCfgCnt);
 
         for (int i = 0; i < keyCfgCnt; i++)
             keyCfg.put(in.readInt(), in.readInt());
@@ -298,7 +298,7 @@ public class ClientCacheAffinityMapping {
 
                     // Expand partToNode if needed.
                     if (part >= partToNode.length)
-                        partToNode = Arrays.copyOf(partToNode, U.ceilPow2(part + 1));
+                        partToNode = Arrays.copyOf(partToNode, CommonUtils.ceilPow2(part + 1));
                 }
 
                 partToNode[part] = nodeId;
@@ -384,12 +384,12 @@ public class ClientCacheAffinityMapping {
          */
         private RendezvousAffinityKeyMapper(int parts) {
             this.parts = parts;
-            affinityMask = RendezvousAffinityFunction.calculateMask(parts);
+            affinityMask = RendezvousAffinityFunctionHelper.calculateMask(parts);
         }
 
         /** {@inheritDoc} */
         @Override public int partition(Object key) {
-            return RendezvousAffinityFunction.calculatePartition(key, affinityMask, parts);
+            return RendezvousAffinityFunctionHelper.calculatePartition(key, affinityMask, parts);
         }
     }
 }

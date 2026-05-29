@@ -16,7 +16,7 @@
  */
 package org.apache.ignite.internal.sql.optimizer.affinity;
 
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionHelper;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.jetbrains.annotations.Nullable;
 
@@ -41,7 +41,7 @@ public class PartitionClientContext {
 
         this.parts = parts;
 
-        mask = RendezvousAffinityFunction.calculateMask(parts);
+        mask = RendezvousAffinityFunctionHelper.calculateMask(parts);
     }
 
     /**
@@ -63,6 +63,6 @@ public class PartitionClientContext {
         if (key == null)
             return null;
 
-        return RendezvousAffinityFunction.calculatePartition(key, mask, parts);
+        return RendezvousAffinityFunctionHelper.calculatePartition(key, mask, parts);
     }
 }

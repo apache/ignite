@@ -42,7 +42,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -109,34 +108,6 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
     @GridToStringExclude
     @IgniteInstanceResource
     private transient IgniteEx ignite;
-
-    /**
-     * Helper method to calculates mask.
-     *
-     * @param parts Number of partitions.
-     * @return Mask to use in calculation when partitions count is power of 2.
-     */
-    public static int calculateMask(int parts) {
-        return (parts & (parts - 1)) == 0 ? parts - 1 : -1;
-    }
-
-    /**
-     * Helper method to calculate partition.
-     *
-     * @param key – Key to get partition for.
-     * @param mask Mask to use in calculation when partitions count is power of 2.
-     * @param parts Number of partitions.
-     * @return Partition number for a given key.
-     */
-    public static int calculatePartition(Object key, int mask, int parts) {
-        if (mask >= 0) {
-            int h;
-
-            return ((h = key.hashCode()) ^ (h >>> 16)) & mask;
-        }
-
-        return U.safeAbs(key.hashCode() % parts);
-    }
 
     /**
      * Empty constructor with all defaults.
@@ -237,7 +208,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
 
         this.parts = parts;
 
-        mask = calculateMask(parts);
+        mask = RendezvousAffinityFunctionHelper.calculateMask(parts);
 
         return this;
     }
@@ -506,7 +477,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
             throw new IllegalArgumentException("Null key is passed for a partition calculation. " +
                 "Make sure that an affinity key that is used is initialized properly.");
 
-        return calculatePartition(key, mask, parts);
+        return RendezvousAffinityFunctionHelper.calculatePartition(key, mask, parts);
     }
 
     /** {@inheritDoc} */
