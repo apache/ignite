@@ -241,6 +241,15 @@ public abstract class CommonUtils {
     /** Field name for value. */
     public static final String VAL_FIELD_NAME = "_VAL";
 
+    /** Default key / trust store type. */
+    public static final String DFLT_STORE_TYPE = System.getProperty("javax.net.ssl.keyStoreType", "JKS");
+
+    /** Default SSL protocol. */
+    public static final String DFLT_SSL_PROTOCOL = "TLS";
+
+    /** Default key manager / trust manager algorithm. Specifying different trust manager algorithm is not supported. */
+    public static final String DFLT_KEY_ALGORITHM = System.getProperty("ssl.KeyManagerFactory.algorithm", "SunX509");
+
     /** Byte bit-mask. */
     private static final int MASK = 0xf;
 

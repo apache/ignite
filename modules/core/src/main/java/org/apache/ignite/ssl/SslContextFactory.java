@@ -34,6 +34,7 @@ import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
@@ -56,13 +57,13 @@ public class SslContextFactory extends AbstractSslContextFactory {
     private static final long serialVersionUID = 0L;
 
     /** Default key / trust store type. */
-    public static final String DFLT_STORE_TYPE = System.getProperty("javax.net.ssl.keyStoreType", "JKS");
+    public static final String DFLT_STORE_TYPE = CommonUtils.DFLT_STORE_TYPE;
 
     /** Default SSL protocol. */
-    public static final String DFLT_SSL_PROTOCOL = AbstractSslContextFactory.DFLT_SSL_PROTOCOL;
+    public static final String DFLT_SSL_PROTOCOL = CommonUtils.DFLT_SSL_PROTOCOL;
 
     /** Default key manager / trust manager algorithm. Specifying different trust manager algorithm is not supported. */
-    public static final String DFLT_KEY_ALGORITHM = System.getProperty("ssl.KeyManagerFactory.algorithm", "SunX509");
+    public static final String DFLT_KEY_ALGORITHM = CommonUtils.DFLT_KEY_ALGORITHM;
 
     /** Key manager algorithm. */
     protected String keyAlgorithm = DFLT_KEY_ALGORITHM;

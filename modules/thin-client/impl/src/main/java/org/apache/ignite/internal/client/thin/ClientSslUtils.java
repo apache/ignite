@@ -43,9 +43,7 @@ import javax.net.ssl.X509TrustManager;
 import org.apache.ignite.client.SslMode;
 import org.apache.ignite.client.SslProtocol;
 import org.apache.ignite.configuration.ClientConfiguration;
-
-import static org.apache.ignite.ssl.SslContextFactory.DFLT_KEY_ALGORITHM;
-import static org.apache.ignite.ssl.SslContextFactory.DFLT_STORE_TYPE;
+import org.apache.ignite.internal.util.CommonUtils;
 
 /** */
 public class ClientSslUtils {
@@ -100,7 +98,7 @@ public class ClientSslUtils {
 
         String keyStoreType = or.apply(
                 cfg.getSslClientCertificateKeyStoreType(),
-                or.apply(System.getProperty("javax.net.ssl.keyStoreType"), DFLT_STORE_TYPE)
+                or.apply(System.getProperty("javax.net.ssl.keyStoreType"), CommonUtils.DFLT_STORE_TYPE)
         );
 
         String keyStorePwd = or.apply(
@@ -115,7 +113,7 @@ public class ClientSslUtils {
 
         String trustStoreType = or.apply(
                 cfg.getSslTrustCertificateKeyStoreType(),
-                or.apply(System.getProperty("javax.net.ssl.trustStoreType"), DFLT_STORE_TYPE)
+                or.apply(System.getProperty("javax.net.ssl.trustStoreType"), CommonUtils.DFLT_STORE_TYPE)
         );
 
         String trustStorePwd = or.apply(
@@ -123,7 +121,7 @@ public class ClientSslUtils {
                 System.getProperty("javax.net.ssl.trustStorePassword")
         );
 
-        String algorithm = or.apply(cfg.getSslKeyAlgorithm(), DFLT_KEY_ALGORITHM);
+        String algorithm = or.apply(cfg.getSslKeyAlgorithm(), CommonUtils.DFLT_KEY_ALGORITHM);
 
         String proto = toString(cfg.getSslProtocol());
 

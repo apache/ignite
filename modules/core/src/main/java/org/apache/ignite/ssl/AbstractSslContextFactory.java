@@ -27,6 +27,7 @@ import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.TrustManager;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
@@ -39,7 +40,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     private static final long serialVersionUID = 0L;
 
     /** Default SSL protocol. */
-    public static final String DFLT_SSL_PROTOCOL = "TLS";
+    public static final String DFLT_SSL_PROTOCOL = CommonUtils.DFLT_SSL_PROTOCOL;
 
     /** SSL protocol. */
     protected String proto = DFLT_SSL_PROTOCOL;
