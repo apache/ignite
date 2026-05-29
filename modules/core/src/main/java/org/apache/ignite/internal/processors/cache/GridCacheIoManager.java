@@ -317,6 +317,15 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     private void handleMessage(UUID nodeId, GridCacheMessage cacheMsg, byte plc) {
         MessageHandlers msgHandlers = cacheMsg instanceof GridCacheGroupIdMessage ? grpHandlers : cacheHandlers;
 
+        MessageSerializer ser = cctx.kernalContext().messageFactory().serializer(cacheMsg.directType());
+
+        try {
+            ser.finishUnmarshal(cacheMsg, cctx.kernalContext(), null);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to unmarshall entry", e);
+        }
+
         Lock lock = rw.readLock();
 
         lock.lock();

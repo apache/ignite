@@ -1765,6 +1765,8 @@ public class IgniteTxHandler {
                     int idx = 0;
 
                     for (IgniteTxEntry entry : req.writes()) {
+                        entry.initializeContext(ctx, false);
+                        
                         GridCacheContext cacheCtx = entry.context();
 
                         int part = cacheCtx.affinity().partition(entry.key());

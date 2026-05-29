@@ -40,7 +40,8 @@ public class CacheVersionedValue implements Message, CacheIdAware {
     GridCacheVersion ver;
     
     /** */
-    private int cacheId;
+    @Order(2)
+    int cacheId;
 
     /** */
     public CacheVersionedValue() {

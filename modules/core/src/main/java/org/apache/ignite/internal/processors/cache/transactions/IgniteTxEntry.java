@@ -1041,13 +1041,13 @@ public class IgniteTxEntry implements GridPeerDeployAware, MarshallableMessage, 
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         // Unmarshal transform closure anyway if it exists.
         if (transformClosBytes != null && entryProcessorsCol == null)
-            entryProcessorsCol = U.unmarshal(marsh, transformClosBytes, U.resolveClassLoader(clsLdr, ctx.gridConfig()));
+            entryProcessorsCol = U.unmarshal(marsh, transformClosBytes, clsLdr);
 
         if (filters == null)
             filters = CU.empty0();
 
         if (expiryPlcBytes != null && expiryPlc == null)
-            expiryPlc = U.unmarshal(marsh, expiryPlcBytes, U.resolveClassLoader(clsLdr, ctx.gridConfig()));
+            expiryPlc = U.unmarshal(marsh, expiryPlcBytes, clsLdr);
     }
 
     /**
