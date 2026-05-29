@@ -69,6 +69,7 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.pagemem.wal.record.ExchangeRecord;
+import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
@@ -2469,8 +2470,16 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 cleanIdxRebuildFutures = false;
 
-                for (CacheGroupContext grp : cctx.cache().cacheGroups())
-                    grp.topology().onExchangeDone(this, grp.affinity().readyAffinity(res), false);
+                for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
+                    AffinityAssignment assignment = grp.affinity().readyAffinity(res);
+
+                    grp.topology().onExchangeDone(this, assignment, false);
+
+                    if (!grp.isReplicated()) {
+                        System.out.println("-->>-->> [" + System.currentTimeMillis() + "][" + Thread.currentThread().getName() + "] " +
+                            "exchange done for grp " + grp.cacheOrGroupName());
+                    }
+                }
 
                 if (changedAffinity())
                     cctx.walState().disableGroupDurabilityForPreloading(this);

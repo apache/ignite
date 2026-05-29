@@ -1137,6 +1137,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         cache.onKernalStart();
 
+        cache.metrics0().updateMdcMetrics();
+
         if (ctx.events().isRecordable(EventType.EVT_CACHE_STARTED))
             ctx.events().addEvent(EventType.EVT_CACHE_STARTED);
 

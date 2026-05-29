@@ -22,7 +22,13 @@ import java.util.Map;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMetrics;
+import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.affinity.rendezvous.ClusterNodeAttributeColocatedBackupFilter;
+import org.apache.ignite.cache.affinity.rendezvous.MdcAffinityBackupFilter;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
@@ -43,6 +49,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -245,6 +252,9 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** Conflict resolver merged entries count. */
     private LongAdderMetric rslvrMergedCnt;
+
+    /** */
+    private Boolean mdcReadyAff;
 
     /**
      * Creates cache metrics.
@@ -1679,6 +1689,11 @@ public class CacheMetricsImpl implements CacheMetrics {
         return fut != null && !fut.isDone();
     }
 
+    /** */
+    private boolean isMdcReadyAffinity() {
+        return mdcReadyAff != null && mdcReadyAff;
+    }
+
     /** {@inheritDoc} */
     @Override public long getIndexRebuildKeysProcessed() {
         return idxRebuildKeyProcessed.value();
@@ -1744,6 +1759,36 @@ public class CacheMetricsImpl implements CacheMetrics {
         rslvrMergedCnt = mreg.longAdderMetric("ConflictResolverMergedCount",
             "Conflict resolver merged entries count");
     }
+
+    /** */
+    public void updateMdcMetrics() {
+        // Calculate this metric only once.
+        if (mdcReadyAff == null) {
+            GridKernalContext kCtx = cctx.kernalContext();
+
+            if (kCtx.clientNode())
+                return;
+
+            if (kCtx.discovery().localNode() == null || kCtx.discovery().localNode().dataCenterId() == null)
+                return;
+
+            mdcReadyAff = Boolean.TRUE;
+
+            mreg.register("IsCacheAffinityMdcReady", this::isMdcReadyAffinity,
+                "True if cache affinity guarantees having a copy of partition in each data center.");
+
+            AffinityFunction affFunc = cctx.config().getAffinity();
+
+            if (affFunc instanceof RendezvousAffinityFunction) {
+                IgniteBiPredicate<ClusterNode, List<ClusterNode>> filter = ((RendezvousAffinityFunction)affFunc).getAffinityBackupFilter();
+
+                if (!(filter instanceof MdcAffinityBackupFilter) && !(filter instanceof ClusterNodeAttributeColocatedBackupFilter))
+                    mdcReadyAff = Boolean.FALSE;
+            }
+        }
+    }
+
+
 
     /** {@inheritDoc} */
     @Override public String toString() {
