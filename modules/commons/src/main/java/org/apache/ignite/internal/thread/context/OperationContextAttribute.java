@@ -32,7 +32,7 @@ public class OperationContextAttribute<T> {
     static final AtomicInteger ID_GEN = new AtomicInteger();
 
     /** */
-    static final int MAX_ATTR_CNT = Integer.SIZE;
+    public static final int MAX_ATTR_CNT = Integer.SIZE;
 
     /** */
     private final int bitmask;
@@ -41,7 +41,7 @@ public class OperationContextAttribute<T> {
     @Nullable private final T initVal;
 
     /** */
-    private OperationContextAttribute(int bitmask, @Nullable T initVal) {
+    public OperationContextAttribute(int bitmask, @Nullable T initVal) {
         this.bitmask = bitmask;
         this.initVal = initVal;
     }

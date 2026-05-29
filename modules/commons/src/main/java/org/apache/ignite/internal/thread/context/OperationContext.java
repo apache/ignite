@@ -307,7 +307,7 @@ public class OperationContext {
     }
 
     /** Immutable container that stores an attribute and its corresponding value. */
-    private static class AttributeValueHolder<T> {
+    public static class AttributeValueHolder<T> {
         /** */
         private final OperationContextAttribute<T> attr;
 

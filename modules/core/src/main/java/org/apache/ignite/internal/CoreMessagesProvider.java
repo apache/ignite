@@ -28,7 +28,6 @@ import org.apache.ignite.internal.managers.checkpoint.GridCheckpointRequest;
 import org.apache.ignite.internal.managers.communication.CompressedMessage;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.internal.managers.communication.GridIoSecurityAwareMessage;
 import org.apache.ignite.internal.managers.communication.GridIoUserMessage;
 import org.apache.ignite.internal.managers.communication.IgniteIoTestMessage;
 import org.apache.ignite.internal.managers.communication.SessionChannelMessage;
@@ -229,6 +228,7 @@ import org.apache.ignite.internal.processors.query.stat.messages.StatisticsReque
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsResponse;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultRequest;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultResponse;
+import org.apache.ignite.internal.processors.security.SecuritySubjectMessage;
 import org.apache.ignite.internal.processors.service.ServiceChangeBatchRequest;
 import org.apache.ignite.internal.processors.service.ServiceClusterDeploymentResult;
 import org.apache.ignite.internal.processors.service.ServiceClusterDeploymentResultBatch;
@@ -602,7 +602,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(GridIoMessage.class);
         withNoSchema(IgniteIoTestMessage.class);
         withSchema(GridIoUserMessage.class);
-        withSchema(GridIoSecurityAwareMessage.class);
+        ++msgIdx; // Former GridIoSecurityAwareMessage.
         withNoSchema(RecoveryLastReceivedMessage.class);
         withNoSchema(TcpInverseConnectionResponseMessage.class);
         withNoSchema(SessionChannelMessage.class);
@@ -669,6 +669,12 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchemaResolvedClassLoader(DynamicCacheChangeRequest.class);
         withNoSchema(PartitionHashRecord.class);
         withNoSchema(TransactionsHashRecord.class);
+
+        // [13400 - 13600]: Operation context messages.
+        msgIdx = 13400;
+        withNoSchema(OperationContexAttributeMessage.class);
+        withNoSchema(OperationContexMessage.class);
+        withNoSchema(SecuritySubjectMessage.class);
 
         assert msgIdx <= MAX_MESSAGE_ID;
     }
