@@ -18,10 +18,15 @@
 package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 
 import java.io.File;
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -32,6 +37,10 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
+import com.sun.management.GcInfo;
+import com.sun.management.internal.GarbageCollectorExtImpl;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -121,6 +130,9 @@ public class Checkpointer extends GridWorker {
 
     /** Timeout between partition file destroy and checkpoint to handle it. */
     private static final long PARTITION_DESTROY_CHECKPOINT_TIMEOUT = 30 * 1000; // 30 Seconds.
+
+    /** Jvm pause explain pattern. */
+    private static final String JVM_PAUSE_EXPLAIN_PATTERN = "Possible JVM Pause explaination: [ %s ]";
 
     /** Avoid the start checkpoint if checkpointer was canceled. */
     private volatile boolean skipCheckpointOnNodeStop = getBoolean(IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, false);
@@ -465,8 +477,6 @@ public class Checkpointer extends GridWorker {
 
             if (chp.hasDelta()) {
                 if (log.isInfoEnabled()) {
-                    long possibleJvmPauseDur = possibleLongJvmPauseDuration(tracker);
-
                     log.info(
                         String.format(
                             CHECKPOINT_STARTED_LOG_FORMAT,
@@ -480,7 +490,7 @@ public class Checkpointer extends GridWorker {
                             tracker.splitAndSortCpPagesDuration(),
                             tracker.recoveryDataWriteDuration(),
                             tracker.writeCheckpointEntryDuration(),
-                            possibleJvmPauseDur > 0 ? "possibleJvmPauseDuration=" + possibleJvmPauseDur + "ms, " : "",
+                            possibleLongJvmPauseExplaination(tracker),
                             chp.pagesSize,
                             chp.progress.reason()
                         )
@@ -928,27 +938,54 @@ public class Checkpointer extends GridWorker {
 
     /**
      * @param tracker Checkpoint metrics tracker.
-     * @return Duration of possible JVM pause, if it was detected, or {@code -1} otherwise.
+     * @return Explain possible JVM pause.
      */
-    private long possibleLongJvmPauseDuration(CheckpointMetricsTracker tracker) {
-        if (LongJVMPauseDetector.enabled()) {
-            if (tracker.lockWaitDuration() + tracker.lockHoldDuration() > longJvmPauseThreshold) {
-                long now = System.currentTimeMillis();
-
-                // We must get last wake up time before search possible pause in events map.
-                long wakeUpTime = pauseDetector.getLastWakeUpTime();
-
-                IgniteBiTuple<Long, Long> lastLongPause = pauseDetector.getLastLongPause();
-
-                if (lastLongPause != null && tracker.checkpointStartTime() < lastLongPause.get1())
-                    return lastLongPause.get2();
-
-                if (now - wakeUpTime > longJvmPauseThreshold)
-                    return now - wakeUpTime;
-            }
+    private String possibleLongJvmPauseExplaination(CheckpointMetricsTracker tracker) {
+        long lockDurationMillis = tracker.lockDurationMillis();
+        if (LongJVMPauseDetector.enabled() && lockDurationMillis > longJvmPauseThreshold) {
+            List<String> explains = new LinkedList<>();
+            explains.add(String.format("Checkpoint lock took %d ms", lockDurationMillis));
+            explains.addAll(getGCExplains(tracker));
+            explains.add(pauseDetector.getTotalSpottedPausesExplain(tracker));
+            return String.format(JVM_PAUSE_EXPLAIN_PATTERN, String.join("; ", explains)) + ", ";
         }
+        return "";
+    }
 
-        return -1L;
+    /**
+     * @param tracker Checkpoint Tracker.
+     * @return Collection of every last GC if it happened within checkpoint process bounds
+     */
+    private Collection<String> getGCExplains(CheckpointMetricsTracker tracker) {
+        return ManagementFactory.getGarbageCollectorMXBeans()
+                .stream()
+                .filter(GarbageCollectorExtImpl.class::isInstance)
+                .map(GarbageCollectorExtImpl.class::cast)
+                .map(mxBean -> getGCExplain(mxBean, tracker))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * @param mxBean GC Mx bean.
+     * @param tracker Check point Tracker.
+     * @return GC explain if it happend within check point process bounds
+     */
+    private Optional<String> getGCExplain(GarbageCollectorExtImpl mxBean, CheckpointMetricsTracker tracker) {
+        String gcName = mxBean.getName();
+        GcInfo lastGcInfo = mxBean.getLastGcInfo();
+        RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
+        long uptimeNanos = runtimeMXBean.getUptime() * 1_000_000L;
+        long checkPointStartNanos = tracker.checkPointStartNanos();
+        long checkPointEndNanos = tracker.checkPointEndNanos();
+        long monotonicStartTimeNanos = System.nanoTime() - uptimeNanos;
+        long monotonicGCStartTimeNanos = monotonicStartTimeNanos + lastGcInfo.getStartTime() * 1_000_000L;
+        long monotonicGCEndTimeNanos = monotonicStartTimeNanos + lastGcInfo.getEndTime() * 1_000_000L;
+        if (checkPointStartNanos >= monotonicGCEndTimeNanos || checkPointEndNanos <= monotonicGCStartTimeNanos)
+            return Optional.empty();
+        long duration = lastGcInfo.getDuration();
+        return Optional.of(String.format("%s most recent GC took %d ms", gcName, duration));
     }
 
     /**
@@ -995,6 +1032,7 @@ public class Checkpointer extends GridWorker {
      *
      * @deprecated Should be rewritten to public API.
      */
+    @Deprecated
     public IgniteInternalFuture<Void> enableCheckpoints(boolean enable) {
         GridFutureAdapter<Void> fut = new GridFutureAdapter<>();
 

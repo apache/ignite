@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntryType;
@@ -54,7 +55,13 @@ public class CheckpointMetricsTracker {
     private volatile int cowPages;
 
     /** */
-    private final long cpStart = System.currentTimeMillis();
+    private final long cpStart = System.nanoTime();
+
+    /** */
+    private long cpEnd;
+
+    /** Epoch time of checkpoint process start */
+    private final long cpStartEpochTime = System.currentTimeMillis();
 
     /** */
     private long cpLockWaitStart;
@@ -66,16 +73,10 @@ public class CheckpointMetricsTracker {
     private long cpMarkEnd;
 
     /** */
-    private long cpLockRelease;
-
-    /** */
     private long cpPagesWriteStart;
 
     /** */
     private long cpFsyncStart;
-
-    /** */
-    private long cpEnd;
 
     /** */
     private long walCpRecordFsyncStart;
@@ -84,19 +85,52 @@ public class CheckpointMetricsTracker {
     private long walCpRecordFsyncEnd;
 
     /** */
-    private long cpMarkerStoreEnd;
-
-    /** */
-    private long splitAndSortCpPagesEnd;
-
-    /** */
     private long cpRecoveryDataWriteEnd;
 
     /** */
     private long cpRecoveryDataSize;
 
     /** */
-    private long listenersExecEnd;
+    private long totalDuration;
+
+    /** */
+    private long totalDurationNanos;
+
+    /** */
+    private long fsyncDuration;
+
+    /** */
+    private long writeCheckpointEntryDuration;
+
+    /** */
+    private long recoveryDataWriteDuration;
+
+    /** */
+    private long splitAndSortCpPagesDuration;
+
+    /** */
+    private long walCpRecordFsyncDuration;
+
+    /** */
+    private long pagesWriteDuration;
+
+    /** */
+    private long lockDurationMillis;
+
+    /** */
+    private long lockHoldDuration;
+
+    /** */
+    private long markDuration;
+
+    /** */
+    private long listenersExecDuration;
+
+    /** */
+    private long beforeLockDuration;
+
+    /** */
+    private long lockWaitDuration;
 
     /**
      * Increments counter if copy on write page was written.
@@ -126,145 +160,170 @@ public class CheckpointMetricsTracker {
 
     /** */
     public void onLockWaitStart() {
-        cpLockWaitStart = System.currentTimeMillis();
+        cpLockWaitStart = System.nanoTime();
+        beforeLockDuration = TimeUnit.NANOSECONDS.toMillis(cpLockWaitStart - cpStart);
     }
 
     /** */
     public void onMarkStart() {
-        cpMarkStart = System.currentTimeMillis();
+        cpMarkStart = System.nanoTime();
+        lockWaitDuration = TimeUnit.NANOSECONDS.toMillis(cpMarkStart - cpLockWaitStart);
     }
 
     /** */
     public void onMarkEnd() {
-        cpMarkEnd = System.currentTimeMillis();
+        cpMarkEnd = System.nanoTime();
+        markDuration = TimeUnit.NANOSECONDS.toMillis(cpMarkEnd - cpMarkStart);
     }
 
     /** */
     public void onLockRelease() {
-        cpLockRelease = System.currentTimeMillis();
+        long nanoTime = System.nanoTime();
+        lockHoldDuration = TimeUnit.NANOSECONDS.toMillis(nanoTime - cpMarkStart);
+        lockDurationMillis = TimeUnit.NANOSECONDS.toMillis(nanoTime - cpLockWaitStart);
     }
 
     /** */
     public void onPagesWriteStart() {
-        cpPagesWriteStart = System.currentTimeMillis();
+        cpPagesWriteStart = System.nanoTime();
     }
 
     /** */
     public void onFsyncStart() {
-        cpFsyncStart = System.currentTimeMillis();
+        cpFsyncStart = System.nanoTime();
+        pagesWriteDuration = TimeUnit.NANOSECONDS.toMillis(cpFsyncStart - cpPagesWriteStart);
     }
 
     /** */
     public void onEnd() {
-        cpEnd = System.currentTimeMillis();
+        cpEnd = System.nanoTime();
+        totalDurationNanos = cpEnd - cpStart;
+        totalDuration = TimeUnit.NANOSECONDS.toMillis(totalDurationNanos);
+        fsyncDuration = TimeUnit.NANOSECONDS.toMillis(cpEnd - cpFsyncStart);
     }
 
     /** */
     public void onListenersExecuteEnd() {
-        listenersExecEnd = System.currentTimeMillis();
+        listenersExecDuration = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - cpMarkStart);
     }
 
     /** */
     public void onWalCpRecordFsyncStart() {
-        walCpRecordFsyncStart = System.currentTimeMillis();
+        walCpRecordFsyncStart = System.nanoTime();
     }
 
     /** */
     public void onCpMarkerStoreEnd() {
-        cpMarkerStoreEnd = System.currentTimeMillis();
+        writeCheckpointEntryDuration = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - cpRecoveryDataWriteEnd);
     }
 
     /** */
     public void onSplitAndSortCpPagesEnd() {
-        splitAndSortCpPagesEnd = System.currentTimeMillis();
+        splitAndSortCpPagesDuration = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - walCpRecordFsyncEnd);
     }
 
     /** */
     public void onWalCpRecordFsyncEnd() {
-        walCpRecordFsyncEnd = System.currentTimeMillis();
+        walCpRecordFsyncEnd = System.nanoTime();
+        walCpRecordFsyncDuration = TimeUnit.NANOSECONDS.toMillis(walCpRecordFsyncEnd - walCpRecordFsyncStart);
     }
 
     /** */
     public void onWriteRecoveryDataEnd(long recoveryDataSize) {
         cpRecoveryDataSize = recoveryDataSize;
-        cpRecoveryDataWriteEnd = System.currentTimeMillis();
+        cpRecoveryDataWriteEnd = System.nanoTime();
+        recoveryDataWriteDuration = TimeUnit.NANOSECONDS.toMillis(cpRecoveryDataWriteEnd - cpMarkEnd);
     }
 
     /**
      * @return Total checkpoint duration.
      */
     public long totalDuration() {
-        return cpEnd - cpStart;
+        return totalDuration;
+    }
+
+    /**
+     * @return Total checkpoint duration (nanos).
+     */
+    public long totalDurationNanos() {
+        return totalDurationNanos;
     }
 
     /**
      * @return Checkpoint lock wait duration.
      */
     public long lockWaitDuration() {
-        return cpMarkStart - cpLockWaitStart;
+        return lockWaitDuration;
     }
 
     /**
      * @return Checkpoint action before taken write lock duration.
      */
     public long beforeLockDuration() {
-        return cpLockWaitStart - cpStart;
+        return beforeLockDuration;
     }
 
     /**
      * @return Execution listeners under write lock duration.
      */
     public long listenersExecuteDuration() {
-        return listenersExecEnd - cpMarkStart;
+        return listenersExecDuration;
     }
 
     /**
      * @return Checkpoint mark duration.
      */
     public long markDuration() {
-        return cpMarkEnd - cpMarkStart;
+        return markDuration;
     }
 
     /**
      * @return Checkpoint lock hold duration.
      */
     public long lockHoldDuration() {
-        return cpLockRelease - cpMarkStart;
+        return lockHoldDuration;
+    }
+
+    /**
+     * @return Checkpoint lock duration
+     */
+    public long lockDurationMillis() {
+        return lockDurationMillis;
     }
 
     /**
      * @return Pages write duration.
      */
     public long pagesWriteDuration() {
-        return cpFsyncStart - cpPagesWriteStart;
+        return pagesWriteDuration;
     }
 
     /**
      * @return Checkpoint fsync duration.
      */
     public long fsyncDuration() {
-        return cpEnd - cpFsyncStart;
+        return fsyncDuration;
     }
 
     /**
      * @return Duration of WAL fsync after logging {@link CheckpointRecord} on checkpoint begin.
      */
     public long walCpRecordFsyncDuration() {
-        return walCpRecordFsyncEnd - walCpRecordFsyncStart;
+        return walCpRecordFsyncDuration;
     }
 
     /**
      * @return Duration of splitting and sorting checkpoint pages.
      */
     public long splitAndSortCpPagesDuration() {
-        return splitAndSortCpPagesEnd - walCpRecordFsyncEnd;
+        return splitAndSortCpPagesDuration;
     }
 
     /**
      * @return Duration of writing recovery data.
      */
     public long recoveryDataWriteDuration() {
-        return cpRecoveryDataWriteEnd - cpMarkEnd;
+        return recoveryDataWriteDuration;
     }
 
     /**
@@ -280,13 +339,27 @@ public class CheckpointMetricsTracker {
      * @see CheckpointMarkersStorage#writeCheckpointEntry(long, UUID, WALPointer, CheckpointRecord, CheckpointEntryType, boolean)
      */
     public long writeCheckpointEntryDuration() {
-        return cpMarkerStoreEnd - cpRecoveryDataWriteEnd;
+        return writeCheckpointEntryDuration;
     }
 
     /**
      * @return Checkpoint start time.
      */
     public long checkpointStartTime() {
+        return cpStartEpochTime;
+    }
+
+    /**
+     * @return monotonic time in nanos at check point process start
+     */
+    public long checkPointStartNanos() {
         return cpStart;
+    }
+
+    /**
+     * @return monotonic time in nanos at check point process end
+     */
+    public long checkPointEndNanos() {
+        return cpEnd;
     }
 }
