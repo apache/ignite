@@ -218,7 +218,7 @@ public class GridStaticRestHandler extends Vertxlet {
             }
 
             res.setStatusCode(200);
-            res.putHeader("Content-Type", "image/svg");
+            res.putHeader("Content-Type", "image/svg+xml");
             res.putHeader("Content-Length", String.valueOf(logo.length));
             res.write(Buffer.buffer(logo));
             rc.end();

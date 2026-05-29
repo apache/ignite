@@ -383,7 +383,7 @@ def example_error_handling():
 def example_batch_operations():
     """Batch operations for better performance"""
     print("\n=== Batch Operations Example ===")
-    stream_name = "batch200-stream"
+    stream_name = "batch300-stream"
     
     # Clear existing data
     clear_stream(stream_name)
@@ -391,7 +391,7 @@ def example_batch_operations():
     # 1. Batch add using pipeline
     print("Batch adding 100 messages using pipeline...")
     pipeline = r.pipeline(transaction=True)
-    for i in range(100):
+    for i in range(10):
         pipeline.xadd(stream_name, {
             'index': str(i),
             'data': f'Batch data {i}',
@@ -450,7 +450,7 @@ def main():
         #example_pagination()
         #example_reverse_reading()
         #example_stream_monitoring()
-        example_error_handling()
+        #example_error_handling()
         example_batch_operations()
         
         print("\n" + "=" * 60)

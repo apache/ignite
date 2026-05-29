@@ -259,35 +259,33 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
         		ctx.grid().getOrCreateCache(ccfg);
         	}
             //end@
-            
-            // 开始事务，事务往往和pipeline同时开启
-            List<GridRedisMessage> queued = ses.meta(SESS_TX_QUEUED_META_KEY);
-        	if(queued!=null && !cmd.equals("MULTI") && !cmd.equals("EXEC") && !cmd.equals("DISCARD")) {
-        		queued.add(msg);
-        		msg.setResponse(GridRedisProtocolParser.toSimpleString("QUEUED"));
-        		sendResponse(ses, msg);
-        		
-        	}
-        	else {
-        		if(redisCmd==GridRedisCommand.INFO) {
-        			updateStateInfo(ses);
-        		}
-                // modify@byron use StripedExecutorService handle session awared handler
-                ctx.pools().getStripedRebalanceExecutorService().execute(()->{
+
+            if(redisCmd==GridRedisCommand.INFO) {
+                updateStateInfo(ses);
+            }
+            // modify@byron use StripedExecutorService handle session awared handler
+            ctx.pools().getStripedRebalanceExecutorService().execute(()->{
+                // 开始事务，事务往往和pipeline同时开启
+                List<GridRedisMessage> queued = ses.meta(SESS_TX_QUEUED_META_KEY);
+                if(queued!=null && !cmd.equals("MULTI") && !cmd.equals("EXEC") && !cmd.equals("DISCARD")) {
+                    queued.add(msg);
+                    msg.setResponse(GridRedisProtocolParser.toSimpleString("QUEUED"));
+                    sendResponse(ses, msg);
+                }
+                else {
 
                     IgniteInternalFuture<GridRedisMessage> f = handlers.get(redisCmd).handleAsync(ses, msg);
                     try {
                         GridRedisMessage res = f.get();
                         sendResponse(ses, res);
                     } catch (IgniteCheckedException e) {
-                        log.error("Redis msg handler fail.",e);
+                        log.error("Redis msg handler fail.", e);
                         msg.setResponse(GridRedisProtocolParser.toGenericError(e.getMessage()));
                         sendResponse(ses, msg);
                     }
+                }
 
-                },ses.hashCode());
-
-        	}
+            },ses.hashCode());
         }
     }
 
