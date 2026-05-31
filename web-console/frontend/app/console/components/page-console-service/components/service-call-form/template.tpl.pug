@@ -1,0 +1,22 @@
+
+
+form(
+    name='ui.inputForm'
+    id='service'
+    novalidate
+)
+    include ./templates/general
+    
+
+.pc-form-actions-panel
+    span.message {{ $ctrl.$scope.message }}
+    .pc-form-actions-panel__right-after
+    
+    
+    button.btn-ignite.btn-ignite--link-success(
+        type='button'
+        ng-click='$ctrl.confirmAndReset()'
+    )
+        | Cancel
+    pc-split-button(actions=`::$ctrl.formActions`)
+    

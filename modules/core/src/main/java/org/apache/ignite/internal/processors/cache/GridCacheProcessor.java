@@ -727,7 +727,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             .filter(ctx -> ctx.config().getRebalanceMode() == SYNC) // Only caches with SYNC mode.
             .filter(ctx -> ctx.startTopologyVersion().equals(joinVer)) // Only caches started on local join.
             .filter(ctx -> ctx.config().getCacheMode() == REPLICATED // Caches without manual rebalance.
-                || ctx.config().getCacheMode() == PARTITIONED && ctx.config().getRebalanceDelay() >= 0)
+                || ctx.config().getCacheMode() == PARTITIONED && ctx.kernalContext().config().getRebalanceThreadPoolSize() > 0)
             .map(ctx -> ctx.preloader().syncFuture())
             .collect(IgniteCollectors.toCompoundFuture());
     }

@@ -21,10 +21,19 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
+import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisNioListener.SESS_TX_META_KEY;
 
 /**
  * Message to communicate with Redis client. Contains command, its attributes and response.
@@ -60,11 +69,17 @@ public class GridRedisMessage implements GridClientMessage {
     /** Cache name. */
     private String cacheName;
 
+    private boolean isPipeline;
+
     /** Cache name prefix. */
-    public static final String CACHE_NAME_PREFIX = "redis-ignite-internal-cache";
+    public static final String CACHE_NAME_PREFIX = "redis-ignite-internal";
 
     /** Default cache name. */
     public static final String DFLT_CACHE_NAME = CACHE_NAME_PREFIX + "-0";
+
+    public static final String DFLT_STREAM_CACHE_NAME = "redis-ignite-internal-0.stream";
+
+    public static final String DFLT_HASH_CACHE_NAME = "redis-ignite-internal-0.hash";
 
     /**
      * Constructor.
@@ -118,12 +133,65 @@ public class GridRedisMessage implements GridClientMessage {
     }
 
     /**
+     * @return isPipeline of the message.
+     */
+    public boolean isPipeline() {
+        return isPipeline;
+    }
+
+    /**
+     * @return isPipeline of the message.
+     */
+    public void setPipeline(boolean isPipeline) {
+        this.isPipeline=isPipeline;
+    }
+
+    /**
      * @return {@link GridRedisCommand}.
      */
     public GridRedisCommand command() {
-        return GridRedisCommand.valueOf(msgParts.get(CMD_POS).toUpperCase());
+    	String cmd = msgParts.get(CMD_POS).toUpperCase();
+    	try {
+    		return GridRedisCommand.valueOf(cmd);
+    	}
+    	catch(Exception e) {
+    		return null;
+    	}
+    }
+	
+	
+	public String standardizeParams(String cmd,String baseCacheName) {
+    	//add@byron hashset:
+    	if(cmd.charAt(0)=='h' || cmd.charAt(0)=='H') { // hash_name as cachename
+    		return baseCacheName+'.'+replaceInvalidCharsWithUnderscore(msgParts.remove(KEY_POS));
+    	}
+        if(cmd.charAt(0)=='x' || cmd.charAt(0)=='X') { // Stream
+            String streamName = msgParts.get(KEY_POS);
+            for(int i=2;i<msgParts.size()-2;i++){
+               if(msgParts.get(i).equalsIgnoreCase("STREAMS")){
+                   streamName = msgParts.get(i+1);
+                   break;
+               }
+            }
+            return baseCacheName+'.'+replaceInvalidCharsWithUnderscore(streamName);
+        }
+    	return baseCacheName;
+    	//end@
     }
 
+    public static String replaceInvalidCharsWithUnderscore(String input) {
+        StringBuilder result = new StringBuilder();
+        for (char c : input.toCharArray()) {
+            // 判断字符是否合法：字母、数字、中划线、下划线
+            if (Character.isLetterOrDigit(c) || c == '-' || c == '_') {
+                result.append(c);
+            } else {
+                // 将非法字符替换为 _uxxxx 格式的Unicode编码
+                result.append(String.format("_u%04x", (int) c));
+            }
+        }
+        return result.toString();
+    }
     /**
      * @return Key for the command.
      */
@@ -224,4 +292,5 @@ public class GridRedisMessage implements GridClientMessage {
     @Override public void sessionToken(byte[] sesTok) {
 
     }
+
 }

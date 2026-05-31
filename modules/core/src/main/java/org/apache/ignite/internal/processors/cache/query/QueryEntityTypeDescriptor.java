@@ -169,7 +169,7 @@ public class QueryEntityTypeDescriptor {
      * @param failOnDuplicate Fail on duplicate flag.
      */
     public void addProperty(QueryEntityClassProperty prop, QuerySqlField sqlAnn, boolean key, boolean failOnDuplicate) {
-        String propName = prop.name();
+        String propName = prop.fullName(); // modify@byron
 
         if (sqlAnn != null && !F.isEmpty(sqlAnn.name()))
             propName = sqlAnn.name();
@@ -180,10 +180,10 @@ public class QueryEntityTypeDescriptor {
                 "QueryEntity [key=" + keyCls.getName() + ", value=" + valCls.getName() + ']');
         }
 
-        fields.put(prop.fullName(), prop.type());
+        fields.put(propName, prop.type());
 
         if (key)
-            keyProps.add(prop.fullName());
+            keyProps.add(propName);
     }
 
     /**

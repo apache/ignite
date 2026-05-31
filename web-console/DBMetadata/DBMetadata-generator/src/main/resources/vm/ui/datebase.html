@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>${fileName}</title>
+    <style>
+        table.GridView {
+            margin: 20px;
+            font-family: verdana, arial, sans-serif;
+            font-size: 11px;
+            color: #333333;
+            border-width: 1px;
+            border-color: #999999;
+            border-collapse: collapse;
+            width:540px;
+            text-align: left;
+        }
+
+        table.GridView th {
+            background-color: #c3dde0;
+            border-width: 1px;
+            padding: 8px;
+            border-style: solid;
+            border-color: #a9c6c9;
+        }
+
+        table.GridView tr:hover {
+            background-color: #ffff66;
+        }
+
+        table.GridView td {
+            border-width: 1px;
+            padding: 8px;
+            border-style: solid;
+            border-color: #a9c6c9;
+        }
+    </style>
+</head>
+<body>
+#foreach( $table in $tables )
+<table class="GridView">
+    #set( $tremarks = "" )
+    #if($table.remarks && $table.remarks != "")
+        #set( $tremarks = " - " + $table.remarks )
+    #end
+    <tr>
+        <th colspan="6">表：${table.name} ${tremarks}</th>
+    </tr>
+    <tr>
+        <th scope="col">列名</th>
+        <th scope="col">类型</th>
+        <th scope="col">备注</th>
+        <th scope="col">主键</th>
+        <th scope="col">可空</th>
+        <th scope="col">默认值</th>
+    </tr>
+    #foreach( $column in $table.baseColumns )
+        #set( $columnName = $column.name )
+        #set( $jdbcTypeName = $column.jdbcTypeName )
+        #set( $remarks = $column.remarks )
+        #set( $PK = $column.pk )
+        #set( $NULL = $column.nullable )
+        #set( $defaultValue = $column.defaultValue )
+
+        #if(!$column.JDBCDateColumn && !$column.JDBCTimeColumn)
+            #set( $jdbcTypeName = $jdbcTypeName + "(" + $column.length )
+            #if($column.scale > 0)
+                #set( $jdbcTypeName = $jdbcTypeName + "," + $column.scale )
+            #end
+            #set( $jdbcTypeName = $jdbcTypeName + ")" )
+        #end
+        <tr>
+            <td>$columnName</td>
+            <td>$jdbcTypeName</td>
+            <td>$remarks</td>
+            <td>#if($PK)Y#else N#end</td>
+            <td>#if($NULL)Y#else N#end</td>
+            <td>$defaultValue</td>
+        </tr>
+    #end
+#end
+</table>
+</body>
+</html>

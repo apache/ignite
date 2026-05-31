@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.managers.eventstorage;
 
 import java.util.EventListener;
+
 import org.apache.ignite.events.Event;
 
 /**

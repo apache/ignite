@@ -49,6 +49,7 @@ import org.apache.ignite.resources.SpringApplicationContextResource;
 import org.apache.ignite.resources.SpringResource;
 import org.apache.ignite.resources.TaskContinuousMapperResource;
 import org.apache.ignite.resources.TaskSessionResource;
+import org.apache.ignite.resources.FileSystemResource;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -509,6 +510,9 @@ public class GridResourceIoc {
 
         /** */
         CACHE_STORE_SESSION(CacheStoreSessionResource.class),
+        
+        /** */
+        FILESYSTEM_RESOURCE(FileSystemResource.class),
 
         /** */
         SERVICE_CONTEXT(ServiceContextResource.class),

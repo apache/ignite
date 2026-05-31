@@ -1936,31 +1936,7 @@ public class IgnitionEx {
          * @param cfg Ignite configuration.
          */
         private void initializeDataStorageConfiguration(IgniteConfiguration cfg) throws IgniteCheckedException {
-            DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
-
-            if (dsCfg != null) {
-                List<String> extraStorages = F.asList(dsCfg.getExtraStoragePaths());
-
-                if (extraStorages.size() != new HashSet<>(extraStorages).size()
-                    || extraStorages.contains(dsCfg.getStoragePath())) {
-                    throw new IgniteCheckedException("DataStorageConfiguration contains duplicates " +
-                        "[storagePath=" + dsCfg.getStoragePath() + ", extraStoragePaths=" + extraStorages + ']');
-                }
-
-                List<String> extraSnapshotStorages = F.asList(dsCfg.getExtraSnapshotPaths());
-
-                if (!extraSnapshotStorages.isEmpty() && extraStorages.size() != extraSnapshotStorages.size()) {
-                    throw new IgniteCheckedException("DataStorageConfiguration error. " +
-                        "Size of extraSnapshotPaths must be equal to extraStoragePath " +
-                        "[extraStoragePaths=" + extraStorages + ", extraSnapshotPaths=" + extraSnapshotStorages + ']');
-                }
-
-                if (extraSnapshotStorages.size() != new HashSet<>(extraSnapshotStorages).size()) {
-                    throw new IgniteCheckedException("DataStorageConfiguration contains duplicates " +
-                        "[extraSnapshotPaths=" + extraSnapshotStorages + ']');
-                }
-            }
-
+           
             if (!cfg.isClientMode() && cfg.getDataStorageConfiguration() == null)
                 cfg.setDataStorageConfiguration(new DataStorageConfiguration());
         }
@@ -2064,7 +2040,7 @@ public class IgnitionEx {
                 cfg.setEncryptionSpi(new NoopEncryptionSpi());
 
             if (F.isEmpty(cfg.getMetricExporterSpi())) {
-                cfg.setMetricExporterSpi(IGNITE_MBEANS_DISABLED
+                cfg.setMetricExporterSpi(U.IGNITE_MBEANS_DISABLED
                     ? new NoopMetricExporterSpi()
                     : new JmxMetricExporterSpi());
             }
@@ -2408,7 +2384,7 @@ public class IgnitionEx {
          * @throws IgniteCheckedException If registration failed.
          */
         private void registerFactoryMbean(MBeanServer srv) throws IgniteCheckedException {
-            if (IGNITE_MBEANS_DISABLED)
+            if (U.IGNITE_MBEANS_DISABLED)
                 return;
 
             assert srv != null;
@@ -2463,7 +2439,7 @@ public class IgnitionEx {
          * Unregister delegate Mbean instance for {@link Ignition}.
          */
         private void unregisterFactoryMBean() {
-            if (IGNITE_MBEANS_DISABLED)
+            if (U.IGNITE_MBEANS_DISABLED)
                 return;
 
             synchronized (mbeans) {
@@ -2593,7 +2569,7 @@ public class IgnitionEx {
 
     /** Initialize default mbean server. */
     public static void initializeDefaultMBeanServer(IgniteConfiguration myCfg) {
-        if (myCfg.getMBeanServer() == null && !IGNITE_MBEANS_DISABLED)
+        if (myCfg.getMBeanServer() == null && !U.IGNITE_MBEANS_DISABLED)
             myCfg.setMBeanServer(ManagementFactory.getPlatformMBeanServer());
     }
 }

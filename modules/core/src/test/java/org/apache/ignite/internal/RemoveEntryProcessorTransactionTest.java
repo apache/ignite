@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal;
 
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest.RemoveAndReturnNullEntryProcessor;
@@ -31,7 +32,7 @@ public class RemoveEntryProcessorTransactionTest extends GridCommonAbstractTest 
     /** */
     @Test
     public void testDelete() throws Exception {
-        var c = startGrid(0).createCache(new CacheConfiguration<String, Integer>()
+        IgniteCache<String, Integer> c = startGrid(0).createCache(new CacheConfiguration<String, Integer>()
             .setName(DEFAULT_CACHE_NAME)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
         );

@@ -1,0 +1,23 @@
+
+
+.status-output {
+    @import 'public/stylesheets/variables';
+
+    display: inline-flex;
+
+    .spinner-circle {
+        margin-left: 5px;
+    }
+
+    .status-output__neutral {
+        color: inherit;
+    }
+
+    .status-output__green {
+        color: $ignite-status-active;
+    }
+
+    .status-output__red {
+        color: $ignite-status-inactive;
+    }
+}

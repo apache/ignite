@@ -1,0 +1,39 @@
+
+
+[password-visibility-root] {
+    &:not(.password-visibility__password-visible) {
+        .password-visibility__icon-visible,
+        .password-visibility__password-visible {
+            display: none;
+        }        
+    }
+
+    &.password-visibility__password-visible {
+        .password-visibility__icon-hidden,
+        .password-visibility__password-hidden {
+            display: none;
+        }
+    }
+}
+
+password-visibility-toggle-button {
+    display: inline-block;
+    width: 36px;
+
+    button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        background: none;
+        border: none;
+        outline: none;
+        padding: 0 !important;
+        margin: 0 !important;
+
+        &:focus {
+            color: #0067b9;
+        }
+    }
+}

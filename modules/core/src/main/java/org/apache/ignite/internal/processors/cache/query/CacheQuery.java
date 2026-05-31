@@ -862,7 +862,7 @@ public class CacheQuery<T> {
     ) throws IgniteCheckedException {
         IgniteClosure<Cache.Entry<Object, Object>, T> t0 = (IgniteClosure<Cache.Entry<Object, Object>, T>)transform;
 
-        final GridIterator<T> txIter = new AbstractScanQueryIterator<>((GridCacheContext<Object, Object>)cctx, this, t0, true) {
+        final GridIterator<T> txIter = new AbstractScanQueryIterator<Object, Object,T>((GridCacheContext<Object, Object>)cctx, this, t0, true) {
             private final Iterator<Object> txData = newAndUpdatedEntries.iterator();
 
             /** {@inheritDoc} */
@@ -893,7 +893,7 @@ public class CacheQuery<T> {
             }
         };
 
-        return new GridCloseableIteratorAdapter<>() {
+        return new GridCloseableIteratorAdapter<T>() {
             /** {@inheritDoc} */
             @Override protected T onNext() {
                 return iter.hasNext() ? iter.next() : txIter.next();

@@ -42,14 +42,14 @@
 
     <groupId>org.apache.ignite</groupId>
     <artifactId>ignite-parent</artifactId>
-    <version>${revision}</version>
+    <version>2.16.999-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <properties>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
 
-        <revision>2.19.0-SNAPSHOT</revision>
+        <revision>2.16.999-SNAPSHOT</revision>
         <!-- Ignite version will be substituted with the flatten-maven-plugin and used as
             a version dependency for Ignite extensions. -->
         <ignite.version>${revision}</ignite.version>
@@ -82,7 +82,7 @@
         <javassist.version>3.28.0-GA</javassist.version>
         <javax.cache.bundle.version>1.0.0_1</javax.cache.bundle.version>
         <javax.cache.tck.version>1.1.0</javax.cache.tck.version>
-        <javax.cache.version>1.0.0</javax.cache.version>
+        <javax.cache.version>1.1.1</javax.cache.version>
         <jboss.rmi.version>1.0.6.Final</jboss.rmi.version>
         <jetbrains.annotations.version>16.0.3</jetbrains.annotations.version>
         <jetty.version>11.0.25</jetty.version>
@@ -92,9 +92,8 @@
         <jnr.posix.version>3.1.15</jnr.posix.version>
         <jotm.version>2.3.1-M1</jotm.version>
         <jtidy.version>1.0.5</jtidy.version>
-        <log4j2.version>2.25.4</log4j2.version>
-        <lucene.bundle.version>7.4.0_1</lucene.bundle.version>
-        <lucene.version>8.11.4</lucene.version>
+        <log4j2.version>2.25.3</log4j2.version>
+        <lucene.version>9.12.3</lucene.version>
         <lz4.version>1.10.1</lz4.version>
         <maven.bundle.plugin.version>5.1.9</maven.bundle.plugin.version>
         <maven.checkstyle.plugin.version>3.6.0</maven.checkstyle.plugin.version>
@@ -145,6 +144,7 @@
         <!-- OSGI Manifest generation default property values -->
         <osgi.import.package>*</osgi.import.package>
         <osgi.export.package>{local-packages}</osgi.export.package>
+        <osgi.private.package>**/internal/**</osgi.private.package>
 
         <flattenMode>clean</flattenMode>
 
@@ -285,11 +285,12 @@
                     <artifactId>maven-javadoc-plugin</artifactId>
                     <version>${maven.javadoc.plugin.version}</version>
                     <configuration>
+                        <skip>true</skip>
                         <taglets>
                             <taglet>
                                 <tagletClass>org.apache.ignite.tools.javadoc.IgniteLinkTaglet</tagletClass>
                                 <tagletArtifact>
-                                    <groupId>${project.groupId}</groupId>
+                                    <groupId>org.apache.ignite</groupId>
                                     <artifactId>ignite-tools</artifactId>
                                     <version>${ignite.version}</version>
                                 </tagletArtifact>
@@ -475,7 +476,7 @@
                     <version>${surefire.version}</version>
                     <dependencies>
                         <dependency>
-                            <groupId>${project.groupId}</groupId>
+                            <groupId>org.apache.ignite</groupId>
                             <artifactId>ignite-tools</artifactId>
                             <version>${ignite.version}</version>
                         </dependency>
@@ -577,7 +578,10 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>flatten-maven-plugin</artifactId>
-
+                <configuration>
+                    <embedBuildProfileDependencies>true</embedBuildProfileDependencies>
+                    <!-- 其他配置 -->
+                </configuration>
                 <executions>
                     <!-- disable flattering for parent pom. -->
                     <execution>
@@ -609,7 +613,7 @@
                 <configuration>
                     <rules>
                         <requireMavenVersion>
-                            <version>[3.9.6,)</version>
+                            <version>[3.9.2,)</version>
                         </requireMavenVersion>
                     </rules>
                 </configuration>
@@ -731,157 +735,6 @@
         </profile>
 
         <profile>
-            <id>check-licenses</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.rat</groupId>
-                        <artifactId>apache-rat-plugin</artifactId>
-                        <version>0.17</version>
-                        <configuration>
-                            <config>${maven.multiModuleProjectDirectory}/parent/rat-config.xml</config>
-                            <!-- Disable SCM ignore file parsing to avoid RAT 0.17 race condition
-                                 with temporary NameSet files in parallel builds -->
-                            <parseSCMIgnoresAsExcludes>false</parseSCMIgnoresAsExcludes>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>check-licenses</id>
-                                <phase>validate</phase>
-                                <goals>
-                                    <goal>check</goal>
-                                </goals>
-                                <configuration>
-                                    <inputExcludes>
-                                        <inputExclude>work/**</inputExclude>
-                                        <inputExclude>**/target/**</inputExclude>
-                                        <inputExclude>**/*.log</inputExclude>
-                                        <inputExclude>**/*.m4</inputExclude><!--Free Software Foundation notice-->
-                                        <inputExclude>**/*.dylib</inputExclude><!--bin-files-->
-                                        <inputExclude>**/*.gar</inputExclude><!--bin-files-->
-                                        <inputExclude>**/licenses/*.txt</inputExclude><!--files of licenses-->
-                                        <inputExclude>**/*readme*.txt</inputExclude><!--readme files-->
-                                        <inputExclude>**/*.sql</inputExclude><!--sql files-->
-                                        <inputExclude>**/*README*.txt</inputExclude><!--readme files-->
-                                        <inputExclude>**/*README*.md</inputExclude><!--readme files-->
-                                        <inputExclude>**/*CONTRIBUTING*.md</inputExclude><!--readme files-->
-                                        <inputExclude>**/*DEVNOTES*.md</inputExclude><!--readme files-->
-                                        <inputExclude>**/*index*.md</inputExclude><!--readme files-->
-                                        <inputExclude>**/*.timestamp</inputExclude><!--tmp-files-->
-                                        <inputExclude>**/*.iml</inputExclude><!--IDEA files-->
-                                        <inputExclude>**/*.csv</inputExclude><!--CSV files-->
-                                        <inputExclude>**/*.jks</inputExclude><!--bin-files-->
-                                        <inputExclude>**/*.svg</inputExclude><!--SVG-files-->
-                                        <inputExclude>**/pom-installed.xml</inputExclude><!--tmp-files-->
-                                        <inputExclude>**/keystore</inputExclude><!--bin-files-->
-                                        <inputExclude>**/keystore/*.jks</inputExclude><!--bin-files-->
-                                        <inputExclude>**/keystore/*.pem</inputExclude><!--auto generated files-->
-                                        <inputExclude>**/keystore/*.pfx</inputExclude><!--bin-files-->
-                                        <inputExclude>**/keystore/ca/*.jks</inputExclude><!--bin-files-->
-                                        <inputExclude>**/keystore/ca/*.key</inputExclude><!--bin-files-->
-                                        <inputExclude>**/keystore/ca/*.txt</inputExclude><!--auto generated files-->
-                                        <inputExclude>**/keystore/ca/*.txt.attr</inputExclude><!--auto generated files-->
-                                        <inputExclude>**/keystore/ca/*serial</inputExclude><!--auto generated files-->
-                                        <inputExclude>**/META-INF/services/**</inputExclude> <!-- Interface mappings: cannot be changed -->
-                                        <inputExclude>**/id_rsa**</inputExclude>  <!--SSH-->
-                                        <!--special excludes-->
-                                        <!-- RAT 0.17 bug: creates temp dir NameSet* in basedir for case-sensitivity check -->
-                                        <inputExclude>NameSet*</inputExclude>
-                                        <inputExclude>**/.gitignore</inputExclude>
-                                        <inputExclude>**/.asf.yaml</inputExclude>
-                                        <inputExclude>.travis.yml</inputExclude>
-                                        <inputExclude>.github/PULL_REQUEST_TEMPLATE.md</inputExclude>
-                                        <inputExclude>idea/ignite_codeStyle.xml</inputExclude>
-                                        <inputExclude>**/DEVNOTES*.txt</inputExclude>
-                                        <inputExclude>**/NOTICE*</inputExclude>
-                                        <inputExclude>**/LICENSE*</inputExclude>
-                                        <inputExclude>**/MIGRATION_GUIDE*</inputExclude>
-                                        <inputExclude>src/main/java/org/apache/ignite/internal/util/nio/SelectedSelectionKeySet.java</inputExclude><!-- Apache 2.0 license -->
-                                        <inputExclude>src/main/java/org/apache/ignite/internal/processors/query/calcite/sql/generated/*.java</inputExclude><!--auto generated files-->
-                                        <inputExclude>src/main/java/org/apache/ignite/internal/processors/query/stat/hll/**</inputExclude><!-- Apache 2.0 license, copyright Aggregate Knowledge, Inc. -->
-                                        <inputExclude>src/main/java/org/jsr166/*.java</inputExclude>
-                                        <inputExclude>src/main/java/org/mindrot/*.java</inputExclude>
-                                        <inputExclude>src/test/java/org/apache/ignite/p2p/p2p.properties</inputExclude><!--test depends on file content-->
-                                        <inputExclude>src/test/resources/org.apache.ignite.util/*.output</inputExclude><!--test depends on file content-->
-                                        <inputExclude>src/test/resources/org.apache.ignite.util/*.txt</inputExclude><!--test depends on file content-->
-                                        <inputExclude>src/test/resources/log/ignite.log.tst</inputExclude><!--test resource-->
-                                        <inputExclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.incorrefs</inputExclude><!--test resource-->
-                                        <inputExclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.empty</inputExclude><!--should be empty-->
-                                        <inputExclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.brokenxml</inputExclude><!--test resource-->
-                                        <inputExclude>**/books/*.txt</inputExclude><!--books examples-->
-                                        <inputExclude>src/main/java/org/apache/ignite/examples/streaming/wordcount/*.txt</inputExclude><!--books examples-->
-                                        <inputExclude>examples/src/main/java/org/apache/ignite/examples/streaming/wordcount/*.txt</inputExclude><!--books examples-->
-                                        <inputExclude>src/main/java/org/jetbrains/annotations/*.java</inputExclude><!--copyright-->
-                                        <inputExclude>dev-tools/IGNITE-*.patch</inputExclude>
-                                        <inputExclude>dev-tools/.gradle/**/*</inputExclude>
-                                        <inputExclude>dev-tools/gradle/wrapper/**/*</inputExclude>
-                                        <inputExclude>dev-tools/gradlew</inputExclude>
-                                        <inputExclude>src/test/binaries/repo/org/apache/ignite/binary/test2/1.1/test2-1.1.pom</inputExclude>
-                                        <inputExclude>src/test/binaries/repo/org/apache/ignite/binary/test2/maven-metadata-local.xml</inputExclude>
-                                        <inputExclude>src/test/binaries/repo/org/apache/ignite/binary/test1/1.1/test1-1.1.pom</inputExclude>
-                                        <inputExclude>src/test/binaries/repo/org/apache/ignite/binary/test1/maven-metadata-local.xml</inputExclude>
-                                        <inputExclude>src/test/resources/org/apache/ignite/internal/managers/discovery/Wrapper.ser</inputExclude>
-                                    <!--platforms-->
-                                        <inputExclude>src/test/binaries/repo/org/apache/ignite/binary/test1/1.1/test1-1.1.jar</inputExclude>
-                                        <inputExclude>src/test/binaries/repo/org/apache/ignite/binary/test2/1.1/test2-1.1.jar</inputExclude>
-                                        <inputExclude>**/*.cmake</inputExclude>
-                                        <inputExclude>**/CMakeLists.txt</inputExclude>
-                                        <inputExclude>**/CMakeSettings.json.in</inputExclude>
-                                        <inputExclude>**/cmake-build-*/</inputExclude>
-                                        <inputExclude>**/.idea/**</inputExclude>
-                                        <inputExclude>**/*.pc.in</inputExclude>
-                                        <inputExclude>**/*.sln</inputExclude>
-                                        <inputExclude>**/*.snk</inputExclude>
-                                        <inputExclude>**/*.slnrel</inputExclude>
-                                        <inputExclude>**/*.ini</inputExclude>
-                                        <inputExclude>**/*.DotSettings</inputExclude>
-                                        <inputExclude>**/*.FxCop</inputExclude>
-                                        <inputExclude>**/*.ruleset</inputExclude>
-                                        <inputExclude>**/*.csproj</inputExclude>
-                                        <inputExclude>**/*.ndproj</inputExclude>
-                                        <inputExclude>**/*.csprojrel</inputExclude>
-                                        <inputExclude>**/mkbuild.cmd</inputExclude>
-                                        <inputExclude>**/module.def</inputExclude>
-                                        <inputExclude>**/*.fxcop</inputExclude>
-                                        <inputExclude>**/*.ruleset</inputExclude>
-                                        <inputExclude>**/*.metaproj</inputExclude>
-                                        <inputExclude>**/*.metaproj.tmp</inputExclude>
-                                        <inputExclude>**/*.nunit</inputExclude>
-                                        <inputExclude>**/teamcity_boost.cpp</inputExclude>
-                                        <inputExclude>**/teamcity_messages.h</inputExclude>
-                                        <inputExclude>**/teamcity_messages.cpp</inputExclude>
-                                        <inputExclude>**/obj/x64/**</inputExclude>
-                                        <inputExclude>**/obj/x86/**</inputExclude>
-                                        <inputExclude>**/bin/x64/**</inputExclude>
-                                        <inputExclude>**/bin/x86/**</inputExclude>
-                                        <inputExclude>**/*.dxg</inputExclude>
-                                        <inputExclude>**/*.cmd</inputExclude>
-                                        <inputExclude>**/*.ps1</inputExclude>
-                                        <inputExclude>**/*.json</inputExclude>
-                                        <inputExclude>**/.dockerignore</inputExclude>
-                                        <inputExclude>modules/platforms/dotnet/Apache.Ignite.Core.Tests/Examples/ExpectedOutput/*.txt</inputExclude>
-                                        <!--Packaging -->
-                                        <inputExclude>packaging/**</inputExclude>
-                                        <!-- Calcite test scripts -->
-                                        <inputExclude>src/test/sql/**</inputExclude>
-                                        <!-- Ignite Documentation-->
-                                        <inputExclude>docs/_site/**</inputExclude>
-                                        <inputExclude>docs/assets/images/**</inputExclude>
-                                        <inputExclude>docs/Gemfile.lock</inputExclude>
-                                        <inputExclude>docs/.jekyll-cache/**</inputExclude>
-                                        <inputExclude>docs/_docs/images/**</inputExclude>
-                                        <inputExclude>docs/Gemfile</inputExclude>
-                                        <inputExclude>docs/assets/js/anchor.min.js</inputExclude><!-- Distributed under the MIT license. The original license header is badly formatted. -->
-                                    </inputExcludes>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
             <id>surefire-fork-count-1</id>
             <activation>
                 <property>
@@ -903,237 +756,13 @@
         </profile>
 
         <profile>
-            <id>java-11+</id>
-            <activation>
-                <jdk>[11,15)</jdk>
-            </activation>
-            <properties>
-                <maven.compiler.source>11</maven.compiler.source>
-                <maven.compiler.target>11</maven.compiler.target>
-            </properties>
-            <dependencies/>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-compiler-plugin</artifactId>
-                        <version>${maven.compiler.plugin.version}</version>
-                        <configuration>
-                            <compilerArgs>
-                                <arg>--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED</arg>
-                                <arg>--add-exports=java.base/sun.nio.ch=ALL-UNNAMED</arg>
-                                <arg>--add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED</arg>
-                                <arg>--add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED</arg>
-                                <arg>--add-exports=java.base/sun.net.util=ALL-UNNAMED</arg>
-                            </compilerArgs>
-                        </configuration>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration>
-                            <argLine>
-                                --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED
-                                --add-exports=java.base/sun.nio.ch=ALL-UNNAMED
-                                --add-exports=java.base/jdk.internal.loader=ALL-UNNAMED
-                                --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
-                                --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
-                                --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
-                                --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED
-                                --add-opens=java.base/jdk.internal.access=ALL-UNNAMED
-                                --add-opens=java.base/jdk.internal.loader=ALL-UNNAMED
-                                --illegal-access=permit
-                            </argLine>
-                        </configuration>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                        <configuration>
-                            <additionalOptions>${javadoc.opts} --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED</additionalOptions>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-
-            <dependencyManagement>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.apache.hadoop</groupId>
-                        <artifactId>hadoop-common</artifactId>
-                        <exclusions>
-                            <exclusion>
-                                <!-- This dependency is not available with java 9.-->
-                                <groupId>jdk.tools</groupId>
-                                <artifactId>jdk.tools</artifactId>
-                            </exclusion>
-                        </exclusions>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.apache.hadoop</groupId>
-                        <artifactId>hadoop-common</artifactId>
-                        <type>test-jar</type>
-                        <exclusions>
-                            <exclusion>
-                                <!-- This dependency is not available with java 9.-->
-                                <groupId>jdk.tools</groupId>
-                                <artifactId>jdk.tools</artifactId>
-                            </exclusion>
-                        </exclusions>
-                    </dependency>
-                </dependencies>
-            </dependencyManagement>
-
-        </profile>
-
-        <profile>
-            <id>java-15+</id>
-            <activation>
-                <jdk>[15,)</jdk>
-            </activation>
-            <properties>
-                <maven.compiler.source>11</maven.compiler.source>
-                <maven.compiler.target>15</maven.compiler.target>
-            </properties>
-            <dependencies/>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-compiler-plugin</artifactId>
-                        <version>${maven.compiler.plugin.version}</version>
-                        <configuration>
-                            <compilerArgs>
-                                <arg>--add-exports</arg>
-                                <arg>java.base/jdk.internal.misc=ALL-UNNAMED</arg>
-                                <arg>--add-exports</arg>
-                                <arg>java.base/jdk.internal.loader=ALL-UNNAMED</arg>
-                                <arg>--add-exports</arg>
-                                <arg>java.base/sun.nio.ch=ALL-UNNAMED</arg>
-                                <arg>--add-exports</arg>
-                                <arg>java.base/sun.net.util=ALL-UNNAMED</arg>
-                                <arg>--add-exports</arg>
-                                <arg>java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED</arg>
-                                <arg>--add-exports</arg>
-                                <arg>jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED</arg>
-                                <arg>--add-exports</arg>
-                                <arg>java.base/java.io=ALL-UNNAMED</arg>
-                                <arg>--add-exports</arg>
-                                <arg>java.base/java.nio=ALL-UNNAMED</arg>
-                                <arg>--add-exports</arg>
-                                <arg>java.base/java.util=ALL-UNNAMED</arg>
-                                <arg>--add-exports</arg>
-                                <arg>java.base/java.lang=ALL-UNNAMED</arg>
-                                <arg>--add-exports</arg>
-                                <arg>java.base/java.lang.invoke=ALL-UNNAMED</arg>
-                                <arg>--add-exports</arg>
-                                <arg>java.sql/java.sql=ALL-UNNAMED</arg>
-                            </compilerArgs>
-                        </configuration>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration>
-                            <argLine>
-                                --add-opens=java.base/jdk.internal.access=ALL-UNNAMED
-                                --add-opens=java.base/jdk.internal.loader=ALL-UNNAMED
-                                --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED
-                                --add-opens=java.base/sun.net.util=ALL-UNNAMED
-                                --add-opens=java.base/sun.nio.ch=ALL-UNNAMED
-                                --add-opens=java.base/sun.nio.fs=ALL-UNNAMED
-                                --add-opens=java.base/sun.util.calendar=ALL-UNNAMED
-                                --add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
-                                --add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
-                                --add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
-                                --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED
-                                --add-opens=java.base/java.io=ALL-UNNAMED
-                                --add-opens=java.base/java.nio=ALL-UNNAMED
-                                --add-opens=java.base/java.net=ALL-UNNAMED
-                                --add-opens=java.base/java.util=ALL-UNNAMED
-                                --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
-                                --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED
-                                --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED
-                                --add-opens=java.base/java.lang=ALL-UNNAMED
-                                --add-opens=java.base/java.lang.invoke=ALL-UNNAMED
-                                --add-opens=java.base/java.math=ALL-UNNAMED
-                                --add-opens=java.sql/java.sql=ALL-UNNAMED
-                                --add-opens=java.base/java.lang.reflect=ALL-UNNAMED
-                                --add-opens=java.base/java.time=ALL-UNNAMED
-                                --add-opens=java.base/java.text=ALL-UNNAMED
-                                --add-opens=java.base/java.security=ALL-UNNAMED
-                                --add-opens=java.logging/java.util.logging=ALL-UNNAMED
-                                --add-opens=java.management/sun.management=ALL-UNNAMED
-                                --add-opens=java.desktop/java.awt.font=ALL-UNNAMED
-                                --add-opens=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED
-                                --add-opens=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED
-                                --add-opens=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED
-                                --add-opens=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED
-                                --add-opens=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED
-                                --add-opens=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED
-                                --add-opens=java.base/java.util.regex=ALL-UNNAMED
-                            </argLine>
-                        </configuration>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                        <configuration>
-                            <additionalOptions>${javadoc.opts} --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED</additionalOptions>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
-            <id>tools.jar-default</id>
-            <activation>
-                <file>
-                    <exists>${java.home}/../lib/tools.jar</exists>
-                </file>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>com.sun</groupId>
-                    <artifactId>tools</artifactId>
-                    <scope>system</scope>
-                    <version>${java.version}</version>
-                    <systemPath>${java.home}/../lib/tools.jar</systemPath>
-                </dependency>
-            </dependencies>
-        </profile>
-
-        <profile>
-            <id>tools.jar-mac</id>
-            <activation>
-                <file>
-                    <exists>${java.home}/../Classes/classes.jar</exists>
-                </file>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>com.sun</groupId>
-                    <artifactId>tools</artifactId>
-                    <scope>system</scope>
-                    <version>${java.version}</version>
-                    <systemPath>${java.home}/../Classes/classes.jar</systemPath>
-                </dependency>
-            </dependencies>
-        </profile>
-
-        <profile>
             <id>licenses</id>
 
             <dependencies>
                 <dependency>
                     <groupId>org.apache.ignite</groupId>
                     <artifactId>ignite-apache-license-gen</artifactId>
-                    <version>1.4.0</version>
+                    <version>1.5.0-SNAPSHOT</version>
                 </dependency>
             </dependencies>
 

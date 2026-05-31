@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+
+<assembly xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.3"
+          xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.3 http://maven.apache.org/xsd/assembly-1.1.3.xsd">
+    <id>release-ignite-web-console</id>
+
+    <formats>
+        <format>zip</format>
+    </formats>
+
+    <fileSets>
+        <fileSet>
+            <directory>${basedir}/assembly</directory>
+            <outputDirectory>/</outputDirectory>
+            <includes>
+                <include>**/README*</include>
+            </includes>
+        </fileSet>
+
+        <fileSet>
+            <directory>${basedir}/web-agent/target</directory>
+            <outputDirectory>/agent_dists</outputDirectory>
+            <excludes>
+                <exclude>**/*</exclude>
+            </excludes>
+        </fileSet>
+
+        <fileSet>
+            <directory>${basedir}/web-agent/target</directory>
+            <outputDirectory>/agent_dists</outputDirectory>
+            <includes>
+                <include>ignite-web-console-agent-${project.version}.zip</include>
+            </includes>
+        </fileSet>
+
+        <fileSet>
+            <directory>${basedir}/frontend/build</directory>
+            <outputDirectory>/frontend</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>${basedir}/web-console-server/target</directory>
+            <outputDirectory>/</outputDirectory>
+            <includes>
+                <include>*.jar</include>
+            </includes>
+            <excludes>
+                <exclude>*-tests.jar</exclude>
+                <exclude>*-javadoc.jar</exclude>
+                <exclude>*-sources.jar</exclude>
+            </excludes>
+        </fileSet>
+
+        <fileSet>
+            <directory>${basedir}/web-console-server/target/libs</directory>
+            <outputDirectory>/libs</outputDirectory>
+            <includes>
+                <include>*.jar</include>
+            </includes>
+            <excludes>
+                <exclude>*-tests.jar</exclude>
+                <exclude>*-javadoc.jar</exclude>
+                <exclude>*-sources.jar</exclude>
+            </excludes>
+        </fileSet>
+
+        <fileSet>
+            <directory>${basedir}/bin</directory>
+            <outputDirectory>/</outputDirectory>
+            <fileMode>0755</fileMode>
+            <includes>
+                <include>*.sh</include>
+            </includes>
+        </fileSet>
+
+        <fileSet>
+            <directory>${basedir}/bin</directory>
+            <outputDirectory>/</outputDirectory>
+            <includes>
+                <include>*.bat</include>
+            </includes>
+        </fileSet>
+    </fileSets>
+</assembly>

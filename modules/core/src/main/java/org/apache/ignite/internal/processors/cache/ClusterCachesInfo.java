@@ -448,31 +448,9 @@ public class ClusterCachesInfo {
         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictionPolicyFactory", "Eviction policy factory",
             locAttr.evictionPolicyFactoryClassName(), rmtAttr.evictionPolicyFactoryClassName(), true);
 
-        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "transactionManagerLookup",
-            "Transaction manager lookup", locAttr.transactionManagerLookupClassName(),
-            rmtAttr.transactionManagerLookupClassName(), false);
-
-        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "defaultLockTimeout",
-            "Default lock timeout", locAttr.defaultLockTimeout(), rmtAttr.defaultLockTimeout(), false);
-
-        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "preloadBatchSize",
-            "Preload batch size", locAttr.rebalanceBatchSize(), rmtAttr.rebalanceBatchSize(), false);
-
-        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "rebalanceDelay",
-            "Rebalance delay", locAttr.rebalanceDelay(), rmtAttr.rebalanceDelay(), false);
-
-        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "rebalanceBatchesPrefetchCount",
-            "Rebalance batches prefetch count", locAttr.rebalanceBatchesPrefetchCount(),
-            rmtAttr.rebalanceBatchesPrefetchCount(), false);
 
         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "rebalanceOrder",
             "Rebalance order", locAttr.rebalanceOrder(), rmtAttr.rebalanceOrder(), false);
-
-        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "rebalanceThrottle",
-            "Rebalance throttle", locAttr.rebalanceThrottle(), rmtAttr.rebalanceThrottle(), false);
-
-        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "rebalanceTimeout",
-            "Rebalance timeout", locAttr.rebalanceTimeout(), rmtAttr.rebalanceTimeout(), false);
 
         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "writeSynchronizationMode",
             "Write synchronization mode", locAttr.writeSynchronization(), rmtAttr.writeSynchronization(),
@@ -2592,9 +2570,6 @@ public class ClusterCachesInfo {
 
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "rebalanceMode", "Rebalance mode",
             cfg.getRebalanceMode(), startCfg.getRebalanceMode(), true);
-
-        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "rebalanceDelay", "Rebalance delay",
-            cfg.getRebalanceDelay(), startCfg.getRebalanceDelay(), false);
 
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "rebalanceOrder", "Rebalance order",
             cfg.getRebalanceOrder(), startCfg.getRebalanceOrder(), false);

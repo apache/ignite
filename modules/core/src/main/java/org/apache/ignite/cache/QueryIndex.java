@@ -31,7 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * the list can be provided as following {@code (id, name asc, age desc)}.
  */
 @SuppressWarnings("TypeMayBeWeakened")
-public class QueryIndex implements Serializable {
+public class QueryIndex implements Serializable,Cloneable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -318,5 +318,19 @@ public class QueryIndex implements Serializable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(QueryIndex.class, this);
+    }
+    
+    @Override
+    public QueryIndex clone() {
+    	QueryIndex self;
+		try {
+			self = (QueryIndex)super.clone();
+			self.fields= new LinkedHashMap<String, Boolean>(this.fields);
+		} catch (CloneNotSupportedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return this;
+		}    	
+    	return self;
     }
 }

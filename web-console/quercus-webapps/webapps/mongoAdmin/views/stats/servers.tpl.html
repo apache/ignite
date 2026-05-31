@@ -1,0 +1,58 @@
+<div class="panel panel-default stats">
+  <div class="panel-heading">
+    <h3>Server Status</h3>
+  </div>
+<table class="table table-bordered">
+  <tr>
+    <td class="span2"><strong>Hostname</strong></td>
+    <td class="span3" id="dbHost">{{ $info.host }}</td>    
+  </tr>
+  <tr>    
+    <td class="span2"><strong>MongoDB Version</strong></td>
+    <td class="span3" id="dbVersion">{{ $info.version }}</td>
+  </tr>
+  <tr>
+    <td><strong>Uptime</strong></td>
+    <td>{{ $info.uptime }} seconds {{ if $info.uptime > 86400 }} ({{ $info.uptime/86400 }} days) {{ /if }}</td>    
+  </tr>
+  <tr>
+    <td><strong>Server Time</strong></td>
+    <td>{{ $info.localTime }}</td>    
+  </tr>
+  <tr>
+    <td><strong>Server Pid</strong></td>
+    <td>{{ $info.pid }}</td>    
+  </tr>
+ 
+  <tr>
+    <td><strong>Current Connections</strong></td>
+    <td>{{ $info.connections.current }}</td>    
+  </tr>
+  <tr>
+    <td><strong>Active Cursors</strong></td>
+    <td>{{ $info.metrics.open.total }}</td>    
+  </tr>  
+  <tr>
+    <td><strong>TimedOut Cursors</strong></td>
+    <td>{{ $info.metrics.timedOut }}</td>    
+  </tr>  
+  
+  
+  <tr>    
+    <td><strong>Total Queries</strong></td>
+    <td>{{ $info.opcounters.query}}</td>
+  </tr>
+  <tr>
+    <td><strong>Total Inserts</strong></td>
+    <td>{{ $info.opcounters.insert }}</td>    
+  </tr>
+  <tr>
+    <td><strong>Total Updates</strong></td>
+    <td>{{ $info.opcounters.update}}</td>    
+  </tr>
+  <tr>    
+    <td><strong>Total Deletes</strong></td>
+    <td>{{ $info.opcounters.delete}}</td>
+  </tr>
+</table>
+</div>

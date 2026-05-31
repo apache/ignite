@@ -62,16 +62,11 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCommonsSystemProperties;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.binary.BinaryCollectionFactory;
-import org.apache.ignite.binary.BinaryInvalidTypeException;
-import org.apache.ignite.binary.BinaryMapFactory;
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.binary.*;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.util.CommonUtils;
+import org.apache.ignite.internal.util.IgniteUuidCache;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -3090,5 +3085,30 @@ public class BinaryUtils {
             this.typeId = typeId;
             this.clsName = clsName;
         }
+    }
+
+    /**
+     * Writes IgniteUuid to a writer.
+     *
+     * @param writer Writer.
+     * @param val Values.
+     */
+    public static void writeIgniteUuid(BinaryRawWriter writer, IgniteUuid val) {
+        if (val == null)
+            writer.writeUuid(null);
+        else {
+            writer.writeUuid(val.globalId());
+            writer.writeLong(val.localId());
+        }
+    }
+
+    public static IgniteUuid readIgniteUuid(BinaryRawReader in){
+        UUID globalId = in.readUuid();
+        if (globalId!=null) {
+            long locId = in.readLong();
+
+            return new IgniteUuid(globalId, locId);
+        }
+        return null;
     }
 }

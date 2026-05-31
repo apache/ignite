@@ -1,0 +1,34 @@
+
+
+connected-clusters-list {
+    position: relative;
+    display: block;
+
+    .ui-grid-cell--status {
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .ui-grid-header-cell:last-child .ui-grid-column-resizer.right {
+        border-right: none;
+    }
+
+    .ui-grid-viewport {
+        overflow: auto !important;
+    }
+
+    connected-clusters-cell-logout {
+        margin-top: -8px;
+        margin-right: -10px;
+    }
+
+    grid-no-data {
+        position: absolute;
+        top: 50%;
+
+        width: 100%;
+        padding: 0 20px;
+
+        text-align: center;
+    }
+}

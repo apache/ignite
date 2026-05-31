@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query;
 
 import java.io.Serializable;
+import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -619,7 +620,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     break;
                 }
-
+                // add@byron auto create queryEngine
+                if (qryEngine == null){
+                    try {
+                        Constructor<? extends QueryEngine> ctor = qryEngineCls.getConstructor(GridKernalContext.class);
+                        qryEngine = ctor.newInstance(ctx);
+                    }
+                    catch (Throwable e) {
+                        throw new IgniteCheckedException("Can't find query engine for class " + qryEngineCls);
+                    }
+                }
+                // end@
                 if (qryEngine == null)
                     throw new IgniteCheckedException("Can't find query engine for class " + qryEngineCls);
 
@@ -2291,7 +2302,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             ccfg.setEncryptionEnabled(encrypted);
 
         ccfg.setSqlSchema("\"" + schemaName + "\"");
-        ccfg.setSqlEscapeAll(true);
+        ccfg.setSqlEscapeAll(false);
         ccfg.setQueryEntities(singleton(entity));
 
         if (!QueryUtils.isCustomAffinityMapper(ccfg.getAffinityMapper()))

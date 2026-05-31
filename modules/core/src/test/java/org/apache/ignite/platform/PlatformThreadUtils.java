@@ -30,7 +30,7 @@ public class PlatformThreadUtils {
         for (Thread thread : Thread.getAllStackTraces().keySet()) {
             if (thread.getName().contains(name)) {
                 //noinspection CallToThreadStopSuspendOrResumeManager,deprecation
-                thread.suspend();
+                //--thread.suspend();
             }
         }
     }
@@ -44,7 +44,7 @@ public class PlatformThreadUtils {
         for (Thread thread : Thread.getAllStackTraces().keySet()) {
             if (thread.getName().contains(name)) {
                 //noinspection CallToThreadStopSuspendOrResumeManager,deprecation
-                thread.resume();
+                //--thread.resume();
             }
         }
     }

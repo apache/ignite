@@ -1,0 +1,20 @@
+
+-var form = 'clusterMetrics'
+
+panel-collapsible
+    panel-title Metrics of cluster
+    panel-description 
+        | Fetch cluster metrics from your cluster.
+    panel-content
+        .pco-relative-root   
+            ignite-grid-table(
+                tab-name='node-metrics'    
+                max-rows-to-show='10'
+                one-way-selection='true'
+                column-defs='$ctrl.kvColumnDefs'
+                items='$ctrl.clusterMetrics'    
+                grid-thin='true'
+            )  
+
+
+

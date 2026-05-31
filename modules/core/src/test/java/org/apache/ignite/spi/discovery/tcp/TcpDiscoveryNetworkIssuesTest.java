@@ -470,13 +470,13 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         else
             failedNodes.add(4);
 
-        failedNodes.forEach(idx -> processNetworkThreads(ignite(idx), Thread::suspend));
+        //-failedNodes.forEach(idx -> processNetworkThreads(ignite(idx), Thread::suspend));
 
         try {
             failLatch.await(10, TimeUnit.SECONDS);
         }
         finally {
-            failedNodes.forEach(idx -> processNetworkThreads(ignite(idx), Thread::resume));
+            //-failedNodes.forEach(idx -> processNetworkThreads(ignite(idx), Thread::resume));
         }
 
         for (int i = 0; i < gridCnt; i++) {

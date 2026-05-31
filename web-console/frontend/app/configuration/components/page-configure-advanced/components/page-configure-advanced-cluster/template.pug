@@ -1,0 +1,11 @@
+
+
+cluster-edit-form(
+    is-new='$ctrl.isNew$|async:this'
+    cluster='$ctrl.originalCluster$|async:this'
+    caches='$ctrl.shortCaches$|async:this'
+    on-save='$ctrl.save($event)'
+    ng-class='{"pca-form-blocked": !($ctrl.isBlocked$|async:this)}'
+    fake-ui-can-exit='base.configuration.edit.advanced.cluster'
+    form-ui-can-exit-guard
+)

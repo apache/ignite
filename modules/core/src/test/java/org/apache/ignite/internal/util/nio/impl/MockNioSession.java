@@ -18,7 +18,10 @@
 package org.apache.ignite.internal.util.nio.impl;
 
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.security.cert.Certificate;
+import java.util.UUID;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -26,6 +29,7 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
 import org.apache.ignite.internal.util.nio.GridNioRecoveryDescriptor;
 import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
@@ -173,5 +177,9 @@ public class MockNioSession extends GridMetadataAwareAdapter implements GridNioS
     /** {@inheritDoc} */
     @Override public void systemMessage(Object msg) {
         // No-op.
+    }
+    
+    @Override public IgniteBiPredicate<UUID, ByteBuffer> messageListener(){
+    	return null;
     }
 }

@@ -95,7 +95,10 @@ public final class GridSqlType {
     public static GridSqlType fromColumn(Column c) {
         if (c.getName() != null)
             c = new Column(null, c.getType(), c.getPrecision(), c.getScale(), c.getDisplaySize());
-
+        // add@byron
+        if (c.getType()==Value.ENUM && c.getEnumerators()==null) {
+        	return new GridSqlType(c.getType(), c.getScale(), c.getPrecision(), c.getDisplaySize(),c.getOriginalSQL());
+        }
         return new GridSqlType(c.getType(), c.getScale(), c.getPrecision(), c.getDisplaySize(), c.getCreateSQL());
     }
 

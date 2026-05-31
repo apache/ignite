@@ -1,0 +1,531 @@
+:root {
+
+    --mpg-background-color-darker: rgb(51, 51, 51);
+    --mpg-background-color: rgb(64, 64, 64);
+    --mpg-brand-color-darker: hsl(93, 71%, 40%);
+    --mpg-brand-color-lighter: hsl(90, 67%, 48%);
+    --mpg-brand-color: hsl(90, 67%, 43%);
+    --mpg-danger-color: hsl(354, 70%, 54%);
+    --mpg-info-color: hsl(188, 78%, 41%);
+    --mpg-json-boolean-color: hsl(351, 94%, 83%);
+    --mpg-json-key-color: hsl(192, 79%, 65%);
+    --mpg-json-number-color: hsl(47, 75%, 60%);
+    --mpg-json-string-color: hsl(120, 67%, 75%);
+    --mpg-primary-color-darker: hsl(252, 53%, 52%);
+    --mpg-primary-color: hsl(252, 53%, 55%);
+    --mpg-secondary-color-darker: hsl(45, 100%, 45%);
+    --mpg-secondary-color: hsl(45, 100%, 51%);
+    --mpg-text-color: white;
+    
+}
+
+*:focus {
+
+    box-shadow: none !important;
+
+}
+
+body {
+
+    background-color: var(--mpg-background-color);
+    color: var(--mpg-text-color);
+    font-family: Arial, sans-serif;
+    
+}
+
+.navbar {
+
+    background-color: var(--mpg-brand-color-darker);
+    margin-bottom: 10px;
+
+}
+
+.navbar.sticky-top {
+
+    z-index: 1060;
+
+}
+
+@media screen and (min-width: 768px) {
+
+    .navbar {
+
+        flex-flow: row nowrap;
+        -ms-flex-pack: start;
+        justify-content: flex-start;
+    
+    }
+
+}
+
+.navbar-brand {
+
+    font-family: Ubuntu, ubuntu-medium;
+    position: relative;
+    left: 0;
+    top: -1px;
+
+}
+
+.navbar-brand, .navbar-nav .nav-link {
+
+    color: white !important;
+    padding: 5px;
+
+}
+
+.navbar-nav {
+
+    display: none;
+
+}
+
+.navbar.menu-expanded .navbar-nav {
+
+    -ms-flex-direction: column;
+    display: -ms-flexbox;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+
+}
+
+@media screen and (min-width: 768px) {
+
+    .navbar-nav {
+
+        display: -ms-flexbox;
+        display: flex;
+        -ms-flex-direction: row;
+        flex-direction: row;
+    
+    }
+    
+}
+
+@media screen and (min-width: 768px) and (max-width: 1199px) {
+
+    .navbar-brand-icon {
+        display: none;
+    }
+
+}
+
+#menu-toggle-button {
+
+    border: none;
+    background: none;
+
+    display: block;
+    position: absolute;
+    right: 10px;
+    top: 17px;
+
+    color: var(--mpg-text-color);
+
+}
+
+@media screen and (min-width: 768px) {
+
+    #menu-toggle-button {
+
+        display: none;
+    
+    }
+
+}
+
+.navbar-nav .nav-link {
+    opacity: 0.85;
+}
+
+.navbar-nav .nav-link:hover, .navbar-nav .nav-link.active {
+
+    opacity: 1;
+    color: #ffc107 !important;
+
+}
+
+@media screen and (min-width: 768px) {
+
+    #mpg-create-coll-button, #mpg-rename-coll-button {
+
+        margin-right: 7px;
+    
+    }
+
+}
+
+#mpg-import-notice {
+
+    margin-top: 10px;
+
+}
+
+#mpg-import-file {
+
+    border: none;
+    width: auto;
+    
+}
+
+@media screen and (max-width: 576px) {
+
+    #mpg-import-button {
+
+        margin-top: 10px;
+        
+    }
+
+}
+
+.vis-network {
+
+    cursor: pointer;
+
+}
+
+.vis-network:focus {
+
+    outline: none;
+
+}
+
+code {
+
+    font-size: 100%;
+
+}
+
+button, input {
+
+    border: 1px solid #ddd;
+
+}
+
+.CodeMirror,
+.json-container {
+
+    background-color: var(--mpg-background-color-darker);
+    font-family: Consolas, monospace;
+    padding: 10px;
+
+}
+
+.CodeMirror .cm-keyword {
+
+    color: var(--mpg-json-string-color);
+
+}
+
+.CodeMirror .cm-variable, /* Cf. Relaxed JSON syntax. */
+.CodeMirror .cm-property,
+.json-container .json-key {
+
+    color: var(--mpg-json-key-color);
+
+}
+
+.CodeMirror .cm-string,
+.json-container .json-string {
+
+    color: var(--mpg-json-string-color);
+
+}
+
+.CodeMirror .cm-number,
+.json-container .json-number {
+
+    color: var(--mpg-json-number-color);
+
+}
+
+.CodeMirror .cm-atom,
+.json-container .json-boolean {
+
+    color: var(--mpg-json-boolean-color);
+
+}
+
+.CodeMirror {
+
+    border: none;
+    color: var(--mpg-text-color);
+    height: auto;
+    margin-bottom: 10px;
+    min-height: 60px;
+    width: 100%;
+
+}
+
+.CodeMirror .CodeMirror-selected {
+
+    background-color: black;
+
+}
+
+li.CodeMirror-hint-active {
+
+    background-color: var(--mpg-brand-color);
+
+}
+
+.CodeMirror .mpg-history-pop-button {
+
+    background: none;
+    border: none;
+    color: var(--mpg-text-color);
+    position: absolute;
+    right: 8px;
+    top: 8px;
+    z-index: 100;
+
+}
+
+.CodeMirror .mpg-history-pop-button:focus {
+
+    outline: none;
+
+}
+
+.CodeMirror-cursor {
+
+    border-color: var(--mpg-text-color);
+
+}
+
+.CodeMirror-hints {
+
+    font-family: Consolas, monospace;
+    font-size: 100%;
+
+}
+
+.json-container .fas {
+
+    font: normal normal normal 14px/1 FontAwesome;
+    border-style: none;
+
+}
+
+.json-container .json-value[data-document-field-is-updatable="true"]:hover {
+
+    cursor: url("../../assets/images/pencil-icon.svg") 16 16, text;
+
+}
+
+.json-container .json-value {
+
+    min-width: 50px; /* This hack allows update of a short or empty value. */
+
+}
+
+#mpg-databases-list, #mpg-collections-list, #mpg-indexable-fields-list {
+
+    list-style-type: none;
+
+}
+
+.mpg-database-link, .mpg-collection-link {
+
+    color: var(--mpg-text-color);
+
+}
+
+.mpg-database-link:hover, .mpg-collection-link:hover,
+.mpg-database-link.active, .mpg-collection-link.active {
+
+    color: var(--mpg-brand-color);
+    font-weight: bold;
+
+}
+
+#mpg-find-button, #mpg-delete-one-button {
+
+    margin-left: 10px;
+
+}
+
+.btn-success {
+
+    background-color: var(--mpg-brand-color);
+    border-color: var(--mpg-brand-color);
+
+}
+
+.btn-success:hover, .btn-success:focus {
+
+    background-color: var(--mpg-brand-color-darker);
+    border-color: var(--mpg-brand-color-darker);
+
+}
+
+#mpg-output-column, #mpg-indexes-column {
+
+    margin-top: 15px;
+
+}
+
+.btn-primary {
+
+    background-color: var(--mpg-primary-color);
+    border-color: var(--mpg-primary-color);
+
+}
+
+.btn-primary:hover, .btn-primary:focus {
+
+    background-color: var(--mpg-primary-color-darker) !important;
+    border-color: var(--mpg-primary-color-darker) !important;
+
+}
+
+.btn-secondary {
+
+    background-color: var(--mpg-secondary-color);
+    border-color: var(--mpg-secondary-color);
+    color: black !important;
+
+}
+
+.btn-secondary:hover, .btn-secondary:focus {
+
+    background-color: var(--mpg-secondary-color-darker) !important;
+    border-color: var(--mpg-secondary-color-darker) !important;
+
+}
+
+#mpg-export-button, #mpg-open-create-user-modal-button {
+
+    position: relative;
+    top: -5px;
+    left: 0;
+
+    margin-left: 10px;
+
+}
+
+#mpg-index-order-select, #mpg-unique-index-select, #mpg-text-index-select {
+    width: auto;   
+}
+
+ .form-group-auto-width {
+    width: 40%;
+    margin: 10px;
+}
+
+#mpg-create-index-button {
+    margin-left: 10px;
+}
+
+.alert {
+
+    border: none;
+    color: var(--mpg-text-color);
+
+}
+
+.alert-danger {
+
+    background-color: var(--mpg-danger-color);
+
+}
+
+.alert-info {
+
+    background-color: var(--mpg-info-color);
+
+}
+
+.alert-success {
+
+    background-color: var(--mpg-brand-color-darker);
+
+}
+
+.alert-dismissible {
+
+    width: fit-content;
+
+}
+
+#mpg-index-created {
+
+    margin-top: 15px;
+    
+}
+
+@media screen and (max-width: 576px) {
+
+    #mpg-create-index-button {
+
+        margin-top: 10px;
+    
+    }
+
+}
+
+#mpg-users-table,
+#mpg-indexes-table {
+
+    background-color: white;
+
+}
+
+#mpg-users-table thead th,
+#mpg-indexes-table thead th {
+
+    background-color: var(--mpg-background-color-darker);
+    border: none;
+    color: var(--mpg-text-color);
+
+}
+
+#mpg-users-table tbody td,
+#mpg-indexes-table tbody td {
+
+    vertical-align: middle;
+
+}
+
+#mpg-create-user-modal {
+
+    top: 50px;
+    overflow-y: auto;
+
+}
+
+#mpg-create-user-modal label {
+
+    color: black;
+
+}
+
+@media screen and (min-width: 768px) {
+
+    #mpg-create-user-modal {
+
+        top: 45px;
+    
+    }
+
+}
+
+@media screen and (min-width: 768px) {
+
+    #mpg-create-user-modal .modal-dialog {
+
+        max-width: 300px;
+
+    }
+
+}
+
+.row .table {    
+    color: #28a745;
+}
+
+.row .table td {
+	word-wrap: break-word; /* 允许在单词内换行 */
+	word-break: break-all; /* 强制换行 */
+}

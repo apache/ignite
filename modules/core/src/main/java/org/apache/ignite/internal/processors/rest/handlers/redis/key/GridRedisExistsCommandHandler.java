@@ -21,8 +21,8 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
+
+import org.apache.ignite.*;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
@@ -36,7 +36,8 @@ import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_ALL;
-import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.EXISTS;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.*;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage.replaceInvalidCharsWithUnderscore;
 
 /**
  * Redis EXISTS command handler.
@@ -44,7 +45,7 @@ import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.Gri
 public class GridRedisExistsCommandHandler extends GridRedisRestCommandHandler {
     /** Supported commands. */
     private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
-        EXISTS
+        EXISTS,HEXISTS
     );
 
     /**
@@ -82,7 +83,7 @@ public class GridRedisExistsCommandHandler extends GridRedisRestCommandHandler {
         Map<Object, Object> mget = U.newHashMap(keys.size());
 
         for (String key : keys)
-            mget.put(key, null);
+            mget.put(key, key);
 
         restReq.values(mget);
 
@@ -90,8 +91,38 @@ public class GridRedisExistsCommandHandler extends GridRedisRestCommandHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public ByteBuffer makeResponse(final GridRestResponse restRes, List<String> params) {
-        return (restRes.getResponse() == null ? GridRedisProtocolParser.toInteger("0")
-            : GridRedisProtocolParser.toInteger(((Map<Object, Object>)restRes.getResponse()).size()));
+    @Override public ByteBuffer makeResponse(final GridRestResponse restRes, GridRedisMessage msg, List<String> params) {
+        int n = 0;
+        if(restRes.getResponse()!=null){
+            n = ((Map<Object, Object>)restRes.getResponse()).size();
+        }
+        if(n==0 && params.isEmpty()){ // is hash exist
+            String hashCache = msg.cacheName();
+            n = ctx.grid().cache(hashCache)==null? 0:1;
+        }
+        if(n==0 && params.size()==1){ // is stream exist
+            String streamCache = msg.cacheName()+'.'+replaceInvalidCharsWithUnderscore(params.get(0));
+            n = ctx.grid().cache(streamCache)==null? 0:1;
+        }
+        if(n==0 && params.size()==1){ // is atom exist
+            String key = params.get(0);
+            IgniteAtomicLong l = ctx.grid().atomicLong(key, 0, false);
+            n = l==null? 0:1;
+        }
+        if(n==0 && params.size()==1){ // is atom exist
+            String queueName = msg.cacheName()+"-"+msg.key();
+            IgniteQueue list = ctx.grid().queue(queueName,0,null);
+            if (list != null) {
+                n = 1;
+            }
+        }
+        if(n==0 && params.size()==1){ // is atom exist
+            String queueName = msg.cacheName()+"-"+msg.key();
+            IgniteSet set = ctx.grid().set(queueName,null);
+            if (set != null) {
+                n = 1;
+            }
+        }
+        return  GridRedisProtocolParser.toInteger(n);
     }
 }

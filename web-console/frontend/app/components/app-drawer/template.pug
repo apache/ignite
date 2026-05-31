@@ -1,0 +1,20 @@
+// app-drawer.template.pug
+.app-drawer-no-overlay(
+  ng-if="$ctrl.isOpen"
+  ng-click="$ctrl.close()"
+  ng-class="{'app-drawer-no-overlay--visible': $ctrl.isOpen}"
+)
+
+    .app-drawer(
+        ng-class="{'app-drawer--open': $ctrl.isOpen, 'app-drawer--right': $ctrl.position == 'right', 'app-drawer--left': $ctrl.position == 'left'}"
+        ng-style="{width: $ctrl.width}"
+        ng-click="$ctrl.stopPropagation($event)"
+    )
+        .app-drawer__header(ng-click="$ctrl.close()")
+            h3.app-drawer__title(ng-if="$ctrl.title") {{ $ctrl.title }}
+            button.app-drawer__close-button(
+                type="button"
+                ng-click="$ctrl.close()"
+            ) X
+        
+        .app-drawer__content(ng-transclude)

@@ -1,0 +1,18 @@
+
+modal-import-service {
+    display: block;
+}
+
+.modal-import-service-form {
+
+    .modal-dialog {
+        width: 900px;
+    }
+    .modal-content .modal-body {
+        display: flex;
+        flex-direction: row;
+        height: 100%;
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }    
+}

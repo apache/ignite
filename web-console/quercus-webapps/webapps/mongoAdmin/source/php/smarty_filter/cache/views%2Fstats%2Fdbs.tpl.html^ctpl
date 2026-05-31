@@ -1,0 +1,66 @@
+a:5:{s:4:"type";s:4:"ctpl";s:7:"version";s:4:"0.83";s:8:"bytecode";a:66:{i:0;s:4:"echo";i:1;s:20:"<div>
+<h3>Database ";i:2;s:6:"lookup";i:3;s:5:"stats";i:4;s:4:"push";i:5;s:2:"db";i:6;s:1:".";i:7;s:5:"print";i:8;s:4:"echo";i:9;s:146:" Stats</h3>
+                    
+<table class="table table-bordered table-striped">
+  <tr>
+    <td><strong>Collections</strong></td>
+    <td>";i:10;s:6:"lookup";i:11;s:5:"stats";i:12;s:4:"push";i:13;s:11:"collections";i:14;s:1:".";i:15;s:5:"print";i:16;s:4:"echo";i:17;s:73:"</td>
+  </tr>
+  <tr>
+    <td><strong>Data Size</strong></td>
+    <td>";i:18;s:6:"lookup";i:19;s:5:"stats";i:20;s:4:"push";i:21;s:8:"dataSize";i:22;s:1:".";i:23;s:5:"print";i:24;s:4:"echo";i:25;s:76:"</td>
+  </tr>
+  <tr>
+    <td><strong>Storage Size</strong></td>
+    <td>";i:26;s:6:"lookup";i:27;s:5:"stats";i:28;s:4:"push";i:29;s:11:"storageSize";i:30;s:1:".";i:31;s:5:"print";i:32;s:4:"echo";i:33;s:18:"</td>
+  </tr>
+  ";i:34;s:2:"if";i:35;a:1:{i:0;a:2:{i:0;a:5:{i:0;s:6:"lookup";i:1;s:5:"stats";i:2;s:4:"push";i:3;s:8:"fileSize";i:4;s:1:".";}i:1;a:10:{i:0;s:4:"echo";i:1;s:71:"
+    <tr>
+    <td><strong>File Size (on disk)</strong></td>
+    <td>";i:2;s:6:"lookup";i:3;s:5:"stats";i:4;s:4:"push";i:5;s:8:"fileSize";i:6;s:1:".";i:7;s:5:"print";i:8;s:4:"echo";i:9;s:20:"</td>
+    </tr>
+  ";}}}i:36;s:4:"echo";i:37;s:4:"
+  ";i:38;s:2:"if";i:39;a:1:{i:0;a:2:{i:0;a:5:{i:0;s:6:"lookup";i:1;s:5:"stats";i:2;s:4:"push";i:3;s:10:"avgObjSize";i:4;s:1:".";}i:1;a:10:{i:0;s:4:"echo";i:1;s:66:"
+    <tr>
+    <td><strong>Avg Obj Size #</strong></td>
+    <td>";i:2;s:6:"lookup";i:3;s:5:"stats";i:4;s:4:"push";i:5;s:10:"avgObjSize";i:6;s:1:".";i:7;s:5:"print";i:8;s:4:"echo";i:9;s:20:"</td>
+    </tr>
+  ";}}}i:40;s:4:"echo";i:41;s:4:"
+  ";i:42;s:2:"if";i:43;a:1:{i:0;a:2:{i:0;a:5:{i:0;s:6:"lookup";i:1;s:5:"stats";i:2;s:4:"push";i:3;s:7:"objects";i:4;s:1:".";}i:1;a:10:{i:0;s:4:"echo";i:1;s:61:"
+    <tr>
+    <td><strong>Objects #</strong></td>
+    <td>";i:2;s:6:"lookup";i:3;s:5:"stats";i:4;s:4:"push";i:5;s:7:"objects";i:6;s:1:".";i:7;s:5:"print";i:8;s:4:"echo";i:9;s:20:"</td>
+    </tr>
+  ";}}}i:44;s:4:"echo";i:45;s:4:"
+  ";i:46;s:2:"if";i:47;a:1:{i:0;a:2:{i:0;a:5:{i:0;s:6:"lookup";i:1;s:5:"stats";i:2;s:4:"push";i:3;s:10:"numExtents";i:4;s:1:".";}i:1;a:10:{i:0;s:4:"echo";i:1;s:61:"
+    <tr>
+    <td><strong>Extents #</strong></td>
+    <td>";i:2;s:6:"lookup";i:3;s:5:"stats";i:4;s:4:"push";i:5;s:10:"numExtents";i:6;s:1:".";i:7;s:5:"print";i:8;s:4:"echo";i:9;s:20:"</td>
+    </tr>
+  ";}}}i:48;s:4:"echo";i:49;s:4:"
+  ";i:50;s:2:"if";i:51;a:1:{i:0;a:2:{i:0;a:5:{i:0;s:6:"lookup";i:1;s:5:"stats";i:2;s:4:"push";i:3;s:17:"extentFreeListNum";i:4;s:1:".";}i:1;a:10:{i:0;s:4:"echo";i:1;s:69:"
+    <tr>
+    <td><strong>Extents Free List</strong></td>
+    <td>";i:2;s:6:"lookup";i:3;s:5:"stats";i:4;s:4:"push";i:5;s:17:"extentFreeListNum";i:6;s:1:".";i:7;s:5:"print";i:8;s:4:"echo";i:9;s:20:"</td>
+    </tr>
+  ";}}}i:52;s:4:"echo";i:53;s:4:"
+  ";i:54;s:2:"if";i:55;a:1:{i:0;a:2:{i:0;a:5:{i:0;s:6:"lookup";i:1;s:5:"stats";i:2;s:4:"push";i:3;s:7:"indexes";i:4;s:1:".";}i:1;a:10:{i:0;s:4:"echo";i:1;s:61:"
+    <tr>
+    <td><strong>Indexes #</strong></td>
+    <td>";i:2;s:6:"lookup";i:3;s:5:"stats";i:4;s:4:"push";i:5;s:7:"indexes";i:6;s:1:".";i:7;s:5:"print";i:8;s:4:"echo";i:9;s:20:"</td>
+    </tr>
+  ";}}}i:56;s:4:"echo";i:57;s:4:"
+  ";i:58;s:2:"if";i:59;a:1:{i:0;a:2:{i:0;a:5:{i:0;s:6:"lookup";i:1;s:5:"stats";i:2;s:4:"push";i:3;s:9:"indexSize";i:4;s:1:".";}i:1;a:10:{i:0;s:4:"echo";i:1;s:62:"
+    <tr>
+    <td><strong>Index Size</strong></td>
+    <td>";i:2;s:6:"lookup";i:3;s:5:"stats";i:4;s:4:"push";i:5;s:9:"indexSize";i:6;s:1:".";i:7;s:5:"print";i:8;s:4:"echo";i:9;s:20:"</td>
+    </tr>
+  ";}}}i:60;s:4:"echo";i:61;s:4:"
+  ";i:62;s:2:"if";i:63;a:1:{i:0;a:2:{i:0;a:5:{i:0;s:6:"lookup";i:1;s:5:"stats";i:2;s:4:"push";i:3;s:15:"dataFileVersion";i:4;s:1:".";}i:1;a:10:{i:0;s:4:"echo";i:1;s:69:"
+    <tr>
+    <td><strong>Data File Version</strong></td>
+    <td>";i:2;s:6:"lookup";i:3;s:5:"stats";i:4;s:4:"push";i:5;s:15:"dataFileVersion";i:6;s:1:".";i:7;s:5:"print";i:8;s:4:"echo";i:9;s:20:"</td>
+    </tr>
+  ";}}}i:64;s:4:"echo";i:65;s:18:"
+</table>
+</div>";}s:7:"inherit";N;s:8:"sections";a:0:{}}

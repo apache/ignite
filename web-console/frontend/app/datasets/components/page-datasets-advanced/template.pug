@@ -1,0 +1,18 @@
+
+include /app/helpers/jade/mixins
+include /app/configuration/mixins
+
+- const model = '$ctrl.clonedDatasource'
+- let form = '$ctrl.form'
+
+form(novalidate name=form)
+    h2.pcb-section-header.pcb-inner-padding 1. Advanced Settings
+    
+    .panel-group
+        include ./basic-form
+
+    .pc-form-actions-panel        
+        span.message {{ $ctrl.$scope.message }}
+        .pc-form-actions-panel__right-after        
+       
+        pc-split-button(actions=`::$ctrl.formActionsMenu`)

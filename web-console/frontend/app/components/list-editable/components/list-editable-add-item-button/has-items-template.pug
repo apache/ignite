@@ -1,0 +1,10 @@
+
+
+button.btn-ignite.btn-ignite--link(
+    list-editable-add-item-button-has-items-button
+    type='button'
+    ng-if='$ctrl.hasItems'
+    ng-click='$ctrl.addItem()'
+    translate='listEditableComponent.addNewItemsButtonLabel'
+    translate-values='::{entity: $ctrl.labelSingle}'
+)

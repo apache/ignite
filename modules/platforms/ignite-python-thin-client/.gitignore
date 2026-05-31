@@ -1,0 +1,16 @@
+.idea
+.benchmarks
+.vscode
+.eggs
+.pytest_cache
+.tox
+*.so
+build
+distr
+docs/generated
+tests/config/*.xml
+junit*.xml
+pyignite.egg-info
+ignite-log-*
+__pycache__
+venv

@@ -18,16 +18,10 @@
 package org.apache.ignite.internal.processors.rest.handlers.cache;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
+import java.nio.file.PathMatcher;
+import java.util.*;
 import java.util.concurrent.Callable;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ModifiedExpiryPolicy;
@@ -100,6 +94,7 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_C
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_CLEAR;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_CONTAINS_KEY;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_CONTAINS_KEYS;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_KEYS;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_ALL;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_AND_PUT;
@@ -133,6 +128,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         DESTROY_CACHE,
         GET_OR_CREATE_CACHE,
         CACHE_CONTAINS_KEYS,
+        CACHE_GET_KEYS,
         CACHE_CONTAINS_KEY,
         CACHE_GET,
         CACHE_GET_AND_PUT,
@@ -452,6 +448,13 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
                     break;
                 }
+                
+                case CACHE_GET_KEYS: {
+                    fut = executeCommand(req.destinationId(), req0.cacheName(), cacheFlags, key,
+                        new GetKeysCommand(key));
+
+                    break;
+                }
 
                 case CACHE_CONTAINS_KEY: {
                     fut = executeCommand(req.destinationId(), req0.cacheName(), cacheFlags, key,
@@ -531,7 +534,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                     }
 
                     // HashMap wrapping for correct serialization
-                    map = new HashMap<>(map);
+                    map = new TreeMap<>(map);
 
                     fut = executeCommand(req.destinationId(), req0.cacheName(), cacheFlags, key,
                         new PutAllCommand(map));
@@ -571,7 +574,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                     Map<Object, Object> map = req0.values();
 
                     // HashSet wrapping for correct serialization
-                    Set<Object> keys = map == null ? null : new HashSet<>(map.keySet());
+                    Set<Object> keys = map == null ? null : new TreeSet<>(map.keySet());
 
                     fut = executeCommand(req.destinationId(), req0.cacheName(), cacheFlags, key,
                         new RemoveAllCommand(keys));
@@ -1016,7 +1019,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             Map<ComputeJob, ClusterNode> map = U.newHashMap(F.isEmpty(cacheName) ? subgrid.size() : 1);
 
             if (!F.isEmpty(cacheName)) {
-                for (int i = 1; i < subgrid.size(); i++) {
+                for (int i = 0; i < subgrid.size(); i++) {
                     if (discovery.nodePublicCaches(subgrid.get(i)).keySet().contains(cacheName)) {
                         MetadataJob job = new MetadataJob();
 
@@ -1182,6 +1185,40 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         /** {@inheritDoc} */
         @Override public IgniteInternalFuture<?> applyx(IgniteInternalCache<Object, Object> c, GridKernalContext ctx) {
             return c.containsKeysAsync(keys);
+        }
+    }
+    
+    /** */
+    private static class GetKeysCommand extends CacheProjectionCommand {
+        /** */
+        private static final long serialVersionUID = 0L;
+        
+        /** */
+        private final Object key;
+
+        /**
+         * @param key filter key: tableName where field = value.
+         */
+        GetKeysCommand(Object key) {
+            this.key = key;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteInternalFuture<?> applyx(IgniteInternalCache<Object, Object> c, GridKernalContext ctx) {
+        	List<Object> keys = new ArrayList<>();        	
+        	
+        	if(key!=null && key instanceof String && !key.toString().isEmpty() && !key.equals("*")) {
+        		PathMatcher pathMatcher = FileSystems.getDefault().getPathMatcher("glob:"+key);
+        		for(Object iKey: c.keySet()) {
+        			if(iKey instanceof String && pathMatcher.matches(Path.of(iKey.toString()))){
+        				keys.add(iKey);
+    				}
+                }
+        	}
+        	else {
+        		keys.addAll(c.keySet());
+        	}
+        	return new GridFinishedFuture<>(keys);
         }
     }
 
@@ -1351,6 +1388,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             return c.getAllAsync(keys);
         }
     }
+   
 
     /** */
     private static class PutAllCommand extends CacheProjectionCommand {
@@ -1710,22 +1748,23 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
             return ctx.closure().callLocalSafe(new GridPlainCallable<Object>() {
                 @Override public Object call() throws Exception {
-                    EntryProcessorResult<Boolean> res = c.invoke(key, new EntryProcessor<Object, Object, Boolean>() {
-                        @Override public Boolean process(MutableEntry<Object, Object> entry,
-                            Object... objects) throws EntryProcessorException {
+                    EntryProcessorResult<Long> res = c.invoke(key, new EntryProcessor<Object, Object, Long>() {
+                        @Override public Long process(MutableEntry<Object, Object> entry,Object... objects) throws EntryProcessorException {
                             GridCacheEntryEx ex = ((CacheInvokeEntry)entry).entry();
 
                             if (entry.getValue() == null)
-                                return false;
-
+                                return -2L;
+                            Long old = -1L;
                             try {
-                                ex.updateTtl(ex.version(), ttl);
+                                old = ex.ttl();
+                                if(ttl!=Long.MIN_VALUE) {
+                                    ex.updateTtl(ex.version(), ttl);
+                                }
                             }
                             catch (GridCacheEntryRemovedException e) {
                                 throw new EntryProcessorException(e.getCause());
                             }
-
-                            return true;
+                            return old;
                         }
                     });
 

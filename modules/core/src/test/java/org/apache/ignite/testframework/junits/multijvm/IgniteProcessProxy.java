@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import javax.cache.CacheException;
 import org.apache.ignite.DataRegionMetrics;
-import org.apache.ignite.DataRegionMetricsAdapter;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
@@ -47,6 +47,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteEncryption;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteLogger;
@@ -59,7 +60,6 @@ import org.apache.ignite.IgniteSet;
 import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
@@ -715,6 +715,7 @@ public class IgniteProcessProxy implements IgniteEx {
     @Override public <K, V> IgniteDataStreamer<K, V> dataStreamer(@Nullable String cacheName) {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
+    
 
     /** {@inheritDoc} */
     @Override public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create)
@@ -828,16 +829,6 @@ public class IgniteProcessProxy implements IgniteEx {
     /** {@inheritDoc} */
     @Override public IgniteSnapshot snapshot() {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<MemoryMetrics> memoryMetrics() {
-        return DataRegionMetricsAdapter.collectionOf(dataRegionMetrics());
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public MemoryMetrics memoryMetrics(String memPlcName) {
-        return DataRegionMetricsAdapter.valueOf(dataRegionMetrics(memPlcName));
     }
 
     /** {@inheritDoc} */
@@ -963,4 +954,16 @@ public class IgniteProcessProxy implements IgniteEx {
             return ((IgniteEx)ignite).localNode();
         }
     }
+
+	@Override
+	public IgniteFileSystem fileSystem(String name) throws IllegalArgumentException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Collection<IgniteFileSystem> fileSystems() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

@@ -1,0 +1,13 @@
+
+
+.timed-redirection--wrapper
+    h1 {{::$ctrl.headerText}}
+
+    .sub-header {{::$ctrl.subHeaderText}}
+
+    .redirection-text(
+        translate='timedRedirectionComponent.message'
+        translate-values='{secondsLeft: $ctrl.secondsLeft}'
+        translate-sanitize-strategy='null'
+        translate-compile
+    )

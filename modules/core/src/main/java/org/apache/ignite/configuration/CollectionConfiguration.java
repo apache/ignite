@@ -44,11 +44,7 @@ public class CollectionConfiguration implements Serializable {
     private IgnitePredicate<ClusterNode> nodeFilter;
 
     /** Number of backups. */
-    private int backups;
-
-    /** Off-heap memory size. */
-    @Deprecated
-    private long offHeapMaxMem = -1;
+    private int backups;    
 
     /** Collocated flag. */
     private boolean collocated;
@@ -144,27 +140,7 @@ public class CollectionConfiguration implements Serializable {
         return this;
     }
 
-    /**
-     * @return Off-heap memory size.
-     * @deprecated No longer used.
-     */
-    @Deprecated
-    public long getOffHeapMaxMemory() {
-        return offHeapMaxMem;
-    }
-
-    /**
-     * @param offHeapMaxMemory Off-heap memory size.
-     * @return {@code this} for chaining.
-     * @deprecated No longer used.
-     */
-    @Deprecated
-    public CollectionConfiguration setOffHeapMaxMemory(long offHeapMaxMemory) {
-        offHeapMaxMem = offHeapMaxMemory;
-
-        return this;
-    }
-
+    
     /**
      * @return Group name.
      */

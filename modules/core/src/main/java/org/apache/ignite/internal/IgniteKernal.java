@@ -43,7 +43,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.CacheException;
 import org.apache.ignite.DataRegionMetrics;
-import org.apache.ignite.DataRegionMetricsAdapter;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
@@ -59,6 +58,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteEncryption;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteMessaging;
@@ -71,7 +71,6 @@ import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterGroup;
@@ -237,6 +236,8 @@ import static org.apache.ignite.internal.GridKernalState.STOPPING;
 import static org.apache.ignite.internal.IgniteComponentType.COMPRESSION;
 import static org.apache.ignite.internal.IgniteComponentType.QUERY_ENGINE;
 import static org.apache.ignite.internal.IgniteComponentType.SCHEDULE;
+import static org.apache.ignite.internal.IgniteComponentType.IGFS_HELPER;
+import static org.apache.ignite.internal.IgniteComponentType.IGFS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_DATE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CLIENT_MODE;
@@ -973,6 +974,8 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             // Starts lifecycle aware components.
             U.startLifecycleAware(lifecycleAwares(cfg));
 
+            ctx.addHelper(IGFS_HELPER.create(F.isEmpty(cfg.getFileSystemConfiguration())));
+            
             startProcessor(new IgnitePluginProcessor(ctx, cfg, plugins));
 
             startProcessor(new FailureProcessor(ctx));
@@ -1099,6 +1102,8 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 startProcessor((GridProcessor)SCHEDULE.createOptional(ctx));
                 startProcessor(createComponent(IgniteRestProcessor.class, ctx));
                 startProcessor(new DataStreamProcessor(ctx));
+                // add@byron
+                startProcessor((GridProcessor)IGFS.create(ctx, F.isEmpty(cfg.getFileSystemConfiguration())));
                 startProcessor(new GridContinuousProcessor(ctx));
                 startProcessor(new DataStructuresProcessor(ctx));
                 startProcessor(createComponent(PlatformProcessor.class, ctx));
@@ -1492,7 +1497,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             for (Map.Entry<String, String> sysEntry : System.getenv().entrySet()) {
                 String name = sysEntry.getKey();
 
-                if (incProps == null || U.containsStringArray(incProps, name, true) ||
+                if (incProps != null && U.containsStringArray(incProps, name, true) ||
                     U.isVisorNodeStartProperty(name) || U.isVisorRequiredProperty(name))
                     ctx.addNodeAttribute(name, sysEntry.getValue());
             }
@@ -1511,7 +1516,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             for (Map.Entry<Object, Object> e : IgniteSystemProperties.snapshot().entrySet()) {
                 String key = (String)e.getKey();
 
-                if (incProps == null || U.containsStringArray(incProps, key, true) ||
+                if (incProps != null && U.containsStringArray(incProps, key, true) ||
                     U.isVisorRequiredProperty(key)) {
                     Object val = ctx.nodeAttribute(key);
 
@@ -2634,6 +2639,44 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         }
     }
 
+
+    /** {@inheritDoc} */
+    @Override public IgniteFileSystem fileSystem(String name) {
+        if (name == null)
+            throw new IllegalArgumentException("IGFS name cannot be null");
+
+        guard();
+
+        try {
+            checkClusterState();
+
+            IgniteFileSystem fs = ctx.igfs().igfs(name);
+
+            if (fs == null)
+                throw new IllegalArgumentException("IGFS is not configured: " + name);
+
+            return fs;
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<IgniteFileSystem> fileSystems() {
+        guard();
+
+        try {
+            checkClusterState();
+
+            return ctx.igfs().igfss();
+        }
+        finally {
+            unguard();
+        }
+    }
+
+
     /** {@inheritDoc} */
     @Override public <T extends IgnitePlugin> T plugin(String name) throws PluginNotFoundException {
         guard();
@@ -2793,16 +2836,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     @Override public IgniteSnapshot snapshot() {
         return ctx.cache().context().snapshotMgr();
     }
-
-    /** {@inheritDoc} */
-    @Override public Collection<MemoryMetrics> memoryMetrics() {
-        return DataRegionMetricsAdapter.collectionOf(dataRegionMetrics());
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public MemoryMetrics memoryMetrics(String memPlcName) {
-        return DataRegionMetricsAdapter.valueOf(dataRegionMetrics(memPlcName));
-    }
+   
 
     /** {@inheritDoc} */
     @Nullable @Override public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create) {

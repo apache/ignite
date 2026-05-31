@@ -26,7 +26,7 @@
     <parent>
         <groupId>org.apache.ignite</groupId>
         <artifactId>ignite-parent</artifactId>
-        <version>${revision}</version>
+        <version>2.16.999-SNAPSHOT</version>
         <relativePath>../../parent/pom.xml</relativePath>
     </parent>
 
@@ -34,27 +34,11 @@
 
     <url>http://ignite.apache.org</url>
 
+    <properties>
+        <src.javaspecific.dir>src/main/java15</src.javaspecific.dir>
+    </properties>
+
     <profiles>
-        <profile>
-            <id>java-11+</id>
-            <activation>
-                <jdk>[11,15)</jdk>
-            </activation>
-            <properties>
-                <src.javaspecific.dir>src/main/java11</src.javaspecific.dir>
-            </properties>
-        </profile>
-
-        <profile>
-            <id>java-15+</id>
-            <activation>
-                <jdk>[15,)</jdk>
-            </activation>
-            <properties>
-                <src.javaspecific.dir>src/main/java15</src.javaspecific.dir>
-            </properties>
-        </profile>
-
         <profile>
             <!--
             This profile is used to provide a check that all tests are defined in at least one suite.

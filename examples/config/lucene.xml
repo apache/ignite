@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd">
+    	
+	<bean id="simple_text" class="org.apache.lucene.analysis.core.SimpleAnalyzer">		
+	</bean> 
+	
+<!--
+	<bean id="index_text_cn" class="com.hankcs.lucene.HanLPIndexAnalyzer">		
+	</bean>   
+	<bean id="query_text_cn" class="com.hankcs.lucene.HanLPAnalyzer">		
+	</bean> 
+-->
+
+
+	<bean id="index_factory" class="org.apache.lucene.analysis.jieba.JiebaTokenizerFactory">		
+		<constructor-arg >
+			<map>
+				<entry key="stopWordDictionaryPath" value="classpath" />		
+			</map>
+		</constructor-arg>
+	</bean>  
+
+	<bean id="index_text_cn" class="org.apache.lucene.analysis.jieba.JiebaIndexAnalyzer">		
+		<constructor-arg ref="index_factory"></constructor-arg>
+	</bean>   
+	<bean id="query_text_cn" class="org.apache.lucene.analysis.jieba.JiebaAnalyzer">	
+		<constructor-arg ref="index_factory"></constructor-arg>	
+	</bean>
+
+	<bean id="default" class="org.apache.ignite.cache.LuceneConfiguration">		
+		<property name="indexAnalyzer" ref="index_text_cn" />
+		<property name="queryAnalyzer" ref="query_text_cn" />
+		<property name="fieldAnalyzerMap">
+			<map>
+				<entry key="tag" value-ref="simple_text" />			
+			</map>
+		</property>		
+	</bean>
+
+</beans>

@@ -320,7 +320,7 @@ public class PartitionReservationManager implements PartitionsExchangeAware {
                             if (grp.register(reserved.subList(reserved.size() - reservedCnt, reserved.size()))) {
                                 reservations.put(grpKey, grp);
 
-                                grp.onPublish(new CI1<>() {
+                                grp.onPublish(new CI1<GridDhtPartitionsReservation>() {
                                     @Override public void apply(GridDhtPartitionsReservation r) {
                                         reservations.remove(grpKey, r);
                                     }

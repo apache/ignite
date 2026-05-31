@@ -39,6 +39,9 @@ public enum GridRestCommand {
 
     /** Contains cached values. */
     CACHE_CONTAINS_KEYS("conkeys"),
+    
+    /** get cached keys. */
+    CACHE_GET_KEYS("keys"),
 
     /** Get several cached values. */
     CACHE_GET_ALL("getall"),

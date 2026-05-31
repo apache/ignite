@@ -1,0 +1,17 @@
+
+.modal.modal--ignite.theme--ignite.center(tabindex='-1' role='dialog')
+    .modal-dialog
+        .modal-content
+            .modal-header
+                button.close(ng-click='$hide()' aria-hidden='true')
+                    svg(ignite-icon="cross")
+                h4.modal-title
+                    svg(ignite-icon="attention")
+                    | {{title}}
+            .modal-body(ng-show='content')
+                .modal-body--inner-content
+                    p(ng-bind-html='content.join("<br/>")')
+            .modal-footer
+                div(ng-show='meta') {{meta}}
+                div
+                    button.btn-ignite.btn-ignite--success(ng-click='$hide()') Ok

@@ -1,0 +1,13 @@
+graft requirements
+graft examples
+graft docs
+recursive-exclude docs/generated *
+graft tests
+recursive-exclude tests/config *.xml
+recursive-exclude tests/logs *
+global-exclude *.py[cod]
+global-exclude *__pycache__*
+include tox.ini
+include README.md
+include LICENSE
+include NOTICE

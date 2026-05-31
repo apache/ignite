@@ -1564,20 +1564,6 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             throw new UnsupportedOperationException();
         }
 
-        /** {@inheritDoc} */
-        @Override public IgniteAsyncSupport withAsync() {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isAsync() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public <R> IgniteFuture<R> future() {
-            throw new UnsupportedOperationException();
-        }
     }
 
     /** Enumeration that represents possible operations on the underlying store. */

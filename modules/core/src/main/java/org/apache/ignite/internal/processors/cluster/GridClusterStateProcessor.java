@@ -1398,7 +1398,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
                 try {
                     GridInternalSubscriptionProcessor isp = ctx.internalSubscriptionProcessor();
-
+                    
                     for (IgniteChangeGlobalStateSupport lsnr : isp.getGlobalStateListeners())
                         lsnr.onActivate(ctx);
 

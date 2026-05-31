@@ -1,0 +1,36 @@
+
+
+pc-items-table(
+    table-title='::"My domain models"'
+    column-defs='$ctrl.columnDefs'
+    items='$ctrl.shortItems$|async:this'
+    actions-menu='$ctrl.tableActions$|async:this'
+    selected-row-id='$ctrl.selectionManager.selectedItemIDs$|async:this'
+    one-way-selection='::true'
+    on-selection-change='$ctrl.selectedRows$.next($event)'
+    on-filter-changed='$ctrl.filterChanges$.next($event)'
+    on-visible-rows-change='$ctrl.visibleRows$.next($event)'
+)
+    footer-slot
+        div(style='font-style: italic' ng-hide='($ctrl.shortItems$|async:this).length')
+            | You have no models. #[a.link-success(ui-sref='base.configuration.edit.advanced.models.model({modelID: "new"})') Create one?]
+        a.link-success(
+            ui-sref='base.configuration.edit.advanced.models.model({modelID: "new"})'
+            ng-show='($ctrl.shortItems$|async:this).length'
+        ) + Add new model
+
+h2.pc-page-header.ng-animate-disabled(ng-if='!($ctrl.itemID$|async:this)')
+    | {{ ($ctrl.selectionManager.selectedItemIDs$|async:this).length ? 'Multiple' : 'No' }} models selected
+    span.pc-page-header-sub Select only one model to see settings and edit it
+
+h2.pc-page-header.ng-animate-disabled(ng-if='$ctrl.itemID$|async:this')
+    | {{ $ctrl.itemEditTitle$|async:this }}
+
+model-edit-form(
+    model='$ctrl.originalItem$|async:this'
+    on-save='$ctrl.save($event)'
+    caches='$ctrl.shortCaches$|async:this'
+    ng-class='{"pca-form-blocked": !($ctrl.itemID$|async:this)}'
+    fake-ui-can-exit='base.configuration.edit.advanced.models.model'
+    form-ui-can-exit-guard
+)

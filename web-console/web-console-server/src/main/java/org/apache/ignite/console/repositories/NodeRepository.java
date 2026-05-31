@@ -1,0 +1,193 @@
+
+
+package org.apache.ignite.console.repositories;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import org.apache.ignite.Ignite;
+import org.apache.ignite.console.db.OneToManyIndex;
+import org.apache.ignite.console.db.Table;
+import org.apache.ignite.console.dto.Activity;
+import org.apache.ignite.console.tx.TransactionManager;
+import org.springframework.stereotype.Repository;
+
+/**
+ * Repository to work with node activities. uuid is consistentId not node ID
+ */
+@Repository
+public class NodeRepository {
+    /** */
+    private final TransactionManager txMgr;
+
+    /** */
+    private Table<Activity> activitiesTbl;
+
+    /** acc_id -> node_id */
+    private OneToManyIndex<UUID, UUID> activitiesIdx;
+
+    /**
+     * @param ignite Ignite.
+     * @param txMgr Transactions manager.
+     */
+    public NodeRepository(Ignite ignite, TransactionManager txMgr) {
+        this.txMgr = txMgr;
+
+        txMgr.registerStarter(() -> {
+            activitiesTbl = new Table<>(ignite, "wc_nodes");
+            activitiesIdx = new OneToManyIndex<>(ignite, "wc_account_nodes_idx");
+        });
+    }
+    
+    /**
+     * GET activity List.
+     *
+     * @param accId Account ID.
+     * @param grp Activity group.
+     *
+     * @return Activity.
+     */
+    public List<Activity> list(UUID accId, String grp) {
+        return txMgr.doInTransaction(() -> {
+            
+            Set<UUID> ids = activitiesIdx.get(accId);
+
+            Collection<Activity> activities = activitiesTbl.loadAll(ids);
+
+            List<Activity> activityList = activities
+                .stream()
+                .filter(item -> item.getGroup().equals(grp))
+                .collect(Collectors.toList())
+                ;
+           
+            return activityList;
+        });
+    }
+
+    /**
+     * GET activity List.
+     *
+     * @param accId Account ID.
+     * @param grp Activity group.
+     * @param act Activity action.
+     *
+     * @return Activity.
+     */
+    public List<Activity> list(UUID accId, String grp,String act) {
+        return txMgr.doInTransaction(() -> {
+
+            Set<UUID> ids = activitiesIdx.get(accId);
+
+            Collection<Activity> activities = activitiesTbl.loadAll(ids);
+
+            List<Activity> activityList = activities
+                    .stream()
+                    .filter(item -> item.getGroup().equals(grp) && item.getAction().equals(act))
+                    .collect(Collectors.toList())
+                    ;
+
+            return activityList;
+        });
+    }
+
+    /**
+     * Save activity.
+     *
+     * @param accId Account ID.
+     * @param grp Node group.
+     * @param act Node adressses.
+     *
+     * @return Activity.
+     */
+    public Activity save(UUID accId, UUID nodeId, String grp, String act) {
+        return save(accId,nodeId,grp,act,null);
+    }
+
+    public Activity save(UUID accId, UUID nodeId, String grp, String act,String json) {
+        return txMgr.doInTransaction(() -> {
+
+            Activity activity = activitiesTbl.get(nodeId);
+            if(activity==null)
+                activity = new Activity(nodeId, accId, grp, act, 1);
+            else {
+                activity.increment(1);
+                activity.setGroup(grp);
+                activity.setAction(act);
+            }
+
+            if(json!=null)
+                activity.json(json);
+
+            activitiesTbl.save(activity);
+
+            activitiesIdx.add(accId, nodeId);
+
+            return activity;
+        });
+    }
+
+    
+    /**
+     * delete activity.
+     *
+     * @param accId Account ID.     
+     *
+     * @return Activity.
+     */
+    public Activity delete(UUID accId, UUID nodeId) {
+        return txMgr.doInTransaction(() -> {
+            activitiesIdx.remove(accId,nodeId);
+
+            return activitiesTbl.delete(nodeId);
+        });
+    }
+    
+    /**
+     * delete activity.
+     *
+     * @param accId Account ID.
+     * @param grp Activity group.
+     * @param act Activity action.
+     *
+     * @return Activity.
+     */
+    public Activity delete(UUID accId, String grp, String act) {
+        return txMgr.doInTransaction(() -> {
+            
+            Set<UUID> ids = activitiesIdx.get(accId);
+
+            Collection<Activity> activities = activitiesTbl.loadAll(ids);
+
+            Activity activity = activities
+                .stream()
+                .filter(item -> item.getGroup().equals(grp) && item.getAction().equals(act))
+                .findFirst()
+                .orElse(null);
+            
+            if(activity!=null) {
+	            activitiesTbl.delete(activity.getId());
+	
+	            activitiesIdx.remove(accId, activity.getId());
+            }
+
+            return activity;
+        });
+    }
+
+    
+
+    /**
+     * @param activity Activity to save.
+     */
+    public void save(UUID accId, Activity activity) {
+        txMgr.doInTransaction(() -> {
+
+            activitiesTbl.save(activity);
+
+            activitiesIdx.add(accId, activity.getId());
+        });
+    }
+}

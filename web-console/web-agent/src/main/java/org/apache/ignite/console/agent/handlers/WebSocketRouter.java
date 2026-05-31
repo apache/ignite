@@ -1,0 +1,937 @@
+package org.apache.ignite.console.agent.handlers;
+
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteIllegalStateException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cluster.ClusterStartNodeResult;
+import org.apache.ignite.compute.ComputeTaskFuture;
+import org.apache.ignite.console.agent.AgentConfiguration;
+import org.apache.ignite.console.agent.AgentUtils;
+import org.apache.ignite.console.agent.IgniteClusterLauncher;
+import org.apache.ignite.console.agent.code.CrudUICodeGenerator;
+import org.apache.ignite.console.agent.db.DataSourceManager;
+import org.apache.ignite.console.agent.rest.GremlinExecutor;
+import org.apache.ignite.console.agent.rest.RestRequest;
+import org.apache.ignite.console.agent.rest.RestResult;
+import org.apache.ignite.console.agent.service.CacheAgentService;
+import org.apache.ignite.console.agent.service.ClusterAgentService;
+import org.apache.ignite.console.agent.service.ClusterAgentServiceManager;
+import org.apache.ignite.console.agent.service.ServiceResult;
+import org.apache.ignite.console.agent.task.CacheServiceMapperTask;
+import org.apache.ignite.console.demo.AgentClusterDemo;
+import org.apache.ignite.console.demo.AgentMetadataDemo;
+import org.apache.ignite.console.utils.Utils;
+import org.apache.ignite.console.websocket.AgentHandshakeRequest;
+import org.apache.ignite.console.websocket.AgentHandshakeResponse;
+import org.apache.ignite.console.websocket.WebSocketRequest;
+import org.apache.ignite.console.websocket.WebSocketResponse;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.logger.slf4j.Slf4jLogger;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.websocket.api.Frame;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.annotations.*;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.nio.ByteBuffer;
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
+
+import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.ignite.console.agent.AgentUtils.*;
+import static org.apache.ignite.console.agent.handlers.DemoClusterHandler.DEMO_CLUSTER_ID;
+import static org.apache.ignite.console.agent.handlers.DemoClusterHandler.DEMO_CLUSTER_NAME;
+import static org.apache.ignite.console.utils.Utils.fromJson;
+import static org.apache.ignite.console.websocket.AgentHandshakeRequest.CURRENT_VER;
+import static org.apache.ignite.console.websocket.WebSocketEvents.*;
+
+/**
+ * Router that listen for web socket and redirect messages to event bus.
+ */
+@WebSocket(maxTextMessageSize = 8 * 1024 * 1024, maxBinaryMessageSize = 8 * 1024 * 1024)
+public class WebSocketRouter implements AutoCloseable {
+    /** */
+    private static final IgniteLogger logger = new Slf4jLogger(LoggerFactory.getLogger(WebSocketRouter.class));
+
+    /** Pong message. */
+    private static final ByteBuffer PONG_MSG = UTF_8.encode("PONG");
+
+    /** Default error messages. */
+    private static final Map<String, String> ERROR_MSGS = Collections.unmodifiableMap(Stream.of(
+        entry(SCHEMA_IMPORT_DRIVERS, "Failed to collect list of JDBC drivers"),
+        entry(SCHEMA_IMPORT_SCHEMAS, "Failed to collect database schemas"),
+        entry(SCHEMA_IMPORT_METADATA, "Failed to collect database metadata"),
+        entry(NODE_REST, "Failed to handle REST request"),
+        entry(NODE_VISOR, "Failed to handle Visor task request")).
+        collect(entriesToMap()));
+
+    /** Close agent latch. */
+    private CountDownLatch closeLatch = null;
+
+    /** Agent configuration. */
+    private final AgentConfiguration cfg;
+
+    /** Websocket Client. */
+    private final WebSocketClient client;
+
+	/** Schema import handler. */
+    private final DatabaseHandler dbHnd;
+
+    /** Cluster handler. */
+    private final RestClusterHandler clusterHnd;
+
+    /** Demo cluster handler. */
+    private final DemoClusterHandler demoClusterHnd;
+    
+    /** Vertx cluster handler. */
+    private final VertxClusterHandler vertxClusterHnd;
+
+    /** Cluster watcher. */
+    private final ClustersWatcher watcher;
+
+    /** Reconnect count. */
+    private AtomicInteger reconnectAttempts = new AtomicInteger(0);
+
+    private AtomicBoolean connected = new AtomicBoolean(false);
+
+    /** Active tokens after handshake. */
+    private Collection<String> validTokens;     
+    
+    private HttpClient httpClient;
+
+    private Session session;
+
+    private URI uri;
+
+    private ScheduledExecutorService reconnectExecutor = ClustersWatcher.pool;
+    
+    private Map<String,Object> runningServices = new ConcurrentHashMap<>();
+
+    // 重连配置
+    private int maxReconnectAttempts = -1;      // 最大重连次数，-1 表示无限
+    private int initialDelay = 1000;             // 初始重连延迟（毫秒）
+    private int maxDelay = 60000;               // 最大重连延迟（毫秒）
+    
+    /**
+     * @param cfg Configuration.
+     */
+    public WebSocketRouter(AgentConfiguration cfg) {
+        this.cfg = cfg;
+
+        dbHnd = new DatabaseHandler(cfg);
+        clusterHnd = new RestClusterHandler(cfg);
+        demoClusterHnd = new DemoClusterHandler(cfg);
+        vertxClusterHnd = new VertxClusterHandler(cfg);
+
+        watcher = new ClustersWatcher(cfg, clusterHnd,demoClusterHnd,dbHnd,vertxClusterHnd);
+        uri = URI.create(cfg.serverUri()).resolve(AGENTS_PATH);
+        
+        createServerSslFactory(cfg);
+        httpClient = new HttpClient();
+        httpClient.setMaxConnectionsPerDestination(4);
+        httpClient.setConnectBlocking(false);
+        httpClient.setConnectTimeout(1000);
+        httpClient.setFollowRedirects(false);
+        
+        // TODO GG-18379 Investigate how to establish native websocket connection with proxy.
+        //- configureProxy(httpClient, cfg.serverUri());
+
+        client = new WebSocketClient(httpClient);
+        client.setIdleTimeout(Duration.ofSeconds(-1));
+        client.setAutoFragment(true);
+
+        try {
+			httpClient.start();
+            client.start();
+        } catch (Exception e) {
+			logger.error("Failed to start http client: ", e);
+		}
+    }
+
+    /**
+     * @param cfg Config.
+     */
+    private static SslContextFactory createServerSslFactory(AgentConfiguration cfg) {
+        boolean trustAll = Boolean.getBoolean("trust.all");
+
+        if (trustAll && !F.isEmpty(cfg.serverTrustStore())) {
+            logger.warning("Options contains both '--server-trust-store' and '-Dtrust.all=true'. " +
+                "Option '-Dtrust.all=true' will be ignored on connect to Web server.");
+
+            trustAll = false;
+        }
+
+        return sslContextFactory(
+            cfg.serverKeyStore(),
+            cfg.serverKeyStorePassword(),
+            trustAll,
+            cfg.serverTrustStore(),
+            cfg.serverTrustStorePassword(),
+            cfg.cipherSuites()
+        );
+    }
+
+    /**
+     * Start websocket client.
+     */
+    public void start() throws Exception {
+        logger.info("Starting Web Console Agent...");
+        closeLatch = new CountDownLatch(1);
+
+        Runtime.getRuntime().addShutdownHook(new Thread(closeLatch::countDown));
+
+        this.connect();
+
+    }
+
+    // Getter/Setter
+    public void setMaxReconnectAttempts(int maxReconnectAttempts) {
+        this.maxReconnectAttempts = maxReconnectAttempts;
+    }
+
+    /**
+     * Stop websocket client.
+     */
+    private void stopClient() {
+        LT.clear();        
+
+        if (client != null) {
+            try {
+                client.stop();
+                client.destroy();
+            }
+            catch (Exception ignored) {
+                // No-op.
+            }
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        logger.info("Stopping Web Console Agent...");
+        watcher.stop();
+        vertxClusterHnd.close();
+        dbHnd.close();
+        demoClusterHnd.close();
+        clusterHnd.close();
+
+        stopClient();
+        httpClient.destroy();
+        watcher.close();
+
+    }
+
+    // 开始连接
+    private void connect() {
+        connectWithRetry();
+    }
+
+    // 主动连接并重连
+    private void connectWithRetry() {
+        if(session!=null && session.isOpen()){
+            logger.info("WebSocket 已经连接成功，会话 ID: "+session.getRemoteAddress());
+            return;
+        }
+
+        try {
+            CompletableFuture<Session> future = client.connect(this, uri);
+
+            future.whenComplete((session, throwable) -> {
+                if (throwable != null) {
+                    logger.error("连接失败", throwable);
+                    scheduleReconnect();
+                } else {
+                    this.session = session;
+                    connected.set(true);
+                    reconnectAttempts.set(0);
+                    logger.info("WebSocket 连接成功，会话 ID: "+session.getRemoteAddress());
+                    onConnected();
+                }
+            });
+
+        } catch (IOException e) {
+            logger.error("Failed to establish websocket connection with server: " + cfg.serverUri());
+        }
+    }
+
+    // 调度重连任务
+    private void scheduleReconnect() {
+        if (maxReconnectAttempts != -1 && reconnectAttempts.get() >= maxReconnectAttempts) {
+            logger.error(String.format("达到最大重连次数%d，停止重连", maxReconnectAttempts));
+            logger.error("Failed to establish websocket connection with server: " + cfg.serverUri());
+            closeLatch.countDown();
+            return;
+        }
+
+        int attempts = reconnectAttempts.incrementAndGet();
+        // 指数退避策略
+        long delay = calculateDelay(attempts);
+
+        logger.info(String.format("将在%d毫秒后进行第%d次重连", delay, attempts));
+        reconnectExecutor.schedule(this::connectWithRetry, delay, TimeUnit.MILLISECONDS);
+    }
+
+    // 计算重连延迟（指数退避）
+    private long calculateDelay(int attempts) {
+        long delay = initialDelay * (long) Math.pow(2, attempts - 1);
+        return Math.min(delay, maxDelay);
+    }
+
+
+    // 连接成功后的回调
+    private void onConnected() {
+        // 可以在这里启动心跳保持连接
+    }
+
+    /**
+     * @throws InterruptedException If await failed.
+     */
+    public void awaitClose() throws InterruptedException {
+        closeLatch.await();
+
+        AgentClusterDemo.stop();
+    }
+
+    /**
+     * @return {@code true} If web agent is running.
+     */
+    public boolean isRunning() {
+        return closeLatch.getCount() > 0;
+    }
+
+    /**
+     * @param ses Session.
+     */
+    @OnWebSocketConnect
+    public void onConnect(Session ses) {
+        AgentHandshakeRequest req = new AgentHandshakeRequest(CURRENT_VER, cfg.tokens());
+
+        try {
+            AgentUtils.send(ses, new WebSocketResponse(AGENT_HANDSHAKE, req), 10L, TimeUnit.SECONDS);
+        }
+        catch (Throwable e) {
+            logger.error("Failed to send handshake to server", e);
+
+            scheduleReconnect();
+        }
+    }
+
+    /**
+     * @param statusCode Close status code.
+     * @param reason Close reason.
+     */
+    @OnWebSocketClose
+    public void onClose(int statusCode, String reason) {
+        logger.info("Websocket connection closed with code: " + statusCode+ ", reason:"+reason);
+        connected.set(false);
+
+        // 如果是非正常关闭（非 1000 正常关闭），触发重连
+        if (statusCode != 1000 && statusCode != 1001) {
+            logger.info("检测到非正常关闭，触发重连");
+            scheduleReconnect();
+        }
+        else{
+            logger.info("服务正常关闭，即将退出");
+            closeLatch.countDown();
+        }
+    }
+
+    @OnWebSocketError
+    public void onError(Throwable cause) {
+        logger.error("WebSocket 错误", cause);
+        // 错误时也可能需要重连
+        if (connected.get()) {
+            connected.set(false);
+        }
+        scheduleReconnect();
+    }
+
+    /**
+     * @param res Response from server.
+     */
+    private void processHandshakeResponse(AgentHandshakeResponse res) {
+        if (F.isEmpty(res.getError())) {
+            validTokens = res.getTokens();
+
+            List<String> missedTokens = new ArrayList<>(cfg.tokens());
+
+            missedTokens.removeAll(validTokens);
+
+            if (!F.isEmpty(missedTokens)) {
+                logger.warning("Failed to validate token(s): " + secured(missedTokens) + "." +
+                    " Please reload agent archive or check settings");
+            }
+
+            if (F.isEmpty(validTokens)) {
+                logger.warning("Valid tokens not found. Stopping agent...");
+
+                closeLatch.countDown();
+            }
+            else {
+            	DataSourceManager.init(getHttpClient(),cfg.serverUri(),validTokens);
+            }
+
+            logger.info("Successfully completes handshake with server");
+        }
+        else {
+            logger.error(res.getError() + " Please reload agent or check settings");
+
+            closeLatch.countDown();
+        }
+    }
+
+    /**
+     * @param tok Token to revoke.
+     */
+    private void processRevokeToken(String tok) {
+        logger.warning("Security token has been revoked: " + tok);
+
+        validTokens.remove(tok);
+
+        if (F.isEmpty(validTokens)) {
+            logger.warning("Web Console Agent will be stopped because no more valid tokens available");
+
+            closeLatch.countDown();
+        }
+    }
+    
+
+    /**
+     * @param json Token to revoke.
+     */
+    private Ignite getIgnite(JsonObject json,JsonObject stat) {                
+        String clusterId = json.getString("id");        
+        String clusterName = json.getString("name");        
+        Ignite ignite = null;
+        stat.put("status", "stoped");
+        if(clusterName!=null) {
+        	clusterName = Utils.escapeFileName(clusterName);
+    	}
+        else {        	
+        	String gridName = RestClusterHandler.clusterNameMap.get(clusterId);
+    		if(gridName!=null) {
+    			try {
+            		ignite = Ignition.ignite(gridName);	    		
+    	    		stat.put("status", "started");
+    	    		clusterName = null;
+        		}
+    	    	catch(IgniteIllegalStateException e) {	
+    	    		stat.put("message", e.getMessage());
+    	    		stat.put("status", "stoped");
+    	    		stat.put("error", e.getClass().getSimpleName());
+    	    	}
+    		}        
+        }
+        
+        if(ignite==null && clusterName!=null) {
+        	try {
+        		ignite = Ignition.ignite(clusterName);	    		
+	    		stat.put("status", "started");
+    		}
+	    	catch(IgniteIllegalStateException e) {	
+	    		stat.put("message", e.getMessage());
+	    		stat.put("status", "stoped");
+	    		stat.put("error", e.getClass().getSimpleName());
+	    	}
+    	}
+        else {
+        	stat.put("message", "ignite cluster not found!");
+        }
+        return ignite;
+    }
+
+    /**
+     * @param evt Token to revoke.
+     */
+    private JsonObject processClusterStart(WebSocketRequest evt) {
+        
+        JsonObject stat = new JsonObject();
+        JsonObject json = fromJson(evt.getPayload());
+        int isLastNode = 0;
+        boolean hasLastNode = evt.getRequestId().endsWith("-lastNode");
+        if(hasLastNode) {
+            String[] parts = evt.getRequestId().split("-");
+            isLastNode = 1+Integer.parseInt(parts[parts.length - 2]);
+        }
+        String clusterId = json.getString("id");
+        String clusterName = Utils.escapeFileName(json.getString("name"));
+        if(clusterId.equals(DEMO_CLUSTER_ID) || DEMO_CLUSTER_NAME.equals(clusterName)) {
+        	json.put("demo", true);
+        }
+        boolean isDemo = json.getBoolean("demo",false);
+
+        List<String> messages = new ArrayList<>();
+        
+        logger.info("Cluster start msg has been revoked: " + clusterName);
+		
+        try {
+            String work = U.workDirectory(null, null);
+            String configPath = work+"/config/";
+            if(isDemo){
+                configPath = work + "/demo-config/";
+            }
+            boolean success = IgniteClusterLauncher.saveBlobToFile(json,configPath,messages);
+            if(success){
+                if(json.containsKey("crudui")) {
+                    String descDir = configPath + clusterName+"/";
+                    CrudUICodeGenerator codeGen = new CrudUICodeGenerator();
+                    List<String> codeMessages = codeGen.generator(descDir,json.getMap(),validTokens);
+                    messages.addAll(codeMessages);
+                }
+            }
+            else if(!success) {
+                stat.put("message", String.join("\n",messages));
+                stat.put("status", "stoped");
+            }
+			
+			Boolean restart = json.getBoolean("restart",false);
+			if(restart) {
+                if(isDemo){
+                    AgentClusterDemo.stop();
+                }
+                else {
+                    IgniteClusterLauncher.stopIgnite(clusterName, clusterId);
+                }
+			}
+			
+			Ignite ignite = null;
+			// 不是演示环境
+			if(!isDemo) {
+				// 如果包含hosts，ports则远程启动节点。
+				
+				File startIniFile = new File(U.getIgniteHome()+ "/config/clusters/"+clusterName+"-start-nodes.ini");
+				File configFile = new File(U.getIgniteHome()+ "/config/clusters/"+clusterName+"-config.xml");
+				
+				if(startIniFile.exists()) {
+					if(isLastNode>0) {
+						try {						
+			        		ignite = Ignition.allGrids().get(0);
+                            Collection<ClusterStartNodeResult> results = ignite.cluster().startNodes(startIniFile, restart, 60*1000, 1);
+                            stat.put("message", "start nodes by {name}-start-nodes.ini file.\n"+results);
+                            stat.put("status", "started");
+			    		}
+				    	catch(IgniteIllegalStateException e) {	
+				    		stat.put("message", e.getMessage());
+				    		stat.put("status", "stoped");
+				    		stat.put("error", e.getClass().getSimpleName());
+				    		return stat;
+				    	}
+					}
+				}
+				else {
+
+		        	String cfgFile = String.format("%s%s/src/main/resources/META-INF/%s-server.xml", configPath, clusterName,clusterName);
+		        	File configWorkFile = new File(cfgFile);
+		        	
+		        	if(configWorkFile.exists() && configFile.exists()) {
+		        		// 合并并启动一个服务端已经配置好的node
+		        		ignite = IgniteClusterLauncher.trySingleStart(clusterId,clusterName,cfg.serverId(),isLastNode,cfgFile,configFile.toString());
+		        	}					
+		        	else if(configWorkFile.exists()) {
+		        		// 启动一个独立的node，jvm内部的node之间相互隔离
+		        		ignite = IgniteClusterLauncher.trySingleStart(clusterId,clusterName,cfg.serverId(),isLastNode,cfgFile);
+		        	}		        	
+		        	else if(configFile.exists()) {
+		        		// 启动一个服务端已经配置好的node
+		        		ignite = IgniteClusterLauncher.trySingleStart(clusterId,clusterName,cfg.serverId(),isLastNode,null,configFile.toString());
+		        	}
+		        	else {		        		
+		        		stat.put("message", "not found cfg file, please deploy cfg first!");		        		
+		        	}
+					
+					if(ignite!=null) {
+                        String nodeRestUrl = IgniteClusterLauncher.getNodeRestUrl(ignite);
+                        RestClusterHandler.registerNodeUrl(clusterId, clusterName, nodeRestUrl);
+
+			        	stat.put("status", "started");
+			        	stat.put("message","Ignite started successfully.");
+					}
+					else {
+						stat.put("status", "stoped");
+						return stat;
+					}
+				}
+				
+			}
+			else {
+				// 启动一个内存型的node，有多少个Agent就有多少个Demo Node
+                AgentMetadataDemo.bindTestDatasource();
+				String cfgFile = String.format("%s%s/src/main/resources/META-INF/%s-server.xml", configPath, clusterName,clusterName);
+				// 启动Demo节点，并且在最后一个节点部署服务
+	        	ignite = AgentClusterDemo.tryStart(clusterName,cfgFile,cfg.serverId(),isLastNode);
+	        	if(ignite!=null) {
+	        		stat.put("status", "started");
+	        	}
+	        	else {
+                    stat.put("status", "started");
+	        		stat.put("message","Demo Ignite already started.");
+	        	}
+	        	return stat;
+			}			
+			
+			
+		} catch (Exception e) {			
+			e.printStackTrace();
+			stat.put("message", e.getMessage());
+			stat.put("status", "stoped");
+			stat.put("error", e.getClass().getSimpleName());
+		}
+        
+        return stat;
+    }
+    
+    /**
+     * @param evt Token to revoke.
+     */
+    private JsonObject processClusterStop(WebSocketRequest evt) {
+        logger.info("Cluster stop msg has been revoked: " + evt.getPayload());
+        JsonObject stat = new JsonObject();
+        JsonObject json = fromJson(evt.getPayload());
+        boolean isLastNode = evt.getRequestId().endsWith("-lastNode");
+        String clusterName = Utils.escapeFileName(json.getString("name"));
+        if(json.getBoolean("demo",false)) {
+        	AgentClusterDemo.stop();
+    	}
+        else {
+        	String id = json.getString("id");
+        	
+        	File startIniFile = new File(U.getIgniteHome()+ "/config/clusters/"+clusterName+"-start-nodes.ini");
+			
+			if(isLastNode && startIniFile.exists()) {
+				try {						
+	        		Ignite ignite = Ignition.ignite(clusterName);	        		
+	        		ignite.cluster().stopNodes();
+	    		}
+		    	catch(IgniteIllegalStateException e) {	
+		    		stat.put("message", e.getMessage());
+		    		stat.put("status", "stoped");
+		    		stat.put("error", e.getClass().getSimpleName());
+		    		return stat;
+		    	}				
+			}
+			
+        	IgniteClusterLauncher.stopIgnite(clusterName,id);
+        }
+        stat.put("status", "stoped");
+        return stat;
+    }
+    
+    /**
+     * @param msg Token to revoke.
+     */
+    private JsonObject processCallClusterService(String msg) {
+        logger.info("Cluster status msg has been revoked: " + msg);
+        JsonObject stat = new JsonObject();
+        JsonObject json = fromJson(msg);
+        String cluterId = json.getString("id");
+        String serviceName = json.getString("serviceName","");
+        
+        if(dbHnd.canHandle(serviceName)) {
+        	JsonObject args = json.getJsonObject("args");
+        	ServiceResult rv = dbHnd.handleCommand(cluterId,serviceName,args);
+    		return rv.toJson();
+        	
+        }
+        
+        Ignite ignite = getIgnite(json,stat);
+        if(ignite!=null && !serviceName.isEmpty()) {
+        	JsonObject args = json.getJsonObject("args");
+        	if(args==null) {
+        		args = new JsonObject();
+        	}
+        	
+        	String serviceType = json.getString("serviceType","ClusterAgentService");
+        	
+        	if(ClusterAgentServiceManager.canHandle(serviceName)) {
+        		ClusterAgentServiceManager serviceList = new ClusterAgentServiceManager(ignite);
+        		ServiceResult result = serviceList.call(serviceName,args.getMap());
+        		return result.toJson();
+        	}
+        	
+        	try {
+        		if(runningServices.containsKey(serviceName)) {
+        			stat.put("message", String.format("%s already running!", serviceName));
+        			return stat;
+        		}
+        		
+        		ServiceResult result;
+        		if(serviceType.equals("CacheAgentService")) {
+        			CacheAgentService serviceObject = ignite.services().serviceProxy(serviceName,CacheAgentService.class,true);
+            		if(serviceObject==null) {
+        				stat.put("message", "service not found!");
+        				return stat;
+        			}
+            		
+            		String cacheName = null;
+            		if(args.containsKey("cache")) {
+            			cacheName = args.getJsonObject("cache").getString("name");            			
+            		}
+            		else if(args.containsKey("cacheName")) {
+            			cacheName = args.getString("cacheName");            			
+            		}
+            		
+            		if(cacheName!=null && !cacheName.isEmpty()) {            			
+            			runningServices.put(serviceName,serviceObject);
+                		result = serviceObject.call(cacheName,args.getMap());
+            		}
+            		else {
+	            		ComputeTaskFuture<ServiceResult> r = ignite.compute().executeAsync(CacheServiceMapperTask.class, json);
+	            		runningServices.put(serviceName,r);
+	            		result = r.get();
+            		}
+            	}
+            	else {
+            		ClusterAgentService serviceObject = ignite.services().serviceProxy(serviceName,ClusterAgentService.class,true);
+            		if(serviceObject==null) {
+        				stat.put("message", "service not found!");
+        				return stat;
+        			}            		
+            		
+            		runningServices.put(serviceName,serviceObject);
+            		result = serviceObject.call(cluterId,args.getMap());
+            		
+            	}
+        		
+        		if(result.isAcknowledged() && result.getMessages().isEmpty()) {
+        			result.addMessage("Execute service "+serviceName+" successfull.");
+        		}
+        		
+        		return result.toJson();
+	        }
+			catch(Exception e) {
+				stat.put("status", "fail");
+				stat.put("message", e.getMessage());
+				stat.put("error", e.getClass().getSimpleName());				
+			}
+        	finally {
+        		runningServices.remove(serviceName);
+        	}
+        }
+        else {
+        	stat.put("status", "stoped");
+        }
+        return stat;
+    }
+
+    
+    /**
+     * @param msg Token to revoke.
+     */
+    private JsonObject processCallClusterCommand(String msg) {
+        logger.info("Cluster cmd has been revoked: " + msg);        
+        JsonObject json = fromJson(msg);
+        
+        String cmdName = json.getString("cmdName","");
+        JsonObject state = new JsonObject();
+        Ignite ignite = getIgnite(json,state);
+        if(ignite!=null || cmdName.equals("commandList")) {
+        	state = IgniteClusterLauncher.callClusterCommand(ignite,cmdName,json);
+        }
+        return state;
+    }
+
+    /**
+     * @param msg Message.
+     */
+    @OnWebSocketMessage
+    public void onMessage(Session ses, String msg) {
+        WebSocketRequest evt = null;
+        JsonObject msgRet;
+        try {
+            evt = fromJson(msg, WebSocketRequest.class);
+
+            switch (evt.getEventType()) {
+                case AGENT_HANDSHAKE:
+                    AgentHandshakeResponse req0 = fromJson(evt.getPayload(), AgentHandshakeResponse.class);
+
+                    processHandshakeResponse(req0);
+
+                    if (closeLatch.getCount() > 0)
+                        watcher.startWatchTask(ses);
+
+                    break;
+
+                case AGENT_REVOKE_TOKEN:
+                    processRevokeToken(evt.getPayload());
+
+                    return;
+                    
+                case AGENT_START_CLUSTER:
+                	msgRet = processClusterStart(evt);
+                	send(ses, evt.response(msgRet));
+                	break;
+                	
+                case AGENT_STOP_CLUSTER:
+                	msgRet = processClusterStop(evt);
+                	send(ses, evt.response(msgRet));
+                	break;
+                	
+                case AGENT_CALL_CLUSTER_SERVICE:
+                	msgRet = processCallClusterService(evt.getPayload());
+                	send(ses, evt.response(msgRet));
+                	break;
+                	
+                case AGENT_CALL_CLUSTER_COMMAND:
+                	msgRet = processCallClusterCommand(evt.getPayload());
+                	send(ses, evt.response(msgRet));
+                	break;
+
+                case SCHEMA_IMPORT_DRIVERS:
+                    send(ses, evt.response(dbHnd.collectJdbcDrivers()));
+
+                    break;
+
+                case SCHEMA_IMPORT_SCHEMAS:
+                    send(ses, evt.response(dbHnd.collectDbSchemas(evt)));
+
+                    break;
+
+                case SCHEMA_IMPORT_METADATA:
+                    send(ses, evt.response(dbHnd.collectDbMetadata(evt)));
+
+                    break;
+
+                case NODE_REST:
+                case NODE_VISOR:
+                    if (logger.isDebugEnabled())
+                        logger.debug("Processing REST request: " + evt);
+
+                    RestRequest reqRest = fromJson(evt.getPayload(), RestRequest.class);
+
+                    JsonObject params = new JsonObject(reqRest.getParams());
+                    String cmd = params.getString("cmd");
+                    RestResult res;
+
+                    try {
+                    	
+                    	if("qryscanexe".equals(cmd) && params.containsKey("className")) {
+                    		// Scan Query or Text Query
+                    		String className = params.getString("className");
+                    		if(className.startsWith("$text:")) {
+                    			params.put("qry", className.substring(6));
+                    			params.remove("className");
+                    		}
+                		}
+                    	
+                    	if("qrygremlinexe".equals(cmd) || "qrygroovyexe".equals(cmd) || "text2gremlin".equals(cmd)) {
+                    		// Gremlin Query or Execute groovy code
+                    		res = vertxClusterHnd.restCommand(reqRest.getClusterId(),params);
+                		}                    	
+                    	else if(DEMO_CLUSTER_ID!=null && DEMO_CLUSTER_ID.equals(reqRest.getClusterId())) {
+                    		// demo grid cmd
+                    		params.put("token", evt.getToken());
+                    		res = demoClusterHnd.restCommand(reqRest.getClusterId(),params);
+                    	}
+                    	else if(dbHnd.isDBCluster(reqRest.getClusterId())) {
+                    		// rdms cmd
+                    		res = dbHnd.restCommand(reqRest.getClusterId(), params);
+                    	}
+                    	else if(vertxClusterHnd.isVertxCluster(reqRest.getClusterId())) {
+                    		// inner task call
+                    		res = vertxClusterHnd.restCommand(reqRest.getClusterId(),params);
+                		} 
+                    	else {
+                    		params.put("token", evt.getToken());
+                    		res = clusterHnd.restCommand(reqRest.getClusterId(),params);
+                    	}
+                    	
+                    	if(cmd.equals("top") && params.getBoolean("attr",false)) {
+                    		JsonArray nodes = new JsonArray(res.getData());
+                    		for(int i=0;i<nodes.size();i++) {
+                    			JsonObject node = nodes.getJsonObject(i);
+                    			JsonObject attr = node.getJsonObject("attributes");
+                    			if(attr!=null) {
+                    				attr.remove("java.library.path");
+                    				attr.remove("java.class.path");
+                    			}
+                    		}
+                    		res = RestResult.success(nodes.toString(), res.getSessionToken());
+                    	}
+                    	else if(cmd.equals("qryscanexe") && res.getData()!=null) {                    		       				
+                    		JsonObject queryResult = new JsonObject(res.getData());
+                    		queryResult = GremlinExecutor.parseKeyValueResponse(queryResult, reqRest.getClusterId());
+                    		if(queryResult.containsKey("rows")) {
+                    			res = RestResult.success(queryResult.toString(), res.getSessionToken());
+                    		}
+                    		
+                    	}
+                    }
+                    catch (Throwable e) {
+                        res = RestResult.fail(HTTP_INTERNAL_ERROR, e.getMessage());
+                    }
+
+                    send(ses, evt.response(res));
+
+                    break;
+
+                default:
+                    logger.warning("Unknown event: " + evt);
+            }
+        }
+        catch (Throwable e) {
+            if (evt == null) {
+                logger.error("Failed to process message: " + msg, e);
+                return;
+            }
+            
+            logger.error("Failed to process message: " + evt, e);
+
+            try {
+                send(ses, evt.withError(ERROR_MSGS.get(evt.getEventType()), e));
+            }
+            catch (Exception ex) {
+                logger.error("Failed to send response with error", e);
+                scheduleReconnect();
+            }
+        }
+    }
+
+    /**
+     * @param ses Session.
+     * @param frame Frame.
+     */
+    @OnWebSocketFrame
+    public void onFrame(Session ses, Frame frame) {
+        if (isRunning() && frame.getType() == Frame.Type.PING) {
+            if (logger.isTraceEnabled())
+                logger.trace("Received ping message [socket=" + ses + ", msg=" + frame + "]");
+
+            try {
+                ses.getRemote().sendPong(PONG_MSG);
+            }
+            catch (Throwable e) {
+                logger.error("Failed to send pong to: " + ses, e);
+            }
+        }
+    }
+
+    /**
+     * Send event to websocket.
+     *
+     * @param ses Websocket session.
+     * @param evt Event.
+     * @throws Exception If failed to send event.
+     */
+    private static void send(Session ses, WebSocketResponse evt) throws Exception {
+        AgentUtils.send(ses, evt, 60L, TimeUnit.SECONDS);
+    }
+    
+    public HttpClient getHttpClient() {
+		return client.getHttpClient();
+	}
+}

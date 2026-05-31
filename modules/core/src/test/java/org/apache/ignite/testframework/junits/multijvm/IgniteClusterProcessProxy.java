@@ -71,6 +71,11 @@ public class IgniteClusterProcessProxy implements IgniteClusterEx {
     @Override public ClusterNode localNode() {
         return compute.call(new LocalNodeTask());
     }
+    
+    /** {@inheritDoc} */
+    @Override public ClusterGroup forIgfsMetadataDataNodes(String igfsName, @Nullable String metaCacheName) {
+        throw new UnsupportedOperationException("Operation is not supported yet.");
+    }
 
     /** {@inheritDoc} */
     @Override public ClusterGroup forLocal() {

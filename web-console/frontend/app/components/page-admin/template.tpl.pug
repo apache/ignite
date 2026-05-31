@@ -1,0 +1,14 @@
+
+
+.admin-page
+    .docs-content
+        .docs-header
+            h1(translate='admin.pageTitle')
+
+            button.btn-ignite.btn-ignite--link-dashed-secondary(ng-click='$ctrl.changeUserNotifications()')
+                svg.icon-left(ignite-icon='gear')
+                span(translate='admin.setUserNotificationsButtonLabel')
+        .docs-body
+            .row
+                .col-xs-12
+                    ignite-list-of-registered-users
