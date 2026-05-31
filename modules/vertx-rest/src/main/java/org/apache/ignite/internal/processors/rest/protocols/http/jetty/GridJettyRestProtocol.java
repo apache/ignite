@@ -36,6 +36,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
+import io.vertx.webmvc.mcp.StreamableMcpServer;
+import io.vertx.webmvc.starter.VertXStarter;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterState;
@@ -83,6 +85,9 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
     /** HTTP server. */
     private WebApiCreater httpSrv;
+
+    private StreamableMcpServer mcpSrv;
+
     private AnnotationConfigApplicationContext context;
     private ServerSocket serverSocketPlaceholder;
 
@@ -158,23 +163,29 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     	    		}
 
                     log.info("[Vertx web] Vertx started in cluster mode.");
-                    IgniteVertxPlugin plugin = ignite.plugin("Vertx");
-                    vertx = plugin.vertx();
-    	    		
-    	    		Future<String> rv = vertx.deployVerticle(httpSrv);
-    	        	while(!rv.isComplete()) {
-    	        		Thread.sleep(200);
-    	        	}
+
+                    VertXStarter vertxStarter = VertXStarter.getInstance(ignite.name());
+                    VertXStarter.State state = vertxStarter.addVerticle(httpSrv);
+                    vertxStarter.start();
+
+                    while(!state.isDeployed()) {
+                        Thread.sleep(200);
+                    }
     	        	
     	        	if(!httpSrv.isStarted()) {
     	            	log.info("Failed to start Vertx REST server (possibly all ports in range are in use) ");
     	                return;
     	            }
     	        	
-    	        	httpSrv.getRouter().route("/ignite*").blockingHandler(jettyHnd);    	    		
-    	    		
+    	        	httpSrv.getRouter().route("/ignite*").blockingHandler(jettyHnd);
     	    		httpSrv.getRouter().get("/service/*").blockingHandler(serviceHnd);
     	    		httpSrv.getRouter().post("/service/*").blockingHandler(serviceHnd);
+
+                    VertXStarter.State mcpState = vertxStarter.addVerticle(mcpSrv);
+                    vertxStarter.start();
+                    while(!mcpState.isDeployed()) {
+                        Thread.sleep(200);
+                    }
     	    		
     	    		httpSrv.getRouter().get("/*").last().handler(new GridStaticRestHandler(ctx));
     	        	
@@ -301,6 +312,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             context.start();
 
             httpSrv = new WebApiCreater(context,srvConn);
+            mcpSrv = new StreamableMcpServer(context,httpSrv::getHttpServer);
             
         }
         else {           
@@ -331,6 +343,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             context.start();
 
             httpSrv = new WebApiCreater(context,this.props);
+            mcpSrv = new StreamableMcpServer(context,httpSrv::getHttpServer);
         }        
         
         assert httpSrv != null;
@@ -379,7 +392,9 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
                 try {
                     httpSrv.stop();
+                    mcpSrv.stop();
                 	httpSrv = null;
+                    mcpSrv = null;
                     context.close();
 
                 }

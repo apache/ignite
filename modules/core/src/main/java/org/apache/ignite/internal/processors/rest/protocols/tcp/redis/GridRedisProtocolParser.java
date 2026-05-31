@@ -122,20 +122,6 @@ public class GridRedisProtocolParser {
         return msg;
     }
 
-    /**
-     * A validation method to check packet completeness.
-     * return true if and only if
-     * 1. First byte is ARRAY (43)
-     * 2. Last two bytes are CR(13) LF(10)
-     *
-     * Otherwise, return false representing this is an incomplete packet with three possible scenarios:
-     * 1. A beginning packet with leading ARRAY byte
-     * 2. A continual packet with ending CRLF bytes.
-     * 3. A continual packet with neither conditions above.
-     */
-    public static boolean isCompletePacket(ByteBuffer buf) {
-        return validatePacketHeader(buf) && validatePacketFooter(buf);
-    }
 
     /**
      * @param buf Buffer containing not parsed bytes.

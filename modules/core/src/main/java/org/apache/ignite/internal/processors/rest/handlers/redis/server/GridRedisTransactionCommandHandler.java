@@ -98,17 +98,6 @@ public class GridRedisTransactionCommandHandler implements GridRedisCommandHandl
         
         if(cmd == MULTI) { 
     		ses.addMeta(SESS_TX_QUEUED_META_KEY, new ArrayList<GridRedisMessage>(5));
-    		
-    		if(isTransCache) {
-    			IgniteTransactions tn = ctx.grid().transactions();
-    			if(tn.tx()!=null) {
-    				this.log.warning("Transaction already exists! commit it.");
-            		tn.tx().commit();
-            	}
-            	Transaction t = tn.txStart();
-            	ses.addMeta(SESS_TX_META_KEY, t);
-    		}
-    		
     		msg.setResponse(GridRedisProtocolParser.oKString());
     	}
     	else if(cmd == DISCARD) {
@@ -129,6 +118,17 @@ public class GridRedisTransactionCommandHandler implements GridRedisCommandHandl
     		ses.removeMeta(SESS_TX_QUEUED_META_KEY);
     		
     		try {
+
+				if(isTransCache) {
+					IgniteTransactions tn = ctx.grid().transactions();
+					if(tn.tx()!=null) {
+						this.log.warning("Transaction already exists! commit it.");
+						tn.tx().commit();
+					}
+					Transaction t = tn.txStart();
+					ses.addMeta(SESS_TX_META_KEY, t);
+				}
+
 				List<IgniteInternalFuture<GridRedisMessage>> steps = new ArrayList<>(queued.size());
 				for(GridRedisMessage msgPart: queued) {
 					IgniteInternalFuture<GridRedisMessage> res = handlers.get(msgPart.command()).handleAsync(ses, msgPart);

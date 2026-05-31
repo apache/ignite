@@ -7,7 +7,6 @@ import java.util.UUID;
 /**
  * add@byron 保存当前的关系数据库连接信息
  */
-
 public class DBInfoDto extends AbstractDto {
 	private UUID accId; // 用户ID
 	private String db; // 数据库类型

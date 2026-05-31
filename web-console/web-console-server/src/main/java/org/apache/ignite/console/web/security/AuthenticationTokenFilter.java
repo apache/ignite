@@ -56,7 +56,7 @@ public class AuthenticationTokenFilter implements Filter{
             		account.setAdmin(true); // add@byron
             		TokenAuthentication authentication = new TokenAuthentication(token,account);
 	                SecurityContextHolder.getContext().setAuthentication(authentication);
-	                log.info("Set authentication with token");
+	                log.debug("Set authentication with token");
             	}
             	else {
             		log.warn("Can not found user for token "+ token);

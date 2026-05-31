@@ -3,12 +3,14 @@
 package org.apache.ignite.console.dto;
 
 import java.util.UUID;
+
+import io.vertx.core.json.JsonObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Activity info.
  */
-public class Activity extends AbstractDto {
+public class Activity extends DataObject {
     /** */
     private UUID accId;
 
@@ -28,6 +30,7 @@ public class Activity extends AbstractDto {
         // No-op.
     }
 
+
     /**
      * Full constructor.
      *
@@ -38,7 +41,7 @@ public class Activity extends AbstractDto {
      * @param amount Number of times activity was executed in current period..
      */
     public Activity(UUID id, UUID accId, String grp, String act, int amount) {
-        super(id);
+        super(id, null);
 
         this.accId = accId;
         this.grp = grp;
@@ -109,6 +112,18 @@ public class Activity extends AbstractDto {
      */
     public void increment(int inc) {
         amount += inc;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override public JsonObject shortView() {
+        return new JsonObject()
+                .put("id", getId())
+                .put("accId", accId)
+                .put("group", grp)
+                .put("action", act)
+                .put("amount", amount)
+                .put("json", json());
     }
 
     /** {@inheritDoc} */

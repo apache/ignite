@@ -24,6 +24,6 @@ public class AutoConfigure {
 	@Bean
     //@ConditionalOnMissingBean
     public VertXStarter vertxStarterBean() {
-        return new VertXStarter(contexPath);
+        return VertXStarter.getInstance(contexPath);
     }
 }

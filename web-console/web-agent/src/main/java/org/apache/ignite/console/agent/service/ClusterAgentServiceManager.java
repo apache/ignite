@@ -77,7 +77,6 @@ public class ClusterAgentServiceManager implements ClusterAgentService {
     		return true; 
     	}
     	if(serviceName.equals("cancelService")) {
-    		
     		return true;    		
     	}
     	return false;

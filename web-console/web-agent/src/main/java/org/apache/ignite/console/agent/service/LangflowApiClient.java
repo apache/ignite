@@ -51,7 +51,7 @@ public class LangflowApiClient implements CacheAgentService{
 	/**
 	 * 
 	 * @param endpoint
-	 * @param input  "{\"input_value\":\"患有\\\"糖尿病\\\"的所有患者的就诊费用总和\",\"output_type\":\"chat\",\"input_type\":\"chat\"}";
+	 * @param payload  "{\"input_value\":\"患有\\\"糖尿病\\\"的所有患者的就诊费用总和\",\"output_type\":\"chat\",\"input_type\":\"chat\"}";
 	 * @return
 	 */   
 	public ServiceResult call(String endpoint,JsonObject payload) {

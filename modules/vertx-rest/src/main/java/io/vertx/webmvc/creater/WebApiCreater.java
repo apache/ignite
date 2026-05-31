@@ -23,11 +23,7 @@ import org.springframework.util.ReflectionUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -43,8 +39,6 @@ public class WebApiCreater extends AbstractVerticle {
 
 	private ApplicationContext springContext;
     
-    public HttpServerOptions options = new HttpServerOptions();
-    
     private Properties props = new Properties();
 
     private InitSingleRouterHandler initSingleRouterHandler;
@@ -52,7 +46,9 @@ public class WebApiCreater extends AbstractVerticle {
     private final Map<String, Vertxlet> vertxletMap = new HashMap<>();
     
     private int state = 0; // 1: init, 2: ready, 3: started, 0: closed    
-    
+
+    public HttpServerOptions options = new HttpServerOptions();
+
     private HttpServer server;
     
     private Consumer<Router> readyCallback;
@@ -60,7 +56,7 @@ public class WebApiCreater extends AbstractVerticle {
     protected String igniteInstanceName;
 
 	public void setIgniteInstanceName(String igniteInstanceName) {
-		this.igniteInstanceName = igniteInstanceName;
+        this.igniteInstanceName = igniteInstanceName;
 	}
 
 	public WebApiCreater(ApplicationContext applicationContext,HttpServerOptions options) {
@@ -71,28 +67,27 @@ public class WebApiCreater extends AbstractVerticle {
     public WebApiCreater(ApplicationContext applicationContext,Properties props) {
         springContext = applicationContext;
         this.props.putAll(props);
-        this.options = new HttpServerOptions();
-        String port = getProperty("server.port");
-        String host = getProperty("server.host");
-        if(port!=null) {
-        	this.options.setPort(Integer.parseInt(port));
-        }
-        if(host!=null) {
-        	this.options.setHost(host);
-        }
+        configureFromProperties();
     }
     
     public WebApiCreater(ApplicationContext applicationContext) {
         springContext = applicationContext;
-        this.options = new HttpServerOptions();
-        Integer port = springContext.getEnvironment().getProperty("server.port", Integer.class);
-        String host = springContext.getEnvironment().getProperty("server.host", String.class);
-        if(port!=null) {
-        	this.options.setPort(port);
-        }
-        if(host!=null) {
-        	this.options.setHost(host);
-        }
+        configureFromProperties();
+    }
+
+    private void configureFromProperties() {
+        String port = getProperty("server.port", "8080");
+        String host = getProperty("server.host", "0.0.0.0");
+        String maxBodySize = getProperty("server.maxBodySize", "10485760");
+        String idleTimeout = getProperty("server.idleTimeout", "60");
+
+        this.options.setPort(Integer.parseInt(port));
+        this.options.setHost(host);
+        this.options.setIdleTimeout(Integer.parseInt(idleTimeout));
+
+        // 启用压缩
+        boolean compressionSupported = Boolean.parseBoolean(getProperty("server.compressionSupported", "true"));
+        this.options.setCompressionSupported(compressionSupported);
     }
     
     public Router getRouter() {
@@ -232,7 +227,7 @@ public class WebApiCreater extends AbstractVerticle {
         	readyCallback.accept(router);
         }        
        
-    	server.listen(options.getPort(),options.getHost()).andThen(res->{
+    	server.listen().andThen(res->{
         	if (res.succeeded()) {
         		state = 3;
                 log.info("Http server started at [{}:{}]",  options.getHost(), options.getPort());
@@ -253,14 +248,15 @@ public class WebApiCreater extends AbstractVerticle {
    
     
     private void cros(Router router) {
-        Set<String> allowedHeaders = new HashSet<>();
-        allowedHeaders.add("x-requested-with");
+        Set<String> allowedHeaders = new HashSet<>(
+                List.of("Mcp-Session-Id","Last-Event-ID","x-requested-with","X-PINGARUNER"));
+
         allowedHeaders.add("Access-Control-Allow-Origin");
         allowedHeaders.add("Origin");
         allowedHeaders.add("Content-Type");
         allowedHeaders.add("Accept");
-        allowedHeaders.add("X-PINGARUNER");
         allowedHeaders.add("Authorization");
+
         allowedHeaders.add("*");
 
         Set<HttpMethod> allowedMethods = new HashSet<>();
@@ -271,8 +267,10 @@ public class WebApiCreater extends AbstractVerticle {
         allowedMethods.add(HttpMethod.PATCH);
         allowedMethods.add(HttpMethod.PUT);
 
+        String allowedOrigins = getProperty("cors.allowedOrigins", "*");
+
         router.route().handler(CorsHandler.create()
-                .addOrigin("*")
+                .addOrigin(allowedOrigins)
                 .allowedHeaders(allowedHeaders)
                 .exposedHeader("ETag")
                 .allowedMethods(allowedMethods));

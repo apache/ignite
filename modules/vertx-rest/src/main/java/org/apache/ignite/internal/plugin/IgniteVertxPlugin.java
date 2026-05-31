@@ -17,7 +17,7 @@ public class IgniteVertxPlugin implements IgnitePlugin {
 		this.log = log;
 	}
 	
-	public Vertx getVertx() {
+	public static Vertx getVertx() {
 		return vertx;
 	}
 

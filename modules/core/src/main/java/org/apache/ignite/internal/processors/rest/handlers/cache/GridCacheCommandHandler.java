@@ -21,16 +21,7 @@ import java.io.Serializable;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.Callable;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ModifiedExpiryPolicy;
@@ -43,8 +34,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CachePeekMode;
-import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
@@ -545,7 +534,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                     }
 
                     // HashMap wrapping for correct serialization
-                    map = new HashMap<>(map);
+                    map = new TreeMap<>(map);
 
                     fut = executeCommand(req.destinationId(), req0.cacheName(), cacheFlags, key,
                         new PutAllCommand(map));
@@ -585,7 +574,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                     Map<Object, Object> map = req0.values();
 
                     // HashSet wrapping for correct serialization
-                    Set<Object> keys = map == null ? null : new HashSet<>(map.keySet());
+                    Set<Object> keys = map == null ? null : new TreeSet<>(map.keySet());
 
                     fut = executeCommand(req.destinationId(), req0.cacheName(), cacheFlags, key,
                         new RemoveAllCommand(keys));

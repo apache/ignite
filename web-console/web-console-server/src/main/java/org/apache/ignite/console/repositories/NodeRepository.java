@@ -16,7 +16,7 @@ import org.apache.ignite.console.tx.TransactionManager;
 import org.springframework.stereotype.Repository;
 
 /**
- * Repository to work with node activities.
+ * Repository to work with node activities. uuid is consistentId not node ID
  */
 @Repository
 public class NodeRepository {
@@ -47,7 +47,6 @@ public class NodeRepository {
      *
      * @param accId Account ID.
      * @param grp Activity group.
-     * @param act Activity action.
      *
      * @return Activity.
      */
@@ -69,6 +68,32 @@ public class NodeRepository {
     }
 
     /**
+     * GET activity List.
+     *
+     * @param accId Account ID.
+     * @param grp Activity group.
+     * @param act Activity action.
+     *
+     * @return Activity.
+     */
+    public List<Activity> list(UUID accId, String grp,String act) {
+        return txMgr.doInTransaction(() -> {
+
+            Set<UUID> ids = activitiesIdx.get(accId);
+
+            Collection<Activity> activities = activitiesTbl.loadAll(ids);
+
+            List<Activity> activityList = activities
+                    .stream()
+                    .filter(item -> item.getGroup().equals(grp) && item.getAction().equals(act))
+                    .collect(Collectors.toList())
+                    ;
+
+            return activityList;
+        });
+    }
+
+    /**
      * Save activity.
      *
      * @param accId Account ID.
@@ -78,13 +103,23 @@ public class NodeRepository {
      * @return Activity.
      */
     public Activity save(UUID accId, UUID nodeId, String grp, String act) {
-        return txMgr.doInTransaction(() -> {            
+        return save(accId,nodeId,grp,act,null);
+    }
 
-        	Activity activity = activitiesTbl.get(nodeId);
-        	if(activity==null)
-            	activity = new Activity(nodeId, accId, grp, act, 1);
-        	else
-        		activity.increment(1);
+    public Activity save(UUID accId, UUID nodeId, String grp, String act,String json) {
+        return txMgr.doInTransaction(() -> {
+
+            Activity activity = activitiesTbl.get(nodeId);
+            if(activity==null)
+                activity = new Activity(nodeId, accId, grp, act, 1);
+            else {
+                activity.increment(1);
+                activity.setGroup(grp);
+                activity.setAction(act);
+            }
+
+            if(json!=null)
+                activity.json(json);
 
             activitiesTbl.save(activity);
 
@@ -93,18 +128,7 @@ public class NodeRepository {
             return activity;
         });
     }
-    
-    /**
-     * clear activity.
-     *
-     * @param accId Account ID.     
-     *
-     * @return Activity.
-     */
-    public void clear() {
-    	activitiesIdx.cache().clear();
-        activitiesTbl.cache().clear();
-    }
+
     
     /**
      * delete activity.
@@ -156,7 +180,6 @@ public class NodeRepository {
     
 
     /**
-     * @param activityKey Activity key.
      * @param activity Activity to save.
      */
     public void save(UUID accId, Activity activity) {

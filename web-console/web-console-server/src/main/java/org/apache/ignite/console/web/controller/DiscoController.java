@@ -3,9 +3,14 @@
 package org.apache.ignite.console.web.controller;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.console.dto.Account;
 import org.apache.ignite.console.dto.Activity;
@@ -39,67 +44,80 @@ public class DiscoController {
     
     private Ignite ignite;
 
+
+
     /**
      * @param accountsSrv Accounts server.
-     * @param adminSrv Administration server.
+     * @param activitiesSrv Administration server.
      */
     public DiscoController(Ignite ignite, AccountsService accountsSrv, NodeRepository activitiesSrv) {
         this.accountsSrv = accountsSrv;
         this.activitiesSrv = activitiesSrv;
         this.ignite = ignite;
-        
-        activitiesSrv.clear();
+
     }
 
     /**
-     * @param params SignUp params.
+     * @param json SignUp params.
      */
-    @Operation(summary = "Register node address.")
-    @PutMapping(path = "/{group}/{nodeId}")
+    @Operation(summary = "Register node info with address.")
+    @PutMapping(path = "/{group}/{nodeId}/{action}")
     public ResponseEntity<Void> registerActivity(@AuthenticationPrincipal Account acc,
-    		@PathVariable("group") String group, @PathVariable("nodeId") UUID nodeId, @RequestBody String addresses) {
-       
-    	activitiesSrv.save(acc.getId(), nodeId, group, addresses);
+    		@PathVariable("group") String group, @PathVariable("nodeId") UUID nodeId, @PathVariable("action") String action,@RequestBody String json) {
+
+        Activity activity = activitiesSrv.save(acc.getId(), nodeId, group, action, json);
 
         return ResponseEntity.ok().build();
     }
     
     /**
-     * @param params SignUp params.
+     * @param action act params.
      */
-    @Operation(summary = "Get Register node addresses.")
-    @GetMapping(path = "/{group}")
+    @Operation(summary = "Get Register node info with addresses.")
+    @GetMapping(path = "/{group}/{action}")
     public ResponseEntity<String> listActivity(@AuthenticationPrincipal Account acc,
-    		@PathVariable("group") String group) {
+    		@PathVariable("group") String group,@PathVariable("action") String action) {
         StringBuilder addresses = new StringBuilder();
-        Collection<Activity> list = activitiesSrv.list(acc.getId(), group);
+        Collection<Activity> list = activitiesSrv.list(acc.getId(), group, action);
         for(Activity act: list) {
-        	if(act.getAction()==null || act.getAction().isBlank()) {
+        	if(act.json()==null || act.json().isBlank()) {
         		continue;
         	}
-        	if(addresses.length()>0) {
-        		addresses.append(",");
+        	if(!addresses.isEmpty()) {
+        		addresses.append("\n");
         	}
-        	addresses.append(act.getAction());
+        	addresses.append(act.json());
         }
         if(group.equals(ignite.name())){ // admin instance
-	        
+            JsonObject st = new JsonObject();
         	TcpDiscoveryNode node = (TcpDiscoveryNode)ignite.configuration().getDiscoverySpi().getLocalNode();
-	        
+            if(!addresses.isEmpty()) {
+                addresses.append("\n");
+            }
+            JsonArray discoveryAddresses = new JsonArray();
 	        Collection<String> adminAddress = node.addresses();
-	        for(String act: adminAddress) {
-	        	if(addresses.length()>0) {
-	        		addresses.append(",");
-	        	}
-	        	addresses.append(act+"#"+node.discoveryPort());
+	        for(String host: adminAddress) {
+                discoveryAddresses.add(host+"#"+node.discoveryPort());
 	        }
+            st.put("discoveryAddress",discoveryAddresses);
+
+            node.attributes().forEach((k,v)->{
+                if(k.toLowerCase().contains("port")){
+                    st.put(k,v);
+                }
+                else if(k.toLowerCase().contains("host")){
+                    st.put(k,v);
+                }
+            });
+
+            addresses.append(st);
         }
 
         return ResponseEntity.ok(addresses.toString());
     }
 
     /**
-     * @param email Account email.
+     * @param acc Account.
      */
     @Operation(summary = "Delete node address.")
     @DeleteMapping(path = "/{group}/{nodeId}")
@@ -107,5 +125,32 @@ public class DiscoController {
     		@PathVariable("group") String group, @PathVariable("nodeId") UUID nodeId) {
         activitiesSrv.delete(acc.getId(), nodeId);
         return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "UnRegister Activity status ByAddress")
+    @PutMapping(path = "/{group}/{action}/to/node-left")
+    public ResponseEntity<Integer> changeActivityByAddress(@AuthenticationPrincipal Account acc,
+            @PathVariable("group") String group, @PathVariable("action") String action,@RequestBody String json) {
+
+        JsonArray addresses = new JsonArray(json);
+        Collection<Activity> list = activitiesSrv.list(acc.getId(), group, action);
+        int c = 0;
+        for(Activity act: list) {
+            if(act.json()==null || act.json().isBlank()) {
+                continue;
+            }
+            AtomicInteger n = new AtomicInteger();
+            JsonObject data = new JsonObject(act.json());
+            JsonArray host = data.getJsonArray("discoveryAddress");
+            addresses.forEach(a->{
+                if(host.remove(a)) {
+                    n.incrementAndGet();
+                }
+            });
+            if(n.get()>0) {
+                activitiesSrv.save(act.getAccountId(), act.getId(), group, "node-left", data.toString());
+            }
+        }
+        return ResponseEntity.ok(c);
     }
 }

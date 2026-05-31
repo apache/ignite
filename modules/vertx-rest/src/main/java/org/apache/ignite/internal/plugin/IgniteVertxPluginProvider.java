@@ -52,7 +52,6 @@ public class IgniteVertxPluginProvider implements PluginProvider<PluginConfigura
 	private static volatile int counter = 0;
 
 	private IgniteVertxPlugin plugin;
-
 	private VertxOptions options = new VertxOptions();
 
 	/** Ignite logger. */
@@ -76,6 +75,10 @@ public class IgniteVertxPluginProvider implements PluginProvider<PluginConfigura
 	@Override
 	public String copyright() {
 		return "apache copy right";
+	}
+
+	public void setVertxOptions(VertxOptions options) {
+		this.options = options;
 	}
 
 	/** {@inheritDoc} */

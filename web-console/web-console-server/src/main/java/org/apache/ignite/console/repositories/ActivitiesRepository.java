@@ -56,7 +56,6 @@ public class ActivitiesRepository {
      *
      * @param accId Account ID.
      * @param grp Activity group.
-     * @param act Activity action.
      *
      * @return Activity.
      */

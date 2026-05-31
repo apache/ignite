@@ -23,8 +23,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
@@ -38,7 +42,10 @@ import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.CX1;
+import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisNioListener.SESS_TX_META_KEY;
 
 /**
  * Redis command handler done via REST.
@@ -72,12 +79,13 @@ public abstract class GridRedisRestCommandHandler implements GridRedisCommandHan
         assert msg != null;
 
         try {
+            trySuspendTransaction(ses,msg);
             return hnd.handleAsync(asRestRequest(msg))
                 .chain(new CX1<IgniteInternalFuture<GridRestResponse>, GridRedisMessage>() {
                     @Override public GridRedisMessage applyx(IgniteInternalFuture<GridRestResponse> f)
                         throws IgniteCheckedException {
                         GridRestResponse restRes = f.get();
-
+                        tryResumeTransaction(ses,msg);
                         if (restRes.getSuccessStatus() == GridRestResponse.STATUS_SUCCESS)
                             msg.setResponse(makeResponse(restRes, msg, msg.auxMKeys()));
                         else
@@ -95,39 +103,6 @@ public abstract class GridRedisRestCommandHandler implements GridRedisCommandHan
 
             return new GridFinishedFuture<>(msg);
         }
-    }
-
-    /**
-     * Retrieves long value following the parameter name from parameters list.
-     *
-     * @param name Parameter name.
-     * @param params Parameters list.
-     * @return Long value from parameters list or null if not exists.
-     * @throws GridRedisGenericException If parsing failed.
-     */
-    @Nullable protected Long longValue(String name, List<String> params) throws GridRedisGenericException {
-        assert name != null;
-
-        Iterator<String> it = params.iterator();
-
-        while (it.hasNext()) {
-            if (name.equalsIgnoreCase(it.next())) {
-                if (it.hasNext()) {
-                    String val = it.next();
-
-                    try {
-                        return Long.valueOf(val);
-                    }
-                    catch (NumberFormatException ignore) {
-                        throw new GridRedisGenericException("Failed to parse parameter of Long type [" + name + "=" + val + "]");
-                    }
-                }
-                else
-                    throw new GridRedisGenericException("Syntax error. Missing value for parameter: " + name);
-            }
-        }
-
-        return null;
     }
 
     /**
@@ -168,5 +143,41 @@ public abstract class GridRedisRestCommandHandler implements GridRedisCommandHan
         else
             throw new UnsupportedOperationException();
 
+    }
+
+    public boolean trySuspendTransaction(GridNioSession ses,GridRedisMessage msg){
+        Transaction t = ses.meta(SESS_TX_META_KEY);
+        if(t!=null) {
+            boolean isTransCache = true;
+            IgniteCache<?,?> stream = ctx.grid().cache(msg.cacheName());
+            CacheConfiguration<?,?> cfg = stream.getConfiguration(CacheConfiguration.class);
+            if(cfg.getAtomicityMode()!= CacheAtomicityMode.TRANSACTIONAL) {
+                //this.log.warning("IgniteTransactions is only enable on CacheAtomicityMode.TRANSACTIONAL, cache. "+stream.getName()+" is not!");
+                isTransCache = false;
+            }
+            if(!isTransCache) {
+                t.suspend();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean tryResumeTransaction(GridNioSession ses,GridRedisMessage msg){
+        Transaction t = ses.meta(SESS_TX_META_KEY);
+        if(t!=null) {
+            boolean isTransCache = true;
+            IgniteCache<?,?> stream = ctx.grid().cache(msg.cacheName());
+            CacheConfiguration<?,?> cfg = stream.getConfiguration(CacheConfiguration.class);
+            if(cfg.getAtomicityMode()!= CacheAtomicityMode.TRANSACTIONAL) {
+                //this.log.warning("IgniteTransactions is only enable on CacheAtomicityMode.TRANSACTIONAL, cache. "+stream.getName()+" is not!");
+                isTransCache = false;
+            }
+            if(!isTransCache) {
+                t.resume();
+                return true;
+            }
+        }
+        return false;
     }
 }

@@ -18,12 +18,22 @@
 package org.apache.ignite.internal.processors.rest.handlers.redis;
 
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.rest.handlers.redis.exception.GridRedisGenericException;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.transactions.Transaction;
+import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisNioListener.SESS_TX_META_KEY;
 
 /**
  * Command handler.
@@ -47,12 +57,48 @@ public interface GridRedisCommandHandler {
      * @param params
      * @return
      */
-    public default String stringValue(String name,List<String> params) {
+    @Nullable
+    default String stringValue(String name,List<String> params) {
     	for(int i=0;i<params.size();i++) {
     		if(params.get(i).equalsIgnoreCase(name) && i+1<params.size()) {
     			return params.get(i+1);
     		}
     	}
     	return null;
+    }
+
+
+    /**
+     * Retrieves long value following the parameter name from parameters list.
+     *
+     * @param name Parameter name.
+     * @param params Parameters list.
+     * @return Long value from parameters list or null if not exists.
+     * @throws GridRedisGenericException If parsing failed.
+     */
+    @Nullable
+    default Long longValue(String name, List<String> params) throws GridRedisGenericException {
+        assert name != null;
+
+        Iterator<String> it = params.iterator();
+
+        while (it.hasNext()) {
+            if (name.equalsIgnoreCase(it.next())) {
+                if (it.hasNext()) {
+                    String val = it.next();
+
+                    try {
+                        return Long.valueOf(val);
+                    }
+                    catch (NumberFormatException ignore) {
+                        throw new GridRedisGenericException("Failed to parse parameter of Long type [" + name + "=" + val + "]");
+                    }
+                }
+                else
+                    throw new GridRedisGenericException("Syntax error. Missing value for parameter: " + name);
+            }
+        }
+
+        return null;
     }
 }

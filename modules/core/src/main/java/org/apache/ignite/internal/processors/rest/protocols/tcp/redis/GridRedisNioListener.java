@@ -61,6 +61,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.*;
+
 /**
  * Listener for Redis protocol requests.
  */
@@ -137,7 +139,7 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
         addCommandHandler(new GridRedisListsCommandHandler(log,ctx));
         addCommandHandler(new GridRedisSetsCommandHandler(log,ctx));
         addCommandHandler(new GridRedisSortedSetsCommandHandler(log,ctx));
-        addCommandHandler(new GridRedisStreamCommandHandler(log,ctx));
+        addCommandHandler(new GridRedisStreamCommandHandler(log,hnd,ctx));
 
         // pubsub commands
         addCommandHandler(subscribeHandler);
@@ -258,24 +260,35 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
                 }
         		ctx.grid().getOrCreateCache(ccfg);
         	}
+
+
             //end@
 
             if(redisCmd==GridRedisCommand.INFO) {
                 updateStateInfo(ses);
             }
+
+            List<GridRedisMessage> txQueued = ses.meta(SESS_TX_QUEUED_META_KEY);
+            if(txQueued!=null && redisCmd!=MULTI && redisCmd!=EXEC && redisCmd!=DISCARD) {
+                txQueued.add(msg);
+                msg.setResponse(GridRedisProtocolParser.toSimpleString("QUEUED"));
+                sendResponse(ses, msg);
+                return;
+            }
+
             // modify@byron use StripedExecutorService handle session awared handler
-            ctx.pools().getStripedRebalanceExecutorService().execute(()->{
+            ctx.pools().asyncCallbackPool().execute(()->{
                 // 开始事务，事务往往和pipeline同时开启
                 List<GridRedisMessage> queued = ses.meta(SESS_TX_QUEUED_META_KEY);
-                if(queued!=null && !cmd.equals("MULTI") && !cmd.equals("EXEC") && !cmd.equals("DISCARD")) {
+                if(queued!=null && redisCmd!=MULTI && redisCmd!=EXEC && redisCmd!=DISCARD) {
                     queued.add(msg);
                     msg.setResponse(GridRedisProtocolParser.toSimpleString("QUEUED"));
                     sendResponse(ses, msg);
                 }
                 else {
 
-                    IgniteInternalFuture<GridRedisMessage> f = handlers.get(redisCmd).handleAsync(ses, msg);
                     try {
+                        IgniteInternalFuture<GridRedisMessage> f = handlers.get(redisCmd).handleAsync(ses, msg);
                         GridRedisMessage res = f.get();
                         sendResponse(ses, res);
                     } catch (IgniteCheckedException e) {

@@ -235,8 +235,8 @@ public class GridStaticRestHandler extends Vertxlet {
             res.end(dfltPage);
 
         }
-        else{ // continue
-        	// res.setStatusCode(404).end();
+        else{ // comment for continue
+        	//- res.setStatusCode(404).end();
         }
     }
 

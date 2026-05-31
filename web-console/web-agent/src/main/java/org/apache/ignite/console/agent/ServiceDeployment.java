@@ -2,6 +2,7 @@ package org.apache.ignite.console.agent;
 import io.swagger.annotations.ApiOperation;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.console.agent.service.*;
+import org.apache.ignite.services.Service;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
@@ -22,7 +23,7 @@ public class ServiceDeployment {
         MetadataReaderFactory metaReader = new CachingMetadataReaderFactory();
 
         String packagePath = basePackage.replace('.', '/');
-        Resource[] resources = resolver.getResources("classpath*:" + packagePath + "/**/*.class");
+        Resource[] resources = resolver.getResources("classpath*:" + packagePath + "/**.class");
 
         List<Class<?>> result = new ArrayList<>();
         for (Resource resource : resources) {
@@ -31,11 +32,8 @@ public class ServiceDeployment {
 
             try {
                 Class<?> clazz = Class.forName(className);
-                for (Method method : clazz.getDeclaredMethods()) {
-                    if (method.isAnnotationPresent(ApiOperation.class)) {
-                        result.add(clazz);
-                        break;
-                    }
+                if (clazz.isAnnotationPresent(ApiOperation.class)) {
+                    result.add(clazz);
                 }
             } catch (ClassNotFoundException e) {
                 // ignore
@@ -73,6 +71,10 @@ public class ServiceDeployment {
                     else if(ClusterAgentService.class.isAssignableFrom(svc)){
                         ClusterAgentService clusterSvc = (ClusterAgentService)svc.getDeclaredConstructor().newInstance();
                         services.deployClusterSingleton(svcName,clusterSvc);
+                    }
+                    else if(Service.class.isAssignableFrom(svc)){
+                        Service nodeSvc = (Service)svc.getDeclaredConstructor().newInstance();
+                        services.deployNodeSingleton(svcName,nodeSvc);
                     }
 
                 } catch (InstantiationException e) {

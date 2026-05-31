@@ -68,27 +68,13 @@ export default class ServiceController {
                 placeholder: 'Filter by description…'
             },
             sortingAlgorithm: naturalCompare,
-            width: 300
+            width: 350
         },
         {
             name: 'mode',
             displayName: 'Mode',
             field: 'mode',
             multiselectFilterOptions: this.Services.serviceModes,
-            width: 150
-        },
-        {
-            name: 'cacheName',
-            displayName: 'CacheName',
-            field: 'cacheName',
-            enableFiltering: false,
-            width: 150
-        },
-        {
-            name: 'affinityKey',
-            displayName: 'affinityKey',
-            field: 'affinityKey',
-            enableFiltering: false,
             width: 150
         },
         {

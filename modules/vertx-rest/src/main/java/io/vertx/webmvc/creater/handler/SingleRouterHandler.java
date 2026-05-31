@@ -15,6 +15,7 @@ import io.vertx.webmvc.common.WebConstant;
 import io.vertx.webmvc.creater.factory.RequestFactory;
 import lombok.extern.slf4j.Slf4j;
 
+import org.apache.ignite.lang.IgniteFuture;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.format.support.FormattingConversionService;
@@ -163,8 +164,10 @@ public abstract class SingleRouterHandler {
 
     public void dealRouterTemplate(Method method, String prefix, Object classBean, Router router) {    	
         String url = getUrl(method);
-        boolean isAync = Future.class.isAssignableFrom(method.getReturnType()) || java.util.concurrent.Future.class.isAssignableFrom(method.getReturnType());
-        if((method.getAnnotation(Blocking.class) != null || classBean.getClass().getAnnotation(Blocking.class) != null) && !isAync) {
+        boolean isAync = Future.class.isAssignableFrom(method.getReturnType())
+                || java.util.concurrent.Future.class.isAssignableFrom(method.getReturnType())
+                || IgniteFuture.class.isAssignableFrom(method.getReturnType());
+        if(method.getAnnotation(Blocking.class) != null || classBean.getClass().getAnnotation(Blocking.class) != null && !isAync) {
         	
         	getRoute(router, prefix, url).blockingHandler(ctx -> webHandle(ctx, method, prefix, url, classBean))
 	            .failureHandler(frc -> {

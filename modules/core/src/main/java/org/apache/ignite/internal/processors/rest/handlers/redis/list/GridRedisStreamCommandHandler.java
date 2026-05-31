@@ -19,20 +19,26 @@ package org.apache.ignite.internal.processors.rest.handlers.redis.list;
 
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cache.query.RangeIndexQueryCriterion;
+import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisRestCommandHandler;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
+import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -44,14 +50,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.*;
-import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisNioListener.SESS_STREAM_LAST_ID_META_KEY;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisNioListener.*;
 
 /**
  * Redis List pop command handler.
  * <p>
  * No key expiration is currently supported.
  */
-public class GridRedisStreamCommandHandler implements GridRedisCommandHandler {
+public class GridRedisStreamCommandHandler extends GridRedisRestCommandHandler implements GridRedisCommandHandler {
 
 	/** Supported commands. */
     private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
@@ -61,12 +67,6 @@ public class GridRedisStreamCommandHandler implements GridRedisCommandHandler {
 			XRANGE,
 			XREVRANGE
     );
-
-    /** Logger. */
-    protected final IgniteLogger log;
-
-    /** Kernel context. */
-    protected final GridKernalContext ctx;
 
 	protected Map<String,Long> lastIdMap = new ConcurrentHashMap<>();
 
@@ -78,9 +78,8 @@ public class GridRedisStreamCommandHandler implements GridRedisCommandHandler {
      * @param log Logger to use.
      * @param ctx Kernal context.
      */
-    public GridRedisStreamCommandHandler(IgniteLogger log, GridKernalContext ctx) {
-        this.log = log;
-        this.ctx = ctx;
+    public GridRedisStreamCommandHandler(IgniteLogger log, GridRestProtocolHandler hnd,GridKernalContext ctx) {
+		super(log,hnd,ctx);
     }
 
     /** {@inheritDoc} */
@@ -95,6 +94,7 @@ public class GridRedisStreamCommandHandler implements GridRedisCommandHandler {
         GridRedisCommand cmd = msg.command();
 		IgniteCache<Long, BinaryObject> stream = ctx.grid().cache(msg.cacheName());
 		if(stream!=null) {
+			trySuspendTransaction(ses,msg); // stream maybe not support transaction
 			stream = stream.withKeepBinary();
 		}
 		if(cmd == XADD) {
@@ -439,8 +439,15 @@ public class GridRedisStreamCommandHandler implements GridRedisCommandHandler {
 				msg.setResponse(GridRedisProtocolParser.toInteger(stream.size(CachePeekMode.PRIMARY)));
 			}
 		}
-
+		if(stream!=null) {
+			tryResumeTransaction(ses,msg);
+		}
         return new GridFinishedFuture<>(msg);
+	}
+
+	@Override
+	public GridRestRequest asRestRequest(GridRedisMessage msg) throws IgniteCheckedException {
+		return null;
 	}
 
 	/**

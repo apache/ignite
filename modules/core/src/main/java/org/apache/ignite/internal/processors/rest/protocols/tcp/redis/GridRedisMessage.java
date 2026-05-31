@@ -21,10 +21,19 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
+import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisNioListener.SESS_TX_META_KEY;
 
 /**
  * Message to communicate with Redis client. Contains command, its attributes and response.
@@ -59,6 +68,8 @@ public class GridRedisMessage implements GridClientMessage {
 
     /** Cache name. */
     private String cacheName;
+
+    private boolean isPipeline;
 
     /** Cache name prefix. */
     public static final String CACHE_NAME_PREFIX = "redis-ignite-internal";
@@ -119,6 +130,20 @@ public class GridRedisMessage implements GridClientMessage {
      */
     public int messageSize() {
         return msgParts.size();
+    }
+
+    /**
+     * @return isPipeline of the message.
+     */
+    public boolean isPipeline() {
+        return isPipeline;
+    }
+
+    /**
+     * @return isPipeline of the message.
+     */
+    public void setPipeline(boolean isPipeline) {
+        this.isPipeline=isPipeline;
     }
 
     /**
@@ -267,4 +292,5 @@ public class GridRedisMessage implements GridClientMessage {
     @Override public void sessionToken(byte[] sesTok) {
 
     }
+
 }

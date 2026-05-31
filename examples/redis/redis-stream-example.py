@@ -4,7 +4,8 @@ import threading
 from datetime import datetime
 
 # Connect to Redis (adjust host/port as needed)
-r = redis.StrictRedis(host='localhost', port=11212, db=0, decode_responses=True)
+r = redis.StrictRedis(host='localhost', port=11212, db=0, 
+                      socket_timeout=600000,socket_connect_timeout=600000,decode_responses=True,retry= None)
 
 def clear_stream(stream_name):
     """Clear all messages from a stream"""
@@ -391,7 +392,7 @@ def example_batch_operations():
     # 1. Batch add using pipeline
     print("Batch adding 100 messages using pipeline...")
     pipeline = r.pipeline(transaction=True)
-    for i in range(10):
+    for i in range(100):
         pipeline.xadd(stream_name, {
             'index': str(i),
             'data': f'Batch data {i}',
@@ -446,7 +447,7 @@ def main():
         #example_xadd_basic()
         #example_xrange_basic()
         #example_xread_basic()
-        #example_consumer_producer()
+        example_consumer_producer()
         #example_pagination()
         #example_reverse_reading()
         #example_stream_monitoring()

@@ -21,7 +21,6 @@ panel-collapsible(opened=`::true` ng-form=form)
                     tip: `${model}.notes`,
                     required: true
                 })(
-                    
                     ignite-unique-property='name'
                     ignite-unique-skip=`["id", ${model}]`
                 )
@@ -29,12 +28,21 @@ panel-collapsible(opened=`::true` ng-form=form)
             
             .pc-form-grid-col-60(ng-if='$ctrl.available("2.1.0")')
                 +form-field__text({
-                    label: 'Cache Name:',
-                    model: `${model}.cacheName`,
-                    name: '"cacheName"',
-                    placeholder: 'Input cache name',
-                    tip: 'Cache name.<br/>\
-                          Caches with the same group name share single underlying "physical" cache (partition set), but are logically isolated.'
+                    label: 'Method Name:',
+                    model: `${model}.methodName`,
+                    name: '"methodName"',
+                    placeholder: 'Service method name',
+                    tip: 'Method name.<br/>\
+                          Method from service,if null use default call method.'
+                })
+            .pc-form-grid-col-60(ng-if='$ctrl.available("2.1.0")')
+                +form-field__text({
+                    label: 'Payload:',
+                    model: `${model}.payload`,
+                    name: '"payload"',
+                    placeholder: 'Service method payload',
+                    tip: 'Method payload.<br/>\
+                          Method payload maybe auto fill.'
                 })
             .pc-form-grid-col-30
                 +form-field__cache-modes({

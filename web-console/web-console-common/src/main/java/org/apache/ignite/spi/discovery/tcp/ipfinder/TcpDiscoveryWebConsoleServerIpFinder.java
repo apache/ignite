@@ -30,21 +30,22 @@ import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.time.Duration;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.Set;
-import java.util.StringTokenizer;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.console.utils.StringToUUID;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -59,7 +60,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 /**
  * Shared Web Console Server IP finder. <h1 class="header">Configuration</h1> <h2 class="header">Mandatory</h2> There are
  * no mandatory configuration parameters. <h2 class="header">Optional</h2> <ul> <li>Path (see {@link
- * #setPath(String)})</li> <li>Shared flag (see {@link #setShared(boolean)})</li> </ul> <p> If {@link #getPath()} is not
+ * #setMasterUrl(String)})</li> <li>Shared flag (see {@link #setShared(boolean)})</li> </ul> <p> If {@link #getPath()} is not
  * provided, then {@link #DFLT_PATH} will be used and only local nodes will discover each other. To enable discovery
  * over network you must provide a path to a shared directory explicitly. <p> The directory will contain empty files
  * named like the following 192.168.1.136#1001. <p> Note that this finder is shared by default (see {@link
@@ -84,6 +85,13 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
     /** IPv6 colon substitute. */
     private static final String COLON_SUBST = "_";
 
+
+    public static String NODE_JOINED = "node-joined";
+
+    public static String NODE_LEFT = "node-left";
+
+    public static String NODE_FAILED = "node-failed";
+
     /** Grid logger. */
     @LoggerResource
     private IgniteLogger log;
@@ -91,7 +99,7 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
     /** File-system path. */
     private String path = null;
     
-    private String masterUrl = "http://127.0.0.1:3000";
+    private String masterUrl = "http://127.0.0.1:3000"; // or "file://works/"
     
     private String accountToken = null;
     
@@ -131,24 +139,12 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
         return path;
     }
 
-    /**
-     * Sets path.
-     *
-     * @param path Shared path.
-     * @return {@code this} for chaining.
-     */
-    @IgniteSpiConfiguration(optional = true)
-    public TcpDiscoveryWebConsoleServerIpFinder setPath(String path) {
-        this.path = path;
-
-        return this;
-    }
 
     public String getMasterUrl() {
 		return masterUrl;
 	}
     /**
-     *  file://ignite-web-console/work or http://127.0.0.1:3000/disco
+     *  file://ignite-web-console/work or http://127.0.0.1:3000
      * @param masterUrl
      */
 	public void setMasterUrl(String masterUrl) {
@@ -173,7 +169,7 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
 	}
 
 	private String getFolderRoot() {
-		String root = this.ignite.configuration().getWorkDirectory();
+		String root = this.ignite.configuration().getIgniteHome()+"/work";
 		return root;
 	}
 	
@@ -182,12 +178,12 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
     }
 	
 	/**
-     * Initializes folder to work with.
+     * Initializes folder or httpclient to work with.
      *
      * @return Folder.
      * @throws org.apache.ignite.spi.IgniteSpiException If failed.
      */
-    private File initFolder() throws IgniteSpiException {
+    private void init() throws IgniteSpiException {
         if (initGuard.compareAndSet(false, true)) {
         	String root = getFolderRoot();
         	String instanceName = this.ignite.name();
@@ -213,25 +209,27 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
             if(this.masterUrl!=null && !masterUrl.toLowerCase().startsWith("file://")) {            	
             	httpClient = HttpClient.newBuilder()
             			.connectTimeout(Duration.ofMillis(responseWaitTime))
+                        .version(HttpClient.Version.HTTP_1_1)
             			.build();
-            	
+                initLatch.countDown();
+                return;
             }
 
             try {
                 File tmp;
-
-                if (new File(root,path).exists())
-                    tmp = new File(root,path);
+                if(path.startsWith("/"))
+                    tmp = new File(path);
                 else {
-                    try {
-                        tmp = U.resolveWorkDirectory(root, path, false);
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteSpiException("Failed to resolve directory [path=" + path +
-                            ", exception=" + e.getMessage() + ']');
+                    tmp = new File(root, path);
+                    if (!tmp.exists()) {
+                        try {
+                            tmp = U.resolveWorkDirectory(root, path, false);
+                        } catch (IgniteCheckedException e) {
+                            throw new IgniteSpiException("Failed to resolve directory [path=" + path +
+                                    ", exception=" + e.getMessage() + ']');
+                        }
                     }
                 }
-
                 if (!tmp.isDirectory())
                     throw new IgniteSpiException("Failed to initialize shared file system path " +
                         "(path must point to folder): " + path);
@@ -254,45 +252,46 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
                 throw new IgniteSpiException("Thread has been interrupted.", e);
             }
 
-            if (folder == null)
+            if (folder == null && httpClient==null)
                 throw new IgniteSpiException("Failed to initialize shared file system folder (check logs for errors).");
         }
 
-        return folder;
     }
 
     /** {@inheritDoc} */
     @Override public Collection<InetSocketAddress> getRegisteredAddresses() throws IgniteSpiException {
-        initFolder();
+        init();
 
         Collection<InetSocketAddress> addrs = new HashSet<>();
         
         if(this.httpClient!=null) {
-        	String url = this.masterUrl+ "/api/v1/"+path;
+        	String url = this.masterUrl+ "/api/v1/"+path+"/"+NODE_JOINED;
         	
-        	HttpRequest request = HttpRequest.newBuilder()
+        	HttpRequest request = HttpRequest.newBuilder().version(HttpClient.Version.HTTP_1_1)
         			         .uri(URI.create(url))
         			         .header("Authorization", "token " + accountToken)
         			         .GET()
         			         .build();
         	try {
 				HttpResponse<String> resp = httpClient.send(request,BodyHandlers.ofString());
-				for(String fileName: resp.body().split(",")) {
-					StringTokenizer st = new StringTokenizer(fileName, DELIM);
-					
-		            if (st.countTokens() != 2)
-		                continue;
-		
-		            String addrStr = st.nextToken();
-		            String portStr = st.nextToken();
-		
+				for(String nodeInfo: resp.body().split("\n")) {
 		            try {
-		                int port = Integer.parseInt(portStr);
-		
-		                addrs.add(new InetSocketAddress(denormalizeAddress(addrStr), port));
+                        JsonObject st = new JsonObject(nodeInfo);
+
+                        if (st.isEmpty())
+                            continue;
+
+                        JsonArray addrsList = st.getJsonArray("discoveryAddress");
+                        if(addrsList==null)
+                            continue;
+		                addrsList.forEach((addr->{
+                            String[] parts = addr.toString().split(DELIM);
+                            addrs.add(new InetSocketAddress(denormalizeAddress(parts[0]), Integer.parseInt(parts[1])));
+                        }));
+
 		            }
 		            catch (IllegalArgumentException e) {
-		                U.error(log, "Failed to parse file entry: " + fileName, e);
+		                U.error(log, "Failed to parse node info entry: " + nodeInfo, e);
 		            }
 				}
 			} catch (IOException | InterruptedException e) {
@@ -301,20 +300,23 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
         } 
         else {
         	for (String fileName : folder.list()) {
-                StringTokenizer st = new StringTokenizer(fileName, DELIM);
-
-                if (st.countTokens() != 2)
-                    continue;
-
-                String addrStr = st.nextToken();
-                String portStr = st.nextToken();
-
                 try {
-                    int port = Integer.parseInt(portStr);
+                    String content = Files.readString(Path.of(folder.getCanonicalPath(),fileName));
+                    JsonObject st = new JsonObject(content);
 
-                    addrs.add(new InetSocketAddress(denormalizeAddress(addrStr), port));
+                    if (st.isEmpty())
+                        continue;
+
+                    JsonArray addrsList = st.getJsonArray("discoveryAddress");
+                    if(addrsList==null)
+                        continue;
+                    addrsList.forEach((addr->{
+                        String[] parts = addr.toString().split(DELIM);
+                        addrs.add(new InetSocketAddress(denormalizeAddress(parts[0]), Integer.parseInt(parts[1])));
+                    }));
+
                 }
-                catch (IllegalArgumentException e) {
+                catch (IllegalArgumentException | IOException e) {
                     U.error(log, "Failed to parse file entry: " + fileName, e);
                 }
             }
@@ -323,40 +325,64 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
         return Collections.unmodifiableCollection(addrs);
     }
 
+    @Override
+    public void registerAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
+        // no-op
+    }
+
     /** {@inheritDoc} */
-    @Override public void registerAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
+    @Override public void initializeLocalAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
         assert !F.isEmpty(addrs);
-
-        initFolder();
+        init();
         nodeCounter.incrementAndGet();
-        try {        	
-        	String addresses = "";
-            for (String name : distinctNames(addrs)) {
-                File file = new File(folder, name);
+        try {
 
-                file.createNewFile();
-                
-                if(!addresses.isEmpty())
-                	addresses += ",";
-                addresses += name;
+            JsonObject st = new JsonObject();
+            this.ignite.cluster().localNode().attributes().forEach((k,v)->{
+                if(k.toLowerCase().contains("port")){
+                    st.put(k,v);
+                }
+                else if(k.toLowerCase().contains("host")){
+                    st.put(k,v);
+                }
+            });
+            List<String> hosts = new ArrayList<>();
+            for (InetSocketAddress addr: addrs) {
+                hosts.add(name(addr));
             }
-            
+            st.put("discoveryAddress",hosts);
+
             if(this.httpClient!=null) {
-            	UUID nodeId = this.ignite.cluster().localNode().id();
-            	String url = this.masterUrl+ "/api/v1/"+path+"/"+nodeId;
+                UUID nodeId;
+                Object cid = ignite.cluster().localNode().consistentId();
+                if(cid instanceof  UUID){
+                    nodeId = (UUID)cid;
+                }
+                else{
+                    nodeId = StringToUUID.uuidFromString(cid.toString());
+                }
+            	String url = this.masterUrl+ "/api/v1/"+path+"/"+nodeId+"/"+NODE_JOINED;
             	
             	HttpRequest request = HttpRequest.newBuilder()
             			         .uri(URI.create(url))
             			         .header("Authorization", "token " + accountToken)
-            			         .PUT(BodyPublishers.ofString(addresses))
+            			         .PUT(BodyPublishers.ofString(st.toString()))
             			         .build();
             	httpClient.send(request,BodyHandlers.discarding());
+            }
+            else{
+                Files.writeString(
+                        Path.of(folder.getCanonicalPath(),ignite.cluster().localNode().consistentId()+".json"),
+                        st.toString(),
+                        StandardCharsets.UTF_8,
+                        StandardOpenOption.CREATE,  // 创建新文件或覆盖
+                        StandardOpenOption.WRITE
+                );
             }
         }
         catch (IOException e) {
             throw new IgniteSpiException("Failed to create file.", e);
         } catch (InterruptedException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
     }
@@ -364,35 +390,56 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
     /** {@inheritDoc} */
     @Override public void unregisterAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
         assert !F.isEmpty(addrs);
-        initFolder();
+        init();
         nodeCounter.decrementAndGet();
         try {
-        	
-        	String addresses = "";
-            for (String name : distinctNames(addrs)) {
-                File file = new File(folder, name);
-
-                if (file.exists() && !file.delete())
-                    throw new IgniteSpiException("Failed to delete file " + file.getName());
-                
-                if(!addresses.isEmpty())
-                	addresses += ",";
-                addresses += name;
+            JsonArray addresses = new JsonArray();
+            for (InetSocketAddress addr: addrs) {
+                String item = name(addr);
+                addresses.add(item);
             }
-        	
+
         	if(this.httpClient!=null) {
-            	UUID nodeId = this.ignite.cluster().localNode().id();
-            	
-            	String url = this.masterUrl+ "/api/v1/"+path+"/"+nodeId;
+
+            	String url = this.masterUrl+ "/api/v1/"+path+"/"+NODE_JOINED+"/to/node-left";
             	
             	HttpRequest request = HttpRequest.newBuilder()
             			         .uri(URI.create(url))
             			         .header("Authorization", "token " + accountToken)
-            			         .DELETE()
+            			         .PUT(BodyPublishers.ofString(addresses.toString()))
             			         .build();
             	httpClient.send(request,BodyHandlers.discarding());
-            }    
-            
+            }
+            else{
+                for (String fileName : folder.list()) {
+                    try {
+                        Path filePath = Path.of(folder.getCanonicalPath(),fileName);
+                        String content = Files.readString(filePath);
+                        JsonObject st = new JsonObject(content);
+
+                        if (st.isEmpty())
+                            continue;
+                        JsonArray newAddresses = new JsonArray();
+                        JsonArray addrsList = st.getJsonArray("discoveryAddress");
+                        addrsList.forEach((addr->{
+                            if(!addresses.contains(addr))
+                                newAddresses.add(addr);
+                        }));
+
+                        if(newAddresses.isEmpty()){
+                            Files.delete(filePath);
+                        }
+                        else if(addrsList.size()!=newAddresses.size()){
+                            st.put("discoveryAddress",newAddresses);
+                            Files.writeString(filePath, st.toString());
+                        }
+
+                    }
+                    catch (IllegalArgumentException | IOException e) {
+                        U.error(log, "Failed to parse file entry: " + fileName, e);
+                    }
+                }
+            }
         }
         catch (SecurityException e) {
             throw new IgniteSpiException("Failed to delete file.", e);
