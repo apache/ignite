@@ -17,55 +17,46 @@
 
 package org.apache.ignite.testcontainers;
 
-import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.util.Arrays;
-import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import com.github.dockerjava.api.command.InspectContainerResponse;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.Ignition;
-import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterState;
-import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
-import org.testcontainers.utility.MountableFile;
 
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.testcontainers.utility.MountableFile.forClasspathResource;
 
 /** Ignite container. */
 public class IgniteContainer extends GenericContainer<IgniteContainer> {
+    /** Property for local work directory. */
+    static final String LOCAL_WORK_DIR_PROP = "local.work.dir";
+
+    /** Local work directory. */
+    static final String LOCAL_WORK_DIR_PATH = System.getProperty(LOCAL_WORK_DIR_PROP,
+        System.getProperty("user.home") + "/test-ignite-work");
+
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger(IgniteContainer.class);
 
-    /** Docker image name. */
-    private static final DockerImageName DOCKER_IMAGE_NAME = DockerImageName.parse("apacheignite/ignite:2.18.0");
+    /** Ignite root directory in container. */
+    private static final String ROOT_DIR_PATH = "/opt/ignite/apache-ignite/";
 
-    /** Work directory. */
-    private static final String WORK_DIR = "/opt/ignite/apache-ignite/";
+    /** Ignite work directory in container. */
+    private static final String WORK_DIR_PATH = ROOT_DIR_PATH + "work";
 
-    /** Libs directory in container. */
-    private static final File LIBS_DIR = new File(WORK_DIR + "libs");
-
-    /** Target libs directory in container. */
-    private static final File TARGET_LIBS_DIR = new File("/opt/ignite/target-libs");
-
-    /** Local target libs directory to copy in container. */
-    private static final String LOCAL_TARGET_LIBS_DIR = System.getProperty("local.target.libs", "/tmp/target-libs");
-
-    /** */
-    private static final String CFG_PATH = WORK_DIR + "config/test-config.xml";
+    /** Config path in container. */
+    private static final String CFG_PATH = ROOT_DIR_PATH + "config/test-config.xml";
 
     /** */
     private static final String ENABLE_EXPERIMENTAL_FLAG = "--enable-experimental";
@@ -76,52 +67,51 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
     /** */
     private static final Pattern RU_STATUS_PATTERN = Pattern.compile("Rolling upgrade status: (enabled|disabled)");
 
-    /** */
-    private static final String WRAPPER_SCRIPT = "/opt/ignite/run-wrapper.sh";
-
     /** Default thin client port. */
     private static final int THIN_CLIENT_PORT = 10800;
 
-    /** Ignite thin client. */
-    private IgniteClient client;
+    /** Hostname. */
+    private final String hostname;
+
+    /** Node ID. */
+    private final String nodeId;
 
     /** Constructor. */
-    public IgniteContainer() {
-        this(Network.newNetwork(), "node0", UUID.randomUUID().toString());
-    }
+    public IgniteContainer(String ver, Network net, String hostname, String nodeId) {
+        super(DockerImageName.parse("apacheignite/ignite:" + ver));
 
-    /** Constructor. */
-    public IgniteContainer(Network net, String hostname, String nodeId) {
-        super(DOCKER_IMAGE_NAME);
+        this.hostname = hostname;
+        this.nodeId = nodeId;
 
         withEnv("CONFIG_URI", "file://" + CFG_PATH);
         withEnv("IGNITE_QUIET", "false");
         withEnv("IGNITE_NODE_NAME", nodeId);
+        withEnv("IGNITE_WORK_DIR", WORK_DIR_PATH + "/" + hostname);
         withEnv("TZ", ZoneId.systemDefault().toString());
-        //withEnv("JVM_OPTS", String.format("-Xmx%s", heapSize));
+
+        withFileSystemBind(LOCAL_WORK_DIR_PATH, WORK_DIR_PATH, BindMode.READ_WRITE);
 
         withCopyFileToContainer(forClasspathResource("docker/test-config.xml"), CFG_PATH);
-        withCopyFileToContainer(forClasspathResource("docker/run-wrapper.sh"), WRAPPER_SCRIPT);
-        withCopyToContainer(MountableFile.forHostPath(LOCAL_TARGET_LIBS_DIR), TARGET_LIBS_DIR.getAbsolutePath());
+
         withNetwork(net);
         withNetworkAliases(hostname);
         withExposedPorts(THIN_CLIENT_PORT);
-
-        withCommand("sh", "-c", "chmod +x " + WRAPPER_SCRIPT + " && exec " + WRAPPER_SCRIPT);
 
         waitingFor(Wait.forLogMessage(".*Node started.*", 1)
             .withStartupTimeout(Duration.ofSeconds(60)));
     }
 
-    /** @return Thin client instance. */
-    public IgniteClient client() {
-        if (client == null)
-            client = Ignition.startClient(clientConfig());
-
-        return client;
+    /** @return Hostname. */
+    public String hostname() {
+        return hostname;
     }
 
-    /** */
+    /** @return Node ID. */
+    public String nodeId() {
+        return nodeId;
+    }
+
+    /** Activate cluster. */
     public void activateCluster() {
         execControl("--set-state", "ACTIVE", "--yes");
 
@@ -142,45 +132,7 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
         }
     }
 
-    /**
-     * 1. Stop ignite node.
-     * 2. Remove current libs dir.
-     * 3. Upgrade JAR's (copy libs from target dir).
-     * 4. Start ignite node.
-     */
-    public void upgrade() throws Exception {
-        LOGGER.info(">>> Upgrade container {}", getContainerName());
-
-        closeClient();
-
-        exec("Failed to kill Ignite process", "kill", "-INT", "1");
-
-        for (int i = 0; i < 30; i++) {
-            ExecResult res = execInContainer("pgrep", "-f", "org.apache.ignite.startup.cmdline.CommandLineStartup");
-
-            if (res.getExitCode() == 1)
-                break;
-
-            U.sleep(1_000);
-        }
-
-        exec("Failed to remove old libs", "sh", "-c", "rm -rf " + LIBS_DIR + "/*");
-
-        exec("Failed to copy new libs", "sh", "-c", "cp -r " + TARGET_LIBS_DIR + "/* " + LIBS_DIR + "/");
-
-        execInContainer("sh", "-c", WORK_DIR + "run.sh &");
-
-        waitForCondition(() -> {
-            try {
-                return client().cluster().nodes().size() == 3;
-            }
-            catch (Exception e) {
-                return false;
-            }
-        }, 30_000);
-    }
-
-    /** */
+    /** @return Rolling upgrade status. */
     public RollingUpgradeStatus rollingUpgradeStatus() {
         String out = execControl("--rolling-upgrade", "status");
 
@@ -194,17 +146,17 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
         throw new IllegalStateException("Failed to parse rolling upgrade status from output:\n" + out);
     }
 
-    /** */
+    /** Enable rolling upgrade. */
     public void rollingUpgradeEnable(String targetVer) {
         execControl("--rolling-upgrade", "enable", targetVer, "--yes");
     }
 
-    /** */
+    /** Disable rolling upgrade. */
     public void rollingUpgradeDisable() {
         execControl("--rolling-upgrade", "disable");
     }
 
-    /** */
+    /** @return Number of cluster nodes for given release version. */
     public int nodesCountForVersion(String targetVer) {
         String out = execControl("--rolling-upgrade", "status");
 
@@ -234,16 +186,16 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
         return cnt;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void containerIsStopping(InspectContainerResponse containerInfo) {
-        closeClient();
+    /** @return Client address. */
+    public String clientAddress() {
+        return getHost() + ":" + getMappedPort(THIN_CLIENT_PORT);
     }
 
     /** */
     private String execControl(String... cmd) {
         String[] fullCmd = new String[cmd.length + 2];
 
-        fullCmd[0] = WORK_DIR + "bin/control.sh";
+        fullCmd[0] = ROOT_DIR_PATH + "bin/control.sh";
         fullCmd[1] = ENABLE_EXPERIMENTAL_FLAG;
 
         System.arraycopy(cmd, 0, fullCmd, 2, cmd.length);
@@ -265,38 +217,7 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
         return result.getStdout();
     }
 
-    /** */
-    private ExecResult exec(String errMsg, String... cmd) {
-        try {
-            ExecResult res = execInContainer(cmd);
-
-            if (res.getExitCode() != 0)
-                throw new IllegalStateException(errMsg + ": " + res.getStderr());
-
-            return res;
-        }
-        catch (IOException | InterruptedException e) {
-            throw new IgniteException(e);
-        }
-    }
-
-    /** */
-    private void closeClient() {
-        if (client != null) {
-            client.close();
-
-            client = null;
-        }
-    }
-
-    /** */
-    private ClientConfiguration clientConfig() {
-        return new ClientConfiguration()
-            .setAddresses("127.0.0.1:" + getMappedPort(THIN_CLIENT_PORT))
-            .setRequestTimeout(30_000);
-    }
-
-    /** */
+    /** Rolling upgrade status. */
     public enum RollingUpgradeStatus {
         /** */
         ENABLED,
