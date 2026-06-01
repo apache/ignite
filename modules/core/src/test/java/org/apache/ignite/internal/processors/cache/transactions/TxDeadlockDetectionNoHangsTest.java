@@ -99,9 +99,9 @@ public class TxDeadlockDetectionNoHangsTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        assertFalse(DEAD_LOCK_FLAG.get());
-
         stopAllGrids();
+
+        assertFalse(DEAD_LOCK_FLAG.get());
     }
 
     /** {@inheritDoc} */
