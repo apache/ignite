@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
@@ -26,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.CheckpointMetricsTracker;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointMetricsTracker;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -92,7 +90,7 @@ public class LongJVMPauseDetector {
     private long longPausesTotalDurationNanos;
 
     /** Last detector's wake up time. */
-    private long lastWakeUpTimeNanos = System.nanoTime();
+    private long lastWakeUpTimeNanos = getMonotonicTimeNanos();
 
     /** Long pauses timestamps. */
     @GridToStringInclude
@@ -132,13 +130,13 @@ public class LongJVMPauseDetector {
                     try {
                         // don't worry, wait will release monitor and all props will be accessible
                         synchronized (this) {
-                            lastWakeUpTimeNanos = System.nanoTime();
+                            lastWakeUpTimeNanos = getMonotonicTimeNanos();
                             long awaitDeadline = lastWakeUpTimeNanos + PRECISION_NANOS;
                             long awaitDeadlineMillis = awaitDeadline / 1_000_000L;
                             int awaitDeadlineNanos = Math.toIntExact(awaitDeadline % 1_000_000);
-                            while (System.nanoTime() <= awaitDeadline)
+                            while (getMonotonicTimeNanos() <= awaitDeadline)
                                 wait(awaitDeadlineMillis, awaitDeadlineNanos);
-                            long nanoTime = System.nanoTime();
+                            long nanoTime = getMonotonicTimeNanos();
                             long pause = nanoTime - awaitDeadline;
                             long pauseMillis = TimeUnit.NANOSECONDS.toMillis(pause);
                             if (pauseMillis >= THRESHOLD) {
@@ -210,13 +208,6 @@ public class LongJVMPauseDetector {
     }
 
     /**
-     * @return Last checker's wake up time.
-     */
-    public synchronized long getLastWakeUpTimeNanos() {
-        return lastWakeUpTimeNanos;
-    }
-
-    /**
      * @return Last long JVM pause events.
      */
     synchronized Map<Long, Long> longPauseEvents() {
@@ -229,45 +220,42 @@ public class LongJVMPauseDetector {
     }
 
     /**
-     * @return last long pause spotted or -1 otherwise
-     */
-    public synchronized long getLastLongPause() {
-        int lastPauseIdx = Math.toIntExact(longPausesCnt % EVT_CNT);
-        long lastLongPause = longPausesDurations[lastPauseIdx];
-        return lastLongPause == 0 ? -1 : lastLongPause;
-    }
-
-    /**
-     * @param tracker Check point Tracker.
+     * @param cpStart Check point start time in nanos.
      * @return Tries to explain total pauses spotted during check point process
-     * since {@link CheckpointMetricsTracker#checkPointStartNanos()}
-     * due to {@link CheckpointMetricsTracker#checkPointEndNanos()}
-     * or {@link Optional#empty()} if none was found
+     * or {@link Optional#empty()} if none were found
      */
-    public synchronized String getTotalSpottedPausesExplain(CheckpointMetricsTracker tracker) {
+    public Optional<String> getTotalSpottedPausesExplain(long cpStart) {
         int lastPointer = (int) (longPausesCnt % EVT_CNT);
         int pausesSpottedTimes = 0;
         int curPointer = lastPointer;
-        List<String> pausesExplains = new LinkedList<>();
-        long checkPointStartNanos = tracker.checkPointStartNanos();
-        do {
-            if (longPausesMonotonicTimestamps[curPointer] <= checkPointStartNanos)
-                break;
-            pausesExplains.add(String.format(
-                    "%d ms at %d",
-                    longPausesDurations[curPointer],
-                    longPausesTimestamps[curPointer]));
-            pausesSpottedTimes++;
-            curPointer = curPointer == 0 ? EVT_CNT - 1 : curPointer - 1;
-        } while (curPointer != lastPointer);
-        return String.format("Pause detecor spotted %d pauses: %s. Each with precision %d ms",
-                pausesSpottedTimes,
-                pausesExplains,
-                PRECISION);
+        StringBuilder explainBuilder = new StringBuilder();
+        synchronized (this) {
+            do {
+                if (longPausesMonotonicTimestamps[curPointer] <= cpStart)
+                    break;
+                explainBuilder.append(longPausesDurations[curPointer]).append(" ms at ")
+                        .append(longPausesTimestamps[curPointer]).append(";");
+                pausesSpottedTimes++;
+                curPointer = curPointer == 0 ? EVT_CNT - 1 : curPointer - 1;
+            } while (curPointer != lastPointer);
+        }
+        return pausesSpottedTimes == 0 ?
+                Optional.empty() :
+                Optional.of(String.format("Pause detecor spotted %d pauses: [%s]. Each with precision %d ms",
+                        pausesSpottedTimes,
+                        explainBuilder,
+                        PRECISION));
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(LongJVMPauseDetector.class, this);
+    }
+
+    /**
+     * @return monotonic time in nanos
+     */
+    protected static long getMonotonicTimeNanos() {
+        return System.nanoTime();
     }
 }
