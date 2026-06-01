@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 import java.util.function.Supplier;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.util.RelNodeUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
@@ -35,27 +36,22 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
     private int rowsProcessed;
 
     /** Fetch can be unset, in this case we need all rows. */
-    private @Nullable Supplier<Integer> fetchNode;
+    private final @Nullable Supplier<Number> fetchNode;
 
     /** Waiting results counter. */
     private int waiting;
 
-    /**
-     * Constructor.
-     *
-     * @param ctx Execution context.
-     * @param rowType Row type.
-     */
+    /** */
     public LimitNode(
         ExecutionContext<Row> ctx,
         RelDataType rowType,
-        Supplier<Integer> offsetNode,
-        Supplier<Integer> fetchNode
+        @Nullable Supplier<Integer> offsetNode,
+        @Nullable Supplier<Number> fetchNode
     ) {
         super(ctx, rowType);
 
         offset = offsetNode == null ? 0 : offsetNode.get();
-        fetch = fetchNode == null ? 0 : fetchNode.get();
+        fetch = RelNodeUtils.resolveFetch(fetchNode, "FETCH");
         this.fetchNode = fetchNode;
     }
 
