@@ -142,7 +142,6 @@ public class GridCacheReturn implements MarshallableMessage, CacheIdAware {
                 v = map0;
             }
         }
-            
         
         return (V)v;
     }
@@ -348,10 +347,12 @@ public class GridCacheReturn implements MarshallableMessage, CacheIdAware {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
         // No-op.
     }
 
+    /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         loc = true;
     }
