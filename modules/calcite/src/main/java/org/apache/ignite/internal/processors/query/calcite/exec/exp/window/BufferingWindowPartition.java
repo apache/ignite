@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.exp.window;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Consumer;
 import org.apache.calcite.rel.core.Window;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -51,10 +51,11 @@ final class BufferingWindowPartition<Row> extends WindowPartitionBase<Row> {
     /** {@inheritDoc} */
     @Override public void add(Row row) {
         buf.add(row);
+        onRowAdded(row);
     }
 
     /** {@inheritDoc} */
-    @Override public void drainTo(RowHandler.RowFactory<Row> factory, Collection<Row> output) {
+    @Override public void evalTo(RowHandler.RowFactory<Row> factory, Consumer<Row> output) {
         if (buf.isEmpty())
             return;
 
@@ -76,7 +77,7 @@ final class BufferingWindowPartition<Row> extends WindowPartitionBase<Row> {
             }
 
             Row resultRow = createResultRow(factory, currRow, accResults);
-            output.add(resultRow);
+            output.accept(resultRow);
 
             prevRow = currRow;
         }
@@ -84,6 +85,7 @@ final class BufferingWindowPartition<Row> extends WindowPartitionBase<Row> {
 
     /** {@inheritDoc} */
     @Override public void reset() {
+        buf.forEach(this::onRowRemoved);
         buf.clear();
         frame.reset();
     }

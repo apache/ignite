@@ -58,11 +58,6 @@ public final class WindowFunctions {
         return false;
     }
 
-    /** Determines if the specified {@link SqlOperator} supports sreaming execution. */
-    static boolean isStreamingFunction(SqlOperator op) {
-        return STREAMING_FUNCTIONS.contains(op);
-    }
-
     /** Window functions, which definitly supports sreaming execution. */
     private static final Set<SqlOperator> STREAMING_FUNCTIONS = Set.of(
         SqlStdOperatorTable.ROW_NUMBER,

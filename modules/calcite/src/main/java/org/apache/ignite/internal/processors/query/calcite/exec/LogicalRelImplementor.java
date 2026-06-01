@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterabl
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.window.WindowPartition;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.window.WindowPartitionFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.AbstractSetOpNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.CollectNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.CorrelatedNestedLoopJoinNode;
@@ -963,11 +964,11 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         Comparator<Row> partCmp = expressionFactory.comparator(TraitUtils.createCollation(grpKeys));
 
         List<AggregateCall> calls = grp.getAggregateCalls(rel);
-        Supplier<WindowPartition<Row>> frameFactory = expressionFactory.windowPartitionFactory(grp, calls, inputType);
+        Supplier<WindowPartition<Row>> partFactory = new WindowPartitionFactory<>(ctx, grp, calls, inputType);
 
         RowFactory<Row> rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), outType);
 
-        WindowNode<Row> node = new WindowNode<>(ctx, outType, partCmp, frameFactory, rowFactory);
+        WindowNode<Row> node = new WindowNode<>(ctx, outType, partCmp, partFactory, rowFactory);
 
         Node<Row> input = visit(rel.getInput());
 

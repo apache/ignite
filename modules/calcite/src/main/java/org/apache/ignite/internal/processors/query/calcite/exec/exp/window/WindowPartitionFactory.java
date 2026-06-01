@@ -48,6 +48,9 @@ public final class WindowPartitionFactory<Row> implements Supplier<WindowPartiti
     private final Comparator<Row> peerCmp;
 
     /** */
+    private final boolean streamable;
+
+    /** */
     public WindowPartitionFactory(
         ExecutionContext<Row> ctx,
         Window.Group grp,
@@ -66,12 +69,13 @@ public final class WindowPartitionFactory<Row> implements Supplier<WindowPartiti
         else
             peerCmp = ctx.expressionFactory().comparator(grp.collation());
 
+        streamable = WindowFunctions.streamable(grp);
         funcFactory = new WindowFunctionFactory<>(ctx, grp, calls, inputRowType);
     }
 
     /** {@inheritDoc} */
     @Override public WindowPartition<Row> get() {
-        if (funcFactory.isStreamable())
+        if (streamable)
             return new StreamWindowPartition<>(peerCmp, funcFactory, rowFactory);
         else
             return new BufferingWindowPartition<>(peerCmp, funcFactory, rowFactory, ctx, grp, inputRowType);

@@ -50,12 +50,11 @@ final class WindowFunctionFactory<Row> extends AccumulatorsFactoryBase<Row> {
         this.inputRowType = inputRowType;
 
         ImmutableList.Builder<WindowFunctionPrototype<Row>> prototypes = ImmutableList.builder();
-        for (AggregateCall aggCall : aggCalls) {
+        for (AggregateCall aggCall : aggCalls)
             if (WindowFunctions.isWindowFunction(aggCall))
                 prototypes.add(new WindowFunctionWrapperPrototype(aggCall));
             else
-                prototypes.add(new WindowFunctionAccumulatorAdapterPrototype(aggCall, grp));
-        }
+                prototypes.add(new WindowFunctionAccumulatorAdapterPrototype(aggCall));
 
         this.prototypes = prototypes.build();
     }
@@ -65,15 +64,8 @@ final class WindowFunctionFactory<Row> extends AccumulatorsFactoryBase<Row> {
         return Commons.transform(prototypes, Supplier::get);
     }
 
-    /** Checks whenether window functions can be streamed. */
-    boolean isStreamable() {
-        return prototypes.stream().allMatch(WindowFunctionPrototype::isStreamable);
-    }
-
     /** */
     private interface WindowFunctionPrototype<Row> extends Supplier<WindowFunctionWrapper<Row>> {
-        /** */
-        boolean isStreamable();
     }
 
     /** */
@@ -91,12 +83,8 @@ final class WindowFunctionFactory<Row> extends AccumulatorsFactoryBase<Row> {
         private Function<Object, Object> outAdapter;
 
         /** */
-        private final boolean supportsStreaming;
-
-        /** */
         private WindowFunctionWrapperPrototype(AggregateCall call) {
             this.call = call;
-            supportsStreaming = WindowFunctions.isStreamingFunction(call.getAggregation());
         }
 
         /** {@inheritDoc} */
@@ -117,8 +105,6 @@ final class WindowFunctionFactory<Row> extends AccumulatorsFactoryBase<Row> {
             inAdapter = createInAdapter(windowFunction);
             outAdapter = createOutAdapter(windowFunction);
 
-            assert supportsStreaming == windowFunction instanceof StreamWindowFunction;
-
             return windowFunction;
         }
 
@@ -132,11 +118,6 @@ final class WindowFunctionFactory<Row> extends AccumulatorsFactoryBase<Row> {
         @NotNull private Function<Object, Object> createOutAdapter(WindowFunction<Row> windowFunction) {
             RelDataType inType = windowFunction.returnType(ctx.getTypeFactory());
             return WindowFunctionFactory.this.createOutAdapter(call, inType);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isStreamable() {
-            return supportsStreaming;
         }
     }
 
@@ -190,24 +171,15 @@ final class WindowFunctionFactory<Row> extends AccumulatorsFactoryBase<Row> {
         private final Supplier<AccumulatorWrapper<Row>> factory;
 
         /** */
-        private final boolean streamable;
-
-        /** */
-        private WindowFunctionAccumulatorAdapterPrototype(AggregateCall call, Window.Group grp) {
+        private WindowFunctionAccumulatorAdapterPrototype(AggregateCall call) {
             Supplier<List<AccumulatorWrapper<Row>>> accFactory =
                 ctx.expressionFactory().accumulatorsFactory(AggregateType.SINGLE, List.of(call), inputRowType);
             factory = () -> accFactory.get().get(0);
-            streamable = grp.isRows && grp.lowerBound.isUnbounded() && grp.upperBound.isCurrentRow();
         }
 
         /** {@inheritDoc} */
         @Override public WindowFunctionWrapper<Row> get() {
-            return new WindowAccumulatorWrapper<>(factory, streamable);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isStreamable() {
-            return streamable;
+            return new WindowAccumulatorWrapper<>(factory);
         }
     }
 
@@ -215,9 +187,6 @@ final class WindowFunctionFactory<Row> extends AccumulatorsFactoryBase<Row> {
     private static final class WindowAccumulatorWrapper<Row> implements WindowFunctionWrapper<Row> {
         /** */
         private final Supplier<AccumulatorWrapper<Row>> factory;
-
-        /** */
-        private final boolean streamable;
 
         /** */
         private AccumulatorWrapper<Row> accHolder;
@@ -229,14 +198,12 @@ final class WindowFunctionFactory<Row> extends AccumulatorsFactoryBase<Row> {
         private int frameEnd = -1;
 
         /** */
-        private WindowAccumulatorWrapper(Supplier<AccumulatorWrapper<Row>> factory, boolean streamable) {
+        private WindowAccumulatorWrapper(Supplier<AccumulatorWrapper<Row>> factory) {
             this.factory = factory;
-            this.streamable = streamable;
         }
 
         /** {@inheritDoc} */
         @Override public Object callStreaming(Row row, int rowIdx, int peerIdx) {
-            assert streamable;
             AccumulatorWrapper<Row> acc = accumulator();
             acc.add(row);
             return acc.end();

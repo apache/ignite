@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.sql.fun;
 
+import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlFunctionCategory;
 import org.apache.calcite.sql.SqlKind;
@@ -156,10 +157,10 @@ public class IgniteOwnSqlOperatorTable extends ReflectiveSqlOperatorTable {
             SqlFunctionCategory.NUMERIC);
 
     /** Lead window funtion */
-    public static final SqlFunction LEAD = new SqlLeadLagFunction(SqlKind.LEAD);
+    public static final SqlAggFunction LEAD = new SqlLeadLagFunction(SqlKind.LEAD);
 
     /** Lag window funtion */
-    public static final SqlFunction LAG = new SqlLeadLagFunction(SqlKind.LAG);
+    public static final SqlAggFunction LAG = new SqlLeadLagFunction(SqlKind.LAG);
 
     /**
      * Returns the Ignite operator table, creating it if necessary.

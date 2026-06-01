@@ -96,10 +96,12 @@ public class WindowNode<Row> extends MemoryTrackingNode<Row> implements SingleNo
 
         waiting--;
 
-        if (part == null)
+        if (part == null) {
             part = partFactory.get();
+            part.attachMemoryTracker(nodeMemoryTracker);
+        }
         else if (prevRow != null && partCmp != null && partCmp.compare(prevRow, row) != 0) {
-            part.drainTo(rowFactory, outBuf);
+            part.evalTo(rowFactory, this::appendToOutBuf);
             part.reset();
             flush();
         }
@@ -107,11 +109,9 @@ public class WindowNode<Row> extends MemoryTrackingNode<Row> implements SingleNo
         part.add(row);
 
         if (part.isStreaming()) {
-            part.drainTo(rowFactory, outBuf);
+            part.evalTo(rowFactory, this::appendToOutBuf);
             flush();
         }
-        else
-            nodeMemoryTracker.onRowAdded(row);
 
         prevRow = row;
 
@@ -133,7 +133,7 @@ public class WindowNode<Row> extends MemoryTrackingNode<Row> implements SingleNo
         checkState();
 
         if (part != null) {
-            part.drainTo(rowFactory, outBuf);
+            part.evalTo(rowFactory, this::appendToOutBuf);
             part.reset();
         }
 
@@ -161,13 +161,21 @@ public class WindowNode<Row> extends MemoryTrackingNode<Row> implements SingleNo
     }
 
     /** */
+    private void appendToOutBuf(Row row) {
+        outBuf.add(row);
+        nodeMemoryTracker.onRowAdded(row);
+    }
+
+    /** */
     private void flush() throws Exception {
         inLoop = true;
         try {
             while (requested > 0 && !outBuf.isEmpty()) {
                 requested--;
 
-                downstream().push(outBuf.poll());
+                Row row = outBuf.poll();
+                nodeMemoryTracker.onRowRemoved(row);
+                downstream().push(row);
             }
 
             if (waiting < 0 && outBuf.isEmpty())

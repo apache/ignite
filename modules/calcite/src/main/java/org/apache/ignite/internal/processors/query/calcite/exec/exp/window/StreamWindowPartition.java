@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.exp.window;
 
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Consumer;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 
 /** Non-buffering implementation of the ROWS / RANGE window partition. */
@@ -58,7 +58,7 @@ final class StreamWindowPartition<Row> extends WindowPartitionBase<Row> {
     }
 
     /** {@inheritDoc} */
-    @Override public void drainTo(RowHandler.RowFactory<Row> factory, Collection<Row> output) {
+    @Override public void evalTo(RowHandler.RowFactory<Row> factory, Consumer<Row> output) {
         if (currRow == null)
             return;
 
@@ -78,7 +78,7 @@ final class StreamWindowPartition<Row> extends WindowPartitionBase<Row> {
         }
 
         Row resultRow = createResultRow(factory, currRow, accResults);
-        output.add(resultRow);
+        output.accept(resultRow);
 
         prevRow = currRow;
         currRow = null;
