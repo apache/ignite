@@ -17,12 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 
-import java.lang.management.ManagementFactory;
-import java.lang.management.RuntimeMXBean;
-import java.util.Collection;
 import java.util.EnumMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -31,9 +26,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import com.sun.management.GcInfo;
-import com.sun.management.internal.GarbageCollectorExtImpl;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.LongJVMPauseDetector;
 import org.apache.ignite.internal.pagemem.store.PageStore;
@@ -66,9 +58,6 @@ import static org.apache.ignite.internal.LongJVMPauseDetector.DEFAULT_JVM_PAUSE_
  * </ol>
  */
 public class CheckpointMetricsTracker {
-    /** Jvm pause explain pattern. */
-    private static final String JVM_PAUSE_EXPLAIN_PATTERN = "Possible JVM Pause explaination: [ %s ]";
-
     /** Checkpoint started log message format. */
     private static final String CHECKPOINT_STARTED_LOG_FORMAT = "Checkpoint started [" +
             "checkpointId=%s, " +
@@ -91,8 +80,10 @@ public class CheckpointMetricsTracker {
                 Thread thread = new Thread(runnable);
                 try {
                     thread.setDaemon(true);
+                    thread.setPriority(Thread.NORM_PRIORITY - 1);
                     thread.setName("check-point-metrics-export-thread");
-                } catch (SecurityException ignored) {
+                }
+                catch (SecurityException ignored) {
                     // do nothing
                 }
                 return thread;
@@ -104,7 +95,8 @@ public class CheckpointMetricsTracker {
             CHECK_POINT_METRICS_EXPORT_EXECUTOR.shutdown();
             try {
                 CHECK_POINT_METRICS_EXPORT_EXECUTOR.awaitTermination(60, TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
+            }
+            catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
         });
@@ -118,7 +110,6 @@ public class CheckpointMetricsTracker {
     /** */
     private static final AtomicIntegerFieldUpdater<CheckpointMetricsTracker> COW_PAGES_UPDATER =
         AtomicIntegerFieldUpdater.newUpdater(CheckpointMetricsTracker.class, "cowPages");
-
 
     /** Long JVM pause threshold. */
     private final int longJvmPauseThreshold =
@@ -444,7 +435,7 @@ public class CheckpointMetricsTracker {
      */
     void storeMetrics(Checkpoint chp, DataStorageMetricsImpl persStoreMetrics, GridCacheProcessor cacheProc) {
         boolean metricsEnabled = persStoreMetrics.metricsEnabled();
-        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager) cacheProc.context().database();
+        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)cacheProc.context().database();
         int pagesSize = chp.pagesSize;
         long pageStoresSize = dbMgr.forAllPageStores(PageStore::size);
         long pageStoresSparseSize = dbMgr.forAllPageStores(PageStore::getSparseSize);
@@ -502,52 +493,20 @@ public class CheckpointMetricsTracker {
         return res;
     }
 
-
     /**
      * @return Explain possible JVM pause.
      */
     private String possibleLongJvmPauseExplaination() {
         long lockDuration = getDurationMillis(Duration.TOTAL_LOCK);
         if (LongJVMPauseDetector.enabled() && lockDuration > longJvmPauseThreshold) {
-            List<String> explains = new LinkedList<>();
-            explains.add(String.format("Checkpoint lock took %d ms", lockDuration));
-            explains.addAll(getGCExplains());
-            pauseDetector.getTotalSpottedPausesExplain(cpStart).ifPresent(explains::add);
-            return String.format(JVM_PAUSE_EXPLAIN_PATTERN, String.join("; ", explains)) + ", ";
+            StringBuilder explainBuilder = new StringBuilder("Checkpoint lock took ")
+                    .append(lockDuration).append(" ms, ");
+            Optional<String> totalSpottedPausesExplain = pauseDetector.getTotalSpottedPausesExplain(cpStart);
+            totalSpottedPausesExplain.ifPresent(explainBuilder::append);
+            totalSpottedPausesExplain.ifPresent(ignored -> explainBuilder.append(", "));
+            return explainBuilder.toString();
         }
         return "";
-    }
-
-    /**
-     * @return Collection of every last GC if it happened within checkpoint process bounds
-     */
-    private Collection<String> getGCExplains() {
-        return ManagementFactory.getGarbageCollectorMXBeans()
-                .stream()
-                .filter(GarbageCollectorExtImpl.class::isInstance)
-                .map(GarbageCollectorExtImpl.class::cast)
-                .map(this::getGCExplain)
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * @param mxBean GC Mx bean.
-     * @return GC explain if it happend within check point process bounds
-     */
-    private Optional<String> getGCExplain(GarbageCollectorExtImpl mxBean) {
-        String gcName = mxBean.getName();
-        GcInfo lastGcInfo = mxBean.getLastGcInfo();
-        RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
-        long uptimeNanos = runtimeMXBean.getUptime() * 1_000_000L;
-        long monotonicStartTimeNanos = System.nanoTime() - uptimeNanos;
-        long monotonicGCStartTimeNanos = monotonicStartTimeNanos + lastGcInfo.getStartTime() * 1_000_000L;
-        long monotonicGCEndTimeNanos = monotonicStartTimeNanos + lastGcInfo.getEndTime() * 1_000_000L;
-        if (cpStart >= monotonicGCEndTimeNanos || cpEnd <= monotonicGCStartTimeNanos)
-            return Optional.empty();
-        long duration = lastGcInfo.getDuration();
-        return Optional.of(String.format("%s most recent GC took %d ms", gcName, duration));
     }
 
     /**
@@ -557,7 +516,8 @@ public class CheckpointMetricsTracker {
     private void invokeLater(Runnable runnable) {
         try {
             CHECK_POINT_METRICS_EXPORT_EXECUTOR.submit(runnable);
-        } catch (RejectedExecutionException ignored) {
+        }
+        catch (RejectedExecutionException ignored) {
             // do nothing, looks like it is the end
         }
     }

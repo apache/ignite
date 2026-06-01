@@ -24,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointMetricsTracker;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -96,6 +95,7 @@ public class LongJVMPauseDetector {
     @GridToStringInclude
     private final long[] longPausesTimestamps = new long[EVT_CNT];
 
+    /** Long pauses monotonic timestamps. */
     @GridToStringExclude
     private final long[] longPausesMonotonicTimestamps = new long[EVT_CNT];
 
@@ -127,38 +127,39 @@ public class LongJVMPauseDetector {
             if (log.isDebugEnabled())
                 log.debug(Thread.currentThread().getName() + " has been started.");
             while (true) {
-                    try {
-                        // don't worry, wait will release monitor and all props will be accessible
-                        synchronized (this) {
-                            lastWakeUpTimeNanos = getMonotonicTimeNanos();
-                            long awaitDeadline = lastWakeUpTimeNanos + PRECISION_NANOS;
-                            long awaitDeadlineMillis = awaitDeadline / 1_000_000L;
-                            int awaitDeadlineNanos = Math.toIntExact(awaitDeadline % 1_000_000);
-                            while (getMonotonicTimeNanos() <= awaitDeadline)
-                                wait(awaitDeadlineMillis, awaitDeadlineNanos);
-                            long nanoTime = getMonotonicTimeNanos();
-                            long pause = nanoTime - awaitDeadline;
-                            long pauseMillis = TimeUnit.NANOSECONDS.toMillis(pause);
-                            if (pauseMillis >= THRESHOLD) {
-                                log.warning("Possible too long JVM pause: " + pauseMillis + " ms. " +
-                                        "Precision: " + PRECISION + " ms.");
-                                final int next = (int) (longPausesCnt++ % EVT_CNT);
-                                longPausesTotalDurationNanos += pause;
-                                longPausesTimestamps[next] = System.currentTimeMillis();
-                                longPausesMonotonicTimestamps[next] = nanoTime;
-                                longPausesDurations[next] = pauseMillis;
-                            }
+                try {
+                    // don't worry, wait will release monitor and all props will be accessible
+                    synchronized (this) {
+                        lastWakeUpTimeNanos = getMonotonicTimeNanos();
+                        long awaitDeadline = lastWakeUpTimeNanos + PRECISION_NANOS;
+                        long awaitDeadlineMillis = awaitDeadline / 1_000_000L;
+                        int awaitDeadlineNanos = Math.toIntExact(awaitDeadline % 1_000_000);
+                        while (getMonotonicTimeNanos() <= awaitDeadline)
+                            wait(awaitDeadlineMillis, awaitDeadlineNanos);
+                        long nanoTime = getMonotonicTimeNanos();
+                        long pause = nanoTime - awaitDeadline;
+                        long pauseMillis = TimeUnit.NANOSECONDS.toMillis(pause);
+                        if (pauseMillis >= THRESHOLD) {
+                            log.warning("Possible too long JVM pause: " + pauseMillis + " ms. " +
+                                    "Precision: " + PRECISION + " ms.");
+                            final int next = (int)(longPausesCnt++ % EVT_CNT);
+                            longPausesTotalDurationNanos += pause;
+                            longPausesTimestamps[next] = System.currentTimeMillis();
+                            longPausesMonotonicTimestamps[next] = nanoTime;
+                            longPausesDurations[next] = pauseMillis;
                         }
-                    } catch (InterruptedException e) {
-                        Thread locThread = Thread.currentThread();
-
-                        if (workerRef.compareAndSet(locThread, null))
-                            log.error(locThread.getName() + " has been interrupted.", e);
-                        else if (log.isDebugEnabled())
-                            log.debug(locThread.getName() + " has been stopped.");
-
-                        break;
                     }
+                }
+                catch (InterruptedException e) {
+                    Thread locThread = Thread.currentThread();
+
+                    if (workerRef.compareAndSet(locThread, null))
+                        log.error(locThread.getName() + " has been interrupted.", e);
+                    else if (log.isDebugEnabled())
+                        log.debug(locThread.getName() + " has been stopped.");
+
+                    break;
+                }
             }
         });
 
@@ -225,7 +226,7 @@ public class LongJVMPauseDetector {
      * or {@link Optional#empty()} if none were found
      */
     public Optional<String> getTotalSpottedPausesExplain(long cpStart) {
-        int lastPointer = (int) (longPausesCnt % EVT_CNT);
+        int lastPointer = (int)(longPausesCnt % EVT_CNT);
         int pausesSpottedTimes = 0;
         int curPointer = lastPointer;
         StringBuilder explainBuilder = new StringBuilder();
