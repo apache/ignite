@@ -45,8 +45,7 @@ public class IgniteRelFieldTrimmer extends RelFieldTrimmer {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public TrimResult trimFields(
+    @Override public TrimResult trimFields(
         Sort sort,
         ImmutableBitSet fieldsUsed,
         Set<RelDataTypeField> extraFields
