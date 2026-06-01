@@ -706,6 +706,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
             false,
             false,
             false,
+            false,
             null,
             false,
             false,

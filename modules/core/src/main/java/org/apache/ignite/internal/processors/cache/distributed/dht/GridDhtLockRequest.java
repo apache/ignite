@@ -111,6 +111,8 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
      * @param storeUsed Cache store used flag.
      * @param keepBinary Keep binary flag.
      * @param txLbl Transaction label.
+     * @param skipReadThrough Skip read-through cache store flag.
+     * @param handleBinaryInInterceptor Handle binary in interceptor operation flag.
      */
     public GridDhtLockRequest(
         int cacheId,
@@ -132,6 +134,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
         long accessTtl,
         boolean skipStore,
         boolean skipReadThrough,
+        boolean handleBinaryInInterceptor,
         boolean storeUsed,
         boolean keepBinary,
         String txLbl
@@ -151,6 +154,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
             txSize,
             skipStore,
             skipReadThrough,
+            handleBinaryInInterceptor,
             keepBinary);
 
         this.topVer = topVer;

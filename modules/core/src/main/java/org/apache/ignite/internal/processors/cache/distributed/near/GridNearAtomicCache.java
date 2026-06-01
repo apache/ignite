@@ -206,6 +206,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                     ttl,
                     expireTime,
                     req.keepBinary(),
+                    req.handleBinaryInInterceptor(),
                     req.nodeId(),
                     taskName,
                     req.operation() == TRANSFORM);
@@ -234,6 +235,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         long ttl,
         long expireTime,
         boolean keepBinary,
+        boolean handleBinaryInInterceptor,
         UUID nodeId,
         String taskName,
         boolean transformedValue) throws IgniteCheckedException {
@@ -259,6 +261,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                         /*read-through*/false,
                         /*retval*/false,
                         keepBinary,
+                        handleBinaryInInterceptor,
                         /*expiry policy*/null,
                         /*event*/true,
                         /*metrics*/true,
@@ -363,6 +366,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             /*read-through*/false,
                             /*retval*/false,
                             req.keepBinary(),
+                            req.handleBinaryInInterceptor(),
                             null,
                             /*event*/true,
                             /*metrics*/true,

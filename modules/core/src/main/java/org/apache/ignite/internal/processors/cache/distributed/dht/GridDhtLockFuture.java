@@ -187,6 +187,9 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
     /** Skip read-through cache store flag. */
     private final boolean skipReadThrough;
 
+    /** Handle binary in interceptor operation flag. */
+    private final boolean handleBinaryInInterceptor;
+
     /** Keep binary. */
     private final boolean keepBinary;
 
@@ -203,6 +206,9 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
      * @param threadId Thread ID.
      * @param accessTtl TTL for read operation.
      * @param skipStore Skip store flag.
+     * @param skipReadThrough Skip read-through cache store flag.
+     * @param handleBinaryInInterceptor Handle binary in interceptor operation flag.
+     * @param keepBinary Keep binary flag.
      */
     public GridDhtLockFuture(
         GridCacheContext<?, ?> cctx,
@@ -219,6 +225,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         long accessTtl,
         boolean skipStore,
         boolean skipReadThrough,
+        boolean handleBinaryInInterceptor,
         boolean keepBinary) {
         super(CU.boolReducer());
 
@@ -239,6 +246,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         this.accessTtl = accessTtl;
         this.skipStore = skipStore;
         this.skipReadThrough = skipReadThrough;
+        this.handleBinaryInInterceptor = handleBinaryInInterceptor;
         this.keepBinary = keepBinary;
 
         if (tx != null)
@@ -939,6 +947,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                             read ? accessTtl : -1L,
                             skipStore,
                             skipReadThrough,
+                            handleBinaryInInterceptor,
                             cctx.store().configured(),
                             keepBinary,
                             inTx() ? tx.label() : null);
