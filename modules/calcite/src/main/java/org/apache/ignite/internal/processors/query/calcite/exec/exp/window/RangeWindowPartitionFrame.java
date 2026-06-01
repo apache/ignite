@@ -122,27 +122,6 @@ final class RangeWindowPartitionFrame<Row> extends WindowFunctionFrame<Row> {
     }
 
     /** {@inheritDoc} */
-    @Override int countPeers() {
-        if (peerCnt == -1) {
-            int size = size();
-            if (size == 0)
-                peerCnt = 0;
-            else {
-                peerCnt = 1;
-                Row prevRow = get(0);
-                for (int i = 1; i < size; i++) {
-                    Row currRow = get(i);
-                    if (compareRowPeer(prevRow, currRow) != 0)
-                        peerCnt++;
-                    prevRow = currRow;
-                }
-            }
-        }
-
-        return peerCnt;
-    }
-
-    /** {@inheritDoc} */
     @Override public void reset() {
         // Reseting index cache.
         cachedStartPeerIdx = -1;

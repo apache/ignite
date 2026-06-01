@@ -42,9 +42,6 @@ abstract class WindowFunctionFrame<Row> {
     /** Returns end frame index in partition for current row peer. */
     abstract int getFrameEnd(int rowIdx, int peerIdx);
 
-    /** Return number of peers in current frame. */
-    abstract int countPeers();
-
     /** Returns frame size in partition for the current row peer. */
     final int size(int rowIdx, int peerIdx) {
         int start = getFrameStart(rowIdx, peerIdx);

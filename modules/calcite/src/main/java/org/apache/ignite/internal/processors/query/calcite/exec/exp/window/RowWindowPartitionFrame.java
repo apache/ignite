@@ -96,11 +96,6 @@ final class RowWindowPartitionFrame<Row> extends WindowFunctionFrame<Row> {
     }
 
     /** {@inheritDoc} */
-    @Override int countPeers() {
-        return size();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void reset() {
         // Reseting index cache.
         cachedStartRowIdx = -1;
