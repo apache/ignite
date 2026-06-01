@@ -24,6 +24,7 @@ import java.util.Map;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.UnregisteredClassException;
@@ -31,14 +32,14 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Return value for cases where both, value and success flag need to be returned.
  */
-public class GridCacheReturn implements Message, CacheIdAware {
+public class GridCacheReturn implements MarshallableMessage, CacheIdAware {
     /** Value. */
     @GridToStringInclude(sensitive = true)
     private volatile Object v;
@@ -122,7 +123,27 @@ public class GridCacheReturn implements Message, CacheIdAware {
     /**
      * @return Value.
      */
-    @Nullable public <V> V value() {
+    @Nullable public <V> V value(GridCacheContext ctx) {
+        if (v == null) {
+            if (cacheObj != null)
+                v = ctx.cacheObjectContext().unwrapBinaryIfNeeded(cacheObj, true, false, U.gridClassLoader());
+
+            if (invokeRes && invokeResCol != null) {
+                Map<Object, CacheInvokeResult> map0 = U.newHashMap(invokeResCol.size());
+
+                for (CacheInvokeDirectResult res : invokeResCol) {
+                    CacheInvokeResult<?> res0 = res.error() == null ?
+                        CacheInvokeResult.fromResult(ctx.cacheObjectContext().unwrapBinaryIfNeeded(res.result(), true, false, null)) :
+                        CacheInvokeResult.fromError(res.error());
+
+                    map0.put(ctx.cacheObjectContext().unwrapBinaryIfNeeded(res.key(), true, false, null), res0);
+                }
+
+                v = map0;
+            }
+        }
+            
+        
         return (V)v;
     }
 
@@ -327,32 +348,13 @@ public class GridCacheReturn implements Message, CacheIdAware {
         }
     }
 
-    /**
-     * @param ctx Cache context.
-     * @param ldr Class loader.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        loc = true;
-
-        if (cacheObj != null) 
-            v = ctx.cacheObjectContext().unwrapBinaryIfNeeded(cacheObj, true, false, ldr);
-
-        if (invokeRes && invokeResCol != null) {
-            Map<Object, CacheInvokeResult> map0 = U.newHashMap(invokeResCol.size());
-
-            for (CacheInvokeDirectResult res : invokeResCol) {
-                CacheInvokeResult<?> res0 = res.error() == null ?
-                    CacheInvokeResult.fromResult(ctx.cacheObjectContext().unwrapBinaryIfNeeded(res.result(), true, false, null)) :
-                    CacheInvokeResult.fromError(res.error());
-
-                map0.put(ctx.cacheObjectContext().unwrapBinaryIfNeeded(res.key(), true, false, null), res0);
-            }
-
-            v = map0;
-        }
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        // No-op.
     }
 
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        loc = true;
+    }
 
     /** {@inheritDoc} */
     @Override public String toString() {
