@@ -282,7 +282,10 @@ public class MessageSerializerGenerator {
         if (isCacheIdAwareMessage(type))
             marshall.add(
                 indentedLine("GridCacheContext<?, ?> ctx = nested == null ? kctx.cache().context().cacheContext(msg.cacheId()) : nested;"));
-        else
+        else if (isCacheGroupIdMessage(type))
+            marshall.add(
+                indentedLine("GridCacheContext<?, ?> ctx = nested == null ? kctx.cache().context().cacheContext(msg.groupId()) : nested;"));
+        else 
             marshall.add(indentedLine("GridCacheContext<?, ?> ctx = nested;"));
 
         if (marshallableMessage()) {
@@ -324,6 +327,9 @@ public class MessageSerializerGenerator {
         if (isCacheIdAwareMessage(type))
             marshall.add(
                 indentedLine("GridCacheContext<?, ?> ctx = nested == null ? kctx.cache().context().cacheContext(msg.cacheId()) : nested;"));
+        else if (isCacheGroupIdMessage(type))
+            marshall.add(
+                indentedLine("GridCacheContext<?, ?> ctx = nested == null ? kctx.cache().context().cacheContext(msg.groupId()) : nested;"));
         else
             marshall.add(indentedLine("GridCacheContext<?, ?> ctx = nested;"));
 
@@ -553,6 +559,11 @@ public class MessageSerializerGenerator {
     /** True if {@code te} extends {@code CacheIdAware} and therefore carries its own per-cache {@code cacheId()}. */
     private boolean isCacheIdAwareMessage(TypeElement te) {
         return assignableFrom(te.asType(), type("org.apache.ignite.plugin.extensions.communication.CacheIdAware"));
+    }
+
+    /** True if {@code te} extends {@code CacheGroupIdMessage} and therefore carries its own per-group {@code groupId()}. */
+    private boolean isCacheGroupIdMessage(TypeElement te) {
+        return assignableFrom(te.asType(), type("org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage"));
     }
 
     /** */
