@@ -82,4 +82,5 @@ includeToClassPath modules/thin-client
 # Include target libraries for opensourse modules to classpath.
 #
 includeToClassPath "${IGNITE_HOME}"/modules
+includeToClassPath "${IGNITE_HOME}"/modules/binary
 includeToClassPath "${IGNITE_HOME}"/modules/thin-client
