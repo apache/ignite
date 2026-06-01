@@ -18,14 +18,17 @@
 package org.apache.ignite.testcontainers;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.ListIterator;
 import org.testcontainers.containers.Network;
 import org.testcontainers.lifecycle.Startable;
 import org.testcontainers.lifecycle.Startables;
 
 /** Ignite cluster container. */
 public class IgniteClusterContainer implements Startable {
+    /** Source version. */
+    private final String ver;
+
     /** Containers. */
     private final List<IgniteContainer> containers;
 
@@ -33,13 +36,14 @@ public class IgniteClusterContainer implements Startable {
     private final Network net = Network.newNetwork();
 
     /** @param nodeIds Node ids. */
-    public IgniteClusterContainer(List<String> nodeIds) {
+    public IgniteClusterContainer(String ver, List<String> nodeIds) {
+        this.ver = ver;
         containers = new ArrayList<>(nodeIds.size());
 
         for (int i = 0; i < nodeIds.size(); i++) {
             String hostname = "node" + (1 + i);
 
-            IgniteContainer ignite = new IgniteContainer(net, hostname, nodeIds.get(i));
+            IgniteContainer ignite = new IgniteContainer(ver, net, hostname, nodeIds.get(i));
 
             containers.add(ignite);
         }
@@ -54,15 +58,35 @@ public class IgniteClusterContainer implements Startable {
     @Override public void stop() {
         for (IgniteContainer container : containers)
             container.stop();
-    }
 
-    /** @return All started nodes. */
-    public List<IgniteContainer> nodes() {
-        return Collections.unmodifiableList(containers);
+        net.close();
     }
 
     /** @return First started node in cluster. */
     public IgniteContainer firstNode() {
         return containers.get(0);
+    }
+
+    /** Rolling upgrade cluster.
+     *
+     * @param ver Target version.
+     */
+    public void upgrade(String ver) {
+        if (this.ver.equals(ver))
+            throw new IllegalArgumentException("Target version matches the current version.");
+
+        ListIterator<IgniteContainer> it = containers.listIterator();
+
+        while (it.hasNext()) {
+            IgniteContainer oldNode = it.next();
+
+            oldNode.stop();
+
+            IgniteContainer newNode = new IgniteContainer(ver, net, oldNode.hostname(), oldNode.nodeId());
+
+            newNode.start();
+
+            it.set(newNode);
+        }
     }
 }
