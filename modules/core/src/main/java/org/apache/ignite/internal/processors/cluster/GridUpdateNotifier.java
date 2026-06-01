@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.thread.context.function.OperationContextAwareRunnable;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.thread.IgniteThread;
@@ -166,7 +167,7 @@ class GridUpdateNotifier {
         log = log.getLogger(getClass());
 
         try {
-            cmd.set(new UpdateChecker(log, first));
+            cmd.set(OperationContextAwareRunnable.wrapIfContextNotEmpty(new UpdateChecker(log, first)));
         }
         catch (RejectedExecutionException e) {
             U.error(log, "Failed to schedule a thread due to execution rejection (safely ignoring): " +

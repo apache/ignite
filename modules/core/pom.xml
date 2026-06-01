@@ -77,6 +77,12 @@
 
         <dependency>
             <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-thin-client-api</artifactId>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-codegen</artifactId>
             <scope>provided</scope>
         </dependency>
@@ -353,6 +359,7 @@
                                     <include>${project.groupId}:ignite-binary-api</include>
                                     <include>${project.groupId}:ignite-binary-impl</include>
                                     <include>${project.groupId}:ignite-grid-unsafe</include>
+                                    <include>${project.groupId}:ignite-thin-client-api</include>
                                 </includes>
                             </artifactSet>
                         </configuration>
