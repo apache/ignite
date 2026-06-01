@@ -17,12 +17,20 @@
 
 package org.apache.ignite.testcontainers;
 
+import java.io.File;
 import java.util.List;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
+import static org.apache.ignite.testcontainers.IgniteContainer.LOCAL_WORK_DIR_PATH;
 import static org.apache.ignite.testcontainers.IgniteContainer.RollingUpgradeStatus.DISABLED;
 import static org.apache.ignite.testcontainers.IgniteContainer.RollingUpgradeStatus.ENABLED;
 import static org.junit.Assert.assertEquals;
@@ -36,16 +44,37 @@ public class IgniteRebalanceOnUpgradeTest {
         "7b880b69-8a9e-4b84-b555-250d365e2e67"
     );
 
+    /** Source version. */
+    private static final String SOURCE_VER = "2.18.0";
+
     /** Target version for RU. */
     private static final String TARGET_VER = "2.18.1";
 
-    /** */
+    /** Cache name. */
     private static final String CACHE_NAME = "ru-test-cache";
 
+    /** Local work directory. */
+    private static final File LOCAL_WORK_DIR = new File(LOCAL_WORK_DIR_PATH);
+
+    /** Thin client. */
+    private IgniteClient client;
+
     /** */
+    @BeforeClass
+    public static void beforeClass() {
+        U.delete(LOCAL_WORK_DIR);
+    }
+
+    /** */
+    @AfterClass
+    public static void afterClass() {
+        U.delete(LOCAL_WORK_DIR);
+    }
+
+    /** Basic RU test. */
     @Test
-    public void testRollingUpgrade() throws Exception {
-        try (IgniteClusterContainer cluster = new IgniteClusterContainer(NODE_IDS)) {
+    public void testRollingUpgrade() {
+        try (IgniteClusterContainer cluster = new IgniteClusterContainer(SOURCE_VER, NODE_IDS)) {
             cluster.start();
 
             IgniteContainer node = cluster.firstNode();
@@ -57,7 +86,7 @@ public class IgniteRebalanceOnUpgradeTest {
                 .setBackups(1)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
-            ClientCache<Integer, Integer> cache = node.client().createCache(cfg);
+            ClientCache<Integer, Integer> cache = client(node.clientAddress()).createCache(cfg);
 
             for (int i = 0; i < 1000; i++)
                 cache.put(i, i);
@@ -68,8 +97,11 @@ public class IgniteRebalanceOnUpgradeTest {
 
             assertEquals(ENABLED, node.rollingUpgradeStatus());
 
-            for (IgniteContainer container : cluster.nodes())
-                container.upgrade();
+            closeClient();
+
+            cluster.upgrade(TARGET_VER);
+
+            node = cluster.firstNode();
 
             assertEquals(NODE_IDS.size(), node.nodesCountForVersion(TARGET_VER));
 
@@ -77,7 +109,7 @@ public class IgniteRebalanceOnUpgradeTest {
 
             assertEquals(DISABLED, node.rollingUpgradeStatus());
 
-            ClientCache<Integer, Integer> targetCache = node.client().getOrCreateCache(CACHE_NAME);
+            ClientCache<Integer, Integer> targetCache = client(node.clientAddress()).getOrCreateCache(CACHE_NAME);
 
             for (int i = 0; i < 1000; i++)
                 assertEquals("Data mismatch after upgrade at key: " + i, i, (int)targetCache.get(i));
@@ -85,6 +117,26 @@ public class IgniteRebalanceOnUpgradeTest {
             targetCache.put(1001, 1001);
 
             assertEquals(1001, (int)targetCache.get(1001));
+        }
+        finally {
+            closeClient();
+        }
+    }
+
+    /** */
+    private IgniteClient client(String addr) {
+        if (client == null)
+            client = Ignition.startClient(new ClientConfiguration().setAddresses(addr));
+
+        return client;
+    }
+
+    /** */
+    private void closeClient() {
+        if (client != null) {
+            client.close();
+
+            client = null;
         }
     }
 }
