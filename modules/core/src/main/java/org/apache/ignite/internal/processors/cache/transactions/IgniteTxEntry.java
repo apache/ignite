@@ -93,6 +93,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /** Skip read-through cache store flag bit mask. */
     private static final int TX_ENTRY_SKIP_READ_THROUGH_FLAG_MASK = 1 << 5;
 
+    /** Calcite engine operation call flag bit mask. */
+    private static final int CALCITE_OP_CALL_FLAG_MASK = 1 << 6;
+
     /** Prepared flag updater. */
     private static final AtomicIntegerFieldUpdater<IgniteTxEntry> PREPARED_UPD =
         AtomicIntegerFieldUpdater.newUpdater(IgniteTxEntry.class, "prepared");
@@ -280,6 +283,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @param conflictVer Data center replication version.
      * @param skipStore Skip store flag.
      * @param skipReadThrough Skip read-through cache store flag.
+     * @param calciteOpCall Calcite engine operation call.
      * @param addReader Add reader flag.
      */
     public IgniteTxEntry(GridCacheContext<?, ?> ctx,
@@ -294,6 +298,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         GridCacheVersion conflictVer,
         boolean skipStore,
         boolean skipReadThrough,
+        boolean calciteOpCall,
         boolean keepBinary,
         boolean addReader
     ) {
@@ -312,6 +317,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
         skipStore(skipStore);
         skipReadThrough(skipReadThrough);
+        calciteOpCall(calciteOpCall);
         keepBinary(keepBinary);
         addReader(addReader);
 
@@ -618,10 +624,22 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     }
 
     /**
-     * @return Skip store flag.
+     * @return Skip read through flag.
      */
     public boolean skipReadThrough() {
         return isFlag(TX_ENTRY_SKIP_READ_THROUGH_FLAG_MASK);
+    }
+
+    /** Sets calcite operation flag. */
+    public void calciteOpCall(boolean calciteOpCall) {
+        setFlag(calciteOpCall, CALCITE_OP_CALL_FLAG_MASK);
+    }
+
+    /**
+     * @return Calcite engine operation flag.
+     */
+    public boolean calciteOpCall() {
+        return isFlag(CALCITE_OP_CALL_FLAG_MASK);
     }
 
     /**

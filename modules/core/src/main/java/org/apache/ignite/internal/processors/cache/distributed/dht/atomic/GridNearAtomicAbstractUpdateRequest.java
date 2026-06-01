@@ -72,6 +72,9 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     /** */
     private static final int SKIP_READ_THROUGH_FLAG_MASK = 0x100;
 
+    /** */
+    private static final int CALCITE_OP_FLAG_MASK = 0x200;
+
     /** Target node ID. */
     protected UUID nodeId;
 
@@ -152,6 +155,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
      * @param skipStore Skip write-through to a CacheStore flag.
      * @param keepBinary Keep binary flag.
      * @param recovery Recovery mode flag.
+     * @param calciteOpCall Calcite engine operation call.
      * @return Flags.
      */
     static short flags(
@@ -163,7 +167,8 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         boolean skipStore,
         boolean keepBinary,
         boolean recovery,
-        boolean skipReadThrough
+        boolean skipReadThrough,
+        boolean calciteOpCall
     ) {
         short flags = 0;
 
@@ -193,6 +198,9 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
 
         if (skipReadThrough)
             flags |= SKIP_READ_THROUGH_FLAG_MASK;
+
+        if (calciteOpCall)
+            flags |= CALCITE_OP_FLAG_MASK;
 
         return flags;
     }
@@ -354,6 +362,11 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     /** */
     public final boolean skipReadThrough() {
         return isFlag(SKIP_READ_THROUGH_FLAG_MASK);
+    }
+
+    /** */
+    public final boolean calciteOpCall() {
+        return isFlag(CALCITE_OP_FLAG_MASK);
     }
 
     /**

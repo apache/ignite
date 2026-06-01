@@ -241,6 +241,8 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
         if (keepBinaryMode)
             cache = cache.keepBinary();
 
+        cache = cache.withCalciteEngine();
+
         if (tx == null)
             invokeOutsideTransaction(tuples, cache);
         else

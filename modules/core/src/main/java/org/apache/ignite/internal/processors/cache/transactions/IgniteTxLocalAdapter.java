@@ -1338,6 +1338,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * @param drExpireTime DR expire time (if any).
      * @param drVer DR version.
      * @param skipStore Skip store flag.
+     * @param skipReadThrough Skip read-through cache store flag.
+     * @param calciteOpCall Calcite engine operation call.
      * @return Transaction entry.
      */
     public final IgniteTxEntry addEntry(GridCacheOperation op,
@@ -1353,6 +1355,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         @Nullable GridCacheVersion drVer,
         boolean skipStore,
         boolean skipReadThrough,
+        boolean calciteOpCall,
         boolean keepBinary,
         boolean addReader
     ) {
@@ -1392,9 +1395,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             old.cached(entry);
             old.filters(filter);
 
-            // Keep old skipStore and keepBinary flags.
+            // Keep old flags.
             old.skipStore(skipStore);
             old.skipReadThrough(skipReadThrough);
+            old.calciteOpCall(calciteOpCall);
             old.keepBinary(keepBinary);
 
             // Update ttl if specified.
@@ -1426,6 +1430,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 drVer,
                 skipStore,
                 skipReadThrough,
+                calciteOpCall,
                 keepBinary,
                 addReader);
 

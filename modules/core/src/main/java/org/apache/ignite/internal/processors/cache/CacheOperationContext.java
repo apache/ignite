@@ -34,11 +34,14 @@ public class CacheOperationContext implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Skip store. */
+    /** */
+    private static final CacheOperationContext INSTANCE = new Builder().build();
+
+    /** Skip store flag. */
     @GridToStringInclude
     private final boolean skipStore;
 
-    /** Skip store. */
+    /** Skip read through flag. */
     @GridToStringInclude
     private final boolean skipReadThrough;
 
@@ -46,49 +49,38 @@ public class CacheOperationContext implements Serializable {
     @GridToStringInclude
     private final boolean noRetries;
 
-    /** */
+    /** Recovery flag. */
     private final boolean recovery;
 
-    /** Read-repair strategy. */
-    private final ReadRepairStrategy readRepairStrategy;
+    /** Read-repair strategy.*/
+    private final @Nullable ReadRepairStrategy readRepairStrategy;
 
     /** Keep binary flag. */
     private final boolean keepBinary;
 
     /** Expiry policy. */
-    private final ExpiryPolicy expiryPlc;
+    private final @Nullable ExpiryPolicy expiryPlc;
 
     /** Data center Id. */
-    private final Byte dataCenterId;
+    private final @Nullable Byte dataCenterId;
 
     /** Application attributes. */
-    private final Map<String, String> appAttrs;
+    private final @Nullable Map<String, String> appAttrs;
+
+    /** Calcite engine call flag. */
+    private final boolean calciteEngineCall;
 
     /**
-     * Constructor with default values.
-     */
-    public CacheOperationContext() {
-        skipStore = false;
-        skipReadThrough = false;
-        keepBinary = false;
-        expiryPlc = null;
-        noRetries = false;
-        recovery = false;
-        readRepairStrategy = null;
-        dataCenterId = null;
-        appAttrs = null;
-    }
-
-    /**
-     * @param skipStore Skip store flag.
-     * @param skipReadThrough Skip read-through cache store flag.
-     * @param keepBinary Keep binary flag.
-     * @param expiryPlc Expiry policy.
-     * @param dataCenterId Data center id.
+     * @param skipStore          Skip store flag.
+     * @param skipReadThrough    Skip read-through cache store flag.
+     * @param keepBinary         Keep binary flag.
+     * @param expiryPlc          Expiry policy.
+     * @param dataCenterId       Data center id.
      * @param readRepairStrategy Read-repair strategy.
-     * @param appAttrs Application attributes.
+     * @param appAttrs           Application attributes.
+     * @param calciteEngineCall  Calcite engine call flag.
      */
-    public CacheOperationContext(
+    private CacheOperationContext(
         boolean skipStore,
         boolean skipReadThrough,
         boolean keepBinary,
@@ -97,7 +89,8 @@ public class CacheOperationContext implements Serializable {
         @Nullable Byte dataCenterId,
         boolean recovery,
         @Nullable ReadRepairStrategy readRepairStrategy,
-        @Nullable Map<String, String> appAttrs
+        @Nullable Map<String, String> appAttrs,
+        boolean calciteEngineCall
     ) {
         this.skipStore = skipStore;
         this.skipReadThrough = skipReadThrough;
@@ -108,38 +101,26 @@ public class CacheOperationContext implements Serializable {
         this.recovery = recovery;
         this.readRepairStrategy = readRepairStrategy;
         this.appAttrs = appAttrs;
+        this.calciteEngineCall = calciteEngineCall;
     }
 
     /**
-     * @return Keep binary flag.
+     * Helper.
+     */
+    public static CacheOperationContext instance() {
+        return INSTANCE;
+    }
+
+    /**
+     * @return keepBinary flag.
      */
     public boolean isKeepBinary() {
         return keepBinary;
     }
 
-    /**
-     * @return {@code True} if data center id is set otherwise {@code false}.
-     */
-    public boolean hasDataCenterId() {
-        return dataCenterId != null;
-    }
-
-    /**
-     * See {@link IgniteInternalCache#keepBinary()}.
-     *
-     * @return New instance of CacheOperationContext with keep binary flag.
-     */
-    public CacheOperationContext keepBinary() {
-        return new CacheOperationContext(
-            skipStore,
-            skipReadThrough,
-            true,
-            expiryPlc,
-            noRetries,
-            dataCenterId,
-            recovery,
-            readRepairStrategy,
-            appAttrs);
+    /** Context with keepBinary flag. */
+    public CacheOperationContext withKeepBinary() {
+        return builder(this).keepBinary(true).build();
     }
 
     /**
@@ -151,182 +132,9 @@ public class CacheOperationContext implements Serializable {
         return dataCenterId;
     }
 
-    /**
-     * @return Skip store.
-     */
-    public boolean skipStore() {
-        return skipStore;
-    }
-
-    /**
-     * See {@link IgniteInternalCache#setSkipStore(boolean)}.
-     *
-     * @param skipStore Skip store flag.
-     * @return New instance of CacheOperationContext with skip store flag.
-     */
-    public CacheOperationContext setSkipStore(boolean skipStore) {
-        return new CacheOperationContext(
-            skipStore,
-            skipReadThrough,
-            keepBinary,
-            expiryPlc,
-            noRetries,
-            dataCenterId,
-            recovery,
-            readRepairStrategy,
-            appAttrs);
-    }
-
-    /** @return Skip read-through cache store. */
-    public boolean skipReadThrough() {
-        return skipReadThrough;
-    }
-
-    /**
-     * See {@link IgniteInternalCache#withApplicationAttributes(Map)}.
-     *
-     * @return New instance of CacheOperationContext with new application attributes.
-     */
-    public CacheOperationContext withApplicationAttributes(Map<String, String> attrs) {
-        return new CacheOperationContext(
-            skipStore,
-            skipReadThrough,
-            keepBinary,
-            expiryPlc,
-            noRetries,
-            dataCenterId,
-            recovery,
-            readRepairStrategy,
-            Collections.unmodifiableMap(attrs));
-    }
-
-    /**
-     * See {@link IgniteInternalCache#withSkipReadThrough()}.
-     *
-     * @return New instance of CacheOperationContext with skip store flag.
-     */
-    public CacheOperationContext withSkipReadThrough() {
-        return new CacheOperationContext(
-            skipStore,
-            true,
-            keepBinary,
-            expiryPlc,
-            noRetries,
-            dataCenterId,
-            recovery,
-            readRepairStrategy,
-            appAttrs);
-    }
-
-    /**
-     * @return {@link ExpiryPolicy} associated with this projection.
-     */
-    @Nullable public ExpiryPolicy expiry() {
-        return expiryPlc;
-    }
-
-    /**
-     * See {@link IgniteInternalCache#withExpiryPolicy(ExpiryPolicy)}.
-     *
-     * @param plc {@link ExpiryPolicy} to associate with this projection.
-     * @return New instance of CacheOperationContext with skip store flag.
-     */
-    public CacheOperationContext withExpiryPolicy(ExpiryPolicy plc) {
-        return new CacheOperationContext(
-            skipStore,
-            skipReadThrough,
-            keepBinary,
-            plc,
-            noRetries,
-            dataCenterId,
-            recovery,
-            readRepairStrategy,
-            appAttrs);
-    }
-
-    /**
-     * @param noRetries No retries flag.
-     * @return Operation context.
-     */
-    public CacheOperationContext setNoRetries(boolean noRetries) {
-        return new CacheOperationContext(
-            skipStore,
-            skipReadThrough,
-            keepBinary,
-            expiryPlc,
-            noRetries,
-            dataCenterId,
-            recovery,
-            readRepairStrategy,
-            appAttrs);
-    }
-
-    /**
-     * @param dataCenterId Data center id.
-     * @return Operation context.
-     */
-    public CacheOperationContext setDataCenterId(byte dataCenterId) {
-        return new CacheOperationContext(
-            skipStore,
-            skipReadThrough,
-            keepBinary,
-            expiryPlc,
-            noRetries,
-            dataCenterId,
-            recovery,
-            readRepairStrategy,
-            appAttrs);
-    }
-
-    /**
-     * @param recovery Recovery flag.
-     * @return New instance of CacheOperationContext with recovery flag.
-     */
-    public CacheOperationContext setRecovery(boolean recovery) {
-        return new CacheOperationContext(
-            skipStore,
-            skipReadThrough,
-            keepBinary,
-            expiryPlc,
-            noRetries,
-            dataCenterId,
-            recovery,
-            readRepairStrategy,
-            appAttrs);
-    }
-
-    /**
-     * @param readRepairStrategy Read Repair strategy.
-     * @return New instance of CacheOperationContext with Read Repair flag.
-     */
-    public CacheOperationContext setReadRepairStrategy(ReadRepairStrategy readRepairStrategy) {
-        return new CacheOperationContext(
-            skipStore,
-            skipReadThrough,
-            keepBinary,
-            expiryPlc,
-            noRetries,
-            dataCenterId,
-            recovery,
-            readRepairStrategy,
-            appAttrs);
-    }
-
-    /**
-     * @param appAttrs Application attributes.
-     * @return New instance of CacheOperationContext with application attributes.
-     */
-    public CacheOperationContext setApplicationAttributes(Map<String, String> appAttrs) {
-        return new CacheOperationContext(
-            skipStore,
-            skipReadThrough,
-            keepBinary,
-            expiryPlc,
-            noRetries,
-            dataCenterId,
-            recovery,
-            readRepairStrategy,
-            new HashMap<>(appAttrs));
+    /** Context with dataCenterId. */
+    public CacheOperationContext withDataCenterId(Byte dataCenterId) {
+        return builder(this).dataCenterId(dataCenterId).build();
     }
 
     /**
@@ -336,11 +144,21 @@ public class CacheOperationContext implements Serializable {
         return recovery;
     }
 
+    /** Context with recovery flag. */
+    public CacheOperationContext withRecovery() {
+        return builder(this).recovery(true).build();
+    }
+
     /**
      * @return Read Repair strategy.
      */
-    public ReadRepairStrategy readRepairStrategy() {
+    @Nullable public ReadRepairStrategy readRepairStrategy() {
         return readRepairStrategy;
+    }
+
+    /** Context with read repair strategy. */
+    public CacheOperationContext withReadRepairStrategy(ReadRepairStrategy strategy) {
+        return builder(this).readRepairStrategy(strategy).build();
     }
 
     /**
@@ -350,15 +168,255 @@ public class CacheOperationContext implements Serializable {
         return noRetries;
     }
 
+    /** Context with noRetries flag. */
+    public CacheOperationContext withNoRetries() {
+        return builder(this).noRetries(true).build();
+    }
+
     /**
      * @return Application attributes.
      */
-    public Map<String, String> applicationAttributes() {
+    @Nullable public Map<String, String> applicationAttributes() {
         return appAttrs;
+    }
+
+    /** Context with application attributes. */
+    public CacheOperationContext withApplicationAttributes(Map<String, String> attrs) {
+        return builder(this).applicationAttributes(attrs).build();
+    }
+
+    /**
+     * @return Skip store.
+     */
+    public boolean skipStore() {
+        return skipStore;
+    }
+
+    /** Context with skipStore flag. */
+    public CacheOperationContext withSkipStore() {
+        return builder(this).skipStore(true).build();
+    }
+
+    /**
+     * @return Skip read-through cache store.
+     */
+    public boolean skipReadThrough() {
+        return skipReadThrough;
+    }
+
+    /** Context with {@link CacheOperationContext#skipReadThrough} flag. */
+    public CacheOperationContext withSkipReadThrough() {
+        return builder(this).skipReadThrough(true).build();
+    }
+
+    /** @return Calcite engine execution flag. */
+    public boolean calciteEngine() {
+        return calciteEngineCall;
+    }
+
+    /** Context with {@link CacheOperationContext#calciteEngine} flag. */
+    public CacheOperationContext withCalciteEngine() {
+        return builder(this).calciteEngine(true).build();
+    }
+
+    /**
+     * @return {@link ExpiryPolicy} associated with this projection.
+     */
+    @Nullable public ExpiryPolicy expiry() {
+        return expiryPlc;
+    }
+
+    /** Context with {@link CacheOperationContext#expiryPlc}. */
+    public CacheOperationContext withExpiryPolicy(ExpiryPolicy plc) {
+        return builder(this).expiryPolicy(plc).build();
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheOperationContext.class, this);
+    }
+
+    /**
+     * Creates the builder from existing context.
+     *
+     * @return Builder for cache operations context.
+     */
+    public static Builder builder(CacheOperationContext ctx) {
+        return new Builder(ctx);
+    }
+
+    /**
+     * Creates the builder for cache operations context.
+     *
+     * @return Builder for cache operations context.
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /** Cache operations context builder. */
+    public static class Builder {
+        /** Skip store. */
+        @GridToStringInclude
+        private boolean skipStore;
+
+        /** Skip read through. */
+        @GridToStringInclude
+        private boolean skipReadThrough;
+
+        /** No retries flag. */
+        @GridToStringInclude
+        private boolean noRetries;
+
+        /** Recovery flag. */
+        private boolean recovery;
+
+        /** Read-repair strategy. */
+        private ReadRepairStrategy readRepairStrategy;
+
+        /** Keep binary flag. */
+        private boolean keepBinary;
+
+        /** Expiry policy. */
+        private ExpiryPolicy expiryPlc;
+
+        /** Data center Id. */
+        private Byte dataCenterId;
+
+        /** Application attributes. */
+        private Map<String, String> appAttrs;
+
+        /** Calcite engine execution flag. */
+        private boolean calciteEngine;
+
+        /** */
+        Builder() {
+            // No context.
+        }
+
+        /** */
+        Builder(CacheOperationContext ctx) {
+            skipStore = ctx.skipStore;
+            skipReadThrough = ctx.skipReadThrough;
+            noRetries = ctx.noRetries;
+            recovery = ctx.recovery;
+            readRepairStrategy = ctx.readRepairStrategy;
+            keepBinary = ctx.keepBinary;
+            expiryPlc = ctx.expiryPlc;
+            dataCenterId = ctx.dataCenterId;
+            appAttrs = ctx.appAttrs;
+            calciteEngine = ctx.calciteEngineCall;
+        }
+
+        /**
+         * CacheOperationContext with keepBinary flag.
+         *
+         * @see IgniteInternalCache#keepBinary()
+         */
+        public Builder keepBinary(boolean keepBinary) {
+            this.keepBinary = keepBinary;
+            return this;
+        }
+
+        /**
+         * CacheOperationContext with skipStore flag.
+         *
+         * @see IgniteInternalCache#withSkipStore()
+         */
+        public Builder skipStore(boolean skipStore) {
+            this.skipStore = skipStore;
+            return this;
+        }
+
+        /**
+         * CacheOperationContext with attributes.
+         *
+         * @see IgniteInternalCache#withApplicationAttributes(Map)
+         */
+        public Builder applicationAttributes(Map<String, String> attrs) {
+            appAttrs = Collections.unmodifiableMap(new HashMap<>(attrs));
+            return this;
+        }
+
+        /**
+         * CacheOperationContext with skip read through flag.
+         *
+         * @see IgniteInternalCache#withSkipReadThrough()
+         */
+        public Builder skipReadThrough(boolean skipReadThrough) {
+            this.skipReadThrough = skipReadThrough;
+            return this;
+        }
+
+        /**
+         * CacheOperationContext with calcite execution flag.
+         *
+         * @see IgniteInternalCache#withCalciteEngine()
+         */
+        public Builder calciteEngine(boolean calciteEngine) {
+            this.calciteEngine = calciteEngine;
+            return this;
+        }
+
+        /**
+         * CacheOperationContext with expiry policy.
+         *
+         * @see IgniteInternalCache#withExpiryPolicy(ExpiryPolicy)
+         */
+        public Builder expiryPolicy(ExpiryPolicy expiryPlc) {
+            this.expiryPlc = expiryPlc;
+            return this;
+        }
+
+        /**
+         * CacheOperationContext with no retries flag.
+         */
+        public Builder noRetries(boolean noRetries) {
+            this.noRetries = noRetries;
+            return this;
+        }
+
+        /**
+         * CacheOperationContext with Data center id.
+         */
+        public Builder dataCenterId(Byte dataCenterId) {
+            this.dataCenterId = dataCenterId;
+            return this;
+        }
+
+        /**
+         * CacheOperationContext with recovery flag.
+         */
+        public Builder recovery(boolean recovery) {
+            this.recovery = recovery;
+            return this;
+        }
+
+        /**
+         * CacheOperationContext with read repair strategy.
+         */
+        public Builder readRepairStrategy(ReadRepairStrategy readRepairStrategy) {
+            this.readRepairStrategy = readRepairStrategy;
+            return this;
+        }
+
+        /**
+         * Builds cache operations context options.
+         *
+         * @return Cache operations context options.
+         */
+        public CacheOperationContext build() {
+            return new CacheOperationContext(
+                skipStore,
+                skipReadThrough,
+                keepBinary,
+                expiryPlc,
+                noRetries,
+                dataCenterId,
+                recovery,
+                readRepairStrategy,
+                appAttrs,
+                calciteEngine);
+        }
     }
 }

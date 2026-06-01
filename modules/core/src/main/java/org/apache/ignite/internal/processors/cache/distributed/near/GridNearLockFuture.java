@@ -160,6 +160,9 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
     /** Skip read-through cache store flag. */
     private final boolean skipReadThrough;
 
+    /** Calcite engine operation flag. */
+    private final boolean calciteOpCall;
+
     /** Mappings to proceed. */
     @GridToStringExclude
     private Queue<GridNearLockMapping> mappings;
@@ -183,6 +186,8 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
      * @param createTtl TTL for create operation.
      * @param accessTtl TTL for read operation.
      * @param skipStore skipStore
+     * @param skipReadThrough Skip read-through cache store flag.
+     * @param calciteOpCall Calcite engine operation call.
      * @param keepBinary Keep binary flag.
      * @param recovery Recovery flag.
      */
@@ -197,6 +202,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         long accessTtl,
         boolean skipStore,
         boolean skipReadThrough,
+        boolean calciteOpCall,
         boolean keepBinary,
         boolean recovery
     ) {
@@ -215,6 +221,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         this.accessTtl = accessTtl;
         this.skipStore = skipStore;
         this.skipReadThrough = skipReadThrough;
+        this.calciteOpCall = calciteOpCall;
         this.keepBinary = keepBinary;
         this.recovery = recovery;
 
@@ -1070,6 +1077,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                                                 read ? accessTtl : -1L,
                                                 skipStore,
                                                 skipReadThrough,
+                                                calciteOpCall,
                                                 keepBinary,
                                                 clientFirst,
                                                 true,

@@ -150,6 +150,9 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
     /** Operation result. */
     protected GridCacheReturn opRes;
 
+    /** Calcite operation call. */
+    protected boolean calciteOpCall;
+
     /**
      * Constructor.
      *
@@ -167,6 +170,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
      * @param recovery {@code True} if cache operation is called in recovery mode.
      * @param remapCnt Remap count.
      * @param appAttrs Application attributes.
+     * @param calciteOpCall Calcite engine call flag.
      */
     protected GridNearAtomicAbstractUpdateFuture(
         GridCacheContext cctx,
@@ -183,7 +187,8 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
         boolean keepBinary,
         boolean recovery,
         int remapCnt,
-        @Nullable Map<String, String> appAttrs
+        @Nullable Map<String, String> appAttrs,
+        boolean calciteOpCall
     ) {
         if (log == null) {
             msgLog = cctx.shared().atomicMessageLogger();
@@ -209,6 +214,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
 
         this.remapCnt = remapCnt;
         this.appAttrs = appAttrs;
+        this.calciteOpCall = calciteOpCall;
     }
 
     /**
@@ -360,7 +366,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
             : (this.retval || op == TRANSFORM)
                 ? cctx.unwrapBinaryIfNeeded(
                     ret.value(),
-                    keepBinary,
+                    calciteOpCall || keepBinary,
                     U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId))
                 : ret.success();
 
@@ -911,7 +917,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
             CacheOperationContext prevOpCtx = cctx.operationContextPerCall();
 
             if (appAttrs != null)
-                cctx.operationContextPerCall(new CacheOperationContext().setApplicationAttributes(appAttrs));
+                cctx.operationContextPerCall(CacheOperationContext.builder().applicationAttributes(appAttrs).build());
 
             try {
                 apply0(req, res);

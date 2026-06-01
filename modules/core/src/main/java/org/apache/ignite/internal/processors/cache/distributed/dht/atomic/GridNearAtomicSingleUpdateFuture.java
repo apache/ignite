@@ -82,6 +82,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
      * @param keepBinary Keep binary flag.
      * @param recovery {@code True} if cache operation is called in recovery mode.
      * @param remapCnt Maximum number of retries.
+     * @param calciteOpCall Calcite engine operation call.
      */
     public GridNearAtomicSingleUpdateFuture(
         GridCacheContext cctx,
@@ -100,7 +101,8 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         boolean keepBinary,
         boolean recovery,
         int remapCnt,
-        @Nullable Map<String, String> appAttrs
+        @Nullable Map<String, String> appAttrs,
+        boolean calciteOpCall
     ) {
         super(cctx,
             cache,
@@ -116,7 +118,8 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
             keepBinary,
             recovery,
             remapCnt,
-            appAttrs);
+            appAttrs,
+            calciteOpCall);
         this.key = key;
         this.val = val;
     }
@@ -553,7 +556,8 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
             skipStore,
             keepBinary,
             recovery,
-            skipReadThrough);
+            skipReadThrough,
+            calciteOpCall);
 
         if (canUseSingleRequest()) {
             if (op == TRANSFORM) {

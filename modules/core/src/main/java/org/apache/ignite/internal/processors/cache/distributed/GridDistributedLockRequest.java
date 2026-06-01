@@ -49,6 +49,9 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     /** */
     private static final int SKIP_READ_THROUGH_FLAG_MASK = 0x08;
 
+    /** Calcite engine operation call flag bit mask. */
+    private static final int CALCITE_OP_CALL_FLAG_MASK = 0x10;
+
     /** Sender node ID. */
     @Order(0)
     public UUID nodeId;
@@ -127,6 +130,8 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
      * @param keyCnt Number of keys.
      * @param txSize Expected transaction size.
      * @param skipStore Skip store flag.
+     * @param skipReadThrough Skip read-through cache store flag.
+     * @param calciteOpCall Calcite engine operation call.
      */
     public GridDistributedLockRequest(
         int cacheId,
@@ -144,6 +149,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         int txSize,
         boolean skipStore,
         boolean skipReadThrough,
+        boolean calciteOpCall,
         boolean keepBinary
     ) {
         super(lockVer, keyCnt, false);
@@ -169,6 +175,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         skipStore(skipStore);
         skipReadThrough(skipReadThrough);
         keepBinary(keepBinary);
+        calciteOpCall(calciteOpCall);
     }
 
     /**
@@ -234,61 +241,90 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
      * @param skipStore Skip store flag.
      */
     private void skipStore(boolean skipStore) {
-        flags = skipStore ? (byte)(flags | SKIP_STORE_FLAG_MASK) : (byte)(flags & ~SKIP_STORE_FLAG_MASK);
+        setFlag(skipStore, SKIP_STORE_FLAG_MASK);
     }
 
     /**
      * @return Skip store flag.
      */
     public boolean skipStore() {
-        return (flags & SKIP_STORE_FLAG_MASK) == 1;
+        return isFlag(SKIP_STORE_FLAG_MASK);
     }
 
     /**
-     * Sets skip store flag value.
+     * Sets skip read-through flag value.
      *
      * @param skipReadThrough Skip read-through cache store flag.
      */
     private void skipReadThrough(boolean skipReadThrough) {
-        flags = skipReadThrough ? (byte)(flags | SKIP_READ_THROUGH_FLAG_MASK) : (byte)(flags & ~SKIP_READ_THROUGH_FLAG_MASK);
+        setFlag(skipReadThrough, SKIP_READ_THROUGH_FLAG_MASK);
     }
 
     /**
-     * @return Skip store flag.
+     * @return Skip read-through flag.
      */
     public boolean skipReadThrough() {
-        return (flags & SKIP_READ_THROUGH_FLAG_MASK) != 0;
+        return isFlag(SKIP_READ_THROUGH_FLAG_MASK);
+    }
+
+    /** Sets calcite operation flag. */
+    public void calciteOpCall(boolean calciteOpCall) {
+        setFlag(calciteOpCall, CALCITE_OP_CALL_FLAG_MASK);
+    }
+
+    /**
+     * @return Calcite engine operation flag.
+     */
+    public boolean calciteOpCall() {
+        return isFlag(CALCITE_OP_CALL_FLAG_MASK);
     }
 
     /**
      * @param keepBinary Keep binary flag.
      */
     private void keepBinary(boolean keepBinary) {
-        flags = keepBinary ? (byte)(flags | KEEP_BINARY_FLAG_MASK) : (byte)(flags & ~KEEP_BINARY_FLAG_MASK);
+        setFlag(keepBinary, KEEP_BINARY_FLAG_MASK);
     }
 
     /**
      * @return Keep binary.
      */
     public boolean keepBinary() {
-        return (flags & KEEP_BINARY_FLAG_MASK) != 0;
+        return isFlag(KEEP_BINARY_FLAG_MASK);
     }
 
     /**
      * @return Flag indicating whether transaction use cache store.
      */
     public boolean storeUsed() {
-        return (flags & STORE_USED_FLAG_MASK) != 0;
+        return isFlag(STORE_USED_FLAG_MASK);
     }
 
     /**
      * @param storeUsed Store used value.
      */
     public void storeUsed(boolean storeUsed) {
-        if (storeUsed)
-            flags |= STORE_USED_FLAG_MASK;
-        else
-            flags &= ~STORE_USED_FLAG_MASK;
+        setFlag(storeUsed, STORE_USED_FLAG_MASK);
+    }
+
+    /**
+     * Sets flag mask.
+     *
+     * @param flag Set or clear.
+     * @param mask Mask.
+     */
+    private void setFlag(boolean flag, int mask) {
+        flags = flag ? (byte)(flags | mask) : (byte)(flags & ~mask);
+    }
+
+    /**
+     * Reads flag mask.
+     *
+     * @param mask Mask to read.
+     * @return Flag value.
+     */
+    private boolean isFlag(int mask) {
+        return (flags & mask) != 0;
     }
 
     /**
