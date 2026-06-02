@@ -15,41 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.client.thin;
+package org.apache.ignite.internal.classpath;
 
-import java.nio.ByteBuffer;
-import org.apache.ignite.internal.binary.streams.BinaryInputStream;
-import org.apache.ignite.internal.binary.streams.BinaryStreams;
+import java.util.UUID;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.util.distributed.DistributedProcess;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
- * Thin client payload input channel.
+ * Class path deploy to all request for {@link DistributedProcess} initiate message.
  */
-class PayloadInputChannel {
-    /** Client channel. */
-    private final ClientChannel ch;
+public class ClassPathDeployToAllRequest implements Message {
+    /** Ignite class path id. */
+    @Order(0)
+    UUID icpId;
 
-    /** Input stream. */
-    private final BinaryInputStream in;
+    /** Node containing class path files received from client. */
+    @Order(1)
+    UUID uploadNodeId;
 
-    /**
-     * Constructor.
-     */
-    PayloadInputChannel(ClientChannel ch, ByteBuffer payload) {
-        this.ch = ch;
-        in = BinaryStreams.inputStream(payload);
+    /** */
+    public ClassPathDeployToAllRequest() {
+        // No-op.
     }
 
-    /**
-     * Gets client channel.
-     */
-    public ClientChannel clientChannel() {
-        return ch;
-    }
-
-    /**
-     * Gets input stream.
-     */
-    public BinaryInputStream in() {
-        return in;
+    /** */
+    public ClassPathDeployToAllRequest(UUID icpId, UUID uploadNodeId) {
+        this.icpId = icpId;
+        this.uploadNodeId = uploadNodeId;
     }
 }

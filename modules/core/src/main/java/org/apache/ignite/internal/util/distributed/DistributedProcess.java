@@ -499,6 +499,11 @@ public class DistributedProcess<I extends Message, R extends Message> {
         /**
          * Snapshot partitions validation.
          */
-        CHECK_SNAPSHOT_PARTS
+        CHECK_SNAPSHOT_PARTS,
+
+        /**
+         * Deploy new classpath to all nodes.
+         */
+        CLASSPATH_DEPLOY_TO_ALL;
     }
 }

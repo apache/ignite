@@ -295,6 +295,9 @@ public class NodeFileTree extends SharedFileTree {
     /** Path to the storage directory. */
     private final File nodeStorage;
 
+    /** Path to the root classpath directory. */
+    private final File icp;
+
     /**
      * Key is the path from {@link DataStorageConfiguration#getExtraStoragePaths()}, may be relative. Value is storage.
      * @see DataStorageConfiguration#getExtraStoragePaths()
@@ -334,6 +337,7 @@ public class NodeFileTree extends SharedFileTree {
         this.folderName = folderName;
 
         binaryMeta = new File(binaryMetaRoot, folderName);
+        icp = new File(icpRoot, folderName);
         nodeStorage = rootRelative(DB_DIR);
         checkpoint = new File(nodeStorage, CHECKPOINT_DIR);
         wal = rootRelative(DFLT_WAL_PATH);
@@ -382,6 +386,7 @@ public class NodeFileTree extends SharedFileTree {
         this.folderName = folderName;
 
         binaryMeta = new File(binaryMetaRoot, folderName);
+        icp = new File(icpRoot, folderName);
 
         DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
 
@@ -429,6 +434,11 @@ public class NodeFileTree extends SharedFileTree {
     /** @return Path to binary metadata directory. */
     public File binaryMeta() {
         return binaryMeta;
+    }
+
+    /** @return Root directory for Ignite class path files. */
+    public File classPathRoot() {
+        return icp;
     }
 
     /** @return Path to the directory containing active WAL segments. */
@@ -1080,6 +1090,14 @@ public class NodeFileTree extends SharedFileTree {
     /** @return Maintenance file. */
     public File maintenanceFile() {
         return new File(nodeStorage, MAINTENANCE_FILE_NAME);
+    }
+
+    /**
+     * @param name IgniteClassPath name.
+     * @return IgniteClassPath directory.
+     */
+    public File classPath(String name) {
+        return new File(icp, name);
     }
 
     /**

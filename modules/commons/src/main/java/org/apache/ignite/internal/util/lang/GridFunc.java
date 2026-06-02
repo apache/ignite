@@ -2153,4 +2153,18 @@ public class GridFunc {
     public static <K, V> Map<K, V> emptyIfNull(@Nullable Map<K, V> map) {
         return map == null ? Collections.emptyMap() : map;
     }
+
+    /**
+     * @param arr Array.
+     * @param el Element.
+     * @return Element index or {@code -1} if not found.
+     */
+    public static <T> int indexOf(T[] arr, T el) {
+        for (int i = 0; i < arr.length; i++) {
+            if (Objects.equals(arr[i], el))
+                return i;
+        }
+
+        return -1;
+    }
 }

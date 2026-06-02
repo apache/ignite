@@ -942,7 +942,6 @@ final class ReliableChannelImpl implements ReliableChannelEx {
 
                     return function.apply(channel);
                 }
-
                 catch (ClientConnectionException err) {
                     failures = new ArrayList<>();
 
@@ -1034,7 +1033,7 @@ final class ReliableChannelImpl implements ReliableChannelEx {
         private volatile ClientChannel ch;
 
         /** ID of the last server node that {@link #ch} is or was connected to. */
-        private volatile UUID serverNodeId;
+        volatile UUID serverNodeId;
 
         /** Address that holder is bind to (chCfg.addr) is not in use now. So close the holder. */
         private volatile boolean close;
@@ -1075,7 +1074,7 @@ final class ReliableChannelImpl implements ReliableChannelEx {
         /**
          * Get or create channel.
          */
-        private ClientChannel getOrCreateChannel()
+        public ClientChannel getOrCreateChannel()
             throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
             return getOrCreateChannel(false);
         }
@@ -1173,6 +1172,19 @@ final class ReliableChannelImpl implements ReliableChannelEx {
         void setConfiguration(ClientChannelConfiguration chCfg) {
             this.chCfg = chCfg;
         }
+    }
+
+    /**
+     * @param id Node id.
+     * @return Client channel for node.
+     */
+    public ClientChannel nodeClientChannel(UUID id) {
+        ClientChannelHolder cliCh = nodeChannels.get(id);
+
+        if (cliCh == null)
+            throw new ClientConnectionException("Node can't be found [id=" + id + ']');
+
+        return cliCh.getOrCreateChannel();
     }
 
     /**

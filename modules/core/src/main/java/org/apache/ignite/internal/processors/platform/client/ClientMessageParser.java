@@ -76,6 +76,7 @@ import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheRe
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheScanQueryRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheSqlFieldsQueryRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheSqlQueryRequest;
+import org.apache.ignite.internal.processors.platform.client.classpath.ClientFileUploadRequest;
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterChangeStateRequest;
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterGetDataCenterNodesRequest;
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterGetStateRequest;
@@ -410,6 +411,9 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     /** Get service topology. */
     private static final short OP_SERVICE_GET_TOPOLOGY = 7003;
 
+    /** File upload. */
+    public static final short FILE_UPLOAD = 9030;
+
     /** Operations that are performed before a node is joined to the topology. */
     /** Stop warmup. */
     private static final short OP_STOP_WARMUP = 10000;
@@ -734,6 +738,9 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
             case OP_SERVICE_GET_TOPOLOGY:
                 return new ClientServiceTopologyRequest(reader);
+
+            case FILE_UPLOAD:
+                return new ClientFileUploadRequest(reader);
 
             case OP_STOP_WARMUP:
                 return new ClientCacheStopWarmupRequest(reader);
