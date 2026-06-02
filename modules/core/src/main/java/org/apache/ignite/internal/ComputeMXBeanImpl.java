@@ -21,6 +21,7 @@ import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.compute.ComputeTaskFuture;
+import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
@@ -72,6 +73,7 @@ public class ComputeMXBeanImpl implements ComputeMXBean {
     /**
      * Cancel compute session closure.
      */
+    @GridInternal
     private static class ComputeCancelSession implements IgniteClosure<IgniteUuid, Void> {
         /** */
         private static final long serialVersionUID = 0L;
