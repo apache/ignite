@@ -19,12 +19,16 @@ package org.apache.ignite.internal;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.OperationContextAttribute;
+import org.apache.ignite.internal.thread.context.OperationContextSnapshot;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
-/** Transport of {@link OperationContext}. */
+/**
+ * Transport for {@link OperationContextSnapshot} attributes.
+ *
+ * @see OperationContextSnapshot
+ */
 public class OperationContexMessage implements Message {
     /** Expected maximal number of operation context attributes. Is for message size optimization.  */
     private static final int DFLT_EXPECTED_MAX_ATTRIBUTES_NUMBER = 5;

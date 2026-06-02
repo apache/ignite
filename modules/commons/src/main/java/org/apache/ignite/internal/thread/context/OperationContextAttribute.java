@@ -41,7 +41,7 @@ public class OperationContextAttribute<T> {
     @Nullable private final T initVal;
 
     /** */
-    public OperationContextAttribute(int bitmask, @Nullable T initVal) {
+    private OperationContextAttribute(int bitmask, @Nullable T initVal) {
         this.bitmask = bitmask;
         this.initVal = initVal;
     }

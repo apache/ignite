@@ -21,6 +21,7 @@ import java.io.Externalizable;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.internal.OperationContexMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -76,8 +77,13 @@ public abstract class TcpDiscoveryAbstractMessage implements Message {
     @Order(4)
     Set<UUID> failedNodes;
 
+    /** */
+    @GridToStringInclude
+    @Order(5)
+    @Nullable OperationContexMessage opCtxMessage;
+
     /**
-     * Default no-arg constructor for {@link Externalizable} interface.
+     * Default no-arg constructor for serialization purposes.
      */
     protected TcpDiscoveryAbstractMessage() {
         // No-op.

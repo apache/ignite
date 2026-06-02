@@ -59,6 +59,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.net.ssl.SSLException;
@@ -360,7 +361,10 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @param adapter Adapter.
      */
     ServerImpl(TcpDiscoverySpi adapter, int utilityPoolSize, int pingRmtDcPoolSize) {
-        super(adapter);
+        super(adapter, (msg, send)-> {
+            if(send)
+                msgWrapper.
+        });
 
         utilityPool = new IgniteThreadPoolExecutor("disco-pool",
             spi.ignite().name(),
@@ -2966,7 +2970,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param log Logger.
          */
         protected RingMessageWorker(IgniteLogger log) {
-            super("tcp-disco-msg-worker-[]", log, 10, getWorkerRegistry(spi));
+            super("tcp-disco-msg-worker-[]", log, 10, getWorkerRegistry(spi), msgWrapper == null ? null : msg -> msgWrapper.apply(msg, true));
 
             setBeforeEachPollAction(() -> {
                 updateHeartbeat();
@@ -3014,16 +3018,16 @@ class ServerImpl extends TcpDiscoveryImpl {
          *
          * @param msg Message to add.
          * @param ignoreHighPriority If {@code true}, high priority messages will be added to the top of the queue.
-         * @param fromSocket If message has been read from socket (not created externally).
+         * @param fromSock If message has been read from socket (not created externally).
          */
-        void addMessage(TcpDiscoveryAbstractMessage msg, boolean ignoreHighPriority, boolean fromSocket) {
+        void addMessage(TcpDiscoveryAbstractMessage msg, boolean ignoreHighPriority, boolean fromSock) {
             DebugLogger log = messageLogger(msg);
 
             if ((msg instanceof TcpDiscoveryStatusCheckMessage ||
                 msg instanceof TcpDiscoveryJoinRequestMessage ||
                 msg instanceof TcpDiscoveryCustomEventMessage ||
                 msg instanceof TcpDiscoveryClientReconnectMessage) &&
-                queue.contains(msg)) {
+                contains(msg)) {
                 if (log.isDebugEnabled())
                     log.debug("Ignoring duplicate message: " + msg);
 
@@ -3034,7 +3038,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 TraceableMessage tMsg = (TraceableMessage)msg;
 
                 // If we read this message from socket.
-                if (fromSocket)
+                if (fromSock)
                     tracing.messages().afterReceive(tMsg);
                 else { // If we're going to send this message.
                     if (!msg.verified() && tMsg.spanContainer().serializedSpanBytes() == null) {
@@ -3069,20 +3073,20 @@ class ServerImpl extends TcpDiscoveryImpl {
             DebugLogger log = messageLogger(msg);
 
             if (addFirst) {
-                queue.addFirst(msg);
+                addFirst(msg);
 
                 if (log.isDebugEnabled())
                     log.debug("Message has been added to a head of a worker's queue: " + msg);
             }
             else {
-                queue.add(msg);
+                add(msg);
 
                 if (log.isDebugEnabled())
                     log.debug("Message has been added to a worker's queue: " + msg);
             }
 
             if (maxMsgQueueSizeMetric != null)
-                maxMsgQueueSizeMetric.update(queue.size());
+                maxMsgQueueSizeMetric.update(queueSize());
         }
 
         /** */
@@ -7879,8 +7883,22 @@ class ServerImpl extends TcpDiscoveryImpl {
          */
         private ClientMessageWorker(Socket sock, UUID clientNodeId, IgniteLogger log) {
             super("tcp-disco-client-message-worker-[" + U.id8(clientNodeId)
-                + ' ' + sock.getInetAddress().getHostAddress()
-                + ":" + sock.getPort() + ']', log, Math.max(spi.metricsUpdateFreq, 10), null);
+                    + ' ' + sock.getInetAddress().getHostAddress()
+                    + ":" + sock.getPort() + ']',
+                log,
+                Math.max(spi.metricsUpdateFreq, 10),
+                null,
+                msgWrapper == null ? null : msgP -> {
+                    assert msgP.get2() == null;
+
+                    msgP.set1(msgWrapper.apply(msgP.get1(), true));
+
+                    return msgP;
+                }
+            );
+
+            super("tcp-disco-msg-worker-[]", log, 10, getWorkerRegistry(spi), msgWrapper == null ? null : msg -> msgWrapper.apply(msg, true));
+
 
             this.sock = sock;
             this.clientNodeId = clientNodeId;
@@ -7928,9 +7946,9 @@ class ServerImpl extends TcpDiscoveryImpl {
             T2<TcpDiscoveryAbstractMessage, byte[]> t = new T2<>(msg, msgBytes);
 
             if (msg.highPriority())
-                queue.addFirst(t);
+                addFirst(t);
             else
-                queue.add(t);
+                add(t);
 
             DebugLogger log = messageLogger(msg);
 
@@ -8207,10 +8225,13 @@ class ServerImpl extends TcpDiscoveryImpl {
      */
     private abstract class MessageWorker<T> extends GridWorker {
         /** Message queue. */
-        protected final BlockingDeque<T> queue = new LinkedBlockingDeque<>();
+        private final BlockingDeque<T> queue = new LinkedBlockingDeque<>();
 
         /** Polling timeout. */
         private final long pollingTimeout;
+
+        /** Add-to-queue listener. */
+        private final @Nullable Function<T, T> enqueueMsgLsnr;
 
         /** */
         private Runnable beforeEachPoll;
@@ -8220,16 +8241,40 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param log Logger.
          * @param pollingTimeout Messages polling timeout.
          * @param lsnr Listener for life-cycle events.
+         * @param enqueueMsgLsnr Add-to-queue listener.
          */
         protected MessageWorker(
             String name,
             IgniteLogger log,
             long pollingTimeout,
-            @Nullable GridWorkerListener lsnr
+            @Nullable GridWorkerListener lsnr,
+            @Nullable Function<T, T> enqueueMsgLsnr
         ) {
             super(spi.ignite().name(), name, log, lsnr);
 
             this.pollingTimeout = pollingTimeout;
+            this.enqueueMsgLsnr = enqueueMsgLsnr;
+        }
+
+        /** */
+        protected void add(T msg) {
+            if (enqueueMsgLsnr != null)
+                msg = enqueueMsgLsnr.apply(msg);
+
+            queue.addLast(msg);
+        }
+
+        /** */
+        protected void addFirst(T msg) {
+            if (enqueueMsgLsnr != null)
+                msg = enqueueMsgLsnr.apply(msg);
+
+            queue.addFirst(msg);
+        }
+
+        /** */
+        protected boolean contains(T msg) {
+            return queue.contains(msg);
         }
 
         /**
@@ -8260,7 +8305,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         /**
          * @return Current message queue size.
          */
-        int queueSize() {
+        protected int queueSize() {
             return queue.size();
         }
 

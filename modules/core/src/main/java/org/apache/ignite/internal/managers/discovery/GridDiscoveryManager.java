@@ -123,6 +123,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -2338,11 +2339,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      */
     public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteCheckedException {
         try {
-            IgniteSecurity security = ctx.security();
-
-            getSpi().sendCustomEvent(security.enabled()
-                ? new SecurityAwareCustomMessageWrapper(msg, security.securityContext().subject().id())
-                : msg);
+            getSpi().sendCustomEvent(msg);
         }
         catch (IgniteClientDisconnectedException e) {
             IgniteFuture<?> reconnectFut = ctx.cluster().clientReconnectFuture();
@@ -2352,6 +2349,17 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         catch (IgniteException e) {
             throw new IgniteCheckedException(e);
         }
+    }
+
+    /** */
+    private Message wrapMessage(Message msg) {
+        IgniteSecurity security = ctx.security();
+
+//        getSpi().sendCustomEvent(security.enabled()
+//            ? new SecurityAwareCustomMessageWrapper(msg, security.securityContext().subject().id())
+//            : msg);
+
+        return msg;
     }
 
     /**
