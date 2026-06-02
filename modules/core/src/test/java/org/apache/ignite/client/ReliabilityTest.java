@@ -126,14 +126,20 @@ public class ReliabilityTest extends AbstractThinClientTest {
 
             // Simple operation failover: put/get
             assertOnUnstableCluster(cluster, () -> {
-                Integer key = rnd.nextInt();
-                String val = key.toString();
+                try {
+                    Integer key = rnd.nextInt();
+                    String val = key.toString();
 
-                cachePut(cache, key, val);
+                    cachePut(cache, key, val);
 
-                String cachedVal = cache.get(key);
+                    String cachedVal = cache.get(key);
 
-                assertEquals(val, cachedVal);
+                    assertEquals(val, cachedVal);
+                }
+                catch (ClientException e) {
+                    // A cache update may fail if the node is stopped while processing the request.
+                    assertTrue(e.getMessage().contains("Failed to update keys"));
+                }
             });
 
             cache.clear();
@@ -143,12 +149,11 @@ public class ReliabilityTest extends AbstractThinClientTest {
                 .collect(Collectors.toMap(i -> i, i -> String.format("String %s", i)));
 
             assertOnUnstableCluster(cluster, () -> {
-                cache.putAll(data);
-
-                Query<Cache.Entry<Integer, String>> qry =
-                    new ScanQuery<Integer, String>().setPageSize(data.size() / 10);
-
                 try {
+                    cache.putAll(data);
+
+                    Query<Cache.Entry<Integer, String>> qry = new ScanQuery<Integer, String>().setPageSize(data.size() / 10);
+
                     try (QueryCursor<Cache.Entry<Integer, String>> cur = cache.query(qry)) {
                         List<Cache.Entry<Integer, String>> res = cur.getAll();
 
@@ -163,6 +168,10 @@ public class ReliabilityTest extends AbstractThinClientTest {
                 catch (ClientConnectionException ignored) {
                     // QueryCursor.getAll always executes on the same channel where the cursor is open,
                     // so failover is not possible, and the call will fail when connection drops.
+                }
+                catch (ClientException e) {
+                    // putAll operation may fail if the participating node left the cluster during its processing.
+                    assertTrue(e.getMessage().contains("Failed to update keys"));
                 }
             });
 

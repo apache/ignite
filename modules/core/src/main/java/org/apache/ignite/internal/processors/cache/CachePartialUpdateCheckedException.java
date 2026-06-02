@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Exception thrown from non-transactional cache in case when update succeeded only partially.
@@ -94,6 +95,6 @@ public class CachePartialUpdateCheckedException extends IgniteCheckedException {
 
     /** {@inheritDoc} */
     @Override public String getMessage() {
-        return super.getMessage() + ": " + failedKeys;
+        return S.toString(super.getMessage(), "failedKeys", failedKeys.toString(), true);
     }
 }

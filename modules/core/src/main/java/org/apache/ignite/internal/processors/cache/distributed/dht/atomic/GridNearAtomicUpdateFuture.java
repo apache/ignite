@@ -476,10 +476,10 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             assert !F.isEmpty(remapKeys) : remapKeys;
 
             CachePartialUpdateCheckedException e =
-                new CachePartialUpdateCheckedException("Failed to update keys (retry update if possible).");
+                new CachePartialUpdateCheckedException("Failed to update keys (retry update if possible)");
 
             ClusterTopologyCheckedException cause = new ClusterTopologyCheckedException(
-                "Failed to update keys, topology changed while execute atomic update inside transaction.");
+                "Failed to update keys, topology changed while execute atomic update inside transaction");
 
             cause.retryReadyFuture(cctx.shared().exchange().affinityReadyFuture(remapTopVer));
 
