@@ -105,7 +105,7 @@ import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.USE_FAILU
  * For more information about grid configuration and startup refer to {@link Ignition}
  * documentation.
  */
-public class IgniteConfiguration {
+public class IgniteConfiguration implements IgniteConfigurationDefaults {
     /** Courtesy notice log category. */
     public static final String COURTESY_LOGGER_NAME = "org.apache.ignite.CourtesyConfigNotice";
 
@@ -165,18 +165,6 @@ public class IgniteConfiguration {
 
     /** Default limit of threads used for rebalance. */
     public static final int DFLT_REBALANCE_THREAD_POOL_SIZE = min(4, max(1, AVAILABLE_PROC_CNT / 4));
-
-    /** Default rebalance message timeout in milliseconds (value is {@code 10000}). */
-    public static final long DFLT_REBALANCE_TIMEOUT = 10000;
-
-    /** Default rebalance batches prefetch count (value is {@code 3}). */
-    public static final long DFLT_REBALANCE_BATCHES_PREFETCH_COUNT = 3;
-
-    /** Time to wait between rebalance messages in milliseconds to avoid overloading CPU (value is {@code 0}). */
-    public static final long DFLT_REBALANCE_THROTTLE = 0;
-
-    /** Default rebalance batch size in bytes (value is {@code 512Kb}). */
-    public static final int DFLT_REBALANCE_BATCH_SIZE = 512 * 1024; // 512K
 
     /** Default size of system thread pool. */
     public static final int DFLT_SYSTEM_CORE_THREAD_CNT = DFLT_PUBLIC_THREAD_CNT;
