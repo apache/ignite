@@ -391,31 +391,24 @@ public class IgniteConfiguration {
     private long segChkFreq = DFLT_SEG_CHK_FREQ;
 
     /** Communication SPI. */
-    @GridToStringExclude
     private CommunicationSpi commSpi;
 
     /** Event storage SPI. */
-    @GridToStringExclude
     private EventStorageSpi evtSpi;
 
     /** Collision SPI. */
-    @GridToStringExclude
     private CollisionSpi colSpi;
 
     /** Deployment SPI. */
-    @GridToStringExclude
     private DeploymentSpi deploySpi;
 
     /** Checkpoint SPI. */
-    @GridToStringExclude
     private CheckpointSpi[] cpSpi;
 
     /** Failover SPI. */
-    @GridToStringExclude
     private FailoverSpi[] failSpi;
 
     /** Load balancing SPI. */
-    @GridToStringExclude
     private LoadBalancingSpi[] loadBalancingSpi;
 
     /** Indexing SPI. */
@@ -426,19 +419,15 @@ public class IgniteConfiguration {
     private AddressResolver addrRslvr;
 
     /** Encryption SPI. */
-    @GridToStringExclude
     private EncryptionSpi encryptionSpi;
 
     /** Metric exporter SPI. */
-    @GridToStringExclude
     private MetricExporterSpi[] metricExporterSpi;
 
     /** System view exporter SPI. */
-    @GridToStringExclude
     private SystemViewExporterSpi[] sysViewExporterSpi;
 
     /** Tracing SPI. */
-    @GridToStringExclude
     private TracingSpi tracingSpi;
 
     /** Cache configurations. */
