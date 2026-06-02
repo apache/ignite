@@ -68,7 +68,7 @@ public class PlatformGetInternalCachesTask extends ComputeTaskAdapter<Object, by
         @Override public byte[] execute() {
             IgniteEx ign = (IgniteEx)ignite;
 
-            try (BinaryWriterEx writer = BinaryUtils.writer(U.binaryContext(null), BinaryStreams.outputStream(512), null)) {
+            try (BinaryWriterEx writer = BinaryUtils.writerWithoutSchemaHolder(U.binaryContext(null), BinaryStreams.outputStream(512))) {
                 Collection<IgniteInternalCache<?, ?>> caches = ign.cachesx();
 
                 writer.writeInt(caches.size());
