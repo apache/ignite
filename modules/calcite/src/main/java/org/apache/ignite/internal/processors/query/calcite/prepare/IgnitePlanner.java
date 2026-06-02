@@ -343,7 +343,11 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
     /** {@inheritDoc} */
     @Override public RelRoot rel(SqlNode sql) {
-        SqlToRelConverter sqlToRelConverter = sqlToRelConverter(validator(), catalogReader, sqlToRelConverterCfg);
+        IgniteSqlValidator validator = (IgniteSqlValidator)validator();
+
+        validator.deriveLimitDynamicParameterTypes(sql);
+
+        SqlToRelConverter sqlToRelConverter = sqlToRelConverter(validator, catalogReader, sqlToRelConverterCfg);
 
         return sqlToRelConverter.convertQuery(sql, false, true);
     }

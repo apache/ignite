@@ -202,6 +202,18 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
         assertThrows("SELECT * FROM TEST_REPL FETCH FIRST ('abc') ROWS ONLY",
             SqlValidatorException.class, "Illegal value of fetch / limit");
 
+        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST (SUBSTRING('abc', 1, 1)) ROWS ONLY",
+            SqlValidatorException.class, "Illegal value of fetch / limit");
+
+        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST (id) ROWS ONLY",
+            SqlValidatorException.class, "Illegal value of fetch / limit");
+
+        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST (id + 1) ROWS ONLY",
+            SqlValidatorException.class, "Illegal value of fetch / limit");
+
+        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST (ABS(id)) ROWS ONLY",
+            SqlValidatorException.class, "Illegal value of fetch / limit");
+
         // Check with parameters.
         assertThrows("SELECT * FROM TEST_REPL FETCH FIRST ? ROWS ONLY",
             SqlValidatorException.class, "Illegal value of fetch / limit", bigInt());
@@ -216,7 +228,7 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
             IgniteSQLException.class, null, NULL_RESULT);
 
         assertThrows("SELECT * FROM TEST_REPL FETCH FIRST (?) ROWS ONLY",
-            IgniteSQLException.class, null, "abc");
+            SqlValidatorException.class, "Illegal value of fetch / limit", "abc");
 
         assertThrows("SELECT * FROM TEST_REPL FETCH FIRST (?) ROWS ONLY",
             SqlValidatorException.class, "Illegal value of fetch / limit", Double.NaN);
