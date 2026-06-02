@@ -102,6 +102,15 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     /** Processed dump size in bytes. */
     private final AtomicLong processedSize = new AtomicLong();
 
+    /** Total partitions. */
+    private final AtomicLong totalParts = new AtomicLong();
+
+    /** Processed partitions. */
+    private final AtomicLong processedParts = new AtomicLong();
+
+    /** Processed entries. */
+    private final LongAdder storedEntries = new LongAdder();
+
     /** If {@code null} then encryption disabled. */
     private final @Nullable Serializable encKey;
 
@@ -270,6 +279,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         AtomicLong writtenEntriesCnt = new AtomicLong();
         AtomicLong changedEntriesCnt = new AtomicLong();
 
+        totalParts.addAndGet(grpParts.size());
+
         String name = cctx.cache().cacheGroup(grp).cacheOrGroupName();
 
         CacheGroupContext gctx = cctx.kernalContext().cache().cacheGroup(grp);
@@ -315,6 +326,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 entriesCnt.addAndGet(entriesCnt0);
                 writtenEntriesCnt.addAndGet(writtenEntriesCnt0);
                 changedEntriesCnt.addAndGet(dumpCtx.changedCnt.intValue());
+
+                processedParts.incrementAndGet();
 
                 if (log.isDebugEnabled()) {
                     log.debug("Finish group partition dump [name=" + name +
@@ -637,6 +650,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 throw new IgniteException("Can't write row");
 
             processedSize.addAndGet(buf.limit());
+
+            storedEntries.increment();
         }
 
         /**
@@ -710,5 +725,20 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     /** @return Encryption key. */
     public @Nullable Serializable encryptionKey() {
         return encKey;
+    }
+
+    /** */
+    public long totalPartitions() {
+        return totalParts.get();
+    }
+
+    /** */
+    public long processedPartitions() {
+        return processedParts.get();
+    }
+
+    /** */
+    public long storedEntries() {
+        return storedEntries.sum();
     }
 }
