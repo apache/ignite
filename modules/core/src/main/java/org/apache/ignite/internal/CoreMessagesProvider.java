@@ -28,13 +28,13 @@ import org.apache.ignite.internal.managers.checkpoint.GridCheckpointRequest;
 import org.apache.ignite.internal.managers.communication.CompressedMessage;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.managers.communication.GridIoSecurityAwareMessage;
 import org.apache.ignite.internal.managers.communication.GridIoUserMessage;
 import org.apache.ignite.internal.managers.communication.IgniteIoTestMessage;
 import org.apache.ignite.internal.managers.communication.SessionChannelMessage;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentResponse;
-import org.apache.ignite.internal.managers.discovery.OperationContextAwareMessage;
 import org.apache.ignite.internal.managers.encryption.ChangeCacheEncryptionRequest;
 import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyRequest;
 import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyResponse;
@@ -602,7 +602,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(GridIoMessage.class);
         withNoSchema(IgniteIoTestMessage.class);
         withSchema(GridIoUserMessage.class);
-        ++msgIdx; // Former GridIoSecurityAwareMessage.
+        withSchema(GridIoSecurityAwareMessage.class);
         withNoSchema(RecoveryLastReceivedMessage.class);
         withNoSchema(TcpInverseConnectionResponseMessage.class);
         withNoSchema(SessionChannelMessage.class);
@@ -674,7 +674,6 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         msgIdx = 13400;
         withNoSchema(OperationContexAttributeMessage.class);
         withNoSchema(OperationContexMessage.class);
-        withNoSchema(OperationContextAwareMessage.class);
         withNoSchema(SecuritySubjectMessage.class);
 
         assert msgIdx <= MAX_MESSAGE_ID;

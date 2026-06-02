@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
-import java.io.Externalizable;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;

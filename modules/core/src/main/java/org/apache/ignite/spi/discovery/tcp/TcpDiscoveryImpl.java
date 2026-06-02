@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.function.BiFunction;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMetrics;
@@ -139,9 +138,6 @@ abstract class TcpDiscoveryImpl {
 
     /** Tracing. */
     protected Tracing tracing;
-
-    /** Mssage listener and wrapper. Accepts: a message to wrap and the send/receive flag. */
-    protected @Nullable BiFunction<TcpDiscoveryAbstractMessage, Boolean, TcpDiscoveryAbstractMessage> msgWrapper;
 
     /**
      * @param spi Adapter.

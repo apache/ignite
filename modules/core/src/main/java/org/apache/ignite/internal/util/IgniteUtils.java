@@ -8282,8 +8282,8 @@ public abstract class IgniteUtils extends CommonUtils {
         }
     }
 
-    /** TODO: remove
-     * Unwraps messsage.
+    /**
+     * Unwraps {@link DiscoverySpiCustomMessage} messsage as {@link DiscoveryCustomMessage}.
      *
      * @param msg Message.
      */

@@ -83,8 +83,6 @@ import org.apache.ignite.internal.IgniteDeploymentCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.OperationContexMessage;
-import org.apache.ignite.internal.OperationContextAttributeType;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
@@ -99,7 +97,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccess
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
-import org.apache.ignite.internal.processors.security.SecuritySubjectMessage;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
@@ -140,6 +137,7 @@ import org.apache.ignite.spi.communication.tcp.internal.CommunicationListenerEx;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectionRequestor;
 import org.apache.ignite.spi.communication.tcp.internal.TcpConnectionRequestDiscoveryMessage;
 import org.apache.ignite.spi.communication.tcp.internal.TcpInverseConnectionResponseMessage;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -2027,8 +2025,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         return ctx.config().getFailureDetectionTimeout();
     }
 
-    /** @return A {@link GridIoMessage} wrapper for {@code msg}. */
-    private GridIoMessage createGridIoMessage(
+    /**
+     * @return One of two message wrappers. The first is {@link GridIoMessage}, the second is secured version {@link
+     * GridIoSecurityAwareMessage}.
+     */
+    private @NotNull GridIoMessage createGridIoMessage(
         Object topic,
         Message msg,
         byte plc,
@@ -2036,18 +2037,16 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         long timeout,
         boolean skipOnTimeout
     ) {
-        GridIoMessage res = new GridIoMessage(plc, topic, msg, ordered, timeout, skipOnTimeout);
-
         if (ctx.security().enabled()) {
-            assert res.opCtxMsg == null : "Several context operation attributes aren't supported yet.";
+            UUID secSubjId = null;
 
-            UUID secSubjId = ctx.security().isDefaultContext() ? null : ctx.security().securityContext().subject().id();
+            if (!ctx.security().isDefaultContext())
+                secSubjId = ctx.security().securityContext().subject().id();
 
-            res.opCtxMsg = OperationContexMessage.enrich(res.opCtxMsg, OperationContextAttributeType.SECURITY,
-                new SecuritySubjectMessage(secSubjId));
+            return new GridIoSecurityAwareMessage(secSubjId, plc, topic, msg, ordered, timeout, skipOnTimeout);
         }
 
-        return res;
+        return new GridIoMessage(plc, topic, msg, ordered, timeout, skipOnTimeout);
     }
 
     /**
@@ -4237,12 +4236,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
      */
     private UUID secSubjId(GridIoMessage msg) {
         if (ctx.security().enabled()) {
-            assert msg.opCtxMsg != null;
-            assert msg.opCtxMsg.hasAttribute(OperationContextAttributeType.SECURITY);
+            assert msg instanceof GridIoSecurityAwareMessage;
 
-            SecuritySubjectMessage secSubjMsg = msg.opCtxMsg.attributeValue(OperationContextAttributeType.SECURITY);
-
-            return secSubjMsg.id;
+            return ((GridIoSecurityAwareMessage)msg).securitySubjectId();
         }
 
         return null;

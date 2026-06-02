@@ -22,10 +22,8 @@ import java.util.UUID;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteDiagnosticRequest;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.OperationContexMessage;
-import org.apache.ignite.internal.OperationContextAttributeType;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
-import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.managers.communication.GridIoSecurityAwareMessage;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -78,12 +76,15 @@ public class IgniteSecurityProcessorTest extends AbstractSecurityTest {
 
         listeningLog.registerListener(logPattern);
 
-        GridIoMessage msg = new GridIoMessage(PUBLIC_POOL, TOPIC_CACHE, new IgniteDiagnosticRequest(), false, 0, false);
-
-        msg.opCtxMsg = OperationContexMessage.enrich(null, OperationContextAttributeType.SECURITY,
-            new SecuritySubjectMessage(UUID.randomUUID()));
-
-        spi.sendMessage(srv.localNode(), msg);
+        spi.sendMessage(srv.localNode(), new GridIoSecurityAwareMessage(
+            UUID.randomUUID(),
+            PUBLIC_POOL,
+            TOPIC_CACHE,
+            new IgniteDiagnosticRequest(),
+            false,
+            0,
+            false
+        ));
 
         GridTestUtils.waitForCondition(logPattern::check, getTestTimeout());
     }
