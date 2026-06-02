@@ -33,6 +33,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Communication.Tcp;
     using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
@@ -363,13 +364,13 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Gets the static discovery.
         /// </summary>
-        public static TcpDiscoverySpi GetStaticDiscovery(int? maxPort = null)
+        public static TcpDiscoverySpi GetStaticDiscovery(int maxPort = 47502)
         {
             return new TcpDiscoverySpi
             {
                 IpFinder = new TcpDiscoveryStaticIpFinder
                 {
-                    Endpoints = new[] { "127.0.0.1:47500" + (maxPort == null ? null : (".." + maxPort)) }
+                    Endpoints = new[] { $"127.0.0.1:47500..{maxPort}" }
                 },
                 SocketTimeout = TimeSpan.FromSeconds(0.3)
             };
@@ -602,6 +603,10 @@ namespace Apache.Ignite.Core.Tests
             return new IgniteConfiguration
             {
                 DiscoverySpi = GetStaticDiscovery(),
+                CommunicationSpi = new TcpCommunicationSpi
+                {
+                    MessageQueueLimit = 5120
+                },
                 Localhost = "127.0.0.1",
                 JvmOptions = TestJavaOptions(jvmDebug),
                 JvmClasspath = CreateTestClasspath(),
