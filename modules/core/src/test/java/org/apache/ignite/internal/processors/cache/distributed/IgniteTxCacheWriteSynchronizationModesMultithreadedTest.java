@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.Cache;
@@ -37,7 +38,10 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -91,6 +95,20 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
 
         for (int i = 0; i < CLIENTS; i++)
             assertTrue(grid(SRVS + i).configuration().isClientMode());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        for (Ignite node : G.allGrids()) {
+            IgniteTxManager tm = ((IgniteEx)node).context().cache().context().tm();
+
+            ConcurrentMap<GridCacheVersion, Object> uncommited =
+                GridTestUtils.getFieldValue(tm, IgniteTxManager.class, "uncommitedSalvageTx");
+
+            assertTrue("Unfinished uncommited [node=" + node.name() + ", size=" + uncommited.size() + ']', uncommited.isEmpty());
+        }
+
+        super.afterTest();
     }
 
     /**

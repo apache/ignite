@@ -59,6 +59,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrep
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxRemote;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxSalvageMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.TransactionAttributesAwareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
@@ -222,6 +223,9 @@ public class IgniteTxHandler {
 
         ctx.io().addCacheHandler(GridDhtTxFinishRequest.class, (UUID nodeId, GridCacheMessage msg) ->
             processDhtTxFinishRequest(nodeId, (GridDhtTxFinishRequest)msg));
+
+        ctx.io().addCacheHandler(GridDhtTxSalvageMessage.class, (UUID nodeId, GridCacheMessage msg) ->
+            processDhtTxSalvageRequest((GridDhtTxSalvageMessage)msg));
 
         ctx.io().addCacheHandler(GridDhtTxOnePhaseCommitAckRequest.class, (UUID nodeId, GridCacheMessage msg) ->
             processDhtTxOnePhaseCommitAckRequest(nodeId, (GridDhtTxOnePhaseCommitAckRequest)msg));
@@ -1338,6 +1342,17 @@ public class IgniteTxHandler {
 
             for (GridCacheVersion ver : req.versions())
                 ctx.tm().removeTxReturn(ver);
+        }
+    }
+
+    /**
+     * @param req Rrequest.
+     */
+    private void processDhtTxSalvageRequest(GridDhtTxSalvageMessage req) {
+        for (IgniteInternalTx active : ctx.tm().activeTransactions()) {
+            if (active.nearXidVersion().equals(req.version()) && active instanceof GridDhtTxRemote) {
+                ctx.tm().salvageTx(active);
+            }
         }
     }
 
