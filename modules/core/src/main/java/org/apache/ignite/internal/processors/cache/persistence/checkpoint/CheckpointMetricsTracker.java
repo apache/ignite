@@ -499,8 +499,8 @@ public class CheckpointMetricsTracker {
     private String possibleLongJvmPauseExplaination() {
         long lockDuration = getDurationMillis(Duration.TOTAL_LOCK);
         if (LongJVMPauseDetector.enabled() && lockDuration > longJvmPauseThreshold) {
-            StringBuilder explainBuilder = new StringBuilder("Checkpoint lock took ")
-                    .append(lockDuration).append(" ms, ");
+            StringBuilder explainBuilder = new StringBuilder("Long JVM pause is spotted! Checkpoint lock took ")
+                    .append(lockDuration).append("ms, ");
             Optional<String> totalSpottedPausesExplain = pauseDetector.getTotalSpottedPausesExplain(cpStart);
             totalSpottedPausesExplain.ifPresent(explainBuilder::append);
             totalSpottedPausesExplain.ifPresent(ignored -> explainBuilder.append(", "));

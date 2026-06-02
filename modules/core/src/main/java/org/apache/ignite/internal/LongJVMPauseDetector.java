@@ -128,21 +128,23 @@ public class LongJVMPauseDetector {
                 log.debug(Thread.currentThread().getName() + " has been started.");
             while (true) {
                 try {
-                    // don't worry, wait will release monitor and all props will be accessible
                     synchronized (this) {
                         lastWakeUpTimeNanos = getMonotonicTimeNanos();
                         long awaitDeadline = lastWakeUpTimeNanos + PRECISION_NANOS;
-                        long awaitDeadlineMillis = awaitDeadline / 1_000_000L;
-                        int awaitDeadlineNanos = Math.toIntExact(awaitDeadline % 1_000_000);
-                        while (getMonotonicTimeNanos() <= awaitDeadline)
-                            wait(awaitDeadlineMillis, awaitDeadlineNanos);
+                        while (getMonotonicTimeNanos() < awaitDeadline) {
+                            long monotonicTimeNanos = getMonotonicTimeNanos();
+                            long waitNanos = awaitDeadline - monotonicTimeNanos;
+                            long waitMillis = Math.max(0, (long)Math.ceil(waitNanos / 1_000_000d));
+                            awaitDeadline = monotonicTimeNanos + (waitMillis * 1_000_000);
+                            wait(waitMillis);
+                        }
                         long nanoTime = getMonotonicTimeNanos();
                         long pause = nanoTime - awaitDeadline;
-                        long pauseMillis = TimeUnit.NANOSECONDS.toMillis(pause);
+                        long pauseMillis = pause / 1_000_000;
                         if (pauseMillis >= THRESHOLD) {
-                            log.warning("Possible too long JVM pause: " + pauseMillis + " ms. " +
-                                    "Precision: " + PRECISION + " ms.");
-                            final int next = (int)(longPausesCnt++ % EVT_CNT);
+                            log.warning("Possible too long JVM pause: " +
+                                    "between " + pauseMillis + " and " + (pauseMillis + PRECISION) + " ms. ");
+                            final int next = (int) (longPausesCnt++ % EVT_CNT);
                             longPausesTotalDurationNanos += pause;
                             longPausesTimestamps[next] = System.currentTimeMillis();
                             longPausesMonotonicTimestamps[next] = nanoTime;
@@ -226,7 +228,7 @@ public class LongJVMPauseDetector {
      * or {@link Optional#empty()} if none were found
      */
     public Optional<String> getTotalSpottedPausesExplain(long cpStart) {
-        int lastPointer = (int)(longPausesCnt % EVT_CNT);
+        int lastPointer = (int)((EVT_CNT + longPausesCnt - 1) % EVT_CNT);
         int pausesSpottedTimes = 0;
         int curPointer = lastPointer;
         StringBuilder explainBuilder = new StringBuilder();
@@ -256,7 +258,7 @@ public class LongJVMPauseDetector {
     /**
      * @return monotonic time in nanos
      */
-    protected static long getMonotonicTimeNanos() {
+    protected long getMonotonicTimeNanos() {
         return System.nanoTime();
     }
 }
