@@ -14,32 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.query.calcite.externalize;
+package org.apache.ignite.internal.processors.query.calcite.sql.fun;
 
-import java.util.List;
-import org.apache.calcite.rel.RelCollation;
-import org.apache.calcite.rel.RelInput;
-import org.apache.calcite.rel.core.Window;
-import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlOperatorBinding;
+import org.apache.calcite.sql.fun.SqlLeadLagAggFunction;
+import org.apache.calcite.sql.type.SqlTypeTransforms;
 
-/** */
-public interface RelInputEx extends RelInput {
-    /**
-     * @param tag Tag.
-     * @return A collation value.
-     */
-    RelCollation getCollation(String tag);
+/** {@link SqlLeadLagAggFunction}, with enforced return type nullability. */
+public class SqlLeadLagFunction extends SqlLeadLagAggFunction {
+    /** */
+    SqlLeadLagFunction(SqlKind kind) {
+        super(kind);
+    }
 
-    /**
-     *
-     * @param tag Tag.
-     * @return Search bounds.
-     */
-    List<SearchBounds> getSearchBounds(String tag);
-
-    /**
-     * @param tag Tag.
-     * @return A window group value.
-     */
-    Window.Group getWindowGroup(String tag);
+    /** {@inheritDoc} */
+    @Override public RelDataType inferReturnType(SqlOperatorBinding opBinding) {
+        return SqlTypeTransforms.FORCE_NULLABLE.transformType(opBinding, super.inferReturnType(opBinding));
+    }
 }
