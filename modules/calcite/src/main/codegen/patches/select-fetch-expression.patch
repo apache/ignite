@@ -14,8 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
---- javacc/Parser.jj
-+++ javacc/Parser.jj
+--- a/javacc/Parser.jj
++++ b/javacc/Parser.jj
 @@ -754,7 +754,7 @@
  {
      // SQL:2008-style syntax. "OFFSET ... FETCH ...".
