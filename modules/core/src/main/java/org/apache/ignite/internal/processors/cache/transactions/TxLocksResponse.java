@@ -27,10 +27,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Transactions lock list response.
@@ -41,27 +39,14 @@ public class TxLocksResponse extends GridCacheMessage {
     long futId;
 
     /** Locks for near txKeys of near transactions. */
+    @Order(1)
     @GridToStringInclude
-    private final Map<IgniteTxKey, List<TxLock>> nearTxKeyLocks = new HashMap<>();
+    Map<IgniteTxKey, List<TxLock>> nearTxKeyLocks = new HashMap<>();
 
     /** Remote keys involved into transactions. Doesn't include near keys. */
-    @GridToStringInclude
-    private Set<IgniteTxKey> txKeys;
-
-    /** Array of txKeys from {@link #nearTxKeyLocks}. Used during marshalling and unmarshalling. */
-    @GridToStringExclude
-    @Order(1)
-    IgniteTxKey[] nearTxKeysArr;
-
-    /** Array of txKeys from {@link #txKeys}. Used during marshalling and unmarshalling. */
-    @GridToStringExclude
     @Order(2)
-    IgniteTxKey[] txKeysArr;
-
-    /** Array of locksArr from {@link #nearTxKeyLocks}. Used during marshalling and unmarshalling. */
-    @GridToStringExclude
-    @Order(3)
-    List<TxLock>[] locksArr;
+    @GridToStringInclude
+    Set<IgniteTxKey> txKeys;
 
     /**
      * Default constructor.
@@ -141,35 +126,16 @@ public class TxLocksResponse extends GridCacheMessage {
         super.prepareMarshal(ctx);
 
         if (nearTxKeyLocks != null && !nearTxKeyLocks.isEmpty()) {
-            int len = nearTxKeyLocks.size();
-
-            nearTxKeysArr = new IgniteTxKey[len];
-            locksArr = (List<TxLock>[])new List[len];
-
-            int i = 0;
-
             for (Map.Entry<IgniteTxKey, List<TxLock>> entry : nearTxKeyLocks.entrySet()) {
                 IgniteTxKey key = entry.getKey();
 
                 key.prepareMarshal(ctx.cacheContext(key.cacheId()));
-
-                nearTxKeysArr[i] = key;
-                locksArr[i] = entry.getValue();
-
-                i++;
             }
         }
 
         if (txKeys != null && !txKeys.isEmpty()) {
-            txKeysArr = new IgniteTxKey[txKeys.size()];
-
-            int i = 0;
-
-            for (IgniteTxKey key : txKeys) {
+            for (IgniteTxKey key : txKeys)
                 key.prepareMarshal(ctx.cacheContext(key.cacheId()));
-
-                txKeysArr[i++] = key;
-            }
         }
     }
 
@@ -178,29 +144,17 @@ public class TxLocksResponse extends GridCacheMessage {
         try {
             super.finishUnmarshal(ctx, ldr);
 
-            if (nearTxKeysArr != null) {
-                for (int i = 0; i < nearTxKeysArr.length; i++) {
-                    IgniteTxKey txKey = nearTxKeysArr[i];
+            if (nearTxKeyLocks != null && !nearTxKeyLocks.isEmpty()) {
+                for (Map.Entry<IgniteTxKey, List<TxLock>> entry : nearTxKeyLocks.entrySet()) {
+                    IgniteTxKey txKey = entry.getKey();
 
                     txKey.key().finishUnmarshal(ctx.cacheObjectContext(txKey.cacheId()), ldr);
-
-                    txLocks().put(txKey, locksArr[i]);
                 }
-
-                nearTxKeysArr = null;
-                locksArr = null;
             }
 
-            if (txKeysArr != null) {
-                txKeys = U.newHashSet(txKeysArr.length);
-
-                for (IgniteTxKey txKey : txKeysArr) {
+            if (txKeys != null && !txKeys.isEmpty()) {
+                for (IgniteTxKey txKey : txKeys)
                     txKey.key().finishUnmarshal(ctx.cacheObjectContext(txKey.cacheId()), ldr);
-
-                    txKeys.add(txKey);
-                }
-
-                txKeysArr = null;
             }
         }
         catch (Exception e) {
