@@ -21,8 +21,8 @@ This page encompasses all data definition language (DDL) commands supported by I
 
 == CREATE TABLE
 
-The command creates a new Ignite cache and defines a SQL table on top of it. The underlying cache stores the data in
-the form of key-value pairs while the table allows processing the data with SQL queries.
+The command defines a SQL table on top of an Ignite cache. By default, Ignite creates a new cache for the table.
+If `CACHE_NAME` points to an existing cache, Ignite defines the SQL table on top of that cache.
 
 The table will reside in the link:SQL/schemas[Schema] specified in the connection parameters. If no schema is specified,
 the `PUBLIC` will be used as a default.
@@ -57,8 +57,9 @@ Parameters:
 sets the write synchronization mode for the underlying cache. If neither this nor the `TEMPLATE` parameter is set, then the cache is created with `FULL_SYNC` mode enabled.
 ** `CACHE_GROUP=<group name>` - specifies the link:configuring-caches/cache-groups[group name] the underlying cache belongs to.
 ** `AFFINITY_KEY=<affinity key column name>` - specifies an link:data-modeling/affinity-collocation[affinity key] name which is a column of the `PRIMARY KEY` constraint.
-** `CACHE_NAME=<custom name of the new cache>` - the name of the underlying cache created by the command,
-or the `SQL_{SCHEMA_NAME}_{TABLE}` format will be used if the parameter not specified.
+** `CACHE_NAME=<cache name>` - the name of the underlying cache. If the cache does not exist, it is created by the command.
+If the cache already exists, Ignite tries to define the table on top of it.
+If the parameter is not specified, the `SQL_{SCHEMA_NAME}_{TABLE}` format is used for the new cache name.
 ** `DATA_REGION=<existing data region name>` - name of the link:memory-configuration/data-regions[data region] where table entries should be stored. By default, Ignite stores all the data in a default region.
 ** `PARALLELISM=<number of SQL execution threads>` - SQL queries are executed by a single thread on each node by default, but certain scenarios can benefit from multi-threaded execution, see link:perf-and-troubleshooting/sql-tuning#query-parallelism[Query Parallelism] for details.
 ** `KEY_TYPE=<custom name of the key type>` - sets the name of the custom key type that is used from the key-value APIs in Ignite. The name should correspond to a Java, .NET, or C++ class, or it can be a random one if link:data-modeling/data-modeling#binary-object-format[BinaryObjects] is used instead of a custom class. The number of fields and their types in the custom key type has to correspond to the `PRIMARY KEY`. Refer to the <<Use non-SQL API>> section below for more details.
@@ -117,6 +118,26 @@ CREATE TABLE IF NOT EXISTS Person (
   PRIMARY KEY (id, city_id)
 ) WITH "template=partitioned,backups=1,affinity_key=city_id,CACHE_NAME=Person,KEY_TYPE=PersonKey,VALUE_TYPE=PersonValue";
 ----
+
+=== Create Table on an Existing Cache
+
+If `CACHE_NAME` points to an existing cache, Ignite adds only SQL metadata to that cache. This is allowed only when the
+cache does not already have query entities, for example from `CacheConfiguration.setQueryEntities(...)` or
+`CacheConfiguration.setIndexedTypes(...)`.
+
+When the existing cache has a SQL schema configured, the table must be created in the same schema. If the schema does not
+match, the command fails with an `Invalid schema` error.
+
+[source,sql]
+----
+CREATE TABLE my_schema.Person (
+  id INT PRIMARY KEY,
+  name VARCHAR
+) WITH "CACHE_NAME=PersonCache";
+----
+
+Cache creation parameters such as `TEMPLATE`, `BACKUPS`, `CACHE_GROUP`, `DATA_REGION`, `ATOMICITY`,
+`WRITE_SYNCHRONIZATION_MODE`, and other cache configuration options are not applied to an existing cache.
 
 
 === Use non-Upper Case Columns
