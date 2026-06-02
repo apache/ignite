@@ -17,8 +17,12 @@
 
 package org.apache.ignite.internal;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.AbstractMessage;
 import org.apache.ignite.internal.ChildMessage;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -29,6 +33,14 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * @see org.apache.ignite.internal.MessageProcessor
  */
 public class ChildMessageSerializer implements MessageSerializer<ChildMessage> {
+    /** */
+    private final ClassLoader clsLdr;
+
+    /** */
+    public ChildMessageSerializer(ClassLoader clsLdr) {
+        this.clsLdr = clsLdr;
+    }
+    
     /** */
     @Override public boolean writeTo(ChildMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
@@ -104,5 +116,15 @@ public class ChildMessageSerializer implements MessageSerializer<ChildMessage> {
         }
 
         return true;
+    }
+
+    /** */
+    @Override public void prepareMarshal(ChildMessage msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {
+        GridCacheContext<?, ?> ctx = nested;
+    }
+
+    /** */
+    @Override public void finishUnmarshal(ChildMessage msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {
+        GridCacheContext<?, ?> ctx = nested;
     }
 }

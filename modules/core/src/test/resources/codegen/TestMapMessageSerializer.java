@@ -17,12 +17,18 @@
 
 package org.apache.ignite.internal;
 
+import java.lang.Double;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.TestMapMessage;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersionSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionType;
 import org.apache.ignite.plugin.extensions.communication.MessageItemType;
@@ -38,7 +44,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class TestMapMessageSerializer implements MessageSerializer<TestMapMessage> {
     /** */
-    private final static GridCacheVersionSerializer GRID_CACHE_VERSION_SER = new GridCacheVersionSerializer();
+    private final ClassLoader clsLdr;
     /** */
     private static final MessageMapType affTopVersionIgniteUuidMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.AFFINITY_TOPOLOGY_VERSION), new MessageItemType(MessageCollectionItemType.IGNITE_UUID), false);
     /** */
@@ -70,6 +76,8 @@ public class TestMapMessageSerializer implements MessageSerializer<TestMapMessag
     /** */
     private static final MessageMapType floatArrayCharArrayMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.FLOAT_ARR), new MessageItemType(MessageCollectionItemType.CHAR_ARR), false);
     /** */
+    private static final MessageMapType gridCacheObjectMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.KEY_CACHE_OBJECT), new MessageMapType(new MessageItemType(MessageCollectionItemType.UUID), new MessageCollectionType(new MessageItemType(MessageCollectionItemType.CACHE_OBJECT), false), false), false);
+    /** */
     private static final MessageMapType gridLongListIntegerMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.GRID_LONG_LIST), new MessageItemType(MessageCollectionItemType.INT), false);
     /** */
     private static final MessageMapType gridlistDoubleMapUuidMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.GRID_LONG_LIST), new MessageMapType(new MessageItemType(MessageCollectionItemType.UUID), new MessageCollectionType(new MessageItemType(MessageCollectionItemType.DOUBLE), false), false), false);
@@ -90,6 +98,11 @@ public class TestMapMessageSerializer implements MessageSerializer<TestMapMessag
     /** */
     private static final MessageMapType uuidStringMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.UUID), new MessageItemType(MessageCollectionItemType.STRING), false);
 
+    /** */
+    public TestMapMessageSerializer(ClassLoader clsLdr) {
+        this.clsLdr = clsLdr;
+    }
+    
     /** */
     @Override public boolean writeTo(TestMapMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
@@ -246,6 +259,12 @@ public class TestMapMessageSerializer implements MessageSerializer<TestMapMessag
 
             case 24:
                 if (!writer.writeMap(msg.gridlistDoubleMapUuidMap, gridlistDoubleMapUuidMapCollDesc))
+                    return false;
+
+                writer.incrementState();
+
+            case 25:
+                if (!writer.writeMap(msg.gridCacheObjectMap, gridCacheObjectMapCollDesc))
                     return false;
 
                 writer.incrementState();
@@ -456,17 +475,77 @@ public class TestMapMessageSerializer implements MessageSerializer<TestMapMessag
                     return false;
 
                 reader.incrementState();
+
+            case 25:
+                msg.gridCacheObjectMap = reader.readMap(gridCacheObjectMapCollDesc);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return true;
     }
 
     /** */
-    @Override public void prepareMarshalCacheObjects(TestMapMessage msg, CacheObjectValueContext ctx, GridCacheSharedContext sharedCtx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(TestMapMessage msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {
+        GridCacheContext<?, ?> ctx = nested;
+
         if (msg.messageBoxedDoubleMap != null) {
-            for (GridCacheVersion k : msg.messageBoxedDoubleMap.keySet()) {
-                if (k != null)
-                    GRID_CACHE_VERSION_SER.prepareMarshalCacheObjects(k, ctx, sharedCtx);
+            for (GridCacheVersion e3 : ((Collection<? extends GridCacheVersion>)msg.messageBoxedDoubleMap.keySet())) {
+                if (e3 != null)
+                    kctx.messageFactory().serializer(e3.directType()).prepareMarshal(e3, kctx, ctx);
+            }
+        }
+
+        if (msg.gridCacheObjectMap != null) {
+            for (KeyCacheObject e3 : ((Collection<? extends KeyCacheObject>)msg.gridCacheObjectMap.keySet())) {
+                if (e3 != null && ctx != null)
+                    e3.prepareMarshal(ctx.cacheObjectContext());
+            }
+            for (Map e3 : ((Collection<? extends Map>)msg.gridCacheObjectMap.values())) {
+                if (e3 != null) {
+                    for (List e5 : ((Collection<? extends List>)e3.values())) {
+                        if (e5 != null) {
+                            for (CacheObject e6 : (Collection<? extends CacheObject>)e5) {
+                                if (e6 != null && ctx != null)
+                                    e6.prepareMarshal(ctx.cacheObjectContext());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /** */
+    @Override public void finishUnmarshal(TestMapMessage msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {
+        GridCacheContext<?, ?> ctx = nested;
+
+        if (msg.messageBoxedDoubleMap != null) {
+            for (GridCacheVersion e3 : ((Collection<? extends GridCacheVersion>)msg.messageBoxedDoubleMap.keySet())) {
+                if (e3 != null)
+                    kctx.messageFactory().serializer(e3.directType()).finishUnmarshal(e3, kctx, ctx);
+            }
+        }
+
+        if (msg.gridCacheObjectMap != null) {
+            for (KeyCacheObject e3 : ((Collection<? extends KeyCacheObject>)msg.gridCacheObjectMap.keySet())) {
+                if (e3 != null && ctx != null)
+                    e3.finishUnmarshal(ctx.cacheObjectContext(), clsLdr);
+            }
+            for (Map e3 : ((Collection<? extends Map>)msg.gridCacheObjectMap.values())) {
+                if (e3 != null) {
+                    for (List e5 : ((Collection<? extends List>)e3.values())) {
+                        if (e5 != null) {
+                            for (CacheObject e6 : (Collection<? extends CacheObject>)e5) {
+                                if (e6 != null && ctx != null)
+                                    e6.finishUnmarshal(ctx.cacheObjectContext(), clsLdr);
+                            }
+                        }
+                    }
+                }
             }
         }
     }

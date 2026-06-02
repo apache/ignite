@@ -17,12 +17,13 @@
 
 package org.apache.ignite.internal;
 
+import java.lang.String;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.TestMessage;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersionSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageArrayType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageItemType;
@@ -37,7 +38,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class TestMessageSerializer implements MessageSerializer<TestMessage> {
     /** */
-    private final static GridCacheVersionSerializer GRID_CACHE_VERSION_SER = new GridCacheVersionSerializer();
+    private final ClassLoader clsLdr;
     /** */
     private static final MessageArrayType intMatrixCollDesc = new MessageArrayType(new MessageItemType(MessageCollectionItemType.INT_ARR), int[].class);
     /** */
@@ -45,6 +46,11 @@ public class TestMessageSerializer implements MessageSerializer<TestMessage> {
     /** */
     private static final MessageArrayType verArrCollDesc = new MessageArrayType(new MessageItemType(MessageCollectionItemType.MSG), GridCacheVersion.class);
 
+    /** */
+    public TestMessageSerializer(ClassLoader clsLdr) {
+        this.clsLdr = clsLdr;
+    }
+    
     /** */
     @Override public boolean writeTo(TestMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
@@ -277,21 +283,44 @@ public class TestMessageSerializer implements MessageSerializer<TestMessage> {
     }
 
     /** */
-    @Override public void prepareMarshalCacheObjects(TestMessage msg, CacheObjectValueContext ctx, GridCacheSharedContext sharedCtx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(TestMessage msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {
+        GridCacheContext<?, ?> ctx = nested;
+
         if (msg.ver != null)
-            GRID_CACHE_VERSION_SER.prepareMarshalCacheObjects(msg.ver, ctx, sharedCtx);
+            kctx.messageFactory().serializer(msg.ver.directType()).prepareMarshal(msg.ver, kctx, ctx);
 
         if (msg.verArr != null) {
-            for (GridCacheVersion e : msg.verArr) {
-                if (e != null)
-                    GRID_CACHE_VERSION_SER.prepareMarshalCacheObjects(e, ctx, sharedCtx);
+            for (GridCacheVersion e3 : msg.verArr) {
+                if (e3 != null)
+                    kctx.messageFactory().serializer(e3.directType()).prepareMarshal(e3, kctx, ctx);
             }
         }
 
-        if (msg.keyCacheObject != null)
-            msg.keyCacheObject.prepareMarshal(ctx);
+        if (msg.keyCacheObject != null && ctx != null)
+            msg.keyCacheObject.prepareMarshal(ctx.cacheObjectContext());
 
-        if (msg.cacheObject != null)
-            msg.cacheObject.prepareMarshal(ctx);
+        if (msg.cacheObject != null && ctx != null)
+            msg.cacheObject.prepareMarshal(ctx.cacheObjectContext());
+    }
+
+    /** */
+    @Override public void finishUnmarshal(TestMessage msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {
+        GridCacheContext<?, ?> ctx = nested;
+
+        if (msg.ver != null)
+            kctx.messageFactory().serializer(msg.ver.directType()).finishUnmarshal(msg.ver, kctx, ctx);
+
+        if (msg.verArr != null) {
+            for (GridCacheVersion e3 : msg.verArr) {
+                if (e3 != null)
+                    kctx.messageFactory().serializer(e3.directType()).finishUnmarshal(e3, kctx, ctx);
+            }
+        }
+
+        if (msg.keyCacheObject != null && ctx != null)
+            msg.keyCacheObject.finishUnmarshal(ctx.cacheObjectContext(), clsLdr);
+
+        if (msg.cacheObject != null && ctx != null)
+            msg.cacheObject.finishUnmarshal(ctx.cacheObjectContext(), clsLdr);
     }
 }

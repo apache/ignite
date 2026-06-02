@@ -17,7 +17,11 @@
 
 package org.apache.ignite.internal;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.DefaultMapperEnumFieldsMessage;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
@@ -32,10 +36,17 @@ import org.apache.ignite.transactions.TransactionIsolation;
  */
 public class DefaultMapperEnumFieldsMessageSerializer implements MessageSerializer<DefaultMapperEnumFieldsMessage> {
     /** */
+    private final ClassLoader clsLdr;
+    /** */
     private final GridCacheOperation[] gridCacheOperationVals = GridCacheOperation.values();
     /** */
     private final TransactionIsolation[] transactionIsolationVals = TransactionIsolation.values();
 
+    /** */
+    public DefaultMapperEnumFieldsMessageSerializer(ClassLoader clsLdr) {
+        this.clsLdr = clsLdr;
+    }
+    
     /** */
     @Override public boolean writeTo(DefaultMapperEnumFieldsMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
@@ -83,5 +94,15 @@ public class DefaultMapperEnumFieldsMessageSerializer implements MessageSerializ
         }
 
         return true;
+    }
+
+    /** */
+    @Override public void prepareMarshal(DefaultMapperEnumFieldsMessage msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {
+        GridCacheContext<?, ?> ctx = nested;
+    }
+
+    /** */
+    @Override public void finishUnmarshal(DefaultMapperEnumFieldsMessage msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {
+        GridCacheContext<?, ?> ctx = nested;
     }
 }

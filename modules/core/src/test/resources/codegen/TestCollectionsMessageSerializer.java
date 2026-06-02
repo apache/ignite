@@ -17,12 +17,28 @@
 
 package org.apache.ignite.internal;
 
+import java.lang.Boolean;
+import java.lang.Byte;
+import java.lang.Character;
+import java.lang.Double;
+import java.lang.Float;
+import java.lang.Integer;
+import java.lang.Long;
+import java.lang.Short;
+import java.lang.String;
+import java.util.BitSet;
+import java.util.Collection;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.TestCollectionsMessage;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersionSerializer;
+import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionType;
 import org.apache.ignite.plugin.extensions.communication.MessageItemType;
@@ -37,7 +53,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class TestCollectionsMessageSerializer implements MessageSerializer<TestCollectionsMessage> {
     /** */
-    private final static GridCacheVersionSerializer GRID_CACHE_VERSION_SER = new GridCacheVersionSerializer();
+    private final ClassLoader clsLdr;
     /** */
     private static final MessageCollectionType affTopVersionListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.AFFINITY_TOPOLOGY_VERSION), false);
     /** */
@@ -67,6 +83,8 @@ public class TestCollectionsMessageSerializer implements MessageSerializer<TestC
     /** */
     private static final MessageCollectionType byteArrayListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.BYTE_ARR), false);
     /** */
+    private static final MessageCollectionType cacheObjectSetCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.CACHE_OBJECT), true);
+    /** */
     private static final MessageCollectionType charArrayListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.CHAR_ARR), false);
     /** */
     private static final MessageCollectionType doubleArrayListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.DOUBLE_ARR), false);
@@ -89,6 +107,11 @@ public class TestCollectionsMessageSerializer implements MessageSerializer<TestC
     /** */
     private static final MessageCollectionType uuidListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.UUID), false);
 
+    /** */
+    public TestCollectionsMessageSerializer(ClassLoader clsLdr) {
+        this.clsLdr = clsLdr;
+    }
+    
     /** */
     @Override public boolean writeTo(TestCollectionsMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
@@ -245,6 +268,12 @@ public class TestCollectionsMessageSerializer implements MessageSerializer<TestC
 
             case 24:
                 if (!writer.writeCollection(msg.bitSetSet, bitSetSetCollDesc))
+                    return false;
+
+                writer.incrementState();
+
+            case 25:
+                if (!writer.writeCollection(msg.cacheObjectSet, cacheObjectSetCollDesc))
                     return false;
 
                 writer.incrementState();
@@ -455,17 +484,53 @@ public class TestCollectionsMessageSerializer implements MessageSerializer<TestC
                     return false;
 
                 reader.incrementState();
+
+            case 25:
+                msg.cacheObjectSet = reader.readCollection(cacheObjectSetCollDesc);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return true;
     }
 
     /** */
-    @Override public void prepareMarshalCacheObjects(TestCollectionsMessage msg, CacheObjectValueContext ctx, GridCacheSharedContext sharedCtx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(TestCollectionsMessage msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {
+        GridCacheContext<?, ?> ctx = nested;
+
         if (msg.messageList != null) {
-            for (GridCacheVersion e : msg.messageList) {
-                if (e != null)
-                    GRID_CACHE_VERSION_SER.prepareMarshalCacheObjects(e, ctx, sharedCtx);
+            for (GridCacheVersion e2 : (Collection<? extends GridCacheVersion>)msg.messageList) {
+                if (e2 != null)
+                    kctx.messageFactory().serializer(e2.directType()).prepareMarshal(e2, kctx, ctx);
+            }
+        }
+
+        if (msg.cacheObjectSet != null) {
+            for (CacheObject e2 : (Collection<? extends CacheObject>)msg.cacheObjectSet) {
+                if (e2 != null && ctx != null)
+                    e2.prepareMarshal(ctx.cacheObjectContext());
+            }
+        }
+    }
+
+    /** */
+    @Override public void finishUnmarshal(TestCollectionsMessage msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {
+        GridCacheContext<?, ?> ctx = nested;
+
+        if (msg.messageList != null) {
+            for (GridCacheVersion e2 : (Collection<? extends GridCacheVersion>)msg.messageList) {
+                if (e2 != null)
+                    kctx.messageFactory().serializer(e2.directType()).finishUnmarshal(e2, kctx, ctx);
+            }
+        }
+
+        if (msg.cacheObjectSet != null) {
+            for (CacheObject e2 : (Collection<? extends CacheObject>)msg.cacheObjectSet) {
+                if (e2 != null && ctx != null)
+                    e2.finishUnmarshal(ctx.cacheObjectContext(), clsLdr);
             }
         }
     }

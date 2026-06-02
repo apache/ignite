@@ -18,8 +18,10 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.TestMarshallableMessage;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
@@ -41,18 +43,12 @@ public class TestMarshallableMessageMarshallableSerializer implements MessageSer
         this.marshaller = marshaller;
         this.clsLdr = clsLdr;
     }
+    
     /** */
     @Override public boolean writeTo(TestMarshallableMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
                 return false;
-
-            try {
-                msg.prepareMarshal(marshaller);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to marshal object " + msg.getClass().getSimpleName(), e);
-            }
 
             writer.onHeaderWritten();
         }
@@ -108,13 +104,20 @@ public class TestMarshallableMessageMarshallableSerializer implements MessageSer
                 reader.incrementState();
         }
 
-        try {
-            msg.finishUnmarshal(marshaller, clsLdr);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException("Failed to unmarshal object " + msg.getClass().getSimpleName(), e);
-        }
-
         return true;
+    }
+
+    /** */
+    @Override public void prepareMarshal(TestMarshallableMessage msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {
+        GridCacheContext<?, ?> ctx = nested;
+
+        msg.prepareMarshal(marshaller);
+    }
+
+    /** */
+    @Override public void finishUnmarshal(TestMarshallableMessage msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {
+        GridCacheContext<?, ?> ctx = nested;
+
+        msg.finishUnmarshal(marshaller, clsLdr);
     }
 }

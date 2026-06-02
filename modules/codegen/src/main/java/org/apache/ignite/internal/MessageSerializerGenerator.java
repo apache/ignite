@@ -237,6 +237,7 @@ public class MessageSerializerGenerator {
 
         writer.write(indentedLine("}"));
         writer.write(NL);
+        writer.write(NL);
 
         --indent;
     }

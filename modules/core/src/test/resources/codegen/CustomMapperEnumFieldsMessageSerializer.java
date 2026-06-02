@@ -17,8 +17,12 @@
 
 package org.apache.ignite.internal;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.CustomMapperEnumFieldsMessage;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.TransactionIsolationEnumMapper;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -32,8 +36,15 @@ import org.apache.ignite.transactions.TransactionIsolation;
  */
 public class CustomMapperEnumFieldsMessageSerializer implements MessageSerializer<CustomMapperEnumFieldsMessage> {
     /** */
+    private final ClassLoader clsLdr;
+    /** */
     private final EnumMapper<TransactionIsolation> transactionIsolationMapper = new TransactionIsolationEnumMapper();
 
+    /** */
+    public CustomMapperEnumFieldsMessageSerializer(ClassLoader clsLdr) {
+        this.clsLdr = clsLdr;
+    }
+    
     /** */
     @Override public boolean writeTo(CustomMapperEnumFieldsMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
@@ -67,5 +78,15 @@ public class CustomMapperEnumFieldsMessageSerializer implements MessageSerialize
         }
 
         return true;
+    }
+
+    /** */
+    @Override public void prepareMarshal(CustomMapperEnumFieldsMessage msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {
+        GridCacheContext<?, ?> ctx = nested;
+    }
+
+    /** */
+    @Override public void finishUnmarshal(CustomMapperEnumFieldsMessage msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {
+        GridCacheContext<?, ?> ctx = nested;
     }
 }
