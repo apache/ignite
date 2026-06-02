@@ -21,9 +21,9 @@ import java.util.BitSet;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockRequest;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -32,6 +32,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -39,7 +40,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * DHT lock request.
  */
-public class GridDhtLockRequest extends GridDistributedLockRequest {
+public class GridDhtLockRequest extends GridDistributedLockRequest implements MarshallableMessage {
     /** Invalidate reader flags. */
     @Order(0)
     BitSet invalidateEntries;
@@ -257,9 +258,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
         if (owned != null && ownedKeys == null) {
             ownedKeys = new KeyCacheObject[owned.size()];
             ownedValues = new GridCacheVersion[ownedKeys.length];
@@ -275,22 +274,17 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         if (ownedKeys != null) {
             owned = new GridLeanMap<>(ownedKeys.length);
 
-            for (int i = 0; i < ownedKeys.length; i++) {
-                ownedKeys[i].finishUnmarshal(ctx.cacheContext(cacheId).cacheObjectContext(), ldr);
+            for (int i = 0; i < ownedKeys.length; i++)
                 owned.put(ownedKeys[i], ownedValues[i]);
-            }
 
             ownedKeys = null;
             ownedValues = null;
         }
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

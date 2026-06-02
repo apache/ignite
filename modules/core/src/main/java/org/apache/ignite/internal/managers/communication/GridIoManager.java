@@ -128,6 +128,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.CommunicationListener;
@@ -464,6 +465,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                     U.error(log, "Communication manager received message of unknown type (will ignore): " +
                             msg.getClass().getName() + ". Most likely GridCommunicationSpi is being used directly, " +
                             "which is illegal - make sure to send messages only via GridProjection API.");
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
                 }
             }
 
@@ -1193,9 +1197,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
      * @param msg Message bytes.
      * @param msgC Closure to call when message processing finished.
      */
-    private void onMessage0(UUID nodeId, GridIoMessage msg, IgniteRunnable msgC) {
+    private void onMessage0(UUID nodeId, GridIoMessage msg, IgniteRunnable msgC) throws IgniteCheckedException {
         assert nodeId != null;
         assert msg != null;
+
+        MessageSerializer ser = ctx.messageFactory().serializer(msg.directType());
+
+        ser.finishUnmarshal(msg, ctx, null);
 
         Lock busyLock0 = busyLock.readLock();
 
@@ -1929,6 +1937,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             false
         );
 
+        MessageSerializer ser = ctx.messageFactory().serializer(ioMsg.directType());
+
+        ser.prepareMarshal(ioMsg, ctx, null);
+
         try {
             return ((TcpCommunicationSpi)(CommunicationSpi)getSpi()).openChannel(node, ioMsg);
         }
@@ -1977,6 +1989,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             MTC.span().addLog(() -> "Create communication msg - " + traceName(msg));
 
             GridIoMessage ioMsg = createGridIoMessage(topic, msg, plc, ordered, timeout, skipOnTimeout);
+
+            MessageSerializer ser = ctx.messageFactory().serializer(ioMsg.directType());
+
+            ser.prepareMarshal(ioMsg, ctx, null);
 
             if (locNodeId.equals(node.id())) {
 

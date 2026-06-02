@@ -270,7 +270,7 @@ public class ZookeeperDiscoveryImpl {
 
         this.stats = stats;
 
-        msgParser = new DiscoveryMessageParser(msgFactory);
+        msgParser = new DiscoveryMessageParser(msgFactory, spi);
     }
 
     /**

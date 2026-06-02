@@ -20,7 +20,6 @@ package org.apache.ignite.internal;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Objects;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -63,16 +62,6 @@ public final class TxEntriesInfo extends IgniteDiagnosticRequest.DiagnosticBaseI
             sb.append("Failed to find cache with id: ").append(cacheId);
 
             return;
-        }
-
-        try {
-            for (KeyCacheObject key : keys)
-                key.finishUnmarshal(cctx.cacheObjectContext(), null);
-        }
-        catch (IgniteCheckedException e) {
-            ctx.cluster().diagnosticLog().error("Failed to unmarshal key: " + e, e);
-
-            sb.append("Failed to unmarshal key: ").append(e).append(U.nl());
         }
 
         sb.append("Cache entries [cacheId=").append(cacheId)

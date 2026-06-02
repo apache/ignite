@@ -25,6 +25,7 @@ import org.apache.ignite.failure.AbstractFailureHandler;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.PluginContext;
@@ -138,7 +139,7 @@ public class DiscoveryDeserializationExceptionTest extends GridCommonAbstractTes
         /** {@inheritDoc} */
         @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
             registry.registerExtension(MessageFactoryProvider.class, (factory) ->
-                factory.register(MSG_DIRECT_TYPE, NotRegisteredMessage::new, new NotRegisteredMessageSerializer())
+                factory.register(MSG_DIRECT_TYPE, NotRegisteredMessage::new, new NotRegisteredMessageSerializer(U.gridClassLoader()))
             );
         }
     }

@@ -36,6 +36,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
@@ -516,7 +517,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
         }
 
         /** {@inheritDoc} */
-        @Override protected <T> T readMessage(TcpDiscoveryIoSession ses, long timeout)
+        @Override protected <T extends Message> T readMessage(TcpDiscoveryIoSession ses, long timeout)
             throws IOException, IgniteCheckedException {
             long currTimeout = getLocalNode().isClient() ?
                 clientFailureDetectionTimeout() : failureDetectionTimeout();

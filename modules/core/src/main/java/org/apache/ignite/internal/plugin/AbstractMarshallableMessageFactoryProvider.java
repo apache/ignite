@@ -73,7 +73,7 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
 
             serializer = marshallable
                 ? (MessageSerializer<T>)serCls.getConstructor(Marshaller.class, ClassLoader.class).newInstance(marsh, clsLrd)
-                : (MessageSerializer<T>)serCls.getConstructor().newInstance();
+                : (MessageSerializer<T>)serCls.getConstructor(ClassLoader.class).newInstance(clsLrd);
         }
         catch (Exception e) {
             throw new IgniteException("Failed to register message of type " + cls.getSimpleName(), e);

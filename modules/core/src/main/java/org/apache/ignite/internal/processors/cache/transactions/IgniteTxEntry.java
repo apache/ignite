@@ -25,13 +25,12 @@ import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -47,7 +46,8 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
@@ -59,7 +59,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
  * {@link #equals(Object)} method, as transaction entries should use referential
  * equality.
  */
-public class IgniteTxEntry implements GridPeerDeployAware, Message {
+public class IgniteTxEntry implements GridPeerDeployAware, MarshallableMessage, CacheIdAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -588,7 +588,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /**
      * @return Cache ID.
      */
-    public int cacheId() {
+    @Override public int cacheId() {
         return cacheId;
     }
 
@@ -1021,59 +1021,45 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         this.filtersSet = filtersSet;
     }
 
-    /**
-     * @param ctx Context.
-     * @param transferExpiry {@code True} if expire policy should be marshalled.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void marshal(GridCacheSharedContext<?, ?> ctx, boolean transferExpiry) throws IgniteCheckedException {
-        if (filters != null) {
-            for (CacheEntryPredicate p : filters) {
-                if (p != null)
-                    p.prepareMarshal(this.ctx);
-            }
-        }
-
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
         // Do not serialize filters if they are null.
         if (transformClosBytes == null && entryProcessorsCol != null)
-            transformClosBytes = CU.marshal(this.ctx, entryProcessorsCol);
+            transformClosBytes = U.marshal(marsh, entryProcessorsCol);
 
-        if (transferExpiry)
-            transferExpiryPlc = expiryPlc != null && expiryPlc != this.ctx.expiry();
-
-        key.prepareMarshal(context().cacheObjectContext());
-
-        val.marshal(context());
+        transferExpiryPlc = expiryPlc != null && expiryPlc != ctx.expiry();
 
         if (transferExpiryPlc) {
             if (expiryPlcBytes == null)
-                expiryPlcBytes = CU.marshal(this.ctx, new IgniteExternalizableExpiryPolicy(expiryPlc));
+                expiryPlcBytes = U.marshal(marsh, new IgniteExternalizableExpiryPolicy(expiryPlc));
         }
         else
             expiryPlcBytes = null;
+    }
 
-        if (oldVal != null)
-            oldVal.marshal(context());
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        // Unmarshal transform closure anyway if it exists.
+        if (transformClosBytes != null && entryProcessorsCol == null)
+            entryProcessorsCol = U.unmarshal(marsh, transformClosBytes, clsLdr);
+
+        if (filters == null)
+            filters = CU.empty0();
+
+        if (expiryPlcBytes != null && expiryPlc == null)
+            expiryPlc = U.unmarshal(marsh, expiryPlcBytes, clsLdr);
     }
 
     /**
-     * Prepares this entry to unmarshall. In particular, this method initialize a cache context.
-     *
      * @param ctx Cache context.
-     * @param topVer Topology version that is used to validate a cache context.
-     *               If this parameter is {@code null} then validation will be skipped.
      * @param near Near flag.
      * @throws IgniteCheckedException If un-marshalling failed.
      */
-    public void prepareUnmarshal(
-        GridCacheSharedContext<?, ?> ctx,
-        AffinityTopologyVersion topVer,
-        boolean near
-    ) throws IgniteCheckedException {
+    public void initializeContext(GridCacheSharedContext<?, ?> ctx, boolean near) throws IgniteCheckedException {
         if (this.ctx == null) {
             GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(cacheId);
 
-            if (cacheCtx == null || (topVer != null && topVer.before(cacheCtx.startTopologyVersion())))
+            if (cacheCtx == null)
                 throw new CacheInvalidStateException(
                     "Failed to perform cache operation (cache is stopped), cacheId=" + cacheId);
 
@@ -1084,53 +1070,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
             this.ctx = cacheCtx;
         }
-    }
-
-    /**
-     * Unmarshalls entry.
-     *
-     * @param ctx Cache context.
-     * @param near Near flag.
-     * @param clsLdr Class loader.
-     * @throws IgniteCheckedException If un-marshalling failed.
-     */
-    public void unmarshal(
-        GridCacheSharedContext<?, ?> ctx,
-        boolean near,
-        ClassLoader clsLdr
-    ) throws IgniteCheckedException {
-
-        if (this.ctx == null)
-            prepareUnmarshal(ctx, null, near);
-
-        CacheObjectValueContext coctx = this.ctx.cacheObjectContext();
-
-        if (coctx == null)
-            throw new CacheInvalidStateException(
-                    "Failed to perform cache operation (cache is stopped), cacheId=" + cacheId);
-
-        // Unmarshal transform closure anyway if it exists.
-        if (transformClosBytes != null && entryProcessorsCol == null)
-            entryProcessorsCol = U.unmarshal(ctx, transformClosBytes, U.resolveClassLoader(clsLdr, ctx.gridConfig()));
-
-        if (filters == null)
-            filters = CU.empty0();
-        else {
-            for (CacheEntryPredicate p : filters) {
-                if (p != null)
-                    p.finishUnmarshal(this.ctx, clsLdr);
-            }
-        }
-
-        key.finishUnmarshal(coctx, clsLdr);
-
-        val.unmarshal(coctx, clsLdr);
-
-        if (expiryPlcBytes != null && expiryPlc == null)
-            expiryPlc = U.unmarshal(ctx, expiryPlcBytes, U.resolveClassLoader(clsLdr, ctx.gridConfig()));
-
-        if (hasOldValue())
-            oldVal.unmarshal(coctx, clsLdr);
     }
 
     /**

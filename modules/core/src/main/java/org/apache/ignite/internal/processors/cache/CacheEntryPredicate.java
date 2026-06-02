@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
@@ -25,19 +24,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  *
  */
 public interface CacheEntryPredicate extends IgnitePredicate<GridCacheEntryEx>, Message {
-    /**
-     * @param ctx Context.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void prepareMarshal(GridCacheContext ctx) throws IgniteCheckedException;
-
-    /**
-     * @param ctx Context.
-     * @param ldr Class loader.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException;
-
     /**
      * @param locked Entry locked
      */

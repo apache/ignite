@@ -65,7 +65,7 @@ public class TxDeadlockDetectionMessageMarshallingTest extends GridCommonAbstrac
                 @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                     if (msg instanceof TxLocksResponse) {
                         try {
-                            ((TxLocksResponse)msg).finishUnmarshal(clientCtx, clientCtx.deploy().globalLoader());
+                            ((TxLocksResponse)msg).finishUnmarshal(clientCtx.marshaller(), clientCtx.deploy().globalLoader());
 
                             res.set(true);
                         }
@@ -86,7 +86,7 @@ public class TxDeadlockDetectionMessageMarshallingTest extends GridCommonAbstrac
             TxLocksResponse msg = new TxLocksResponse();
             msg.addKey(cctx.txKey(key));
 
-            msg.prepareMarshal(cctx.shared());
+            msg.prepareDeployment(cctx.shared());
 
             ((IgniteKernal)ignite).context().cache().context().gridIO().sendToCustomTopic(
                 ((IgniteKernal)client).localNode(), TOPIC, msg, GridIoPolicy.PUBLIC_POOL);

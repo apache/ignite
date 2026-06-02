@@ -28,6 +28,7 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,12 +47,14 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.type.TypeVariable;
 import javax.lang.model.util.Elements;
 import javax.tools.Diagnostic;
 import javax.tools.FileObject;
 import javax.tools.JavaFileObject;
 import javax.tools.StandardLocation;
 import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.Nullable;
 
@@ -74,7 +77,7 @@ public class MessageSerializerGenerator {
     public static final String NL = System.lineSeparator();
 
     /** */
-    private static final String CLS_JAVADOC = "/** " + NL +
+    private static final String CLS_JAVADOC = "/**" + NL +
         " * This class is generated automatically." + NL +
         " *" + NL +
         " * @see org.apache.ignite.internal.MessageProcessor" + NL +
@@ -98,6 +101,9 @@ public class MessageSerializerGenerator {
 
     /** Collection of lines for {@code readFrom} method. */
     private final List<String> read = new ArrayList<>();
+
+    /** */
+    private final List<String> marshall = new ArrayList<>();
 
     /** Collection of message-specific imports. */
     private final Set<String> imports = new TreeSet<>();
@@ -165,10 +171,10 @@ public class MessageSerializerGenerator {
 
     /** Generates full code for a serializer class. */
     private String generateSerializerCode(String serClsName) throws IOException {
-        if (marshallableMessage()) {
+        if (marshallableMessage())
             fields.add("private final Marshaller marshaller;");
-            fields.add("private final ClassLoader clsLdr;");
-        }
+
+        fields.add("private final ClassLoader clsLdr;");
 
         try (Writer writer = new StringWriter()) {
             writeClassHeader(writer, env.getElementUtils().getPackageOf(type).toString(), serClsName);
@@ -189,9 +195,14 @@ public class MessageSerializerGenerator {
 
             writer.write(TAB + "}" + NL);
 
-            writer.write("}");
+            if (!marshall.isEmpty()) {
+                writer.write(NL);
 
-            writer.write(NL);
+                for (String p: marshall)
+                    writer.write(p + NL);
+            }
+
+            writer.write("}");
 
             return writer.toString();
         }
@@ -199,28 +210,32 @@ public class MessageSerializerGenerator {
 
     /** */
     private void writeConstructor(Writer writer, String serClsName) throws IOException {
-        if (!marshallableMessage())
-            return;
+        ++indent;
+
+        writer.write(indentedLine(METHOD_JAVADOC));
+        writer.write(NL);
+
+        if (marshallableMessage())
+            writer.write(indentedLine("public " + serClsName + "(Marshaller marshaller, ClassLoader clsLdr) {"));
+        else
+            writer.write(indentedLine("public " + serClsName + "(ClassLoader clsLdr) {"));
+
+        writer.write(NL);
 
         ++indent;
 
-        writer.write(identedLine(METHOD_JAVADOC));
-        writer.write(NL);
-        writer.write(identedLine("public " + serClsName + "(Marshaller marshaller, ClassLoader clsLdr) {"));
-
-        writer.write(NL);
-
-        ++indent;
-
-        writer.write(identedLine("this.marshaller = marshaller;"));
-        writer.write(NL);
-        writer.write(identedLine("this.clsLdr = clsLdr;"));
+        if (marshallableMessage()) {
+            writer.write(indentedLine("this.marshaller = marshaller;"));
+            writer.write(NL);
+        }
+        
+        writer.write(indentedLine("this.clsLdr = clsLdr;"));
 
         --indent;
 
         writer.write(NL);
 
-        writer.write(identedLine("}"));
+        writer.write(indentedLine("}"));
         writer.write(NL);
 
         --indent;
@@ -240,8 +255,329 @@ public class MessageSerializerGenerator {
 
         indent--;
 
-        finish(write, false, false);
-        finish(read, true, marshallableMessage());
+        finish(write);
+        finish(read);
+
+        generateMarshallMethods(fields);
+        generateUnmarshallMethods(fields);
+    }
+
+    /** */
+    private void generateMarshallMethods(List<VariableElement> orderedFields) {
+        imports.add("org.apache.ignite.IgniteCheckedException");
+        imports.add("org.apache.ignite.internal.processors.cache.CacheObjectValueContext");
+        imports.add("org.apache.ignite.internal.GridKernalContext");
+        imports.add("org.apache.ignite.internal.processors.cache.GridCacheContext");
+
+        indent = 1;
+
+        marshall.add(indentedLine(METHOD_JAVADOC));
+
+        marshall.add(indentedLine(
+            "@Override public void prepareMarshal(" + simpleNameWithGeneric(type) +
+                " msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {"));
+
+        indent++;
+
+        if (isCacheIdAwareMessage(type))
+            marshall.add(
+                indentedLine("GridCacheContext<?, ?> ctx = nested == null ? kctx.cache().context().cacheContext(msg.cacheId()) : nested;"));
+        else if (isCacheGroupIdMessage(type))
+            marshall.add(
+                indentedLine("GridCacheContext<?, ?> ctx = nested == null ? kctx.cache().context().cacheContext(msg.groupId()) : nested;"));
+        else 
+            marshall.add(indentedLine("GridCacheContext<?, ?> ctx = nested;"));
+
+        if (marshallableMessage()) {
+            marshall.add(EMPTY);
+
+            marshall.add(indentedLine("msg.prepareMarshal(marshaller);"));
+        }
+
+        for (VariableElement field : orderedFields) {
+            List<String> marshalled = marshall(field.asType(), fieldAccessor(field), false);
+
+            if (!marshalled.isEmpty()) {
+                if (!marshall.get(marshall.size() - 1).equals(EMPTY))
+                    marshall.add(EMPTY);
+
+                marshall.addAll(marshalled);
+            }
+        }
+
+        indent--;
+
+        marshall.add(indentedLine("}"));
+    }
+
+    /** */
+    private void generateUnmarshallMethods(List<VariableElement> orderedFields) {
+        marshall.add(EMPTY);
+
+        indent = 1;
+
+        marshall.add(indentedLine(METHOD_JAVADOC));
+
+        marshall.add(indentedLine(
+            "@Override public void finishUnmarshal(" + simpleNameWithGeneric(type) +
+                " msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {"));
+
+        indent++;
+
+        if (isCacheIdAwareMessage(type))
+            marshall.add(
+                indentedLine("GridCacheContext<?, ?> ctx = nested == null ? kctx.cache().context().cacheContext(msg.cacheId()) : nested;"));
+        else if (isCacheGroupIdMessage(type))
+            marshall.add(
+                indentedLine("GridCacheContext<?, ?> ctx = nested == null ? kctx.cache().context().cacheContext(msg.groupId()) : nested;"));
+        else
+            marshall.add(indentedLine("GridCacheContext<?, ?> ctx = nested;"));
+
+        for (VariableElement field : orderedFields) {
+            List<String> unmarshalled = marshall(field.asType(), fieldAccessor(field), true);
+
+            if (!unmarshalled.isEmpty()) {
+                if (!marshall.get(marshall.size() - 1).equals(EMPTY))
+                    marshall.add(EMPTY);
+
+                marshall.addAll(unmarshalled);
+            }
+        }
+
+        if (marshallableMessage()) {
+            marshall.add(EMPTY);
+
+            marshall.add(indentedLine("msg.finishUnmarshal(marshaller, clsLdr);"));
+        }
+
+        indent--;
+
+        marshall.add(indentedLine("}"));
+    }
+
+    /** */
+    private List<String> marshall(TypeMirror t, String accessor, boolean unmarshall) {
+        if (t.getKind() == TypeKind.ARRAY) {
+            TypeMirror comp = ((ArrayType)t).getComponentType();
+
+            if (comp.getKind() == TypeKind.DECLARED) {
+                List<String> code = new ArrayList<>();
+
+                imports.add(((QualifiedNameable)((DeclaredType)comp).asElement()).getQualifiedName().toString());
+
+                code.add(indentedLine("if (%s != null) {", accessor));
+
+                indent++;
+
+                String el = "e" + indent;
+
+                code.add(indentedLine("for (%s %s : %s) {", ((DeclaredType)comp).asElement().getSimpleName().toString(), el, accessor));
+
+                indent++;
+
+                List<String> res = marshall(comp, el, unmarshall);
+
+                code.addAll(res);
+
+                indent--;
+
+                code.add(indentedLine("}"));
+
+                indent--;
+
+                code.add(indentedLine("}"));
+
+                if (res.isEmpty())
+                    return Collections.emptyList();
+                else
+                    return code;
+            }
+        }
+        else if (t.getKind() == TypeKind.DECLARED || t.getKind() == TypeKind.TYPEVAR) {
+            if (isMessage(t)) {
+                List<String> code = new ArrayList<>();
+
+                code.add(indentedLine("if (%s != null)", accessor));
+
+                indent++;
+
+                if (!unmarshall)
+                    code.add(indentedLine(
+                        "kctx.messageFactory().serializer(%s.directType()).prepareMarshal(%s, kctx, ctx);",
+                        accessor,
+                        accessor));
+                else
+                    code.add(indentedLine(
+                        "kctx.messageFactory().serializer(%s.directType()).finishUnmarshal(%s, kctx, ctx);",
+                        accessor,
+                        accessor));
+
+                indent--;
+
+                return code;
+            }
+            else if (isCacheObject(t)) {
+                List<String> code = new ArrayList<>();
+
+                code.add(indentedLine("if (%s != null)", accessor));
+
+                indent++;
+
+                if (!unmarshall)
+                    code.add(indentedLine("%s.prepareMarshal(ctx != null ? ctx.cacheObjectContext() : null);", accessor));
+                else
+                    code.add(indentedLine("%s.finishUnmarshal(ctx != null ? ctx.cacheObjectContext() : null, clsLdr);", accessor));
+
+                indent--;
+
+                return code;
+            }
+            else if (assignableFrom(erasedType(t), type(Map.class.getName()))) {
+                List<? extends TypeMirror> args = ((DeclaredType)t).getTypeArguments();
+
+                TypeMirror keyType = args.get(0);
+                TypeMirror valType = args.get(1);
+
+                List<String> code = new ArrayList<>();
+
+                code.add(indentedLine("if (%s != null) {", accessor));
+
+                indent++;
+
+                String el = "e" + indent;
+
+                indent++; // Emulating subsequent indent.
+                List<String> keyRes = marshall(keyType, el, unmarshall);
+                List<String> valRes = marshall(valType, el, unmarshall);
+                indent--;
+
+                if (!keyRes.isEmpty() && (keyType.getKind() == TypeKind.DECLARED || keyType.getKind() == TypeKind.TYPEVAR)) {
+                    Element elem = element(keyType);
+                    
+                    imports.add(((QualifiedNameable)(elem)).getQualifiedName().toString());
+                    imports.add("java.util.Collection");
+
+                    String type = elem.getSimpleName().toString();
+
+                    code.add(indentedLine("for (%s %s : ((Collection<? extends %s>)%s.keySet())) {", type, el, type, accessor));
+
+                    indent++;
+
+                    code.addAll(keyRes);
+
+                    indent--;
+
+                    code.add(indentedLine("}"));
+                }
+
+                if (!valRes.isEmpty() && (valType.getKind() == TypeKind.DECLARED || valType.getKind() == TypeKind.TYPEVAR)) {
+                    Element elem = element(valType);
+                    
+                    imports.add(((QualifiedNameable)(elem)).getQualifiedName().toString());
+                    imports.add("java.util.Collection");                    
+
+                    String type = elem.getSimpleName().toString();
+
+                    code.add(indentedLine("for (%s %s : ((Collection<? extends %s>)%s.values())) {", type, el, type, accessor));
+
+                    indent++;
+
+                    code.addAll(valRes);
+
+                    indent--;
+
+                    code.add(indentedLine("}"));
+                }
+
+                indent--;
+
+                code.add(indentedLine("}"));
+
+                if (keyRes.isEmpty() && valRes.isEmpty())
+                    return Collections.emptyList();
+                else
+                    return code;
+            }
+            else if (assignableFrom(erasedType(t), type(Collection.class.getName()))) {
+                List<? extends TypeMirror> args = ((DeclaredType)t).getTypeArguments();
+
+                TypeMirror arg = args.get(0);
+
+                if ((arg.getKind() == TypeKind.DECLARED || arg.getKind() == TypeKind.TYPEVAR)) {
+                    List<String> code = new ArrayList<>();
+
+                    Element elem = element(arg);
+
+                    imports.add(((QualifiedNameable)(elem)).getQualifiedName().toString());
+                    imports.add("java.util.Collection");
+
+                    String el = "e" + indent;
+
+                    code.add(indentedLine("if (%s != null) {", accessor));
+
+                    indent++;
+
+                    String type = elem.getSimpleName().toString();
+
+                    code.add(indentedLine("for (%s %s : (Collection<? extends %s>)%s) {", type, el, type, accessor));
+
+                    indent++;
+
+                    List<String> res = marshall(arg, el, unmarshall);
+
+                    code.addAll(res);
+
+                    indent--;
+
+                    code.add(indentedLine("}"));
+
+                    indent--;
+
+                    code.add(indentedLine("}"));
+
+                    if (res.isEmpty())
+                        return Collections.emptyList();
+                    else
+                        return code;
+                }
+            }
+        }
+
+        return Collections.emptyList();
+    }
+
+    /** */
+    private boolean isCacheObject(TypeMirror type) {
+        return assignableFrom(type, type("org.apache.ignite.internal.processors.cache.CacheObject"));
+    }
+
+    /** */
+    private boolean isMessage(TypeMirror type) {
+        return assignableFrom(type, type(MESSAGE_INTERFACE));
+    }
+
+    /** True if {@code te} extends {@code CacheIdAware} and therefore carries its own per-cache {@code cacheId()}. */
+    private boolean isCacheIdAwareMessage(TypeElement te) {
+        return assignableFrom(te.asType(), type("org.apache.ignite.plugin.extensions.communication.CacheIdAware"));
+    }
+
+    /** True if {@code te} extends {@code CacheGroupIdMessage} and therefore carries its own per-group {@code groupId()}. */
+    private boolean isCacheGroupIdMessage(TypeElement te) {
+        return assignableFrom(te.asType(), type("org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage"));
+    }
+
+    /** */
+    private String fieldAccessor(VariableElement field) {
+        String name = field.getSimpleName().toString();
+
+        return "msg." + name;
+    }
+    
+    /** */
+    private Element element(TypeMirror type) {
+        return type.getKind() == TypeKind.DECLARED ?
+            ((DeclaredType)type).asElement() :
+            ((DeclaredType)((TypeVariable)type).getUpperBound()).asElement();
     }
 
     /**
@@ -262,57 +598,31 @@ public class MessageSerializerGenerator {
     private void start(Collection<String> code, boolean write) {
         indent = 1;
 
-        code.add(identedLine(METHOD_JAVADOC));
+        code.add(indentedLine(METHOD_JAVADOC));
 
-        code.add(identedLine("@Override public boolean %s(" + type.getSimpleName() + " msg, %s) {",
+        code.add(indentedLine("@Override public boolean %s(" + simpleNameWithGeneric(type) + " msg, %s) {",
             write ? "writeTo" : "readFrom",
             write ? "MessageWriter writer" : "MessageReader reader"));
 
         indent++;
 
         if (write) {
-            code.add(identedLine("if (!writer.isHeaderWritten()) {"));
+            code.add(indentedLine("if (!writer.isHeaderWritten()) {"));
 
             indent++;
 
             returnFalseIfWriteFailed(code, "writer.writeHeader", "directType()");
 
-            if (write && marshallableMessage()) {
-                imports.add("org.apache.ignite.IgniteCheckedException");
-                imports.add("org.apache.ignite.IgniteException");
-
-                code.add(EMPTY);
-
-                code.add(identedLine("try {"));
-
-                indent++;
-
-                code.add(identedLine("msg.prepareMarshal(marshaller);"));
-
-                indent--;
-
-                code.add(identedLine("}"));
-                code.add(identedLine("catch (IgniteCheckedException e) {"));
-
-                indent++;
-
-                code.add(identedLine("throw new IgniteException(\"Failed to marshal object \" + msg.getClass().getSimpleName(), e);"));
-
-                indent--;
-
-                code.add(identedLine("}"));
-            }
-
             code.add(EMPTY);
-            code.add(identedLine("writer.onHeaderWritten();"));
+            code.add(indentedLine("writer.onHeaderWritten();"));
 
             indent--;
 
-            code.add(identedLine("}"));
+            code.add(indentedLine("}"));
             code.add(EMPTY);
         }
 
-        code.add(identedLine("switch (%s.state()) {", write ? "writer" : "reader"));
+        code.add(indentedLine("switch (%s.state()) {", write ? "writer" : "reader"));
     }
 
     /**
@@ -341,14 +651,14 @@ public class MessageSerializerGenerator {
      * @param opt Case option.
      */
     private void writeField(VariableElement field, int opt) throws Exception {
-        write.add(identedLine("case %d:", opt));
+        write.add(indentedLine("case %d:", opt));
 
         indent++;
 
         returnFalseIfWriteFailed(field);
 
         write.add(EMPTY);
-        write.add(identedLine("writer.incrementState();"));
+        write.add(indentedLine("writer.incrementState();"));
         write.add(EMPTY);
 
         indent--;
@@ -369,14 +679,14 @@ public class MessageSerializerGenerator {
      * @param opt Case option.
      */
     private void readField(VariableElement field, int opt) throws Exception {
-        read.add(identedLine("case %d:", opt));
+        read.add(indentedLine("case %d:", opt));
 
         indent++;
 
         returnFalseIfReadFailed(field);
 
         read.add(EMPTY);
-        read.add(identedLine("reader.incrementState();"));
+        read.add(indentedLine("reader.incrementState();"));
         read.add(EMPTY);
 
         indent--;
@@ -541,11 +851,11 @@ public class MessageSerializerGenerator {
     private void returnFalseIfWriteFailed(Collection<String> code, String accessor, @Nullable String... args) {
         String argsStr = String.join(", ", args);
 
-        code.add(identedLine("if (!%s(msg.%s))", accessor, argsStr));
+        code.add(indentedLine("if (!%s(msg.%s))", accessor, argsStr));
 
         indent++;
 
-        code.add(identedLine(RETURN_FALSE_STMT));
+        code.add(indentedLine(RETURN_FALSE_STMT));
 
         indent--;
     }
@@ -557,15 +867,15 @@ public class MessageSerializerGenerator {
         String argsStr = String.join(", ", args);
 
         if (type.equals(field.getEnclosingElement()))
-            code.add(identedLine("if (!%s(msg.%s))", accessor, argsStr));
+            code.add(indentedLine("if (!%s(msg.%s))", accessor, argsStr));
         else {
             // Field has to be requested from a super class object.
-            code.add(identedLine("if (!%s(((%s)msg).%s))", accessor, field.getEnclosingElement().getSimpleName(), argsStr));
+            code.add(indentedLine("if (!%s(((%s)msg).%s))", accessor, field.getEnclosingElement().getSimpleName(), argsStr));
         }
 
         indent++;
 
-        code.add(identedLine(RETURN_FALSE_STMT));
+        code.add(indentedLine(RETURN_FALSE_STMT));
 
         indent--;
     }
@@ -580,16 +890,16 @@ public class MessageSerializerGenerator {
         String mapperCall,
         String fieldGetterCall) {
         if (type.equals(field.getEnclosingElement()))
-            code.add(identedLine("if (!%s(%s(msg.%s)))", writerCall, mapperCall, fieldGetterCall));
+            code.add(indentedLine("if (!%s(%s(msg.%s)))", writerCall, mapperCall, fieldGetterCall));
         else {
             // Field has to be requested from a super class object.
-            code.add(identedLine("if (!%s(%s(((%s)msg).%s)))",
+            code.add(indentedLine("if (!%s(%s(((%s)msg).%s)))",
                 writerCall, mapperCall, field.getEnclosingElement().getSimpleName(), fieldGetterCall));
         }
 
         indent++;
 
-        code.add(identedLine(RETURN_FALSE_STMT));
+        code.add(indentedLine(RETURN_FALSE_STMT));
 
         indent--;
     }
@@ -886,20 +1196,20 @@ public class MessageSerializerGenerator {
         String argsStr = String.join(", ", args);
 
         if (type.equals(field.getEnclosingElement()))
-            read.add(identedLine("msg.%s = %s(%s);", field.getSimpleName().toString(), mtd, argsStr));
+            read.add(indentedLine("msg.%s = %s(%s);", field.getSimpleName().toString(), mtd, argsStr));
         else {
             // Field has to be requested from a super class object.
-            read.add(identedLine("((%s)msg).%s = %s(%s);",
+            read.add(indentedLine("((%s)msg).%s = %s(%s);",
                 field.getEnclosingElement().getSimpleName(), field.getSimpleName().toString(), mtd, argsStr));
         }
 
         read.add(EMPTY);
 
-        read.add(identedLine("if (!reader.isLastRead())"));
+        read.add(indentedLine("if (!reader.isLastRead())"));
 
         indent++;
 
-        read.add(identedLine(RETURN_FALSE_STMT));
+        read.add(indentedLine(RETURN_FALSE_STMT));
 
         indent--;
     }
@@ -918,61 +1228,35 @@ public class MessageSerializerGenerator {
             readOp = line("%s(%s, reader.readByte())", mapperDecodeCallStmnt, enumValuesFieldName);
 
         if (type.equals(field.getEnclosingElement()))
-            read.add(identedLine("msg.%s = %s;", field.getSimpleName().toString(), readOp));
+            read.add(indentedLine("msg.%s = %s;", field.getSimpleName().toString(), readOp));
         else {
             // Field has to be requested from a super class object.
-            read.add(identedLine("((%s)msg).%s = %s;",
+            read.add(indentedLine("((%s)msg).%s = %s;",
                 field.getEnclosingElement().getSimpleName(), field.getSimpleName().toString(), readOp));
         }
 
         read.add(EMPTY);
 
-        read.add(identedLine("if (!reader.isLastRead())"));
+        read.add(indentedLine("if (!reader.isLastRead())"));
 
         indent++;
 
-        read.add(identedLine(RETURN_FALSE_STMT));
+        read.add(indentedLine(RETURN_FALSE_STMT));
 
         indent--;
     }
 
     /** */
-    private void finish(List<String> code, boolean read, boolean marshallable) {
+    private void finish(List<String> code) {
         String lastLine = code.get(code.size() - 1);
 
         if (EMPTY.equals(lastLine))
             code.remove(code.size() - 1);
 
-        code.add(identedLine("}"));
+        code.add(indentedLine("}"));
         code.add(EMPTY);
 
-        if (read && marshallable) {
-            imports.add("org.apache.ignite.IgniteCheckedException");
-            imports.add("org.apache.ignite.IgniteException");
-
-            code.add(identedLine("try {"));
-
-            indent++;
-
-            code.add(identedLine("msg.finishUnmarshal(marshaller, clsLdr);"));
-
-            indent--;
-
-            code.add(identedLine("}"));
-            code.add(identedLine("catch (IgniteCheckedException e) {"));
-
-            indent++;
-
-            code.add(identedLine("throw new IgniteException(\"Failed to unmarshal object \" + msg.getClass().getSimpleName(), e);"));
-
-            indent--;
-
-            code.add(identedLine("}"));
-
-            code.add(EMPTY);
-        }
-
-        code.add(identedLine("return true;"));
+        code.add(indentedLine("return true;"));
     }
 
     /**
@@ -980,7 +1264,7 @@ public class MessageSerializerGenerator {
      *
      * @return Line with current indent.
      */
-    private String identedLine(String format, Object... args) {
+    private String indentedLine(String format, Object... args) {
         SB sb = new SB();
 
         for (int i = 0; i < indent; i++)
@@ -1012,9 +1296,9 @@ public class MessageSerializerGenerator {
         indent = 1;
 
         for (String field: fields) {
-            writer.write(identedLine(METHOD_JAVADOC));
+            writer.write(indentedLine(METHOD_JAVADOC));
             writer.write(NL);
-            writer.write(identedLine(field));
+            writer.write(indentedLine(field));
             writer.write(NL);
         }
         writer.write(NL);
@@ -1054,7 +1338,7 @@ public class MessageSerializerGenerator {
         writer.write(CLS_JAVADOC);
         writer.write(NL);
 
-        writer.write("public class " + serClsName + " implements MessageSerializer<" + type.getSimpleName() + "> {" + NL);
+        writer.write("public class " + serClsName + " implements MessageSerializer<" + simpleNameWithGeneric(type) + "> {" + NL);
     }
 
     /** */
@@ -1149,5 +1433,24 @@ public class MessageSerializerGenerator {
         }
 
         throw new IllegalArgumentException("Compress annotation is used for an unsupported type: " + type);
+    }
+
+    /** @return Simple class name. */
+    private String simpleNameWithGeneric(TypeElement te) {
+        if (F.size(te.getTypeParameters()) == 0)
+            return te.getSimpleName().toString();
+
+        StringBuilder generic = new StringBuilder(te.getSimpleName() + "<");
+
+        for (int i = 0; i < F.size(te.getTypeParameters()); i++) {
+            if (i > 0)
+                generic.append(", ");
+
+            generic.append("?");
+        }
+
+        generic.append(">");
+
+        return generic.toString();
     }
 }

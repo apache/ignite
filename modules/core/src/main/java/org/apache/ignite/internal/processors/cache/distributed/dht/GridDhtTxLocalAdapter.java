@@ -496,7 +496,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         assert state == PREPARING : "Invalid tx state for " +
             "adding entry [msgId=" + msgId + ", e=" + e + ", tx=" + this + ']';
 
-        e.unmarshal(cctx, false, cctx.deploy().globalLoader());
+        e.initializeContext(cctx, false);
 
         checkInternal(e.txKey());
 

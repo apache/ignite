@@ -217,27 +217,15 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
+    @Override public void prepareDeployment(GridCacheSharedContext ctx) throws IgniteCheckedException {
+        super.prepareDeployment(ctx);
 
         GridCacheContext cctx = ctx.cacheContext(cacheId);
 
-        prepareMarshalCacheObject(key, cctx);
+        prepareCacheObjectDeployment(key, cctx);
 
         if (val != null)
-            prepareMarshalCacheObject(val, cctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
-
-        key.finishUnmarshal(cctx.cacheObjectContext(), ldr);
-
-        if (val != null)
-            val.finishUnmarshal(cctx.cacheObjectContext(), ldr);
+            prepareCacheObjectDeployment(val, cctx);
     }
 
     /** {@inheritDoc} */

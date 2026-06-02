@@ -126,7 +126,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
 
         if (writeEntries != null) {
             for (IgniteTxEntry entry : writeEntries) {
-                entry.unmarshal(ctx, true, ldr);
+                entry.initializeContext(ctx, true);
 
                 addEntry(entry);
             }
@@ -203,7 +203,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
      */
     public void addEntries(ClassLoader ldr, Iterable<IgniteTxEntry> entries) throws IgniteCheckedException {
         for (IgniteTxEntry entry : entries) {
-            entry.unmarshal(cctx, true, ldr);
+            entry.initializeContext(cctx, true);
 
             addEntry(entry);
         }

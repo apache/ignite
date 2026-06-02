@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
@@ -39,6 +38,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -320,32 +320,33 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
      *
      * @param ctx
      */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
+    @Override public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        super.prepareDeployment(ctx);
 
         if (owned != null && ownedKeys == null) {
-            ownedKeys = owned.keySet();
-
-            ownedVals = owned.values();
-
-            for (IgniteTxKey key: ownedKeys) {
+            for (IgniteTxKey key: owned.keySet()) {
                 GridCacheContext<?, ?> cctx = ctx.cacheContext(key.cacheId());
 
-                key.prepareMarshal(cctx);
-
                 if (addDepInfo)
-                    prepareObject(key, cctx);
+                    prepareObjectDeployment(key, cctx);
             }
         }
 
         if (nearWrites != null)
-            marshalTx(nearWrites, ctx);
+            prepareTxDeployment(nearWrites, ctx);
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (owned != null && ownedKeys == null) {
+            ownedKeys = owned.keySet();
 
+            ownedVals = owned.values();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         if (ownedKeys != null) {
             assert ownedKeys.size() == ownedVals.size();
 
@@ -358,40 +359,11 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
             while (keyIter.hasNext()) {
                 IgniteTxKey key = keyIter.next();
 
-                GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(key.cacheId());
-
-                if (cacheCtx != null) {
-                    key.finishUnmarshal(cacheCtx, ldr);
-
-                    owned.put(key, valIter.next());
-                }
-            }
-        }
-
-        if (nearWrites != null) {
-            for (Iterator<IgniteTxEntry> it = nearWrites.iterator(); it.hasNext();) {
-                IgniteTxEntry e = it.next();
-
-                GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(e.cacheId());
-
-                if (cacheCtx == null) {
-                    it.remove();
-
-                    if (nearWritesCacheMissed == null)
-                        nearWritesCacheMissed = new ArrayList<>();
-
-                    nearWritesCacheMissed.add(e.txKey());
-                }
-                else {
-                    e.context(cacheCtx);
-
-                    e.unmarshal(ctx, true, ldr);
-                }
+                owned.put(key, valIter.next());
             }
         }
     }
-
-
+    
     /** {@inheritDoc} */
     @Override public int partition() {
         return U.safeAbs(version().hashCode());

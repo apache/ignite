@@ -265,11 +265,6 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
         return cp;
     }
 
-    /** {@inheritDoc} */
-    @Override protected boolean transferExpiryPolicy() {
-        return true;
-    }
-
     /**
      * Sets flag mask.
      *

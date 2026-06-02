@@ -1791,7 +1791,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                     true,
                                     keepBinary,
                                     U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId),
-                                    implicitRes.value(),
+                                    implicitRes.value(cacheCtx),
                                     implicitRes.success()
                                 );
                             }
@@ -2646,7 +2646,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         try {
                             txFut.get();
 
-                            Object res = implicitRes.value();
+                            Object res = implicitRes.value(cacheCtx);
 
                             if (implicitRes.invokeResult()) {
                                 assert res == null || res instanceof Map : implicitRes;

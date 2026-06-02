@@ -278,7 +278,7 @@ public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTe
         private final CountDownLatch netDisabledLatch = new CountDownLatch(1);
 
         /** {@inheritDoc} */
-        @Override protected <T> T readMessage(TcpDiscoveryIoSession ses,
+        @Override protected <T extends Message> T readMessage(TcpDiscoveryIoSession ses,
             long timeout) throws IOException, IgniteCheckedException {
             if (netDisabled) {
                 U.sleep(timeout);

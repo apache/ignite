@@ -23,12 +23,11 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -37,12 +36,13 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Near cache prepare response.
  */
-public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse {
+public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse implements MarshallableMessage {
     /** Versions that are less than lock version ({@link #version()}). */
     @GridToStringInclude
     @Order(0)
@@ -196,7 +196,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         if (ownedVals == null)
             ownedVals = new HashMap<>();
 
-        CacheVersionedValue oVal = new CacheVersionedValue(val, ver);
+        CacheVersionedValue oVal = new CacheVersionedValue(val, ver, key.cacheId());
 
         ownedVals.put(key, oVal);
     }
@@ -236,54 +236,16 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        // There are separate collections for keys and values of the 'ownedVals' map, because IgniteTxKey
-        // can not be inserted directly in a map as a key during invocation of MessageReader#read.
-        // The IgniteTxKey's hash code calculation will fail due to delegation of calculation
-        // to KeyCacheObjectImpl#hashCode, which in turn fails with assertion error if KeyCacheObjectImpl#val
-        // has not initialized yet in KeyCacheObjectImpl#finishUnmarshal.
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
         if (ownedVals != null && ownedValKeys == null) {
             ownedValKeys = ownedVals.keySet();
 
             ownedValVals = ownedVals.values();
-
-            for (Map.Entry<IgniteTxKey, CacheVersionedValue> entry : ownedVals.entrySet()) {
-                GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(entry.getKey().cacheId());
-
-                entry.getKey().prepareMarshal(cacheCtx);
-
-                entry.getValue().prepareMarshal(cacheCtx.cacheObjectContext());
-            }
-        }
-
-        if (retVal != null && retVal.cacheId() != 0) {
-            GridCacheContext<?, ?> cctx = ctx.cacheContext(retVal.cacheId());
-
-            assert cctx != null : retVal.cacheId();
-
-            retVal.prepareMarshal(cctx);
-        }
-
-        if (filterFailedKeys != null) {
-            for (IgniteTxKey key : filterFailedKeys) {
-                GridCacheContext<?, ?> cctx = ctx.cacheContext(key.cacheId());
-
-                key.prepareMarshal(cctx);
-            }
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        // There are separate collections for keys and values of the 'ownedVals' map, because IgniteTxKey
-        // can not be inserted directly in a map as a key during invocation of MessageReader#read.
-        // The IgniteTxKey's hash code calculation will fail due to delegation of calculation
-        // to KeyCacheObjectImpl#hashCode, which in turn fails with assertion error if KeyCacheObjectImpl#val
-        // has not initialized yet in KeyCacheObjectImpl#finishUnmarshal.
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         if (ownedValKeys != null && ownedVals == null) {
             ownedVals = U.newHashMap(ownedValKeys.size());
 
@@ -296,36 +258,13 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
             while (keyIter.hasNext()) {
                 IgniteTxKey key = keyIter.next();
 
-                GridCacheContext<?, ?> cctx = ctx.cacheContext(key.cacheId());
-
                 CacheVersionedValue val = valIter.next();
-
-                key.finishUnmarshal(cctx, ldr);
-
-                val.finishUnmarshal(cctx, ldr);
 
                 ownedVals.put(key, val);
             }
         }
-
-        if (retVal != null && retVal.cacheId() != 0) {
-            GridCacheContext<?, ?> cctx = ctx.cacheContext(retVal.cacheId());
-
-            assert cctx != null : retVal.cacheId();
-
-            retVal.finishUnmarshal(cctx, ldr);
-        }
-
-        if (filterFailedKeys != null) {
-            for (IgniteTxKey key : filterFailedKeys) {
-                GridCacheContext<?, ?> cctx = ctx.cacheContext(key.cacheId());
-
-                key.finishUnmarshal(cctx, ldr);
-            }
-        }
     }
-
-
+    
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridNearTxPrepareResponse.class, this, "super", super.toString());

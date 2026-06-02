@@ -32,6 +32,7 @@ import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.communication.UnknownMessageException;
@@ -145,7 +146,7 @@ public class TcpDiscoveryIoSession {
      * @return Deserialized message instance.
      * @throws IgniteCheckedException If deserialization fails.
      */
-    <T> T readMessage() throws IgniteCheckedException, IOException {
+    <T extends Message> T readMessage() throws IgniteCheckedException, IOException {
         try {
             byte b0 = (byte)in.read();
             byte b1 = (byte)in.read();
@@ -197,6 +198,8 @@ public class TcpDiscoveryIoSession {
             }
             while (!finished);
 
+            msgSer.finishUnmarshal(msg, ((IgniteEx)spi.ignite()).context(), null);
+
             return (T)msg;
         }
         catch (Exception e) {
@@ -238,8 +241,10 @@ public class TcpDiscoveryIoSession {
      * @param out Output stream to write serialized message.
      * @throws IOException If serialization fails.
      */
-    void serializeMessage(Message m, OutputStream out) throws IOException {
+    void serializeMessage(Message m, OutputStream out) throws IOException, IgniteCheckedException {
         MessageSerializer msgSer = spi.messageFactory().serializer(m.directType());
+
+        msgSer.prepareMarshal(m, ((IgniteEx)spi.ignite()).context(), null);
 
         msgWriter.reset();
         msgWriter.setBuffer(msgBuf);

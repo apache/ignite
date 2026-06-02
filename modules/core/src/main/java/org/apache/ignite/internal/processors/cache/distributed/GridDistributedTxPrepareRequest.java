@@ -25,8 +25,8 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -38,6 +38,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
@@ -46,7 +47,7 @@ import org.jetbrains.annotations.Nullable;
  * Transaction prepare request for optimistic and eventually consistent
  * transactions.
  */
-public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage implements IgniteTxStateAware {
+public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage implements IgniteTxStateAware, MarshallableMessage {
     /** */
     private static final int NEED_RETURN_VALUE_FLAG_MASK = 0x01;
 
@@ -372,54 +373,14 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
+    @Override public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        super.prepareDeployment(ctx);
 
         if (writes != null)
-            marshalTx(writes, ctx);
+            prepareTxDeployment(writes, ctx);
 
         if (reads != null)
-            marshalTx(reads, ctx);
-
-        if (dhtVers != null && dhtVerKeys == null) {
-            for (IgniteTxKey key : dhtVers.keySet()) {
-                GridCacheContext<?, ?> cctx = ctx.cacheContext(key.cacheId());
-
-                key.prepareMarshal(cctx);
-            }
-
-            dhtVerKeys = dhtVers.keySet();
-            dhtVerVals = dhtVers.values();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        if (writes != null)
-            unmarshalTx(writes, ctx, ldr);
-
-        if (reads != null)
-            unmarshalTx(reads, ctx, ldr);
-
-        if (dhtVerKeys != null && dhtVers == null) {
-            assert dhtVerVals != null;
-            assert dhtVerKeys.size() == dhtVerVals.size();
-
-            Iterator<IgniteTxKey> keyIt = dhtVerKeys.iterator();
-            Iterator<GridCacheVersion> verIt = dhtVerVals.iterator();
-
-            dhtVers = U.newHashMap(dhtVerKeys.size());
-
-            while (keyIt.hasNext()) {
-                IgniteTxKey key = keyIt.next();
-
-                key.finishUnmarshal(ctx.cacheContext(key.cacheId()), ldr);
-
-                dhtVers.put(key, verIt.next());
-            }
-        }
+            prepareTxDeployment(reads, ctx);
     }
 
     /** {@inheritDoc} */
@@ -452,6 +413,32 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         return (flags & mask) != 0;
     }
 
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (dhtVers != null && dhtVerKeys == null) {
+            dhtVerKeys = dhtVers.keySet();
+            dhtVerVals = dhtVers.values();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (dhtVerKeys != null && dhtVers == null) {
+            assert dhtVerVals != null;
+            assert dhtVerKeys.size() == dhtVerVals.size();
+
+            Iterator<IgniteTxKey> keyIt = dhtVerKeys.iterator();
+            Iterator<GridCacheVersion> verIt = dhtVerVals.iterator();
+
+            dhtVers = U.newHashMap(dhtVerKeys.size());
+
+            while (keyIt.hasNext()) {
+                IgniteTxKey key = keyIt.next();
+
+                dhtVers.put(key, verIt.next());
+            }
+        }
+    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

@@ -23,6 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -37,14 +38,14 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Get request. Responsible for obtaining entry from primary node. 'Near' means 'Initiating node' here, not 'Near Cache'.
  */
-public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheDeployable,
-    GridCacheVersionable {
+public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheDeployable, GridCacheVersionable, MarshallableMessage {
     /** */
     private static final int READ_THROUGH_FLAG_MASK = 0x01;
 
@@ -284,8 +285,8 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
      * @param ctx Cache context.
      * @throws IgniteCheckedException If failed.
      */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
+    @Override public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        super.prepareDeployment(ctx);
 
         assert ctx != null;
         assert !F.isEmpty(keys);
@@ -293,21 +294,21 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
 
         GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
-        prepareMarshalCacheObjects(keys, cctx);
+        prepareCacheObjectsDeployment(keys, cctx);
     }
 
-    /**
-     * @param ctx Context.
-     * @param ldr Loader.
-     * @throws IgniteCheckedException If failed.
-     */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return addDepInfo;
+    }
 
-        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        // No-op.
+    }
 
-        finishUnmarshalCacheObjects(keys, cctx, ldr);
-
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         assert !F.isEmpty(keys);
         assert readersFlags == null || keys.size() == readersFlags.size();
 
@@ -323,12 +324,6 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
             }
         }
     }
-
-    /** {@inheritDoc} */
-    @Override public boolean addDeploymentInfo() {
-        return addDepInfo;
-    }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

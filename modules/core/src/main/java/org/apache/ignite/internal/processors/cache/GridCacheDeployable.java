@@ -28,7 +28,7 @@ public interface GridCacheDeployable {
      *
      * @param depInfo Deployment information.
      */
-    public void prepare(GridDeploymentInfo depInfo);
+    public void prepareDeployment(GridDeploymentInfo depInfo);
 
     /**
      * @return Deployment bean.

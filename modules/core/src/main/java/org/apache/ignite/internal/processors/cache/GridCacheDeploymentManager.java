@@ -411,7 +411,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                 checkDeploymentIsCorrect(dep, deployable, true);
 
             if (dep != null)
-                deployable.prepare(dep);
+                deployable.prepareDeployment(dep);
 
             if (log.isDebugEnabled())
                 log.debug("Prepared grid cache deployable [dep=" + dep + ", deployable=" + deployable + ']');

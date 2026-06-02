@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -51,6 +52,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.stream.StreamReceiver;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -712,6 +714,15 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
                             ioMsg.timeout(),
                             ioMsg.skipOnTimeout()
                         );
+
+                        MessageSerializer msgSer = ((IgniteEx)ignite).context().messageFactory().serializer(msg.directType());
+
+                        try {
+                            msgSer.prepareMarshal(msg, ((IgniteEx)ignite).context(), null);
+                        }
+                        catch (IgniteCheckedException e) {
+                            throw new RuntimeException(e);
+                        }
 
                         needStaleTop = false;
                     }

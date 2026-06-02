@@ -15,29 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal;
 
-import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
-/**
- * Message related to particular cache.
- */
-public abstract class GridCacheIdMessage extends GridCacheMessage implements CacheIdAware {
-    /** Cache ID. */
-    @GridToStringInclude
+/** APT fixture: entry Message for {@link TestKeyCacheObjectCollectionMessage}. */
+public class KeyCacheObjectEntryMsg implements Message {
     @Order(0)
-    public int cacheId;
+    KeyCacheObject key;
 
-    /** {@inheritDoc} */
-    @Override public int cacheId() {
-        return cacheId;
-    }
+    @Order(1)
+    GridCacheVersion val;
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GridCacheIdMessage.class, this, "super", super.toString());
+    public short directType() {
+        return 0;
     }
 }

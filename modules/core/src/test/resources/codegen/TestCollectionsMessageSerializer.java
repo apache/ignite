@@ -17,7 +17,12 @@
 
 package org.apache.ignite.internal;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.TestCollectionsMessage;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersionSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionType;
 import org.apache.ignite.plugin.extensions.communication.MessageItemType;
@@ -32,55 +37,57 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class TestCollectionsMessageSerializer implements MessageSerializer<TestCollectionsMessage> {
     /** */
-    private final static MessageCollectionType affTopVersionListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.AFFINITY_TOPOLOGY_VERSION), false);
+    private final static GridCacheVersionSerializer GRID_CACHE_VERSION_SER = new GridCacheVersionSerializer();
     /** */
-    private final static MessageCollectionType bitSetListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.BIT_SET), false);
+    private static final MessageCollectionType affTopVersionListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.AFFINITY_TOPOLOGY_VERSION), false);
     /** */
-    private final static MessageCollectionType bitSetSetCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.BIT_SET), true);
+    private static final MessageCollectionType bitSetListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.BIT_SET), false);
     /** */
-    private final static MessageCollectionType booleanArrayListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.BOOLEAN_ARR), false);
+    private static final MessageCollectionType bitSetSetCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.BIT_SET), true);
     /** */
-    private final static MessageCollectionType boxedBooleanListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.BOOLEAN), false);
+    private static final MessageCollectionType booleanArrayListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.BOOLEAN_ARR), false);
     /** */
-    private final static MessageCollectionType boxedByteListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.BYTE), false);
+    private static final MessageCollectionType boxedBooleanListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.BOOLEAN), false);
     /** */
-    private final static MessageCollectionType boxedCharListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.CHAR), false);
+    private static final MessageCollectionType boxedByteListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.BYTE), false);
     /** */
-    private final static MessageCollectionType boxedDoubleListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.DOUBLE), false);
+    private static final MessageCollectionType boxedCharListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.CHAR), false);
     /** */
-    private final static MessageCollectionType boxedFloatListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.FLOAT), false);
+    private static final MessageCollectionType boxedDoubleListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.DOUBLE), false);
     /** */
-    private final static MessageCollectionType boxedIntListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.INT), false);
+    private static final MessageCollectionType boxedFloatListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.FLOAT), false);
     /** */
-    private final static MessageCollectionType boxedIntegerSetCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.INT), true);
+    private static final MessageCollectionType boxedIntListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.INT), false);
     /** */
-    private final static MessageCollectionType boxedLongListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.LONG), false);
+    private static final MessageCollectionType boxedIntegerSetCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.INT), true);
     /** */
-    private final static MessageCollectionType boxedShortListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.SHORT), false);
+    private static final MessageCollectionType boxedLongListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.LONG), false);
     /** */
-    private final static MessageCollectionType byteArrayListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.BYTE_ARR), false);
+    private static final MessageCollectionType boxedShortListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.SHORT), false);
     /** */
-    private final static MessageCollectionType charArrayListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.CHAR_ARR), false);
+    private static final MessageCollectionType byteArrayListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.BYTE_ARR), false);
     /** */
-    private final static MessageCollectionType doubleArrayListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.DOUBLE_ARR), false);
+    private static final MessageCollectionType charArrayListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.CHAR_ARR), false);
     /** */
-    private final static MessageCollectionType floatArrayListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.FLOAT_ARR), false);
+    private static final MessageCollectionType doubleArrayListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.DOUBLE_ARR), false);
     /** */
-    private final static MessageCollectionType gridLongListListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.GRID_LONG_LIST), false);
+    private static final MessageCollectionType floatArrayListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.FLOAT_ARR), false);
     /** */
-    private final static MessageCollectionType igniteUuidListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.IGNITE_UUID), false);
+    private static final MessageCollectionType gridLongListListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.GRID_LONG_LIST), false);
     /** */
-    private final static MessageCollectionType intArrayListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.INT_ARR), false);
+    private static final MessageCollectionType igniteUuidListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.IGNITE_UUID), false);
     /** */
-    private final static MessageCollectionType longArrayListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.LONG_ARR), false);
+    private static final MessageCollectionType intArrayListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.INT_ARR), false);
     /** */
-    private final static MessageCollectionType messageListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.MSG), false);
+    private static final MessageCollectionType longArrayListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.LONG_ARR), false);
     /** */
-    private final static MessageCollectionType shortArrayListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.SHORT_ARR), false);
+    private static final MessageCollectionType messageListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.MSG), false);
     /** */
-    private final static MessageCollectionType stringListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.STRING), false);
+    private static final MessageCollectionType shortArrayListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.SHORT_ARR), false);
     /** */
-    private final static MessageCollectionType uuidListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.UUID), false);
+    private static final MessageCollectionType stringListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.STRING), false);
+    /** */
+    private static final MessageCollectionType uuidListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.UUID), false);
 
     /** */
     @Override public boolean writeTo(TestCollectionsMessage msg, MessageWriter writer) {
@@ -451,5 +458,15 @@ public class TestCollectionsMessageSerializer implements MessageSerializer<TestC
         }
 
         return true;
+    }
+
+    /** */
+    @Override public void prepareMarshalCacheObjects(TestCollectionsMessage msg, CacheObjectValueContext ctx, GridCacheSharedContext sharedCtx) throws IgniteCheckedException {
+        if (msg.messageList != null) {
+            for (GridCacheVersion e : msg.messageList) {
+                if (e != null)
+                    GRID_CACHE_VERSION_SER.prepareMarshalCacheObjects(e, ctx, sharedCtx);
+            }
+        }
     }
 }

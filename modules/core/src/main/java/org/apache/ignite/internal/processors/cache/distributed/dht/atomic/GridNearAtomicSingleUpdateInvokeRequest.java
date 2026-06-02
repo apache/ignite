@@ -24,6 +24,7 @@ import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -33,9 +34,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -44,7 +45,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 /**
  *
  */
-public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingleUpdateRequest {
+public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingleUpdateRequest implements MarshallableMessage {
     /** Optional arguments for entry processor. */
     private @Nullable Object[] invokeArgs;
 
@@ -160,8 +161,8 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
+    @Override public void prepareDeployment(GridCacheSharedContext ctx) throws IgniteCheckedException {
+        super.prepareDeployment(ctx);
 
         GridCacheContext cctx = ctx.cacheContext(cacheId);
 
@@ -171,24 +172,11 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
 
         if (entryProc != null && entryProcBytes == null) {
             if (addDepInfo)
-                prepareObject(entryProc, cctx);
-
-            entryProcBytes = CU.marshal(cctx, entryProc);
+                prepareObjectDeployment(entryProc, cctx);
         }
 
         if (!F.isEmpty(invokeArgs) && invokeArgsBytes == null)
-            invokeArgsBytes = Arrays.asList(marshalInvokeArguments(invokeArgs, cctx));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        if (entryProcBytes != null && entryProc == null)
-            entryProc = U.unmarshal(ctx, entryProcBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-
-        if (invokeArgsBytes != null && invokeArgs == null)
-            invokeArgs = unmarshalInvokeArguments(invokeArgsBytes.toArray(new byte[invokeArgsBytes.size()][]), ctx, ldr);
+            prepareInvokeArgumentsDeployment(invokeArgs, cctx);
     }
 
     /** {@inheritDoc} */
@@ -198,6 +186,23 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
         entryProc = null;
     }
 
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (entryProc != null && entryProcBytes == null)
+            entryProcBytes = U.marshal(marsh, entryProc);
+        
+        if (!F.isEmpty(invokeArgs) && invokeArgsBytes == null)
+            invokeArgsBytes = Arrays.asList(marshallInvokeArguments(invokeArgs, marsh));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (entryProcBytes != null && entryProc == null)
+            entryProc = U.unmarshal(marsh, entryProcBytes, clsLdr);
+
+        if (invokeArgsBytes != null && invokeArgs == null)
+            invokeArgs = unmarshalInvokeArguments(invokeArgsBytes.toArray(new byte[invokeArgsBytes.size()][]), marsh, clsLdr);
+    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

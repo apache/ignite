@@ -17,19 +17,18 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Cache transaction key. This wrapper is needed because same keys may be enlisted in the same transaction
  * for multiple caches.
  */
-public class IgniteTxKey implements Message {
+public class IgniteTxKey implements Message, CacheIdAware {
     /** Key. */
     @Order(0)
     @GridToStringInclude(sensitive = true)
@@ -65,27 +64,8 @@ public class IgniteTxKey implements Message {
     /**
      * @return Cache ID.
      */
-    public int cacheId() {
+    @Override public int cacheId() {
         return cacheId;
-    }
-
-    /**
-     * @param ctx Context.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void prepareMarshal(GridCacheContext ctx) throws IgniteCheckedException {
-        key.prepareMarshal(ctx.cacheObjectContext());
-    }
-
-    /**
-     * @param ctx Context.
-     * @param ldr Class loader.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        assert key != null;
-
-        key.finishUnmarshal(ctx.cacheObjectContext(), ldr);
     }
 
     /** {@inheritDoc} */

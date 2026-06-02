@@ -1314,7 +1314,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     }
 
     /** */
-    private void initMessageFactory() throws IgniteCheckedException {
+    public void initMessageFactory() throws IgniteCheckedException {
         MessageFactoryProvider[] msgs = ctx.plugins().extensions(MessageFactoryProvider.class);
 
         List<MessageFactoryProvider> compMsgs = new ArrayList<>();

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -377,7 +378,7 @@ public class IgniteTxHandler {
         IgniteTxEntry firstEntry = null;
 
         for (IgniteTxEntry e : entries) {
-            e.unmarshal(ctx, false, ctx.deploy().globalLoader());
+            e.initializeContext(ctx, false);
 
             if (firstEntry == null)
                 firstEntry = e;
@@ -1211,7 +1212,26 @@ public class IgniteTxHandler {
                 if (nearTx != null)
                     res.nearEvicted(nearTx.evicted());
 
-                List<IgniteTxKey> writesCacheMissed = req.nearWritesCacheMissed();
+                List<IgniteTxKey> writesCacheMissed = new ArrayList<>();
+
+                Collection<IgniteTxEntry> writes = req.nearWrites();
+
+                for (Iterator<IgniteTxEntry> it = writes.iterator(); it.hasNext();) {
+                    IgniteTxEntry e = it.next();
+
+                    GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(e.cacheId());
+
+                    if (cacheCtx == null) {
+                        it.remove();
+
+                        writesCacheMissed.add(e.txKey());
+                    }
+                    else {
+                        e.context(cacheCtx);
+
+                        e.initializeContext(ctx, true);
+                    }
+                }
 
                 if (writesCacheMissed != null) {
                     Collection<IgniteTxKey> evicted0 = res.nearEvicted();
@@ -1745,6 +1765,8 @@ public class IgniteTxHandler {
                     int idx = 0;
 
                     for (IgniteTxEntry entry : req.writes()) {
+                        entry.initializeContext(ctx, false);
+                        
                         GridCacheContext cacheCtx = entry.context();
 
                         int part = cacheCtx.affinity().partition(entry.key());

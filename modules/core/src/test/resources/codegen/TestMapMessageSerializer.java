@@ -17,7 +17,12 @@
 
 package org.apache.ignite.internal;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.TestMapMessage;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersionSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionType;
 import org.apache.ignite.plugin.extensions.communication.MessageItemType;
@@ -33,55 +38,57 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class TestMapMessageSerializer implements MessageSerializer<TestMapMessage> {
     /** */
-    private final static MessageMapType affTopVersionIgniteUuidMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.AFFINITY_TOPOLOGY_VERSION), new MessageItemType(MessageCollectionItemType.IGNITE_UUID), false);
+    private final static GridCacheVersionSerializer GRID_CACHE_VERSION_SER = new GridCacheVersionSerializer();
     /** */
-    private final static MessageMapType bitSetUuidMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.BIT_SET), new MessageItemType(MessageCollectionItemType.UUID), false);
+    private static final MessageMapType affTopVersionIgniteUuidMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.AFFINITY_TOPOLOGY_VERSION), new MessageItemType(MessageCollectionItemType.IGNITE_UUID), false);
     /** */
-    private final static MessageMapType booleanArrayBoxedLongMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.BOOLEAN_ARR), new MessageItemType(MessageCollectionItemType.LONG), false);
+    private static final MessageMapType bitSetUuidMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.BIT_SET), new MessageItemType(MessageCollectionItemType.UUID), false);
     /** */
-    private final static MessageMapType boxedBooleanAffTopVersionMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.BOOLEAN), new MessageItemType(MessageCollectionItemType.AFFINITY_TOPOLOGY_VERSION), false);
+    private static final MessageMapType booleanArrayBoxedLongMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.BOOLEAN_ARR), new MessageItemType(MessageCollectionItemType.LONG), false);
     /** */
-    private final static MessageMapType boxedByteBoxedBooleanMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.BYTE), new MessageItemType(MessageCollectionItemType.BOOLEAN), false);
+    private static final MessageMapType boxedBooleanAffTopVersionMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.BOOLEAN), new MessageItemType(MessageCollectionItemType.AFFINITY_TOPOLOGY_VERSION), false);
     /** */
-    private final static MessageMapType boxedCharBoxedLongMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.CHAR), new MessageItemType(MessageCollectionItemType.LONG), false);
+    private static final MessageMapType boxedByteBoxedBooleanMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.BYTE), new MessageItemType(MessageCollectionItemType.BOOLEAN), false);
     /** */
-    private final static MessageMapType boxedDoubleBoxedFloatMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.DOUBLE), new MessageItemType(MessageCollectionItemType.FLOAT), false);
+    private static final MessageMapType boxedCharBoxedLongMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.CHAR), new MessageItemType(MessageCollectionItemType.LONG), false);
     /** */
-    private final static MessageMapType boxedFloatBoxedCharMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.FLOAT), new MessageItemType(MessageCollectionItemType.CHAR), false);
+    private static final MessageMapType boxedDoubleBoxedFloatMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.DOUBLE), new MessageItemType(MessageCollectionItemType.FLOAT), false);
     /** */
-    private final static MessageMapType boxedIntBoxedShortMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.INT), new MessageItemType(MessageCollectionItemType.SHORT), false);
+    private static final MessageMapType boxedFloatBoxedCharMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.FLOAT), new MessageItemType(MessageCollectionItemType.CHAR), false);
     /** */
-    private final static MessageMapType boxedLongBoxedIntMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.LONG), new MessageItemType(MessageCollectionItemType.INT), false);
+    private static final MessageMapType boxedIntBoxedShortMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.INT), new MessageItemType(MessageCollectionItemType.SHORT), false);
     /** */
-    private final static MessageMapType boxedShortBoxedByteMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.SHORT), new MessageItemType(MessageCollectionItemType.BYTE), false);
+    private static final MessageMapType boxedLongBoxedIntMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.LONG), new MessageItemType(MessageCollectionItemType.INT), false);
     /** */
-    private final static MessageMapType byteArrayBooleanArrayMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.BYTE_ARR), new MessageItemType(MessageCollectionItemType.BOOLEAN_ARR), false);
+    private static final MessageMapType boxedShortBoxedByteMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.SHORT), new MessageItemType(MessageCollectionItemType.BYTE), false);
     /** */
-    private final static MessageMapType charArrayLongArrayMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.CHAR_ARR), new MessageItemType(MessageCollectionItemType.LONG_ARR), false);
+    private static final MessageMapType byteArrayBooleanArrayMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.BYTE_ARR), new MessageItemType(MessageCollectionItemType.BOOLEAN_ARR), false);
     /** */
-    private final static MessageMapType doubleArrayFloatArrayMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.DOUBLE_ARR), new MessageItemType(MessageCollectionItemType.FLOAT_ARR), false);
+    private static final MessageMapType charArrayLongArrayMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.CHAR_ARR), new MessageItemType(MessageCollectionItemType.LONG_ARR), false);
     /** */
-    private final static MessageMapType floatArrayCharArrayMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.FLOAT_ARR), new MessageItemType(MessageCollectionItemType.CHAR_ARR), false);
+    private static final MessageMapType doubleArrayFloatArrayMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.DOUBLE_ARR), new MessageItemType(MessageCollectionItemType.FLOAT_ARR), false);
     /** */
-    private final static MessageMapType gridLongListIntegerMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.GRID_LONG_LIST), new MessageItemType(MessageCollectionItemType.INT), false);
+    private static final MessageMapType floatArrayCharArrayMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.FLOAT_ARR), new MessageItemType(MessageCollectionItemType.CHAR_ARR), false);
     /** */
-    private final static MessageMapType gridlistDoubleMapUuidMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.GRID_LONG_LIST), new MessageMapType(new MessageItemType(MessageCollectionItemType.UUID), new MessageCollectionType(new MessageItemType(MessageCollectionItemType.DOUBLE), false), false), false);
+    private static final MessageMapType gridLongListIntegerMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.GRID_LONG_LIST), new MessageItemType(MessageCollectionItemType.INT), false);
     /** */
-    private final static MessageMapType igniteUuidBitSetMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.IGNITE_UUID), new MessageItemType(MessageCollectionItemType.BIT_SET), false);
+    private static final MessageMapType gridlistDoubleMapUuidMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.GRID_LONG_LIST), new MessageMapType(new MessageItemType(MessageCollectionItemType.UUID), new MessageCollectionType(new MessageItemType(MessageCollectionItemType.DOUBLE), false), false), false);
     /** */
-    private final static MessageMapType intArrayShortArrayMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.INT_ARR), new MessageItemType(MessageCollectionItemType.SHORT_ARR), false);
+    private static final MessageMapType igniteUuidBitSetMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.IGNITE_UUID), new MessageItemType(MessageCollectionItemType.BIT_SET), false);
     /** */
-    private final static MessageMapType integerGridLongListMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.INT), new MessageItemType(MessageCollectionItemType.GRID_LONG_LIST), false);
+    private static final MessageMapType intArrayShortArrayMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.INT_ARR), new MessageItemType(MessageCollectionItemType.SHORT_ARR), false);
     /** */
-    private final static MessageMapType longArrayIntArrayMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.LONG_ARR), new MessageItemType(MessageCollectionItemType.INT_ARR), false);
+    private static final MessageMapType integerGridLongListMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.INT), new MessageItemType(MessageCollectionItemType.GRID_LONG_LIST), false);
     /** */
-    private final static MessageMapType messageBoxedDoubleMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.MSG), new MessageItemType(MessageCollectionItemType.DOUBLE), false);
+    private static final MessageMapType longArrayIntArrayMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.LONG_ARR), new MessageItemType(MessageCollectionItemType.INT_ARR), false);
     /** */
-    private final static MessageMapType shortArrayByteArrayMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.SHORT_ARR), new MessageItemType(MessageCollectionItemType.BYTE_ARR), false);
+    private static final MessageMapType messageBoxedDoubleMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.MSG), new MessageItemType(MessageCollectionItemType.DOUBLE), false);
     /** */
-    private final static MessageMapType stringDoubleArrayMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.STRING), new MessageItemType(MessageCollectionItemType.DOUBLE_ARR), false);
+    private static final MessageMapType shortArrayByteArrayMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.SHORT_ARR), new MessageItemType(MessageCollectionItemType.BYTE_ARR), false);
     /** */
-    private final static MessageMapType uuidStringMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.UUID), new MessageItemType(MessageCollectionItemType.STRING), false);
+    private static final MessageMapType stringDoubleArrayMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.STRING), new MessageItemType(MessageCollectionItemType.DOUBLE_ARR), false);
+    /** */
+    private static final MessageMapType uuidStringMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.UUID), new MessageItemType(MessageCollectionItemType.STRING), false);
 
     /** */
     @Override public boolean writeTo(TestMapMessage msg, MessageWriter writer) {
@@ -452,5 +459,15 @@ public class TestMapMessageSerializer implements MessageSerializer<TestMapMessag
         }
 
         return true;
+    }
+
+    /** */
+    @Override public void prepareMarshalCacheObjects(TestMapMessage msg, CacheObjectValueContext ctx, GridCacheSharedContext sharedCtx) throws IgniteCheckedException {
+        if (msg.messageBoxedDoubleMap != null) {
+            for (GridCacheVersion k : msg.messageBoxedDoubleMap.keySet()) {
+                if (k != null)
+                    GRID_CACHE_VERSION_SER.prepareMarshalCacheObjects(k, ctx, sharedCtx);
+            }
+        }
     }
 }
