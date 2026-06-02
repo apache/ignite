@@ -32,7 +32,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cache.context.SessionContextImpl;
-import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
@@ -239,23 +238,13 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
         QueryProperties props = context().unwrap(QueryProperties.class);
         boolean keepBinaryMode = props == null || props.keepBinary();
 
-        CacheOperationContext opCtx = null;
-
         if (keepBinaryMode)
             cache = cache.keepBinary();
-        else
-            opCtx = cctx != null ? Commons.setKeepBinaryContext(cctx) : null;
 
-        try {
-            if (tx == null)
-                invokeOutsideTransaction(tuples, cache);
-            else
-                invokeInsideTransaction(tuples, cache, tx);
-        }
-        finally {
-            if (opCtx != null)
-                Commons.restoreKeepBinaryContext(cctx, opCtx);
-        }
+        if (tx == null)
+            invokeOutsideTransaction(tuples, cache);
+        else
+            invokeInsideTransaction(tuples, cache, tx);
     }
 
     /**
