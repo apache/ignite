@@ -344,6 +344,7 @@
                                 <patch
                                     dir="${project.build.directory}/generated-sources/fmpp"
                                     patchfile="${project.build.directory}/codegen/patches/select-fetch-expression.patch"
+                                    strip="0"
                                 />
                             </target>
                         </configuration>
