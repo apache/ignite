@@ -31,7 +31,14 @@ public enum CheckpointWriteOrder {
      * All checkpoint pages are collected into single list and sorted by page index.
      * Provides almost sequential disk writes, which can be much faster on some SSD models.
      */
-    SEQUENTIAL;
+    SEQUENTIAL,
+
+    /**
+     * All checkpoint pages are sorted by page index. But for each new partition, the first page is one with the
+     * maximum page id, followed by pages sorted in ascending order. As a result, the first page for a given partition
+     * preallocates all necessary disk space for the file on the current checkpoint.
+     */
+    SEQUENTIAL_WITH_PREALLOCATION;
 
     /**
      * Enumerated values.
