@@ -27,7 +27,9 @@ import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
+import org.apache.ignite.internal.processors.query.QueryEntityMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -57,13 +59,10 @@ public class StoredCacheData implements Serializable, CdcCacheEvent, Marshallabl
     @Order(0)
     transient byte[] ccfgBytes;
 
-    /** Query entities. */
-    @GridToStringInclude
-    private Collection<QueryEntity> qryEntities;
-
-    /** Serialized {@link #qryEntities}. */
+    /** Query entity messages. */
     @Order(1)
-    transient byte[] qryEntitiesBytes;
+    @GridToStringInclude
+    Collection<QueryEntityMessage> entityMsgs;
 
     /** SQL flag - {@code true} if cache was created with {@code CREATE TABLE}. */
     @Order(2)
@@ -97,7 +96,7 @@ public class StoredCacheData implements Serializable, CdcCacheEvent, Marshallabl
         A.notNull(ccfg, "ccfg");
 
         this.ccfg = ccfg;
-        qryEntities = ccfg.getQueryEntities();
+        entityMsgs = F.viewReadOnly(ccfg.getQueryEntities(), QueryEntityMessage::new);
     }
 
     /**
@@ -105,7 +104,7 @@ public class StoredCacheData implements Serializable, CdcCacheEvent, Marshallabl
      */
     public StoredCacheData(StoredCacheData cacheData) {
         ccfg = cacheData.ccfg;
-        qryEntities = cacheData.qryEntities;
+        entityMsgs = cacheData.entityMsgs;
         sql = cacheData.sql;
         cacheConfigurationEnrichment = cacheData.cacheConfigurationEnrichment;
         grpKeyEncrypted = cacheData.grpKeyEncrypted;
@@ -129,14 +128,14 @@ public class StoredCacheData implements Serializable, CdcCacheEvent, Marshallabl
      * @return Query entities.
      */
     @Override public Collection<QueryEntity> queryEntities() {
-        return qryEntities;
+        return F.viewReadOnly(entityMsgs, QueryEntityMessage::queryEntity);
     }
 
     /**
      * @param qryEntities Query entities.
      */
     public void queryEntities(Collection<QueryEntity> qryEntities) {
-        this.qryEntities = qryEntities;
+        entityMsgs = F.viewReadOnly(qryEntities, QueryEntityMessage::new);
     }
 
     /**
@@ -228,9 +227,6 @@ public class StoredCacheData implements Serializable, CdcCacheEvent, Marshallabl
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
         if (ccfg != null)
             ccfgBytes = U.marshal(marsh, ccfg);
-
-        if (qryEntities != null)
-            qryEntitiesBytes = U.marshal(marsh, qryEntities);
     }
 
     /** {@inheritDoc} */
@@ -239,12 +235,6 @@ public class StoredCacheData implements Serializable, CdcCacheEvent, Marshallabl
             ccfg = U.unmarshal(marsh, ccfgBytes, clsLdr);
 
             ccfgBytes = null;
-        }
-
-        if (qryEntitiesBytes != null) {
-            qryEntities = U.unmarshal(marsh, qryEntitiesBytes, clsLdr);
-
-            qryEntitiesBytes = null;
         }
     }
 }
