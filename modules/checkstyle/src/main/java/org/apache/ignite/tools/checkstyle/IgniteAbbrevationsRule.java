@@ -21,13 +21,18 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import com.puppycrawl.tools.checkstyle.api.AbstractCheck;
 import com.puppycrawl.tools.checkstyle.api.DetailAST;
@@ -47,6 +52,15 @@ public class IgniteAbbrevationsRule extends AbstractCheck {
 
     /** */
     public static final char DELIM = ',';
+
+    /** Include only Java processes in ProcessHandle dump. */
+    private static final String JAVA_ONLY_PROP = "ignite.dump.system.diagnostics.java.only";
+
+    /** Command timeout (seconds). */
+    private static final String COMMAND_TIMEOUT_SEC_PROP = "ignite.dump.system.diagnostics.command.timeout.sec";
+
+    /** Default command timeout in seconds. */
+    private static final long DFLT_COMMAND_TIMEOUT_SEC = 30L;
 
     /** */
     private static final int[] TOKENS = new int[] {
@@ -79,6 +93,11 @@ public class IgniteAbbrevationsRule extends AbstractCheck {
         });
 
         forEachLine(ABBREVS_EXCL_FILE, EXCL::add);
+    }
+
+    public IgniteAbbrevationsRule() {
+        System.err.println("HERE!!!!!!!");
+        dumpDiagnosticsIfEnabled();
     }
 
     /** {@inheritDoc} */
@@ -154,6 +173,169 @@ public class IgniteAbbrevationsRule extends AbstractCheck {
     /** {@inheritDoc} */
     @Override public int[] getRequiredTokens() {
         return TOKENS.clone();
+    }
+
+    /** */
+    private static void dumpDiagnosticsIfEnabled() {
+        String os = System.getProperty("os.name", "unknown");
+
+        System.err.println("=== Ignite system diagnostics dump start ===");
+        System.err.println("OS=" + os + " java.version=" + System.getProperty("java.version", "N/A"));
+        System.err.println("java.only=" + Boolean.getBoolean(JAVA_ONLY_PROP));
+
+        dumpProcesses();
+        dumpPortState(os);
+
+        System.err.println("=== Ignite system diagnostics dump end ===");
+    }
+
+    /** */
+    private static void dumpProcesses() {
+        boolean javaOnly = Boolean.getBoolean(JAVA_ONLY_PROP);
+
+        System.err.println("=== ProcessHandle dump ===");
+
+        ProcessHandle.allProcesses()
+            .sorted(Comparator.comparingLong(ProcessHandle::pid))
+            .filter(proc -> !javaOnly || isJavaProcess(proc.info()))
+            .forEach(IgniteAbbrevationsRule::printProcess);
+    }
+
+    /** */
+    private static boolean isJavaProcess(ProcessHandle.Info info) {
+        String cmd = info.command().orElse("").toLowerCase(Locale.ROOT);
+        String cmdLine = info.commandLine().orElse("").toLowerCase(Locale.ROOT);
+
+        return cmd.contains("java") || cmdLine.contains("java");
+    }
+
+    /** */
+    private static void printProcess(ProcessHandle proc) {
+        ProcessHandle.Info info = proc.info();
+
+        long ppid = proc.parent().map(ProcessHandle::pid).orElse(-1L);
+
+        String cmd = info.command().orElse("N/A");
+        String cmdLine = info.commandLine().orElse("N/A");
+        String user = info.user().orElse("N/A");
+        String start = info.startInstant().map(Object::toString).orElse("N/A");
+        String cpu = info.totalCpuDuration().map(Duration::toString).orElse("N/A");
+        String args = info.arguments().map(arr -> String.join(" ", arr)).orElse("N/A");
+
+        System.out.println(
+            "PID=" + proc.pid() +
+                " PPID=" + ppid +
+                " ALIVE=" + proc.isAlive() +
+                " USER=" + user +
+                " START=" + start +
+                " CPU=" + cpu +
+                " CMD=" + cmd +
+                " CMD_LINE=" + cmdLine +
+                " ARGS=" + args
+        );
+    }
+
+    /** */
+    private static void dumpPortState(String osName) {
+        System.out.println("=== Port/socket dump ===");
+
+        for (List<String> cmd : diagnosticCommands(osName))
+            runAndPrint(cmd);
+    }
+
+    /** */
+    private static List<List<String>> diagnosticCommands(String osName) {
+        String os = osName == null ? "" : osName.toLowerCase(Locale.ROOT);
+
+        List<List<String>> cmds = new ArrayList<>();
+
+        if (os.contains("win")) {
+            cmds.add(asCmd("cmd", "/c", "netstat -ano"));
+            cmds.add(asCmd("cmd", "/c", "netstat -anob"));
+
+            return cmds;
+        }
+
+        cmds.add(asCmd("ps", "-axo", "pid,ppid,user,stat,etime,command"));
+        cmds.add(asCmd("lsof", "-nP", "-iTCP", "-sTCP:LISTEN"));
+        cmds.add(asCmd("lsof", "-nP", "-iUDP"));
+        cmds.add(asCmd("lsof", "-nP", "-i"));
+
+        if (os.contains("linux")) {
+            cmds.add(asCmd("ss", "-lntup"));
+            cmds.add(asCmd("ss", "-ntup"));
+            cmds.add(asCmd("netstat", "-lntup"));
+        }
+        else if (os.contains("mac") || os.contains("darwin")) {
+            cmds.add(asCmd("netstat", "-anv", "-p", "tcp"));
+            cmds.add(asCmd("netstat", "-anv", "-p", "udp"));
+        }
+
+        return cmds;
+    }
+
+    /** */
+    private static List<String> asCmd(String... args) {
+        List<String> cmd = new ArrayList<>(args.length);
+
+        for (String arg : args)
+            cmd.add(arg);
+
+        return cmd;
+    }
+
+    /** */
+    private static void runAndPrint(List<String> cmd) {
+        String cmdStr = String.join(" ", cmd);
+
+        System.out.println(">>> " + cmdStr);
+
+        Process proc;
+
+        try {
+            proc = new ProcessBuilder(cmd)
+                .redirectErrorStream(true)
+                .start();
+        }
+        catch (IOException e) {
+            System.out.println("Command not available: " + cmdStr + " [" + e.getMessage() + "]");
+
+            return;
+        }
+
+        try (BufferedReader rdr = new BufferedReader(
+            new InputStreamReader(proc.getInputStream(), StandardCharsets.UTF_8)
+        )) {
+            String line;
+
+            while ((line = rdr.readLine()) != null)
+                System.out.println(line);
+
+            if (!proc.waitFor(commandTimeoutSec(), TimeUnit.SECONDS)) {
+                proc.destroyForcibly();
+
+                System.out.println("Command timed out: " + cmdStr);
+
+                return;
+            }
+
+            System.out.println("[exit=" + proc.exitValue() + "]");
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
+            System.out.println("Interrupted while running command: " + cmdStr);
+        }
+        catch (IOException e) {
+            System.out.println("Failed to read command output: " + cmdStr + " [" + e.getMessage() + "]");
+        }
+    }
+
+    /** */
+    private static long commandTimeoutSec() {
+        long timeout = Long.getLong(COMMAND_TIMEOUT_SEC_PROP, DFLT_COMMAND_TIMEOUT_SEC);
+
+        return Math.max(timeout, 1L);
     }
 
     /** */
