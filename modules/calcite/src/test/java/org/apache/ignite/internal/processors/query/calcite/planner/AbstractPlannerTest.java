@@ -468,6 +468,8 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     ) throws Exception {
         IgniteRel plan = physicalPlan(plannerCtx(sql, schemas, planLsnr, disabledRules));
 
+        System.out.println("plan = " + RelOptUtil.toString(plan, SqlExplainLevel.ALL_ATTRIBUTES));
+
         checkSplitAndSerialization(plan, schemas);
 
         if (!predicate.test((T)plan)) {

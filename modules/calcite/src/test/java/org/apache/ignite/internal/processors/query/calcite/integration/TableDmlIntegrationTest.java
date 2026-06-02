@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 
 /** */
@@ -670,6 +671,18 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTransaction
         sql(sql, new Object[rowsCnt * 2]);
 
         assertQuery("SELECT * FROM test").resultSize(rowsCnt).check();
+    }
+
+    /** */
+    @Test
+    public void insertFromSelectWithAlwaysFalseCondition() {
+        sql("CREATE TABLE test (id INT PRIMARY KEY, val REAL)");
+        sql("CREATE TABLE test2 (id INT PRIMARY KEY, val REAL)");
+
+        assertQuery("INSERT INTO test2 SELECT id, val FROM test WHERE val > 1 AND val < 0")
+            .matches(CoreMatchers.not(QueryChecker.containsSubPlan("IgniteTableModify")))
+            .returns(0L)
+            .check();
     }
 
     /** */
