@@ -464,20 +464,34 @@ Continuous growth of the queue size can lead to OOM errors.
 ==== Communication Message Queue
 The queue of outgoing communication messages contains communication messages that are waiting to be sent to other nodes.
 If the size is growing, it means there is a problem.
+Use the current queue size to detect an ongoing issue and the maximum queue size to catch short spikes that can disappear before the next manual check.
 
 [{table_opts}]
 |===
 | Attribute | Type | Description | Scope
 | OutboundMessagesQueueSize  | int | The size of the queue of outgoing communication messages. | Node
+| maxOutboundMessagesQueueSize | long | The maximum size of the outgoing communication message queue during the configured metric interval. | Node
 |===
+
+When the `IGNITE_TCP_COMM_MSG_QUEUE_WARN_SIZE` system property is set to a positive value, Ignite prints a warning if the outbound communication queue for a node grows above this value.
 
 ==== Discovery Messages Queue
 
 The queue of discovery messages.
+If this queue grows, topology changes, discovery custom messages, and node failure detection events can be delayed.
 
 [{table_opts}]
 |===
 | Attribute | Type | Description | Scope
 | MessageWorkerQueueSize | int | The size of the queue of discovery messages that are waiting to be sent to other nodes. | Node
+| MaxMsgQueueSize | long | The maximum size of the discovery message queue during the configured metric interval. | Node
+| Next | UUID | The next node in the TCP discovery ring. | Node
 |AvgMessageProcessingTime|long| Average message processing time. | Node
 |===
+
+The interval used by `maxOutboundMessagesQueueSize` and `MaxMsgQueueSize` can be changed with the control utility:
+
+[source,shell]
+----
+control.sh --metric --configure-max-value <metric_name> <new_time_interval>
+----
