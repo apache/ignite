@@ -62,6 +62,8 @@ import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheOperationContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -568,5 +570,39 @@ public final class Commons {
     /** Compares {@link BinaryObject} for DML operation. Before use, call {@link #isBinaryComparable(Object, Object)}. */
     public static int compareBinary(Object o1, Object o2) {
         return BinaryUtils.binariesFactory.compareForDml(o1, o2);
+    }
+
+    /**
+     * Makes current operation context as keepBinary.
+     *
+     * @param cctx Cache context.
+     * @return Old operation context.
+     */
+    public static CacheOperationContext setKeepBinaryContext(GridCacheContext<?, ?> cctx) {
+        CacheOperationContext opCtx = cctx.operationContextPerCall();
+
+        // Force keepBinary for operation context to avoid binary deserialization inside entry processor
+        CacheOperationContext newOpCtx = null;
+
+        if (opCtx == null)
+            // Mimics behavior of GridCacheAdapter#keepBinary and GridCacheProxyImpl#keepBinary
+            newOpCtx = new CacheOperationContext(false, false, true, null, false, null, false, null, null);
+        else if (!opCtx.isKeepBinary())
+            newOpCtx = opCtx.keepBinary();
+
+        if (newOpCtx != null)
+            cctx.operationContextPerCall(newOpCtx);
+
+        return opCtx;
+    }
+
+    /**
+     * Restore previous binary context.
+     *
+     * @param cctx Cache context.
+     * @param oldOpCtx Old operation context.
+     */
+    public static void restoreKeepBinaryContext(GridCacheContext<?, ?> cctx, CacheOperationContext oldOpCtx) {
+        cctx.operationContextPerCall(oldOpCtx);
     }
 }
