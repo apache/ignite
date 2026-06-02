@@ -462,6 +462,13 @@ public class TxDeadlockDetection {
                             Set<GridCacheVersion> waitingTxs = wfg.computeIfAbsent(txId, k -> new HashSet<>());
 
                             waitingTxs.add(lock.txId());
+
+                            Set<GridCacheVersion> txs = txRequestedKeys.get(e.getKey());
+
+                            if (txs == null)
+                                txRequestedKeys.put(e.getKey(), txs = new HashSet<>());
+
+                            txs.add(txId);
                         }
 
                         continue;
