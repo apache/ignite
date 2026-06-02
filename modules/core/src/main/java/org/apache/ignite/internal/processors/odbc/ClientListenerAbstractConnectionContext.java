@@ -142,11 +142,13 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
     }
 
     /** */
-    protected void initClientDescriptor(String prefix) {
+    protected void initClientContext(String prefix) {
         clientDesc = prefix + ":" + ses.remoteAddress().getHostString() + ":" + ses.remoteAddress().getPort();
 
         if (secCtx != null)
             clientDesc += "@" + secCtx.subject().login();
+
+        managementClient = Boolean.parseBoolean(attributes().get(MANAGEMENT_CLIENT_ATTR));
     }
 
     /**
@@ -203,9 +205,6 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
 
     /** {@inheritDoc} */
     @Override public boolean managementClient() {
-        if (managementClient == null)
-            managementClient = Boolean.parseBoolean(attributes().get(MANAGEMENT_CLIENT_ATTR));
-
         return managementClient;
     }
 }
