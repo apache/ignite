@@ -4519,71 +4519,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
 
-                if (err == null)
-                    err = spi.getSpiContext().validateNode(node);
-
-                if (err == null) {
-                    DiscoveryDataBag data = msg.gridDiscoveryData().bagWithJoiningNodeData();
-
-                    err = spi.getSpiContext().validateNode(node, data);
-                }
-
-                if (err != null) {
-                    final IgniteNodeValidationResult err0 = err;
-
-                    if (log.isDebugEnabled())
-                        log.debug("Node validation failed [res=" + err + ", node=" + node + ']');
-
-                    utilityPool.execute(
-                        new Runnable() {
-                            @Override public void run() {
-                                spi.getSpiContext().recordEvent(new NodeValidationFailedEvent(locNode, node, err0));
-
-                                boolean ping = node.id().equals(err0.nodeId()) ? pingNode(node) : pingNode(err0.nodeId());
-
-                                if (!ping) {
-                                    if (log.isDebugEnabled()) {
-                                        log.debug("Conflicting node has already left, need to wait for event. " +
-                                            "Will ignore join request for now since it will be recent [req=" + msg +
-                                            ", err=" + err0.message() + ']');
-                                    }
-
-                                    // Ignore join request.
-                                    return;
-                                }
-
-                                LT.warn(log, err0.message());
-
-                                // Always output in debug.
-                                if (log.isDebugEnabled())
-                                    log.debug(err0.message());
-
-                                try {
-                                    trySendMessageDirectly(node,
-                                        new TcpDiscoveryCheckFailedMessage(err0.nodeId(), err0.sendMessage()));
-                                }
-                                catch (IgniteSpiException e) {
-                                    if (log.isDebugEnabled()) {
-                                        log.debug("Failed to send hash ID resolver validation failed message to node " +
-                                            "[node=" + node + ", err=" + e.getMessage() + ']');
-                                    }
-
-                                    onException("Failed to send hash ID resolver validation failed message to node " +
-                                        "[node=" + node + ", err=" + e.getMessage() + ']', e);
-                                }
-                            }
-                        }
-                    );
-
-                    // Ignore join request.
-                    msg.spanContainer().span()
-                        .addLog(() -> "Ignored")
-                        .setStatus(SpanStatus.ABORTED)
-                        .end();
-
-                    return;
-                }
-
                 final String locMarsh = locNode.attribute(ATTR_MARSHALLER);
                 final String rmtMarsh = node.attribute(ATTR_MARSHALLER);
 
@@ -4852,6 +4787,71 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         return;
                     }
+                }
+
+                if (err == null)
+                    err = spi.getSpiContext().validateNode(node);
+
+                if (err == null) {
+                    DiscoveryDataBag data = msg.gridDiscoveryData().bagWithJoiningNodeData();
+
+                    err = spi.getSpiContext().validateNode(node, data);
+                }
+
+                if (err != null) {
+                    final IgniteNodeValidationResult err0 = err;
+
+                    if (log.isDebugEnabled())
+                        log.debug("Node validation failed [res=" + err + ", node=" + node + ']');
+
+                    utilityPool.execute(
+                        new Runnable() {
+                            @Override public void run() {
+                                spi.getSpiContext().recordEvent(new NodeValidationFailedEvent(locNode, node, err0));
+
+                                boolean ping = node.id().equals(err0.nodeId()) ? pingNode(node) : pingNode(err0.nodeId());
+
+                                if (!ping) {
+                                    if (log.isDebugEnabled()) {
+                                        log.debug("Conflicting node has already left, need to wait for event. " +
+                                            "Will ignore join request for now since it will be recent [req=" + msg +
+                                            ", err=" + err0.message() + ']');
+                                    }
+
+                                    // Ignore join request.
+                                    return;
+                                }
+
+                                LT.warn(log, err0.message());
+
+                                // Always output in debug.
+                                if (log.isDebugEnabled())
+                                    log.debug(err0.message());
+
+                                try {
+                                    trySendMessageDirectly(node,
+                                        new TcpDiscoveryCheckFailedMessage(err0.nodeId(), err0.sendMessage()));
+                                }
+                                catch (IgniteSpiException e) {
+                                    if (log.isDebugEnabled()) {
+                                        log.debug("Failed to send hash ID resolver validation failed message to node " +
+                                            "[node=" + node + ", err=" + e.getMessage() + ']');
+                                    }
+
+                                    onException("Failed to send hash ID resolver validation failed message to node " +
+                                        "[node=" + node + ", err=" + e.getMessage() + ']', e);
+                                }
+                            }
+                        }
+                    );
+
+                    // Ignore join request.
+                    msg.spanContainer().span()
+                        .addLog(() -> "Ignored")
+                        .setStatus(SpanStatus.ABORTED)
+                        .end();
+
+                    return;
                 }
 
                 // Handle join.
