@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -65,7 +67,6 @@ import org.apache.calcite.sql.validate.SqlValidatorNamespace;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.sql.validate.SqlValidatorTable;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
-import org.apache.calcite.util.Static;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
@@ -111,6 +112,9 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** */
     private final RelDataType nullType;
+
+    /** Dynamic parameter types by parameter index. */
+    private final Map<Integer, RelDataType> dynamicParamTypeByIdx = new HashMap<>();
 
     /**
      * Creates a validator.
@@ -173,7 +177,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         final SqlValidatorTable targetTable = getCatalogReader().getTable(((SqlIdentifier)table).names);
 
         if (targetTable == null)
-            throw newValidationError(table, Static.RESOURCE.objectNotFound(table.toString()));
+            throw newValidationError(table, RESOURCE.objectNotFound(table.toString()));
 
         if (!targetTable.unwrap(IgniteTable.class).isModifiable())
             throw newValidationError(table, IgniteResource.INSTANCE.modifyTableNotSupported(table.toString()));
@@ -192,7 +196,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         final SqlValidatorTable table = getCatalogReader().getTable(targetTable.names);
 
         if (table == null)
-            throw newValidationError(call, Static.RESOURCE.objectNotFound(targetTable.toString()));
+            throw newValidationError(call, RESOURCE.objectNotFound(targetTable.toString()));
 
         SqlIdentifier alias = call.getAlias() != null ? call.getAlias() :
             new SqlIdentifier(deriveAlias(targetTable, 0), SqlParserPos.ZERO);
@@ -265,26 +269,76 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
      * @param nodeName Node name.
      */
     private void checkIntegerLimit(SqlNode n, String nodeName) {
-        if (n instanceof SqlLiteral) {
-            BigDecimal offFetchLimit = ((SqlLiteral)n).bigDecimalValue();
+        if (n == null)
+            return;
+
+        deriveDynamicParameterTypes(n);
+
+        BigDecimal offFetchLimit = limitValue(n, nodeName);
+
+        if (offFetchLimit != null) {
+            offFetchLimit = offFetchLimit.setScale(0, RoundingMode.DOWN);
 
             if (offFetchLimit.compareTo(DEC_INT_MAX) > 0 || offFetchLimit.compareTo(BigDecimal.ZERO) < 0)
                 throw newValidationError(n, IgniteResource.INSTANCE.correctIntegerLimit(nodeName));
         }
-        else if (n instanceof SqlDynamicParam) {
-            // will fail in params check.
+    }
+
+    /**
+     * @param n Limit node.
+     * @param nodeName Node name.
+     * @return Limit value, or {@code null} if the node is not an atomic value.
+     */
+    private @Nullable BigDecimal limitValue(SqlNode n, String nodeName) {
+        if (n instanceof SqlLiteral) {
+            if (((SqlLiteral)n).getTypeName().getFamily() != SqlTypeFamily.NUMERIC)
+                throw newValidationError(n, IgniteResource.INSTANCE.correctIntegerLimit(nodeName));
+
+            return ((SqlLiteral)n).bigDecimalValue();
+        }
+
+        if (n instanceof SqlDynamicParam) {
+            // Will fail in params check.
             if (F.isEmpty(parameters))
-                return;
+                return null;
 
             int idx = ((SqlDynamicParam)n).getIndex();
 
-            if (idx < parameters.length) {
-                Object param = parameters[idx];
-                if (parameters[idx] instanceof Integer) {
-                    if ((Integer)param < 0)
-                        throw newValidationError(n, IgniteResource.INSTANCE.correctIntegerLimit(nodeName));
-                }
+            if (idx >= parameters.length)
+                return null;
+
+            Object param = parameters[idx];
+
+            if (!(param instanceof Number))
+                return null;
+            else if (param instanceof Double || param instanceof Float) {
+                if (!Double.isFinite(((Number)param).doubleValue()))
+                    throw newValidationError(n, IgniteResource.INSTANCE.correctIntegerLimit(nodeName));
             }
+
+            return new BigDecimal(param.toString());
+        }
+
+        return null;
+    }
+
+    /**
+     * @param n Node to check.
+     */
+    private void deriveDynamicParameterTypes(SqlNode n) {
+        if (n instanceof SqlDynamicParam) {
+            RelDataType dataType = typeFactory().createTypeWithNullability(
+                typeFactory().createSqlType(SqlTypeName.DECIMAL), true);
+            SqlDynamicParam paramNode = (SqlDynamicParam)n;
+
+            if (deriveDynamicParameterType(paramNode, dataType) == null) {
+                setValidatedNodeType(paramNode, dataType);
+                dynamicParamTypeByIdx.put(paramNode.getIndex(), dataType);
+            }
+        }
+        else if (n instanceof SqlCall) {
+            for (SqlNode operand : ((SqlCall)n).getOperandList())
+                deriveDynamicParameterTypes(operand);
         }
     }
 
@@ -569,9 +623,28 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         return super.deriveType(scope, expr);
     }
 
+    /** {@inheritDoc} */
+    @Override public @Nullable RelDataType getValidatedNodeTypeIfKnown(SqlNode node) {
+        RelDataType type = super.getValidatedNodeTypeIfKnown(node);
+
+        if (type == null && node instanceof SqlDynamicParam) {
+            SqlDynamicParam param = (SqlDynamicParam)node;
+
+            type = dynamicParamTypeByIdx.get(param.getIndex());
+
+            if (type == null)
+                type = dynamicParameterType(param, nullType);
+        }
+
+        return type;
+    }
+
     /** @return A derived type or {@code null} if unable to determine. */
     @Nullable private RelDataType deriveDynamicParameterType(SqlDynamicParam node, RelDataType nullValType) {
-        RelDataType type = getValidatedNodeTypeIfKnown(node);
+        RelDataType type = super.getValidatedNodeTypeIfKnown(node);
+
+        if (type == null)
+            type = dynamicParamTypeByIdx.get(node.getIndex());
 
         // Do not clarify the widest type for any value.
         if (type instanceof OtherType)
@@ -585,11 +658,28 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         if (val == null && type != null)
             return type;
 
-        type = val == null
+        type = dynamicParameterType(node, nullValType);
+
+        if (type == null)
+            return null;
+
+        setValidatedNodeType(node, type);
+
+        return type;
+    }
+
+    /** @return Dynamic parameter type derived from parameter value, or {@code null} if unable to determine. */
+    @Nullable private RelDataType dynamicParameterType(SqlDynamicParam node, RelDataType nullValType) {
+        if (parameters == null || node.getIndex() >= parameters.length)
+            return null;
+
+        Object val = parameters[node.getIndex()];
+
+        RelDataType type = val == null
             ? typeFactory().createTypeWithNullability(nullValType, true)
             : typeFactory().createTypeWithNullability(typeFactory().toSql(typeFactory().createType(val.getClass())), true);
 
-        setValidatedNodeType(node, type);
+        dynamicParamTypeByIdx.put(node.getIndex(), type);
 
         return type;
     }

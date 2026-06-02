@@ -19,22 +19,30 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
+import java.util.Set;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.prepare.Prepare;
+import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.core.JoinRelType;
+import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.logical.LogicalTableModify;
 import org.apache.calcite.rel.logical.LogicalValues;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.rex.RexDynamicParam;
 import org.apache.calcite.rex.RexInputRef;
+import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlInsert;
@@ -46,11 +54,15 @@ import org.apache.calcite.sql.util.SqlShuttle;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
+import org.apache.calcite.sql2rel.RelFieldTrimmer;
 import org.apache.calcite.sql2rel.SqlRexConvertletTable;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.ControlFlowException;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Pair;
+import org.apache.calcite.util.mapping.Mapping;
+import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.jetbrains.annotations.Nullable;
 
@@ -85,6 +97,11 @@ public class IgniteSqlToRelConvertor extends SqlToRelConverter {
             return RelRoot.of(convertMerge((SqlMerge)qry), qry.getKind());
         else
             return super.convertQueryRecursive(qry, top, targetRowType);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected RelFieldTrimmer newFieldTrimmer() {
+        return new IgniteRelFieldTrimmer(validator, relBuilder);
     }
 
     /** {@inheritDoc} */
@@ -196,6 +213,58 @@ public class IgniteSqlToRelConvertor extends SqlToRelConverter {
             }
 
             return super.visit(call);
+        }
+    }
+
+    /** Field trimmer that preserves expression-based OFFSET/FETCH nodes. */
+    public static class IgniteRelFieldTrimmer extends RelFieldTrimmer {
+        /** */
+        private IgniteRelFieldTrimmer(@Nullable SqlValidator validator, RelBuilder relBuilder) {
+            super(validator, relBuilder);
+        }
+
+        /** {@inheritDoc} */
+        @Override public TrimResult trimFields(
+            Sort sort,
+            ImmutableBitSet fieldsUsed,
+            Set<RelDataTypeField> extraFields
+        ) {
+            if (supportedByRelBuilder(sort.offset) && supportedByRelBuilder(sort.fetch))
+                return super.trimFields(sort, fieldsUsed, extraFields);
+
+            RelCollation collation = sort.getCollation();
+            RelNode input = sort.getInput();
+            int fieldCnt = sort.getRowType().getFieldCount();
+
+            ImmutableBitSet.Builder inputFieldsUsed = fieldsUsed.rebuild();
+
+            for (RelFieldCollation field : collation.getFieldCollations())
+                inputFieldsUsed.set(field.getFieldIndex());
+
+            TrimResult trimRes = trimChild(sort, input, inputFieldsUsed.build(), Collections.emptySet());
+            RelNode newInput = trimRes.left;
+            Mapping inputMapping = trimRes.right;
+
+            if (newInput == input && inputMapping.isIdentity() && fieldsUsed.cardinality() == fieldCnt)
+                return result(sort, Mappings.createIdentity(fieldCnt));
+
+            RelNode newSort = sort.copy(
+                sort.getTraitSet(),
+                newInput,
+                RexUtil.apply(inputMapping, collation),
+                sort.offset,
+                sort.fetch
+            );
+
+            return result(newSort, inputMapping, sort);
+        }
+
+        /**
+         * @param node Rex node.
+         * @return {@code true} if Calcite RelBuilder accepts the node for OFFSET/FETCH.
+         */
+        private static boolean supportedByRelBuilder(@Nullable RexNode node) {
+            return node == null || node instanceof RexLiteral || node instanceof RexDynamicParam;
         }
     }
 

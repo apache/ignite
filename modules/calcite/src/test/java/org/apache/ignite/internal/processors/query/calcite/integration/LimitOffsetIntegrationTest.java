@@ -93,26 +93,21 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
 
     /** */
     @Test
-    public void testNestedLimitOffsetWithUnion() {
-        sql("INSERT into TEST_REPL VALUES (1, 'a'), (2, 'b'), (3, 'c'), (4, 'd')");
+    public void testNestedLimitOffsetWithUnion() throws Exception {
+        fillCache(cacheRepl, 4);
 
         assertQuery("(SELECT id FROM TEST_REPL WHERE id = 2) UNION ALL " +
             "SELECT id FROM (select id from (SELECT id FROM TEST_REPL OFFSET 2) order by id OFFSET 1)"
-        ).returns(2).returns(4).check();
+        ).returns(2).returns(3).check();
     }
 
     /** Tests correctness of fetch / offset params. */
     @Test
     public void testInvalidLimitOffset() {
-        String bigInt = BigDecimal.valueOf(10000000000L).toString();
-
-        assertThrows("SELECT * FROM TEST_REPL OFFSET " + bigInt + " ROWS",
+        assertThrows("SELECT * FROM TEST_REPL OFFSET " + bigInt() + " ROWS",
             SqlValidatorException.class, "Illegal value of offset");
 
-        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST " + bigInt + " ROWS ONLY",
-            SqlValidatorException.class, "Illegal value of fetch / limit");
-
-        assertThrows("SELECT * FROM TEST_REPL LIMIT " + bigInt,
+        assertThrows("SELECT * FROM TEST_REPL LIMIT " + bigInt(),
             SqlValidatorException.class, "Illegal value of fetch / limit");
 
         assertThrows("SELECT * FROM TEST_REPL OFFSET -1 ROWS FETCH FIRST -1 ROWS ONLY",
@@ -130,9 +125,6 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
 
         assertThrows("SELECT * FROM TEST_REPL OFFSET ? ROWS",
             SqlValidatorException.class, "Illegal value of offset", -1);
-
-        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST ? ROWS ONLY",
-            SqlValidatorException.class, "Illegal value of fetch / limit", -1);
     }
 
     /**
@@ -184,6 +176,347 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
         fillCache(cachePart, 5);
 
         assertQuery("SELECT (SELECT id FROM TEST_PART ORDER BY id LIMIT 1 OFFSET 10)").returns(NULL_RESULT).check();
+    }
+
+    /** */
+    @Test
+    public void testInvalidFetch() {
+        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST " + bigInt() + " ROWS ONLY",
+            SqlValidatorException.class, "Illegal value of fetch / limit");
+
+        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST -1 ROWS ONLY",
+            IgniteSQLException.class, null);
+
+        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST (-2) ROWS ONLY",
+            SqlValidatorException.class, "Illegal value of fetch / limit");
+
+        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST (2 - 3) ROWS ONLY",
+            IgniteSQLException.class, null);
+
+        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST (1 + 2 - 4) ROWS ONLY",
+            IgniteSQLException.class, null);
+
+        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST (10 - (50 - 20)) ROWS ONLY",
+            IgniteSQLException.class, null);
+
+        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST ('abc') ROWS ONLY",
+            SqlValidatorException.class, "Illegal value of fetch / limit");
+
+        // Check with parameters.
+        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST ? ROWS ONLY",
+            SqlValidatorException.class, "Illegal value of fetch / limit", bigInt());
+
+        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST ? ROWS ONLY",
+            SqlValidatorException.class, "Illegal value of fetch / limit", -4);
+
+        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST (?) ROWS ONLY",
+            SqlValidatorException.class, "Illegal value of fetch / limit", -5);
+
+        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST (?) ROWS ONLY",
+            IgniteSQLException.class, null, NULL_RESULT);
+
+        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST (?) ROWS ONLY",
+            IgniteSQLException.class, null, "abc");
+
+        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST (?) ROWS ONLY",
+            SqlValidatorException.class, "Illegal value of fetch / limit", Double.NaN);
+
+        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST (?) ROWS ONLY",
+            SqlValidatorException.class, "Illegal value of fetch / limit", Double.POSITIVE_INFINITY);
+
+        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST (1 + ? - 4) ROWS ONLY",
+            IgniteSQLException.class, null, 1);
+
+        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST (? - (50 - 20)) ROWS ONLY",
+            IgniteSQLException.class, null, 2);
+    }
+
+    /** */
+    @Test
+    public void testInvalidFetchWithScalarFunctionExpression() {
+        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST SQRT(4) ROWS ONLY",
+            IgniteSQLException.class, null);
+
+        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST (SQRT(?) + 1 + 0) ROWS ONLY",
+            IgniteSQLException.class, null, NULL_RESULT);
+
+        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST (SQRT(?) + 1 + 0) ROWS ONLY",
+            IgniteSQLException.class, null, Double.NaN);
+
+        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST (SQRT(?) + 1 + 0) ROWS ONLY",
+            IgniteSQLException.class, null, Double.NEGATIVE_INFINITY);
+    }
+
+    /** */
+    @Test
+    public void testFetchExpression() throws Exception {
+        fillCache(cacheRepl, 5);
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST (1) ROWS ONLY")
+            .returns(0)
+            .check();
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST (1 + 2) ROWS ONLY")
+            .returns(0)
+            .returns(1)
+            .returns(2)
+            .check();
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST (1 + 5 - 2) ROWS ONLY")
+            .returns(0)
+            .returns(1)
+            .returns(2)
+            .returns(3)
+            .check();
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST (1 + (2 - 1) + 1) ROWS ONLY")
+            .returns(0)
+            .returns(1)
+            .returns(2)
+            .check();
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST (1 + (2 - 1) + 1) ROWS ONLY")
+            .returns(0)
+            .returns(1)
+            .returns(2)
+            .check();
+
+        // With parameters.
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST (?) ROWS ONLY")
+            .withParams(1)
+            .returns(0)
+            .check();
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST (?) ROWS ONLY")
+            .withParams(2)
+            .returns(0)
+            .returns(1)
+            .check();
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST (1 + ?) ROWS ONLY")
+            .withParams(1)
+            .returns(0)
+            .returns(1)
+            .check();
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST (? + 1) ROWS ONLY")
+            .withParams(1)
+            .returns(0)
+            .returns(1)
+            .check();
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST (? + 1) ROWS ONLY")
+            .withParams(3)
+            .returns(0)
+            .returns(1)
+            .returns(2)
+            .returns(3)
+            .check();
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST (? + (3 - 1)) ROWS ONLY")
+            .withParams(2)
+            .returns(0)
+            .returns(1)
+            .returns(2)
+            .returns(3)
+            .check();
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST (1 + (2 - ?) + 1) ROWS ONLY")
+            .withParams(1)
+            .returns(0)
+            .returns(1)
+            .returns(2)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testFetchExpressionAnotherSortOrder() throws Exception {
+        fillCache(cacheRepl, 5);
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id DESC FETCH FIRST (1 + (2 - 1) + 1) ROWS ONLY")
+            .returns(4)
+            .returns(3)
+            .returns(2)
+            .check();
+
+        // With parameters.
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id DESC FETCH FIRST (1 + (2 - 1) + ?) ROWS ONLY")
+            .withParams(2)
+            .returns(4)
+            .returns(3)
+            .returns(2)
+            .returns(1)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testFetchExpressionWithoutSortOrder() throws Exception {
+        fillCache(cacheRepl, 5);
+
+        assertQuery("SELECT id FROM TEST_REPL FETCH FIRST (1 + (2 - 1) + 1) ROWS ONLY")
+            .returns(0)
+            .returns(1)
+            .returns(2)
+            .check();
+
+        // With parameters.
+        assertQuery("SELECT id FROM TEST_REPL FETCH FIRST (1 + (2 - 1) + ?) ROWS ONLY")
+            .withParams(2)
+            .returns(0)
+            .returns(1)
+            .returns(2)
+            .returns(3)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testFetchExpressionCachedQuery() throws Exception {
+        fillCache(cacheRepl, 5);
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST (? + 1) ROWS ONLY")
+            .withParams(1)
+            .returns(0)
+            .returns(1)
+            .check();
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST (? + 1) ROWS ONLY")
+            .withParams(2)
+            .returns(0)
+            .returns(1)
+            .returns(2)
+            .check();
+
+        // Check negative param.
+        assertThrows("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST (? + 1) ROWS ONLY",
+            IgniteSQLException.class, "FETCH must not be negative", -2);
+    }
+
+    /** */
+    @Test
+    public void testFetchExpressionCachedQueryAndAnotherSortOrder() throws Exception {
+        fillCache(cacheRepl, 5);
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id DESC FETCH FIRST (? + 1) ROWS ONLY")
+            .withParams(1)
+            .returns(4)
+            .returns(3)
+            .check();
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id DESC FETCH FIRST (? + 1) ROWS ONLY")
+            .withParams(2)
+            .returns(4)
+            .returns(3)
+            .returns(2)
+            .check();
+
+        // Check negative param.
+        assertThrows("SELECT id FROM TEST_REPL ORDER BY id DESC FETCH FIRST (? + 1) ROWS ONLY",
+            IgniteSQLException.class, "FETCH must not be negative", -2);
+    }
+
+    /** */
+    @Test
+    public void testFetchExpressionCachedQueryAndWithoutSortOrder() throws Exception {
+        fillCache(cacheRepl, 5);
+
+        assertQuery("SELECT id FROM TEST_REPL FETCH FIRST (? + 1) ROWS ONLY")
+            .withParams(1)
+            .returns(0)
+            .returns(1)
+            .check();
+
+        assertQuery("SELECT id FROM TEST_REPL FETCH FIRST (? + 1) ROWS ONLY")
+            .withParams(2)
+            .returns(0)
+            .returns(1)
+            .returns(2)
+            .check();
+
+        // Check negative param.
+        assertThrows("SELECT id FROM TEST_REPL FETCH FIRST (? + 1) ROWS ONLY",
+            IgniteSQLException.class, "FETCH must not be negative", -2);
+    }
+
+    /** */
+    @Test
+    public void testFetchExpressionNested() throws Exception {
+        fillCache(cacheRepl, 5);
+
+        assertQuery("SELECT id FROM (SELECT id from TEST_REPL FETCH FIRST (? + 3) ROWS ONLY) " +
+            "FETCH NEXT (1 + ?) ROWS ONLY")
+            .withParams(2, 1)
+            .returns(0)
+            .returns(1)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testFetchScalarFunctionExpression() throws Exception {
+        fillCache(cacheRepl, 5);
+
+        assertQuery("SELECT id FROM TEST_REPL FETCH FIRST (1 + ABS(?)) ROWS ONLY")
+            .withParams(-2)
+            .returns(0)
+            .returns(1)
+            .returns(2)
+            .check();
+
+        assertQuery("SELECT id FROM TEST_REPL FETCH FIRST (1 + ABS(?)) ROWS ONLY")
+            .withParams(1)
+            .returns(0)
+            .returns(1)
+            .check();
+
+        assertQuery("SELECT id FROM TEST_REPL FETCH FIRST (SQRT(?) + 1 + 0) ROWS ONLY")
+            .withParams(4)
+            .returns(0)
+            .returns(1)
+            .returns(2)
+            .check();
+
+        assertQuery("SELECT id FROM TEST_REPL FETCH FIRST (SQRT(?) + 1 + 0) ROWS ONLY")
+            .withParams(5)
+            .returns(0)
+            .returns(1)
+            .returns(2)
+            .check();
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST (SQRT(?) + 1 + 0) ROWS ONLY")
+            .withParams(5)
+            .returns(0)
+            .returns(1)
+            .returns(2)
+            .check();
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id DESC FETCH FIRST (SQRT(?) + 1 + 0) ROWS ONLY")
+            .withParams(5)
+            .returns(4)
+            .returns(3)
+            .returns(2)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testFetchExpressionWithRewrite() throws Exception {
+        fillCache(cacheRepl, 5);
+
+        assertQuery("SELECT id FROM TEST_REPL FETCH FIRST (1 + NVL(?, 10000)) ROWS ONLY")
+            .withParams(1)
+            .returns(0)
+            .returns(1)
+            .check();
+
+        assertQuery("SELECT id FROM TEST_REPL FETCH FIRST (1 + NVL(?, 10000)) ROWS ONLY")
+            .withParams(2)
+            .returns(0)
+            .returns(1)
+            .returns(2)
+            .check();
     }
 
     /**
@@ -269,5 +602,10 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
             sb.append("FETCH FIRST ").append(param ? "?" : Integer.toString(lim)).append(" ROWS ONLY ");
 
         return sb.toString();
+    }
+
+    /** */
+    private static BigDecimal bigInt() {
+        return BigDecimal.valueOf(Integer.MAX_VALUE).add(BigDecimal.ONE);
     }
 }
