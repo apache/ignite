@@ -48,6 +48,22 @@ If you don't use data regions, you have to explicitly add default data region pa
 By default, eviction starts when the overall RAM consumption by a region gets to 90%.
 Use the `DataRegionConfiguration.setEvictionThreshold(...)` parameter if you need to initiate eviction earlier or later.
 
+=== Monitoring Page Eviction
+
+When page eviction starts because a data region is under memory pressure, Ignite sets the `EvictionsStarted` metric to `true` for that data region.
+The metric is available in the `io.dataregion.{data_region_name}` registry.
+Use it together with `EvictionRate` to monitor whether eviction has started and how actively pages are being evicted.
+
+Ignite also logs a warning when page-based eviction starts:
+
+[source,text]
+----
+Page-based evictions started. Consider increasing 'maxSize' on Data Region configuration: <region_name>
+----
+
+The warning is logged once per data region.
+For monitoring, prefer the `EvictionsStarted` metric because it identifies the affected data region directly and does not depend on log parsing.
+
 Ignite supports two page selection algorithms:
 
 * Random-LRU
