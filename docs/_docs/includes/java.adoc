@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-To run Ignite with Java 11 or later, follow these steps:
+To run Ignite with Java 17 or later, follow these steps:
 
 1.  Set the `JAVA_HOME` environment variable to point to the Java installation
 directory.
@@ -26,19 +26,6 @@ application:
 +
 [tabs]
 --
-tab:Java 11[]
-[source,shell]
-----
---add-exports=java.base/jdk.internal.misc=ALL-UNNAMED
---add-exports=java.base/sun.nio.ch=ALL-UNNAMED
---add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
---add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
---add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
---add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED
---add-opens=java.base/java.nio=ALL-UNNAMED
---illegal-access=permit
-----
-
 tab:Java 17[]
 [source,shell]
 ----
