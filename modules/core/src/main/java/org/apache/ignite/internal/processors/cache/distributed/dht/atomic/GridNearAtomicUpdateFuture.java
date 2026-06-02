@@ -418,7 +418,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
 
                         if (ret.value(cctx) != null) {
                             if (opRes != null)
-                                opRes.mergeEntryProcessResults(ret);
+                                opRes.mergeEntryProcessResults(cctx, ret);
                             else
                                 opRes = ret;
                         }

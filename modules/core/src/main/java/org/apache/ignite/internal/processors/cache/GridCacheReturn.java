@@ -314,12 +314,12 @@ public class GridCacheReturn implements MarshallableMessage, CacheIdAware {
     /**
      * @param other Other result to merge with.
      */
-    public synchronized void mergeEntryProcessResults(GridCacheReturn other) {
+    public synchronized void mergeEntryProcessResults(GridCacheContext ctx, GridCacheReturn other) {
         assert invokeRes || v == null : "Invalid state to merge: " + this;
         assert other.invokeRes;
         assert loc == other.loc : loc;
 
-        if (other.v == null)
+        if (other.value(ctx) == null)
             return;
 
         invokeRes = true;

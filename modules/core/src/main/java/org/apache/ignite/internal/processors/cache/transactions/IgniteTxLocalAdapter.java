@@ -326,7 +326,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         assert ret != null;
 
         if (ret.invokeResult())
-            implicitRes.mergeEntryProcessResults(ret);
+            implicitRes.mergeEntryProcessResults(cctx.cacheContext(ret.cacheId()), ret);
         else
             implicitRes = ret;
     }
