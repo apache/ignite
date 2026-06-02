@@ -361,10 +361,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @param adapter Adapter.
      */
     ServerImpl(TcpDiscoverySpi adapter, int utilityPoolSize, int pingRmtDcPoolSize) {
-        super(adapter, (msg, send)-> {
-            if(send)
-                msgWrapper.
-        });
+        super(adapter);
 
         utilityPool = new IgniteThreadPoolExecutor("disco-pool",
             spi.ignite().name(),
@@ -7888,17 +7885,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 log,
                 Math.max(spi.metricsUpdateFreq, 10),
                 null,
-                msgWrapper == null ? null : msgP -> {
-                    assert msgP.get2() == null;
-
-                    msgP.set1(msgWrapper.apply(msgP.get1(), true));
-
-                    return msgP;
-                }
+                null
             );
-
-            super("tcp-disco-msg-worker-[]", log, 10, getWorkerRegistry(spi), msgWrapper == null ? null : msg -> msgWrapper.apply(msg, true));
-
 
             this.sock = sock;
             this.clientNodeId = clientNodeId;

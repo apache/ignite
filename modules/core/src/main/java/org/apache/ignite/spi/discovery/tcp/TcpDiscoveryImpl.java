@@ -146,10 +146,7 @@ abstract class TcpDiscoveryImpl {
     /**
      * @param spi Adapter.
      */
-    TcpDiscoveryImpl(
-        TcpDiscoverySpi spi,
-        @Nullable BiFunction<TcpDiscoveryAbstractMessage, Boolean, TcpDiscoveryAbstractMessage> msgWrapper
-    ) {
+    TcpDiscoveryImpl(TcpDiscoverySpi spi) {
         this.spi = spi;
 
         log = spi.log;
@@ -158,8 +155,6 @@ abstract class TcpDiscoveryImpl {
             tracing = ((IgniteEx)spi.ignite()).context().tracing();
         else
             tracing = new NoopTracing();
-
-        this.msgWrapper = msgWrapper;
     }
 
     /**

@@ -73,6 +73,8 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.OperationContexMessage;
+import org.apache.ignite.internal.OperationContextAttributeType;
 import org.apache.ignite.internal.cluster.NodeOrderComparator;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
@@ -92,6 +94,7 @@ import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IGridClusterStateProcessor;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.processors.security.SecuritySubjectMessage;
 import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
 import org.apache.ignite.internal.systemview.ClusterNodeViewWalker;
 import org.apache.ignite.internal.systemview.NodeAttributeViewWalker;
@@ -123,7 +126,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -143,6 +145,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.systemview.view.ClusterNodeView;
 import org.apache.ignite.spi.systemview.view.NodeAttributeView;
 import org.apache.ignite.spi.systemview.view.NodeMetricsView;
@@ -936,10 +939,16 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 @Override public void run() {
                     DiscoverySpiCustomMessage customMsg = notification.customMessage();
 
-                    if (customMsg instanceof SecurityAwareCustomMessageWrapper) {
-                        UUID secSubjId = ((SecurityAwareCustomMessageWrapper)customMsg).securitySubjectId();
+                    assert customMsg instanceof TcpDiscoveryAbstractMessage;
 
-                        try (Scope ignored = ctx.security().withContext(secSubjId)) {
+                    TcpDiscoveryAbstractMessage msg0 = (TcpDiscoveryAbstractMessage)customMsg;
+
+                    SecuritySubjectMessage secSubjMsg = msg0.opCtxMessage == null
+                        ? null
+                        : msg0.opCtxMessage.attributeValue(OperationContextAttributeType.SECURITY);
+
+                    if (secSubjMsg != null) {
+                        try (Scope ignored = ctx.security().withContext(secSubjMsg.id)) {
                             super.run();
                         }
                     }
@@ -2338,6 +2347,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @throws IgniteCheckedException If failed.
      */
     public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteCheckedException {
+        wrapMessage(msg);
+
         try {
             getSpi().sendCustomEvent(msg);
         }
@@ -2352,14 +2363,17 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /** */
-    private Message wrapMessage(Message msg) {
-        IgniteSecurity security = ctx.security();
+    private void wrapMessage(DiscoverySpiCustomMessage msg) {
+        assert msg instanceof TcpDiscoveryAbstractMessage;
 
-//        getSpi().sendCustomEvent(security.enabled()
-//            ? new SecurityAwareCustomMessageWrapper(msg, security.securityContext().subject().id())
-//            : msg);
+        IgniteSecurity sec = ctx.security();
 
-        return msg;
+        if (sec.enabled()) {
+            TcpDiscoveryAbstractMessage msg0 = (TcpDiscoveryAbstractMessage)msg;
+
+            OperationContexMessage.enrich(msg0.opCtxMessage, OperationContextAttributeType.SECURITY,
+                new SecuritySubjectMessage(sec.securityContext().subject().id()));
+        }
     }
 
     /**

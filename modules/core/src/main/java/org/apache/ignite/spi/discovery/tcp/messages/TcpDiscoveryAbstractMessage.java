@@ -80,7 +80,7 @@ public abstract class TcpDiscoveryAbstractMessage implements Message {
     /** */
     @GridToStringInclude
     @Order(5)
-    @Nullable OperationContexMessage opCtxMessage;
+    public @Nullable OperationContexMessage opCtxMessage;
 
     /**
      * Default no-arg constructor for serialization purposes.
