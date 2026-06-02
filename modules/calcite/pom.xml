@@ -341,6 +341,11 @@
                                     outputRoot="${project.build.directory}/generated-sources/fmpp"
                                     data="tdd(${project.build.directory}/codegen/config.fmpp), default: tdd(${project.build.directory}/codegen/default_config.fmpp)"
                                 />
+                                <patch
+                                    dir="${project.build.directory}/generated-sources/fmpp"
+                                    patchfile="${project.build.directory}/codegen/patches/select-fetch-expression.patch"
+                                    strip="1"
+                                />
                             </target>
                         </configuration>
                     </execution>

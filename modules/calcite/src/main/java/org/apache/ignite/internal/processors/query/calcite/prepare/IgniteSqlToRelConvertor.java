@@ -46,6 +46,7 @@ import org.apache.calcite.sql.util.SqlShuttle;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
+import org.apache.calcite.sql2rel.RelFieldTrimmer;
 import org.apache.calcite.sql2rel.SqlRexConvertletTable;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.RelBuilder;
@@ -85,6 +86,11 @@ public class IgniteSqlToRelConvertor extends SqlToRelConverter {
             return RelRoot.of(convertMerge((SqlMerge)qry), qry.getKind());
         else
             return super.convertQueryRecursive(qry, top, targetRowType);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected RelFieldTrimmer newFieldTrimmer() {
+        return new IgniteRelFieldTrimmer(validator, relBuilder);
     }
 
     /** {@inheritDoc} */

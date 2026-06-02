@@ -43,6 +43,7 @@ import org.apache.calcite.rel.rules.ProjectRemoveRule;
 import org.apache.calcite.rel.rules.PruneEmptyRules;
 import org.apache.calcite.rel.rules.SetOpToFilterRule;
 import org.apache.calcite.rel.rules.SortRemoveRule;
+import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
@@ -259,7 +260,9 @@ public enum PlannerPhase {
 
                     ((RelRule<?>)PruneEmptyRules.SORT_FETCH_ZERO_INSTANCE).config
                         .withOperandSupplier(b ->
-                            b.operand(LogicalSort.class).anyInputs())
+                            b.operand(LogicalSort.class)
+                                .predicate(sort -> sort.fetch instanceof RexLiteral)
+                                .anyInputs())
                         .toRule(),
 
                     ExposeIndexRule.INSTANCE,
