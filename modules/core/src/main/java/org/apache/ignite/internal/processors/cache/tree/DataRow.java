@@ -45,8 +45,7 @@ public class DataRow extends CacheDataRowAdapter {
      */
     protected DataRow(CacheGroupContext grp, int hash, long link, int part, RowData rowData, boolean skipVer) {
         super(link);
-
-        this.hash = hash;
+        
         this.part = part;
 
         try {
@@ -71,8 +70,7 @@ public class DataRow extends CacheDataRowAdapter {
      */
     public DataRow(KeyCacheObject key, CacheObject val, GridCacheVersion ver, int part, long expireTime, int cacheId) {
         super(0);
-
-        this.hash = key.hashCode();
+        
         this.key = key;
         this.val = val;
         this.ver = ver;
@@ -91,13 +89,6 @@ public class DataRow extends CacheDataRowAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void key(KeyCacheObject key) {
-        super.key(key);
-
-        hash = key.hashCode();
-    }
-
-    /** {@inheritDoc} */
     @Override public int partition() {
         return part;
     }
@@ -111,7 +102,7 @@ public class DataRow extends CacheDataRowAdapter {
 
     /** {@inheritDoc} */
     @Override public int hash() {
-        return hash;
+        return hash = key.hashCode();
     }
 
     /** {@inheritDoc} */

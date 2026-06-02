@@ -421,14 +421,14 @@ public class MessageSerializerGenerator {
             else if (isCacheObject(t)) {
                 List<String> code = new ArrayList<>();
 
-                code.add(indentedLine("if (%s != null)", accessor));
+                code.add(indentedLine("if (%s != null && ctx != null)", accessor));
 
                 indent++;
 
                 if (!unmarshall)
-                    code.add(indentedLine("%s.prepareMarshal(ctx != null ? ctx.cacheObjectContext() : null);", accessor));
+                    code.add(indentedLine("%s.prepareMarshal(ctx.cacheObjectContext());", accessor));
                 else
-                    code.add(indentedLine("%s.finishUnmarshal(ctx != null ? ctx.cacheObjectContext() : null, clsLdr);", accessor));
+                    code.add(indentedLine("%s.finishUnmarshal(ctx.cacheObjectContext(), clsLdr);", accessor));
 
                 indent--;
 
