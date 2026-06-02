@@ -105,7 +105,7 @@ public class ClusterAgentVerticleManager implements ClusterAgentService {
 			if (service instanceof String) {
 				DeploymentOptions options = new DeploymentOptions();
 				try {
-					Class<? extends Verticle> ctx = (Class) Class.forName(service.toString());
+					Class<? extends Verticle> ctx = (Class<? extends Verticle>) Class.forName(service.toString());
 
 					ApiOperation api = ctx.getAnnotation(ApiOperation.class);
 					JsonObject info = JsonObject.mapFrom(options);

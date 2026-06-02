@@ -19,7 +19,7 @@ import javax.script.ScriptException;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.console.agent.service.LangflowApiClient;
+import org.apache.ignite.internal.plugin.IgniteVertxPlugin;
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.apache.tinkerpop.gremlin.driver.Client;
 import org.apache.tinkerpop.gremlin.driver.Cluster;
@@ -434,14 +434,15 @@ public class GremlinExecutor implements AutoCloseable {
      * @throws IOException If failed to parse REST result.
      * @throws Throwable If failed to send request.
      */
-    public RestResult execRequest(Ignite ignite, Vertx vertx, String clusterId, JsonObject params) throws Throwable {
+    public RestResult execRequest(Ignite ignite, IgniteVertxPlugin vertxPlugin, String clusterId, JsonObject params) throws Throwable {
     	String code = params.getString("qry");
         try {
         	JsonObject res = new JsonObject();
         	res.put("error",(String)null);
         	long start = System.currentTimeMillis();    
         	Bindings bindings = engine.createBindings();
-        	bindings.put("vertx",vertx);
+        	bindings.put("vertx",vertxPlugin.vertx());
+			bindings.put("vertxStarter",vertxPlugin.starter());
         	bindings.put("ignite",ignite);
         	
         	Object result = engine.eval(code, bindings);

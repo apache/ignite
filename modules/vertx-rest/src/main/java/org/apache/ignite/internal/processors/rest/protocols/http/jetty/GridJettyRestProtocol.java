@@ -362,8 +362,9 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
         
         serverSocketPlaceholder = new ServerSocket(port);
         
-        override(httpSrv.options); 
-        
+        override(httpSrv.options);
+
+        mcpSrv.setIgniteInstanceName(ctx.igniteInstanceName());
         httpSrv.setIgniteInstanceName(ctx.igniteInstanceName());
         httpSrv.setReadyCallback((router)->{
             try {
@@ -395,6 +396,8 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
                     mcpSrv.stop();
                 	httpSrv = null;
                     mcpSrv = null;
+                    VertXStarter vertxStarter = VertXStarter.getInstance(this.ctx.igniteInstanceName());
+                    vertxStarter.stop();
                     context.close();
 
                 }

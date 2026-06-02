@@ -18,22 +18,20 @@ panel-collapsible(opened=`::true` ng-form=form)
                     label: 'Service Name:',
                     model: `${model}.name`,
                     name: '"name"',   
-                    tip: `${model}.notes`,
+                    tip: '{{ $ctrl.clonedService.notes }}',
                     required: true
                 })(
                     ignite-unique-property='name'
                     ignite-unique-skip=`["id", ${model}]`
                 )
-                    
-            
             .pc-form-grid-col-60(ng-if='$ctrl.available("2.1.0")')
-                +form-field__text({
-                    label: 'Method Name:',
-                    model: `${model}.methodName`,
-                    name: '"methodName"',
-                    placeholder: 'Service method name',
-                    tip: 'Method name.<br/>\
-                          Method from service,if null use default call method.'
+                +form-field__dropdown({
+                    label: 'Tool Name:',
+                    model: `${model}.toolName`,
+                    name: '"toolName"',
+                    placeholder: 'Tool name in service,default is call if empty',
+                    options: `${model}.toolChoices || []`,
+                    tip: '{{ $ctrl.getToolTip() }}'
                 })
             .pc-form-grid-col-60(ng-if='$ctrl.available("2.1.0")')
                 +form-field__text({

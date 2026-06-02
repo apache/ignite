@@ -7,11 +7,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.vertx.webmvc.mcp.ToolExecutor;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.console.agent.ServiceDeployment;
 import org.apache.ignite.console.agent.handlers.RestClusterHandler;
 import org.apache.ignite.console.utils.Utils;
+import org.apache.ignite.internal.plugin.IgniteVertxPlugin;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
@@ -23,7 +26,7 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 @ApiOperation(nickname="serviceManager", value = "Deploy Service to the cluster", notes = "列出、部署、卸载Service到ignite集群中。")
-public class ClusterAgentServiceManager implements ClusterAgentService {
+public class ClusterAgentServiceManager implements ClusterAgentService,McpService {
    
 	@IgniteInstanceResource
     private Ignite ignite;
@@ -62,24 +65,66 @@ public class ClusterAgentServiceManager implements ClusterAgentService {
     	}
         return ignite;
     }
-	
-	public static boolean canHandle(String serviceName) {
-		if(serviceName.equals("listService") || serviceName.equals("serviceList")) {    		
-    		return true;		
-    	}
-    	if(serviceName.equals("deployService")) {    		
-    		return true;   		
-    	}
-    	if(serviceName.equals("redeployService")) {    		
-    		return true;   		
-    	}
-    	if(serviceName.equals("undeployService")) {
-    		return true; 
-    	}
-    	if(serviceName.equals("cancelService")) {
-    		return true;    		
-    	}
-    	return false;
+
+	@Override
+	public List<ToolExecutor> toolExecutors(){
+		ToolExecutor list = ToolExecutor.builder()
+				.name("serviceList")
+				.description("Get deployed services from cluster")
+				.outputField("*","object","Service attributes and toolList")
+				.executor((Map<String,Object> param)->{
+					ServiceResult result = this.call("serviceList",param);
+					return result;
+				})
+				.build();
+
+		ToolExecutor deploy = ToolExecutor.builder()
+				.name("deployService")
+				.description("Deploy Service into cluster")
+				.parameter("service","object","Ignite service object",false)
+				.parameter("name","string","Ignite service name",true)
+				.parameter("serviceClass","string","Ignite service class",true)
+				.outputField("*","object","Service attributes and toolList")
+				.executor((Map<String,Object> param)->{
+					ServiceResult result = this.call("deployService",param);
+					return result;
+				})
+				.build();
+
+		ToolExecutor redeploy = ToolExecutor.builder()
+				.name("redeployService")
+				.description("ReDeploy Service into cluster")
+				.parameter("services","array","Ignite service name list",true)
+				.outputField("*","object","Service attributes")
+				.executor((Map<String,Object> param)->{
+					ServiceResult result = this.call("redeployService",param);
+					return result;
+				})
+				.build();
+
+		ToolExecutor undeploy = ToolExecutor.builder()
+				.name("undeployService")
+				.description("UnDeploy Service from cluster")
+				.parameter("services","array","Ignite service name list",true)
+				.outputField("*","object","Service attributes")
+				.executor((Map<String,Object> param)->{
+					ServiceResult result = this.call("undeployService",param);
+					return result;
+				})
+				.build();
+
+		ToolExecutor cancel = ToolExecutor.builder()
+				.name("cancelService")
+				.description("Cancel Service execute in cluster")
+				.parameter("services","array","Ignite service name list",true)
+				.outputField("*","object","Service attributes")
+				.executor((Map<String,Object> param)->{
+					ServiceResult result = this.call("cancelService",param);
+					return result;
+				})
+				.build();
+
+		return List.of(list,deploy,redeploy,undeploy,cancel);
 	}
 	
 	@Override
@@ -109,53 +154,55 @@ public class ClusterAgentServiceManager implements ClusterAgentService {
 		ServiceResult result = new ServiceResult();
 		Collection<ServiceDescriptor> descs = ignite.services().serviceDescriptors();
 		
-		
 		String type = payload!=null? (String)payload.get("type"):null;
 		
-		for(ServiceDescriptor ctx: descs) {
+		for(ServiceDescriptor desc: descs) {
 			JsonObject info = new JsonObject();
-			info.put("name", ctx.name());			
+			info.put("name", desc.name());
 			
-			info.put("cacheName", ctx.cacheName());
-			info.put("affinityKey", ctx.affinityKey());
-			info.put("totalCount", ctx.totalCount());
-			info.put("maxPerNodeCount", ctx.maxPerNodeCount());
-			ApiOperation api = ctx.serviceClass().getAnnotation(ApiOperation.class);
+			info.put("cacheName", desc.cacheName());
+			info.put("affinityKey", desc.affinityKey());
+			info.put("totalCount", desc.totalCount());
+			info.put("maxPerNodeCount", desc.maxPerNodeCount());
+			ApiOperation api = desc.serviceClass().getAnnotation(ApiOperation.class);
 			if(api!=null) {
 				info.put("description", api.value());
 				info.put("notes", api.notes());				
 			}			
 			else {
-				info.put("description", ctx.serviceClass().getSimpleName());
+				info.put("description", desc.serviceClass().getSimpleName());
 				info.put("notes","");
 			}
+
+			info.put("tools",ServiceDeployment.getToolList(desc.name()));
 			
-			if(ClusterAgentService.class.isAssignableFrom(ctx.serviceClass())){
+			if(ClusterAgentService.class.isAssignableFrom(desc.serviceClass())){
 				info.put("type","ClusterAgentService");
 				// KeyaffinitySingleton,Multiple,NodeSingleton,ClusterSingleton
 				info.put("mode", "ClusterSingleton"); 
 			}
-			else if(CacheAgentService.class.isAssignableFrom(ctx.serviceClass())){
+			else if(CacheAgentService.class.isAssignableFrom(desc.serviceClass())){
 				info.put("type","CacheAgentService");
 				// KeyaffinitySingleton,Multiple,NodeSingleton,ClusterSingleton
 				info.put("mode", "NodeSingleton"); 
 			}
-			else {
+			else if(desc.totalCount()==1){
 				info.put("mode", "ClusterSingleton"); 
-				info.put("type","Unknown");
+				info.put("type",desc.serviceClass().getSimpleName());
+			}
+			else if(desc.totalCount()==0 && desc.maxPerNodeCount()==1){
+				info.put("mode", "NodeSingleton");
+				info.put("type",desc.serviceClass().getSimpleName());
+			}
+			else{
+				info.put("mode", "Multiple");
+				info.put("type",desc.serviceClass().getSimpleName());
 			}
 			
 			if(type!=null && !info.getString("type").equals(type)) {
 				continue;
 			}
-			
-			if(ctx.affinityKey()!=null) {
-				info.put("mode", "KeyaffinitySingleton"); 
-			}
-			else if(ctx.maxPerNodeCount()>1) {
-				info.put("mode", "Multiple"); 
-			}
-			result.put(ctx.name(), info);
+			result.put(desc.name(), info);
 		}
 		return result;
 	}	
@@ -182,8 +229,9 @@ public class ClusterAgentServiceManager implements ClusterAgentService {
 					info.put("cacheName", desc.cacheName());
 					
 				    try {
-						cfg.setService(desc.serviceClass().getDeclaredConstructor().newInstance());
-						ignite.services().deploy(cfg);						
+						ignite.services().cancel(service.toString());
+						ServiceDeployment.deployService(ignite,cfg,desc.serviceClass().getName(),null);
+						info.put("success",true);
 						
 					} catch (Exception e) {
 						messages.add(e.getMessage());
@@ -206,7 +254,8 @@ public class ClusterAgentServiceManager implements ClusterAgentService {
 			    JsonObject info = new JsonObject();
 				info.put("name", service.toString());				
 			    try {						
-					ignite.services().cancel(service.toString());					
+					ignite.services().cancel(service.toString());
+					info.put("success",true);
 					
 				} catch (Exception e) {
 					messages.add(e.getMessage());
@@ -230,6 +279,7 @@ public class ClusterAgentServiceManager implements ClusterAgentService {
 			    try {						
 					Service svc = ignite.services().service(service.toString());
 					svc.cancel();
+					info.put("success",true);
 					
 				} catch (Exception e) {
 					messages.add(e.getMessage());
@@ -245,79 +295,51 @@ public class ClusterAgentServiceManager implements ClusterAgentService {
 	 */	
 	public ServiceResult deployService(Map<String, Object> payload) {
 		ServiceResult result = new ServiceResult();
-		List<String> messages = result.getMessages();
 		JsonObject args = new JsonObject(payload);
+		JsonObject service;
 		if(args.containsKey("service")) {
-			JsonObject service = args.getJsonObject("service");
+			service = args.getJsonObject("service");
+		}
+		else{
+			service = args;
+		}
+
+		if(service.containsKey("name")) {
 			ServiceConfiguration cfg = new ServiceConfiguration();
 		    cfg.setName(service.getString("name"));
 		    cfg.setCacheName(service.getString("cache"));
 		    cfg.setAffinityKey(service.getString("affinityKey"));
-		    cfg.setMaxPerNodeCount(service.getInteger("maxPerNodeCount"));
-		    cfg.setTotalCount(service.getInteger("totalCount"));		    
+
+			String mode = args.getString("mode");
+			if(mode==null) {
+				cfg.setMaxPerNodeCount(service.getInteger("maxPerNodeCount"));
+				cfg.setTotalCount(service.getInteger("totalCount"));
+			}
+			else{
+				if(mode.equals("ClusterSingleton")) {
+					cfg.setTotalCount(1);
+					cfg.setMaxPerNodeCount(1);
+				}
+				else if(mode.equals("NodeSingleton")) {
+					cfg.setMaxPerNodeCount(1);
+					cfg.setTotalCount(0);
+				}
+				else if(mode.equals("Multiple")) {
+					int maxPerNodeCnt = args.getInteger("maxPerNodeCount",2);
+					cfg.setMaxPerNodeCount(maxPerNodeCnt);
+					cfg.setTotalCount(0);
+				}
+			}
 		    
 		    try {
-		    	String serviceCls = service.getString("service");
-		    	// must be java bean
-		    	Class<? extends Service> serviceClass = (Class) Class.forName(serviceCls);
-				cfg.setService(serviceClass.getDeclaredConstructor().newInstance());
-				ignite.services().deploy(cfg);				
+		    	String serviceCls = service.getString("serviceClass");
+				result = ServiceDeployment.deployService(ignite,cfg,serviceCls,mode);
 				
 			} catch (Exception e) {
-				messages.add(e.getMessage());
+				result.addMessage(e.getMessage());
 			}
 			result.setStatus("success");
 			return result;
-		}
-		// 依次部署多个class，信息从ApiOperation获取
-		JsonArray services = args.getJsonArray("servicesClass");
-		// KeyaffinitySingleton,Multiple,NodeSingleton,ClusterSingleton
-		String mode = args.getString("mode","NodeSingleton");
-		
-		for(Object service: services) {
-			if(service instanceof String) {				
-			    try {
-			    	Class<? extends Service> ctx = (Class)Class.forName(service.toString());
-			    	Service svc = ctx.getDeclaredConstructor().newInstance();
-			    	
-				    JsonObject info = new JsonObject();
-					info.put("name", ctx.getSimpleName());
-					info.put("cacheName", "");
-					ApiOperation api = ctx.getAnnotation(ApiOperation.class);					
-
-					if (api != null) {
-						info.put("description", api.value());
-						info.put("notes", api.notes());
-					} else {
-						info.put("description", ctx.getName());
-						info.put("notes", "");
-					}
-					info.put("mode", mode);
-					if(mode.equals("ClusterSingleton")) {
-						ignite.services().deployClusterSingleton(ctx.getSimpleName(),svc);
-					}
-					else if(mode.equals("NodeSingleton")) {
-						ignite.services().deployNodeSingleton(ctx.getSimpleName(),svc);
-					}
-					else if(mode.equals("Multiple")) {
-						int totalCnt = args.getInteger("totalCnt",ignite.cluster().nodes().size());
-						int maxPerNodeCnt = args.getInteger("maxPerNodeCnt",1);
-						ignite.services().deployMultiple(ctx.getSimpleName(), svc, totalCnt, maxPerNodeCnt);
-					}
-					else {
-						String cacheName = args.getString("cacheName");
-						Object affKey = args.getValue("affKey");
-						info.put("cacheName", cacheName);
-						ignite.services().deployKeyAffinitySingleton(ctx.getSimpleName(), svc, cacheName, affKey);
-					}					
-					result.put(ctx.getSimpleName(), info);	
-					
-				} catch (InstantiationException | IllegalAccessException e) {
-					messages.add(e.getMessage());
-				} catch (Exception e) {
-					messages.add(e.getMessage());
-				}			    				
-			}
 		}
 		return result;
 	}

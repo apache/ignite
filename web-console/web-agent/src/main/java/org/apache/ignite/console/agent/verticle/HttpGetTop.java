@@ -29,19 +29,7 @@ public class HttpGetTop extends AbstractVerticle {
 	    	int status = resp.statusCode();
 		    Buffer body = resp.body().result();
 		    
-	    });	    
+	    });
 
-    }
-	
-	public static void main(String[] args) {
-        VertxOptions options = new VertxOptions();
-        Vertx.clusteredVertx(options,res->{
-            if(res.succeeded()) {
-                Vertx vertx = res.result();
-                vertx.deployVerticle("org.apache.ignite.console.agent.verticle.HttpGetTop");
-            }else{
-                //失败的时候做什么！
-            }
-        });
     }
 }

@@ -31,8 +31,6 @@ export default class ServiceCallFormController {
 
     $onInit() {
         this.available = this.IgniteVersion.available.bind(this.IgniteVersion);
-
-
         // TODO: Do we really need this?
         this.$scope.ui = this.IgniteFormUtils.formUI();
 
@@ -43,7 +41,7 @@ export default class ServiceCallFormController {
     }
 
     $onDestroy() {
-        
+        this.result = null;
     }
 
     $onChanges(changes) {
@@ -55,8 +53,24 @@ export default class ServiceCallFormController {
                 this.$scope.ui.inputForm.$setPristine();
                 this.$scope.ui.inputForm.$setUntouched();
             }
+            this.result = null;
         }
         
+    }
+
+    getToolTip(){
+      let toolTips = '';
+      if(this.clonedService && this.clonedService.toolName){
+        for(let tool of this.clonedService.tools){
+            if(tool.name==this.clonedService.toolName){
+                toolTips+=this.clonedService.toolName+':<pre>';
+                toolTips+=JSON.stringify(tool.inputSchema, null, 2);
+                toolTips+='</pre>\n';
+                break;
+            }
+        }
+      }
+      return toolTips;
     }
 
     getValuesToCompare() {
@@ -67,24 +81,28 @@ export default class ServiceCallFormController {
         let serviceName = 'redeployService';
         return this.callServiceForGrid(serviceName,{force});
     }
-
     
     callServiceForGrid(serviceName:string,params) {
-        let args = this.onCall({$event: {serviceName: this.clonedService}});
+        let args = this.onCall({$event: {serviceName: serviceName}});
+        let toolName = params.toolName;
+        if(toolName && toolName!='call'){
+            serviceName = toolName;
+        }
         let clusterId = args['clusterId'];
         params = Object.assign(args,params);
         this.AgentManager.callClusterService({id: clusterId},serviceName,args).then((data) => {  
             this.$scope.status = data.status; 
             if(data.message){
-                this.$scope.message = data.message;
+                this.message = data.message;
             }
             if(data.result){
+                this.result = JSON.stringify(data.result, null, 2);
                 return data.result;
             }
             return {}
         })   
        .catch((e) => {
-            this.$scope.message = ('Failed to callClusterService : '+serviceName+' Caused : '+e);           
+            this.message = ('Failed to callClusterService : '+serviceName+' Caused : '+e);
         });
     }
 

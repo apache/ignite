@@ -78,7 +78,7 @@ public class CommandsProviderExtImpl implements CommandsProvider {
 				if(ignite!=null && isLastNode>0) {
 					String nodeRestUrl = IgniteClusterLauncher.getNodeRestUrl(ignite);
                     RestClusterHandler.registerNodeUrl(arg.clusterId(),arg.instanceName(),nodeRestUrl);
-                    ServiceDeployment.deployServices(ignite.services(ignite.cluster()));
+                    ServiceDeployment.deployBuildinServices(ignite);
 		        	return true;
 				}
 				else {

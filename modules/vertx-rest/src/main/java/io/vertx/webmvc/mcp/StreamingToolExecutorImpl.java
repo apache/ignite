@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import static io.vertx.webmvc.mcp.McpSchema.*;
 
 /**
  * 抽象流式工具执行器基类
@@ -17,14 +18,21 @@ import java.util.function.Function;
 public class StreamingToolExecutorImpl implements StreamingToolExecutor {
     protected final String name;
     protected final String description;
-    protected final Map<String, Object> parameters;
-    protected final Map<String, Object> outputSchema;
+    protected final JSONSchema parameters;
+    protected final JSONSchema outputSchema;
     private final Function<Map<String, Object>, Iterator<?>> executor;
 
+    public StreamingToolExecutorImpl(String name, String description, JSONSchema parameters) {
+        this.name = name;
+        this.description = description;
+        this.parameters = parameters;
+        this.outputSchema = null;
+        this.executor = null;
+    }
+
     public StreamingToolExecutorImpl(String name, String description,
-                                     Map<String, Object> parameters,Map<String, Object> outputSchema,
-                                     Function<Map<String, Object>, Iterator<?>> executor
-    ) {
+                                     JSONSchema parameters, JSONSchema outputSchema,
+                                     Function<Map<String, Object>, Iterator<?>> executor) {
         this.name = name;
         this.description = description;
         this.parameters = parameters;
@@ -34,13 +42,13 @@ public class StreamingToolExecutorImpl implements StreamingToolExecutor {
     /**
      * 执行流式处理逻辑
      */
-    protected void processStream(Map<String, Object> arguments,
-                                          StreamEmitter emitter,
-                                          StreamCallback callback){
+    protected void processStream(ToolExecutionContext exeCtx,
+                                 StreamEmitter emitter,
+                                 StreamCallback callback){
         int i = 0;
         long startTime = System.currentTimeMillis();
-        Iterator<?> it = executor.apply(arguments);
-
+        Iterator<?> it = executor.apply(exeCtx.getArguments());
+        exeCtx.setExecutedResult(it);
         while(it.hasNext()){
             Object next = it.next();
             if(next instanceof Map){
@@ -53,18 +61,18 @@ public class StreamingToolExecutorImpl implements StreamingToolExecutor {
             else if(next instanceof byte[]){
                 emitter.emitDataChunk((byte[])next);
             }
-
+            exeCtx.setExecutedResult(next);
         }
 
-        Map<String, Object> finalResult = new HashMap<>();
-        finalResult.put("status", "completed");
-        finalResult.put("duration", System.currentTimeMillis() - startTime);
-        finalResult.put("message", "process completed");
-        callback.onComplete(finalResult);
+        Map<String, Object> completedResult = new HashMap<>();
+        completedResult.put("status", "completed");
+        completedResult.put("duration", System.currentTimeMillis() - startTime);
+        completedResult.put("message", "process completed");
+        callback.onComplete(completedResult);
     }
 
     @Override
-    public void executeStreaming(Map<String, Object> arguments, StreamCallback callback) {
+    public void executeStreaming(ToolExecutionContext exeCtx, StreamCallback callback) {
         String taskId = generateTaskId();
 
         // 发送开始元数据
@@ -79,7 +87,7 @@ public class StreamingToolExecutorImpl implements StreamingToolExecutor {
 
         // 执行处理
         try {
-            processStream(arguments, emitter, callback);
+            processStream(exeCtx, emitter, callback);
         } catch (Exception e) {
             callback.onError(new McpSchema.McpError(500,e.getMessage(),null));
         }
@@ -100,21 +108,22 @@ public class StreamingToolExecutorImpl implements StreamingToolExecutor {
     }
 
     @Override
-    public Map<String, Object> getParameters() {
+    public JSONSchema getParameters() {
         return parameters;
     }
 
     @Override
-    public Map<String, Object> getOutputSchema() {
+    public JSONSchema getOutputSchema() {
         return outputSchema;
     }
 
     @Override
-    public Object execute(Map<String, Object> arguments) {
+    public Object execute(ToolExecutionContext exeCtx) {
         // 非流式执行的兼容实现
         StreamResultHandler handler = new StreamResultHandler();
-        executeStreaming(arguments, handler);
-        return handler.getPromise().future().result();
+        executeStreaming(exeCtx, handler);
+        Object result = handler.getPromise().future().result();
+        return result;
     }
 
     /**
@@ -184,7 +193,7 @@ public class StreamingToolExecutorImpl implements StreamingToolExecutor {
             emitChunk(chunk);
         }
 
-        public void emitProgress(int current,int total,String message) {
+        public void emitProgress(long current,long total,String message) {
             Map<String, Object> chunk = new HashMap<>();
             chunk.put("type", "progress");
             chunk.put("current", current);
@@ -206,7 +215,7 @@ public class StreamingToolExecutorImpl implements StreamingToolExecutor {
     /**
      * 流式结果处理器（支持 Promise）
      */
-    class StreamResultHandler implements StreamCallback {
+    static class StreamResultHandler implements StreamCallback {
         private final Promise<Map<String, Object>> promise = Promise.promise();
         private final java.util.List<Map<String, Object>> chunks = new java.util.ArrayList<>();
         private Map<String, Object> finalResult;

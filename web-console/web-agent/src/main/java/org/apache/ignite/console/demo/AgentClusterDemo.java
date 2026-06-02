@@ -167,10 +167,11 @@ public class AgentClusterDemo {
     /**
      * Starts read and write from cache in background.
      *
-     * @param services Distributed services on the grid.
+     * @param ignite Distributed services on the grid.
      */
-    private static void deployServices(IgniteServices services) {
-        ServiceDeployment.deployServices(services);
+    private static void deployServices(Ignite ignite) {
+        IgniteServices services = ignite.services();
+        ServiceDeployment.deployBuildinServices(ignite);
 
         services.deployMultiple("Demo service: Multiple instances", new DemoServiceMultipleInstances(), 7, 3);
         services.deployNodeSingleton("Demo service: Node singleton", new DemoServiceNodeSingleton());
@@ -277,7 +278,7 @@ public class AgentClusterDemo {
                     	}                       
                     	ignite.cluster().state(ClusterState.ACTIVE);
 
-                        deployServices(ignite.services(ignite.cluster()));
+                        deployServices(ignite);
 
                         log.info("DEMO: All embedded nodes for demo successfully started");
                     }

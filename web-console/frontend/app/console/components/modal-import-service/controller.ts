@@ -61,7 +61,7 @@ export default class ModalImportServiceController {
             return this.IgniteFormUtils.triggerValidation(this.form, this.$scope);
         
         for(let i = 0; i < this.cluster.serviceConfigurations.length; i++){
-            if(this.cluster.serviceConfigurations[i].service == this.serviceConfiguration.service){
+            if(this.cluster.serviceConfigurations[i].serviceClass == this.serviceConfiguration.serviceClass){
                 this.IgniteMessages.showError('Service configuration with the same serviceClass already exists');
                 return;
             }

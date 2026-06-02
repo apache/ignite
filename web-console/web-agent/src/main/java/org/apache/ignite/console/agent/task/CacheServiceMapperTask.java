@@ -163,6 +163,7 @@ public class CacheServiceMapperTask extends ComputeTaskSplitAdapter<JsonObject, 
 	}
 
 	// Aggregate results into one compound result.
+	@Override
 	public ServiceResult reduce(List<ComputeJobResult> results) {
 		ServiceResult result = new ServiceResult();
 		StringBuilder errorMessage = new StringBuilder();

@@ -1,10 +1,10 @@
 package org.apache.ignite.console.agent.service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
+
+import io.vertx.webmvc.mcp.McpSchema.*;
+import io.vertx.webmvc.mcp.ToolExecutor;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
@@ -14,12 +14,26 @@ import io.swagger.annotations.ApiOperation;
 
 
 
-@ApiOperation("Clear cache data to cluster")
-public class CacheClearDataService implements CacheAgentService {
+@ApiOperation("Clear cache data from cluster")
+public class CacheClearDataService implements CacheAgentService,McpService {
    
 	 /** Ignite instance. */
     @IgniteInstanceResource
     private Ignite ignite;
+
+	@Override
+	public List<ToolExecutor> toolExecutors(){
+		ToolExecutor toolX = ToolExecutor.builder()
+				.name("clear-cache")
+				.description("Clear cache data from cluster")
+				.parameter("cacheName","string","Ignie cache name",true)
+				.executor((Map<String,Object> param)->{
+					return this.call((String)param.get("cacheName"),param);
+				 })
+				.build();
+
+		return List.of(toolX);
+	}
     
 	@Override
 	public ServiceResult call(String cache,Map<String,Object> payload) {

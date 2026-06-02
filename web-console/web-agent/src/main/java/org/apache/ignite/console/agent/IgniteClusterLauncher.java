@@ -20,6 +20,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -331,8 +332,8 @@ public class IgniteClusterLauncher implements StartNodeCallable{
 			}
         	
 			ignite.cluster().state(ClusterState.ACTIVE);
+			ServiceDeployment.deployBuildinServices(ignite);
 
-			ServiceDeployment.deployServices(ignite.services(ignite.cluster()));
 		}
         return ignite;
     }

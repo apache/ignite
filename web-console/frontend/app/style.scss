@@ -40,7 +40,16 @@ div.pc-form-actions-panel {
 
     .message {
         font-size: 14px;
-        color: #e30d09;
+        color: #a94442;
         margin: 0.25em;
+    }
+
+    pre.message {
+      max-width: calc(100vw - 400px);
+      overflow-x: auto;
+      white-space: pre;
+      background: #a7c6de;
+      padding: 10px;
+      border-radius: 5px;
     }
 }

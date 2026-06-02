@@ -174,7 +174,7 @@ export default class ServiceController {
     }
 
     call(itemIDs: Array<string>, serviceName: string) {
-       this.callService(serviceName,{services: itemIDs,clusterId: this.clusterID}).then((data) => {
+       this.callService(serviceName,{services: itemIDs, clusterId: this.clusterID}).then((data) => {
             if(data.message){
                 this.message = data.message;
             }
@@ -216,8 +216,18 @@ export default class ServiceController {
                     let serviceList = [];
                     let serviceMap = Object.assign(data.result);
                     Object.keys(serviceMap).forEach((key) => {
-                       serviceMap[key]['id'] = key;
-                       serviceList.push(serviceMap[key]);                       
+                        const service = serviceMap[key]
+                        service['id'] = key;
+                        if(service.tools){
+                          service['toolChoices'] = service.tools.map((t)=>{
+                              return {
+                                value: t.name,
+                                label: t.description
+                              };
+                          });
+                        }
+
+                        serviceList.push(service);
                     });    
                     this.serviceMap = serviceMap;
                     resolve(serviceList);

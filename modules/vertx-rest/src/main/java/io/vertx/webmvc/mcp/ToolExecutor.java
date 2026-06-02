@@ -1,11 +1,8 @@
 package io.vertx.webmvc.mcp;
 
-import io.vertx.ext.web.RoutingContext;
-import lombok.Getter;
-
 import java.util.*;
 import java.util.function.Function;
-
+import static io.vertx.webmvc.mcp.McpSchema.*;
 /**
  * 工具执行器接口和构建器
  */
@@ -13,12 +10,12 @@ public interface ToolExecutor {
 
     String getName();
     String getDescription();
-    Map<String, Object> getParameters();
+    JSONSchema getParameters();
 
-    Map<String, Object> getOutputSchema();
+    JSONSchema getOutputSchema();
 
     boolean isStreamingSupported();
-    Object execute(Map<String, Object> arguments);
+    Object execute(ToolExecutionContext exeCtx);
 
     static Builder builder() {
         return new Builder();
@@ -27,10 +24,10 @@ public interface ToolExecutor {
     class Builder {
         private String name;
         private String description;
-        private final Map<String, Object> parameters = new HashMap<>();
-        private Map<String, Object> outputSchema = null;
-        private final Map<String, Map<String, Object>> outputFields = new HashMap<>();
-        private final Map<String, Map<String, Object>> properties = new HashMap<>();
+        private JSONSchema parameters = new JSONSchema();
+        private JSONSchema outputSchema = null;
+        private final Map<String, JSONSchema> outputFields = new HashMap<>();
+        private final Map<String, JSONSchema> properties = new HashMap<>();
         private final List<String> required = new ArrayList<>();
         private boolean streamingSupported = false;
         private Function<Map<String, Object>, Object> executor;
@@ -47,10 +44,18 @@ public interface ToolExecutor {
             return this;
         }
 
+        public Builder toolInfo(McpToolInfo toolInfo) {
+            this.name = toolInfo.getName();
+            this.description = toolInfo.getDescription();
+            this.parameters = toolInfo.getInputSchema();
+            this.outputSchema = toolInfo.getOutputSchema();
+            return this;
+        }
+
         public Builder parameter(String name, String type, String description, boolean required) {
-            Map<String, Object> param = new HashMap<>();
-            param.put("type", type);
-            param.put("description", description);
+            JSONSchema param = new JSONSchema();
+            param.setType(type);
+            param.setDescription(description);
             properties.put(name, param);
 
             if (required) {
@@ -59,15 +64,19 @@ public interface ToolExecutor {
             return this;
         }
 
-        public Builder outputField(String name, String type, String description, boolean required) {
-            Map<String, Object> param = new HashMap<>();
-            param.put("type", type);
-            param.put("description", description);
-            outputFields.put(name, param);
-
+        public Builder parameter(String name, JSONSchema param,boolean required) {
+            properties.put(name, param);
             if (required) {
                 this.required.add(name);
             }
+            return this;
+        }
+
+        public Builder outputField(String name, String type, String description) {
+            JSONSchema param = new JSONSchema();
+            param.setType(type);
+            param.setDescription(description);
+            outputFields.put(name, param);
             return this;
         }
 
@@ -88,16 +97,16 @@ public interface ToolExecutor {
         }
 
         public ToolExecutor build() {
-            parameters.put("type", "object");
-            parameters.put("properties", properties);
+            parameters.setType("object");
+            parameters.setProperties(properties);
             if (!required.isEmpty()) {
-                parameters.put("required", required);
+                parameters.setRequired(required);
             }
 
             if(!outputFields.isEmpty()){
-                outputSchema = new HashMap<>();
-                outputSchema.put("type", "object");
-                outputSchema.put("properties", outputFields);
+                outputSchema = new JSONSchema();
+                outputSchema.setType("object");
+                outputSchema.setProperties(outputFields);
             }
 
             if(streamExecutor!=null){

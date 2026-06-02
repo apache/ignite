@@ -32,8 +32,8 @@ form.pc-form-grid-row(name=form novalidate)
                 .pc-form-grid-col-60
                     +form-field__java-class({
                         label: 'Service class',
-                        model: `${item}.service`,
-                        name: '"serviceService"',
+                        model: `${item}.serviceClass`,
+                        name: '"serviceClass"',
                         required: 'true',
                         tip: 'Service implementation class name'
                     })
@@ -41,7 +41,7 @@ form.pc-form-grid-row(name=form novalidate)
                     +form-field__number({
                         label: 'Max per node count:',
                         model: `${item}.maxPerNodeCount`,
-                        name: '"ServiceMaxPerNodeCount"',
+                        name: '"serviceMaxPerNodeCount"',
                         placeholder: 'Unlimited',
                         min: '0',
                         tip: 'Maximum number of deployed service instances on each node.<br/>\

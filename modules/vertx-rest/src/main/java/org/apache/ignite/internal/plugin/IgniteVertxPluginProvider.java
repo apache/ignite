@@ -102,11 +102,10 @@ public class IgniteVertxPluginProvider implements PluginProvider<PluginConfigura
 		options.setHAGroup(this.instanceName);
 		options.setEventLoopPoolSize(igniteCfg.getSystemThreadPoolSize());
 		
-		this.plugin = new IgniteVertxPlugin(options,log);
+		this.plugin = new IgniteVertxPlugin(options,log,instanceName);
 	}
 
 	/** {@inheritDoc} */
-	@SuppressWarnings("unchecked")
 	@Override
 	public @Nullable <T> T createComponent(PluginContext ctx, Class<T> cls) {
 		return null;

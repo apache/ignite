@@ -6,10 +6,12 @@ import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.core.json.JsonObject;
 import io.vertx.webmvc.mcp.StreamCallback;
 import io.vertx.webmvc.mcp.StreamingToolExecutorImpl;
+import io.vertx.webmvc.mcp.ToolExecutionContext;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import static io.vertx.webmvc.mcp.McpSchema.*;
 
 /**
  * 实时数据流工具 - 从 EventBus 订阅实时数据
@@ -21,44 +23,52 @@ public class RealtimeDataStreamTool extends StreamingToolExecutorImpl {
 
     public RealtimeDataStreamTool(Vertx vertx) {
         super("realtime_stream", "Subscribe to real-time data stream",
-                buildParameters(),buildOutputSchema(),null);
+                buildParameters());
         this.vertx = vertx;
     }
-    protected static Map<String, Object> buildParameters() {
-        Map<String, Object> parameters = new HashMap<>();
-        parameters.put("type", "object");
+    protected static JSONSchema buildParameters() {
+        // 根节点：整体是 object 类型
+        JSONSchema root = new JSONSchema();
+        root.setType("object");
 
-        Map<String, Object> properties = new HashMap<>();
+        // 构建 properties
+        Map<String, JSONSchema> properties = new HashMap<>();
 
-        Map<String, Object> channelParam = new HashMap<>();
-        channelParam.put("type", "string");
-        channelParam.put("description", "EventBus channel to subscribe");
+        // 1. channel 参数
+        JSONSchema channelParam = new JSONSchema();
+        channelParam.setType("string");
+        channelParam.setDescription("EventBus channel to subscribe");
         properties.put("channel", channelParam);
 
-        Map<String, Object> durationParam = new HashMap<>();
-        durationParam.put("type", "integer");
-        durationParam.put("description", "Subscription duration in seconds (0 = unlimited)");
-        durationParam.put("default", 60);
+        // 2. duration 参数
+        JSONSchema durationParam = new JSONSchema();
+        durationParam.setType("integer");
+        durationParam.setDescription("Subscription duration in seconds (0 = unlimited)");
+        durationParam.setDefaultValue(60);
         properties.put("duration", durationParam);
 
-        Map<String, Object> filterParam = new HashMap<>();
-        filterParam.put("type", "object");
-        filterParam.put("description", "Message filter criteria");
+        // 3. filter 参数（嵌套 object）
+        JSONSchema filterParam = new JSONSchema();
+        filterParam.setType("object");
+        filterParam.setDescription("Message filter criteria");
         properties.put("filter", filterParam);
 
-        parameters.put("properties", properties);
-        parameters.put("required", List.of("channel"));
+        root.setProperties(properties);
+        // 必选参数
+        root.setRequired(List.of("channel"));
 
-        return parameters;
+        return root;
     }
 
     protected static Map<String, Object> buildOutputSchema() {
         return null;
     }
+
     @Override
-    protected void processStream(Map<String, Object> arguments,
+    protected void processStream(ToolExecutionContext exeCtx,
                                  StreamEmitter emitter,
                                  StreamCallback callback) {
+        Map<String,Object> arguments = exeCtx.getArguments();
         String channel = (String) arguments.get("channel");
         int duration = (Integer) arguments.getOrDefault("duration",60);
 

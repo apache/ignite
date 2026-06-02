@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
- * vert.x starter
+ * vert.x Verticle starter
  *
  */
 @Slf4j
@@ -64,6 +64,16 @@ public class VertXStarter extends VertxInstanceAware {
         return state;
 	}
 
+    public <T extends AbstractVerticle> T findVerticle(Class<T> verticle) {
+        for(int i=webApps.size()-1;i>=0;i--) {
+            AbstractVerticle app = webApps.get(i);
+            if(app.getClass().equals(verticle)){
+                return (T)app;
+            }
+        }
+        return null;
+    }
+
 
     public void start() {
         long startwatch = System.currentTimeMillis();
@@ -100,6 +110,7 @@ public class VertXStarter extends VertxInstanceAware {
     public void stop() {
         long startwatch = System.currentTimeMillis();
         log.info("[Vertx web] Vertx web's vert.x system start to stop...");
+        instanceMap.remove(this.getIgniteInstanceName());
         Ignite ignite = Ignition.ignite(igniteInstanceName);
         IgniteVertxPlugin plugin = ignite.plugin("Vertx");
         vertx = plugin.vertx();

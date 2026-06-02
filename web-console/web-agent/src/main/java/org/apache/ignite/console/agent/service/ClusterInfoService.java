@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.LongAdder;
 
 import javax.cache.Cache;
 
+import io.vertx.webmvc.mcp.ToolExecutor;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCluster;
@@ -29,12 +30,29 @@ import io.vertx.core.json.JsonObject;
 
 
 @ApiOperation(value="Get cluster node attributes and metrics data",notes="获取集群节点的属性和统计信息")
-public class ClusterInfoService implements ClusterAgentService {
+public class ClusterInfoService implements ClusterAgentService,McpService {
    
 	 /** Ignite instance. */
     @IgniteInstanceResource
     private Ignite ignite;
-    
+
+	@Override
+	public List<ToolExecutor> toolExecutors(){
+		ToolExecutor toolX = ToolExecutor.builder()
+				.name("cluster-info")
+				.description("Get cluster node attributes from cluster")
+				.parameter("clusterName","string","Ignite cluster name",true)
+				.outputField("nodes","array","node attributes")
+				.outputField("state","string","cluster state {actived,inactived}")
+				.executor((Map<String,Object> param)->{
+					ServiceResult result = this.call((String)param.get("clusterName"),param);
+					return result;
+				})
+				.build();
+
+		return List.of(toolX);
+	}
+
 	@Override
 	public ServiceResult call(String cluterId,Map<String,Object> payload) {
 		ServiceResult result = new ServiceResult();		
@@ -50,7 +68,7 @@ public class ClusterInfoService implements ClusterAgentService {
 			attr.put("node.hostNames", node.hostNames());
 			
 			node.attributes().forEach((k,v)->{
-				if(v instanceof CharSequence && v.toString().length()<1024) {
+				if(v instanceof CharSequence && v.toString().length()<256) {
 					attr.put(k,v);
 				}
 				else if(v instanceof Number) {

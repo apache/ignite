@@ -12,7 +12,6 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
-import io.vertx.ext.web.handler.CorsHandler;
 import io.vertx.webmvc.mcp.tools.RealtimeDataStreamTool;
 import io.vertx.webmvc.mcp.tools.StreamFileProcessorTool;
 import org.apache.ignite.internal.util.typedef.F;
@@ -59,6 +58,12 @@ public class StreamableMcpServer extends AbstractVerticle {
     private RequestLogger requestLogger;
 
     private RealtimeDataStreamTool realtimeDataStreamTool;
+
+    protected String igniteInstanceName;
+
+    public void setIgniteInstanceName(String igniteInstanceName) {
+        this.igniteInstanceName = igniteInstanceName;
+    }
 
     public StreamableMcpServer(ApplicationContext applicationContext, Supplier<HttpServer> server) {
         this.springContext = applicationContext;
@@ -154,15 +159,15 @@ public class StreamableMcpServer extends AbstractVerticle {
                 .put("timestamp", System.currentTimeMillis())
                 .put("toolsCount", toolRegistry.size())
                 .put("activeSessions", sessionManager.getActiveSessionCount());
-        ctx.response().end(health.encode());
+        ctx.response().end(health.encodePrettily());
     }
 
     private void handleToolsListEndpoint(RoutingContext ctx) {
-        List<Map<String, Object>> tools = getToolsList();
+        List<McpToolInfo> tools = getToolsList();
         JsonObject response = new JsonObject()
                 .put("tools", tools)
                 .put("count", tools.size());
-        ctx.response().end(response.encode());
+        ctx.response().end(response.encodePrettily());
     }
 
     private void handleStreamConnection(RoutingContext ctx) {
@@ -189,7 +194,16 @@ public class StreamableMcpServer extends AbstractVerticle {
 
         String xsessionId = sessionId;
 
-        realtimeDataStreamTool.executeStreaming((Map)arguments,new StreamCallback() {
+        // 执行拦截器链
+        ToolExecutionContext executionContext = new ToolExecutionContext(
+                xsessionId,
+                realtimeDataStreamTool,
+                (Map)arguments,
+                ctx,
+                session
+        );
+
+        realtimeDataStreamTool.executeStreaming(executionContext,new StreamCallback() {
             @Override
             public void onStart(Map<String, Object> metadata) {
                 // 发送开始事件
@@ -375,7 +389,7 @@ public class StreamableMcpServer extends AbstractVerticle {
     }
 
     private void handleToolsList(RoutingContext ctx, McpRequest request) {
-        List<Map<String, Object>> tools = getToolsList();
+        List<McpToolInfo> tools = getToolsList();
 
         Map<String, Object> result = new HashMap<>();
         result.put("tools", tools);
@@ -388,20 +402,19 @@ public class StreamableMcpServer extends AbstractVerticle {
         sendStandardResponse(ctx, request, result);
     }
 
-    private List<Map<String, Object>> getToolsList() {
-        List<Map<String, Object>> tools = new ArrayList<>();
+    private List<McpToolInfo> getToolsList() {
+        List<McpToolInfo> tools = new ArrayList<>();
         for (Map.Entry<String, ToolExecutor> entry : toolRegistry.entrySet()) {
-            Map<String, Object> toolInfo = new HashMap<>();
             ToolExecutor toolEx = entry.getValue();
-            toolInfo.put("name", entry.getKey());
-            toolInfo.put("description", toolEx.getDescription());
-            toolInfo.put("inputSchema", toolEx.getParameters());
-            toolInfo.put("outputSchema", toolEx.getOutputSchema());
+            McpToolInfo toolInfo = new McpToolInfo();
+            toolInfo.setName(toolEx.getName());
+            toolInfo.setDescription(toolEx.getDescription());
+            toolInfo.setInputSchema(toolEx.getParameters());
+            toolInfo.setOutputSchema(toolEx.getOutputSchema());
 
-            Map<String, Object> meta = new HashMap<>();
-            meta.put("isStreaming", entry.getValue().isStreamingSupported());
-
-            toolInfo.put("meta",meta);
+            ToolMeta meta = new ToolMeta();
+            meta.setIsStreaming(toolEx.isStreamingSupported());
+            toolInfo.setMeta(meta);
             tools.add(toolInfo);
         }
         return tools;
@@ -417,21 +430,21 @@ public class StreamableMcpServer extends AbstractVerticle {
             sessionId = ctx.request().getHeader("Mcp-Session-Id");
         }
 
-        // 执行拦截器链
-        ToolExecutionContext executionContext = new ToolExecutionContext(
-                request.getId(),
-                toolName,
-                arguments,
-                ctx,
-                sessionManager.getSession(sessionId)
-        );
-
         // 验证工具是否存在
         ToolExecutor tool = toolRegistry.get(toolName);
         if (tool == null) {
             sendError(ctx, request.getId(), "Tool not found: " + toolName, -32601);
             return;
         }
+
+        // 执行拦截器链
+        ToolExecutionContext executionContext = new ToolExecutionContext(
+                request.getId(),
+                tool,
+                arguments,
+                ctx,
+                sessionManager.getSession(sessionId)
+        );
 
         // 执行前置拦截器
         for (ToolInterceptor interceptor : toolInterceptors) {
@@ -446,16 +459,13 @@ public class StreamableMcpServer extends AbstractVerticle {
 
         // 执行工具调用
         try {
-            if (shouldStream) {
-                executeStreamingTool(ctx, request, tool, arguments);
+
+            if (shouldStream && tool.isStreamingSupported()) {
+                executeStreamingTool(executionContext, request, tool);
             } else {
-                executeStandardTool(ctx, request, tool, arguments);
+                executeStandardTool(executionContext, request, tool);
             }
 
-            // 执行后置拦截器
-            for (ToolInterceptor interceptor : toolInterceptors) {
-                interceptor.afterExecute(executionContext, null);
-            }
         } catch (Exception e) {
             // 执行错误拦截器
             for (ToolInterceptor interceptor : toolInterceptors) {
@@ -491,15 +501,21 @@ public class StreamableMcpServer extends AbstractVerticle {
         return false;
     }
 
-    private void executeStandardTool(RoutingContext ctx, McpRequest request,
-                                     ToolExecutor tool, Map<String, Object> arguments) {
+    private void executeStandardTool(ToolExecutionContext exeCtx, McpRequest request, ToolExecutor tool) {
         long startTime = System.currentTimeMillis();
+        RoutingContext ctx = exeCtx.getRoutingContext();
 
         // 验证参数
-        validateToolArguments(tool, arguments);
+        validateToolArguments(tool, exeCtx.getArguments());
 
         // 执行工具
-        Object result = tool.execute(arguments);
+        Object result = tool.execute(exeCtx);
+
+        // 执行后置拦截器
+        for (ToolInterceptor interceptor : toolInterceptors) {
+            interceptor.afterExecute(exeCtx, result);
+        }
+        result = exeCtx.getExecutedResult();
 
         // 记录执行时间
         long duration = System.currentTimeMillis() - startTime;
@@ -507,14 +523,44 @@ public class StreamableMcpServer extends AbstractVerticle {
 
         // 构建响应
         McpToolCallResult toolResult = new McpToolCallResult();
-        toolResult.setContent(Collections.singletonList(Map.of("type", "text", "text", result.toString())));
+        boolean isStructureOutput = exeCtx.isStructuredOutput();
+        if(!isStructureOutput) {
+            if(result instanceof Collection && !(result instanceof List)){
+                result = new ArrayList<>((Collection)result);
+            }
+            if(result instanceof List){
+                List list = (List)result;
+                if(!list.isEmpty() && list.get(0) instanceof Map){
+                    toolResult.setContent(list);
+                }
+                if(!list.isEmpty()){
+                    toolResult.setContent(list.stream().map(item->Map.of("type", "text", "text", item.toString())).toList());
+                }
+                else{
+                    toolResult.setContent(list);
+                }
+            }
+            else if(result instanceof CharSequence)
+                toolResult.setContent(Collections.singletonList(Map.of("type", "text", "text", result.toString())));
+            else{
+                JsonObject json = JsonObject.mapFrom(result);
+                toolResult.setContent(Collections.singletonList(Map.of("type", "text", "text", json.toString())));
+            }
+        }
+        else if(result instanceof Map){
+            toolResult.setStructuredContent((Map)result);
+        }
+        else{
+            JsonObject json = JsonObject.mapFrom(result);
+            toolResult.setStructuredContent(json.getMap());
+        }
         toolResult.setExecutionTime(duration);
 
         sendStandardResponse(ctx, request, toolResult);
     }
 
-    private void executeStreamingTool(RoutingContext ctx, McpRequest request,
-                                      ToolExecutor tool, Map<String, Object> arguments) {
+    private void executeStreamingTool(ToolExecutionContext exeCtx, McpRequest request,ToolExecutor tool) {
+        RoutingContext ctx = exeCtx.getRoutingContext();
         // 设置SSE响应头
         ctx.response()
                 .setStatusCode(200)
@@ -524,10 +570,13 @@ public class StreamableMcpServer extends AbstractVerticle {
                 .putHeader("X-Accel-Buffering", "no")  // 禁用nginx缓冲
                 .setChunked(true);
 
+        String lastEventId = ctx.request().getHeader("Last-Event-ID");
+        exeCtx.setLastEventId(lastEventId);
+
         // 执行流式工具
         if (tool instanceof StreamingToolExecutor) {
             StreamingToolExecutor streamingTool = (StreamingToolExecutor) tool;
-            streamingTool.executeStreaming(arguments, new StreamCallback() {
+            streamingTool.executeStreaming(exeCtx, new StreamCallback() {
                 @Override
                 public void onStart(Map<String, Object> metadata) {
                     // 发送开始事件
@@ -560,9 +609,20 @@ public class StreamableMcpServer extends AbstractVerticle {
                     ctx.response().end();
                 }
             });
+            // 执行后置拦截器
+            for (ToolInterceptor interceptor : toolInterceptors) {
+                interceptor.afterExecute(exeCtx, null);
+            }
+
         } else {
             // 普通工具模拟流式输出
-            Object result = tool.execute(arguments);
+            Object result = tool.execute(exeCtx);
+            // 执行后置拦截器
+            for (ToolInterceptor interceptor : toolInterceptors) {
+                interceptor.afterExecute(exeCtx, result);
+            }
+            result = exeCtx.getExecutedResult();
+
             if(result instanceof Iterable<?>) {
                 sendStreamingResponse(ctx, request, (Iterable)result);
             }
@@ -575,17 +635,22 @@ public class StreamableMcpServer extends AbstractVerticle {
     }
 
     private void validateToolArguments(ToolExecutor tool, Map<String, Object> arguments) {
-        Map<String, Object> parameters = tool.getParameters();
-        if (parameters == null || !parameters.containsKey("properties")) {
+        JSONSchema parameters = tool.getParameters();
+        if (parameters == null || parameters.getProperties()==null) {
             return;
         }
 
-        Map<String, Map<String, Object>> properties =
-                (Map<String, Map<String, Object>>) parameters.get("properties");
+        // 放默认值
+        Map<String, JSONSchema> properties = parameters.getProperties();
+        properties.forEach((k,v)->{
+            if(v.getDefaultValue()!=null && arguments.get(k)==null){
+                arguments.put(k,v.getDefaultValue());
+            }
+        });
 
         // 检查必需参数
-        if (parameters.containsKey("required")) {
-            List<String> required = (List<String>) parameters.get("required");
+        if (!parameters.getRequired().isEmpty()) {
+            List<String> required = parameters.getRequired();
             for (String req : required) {
                 if (!arguments.containsKey(req)) {
                     throw new IllegalArgumentException("Missing required argument: " + req);
@@ -608,13 +673,14 @@ public class StreamableMcpServer extends AbstractVerticle {
     private void sendStreamingResponse(RoutingContext ctx, McpRequest request, Iterable<?> result)  {
         // 流式响应实现
         String taskId = request.getId();
+        List<JsonObject> content = new ArrayList<>();
+        JsonObject jsonResult = new JsonObject().put("content",content).put("isPartial",true);
+        // root消息
+        JsonObject rootMsg = new JsonObject()
+                .put("jsonrpc", "2.0")
+                .put("id", taskId)
+                .put("result", jsonResult);
 
-        // 发送开始消息
-        JsonObject startMsg = new JsonObject()
-                .put("type", "start")
-                .put("taskId", taskId)
-                .put("timestamp", System.currentTimeMillis());
-        sendStreamEvent(ctx, "start", startMsg);
         int sequence = 0;
         long startTime = System.currentTimeMillis();
 
@@ -631,47 +697,75 @@ public class StreamableMcpServer extends AbstractVerticle {
                     row = ((java.util.concurrent.Future)row).get();
                 }
 
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
             } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-
-            if (row instanceof String) {
+                LOGGER.warning("Get Iterable result failed:"+e.getMessage());
+                jsonResult.put("isPartial",false);
+                jsonResult.put("isError",true);
                 JsonObject dataMsg = new JsonObject()
                         .put("type", "text")
-                        .put("taskId", taskId)
-                        .put("text", row)
+                        .put("message", e.getMessage())
+                        .put("code", -32000)
                         .put("sequence", sequence);
 
-                sendStreamEvent(ctx, null, dataMsg);
-            } else if (row instanceof byte[]) {
+                content.clear();
+                content.add(dataMsg);
+                sendStreamEvent(ctx, null, rootMsg);
+
+                ctx.response().end();
+                return;
+            }
+
+            if (row instanceof byte[]) {
                 JsonObject dataMsg = new JsonObject()
                         .put("type", "data")
-                        .put("taskId", taskId)
                         .put("data", row)
                         .put("sequence", sequence);
 
-                sendStreamEvent(ctx, null, dataMsg);
+                content.clear();
+                content.add(dataMsg);
+                sendStreamEvent(ctx, null, rootMsg);
             } else if (row instanceof JsonObject) {
                 JsonObject dataMsg = new JsonObject()
                         .put("type", "data")
-                        .put("taskId", taskId)
                         .put("data", row)
                         .put("sequence", sequence);
 
-                sendStreamEvent(ctx, null, dataMsg);
+                content.clear();
+                content.add(dataMsg);
+                sendStreamEvent(ctx, null, rootMsg);
+            } else if(row instanceof Map.Entry){
+                Map.Entry<String,Object> entry = (Map.Entry)row;
+                JsonObject dataMsg = new JsonObject()
+                        .put("type", "data")
+                        .put(entry.getKey(), entry.getValue())
+                        .put("sequence", sequence);
+
+                content.clear();
+                content.add(dataMsg);
+                sendStreamEvent(ctx, null, rootMsg);
+            }
+            else {
+                JsonObject dataMsg = new JsonObject()
+                        .put("type", "text")
+                        .put("text", row.toString())
+                        .put("sequence", sequence);
+
+                content.clear();
+                content.add(dataMsg);
+                sendStreamEvent(ctx, null, rootMsg);
             }
             sequence++;
         };
 
         // 发送完成消息
+        jsonResult.put("isPartial",false);
         JsonObject completeMsg = new JsonObject()
                 .put("type", "complete")
-                .put("taskId", taskId)
                 .put("status", "success")
                 .put("duration", System.currentTimeMillis() - startTime);
-        sendStreamEvent(ctx, "complete", completeMsg);
+        content.clear();
+        content.add(completeMsg);
+        sendStreamEvent(ctx, null, rootMsg);
 
         ctx.response().end();
 
@@ -767,7 +861,7 @@ public class StreamableMcpServer extends AbstractVerticle {
         realtimeDataStreamTool = new RealtimeDataStreamTool(vertx);
         registerStreamingTool(realtimeDataStreamTool);
 
-        StreamFileProcessorTool fileProcessorTool = new StreamFileProcessorTool(vertx);
+        StreamFileProcessorTool fileProcessorTool = new StreamFileProcessorTool(vertx,this.igniteInstanceName);
         registerStreamingTool(fileProcessorTool);
     }
 

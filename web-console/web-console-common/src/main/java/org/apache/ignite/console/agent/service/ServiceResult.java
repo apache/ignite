@@ -106,13 +106,19 @@ public class ServiceResult {
 		}
 		return result;
 	}
+
+	public ServiceResult setResult(Map<String,Object> result) {
+		this.result = result;
+		return this;
+	}
 	
 	public String getErrorType() {
 		return errorType;
 	}
 
-	public void setErrorType(String errorType) {
+	public ServiceResult setErrorType(String errorType) {
 		this.errorType = errorType;
+		return this;
 	}
 	
 	public JsonObject toJson() {
@@ -140,15 +146,17 @@ public class ServiceResult {
 		return acknowledged;
 	}
 
-	public void setAcknowledged(boolean acknowledged) {
+	public ServiceResult setAcknowledged(boolean acknowledged) {
 		this.acknowledged = acknowledged;
+		return this;
 	}
 
 	public String getCacheName() {
 		return cacheName;
 	}
 
-	public void setCacheName(String cacheName) {
+	public ServiceResult setCacheName(String cacheName) {
 		this.cacheName = cacheName;
+		return this;
 	}
 }

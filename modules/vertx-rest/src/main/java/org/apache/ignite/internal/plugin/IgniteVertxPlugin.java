@@ -1,5 +1,6 @@
 package org.apache.ignite.internal.plugin;
 
+import io.vertx.webmvc.starter.VertXStarter;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.plugin.IgnitePlugin;
 
@@ -10,11 +11,13 @@ public class IgniteVertxPlugin implements IgnitePlugin {
 	static Vertx vertx = null;  // 一个jvm只有一个vertx
 	private VertxOptions options;
 	private IgniteLogger log;
+	private final String instanceName;
 	volatile boolean finish = false;
 	
-	public IgniteVertxPlugin(VertxOptions options, IgniteLogger log) {
+	public IgniteVertxPlugin(VertxOptions options, IgniteLogger log,String instanceName) {
 		this.options = options;
 		this.log = log;
+		this.instanceName = instanceName;
 	}
 	
 	public static Vertx getVertx() {
@@ -71,5 +74,9 @@ public class IgniteVertxPlugin implements IgnitePlugin {
 			finish = true;
 		}
 		return vertx;
+	}
+
+	public VertXStarter starter(){
+		return VertXStarter.getInstance(this.instanceName);
 	}
 }

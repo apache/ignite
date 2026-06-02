@@ -42,7 +42,7 @@ export default class CacheServiceCallFormController {
     }
 
     $onDestroy() {
-       
+       this.result = null;
     }
 
     $onChanges(changes) {
@@ -54,6 +54,7 @@ export default class CacheServiceCallFormController {
                 this.$scope.ui.inputForm.$setPristine();
                 this.$scope.ui.inputForm.$setUntouched();
             }
+            this.result = null;
         }
         if ('models' in changes)
             this.modelsMenu = (changes.models.currentValue || []).map((m) => ({value: m.id, label: m.valueType}));
@@ -69,19 +70,20 @@ export default class CacheServiceCallFormController {
         let args = this.onCall({$event: {cache: this.clonedCache}});
         let clusterId = args['clusterId'];
         params = Object.assign(args,params);
-        this.$scope.message = 'Calling service ...';
+        this.message = 'Calling service ...';
         this.AgentManager.callCacheService({id: clusterId},serviceName,args).then((data) => {  
-            this.$scope.status = data.status;
+            this.status = data.status;
             if(data.message){
-                this.$scope.message = data.message;                
+                this.message = data.message;
             }
             if(data.result){
+                this.result = JSON.stringify(data.result, null, 2);
                 return data.result;
             }
             return {}
         })   
        .catch((e) => {
-            this.$scope.message = ('Failed to callClusterService : '+serviceName+' Caused : '+e);                    
+            this.message = ('Failed to callClusterService : '+serviceName+' Caused : '+e);
         });
     }
 

@@ -10,3 +10,14 @@ Copyright (C) JetBrains s.r.o.
 https://www.jetbrains.com/idea/
 Licensed under Apache License, Version 2.0.
 http://search.maven.org/#artifactdetails%7Corg.jetbrains%7Cannotations%7C13.0%7Cjar
+
+使用Vertx web替代Jetty Http Rest Service
+增加Mcp Server for Ignite Service
+使用Web Agent Console 启动Ignite Node
+Ignite Cluster的节点必须使用相同的Instance Name
+增加基于Web Agent Console Server的服务发现实现,强烈推荐使用这个服务发现器
+增加了大部分Redis 5.0的指令,包含事务,流指令支持
+
+
+
+
