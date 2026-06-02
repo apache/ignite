@@ -782,7 +782,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     discoEvtHnd.discoCache = discoCache;
 
                     if (!ctx.clientDisconnected()) {
-                        // The security processor must be notified first, since {@link IgniteSecurity#onLocalJoin}
+                        // The Rolling Upgrade Feature Manager must be notified first, as {@link IgniteFeatureManager#onLocalJoin}
+                        // completes initialization of the local node's Active Feature Set based on data received from the cluster.
+                        // The Active Feature Set, in turn, determines the node's overall behavior.
+                        ctx.rollingUpgrade().features().onLocalJoin();
+
+                        // The security processor must be notified second, since {@link IgniteSecurity#onLocalJoin}
                         // finishes local node security context initialization that can be demanded by other Ignite
                         // components.
                         ctx.security().onLocalJoin();

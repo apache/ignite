@@ -265,6 +265,11 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
         revHash = CommonUtils.readByteArray(in);
     }
 
+    /** @return Short name of Ignite Product Version. */
+    public String shortName() {
+        return major + "." + minor + "." + maintenance;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         String revTsStr = IgniteVersionUtils.formatBuildTimeStamp(revTs * 1000);
@@ -273,7 +278,7 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
 
         hash = hash.length() > 8 ? hash.substring(0, 8) : hash;
 
-        return major + "." + minor + "." + maintenance + "#" + revTsStr + "-sha1:" + hash;
+        return shortName() + "#" + revTsStr + "-sha1:" + hash;
     }
 
     /**

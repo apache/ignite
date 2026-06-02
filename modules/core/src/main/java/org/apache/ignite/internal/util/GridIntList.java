@@ -223,6 +223,17 @@ public class GridIntList implements Externalizable {
         return res;
     }
 
+    /**
+     * @param from the initial index of the range to be copied, inclusive.
+     * @param to the final index of the range to be copied, exclusive.
+     * @return a new {@link GridIntList} containing the specified range from the current {@link GridIntList}.
+     */
+    public GridIntList copyOfRange(int from, int to) {
+        assert 0 <= from && from <= to && to <= idx;
+
+        return new GridIntList(Arrays.copyOfRange(arr, from, to));
+    }
+
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(idx);
