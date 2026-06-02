@@ -78,7 +78,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
     /** */
     @GridToStringExclude
-    private final Map<String, GridQueryProperty> props = new HashMap<>();
+    private final Map<String, GridQueryProperty> props = new LinkedHashMap<>();
 
     /** Map with upper cased property names to help find properties based on SQL INSERT and MERGE queries. */
     private final Map<String, GridQueryProperty> uppercaseProps = new HashMap<>();
