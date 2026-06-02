@@ -19,8 +19,10 @@ package org.apache.ignite.internal.processors.query.schema.operation;
 
 import java.util.Collection;
 import java.util.UUID;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.management.cache.QueryEntity;
+import org.apache.ignite.internal.processors.query.QueryEntityMessage;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Enabling indexing on cache operation.
@@ -31,7 +33,7 @@ public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation {
 
     /** */
     @Order(0)
-    Collection<QueryEntity> qryEntities;
+    Collection<QueryEntityMessage> entityMsgs;
 
     /** */
     @Order(1)
@@ -56,12 +58,12 @@ public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation {
         UUID opId,
         String cacheName,
         String schemaName,
-        Collection<org.apache.ignite.cache.QueryEntity> entities,
+        Collection<QueryEntity> entities,
         int qryParallelism,
         boolean sqlEscape
     ) {
         super(opId, cacheName, schemaName);
-        qryEntities = QueryEntity.list(entities);
+        entityMsgs = F.viewReadOnly(entities, QueryEntityMessage::new);
         this.qryParallelism = qryParallelism;
         this.sqlEscape = sqlEscape;
     }
@@ -69,8 +71,8 @@ public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation {
     /**
      * @return Collection of query entities.
      */
-    public Collection<org.apache.ignite.cache.QueryEntity> entities() {
-        return QueryEntity.unwrapList(qryEntities);
+    public Collection<QueryEntity> entities() {
+        return F.viewReadOnly(entityMsgs, QueryEntityMessage::queryEntity);
     }
 
     /**

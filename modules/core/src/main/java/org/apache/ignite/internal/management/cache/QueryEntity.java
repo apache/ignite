@@ -17,25 +17,21 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.cache.query.QueryIndexMessage;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /**
- * Message for {@link org.apache.ignite.cache.QueryEntity}.
+ * Data transfer object for {@link org.apache.ignite.cache.QueryEntity}.
  */
-public class QueryEntity implements Message, Serializable {
+public class QueryEntity extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -73,11 +69,11 @@ public class QueryEntity implements Message, Serializable {
 
     /** Fields to create group indexes for. */
     @Order(8)
-    List<QueryIndexMessage> grps;
+    List<QueryIndex> grps;
 
     /**
      * @param qryEntities Collection of query entities.
-     * @return Messages for query entities.
+     * @return Data transfer object for query entities.
      */
     public static List<QueryEntity> list(Collection<org.apache.ignite.cache.QueryEntity> qryEntities) {
         List<QueryEntity> entities = new ArrayList<>();
@@ -91,40 +87,14 @@ public class QueryEntity implements Message, Serializable {
     }
 
     /**
-     * @param qryEntities Collection of messages for query entities.
-     * @return Query entities from messages.
+     * Create data transfer object for given cache type metadata.
      */
-    public static Collection<org.apache.ignite.cache.QueryEntity> unwrapList(Collection<QueryEntity> qryEntities) {
-        Collection<org.apache.ignite.cache.QueryEntity> entities = new ArrayList<>();
-
-        if (!F.isEmpty(qryEntities)) {
-            for (QueryEntity entityDto : qryEntities) {
-                org.apache.ignite.cache.QueryEntity entity = new org.apache.ignite.cache.QueryEntity();
-
-                entity.setKeyType(entityDto.keyType);
-                entity.setValueType(entityDto.valType);
-                entity.setFields((LinkedHashMap<String, String>)entityDto.qryFlds);
-                entity.setKeyFields(entityDto.keyFields != null ? new LinkedHashSet<>(entityDto.keyFields) : null);
-                entity.setAliases(entityDto.aliases);
-                entity.setTableName(entityDto.tblName);
-                entity.setKeyFieldName(entityDto.keyFieldName);
-                entity.setValueFieldName(entityDto.valFieldName);
-                entity.setIndexes(F.viewReadOnly(entityDto.grps, QueryIndexMessage::queryIndex));
-
-                entities.add(entity);
-            }
-        }
-
-        return entities;
-    }
-
-    /** Empty constructor for a {@link MessageFactory}. */
     public QueryEntity() {
         // No-op.
     }
 
     /**
-     * Create message for given cache type metadata.
+     * Create data transfer object for given cache type metadata.
      *
      * @param q Actual cache query entities.
      */
@@ -134,7 +104,7 @@ public class QueryEntity implements Message, Serializable {
         keyType = q.getKeyType();
         valType = q.getValueType();
 
-        keyFields = q.getKeyFields() != null ? new ArrayList<>(q.getKeyFields()) : null;
+        keyFields = toList(q.getKeyFields());
 
         LinkedHashMap<String, String> qryFields = q.getFields();
 
@@ -147,7 +117,7 @@ public class QueryEntity implements Message, Serializable {
         grps = new ArrayList<>(qryIdxs.size());
 
         for (org.apache.ignite.cache.QueryIndex qryIdx : qryIdxs)
-            grps.add(new QueryIndexMessage(qryIdx));
+            grps.add(new QueryIndex(qryIdx));
 
         tblName = q.getTableName();
         keyFieldName = q.getKeyFieldName();
@@ -213,7 +183,7 @@ public class QueryEntity implements Message, Serializable {
     /**
      * @return Fields to create group indexes for.
      */
-    public List<QueryIndexMessage> getGroups() {
+    public List<QueryIndex> getGroups() {
         return grps;
     }
 

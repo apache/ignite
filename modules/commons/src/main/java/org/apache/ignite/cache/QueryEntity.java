@@ -90,7 +90,7 @@ public class QueryEntity implements Serializable {
     /** Fields default values. */
     private Map<String, Object> defaultFieldValues = new HashMap<>();
 
-    /** Precision (maximum length) for fields. */
+    /** Precision(Maximum length) for fields. */
     private Map<String, Integer> fieldsPrecision = new HashMap<>();
 
     /** Scale for fields. */
