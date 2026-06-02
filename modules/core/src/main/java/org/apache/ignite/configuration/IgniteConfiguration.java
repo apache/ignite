@@ -49,6 +49,7 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -314,6 +315,7 @@ public class IgniteConfiguration implements IgniteConfigurationDefaults {
     private String igniteWorkDir;
 
     /** MBean server. */
+    @GridToStringExclude
     private MBeanServer mbeanSrv;
 
     /** Local node ID. */
@@ -377,42 +379,54 @@ public class IgniteConfiguration implements IgniteConfigurationDefaults {
     private long segChkFreq = DFLT_SEG_CHK_FREQ;
 
     /** Communication SPI. */
+    @GridToStringExclude
     private CommunicationSpi commSpi;
 
     /** Event storage SPI. */
+    @GridToStringExclude
     private EventStorageSpi evtSpi;
 
     /** Collision SPI. */
+    @GridToStringExclude
     private CollisionSpi colSpi;
 
     /** Deployment SPI. */
+    @GridToStringExclude
     private DeploymentSpi deploySpi;
 
     /** Checkpoint SPI. */
+    @GridToStringExclude
     private CheckpointSpi[] cpSpi;
 
     /** Failover SPI. */
+    @GridToStringExclude
     private FailoverSpi[] failSpi;
 
     /** Load balancing SPI. */
+    @GridToStringExclude
     private LoadBalancingSpi[] loadBalancingSpi;
 
     /** Indexing SPI. */
+    @GridToStringExclude
     private IndexingSpi indexingSpi;
 
     /** Address resolver. */
     private AddressResolver addrRslvr;
 
     /** Encryption SPI. */
+    @GridToStringExclude
     private EncryptionSpi encryptionSpi;
 
     /** Metric exporter SPI. */
+    @GridToStringExclude
     private MetricExporterSpi[] metricExporterSpi;
 
     /** System view exporter SPI. */
+    @GridToStringExclude
     private SystemViewExporterSpi[] sysViewExporterSpi;
 
     /** Tracing SPI. */
+    @GridToStringExclude
     private TracingSpi tracingSpi;
 
     /** Cache configurations. */
