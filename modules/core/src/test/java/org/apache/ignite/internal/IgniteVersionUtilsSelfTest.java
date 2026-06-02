@@ -21,15 +21,14 @@ import java.util.Calendar;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-/**
- */
+import static org.h2.util.DateTimeUtils.UTC;
+
+/** */
 public class IgniteVersionUtilsSelfTest extends GridCommonAbstractTest {
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testIgniteCopyrights() throws Exception {
-        final String COPYRIGHT = String.valueOf(Calendar.getInstance().get(Calendar.YEAR)) + " Copyright(C) Apache Software Foundation";
+    public void testIgniteCopyrights() {
+        final String COPYRIGHT = Calendar.getInstance(UTC).get(Calendar.YEAR) + " Copyright(C) Apache Software Foundation";
 
         assertNotNull(IgniteVersionUtils.COPYRIGHT);
 
