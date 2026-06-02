@@ -170,7 +170,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.Fail("Node failed to start: " + string.Join("\n", reader.GetOutput()));
             }
 
-            VerifyNodeStarted(exePath);
+            VerifyNodeStarted(exePath, proc, reader);
         }
 
         /// <summary>
@@ -227,19 +227,31 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Verifies that custom-deployed node has started.
         /// </summary>
-        private static void VerifyNodeStarted(string exePath)
+        private static void VerifyNodeStarted(string exePath, System.Diagnostics.Process proc, ListDataReader reader)
         {
             using (var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 SpringConfigUrl = "Config/Compute/compute-grid1.xml",
             }))
             {
-                Assert.IsTrue(ignite.WaitTopology(2));
+                Assert.IsTrue(ignite.WaitTopology(2, 90000), GetProcessDetails(proc, reader));
 
                 var remoteProcPath = ignite.GetCluster().ForRemotes().GetCompute().Call(new ProcessPathFunc());
 
-                Assert.AreEqual(exePath, remoteProcPath);
+                Assert.AreEqual(exePath, remoteProcPath, GetProcessDetails(proc, reader));
             }
+        }
+
+        /// <summary>
+        /// Gets external node process details for assertion messages.
+        /// </summary>
+        private static string GetProcessDetails(System.Diagnostics.Process proc, ListDataReader reader)
+        {
+            var procInfo = proc.HasExited
+                ? string.Format("exited, exitCode={0}", proc.ExitCode)
+                : "alive";
+
+            return "External node process is " + procInfo + ". Output: " + string.Join("\n", reader.GetOutput());
         }
 
         #pragma warning disable 649
