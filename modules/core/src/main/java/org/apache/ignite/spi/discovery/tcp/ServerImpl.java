@@ -1614,8 +1614,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             catch (ClassCastException e) {
                 // This issue is rarely reproducible on AmazonEC2, but never
                 // on dedicated machines.
-                if (log.isDebugEnabled())
-                    U.error(log, "Class cast exception on direct send: " + addr, e);
+                U.error(log, "Class cast exception on direct send: " + addr, e);
 
                 onException("Class cast exception on direct send: " + addr, e);
 
@@ -1625,8 +1624,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 errs.add(e);
             }
             catch (IOException | IgniteCheckedException e) {
-                if (log.isDebugEnabled())
-                    log.error("Exception on direct send: " + e.getMessage(), e);
+                log.error("Exception on direct send: " + e.getMessage(), e);
 
                 onException("Exception on direct send: " + e.getMessage(), e);
 
