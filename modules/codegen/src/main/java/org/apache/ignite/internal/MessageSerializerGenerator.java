@@ -258,8 +258,10 @@ public class MessageSerializerGenerator {
         finish(write);
         finish(read);
 
-        generateMarshallMethods(fields);
-        generateUnmarshallMethods(fields);
+        if (!isNonMarshallableMessage(type)) {
+            generateMarshallMethods(fields);
+            generateUnmarshallMethods(fields);
+        }
     }
 
     /** */
@@ -554,6 +556,11 @@ public class MessageSerializerGenerator {
     /** */
     private boolean isMessage(TypeMirror type) {
         return assignableFrom(type, type(MESSAGE_INTERFACE));
+    }
+
+    /** */
+    private boolean isNonMarshallableMessage(TypeElement te) {
+        return assignableFrom(te.asType(), type("org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage"));
     }
 
     /** True if {@code te} extends {@code CacheIdAware} and therefore carries its own per-cache {@code cacheId()}. */
