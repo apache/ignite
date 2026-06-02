@@ -15,7 +15,9 @@
 
 name: Protected Classes
 
-on: pull_request_target
+on:
+  pull_request:
+    branches: [ main, master ]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
@@ -32,34 +34,18 @@ jobs:
       - uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Rolling Upgrade check
         id: check
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GITHUB_OUTPUT: ${{ github.output }}
         run: |
-          BASE_SHA=${{ github.event.pull_request.base.sha }}
-          HEAD_SHA=${{ github.event.pull_request.head.sha }}
-
-          HITS=""
-
-          # New and deleted files: check diff content for @Order annotation.
-          for file in $(git diff --name-only --no-renames --diff-filter=AD "$BASE_SHA"..."$HEAD_SHA" -- '*.java'); do
-            if git diff "$BASE_SHA"..."$HEAD_SHA" -- "$file" | grep -q 'org.apache.ignite.internal.Order'; then
-              HITS="${HITS}${file}\n"
-            fi
-          done
-
-          # Modified files: check base version content for @Order annotation.
-          for file in $(git diff --name-only --no-renames --diff-filter=M "$BASE_SHA"..."$HEAD_SHA" -- '*.java'); do
-            if git show "${BASE_SHA}:${file}" 2>/dev/null | grep -q 'org.apache.ignite.internal.Order'; then
-              HITS="${HITS}${file}\n"
-            fi
-          done
-
-          if [ -n "$HITS" ]; then
-            echo "affected=true" >> "$GITHUB_OUTPUT"
-            printf '%b' "$HITS" > /tmp/protected-hits.txt
-          fi
+          git fetch --depth=1 origin "$BASE_SHA"
+          chmod +x ./scripts/check-protected-classes.sh
+          ./scripts/check-protected-classes.sh
 
       - name: Comment on PR
         if: steps.check.outputs.affected == 'true'
@@ -102,11 +88,6 @@ jobs:
               body,
             });
 
-      - name: Add label
-        if: steps.check.outputs.affected == 'true'
-        uses: actions/github-script@v8
-        with:
-          script: |
             await github.rest.issues.addLabels({
               owner: context.repo.owner,
               repo: context.repo.repo,
