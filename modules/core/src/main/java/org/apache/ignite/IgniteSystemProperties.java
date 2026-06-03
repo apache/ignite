@@ -1320,14 +1320,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
         "IGNITE_DISABLE_REBALANCING_CANCELLATION_OPTIMIZATION";
 
     /**
-     * Sets timeout for TCP client recovery descriptor reservation.
-     */
-    @SystemProperty(value = "Timeout for TCP client recovery descriptor reservation in milliseconds",
-        type = Long.class, defaults = "" + DFLT_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT)
-    public static final String IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT =
-            "IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT";
-
-    /**
      * When set to {@code true}, Ignite will skip partitions sizes check on partition validation after rebalance has finished.
      * Partitions sizes may differs on nodes when Expiry Policy is in use and it is ok due to lazy entry eviction mechanics.
      *
