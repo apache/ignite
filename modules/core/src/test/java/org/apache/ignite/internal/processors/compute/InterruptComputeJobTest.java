@@ -36,11 +36,12 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalWrapper;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.job.GridJobWorker;
 import org.apache.ignite.internal.processors.job.JobWorkerInterruptionTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
-import org.apache.ignite.internal.util.GridConcurrentSkipListSet;
+import org.apache.ignite.internal.thread.context.function.OperationContextAwareWrapper;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.collision.CollisionContext;
@@ -284,8 +285,10 @@ public class InterruptComputeJobTest extends GridCommonAbstractTest {
      * @param n Node.
      * @return Value of {@code GridTimeoutProcessor#timeoutObjs}.
      */
-    private static GridConcurrentSkipListSet<GridTimeoutObject> timeoutObjects(IgniteEx n) {
-        return getFieldValue(n.context().timeout(), "timeoutObjs");
+    private static Collection<GridTimeoutObject> timeoutObjects(IgniteEx n) {
+        Collection<OperationContextAwareWrapper<GridTimeoutObject>> res = getFieldValue(n.context().timeout(), "timeoutObjs");
+
+        return F.viewReadOnly(res, o -> (GridTimeoutObject)IgniteInternalWrapper.unwrap(o));
     }
 
     /**
@@ -294,7 +297,7 @@ public class InterruptComputeJobTest extends GridCommonAbstractTest {
      * @return Collection of {@link JobWorkerInterruptionTimeoutObject} for {@code jobWorker}.
      */
     private static Collection<JobWorkerInterruptionTimeoutObject> jobWorkerInterrupters(
-        GridConcurrentSkipListSet<GridTimeoutObject> timeoutObjects,
+        Collection<GridTimeoutObject> timeoutObjects,
         GridJobWorker jobWorker
     ) {
         return timeoutObjects.stream()

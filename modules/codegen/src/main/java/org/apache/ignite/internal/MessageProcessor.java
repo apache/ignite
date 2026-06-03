@@ -70,7 +70,7 @@ public class MessageProcessor extends AbstractProcessor {
     static final String MESSAGE_INTERFACE = "org.apache.ignite.plugin.extensions.communication.Message";
 
     /** Compressed message. */
-    static final String COMPRESSED_MESSAGE_INTERFACE = "org.apache.ignite.internal.managers.communication.CompressedMessage";
+    static final String COMPRESSED_MESSAGE_CLASS = "org.apache.ignite.internal.managers.communication.CompressedMessage";
 
     /** Externalizable message. */
     static final String MARSHALLABLE_MESSAGE_INTERFACE = "org.apache.ignite.internal.MarshallableMessage";
@@ -85,7 +85,7 @@ public class MessageProcessor extends AbstractProcessor {
     /** Messages with no fields. A serializer generation intentionally skipped. */
     static final String[] SKIP_MESSAGES = {
         "org.apache.ignite.internal.processors.odbc.ClientMessage",
-        "org.apache.ignite.internal.managers.communication.CompressedMessage",
+        COMPRESSED_MESSAGE_CLASS,
         "org.apache.ignite.loadtests.communication.GridTestMessage"
     };
 

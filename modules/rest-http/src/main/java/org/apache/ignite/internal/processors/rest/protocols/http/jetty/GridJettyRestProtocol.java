@@ -23,20 +23,30 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.util.Collection;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
+import jakarta.servlet.DispatcherType;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.protocols.GridRestProtocolAdapter;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.eclipse.jetty.server.AbstractNetworkConnector;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.NetworkConnector;
@@ -44,6 +54,8 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.HandlerList;
+import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -55,6 +67,7 @@ import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_HOME;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_HOST;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_LOG_NO_OVERRIDE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
+import static org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyRestHandler.IGNITE_CMD_PATH;
 import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
 
 /**
@@ -71,6 +84,9 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
         }
     }
 
+    /** Default Jetty port. */
+    public static final String DFLT_JETTY_PORT = "8080";
+
     /** Object mapper class name. */
     private static final String IGNITE_OBJECT_MAPPER = "org.apache.ignite.internal.jackson.IgniteObjectMapper";
 
@@ -79,6 +95,9 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
     /** HTTP server. */
     private Server httpSrv;
+
+    /** Registered REST extensions. */
+    private final Collection<IgniteRestExtension> exts = new CopyOnWriteArrayList<>();
 
     /**
      * @param ctx Context.
@@ -261,7 +280,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             httpCfg.setSendServerVersion(true);
             httpCfg.setSendDateHeader(true);
 
-            String srvPortStr = System.getProperty(IGNITE_JETTY_PORT, "8080");
+            String srvPortStr = System.getProperty(IGNITE_JETTY_PORT, DFLT_JETTY_PORT);
 
             int srvPort;
 
@@ -317,11 +336,49 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
         assert httpSrv != null;
 
+        Handler extsHnd = loadExtensions();
         WelcomeHandler welcomeHnd = new WelcomeHandler(log);
 
-        httpSrv.setHandler(new HandlerList(jettyHnd, welcomeHnd));
+        httpSrv.setHandler(new HandlerList(jettyHnd, extsHnd, welcomeHnd));
 
         override(getJettyConnector());
+    }
+
+    /** */
+    private Handler loadExtensions() throws IgniteCheckedException {
+        HandlerList extsHnd = new HandlerList();
+
+        CommonUtils.loadService(IgniteRestExtension.class).forEach(exts::add);
+
+        Set<String> paths = new HashSet<>();
+
+        paths.add(IGNITE_CMD_PATH);
+
+        for (IgniteRestExtension ext : exts) {
+            ctx.resource().injectGeneric(ext);
+
+            ServletContextHandler extCtx = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
+
+            if (ctx.security().enabled())
+                extCtx.addFilter(new FilterHolder(new AuthenticationFilter(ctx)), "/*", EnumSet.allOf(DispatcherType.class));
+
+            try {
+                ext.configure(extCtx);
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException("Failed to configure REST extension: " + ext.getClass().getName(), e);
+            }
+
+            A.ensure(!extCtx.isContextPathDefault(), "The context path must be configured: " + ext.getClass().getName());
+            A.ensure(paths.add(extCtx.getContextPath()), "Duplicate REST context path: " + extCtx.getContextPath());
+
+            extsHnd.addHandler(extCtx);
+
+            if (log.isInfoEnabled())
+                log.info("Configured REST extension: " + ext.getClass().getName());
+        }
+
+        return extsHnd;
     }
 
     /**
@@ -396,8 +453,20 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public void onProcessorStart() {
+        try {
+            U.startLifecycleAware(exts);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to start REST extensions.", e);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void stop() {
         stopJetty();
+
+        U.stopLifecycleAware(log, exts);
 
         httpSrv = null;
         jettyHnd = null;

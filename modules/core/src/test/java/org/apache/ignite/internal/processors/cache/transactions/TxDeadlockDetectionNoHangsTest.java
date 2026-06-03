@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -32,14 +33,13 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT;
-import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -54,6 +54,18 @@ public class TxDeadlockDetectionNoHangsTest extends GridCommonAbstractTest {
     /** Cache. */
     private static final String CACHE = "cache";
 
+    /** Log listener. */
+    private final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
+
+    /** Deadlock timeout, it`s unexpected during these tests. */
+    private static final AtomicBoolean DEAD_LOCK_FLAG = new AtomicBoolean();
+
+    /** */
+    private static final Consumer<String> DEAD_LOCK_LSNR = s -> {
+        if (s.contains("Deadlock detection was timed out"))
+            DEAD_LOCK_FLAG.set(true);
+    };
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -67,6 +79,11 @@ public class TxDeadlockDetectionNoHangsTest extends GridCommonAbstractTest {
         ccfg.setNearConfiguration(null);
 
         cfg.setCacheConfiguration(ccfg);
+
+        assertFalse(DEAD_LOCK_FLAG.get());
+
+        listeningLog.registerListener(DEAD_LOCK_LSNR);
+        cfg.setGridLogger(listeningLog);
 
         return cfg;
     }
@@ -83,19 +100,8 @@ public class TxDeadlockDetectionNoHangsTest extends GridCommonAbstractTest {
         super.afterTest();
 
         stopAllGrids();
-    }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        GridTestUtils.setFieldValue(TxDeadlockDetection.class, "deadLockTimeout", (int)(getTestTimeout() * 2));
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        GridTestUtils.setFieldValue(TxDeadlockDetection.class, "deadLockTimeout",
-            getInteger(IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT, 60000));
+        assertFalse(DEAD_LOCK_FLAG.get());
     }
 
     /** {@inheritDoc} */

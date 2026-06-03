@@ -320,7 +320,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *
      * @return Data streamer processor.
      */
-    public <K, V> DataStreamProcessor<K, V> dataStream();
+    public DataStreamProcessor dataStream();
 
     /**
      * Gets event continuous processor.
