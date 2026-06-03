@@ -24,14 +24,10 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Map;
 import com.google.common.io.CharStreams;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.sql.SqlExplainLevel;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -64,7 +60,7 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
 
     /** Query id. Set by {@link PlanChecker}. */
     @Parameterized.Parameter
-    public String queryId;
+    public String qryId;
 
     /** Run once, before all queries check. */
     @BeforePlansTest
@@ -114,7 +110,7 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
             return;
         }
 
-        PlanTemplate pt = new PlanTemplate(loadFromResource(String.format("%s/%s.plan", sqlTestName(getClass()), queryId)));
+        PlanTemplate pt = new PlanTemplate(loadFromResource(String.format("%s/%s.plan", sqlTestName(getClass()), qryId)));
 
         if (!pt.match(actualPlan)) {
             // This assertion will print nice diff in IDE that will help to investigate.
@@ -137,7 +133,7 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
             "igniteSchemas"
         );
 
-        PlanningContext ctx = plannerCtx(loadFromResource(sqlTestName(getClass()) + "/" + queryId + ".sql"), schemas.values(), null);
+        PlanningContext ctx = plannerCtx(loadFromResource(sqlTestName(getClass()) + "/" + qryId + ".sql"), schemas.values(), null);
 
         return new PlanTemplate(RelOptUtil.toString(physicalPlan(ctx), SqlExplainLevel.ALL_ATTRIBUTES)).template;
     }
@@ -155,25 +151,10 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
         try {
             Files.createDirectories(targetDir);
 
-            Files.writeString(targetDir.resolve(String.format("%s.plan", queryId)), newPlan);
+            Files.writeString(targetDir.resolve(String.format("%s.plan", qryId)), newPlan);
         }
         catch (Exception e) {
             throw new RuntimeException(e);
-        }
-    }
-
-    /**
-     * Execute SQL query.
-     *
-     * @param ignite Ignite.
-     * @param sql SQL query.
-     * @param params Query parameters.
-     */
-    public static List<List<?>> sql(Ignite ignite, String sql, Object... params) {
-        SqlFieldsQuery qry = new SqlFieldsQuery(sql).setArgs(params);
-
-        try (FieldsQueryCursor<List<?>> cur = ((IgniteEx)ignite).context().query().querySqlFields(qry, false)) {
-            return cur.getAll();
         }
     }
 
@@ -189,23 +170,23 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
     /**
      * Loads resource with given name as string.
      *
-     * @param resource Name of the resource to load.
+     * @param rsrc Name of the resource to load.
      * @return Resource as string.
      */
-    private static String loadFromResource(String resource) {
-        if (resource.startsWith(RSRC_DIR))
-            resource = resource.substring(RSRC_DIR.length() + 1);
+    private static String loadFromResource(String rsrc) {
+        if (rsrc.startsWith(RSRC_DIR))
+            rsrc = rsrc.substring(RSRC_DIR.length() + 1);
 
-        try (InputStream is = AbstractTpcQueryPlannerTest.class.getClassLoader().getResourceAsStream(resource)) {
+        try (InputStream is = AbstractTpcQueryPlannerTest.class.getClassLoader().getResourceAsStream(rsrc)) {
             if (is == null)
-                throw new IllegalArgumentException("Resource does not exist: " + resource);
+                throw new IllegalArgumentException("Resource does not exist: " + rsrc);
 
             try (InputStreamReader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {
                 return CharStreams.toString(reader);
             }
         }
         catch (IOException e) {
-            throw new UncheckedIOException("I/O operation failed: " + resource, e);
+            throw new UncheckedIOException("I/O operation failed: " + rsrc, e);
         }
     }
 }
