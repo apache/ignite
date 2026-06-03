@@ -26,6 +26,7 @@ import static org.apache.ignite.internal.util.CommonUtils.DFLT_MARSHAL_BUFFERS_P
 import static org.apache.ignite.internal.util.CommonUtils.DFLT_MARSHAL_BUFFERS_RECHECK;
 import static org.apache.ignite.internal.util.CommonUtils.DFLT_MEMORY_PER_BYTE_COPY_THRESHOLD;
 import static org.apache.ignite.internal.util.GridLogThrottle.DFLT_LOG_THROTTLE_CAPACITY;
+import static org.apache.ignite.internal.util.nio.GridNioRecoveryDescriptor.DFLT_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT;
 import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_COLLECTION_LIMIT;
 import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_INCLUDE_SENSITIVE;
 import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_MAX_LENGTH;
@@ -184,6 +185,14 @@ public class IgniteCommonsSystemProperties {
     @SystemProperty(value = "Path to the file that contains list of classes disallowed to safe deserialization",
         type = String.class)
     public static final String IGNITE_MARSHALLER_BLACKLIST = "IGNITE_MARSHALLER_BLACKLIST";
+
+    /**
+     * Sets timeout for TCP client recovery descriptor reservation.
+     */
+    @SystemProperty(value = "Timeout for TCP client recovery descriptor reservation in milliseconds",
+        type = Long.class, defaults = "" + DFLT_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT)
+    public static final String IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT =
+        "IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT";
 
     /**
      * @param enumCls Enum type.
