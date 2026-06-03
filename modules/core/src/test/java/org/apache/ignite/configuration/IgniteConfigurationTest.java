@@ -36,11 +36,11 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
 public class IgniteConfigurationTest extends GridCommonAbstractTest {
     /** Error message to be prompted for ignite configuration */
     private static final String ASSERTION_ERROR_MESSAGE =
-            "Ignite configuration log message contains objects with default toString implementation!";
+            "Ignite configuration log message contains objects with default toString implementation";
 
     /** Error message to be prompted for node start log message */
     private static final String NODE_START_ASSERTION_ERROR_MESSAGE =
-            "Node start log message contains objects with default toString implementation!";
+            "Node start log message contains objects with default toString implementation";
 
     /** Pattern to check any object has default {@link Object#toString()} implementation */
     private static final Pattern ERROR_PATTERN = Pattern.compile("^(?=.*IgniteConfiguration \\[)(?!.*@[a-fA-F0-9]+).*$");
@@ -59,11 +59,9 @@ public class IgniteConfigurationTest extends GridCommonAbstractTest {
     public void testIgniteConfigurationPrompt() throws Exception {
         LogListener igniteConfigurationLogListener = LogListener
                 .matches(ERROR_PATTERN)
-                .atLeast(1)
                 .build();
         LogListener nodeStartIgniteConfigurationLogListener = LogListener
                 .matches(NODE_START_ERROR_PATTERN)
-                .atLeast(1)
                 .build();
         listeningLog.registerListener(igniteConfigurationLogListener);
         listeningLog.registerListener(nodeStartIgniteConfigurationLogListener);
