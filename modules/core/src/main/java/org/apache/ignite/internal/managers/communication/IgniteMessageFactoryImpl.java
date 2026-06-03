@@ -18,18 +18,12 @@
 package org.apache.ignite.internal.managers.communication;
 
 import java.lang.reflect.Array;
-import java.nio.ByteBuffer;
 import java.util.function.Supplier;
-
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.direct.DirectMessageReader;
-import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -41,29 +35,6 @@ public class IgniteMessageFactoryImpl implements MessageFactory {
 
     /** Array size. */
     private static final int ARR_SIZE = 1 << Short.SIZE;
-
-    /** Delegate serialization to {@code Message} methods. */
-    private static final MessageSerializer DEFAULT_SERIALIZER = new MessageSerializer() {
-        /** {@inheritDoc} */
-        @Override public boolean writeTo(Message msg, MessageWriter writer) {
-            ByteBuffer buf = null;
-
-            if (writer instanceof DirectMessageWriter)
-                buf = ((DirectMessageWriter)writer).getBuffer();
-
-            return msg.writeTo(buf, writer);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean readFrom(Message msg, MessageReader reader) {
-            ByteBuffer buf = null;
-
-            if (reader instanceof DirectMessageReader)
-                buf = ((DirectMessageReader)reader).getBuffer();
-
-            return msg.readFrom(buf, reader);
-        }
-    };
 
     /** Message suppliers. */
     private final Supplier<Message>[] msgSuppliers = (Supplier<Message>[])Array.newInstance(Supplier.class, ARR_SIZE);
@@ -131,11 +102,6 @@ public class IgniteMessageFactoryImpl implements MessageFactory {
             throw new IgniteException("Message factory is already registered for direct type: " + directType);
     }
 
-    /** {@inheritDoc} */
-    @Override public void register(short directType, Supplier<Message> supplier) throws IgniteException {
-        register(directType, supplier, DEFAULT_SERIALIZER);
-    }
-
     /**
      * Creates new message instance of provided direct type.
      *
@@ -147,7 +113,7 @@ public class IgniteMessageFactoryImpl implements MessageFactory {
         Supplier<Message> supplier = msgSuppliers[directTypeToIndex(directType)];
 
         if (supplier == null)
-            throw new IgniteException("Invalid message type: " + directType);
+            throw new UnknownMessageException(directType);
 
         return supplier.get();
     }

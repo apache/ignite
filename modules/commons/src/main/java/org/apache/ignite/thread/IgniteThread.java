@@ -19,8 +19,12 @@ package org.apache.ignite.thread;
 
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.thread.context.OperationContext;
+import org.apache.ignite.internal.thread.context.function.OperationContextAwareWrapper;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
+
+import static org.apache.ignite.internal.thread.context.function.OperationContextAwareRunnable.wrapIfContextNotEmpty;
 
 /**
  * This class adds some necessary plumbing on top of the {@link Thread} class.
@@ -30,6 +34,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  *      <li>Dedicated parent thread group</li>
  *      <li>Backing interrupted flag</li>
  *      <li>Name of the grid this thread belongs to</li>
+ *      <li>Automatic capturing of {@link OperationContext} of parent thread</li>
  * </ul>
  * <b>Note</b>: this class is intended for internal use only.
  */
@@ -76,12 +81,17 @@ public class IgniteThread extends Thread {
      * @param r Runnable to execute.
      */
     public IgniteThread(String igniteInstanceName, String threadName, Runnable r) {
-        this(igniteInstanceName, threadName, r, GRP_IDX_UNASSIGNED, -1, GridIoPolicy.UNDEFINED);
+        this(igniteInstanceName, threadName, wrapIfContextNotEmpty(r), GRP_IDX_UNASSIGNED, -1, GridIoPolicy.UNDEFINED);
     }
 
     /**
      * Creates grid thread with given name for a given Ignite instance with specified
      * thread group.
+     *
+     * <b>Note</b>: This constructor creates a thread that does NOT automatically acquire the parent thread's Operation
+     * Context, ensuring that no Operation Context is attached to it at the start of execution. It is used in Ignite
+     * thread pools and worker threads, which rely on this behavior to avoid unnecessary wrapping
+     * (see {@link OperationContextAwareWrapper})
      *
      * @param igniteInstanceName Name of the Ignite instance this thread is created for.
      * @param threadName Name of thread.
@@ -99,20 +109,6 @@ public class IgniteThread extends Thread {
         this.compositeRwLockIdx = grpIdx;
         this.stripe = stripe;
         this.plc = plc;
-    }
-
-    /**
-     * @param igniteInstanceName Name of the Ignite instance this thread is created for.
-     * @param threadGrp Thread group.
-     * @param threadName Name of thread.
-     */
-    protected IgniteThread(String igniteInstanceName, ThreadGroup threadGrp, String threadName) {
-        super(threadGrp, threadName);
-
-        this.igniteInstanceName = igniteInstanceName;
-        this.compositeRwLockIdx = GRP_IDX_UNASSIGNED;
-        this.stripe = -1;
-        this.plc = GridIoPolicy.UNDEFINED;
     }
 
     /**
@@ -239,6 +235,22 @@ public class IgniteThread extends Thread {
      */
     public static String createName(long num, String threadName, String igniteInstanceName) {
         return threadName + "-#" + num + (igniteInstanceName != null ? '%' + igniteInstanceName + '%' : "");
+    }
+
+    /**
+     * @param threadId Thread ID.
+     * @return Thread name if found.
+     */
+    public static String resolveName(long threadId) {
+        Thread[] threads = new Thread[Thread.activeCount()];
+
+        int cnt = Thread.enumerate(threads);
+
+        for (int i = 0; i < cnt; i++)
+            if (threads[i].getId() == threadId)
+                return threads[i].getName();
+
+        return "<failed to find active thread " + threadId + '>';
     }
 
     /** {@inheritDoc} */

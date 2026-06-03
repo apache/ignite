@@ -179,7 +179,7 @@ The CACHE_GROUPS view contains information about the link:configuring-caches/cac
 |CACHE_MODE | VARCHAR | The cache mode.
 |DATA_REGION_NAME | VARCHAR | The name of the link:memory-configuration/data-regions[data region].
 |IS_SHARED|BOOLEAN | If this group contains more than one cache.
-|NODE_FILTER | VARCHAR | String representation of the the node filter defined for the cache group.
+|NODE_FILTER | VARCHAR | String representation of the node filter defined for the cache group.
 |PARTITION_LOSS_POLICY | VARCHAR | link:configuring-caches/partition-loss-policy[Partition loss policy].
 |PARTITIONS_COUNT|INT | The number of partitions.
 |REBALANCE_DELAY|LONG | link:data-rebalancing#other-properties[Rebalancing delay].
@@ -267,34 +267,36 @@ methods. The parameter is empty, if you use `IgniteCompute` APIs that don't targ
 
 This view exposes information about currently running transactions.
 
+Each row in this view represents a transaction object on the node where the view is queried. A distributed transaction can be represented by several transaction objects on different nodes, such as near, DHT-local, and DHT-remote transaction objects. Therefore, rows for the same distributed transaction can differ from node to node.
+
 [{table_opts}]
 |===
 |NAME | TYPE |    DESCRIPTION
-|ORIGINATING_NODE_ID | UUID |
-|STATE | string |
-|XID | UUID |
-|LABEL | string |
-|START_TIME | long |
-|ISOLATION | string |
-|CONCURRENCY | string |
-|KEYS_COUNT | int |
-|CACHE_IDS | string |
-|COLOCATED | boolean |
-|DHT | boolean |
-|DURATION | long |
-|IMPLICIT | boolean |
-|IMPLICIT_SINGLE | boolean |
-|INTERNAL | boolean |
-|LOCAL | boolean |
-|LOCAL_NODE_ID | UUID |
-|NEAR | boolean |
-|ONE_PHASE_COMMIT | boolean |
-|OTHER_NODE_ID | UUID |
-|SUBJECT_ID | UUID |
-|SYSTEM | boolean |
-|THREAD_ID | long |
-|TIMEOUT | long |
-|TOP_VER | string |
+|ORIGINATING_NODE_ID | UUID | ID of the node that initiated the current transaction object. For a transaction object mapped to a primary partition, this is the transaction initiator node; for a transaction object mapped to a backup partition, this is the node that owns the primary partition
+|STATE | string | Current transaction state
+|XID | UUID | Unique transaction identifier
+|LABEL | string | Transaction label
+|START_TIME | long | Start time of the transaction on this node
+|ISOLATION | string | Transaction isolation level
+|CONCURRENCY | string | Transaction concurrency mode
+|KEYS_COUNT | int | Number of cache keys participating in the transaction
+|CACHE_IDS | string | Comma-separated IDs of caches participating in the transaction
+|COLOCATED | boolean | `True` if the transaction is DHT colocated
+|DHT | boolean | `True` if current node has data for this transaction
+|DURATION | long | Transaction duration in milliseconds
+|IMPLICIT | boolean | `True` if the transaction was started implicitly
+|IMPLICIT_SINGLE | boolean | `True` if the transaction is implicit with only one key
+|INTERNAL | boolean | `True` if transaction operates with keys related to Ignite internal data structures
+|LOCAL | boolean | `True` if this transaction object is on the initiator side or mapped to a primary partition, `false` if it is mapped to a backup partition
+|LOCAL_NODE_ID | UUID | Local node ID
+|NEAR | boolean | `True` if the transaction is near
+|ONE_PHASE_COMMIT | boolean | `True` if the transaction is a one-phase-commit transaction
+|OTHER_NODE_ID | UUID | ID of an additional node involved in the transaction
+|SUBJECT_ID | UUID | ID of the subject that initiated the transaction
+|SYSTEM | boolean | `True` if the transaction was started for a system cache
+|THREAD_ID | long | ID of the thread started the transaction
+|TIMEOUT | long | Transaction timeout in milliseconds
+|TOP_VER | string | Topology version assigned to the transaction. If not assigned explicitly, it is a topology version of the latest partition exchange.
 |===
 
 == NODES
@@ -497,6 +499,7 @@ This view exposes information about currently running SQL queries.
 |START_TIME | date | Query start time
 |DURATION | long | Query execution duration
 |INITIATOR_ID | string | User defined query initiator ID
+|MAP_QUERY | boolean | True if query is H2 map query
 |LOCAL | boolean | True if local only
 |SCHEMA_NAME | string | Schema name
 |SUBJECT_ID | UUID | The subject ID of the entity that initiated the query

@@ -24,6 +24,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.GridTopicMessage;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
@@ -40,11 +41,8 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridEventStorageMessage implements MarshallableMessage {
     /** */
-    private Object resTopic;
-
-    /** */
     @Order(0)
-    byte[] resTopicBytes;
+    GridTopicMessage resTopicMsg;
 
     /** */
     private IgnitePredicate<?> filter;
@@ -91,7 +89,7 @@ public class GridEventStorageMessage implements MarshallableMessage {
     }
 
     /**
-     * @param resTopic Response topic,
+     * @param resTopic Response topic.
      * @param filter Query filter.
      * @param clsLdrId Class loader ID.
      * @param depMode Deployment mode.
@@ -105,7 +103,7 @@ public class GridEventStorageMessage implements MarshallableMessage {
         DeploymentMode depMode,
         String userVer,
         Map<UUID, IgniteUuid> ldrParties) {
-        this.resTopic = resTopic;
+        resTopicMsg = new GridTopicMessage(resTopic);
         this.filter = filter;
         filterClsName = filter.getClass().getName();
         this.depMode = depMode;
@@ -127,7 +125,7 @@ public class GridEventStorageMessage implements MarshallableMessage {
         if (ex != null)
             errMsg = new ErrorMessage(ex);
 
-        resTopic = null;
+        resTopicMsg = null;
         filter = null;
         filterClsName = null;
         depMode = null;
@@ -139,13 +137,13 @@ public class GridEventStorageMessage implements MarshallableMessage {
      * @return Response topic.
      */
     Object responseTopic() {
-        return resTopic;
+        return GridTopicMessage.topic(resTopicMsg);
     }
 
     /**
      * @return Filter.
      */
-    public IgnitePredicate<?> filter() {
+    IgnitePredicate<?> filter() {
         return filter;
     }
 
@@ -159,35 +157,35 @@ public class GridEventStorageMessage implements MarshallableMessage {
     /**
      * @return the Class loader ID.
      */
-    public IgniteUuid classLoaderId() {
+    IgniteUuid classLoaderId() {
         return clsLdrId;
     }
 
     /**
      * @return Deployment mode.
      */
-    public DeploymentMode deploymentMode() {
+    DeploymentMode deploymentMode() {
         return depMode;
     }
 
     /**
      * @return Filter class name.
      */
-    public String filterClassName() {
+    String filterClassName() {
         return filterClsName;
     }
 
     /**
      * @return User version.
      */
-    public String userVersion() {
+    String userVersion() {
         return userVer;
     }
 
     /**
      * @return Node class loader participant map.
      */
-    public @Nullable Map<UUID, IgniteUuid> loaderParticipants() {
+    @Nullable Map<UUID, IgniteUuid> loaderParticipants() {
         return ldrParties != null ? Collections.unmodifiableMap(ldrParties) : null;
     }
 
@@ -200,9 +198,6 @@ public class GridEventStorageMessage implements MarshallableMessage {
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (resTopic != null)
-            resTopicBytes = U.marshal(marsh, resTopic);
-
         if (filter != null)
             filterBytes = U.marshal(marsh, filter);
 
@@ -212,12 +207,6 @@ public class GridEventStorageMessage implements MarshallableMessage {
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader ldr) throws IgniteCheckedException {
-        if (resTopicBytes != null) {
-            resTopic = U.unmarshal(marsh, resTopicBytes, ldr);
-
-            resTopicBytes = null;
-        }
-
         if (evtsBytes != null) {
             evts = U.unmarshal(marsh, evtsBytes, ldr);
 
@@ -236,7 +225,6 @@ public class GridEventStorageMessage implements MarshallableMessage {
             filterBytes = null;
         }
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

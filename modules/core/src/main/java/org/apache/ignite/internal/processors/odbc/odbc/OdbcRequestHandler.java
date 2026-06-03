@@ -92,9 +92,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     /** Busy lock. */
     private final GridSpinBusyLock busyLock;
 
-    /** Worker. */
-    private final OdbcRequestHandlerWorker worker;
-
     /** Maximum allowed cursors. */
     private final int maxCursors;
 
@@ -176,9 +173,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         this.ver = ver;
 
         log = ctx.log(getClass());
-
-        // TODO IGNITE-9484 Do not create worker if there is a possibility to unbind TX from threads.
-        worker = new OdbcRequestHandlerWorker(ctx.igniteInstanceName(), log, this, ctx);
     }
 
     /** {@inheritDoc} */
@@ -188,14 +182,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         assert req instanceof OdbcRequest;
 
         return doHandle((OdbcRequest)req);
-    }
-
-    /**
-     * Start worker, if it's present.
-     */
-    void start() {
-        if (worker != null)
-            worker.start();
     }
 
     /**
@@ -264,17 +250,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      */
     public void onDisconnect() {
         if (busyLock.enterBusy()) {
-            if (worker != null) {
-                worker.cancel();
-
-                try {
-                    worker.join();
-                }
-                catch (InterruptedException e) {
-                    // No-op.
-                }
-            }
-
             try {
                 for (OdbcQueryResults res : qryResults.values())
                     res.closeAll();

@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.service;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -78,6 +80,9 @@ class ServiceDeploymentTask {
     /** Remaining nodes to received services single deployments message. */
     @GridToStringInclude
     private final Set<UUID> remaining = new HashSet<>();
+
+    /** Nodes that did not respond with single message because they left the cluster during distributed process. */
+    private final Set<UUID> failedToReply = new HashSet<>();
 
     /** Added in deployment queue flag. */
     private final AtomicBoolean addedInQueue = new AtomicBoolean(false);
@@ -219,8 +224,13 @@ class ServiceDeploymentTask {
 
                     if (evtType == EVT_NODE_LEFT || evtType == EVT_NODE_FAILED) {
                         deployedServices.forEach((srvcId, desc) -> {
-                            if (desc.topologySnapshot().containsKey(evtNode.id()) ||
-                                (desc.cacheName() != null && !evtNode.isClient())) // If affinity service
+                            ServiceTopology top = desc.serviceTopology();
+
+                            if (
+                                top.isTransitional() ||
+                                top.containsNode(evtNode.id()) ||
+                                desc.cacheName() != null && !evtNode.isClient() // If affinity service
+                            )
                                 toDeploy.put(srvcId, desc);
                         });
                     }
@@ -298,33 +308,38 @@ class ServiceDeploymentTask {
         if (!depActions.servicesToDeploy().isEmpty()) {
             final Collection<UUID> evtTopNodes = nodeIds(ctx.discovery().nodes(evtTopVer));
 
-            depActions.servicesToDeploy().forEach((srvcId, desc) -> {
-                try {
-                    ServiceConfiguration cfg = desc.configuration();
+            depActions.servicesToDeploy().entrySet().stream()
+                .sorted(Comparator.comparingInt(e -> e.getValue().configuration().getLocalStartOrder()))
+                .forEach(entry -> {
+                    IgniteUuid srvcId = entry.getKey();
+                    ServiceInfo desc = entry.getValue();
 
-                    TreeMap<UUID, Integer> oldTop = filterDeadNodes(evtTopNodes, desc.topologySnapshot());
+                    try {
+                        ServiceConfiguration cfg = desc.configuration();
 
-                    Map<UUID, Integer> top = reassign(srvcId, cfg, evtTopVer, oldTop);
+                        TreeMap<UUID, Integer> oldTop = filterDeadNodes(evtTopNodes, desc.topologySnapshot());
 
-                    expDeps.put(srvcId, top);
+                        Map<UUID, Integer> top = reassign(srvcId, cfg, evtTopVer, oldTop);
 
-                    Integer expCnt = top.getOrDefault(ctx.localNodeId(), 0);
+                        expDeps.put(srvcId, top);
 
-                    if (expCnt > srvcProc.localInstancesCount(srvcId)) {
-                        srvcProc.deployment().deployerBlockingSectionBegin();
+                        Integer expCnt = top.getOrDefault(ctx.localNodeId(), 0);
 
-                        try {
-                            srvcProc.redeploy(srvcId, cfg, top);
-                        }
-                        finally {
-                            srvcProc.deployment().deployerBlockingSectionEnd();
+                        if (expCnt > srvcProc.localInstancesCount(srvcId)) {
+                            srvcProc.deployment().deployerBlockingSectionBegin();
+
+                            try {
+                                srvcProc.redeploy(srvcId, cfg, top);
+                            }
+                            finally {
+                                srvcProc.deployment().deployerBlockingSectionEnd();
+                            }
                         }
                     }
-                }
-                catch (IgniteCheckedException e) {
-                    depErrors.computeIfAbsent(srvcId, c -> new ArrayList<>()).add(e);
-                }
-            });
+                    catch (IgniteCheckedException e) {
+                        depErrors.computeIfAbsent(srvcId, c -> new ArrayList<>()).add(e);
+                    }
+                });
         }
 
         createAndSendSingleDeploymentsMessage(depId, depErrors);
@@ -342,8 +357,13 @@ class ServiceDeploymentTask {
 
             try {
                 for (ClusterNode node : ctx.discovery().nodes(topVer)) {
-                    if (ctx.discovery().alive(node) && !singleDepsMsgs.containsKey(node.id()))
+                    if (singleDepsMsgs.containsKey(node.id()))
+                        continue;
+
+                    if (ctx.discovery().alive(node))
                         remaining.add(node.id());
+                    else
+                        failedToReply.add(node.id());
                 }
             }
             catch (Exception e) {
@@ -383,8 +403,7 @@ class ServiceDeploymentTask {
             Map<IgniteUuid, ServiceSingleNodeDeploymentResult> results = new HashMap<>();
 
             for (IgniteUuid srvcId : depServicesIds) {
-                ServiceSingleNodeDeploymentResult depRes = new ServiceSingleNodeDeploymentResult(
-                    srvcProc.localInstancesCount(srvcId), log);
+                ServiceSingleNodeDeploymentResult depRes = new ServiceSingleNodeDeploymentResult(srvcProc.localInstancesCount(srvcId));
 
                 depRes.errors(errors.get(srvcId));
 
@@ -395,8 +414,7 @@ class ServiceDeploymentTask {
                 if (results.containsKey(srvcId))
                     return;
 
-                ServiceSingleNodeDeploymentResult depRes = new ServiceSingleNodeDeploymentResult(
-                    srvcProc.localInstancesCount(srvcId), log);
+                ServiceSingleNodeDeploymentResult depRes = new ServiceSingleNodeDeploymentResult(srvcProc.localInstancesCount(srvcId));
 
                 depRes.errors(err);
 
@@ -462,7 +480,7 @@ class ServiceDeploymentTask {
 
                     assert depResults != null : "Services deployment actions should be attached.";
 
-                    final Map<IgniteUuid, Map<UUID, Integer>> fullTops = depResults.deploymentTopologies();
+                    final Map<IgniteUuid, ServiceTopology> fullTops = depResults.deploymentTopologies();
                     final Map<IgniteUuid, Collection<Throwable>> fullErrors = depResults.deploymentErrors();
 
                     depActions.deploymentTopologies(fullTops);
@@ -472,25 +490,28 @@ class ServiceDeploymentTask {
 
                     final Map<IgniteUuid, ServiceInfo> services = srvcProc.deployedServices();
 
-                    fullTops.forEach((srvcId, top) -> {
-                        Integer expCnt = top.getOrDefault(ctx.localNodeId(), 0);
+                    fullTops.entrySet().stream()
+                        .sorted(Comparator.comparingInt(e -> services.get(e.getKey()).configuration().getLocalStartOrder()))
+                        .forEach(entry -> {
+                            IgniteUuid srvcId = entry.getKey();
+                            ServiceTopology top = entry.getValue();
 
-                        if (expCnt < srvcProc.localInstancesCount(srvcId)) { // Undeploy exceed instances
-                            ServiceInfo desc = services.get(srvcId);
+                            Integer expCnt = top.snapshot().getOrDefault(ctx.localNodeId(), 0);
 
-                            assert desc != null;
+                            if (expCnt < srvcProc.localInstancesCount(srvcId)) { // Undeploy exceed instances
+                                ServiceInfo desc = services.get(srvcId);
 
-                            ServiceConfiguration cfg = desc.configuration();
+                                ServiceConfiguration cfg = desc.configuration();
 
-                            try {
-                                srvcProc.redeploy(srvcId, cfg, top);
+                                try {
+                                    srvcProc.redeploy(srvcId, cfg, top.snapshot());
+                                }
+                                catch (IgniteCheckedException e) {
+                                    log.error("Error occured during cancel exceed service instances: " +
+                                        "[srvcId=" + srvcId + ", name=" + desc.name() + ']', e);
+                                }
                             }
-                            catch (IgniteCheckedException e) {
-                                log.error("Error occured during cancel exceed service instances: " +
-                                    "[srvcId=" + srvcId + ", name=" + desc.name() + ']', e);
-                            }
-                        }
-                    });
+                        });
 
                     completeSuccess();
                 }
@@ -639,7 +660,7 @@ class ServiceDeploymentTask {
             if (cnt == 0 && res.errors().isEmpty())
                 return;
 
-            ServiceSingleNodeDeploymentResult singleDepRes = new ServiceSingleNodeDeploymentResult(cnt, log);
+            ServiceSingleNodeDeploymentResult singleDepRes = new ServiceSingleNodeDeploymentResult(cnt);
 
             if (!res.errors().isEmpty())
                 singleDepRes.errors(res.errors());
@@ -649,13 +670,39 @@ class ServiceDeploymentTask {
 
         final Collection<ServiceClusterDeploymentResult> fullResults = new ArrayList<>();
 
+        Set<IgniteUuid> transitionalSrvcTops = collectTransitionalTopologies();
+
         singleResults.forEach((srvcId, dep) -> {
             ServiceClusterDeploymentResult res = new ServiceClusterDeploymentResult(srvcId, dep);
+
+            if (transitionalSrvcTops.contains(srvcId))
+                res.markServiceTopologyTransitional();
 
             fullResults.add(res);
         });
 
         return fullResults;
+    }
+
+    /**
+     * Nodes may leave the cluster while the service topology is being recalculated. In this case, the resulting service
+     * topology may be incomplete. We consider the mentioned service topology transitional and expect it to be recalculated
+     * soon.
+     */
+    private Set<IgniteUuid> collectTransitionalTopologies() {
+        if (failedToReply.isEmpty())
+            return Collections.emptySet();
+
+        Set<IgniteUuid> res = new HashSet<>();
+
+        for (UUID nodeId : failedToReply) {
+            expDeps.forEach((srvcId, top) -> {
+                if (top.containsKey(nodeId))
+                    res.add(srvcId);
+            });
+        }
+
+        return res;
     }
 
     /**
@@ -688,10 +735,14 @@ class ServiceDeploymentTask {
                 synchronized (initCrdMux) {
                     boolean rmvd = remaining.remove(nodeId);
 
-                    if (rmvd && remaining.isEmpty()) {
-                        singleDepsMsgs.remove(nodeId);
+                    if (rmvd) {
+                        failedToReply.add(nodeId);
 
-                        onAllReceived();
+                        if (remaining.isEmpty()) {
+                            singleDepsMsgs.remove(nodeId);
+
+                            onAllReceived();
+                        }
                     }
                 }
             }

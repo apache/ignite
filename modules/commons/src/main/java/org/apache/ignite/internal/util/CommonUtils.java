@@ -29,6 +29,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.math.BigDecimal;
 import java.net.DatagramSocket;
 import java.net.Socket;
 import java.net.SocketException;
@@ -44,18 +45,25 @@ import java.nio.file.Path;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.security.ProtectionDomain;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -81,6 +89,8 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
 import org.apache.ignite.lang.IgniteFutureTimeoutException;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.thread.IgniteThread;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Objects.isNull;
@@ -222,6 +232,21 @@ public abstract class CommonUtils {
     /** */
     private static final Class<?> GEOMETRY_CLASS = classForName("org.locationtech.jts.geom.Geometry", null);
 
+    /** Boxed class map. */
+    private static final Map<Class<?>, Class<?>> boxedClsMap = new HashMap<>(16, .5f);
+
+    /** Field name for key. */
+    public static final String KEY_FIELD_NAME = "_KEY";
+
+    /** Field name for value. */
+    public static final String VAL_FIELD_NAME = "_VAL";
+
+    /** Byte bit-mask. */
+    private static final int MASK = 0xf;
+
+    /** */
+    private static final Set<Class<?>> SQL_TYPES = createSqlTypes();
+
     static {
         primitiveMap.put("byte", byte.class);
         primitiveMap.put("short", short.class);
@@ -232,6 +257,16 @@ public abstract class CommonUtils {
         primitiveMap.put("char", char.class);
         primitiveMap.put("boolean", boolean.class);
         primitiveMap.put("void", void.class);
+
+        boxedClsMap.put(byte.class, Byte.class);
+        boxedClsMap.put(short.class, Short.class);
+        boxedClsMap.put(int.class, Integer.class);
+        boxedClsMap.put(long.class, Long.class);
+        boxedClsMap.put(float.class, Float.class);
+        boxedClsMap.put(double.class, Double.class);
+        boxedClsMap.put(char.class, Character.class);
+        boxedClsMap.put(boolean.class, Boolean.class);
+        boxedClsMap.put(void.class, Void.class);
 
         try {
             OBJECT_CTOR = Object.class.getConstructor();
@@ -541,27 +576,27 @@ public abstract class CommonUtils {
 
     /**
      * Starts clock timer if grid is first.
+     *
+     * @param igniteInstanceName Ignite instance name.
      */
-    public static void onGridStart() {
+    @SuppressWarnings({"BusyWait"})
+    public static void onGridStart(String igniteInstanceName) {
         synchronized (mux) {
             if (gridCnt == 0) {
                 assert timer == null;
 
-                timer = new Thread(new Runnable() {
-                    @SuppressWarnings({"BusyWait"})
-                    @Override public void run() {
-                        while (true) {
-                            curTimeMillis = System.currentTimeMillis();
+                timer = new IgniteThread(igniteInstanceName, "ignite-clock", () -> {
+                    while (!IgniteThread.currentThread().isInterrupted()) {
+                        curTimeMillis = System.currentTimeMillis();
 
-                            try {
-                                Thread.sleep(10);
-                            }
-                            catch (InterruptedException ignored) {
-                                break;
-                            }
+                        try {
+                            Thread.sleep(10);
+                        }
+                        catch (InterruptedException ignored) {
+                            break;
                         }
                     }
-                }, "ignite-clock");
+                });
 
                 timer.setDaemon(true);
 
@@ -1661,6 +1696,43 @@ public abstract class CommonUtils {
     }
 
     /**
+     * Writes byte array to output stream accounting for <tt>null</tt> values.
+     *
+     * @param out Output stream to write to.
+     * @param arr Array to write, possibly <tt>null</tt>.
+     * @throws java.io.IOException If write failed.
+     */
+    public static void writeByteArray(DataOutput out, @Nullable byte[] arr) throws IOException {
+        if (arr == null)
+            out.writeInt(-1);
+        else {
+            out.writeInt(arr.length);
+
+            out.write(arr);
+        }
+    }
+
+    /**
+     * Reads byte array from input stream accounting for <tt>null</tt> values.
+     *
+     * @param in Stream to read from.
+     * @return Read byte array, possibly <tt>null</tt>.
+     * @throws java.io.IOException If read failed.
+     */
+    @Nullable public static byte[] readByteArray(DataInput in) throws IOException {
+        int len = in.readInt();
+
+        if (len == -1)
+            return null; // Value "-1" indicates null.
+
+        byte[] res = new byte[len];
+
+        in.readFully(res);
+
+        return res;
+    }
+
+    /**
      * Get number of bytes for {@link DataOutput#writeUTF},
      * depending on character: <br/>
      *
@@ -2120,5 +2192,166 @@ public abstract class CommonUtils {
      */
     public static boolean isGeometryClass(Class<?> cls) {
         return GEOMETRY_CLASS != null && GEOMETRY_CLASS.isAssignableFrom(cls);
+    }
+
+    /**
+     * Gets wrapper class for a primitive type.
+     *
+     * @param cls Class. If {@code null}, method is no-op.
+     * @return Wrapper class or original class if it is non-primitive.
+     */
+    @Nullable public static Class<?> box(@Nullable Class<?> cls) {
+        if (cls == null)
+            return null;
+
+        if (!cls.isPrimitive())
+            return cls;
+
+        return boxedClsMap.get(cls);
+    }
+
+    /**
+     * Checks if the given class can be mapped to a simple SQL type.
+     *
+     * @param cls Class.
+     * @return {@code true} If can.
+     */
+    public static boolean isSqlType(Class<?> cls) {
+        cls = box(cls);
+
+        return SQL_TYPES.contains(cls) || isGeometryClass(cls);
+    }
+
+    /**
+     * @param timeout Timeout.
+     * @param timeUnit Time unit.
+     * @return Converted time.
+     */
+    public static int validateTimeout(int timeout, TimeUnit timeUnit) {
+        A.ensure(timeUnit != TimeUnit.MICROSECONDS && timeUnit != TimeUnit.NANOSECONDS,
+            "timeUnit minimal resolution is millisecond.");
+
+        A.ensure(timeout >= 0, "timeout value should be non-negative.");
+
+        long tmp = TimeUnit.MILLISECONDS.convert(timeout, timeUnit);
+
+        return (int)tmp;
+    }
+
+    /**
+     * Converts byte array to hex string.
+     *
+     * @param arr Array of bytes.
+     * @return Hex string.
+     */
+    public static String byteArray2HexString(byte[] arr) {
+        return byteArray2HexString(arr, true);
+    }
+
+    /**
+     * Converts byte array to hex string.
+     *
+     * @param arr Array of bytes.
+     * @param toUpper If {@code true} returns upper cased result.
+     * @return Hex string.
+     */
+    public static String byteArray2HexString(byte[] arr, boolean toUpper) {
+        StringBuilder sb = new StringBuilder(arr.length << 1);
+
+        for (byte b : arr)
+            addByteAsHex(sb, b);
+
+        return toUpper ? sb.toString().toUpperCase() : sb.toString();
+    }
+
+    /**
+     * @param sb String builder.
+     * @param b Byte to add in hexadecimal format.
+     */
+    protected static void addByteAsHex(StringBuilder sb, byte b) {
+        sb.append(Integer.toHexString(MASK & b >>> 4)).append(Integer.toHexString(MASK & b));
+    }
+
+    /**
+     * Converts an array of characters representing hexidecimal values into an
+     * array of bytes of those same values. The returned array will be half the
+     * length of the passed array, as it takes two characters to represent any
+     * given byte. An exception is thrown if the passed char array has an odd
+     * number of elements.
+     *
+     * @param data An array of characters containing hexidecimal digits
+     * @return A byte array containing binary data decoded from
+     *         the supplied char array.
+     * @throws IgniteCheckedException Thrown if an odd number or illegal of characters is supplied.
+     */
+    public static byte[] decodeHex(char[] data) throws IgniteCheckedException {
+        int len = data.length;
+
+        if ((len & 0x01) != 0)
+            throw new IgniteCheckedException("Odd number of characters.");
+
+        byte[] out = new byte[len >> 1];
+
+        // Two characters form the hex value.
+        for (int i = 0, j = 0; j < len; i++) {
+            int f = toDigit(data[j], j) << 4;
+
+            j++;
+
+            f |= toDigit(data[j], j);
+
+            j++;
+
+            out[i] = (byte)(f & 0xFF);
+        }
+
+        return out;
+    }
+
+    /**
+     * Converts a hexadecimal character to an integer.
+     *
+     * @param ch A character to convert to an integer digit
+     * @param idx The index of the character in the source
+     * @return An integer
+     * @throws IgniteCheckedException Thrown if ch is an illegal hex character
+     */
+    public static int toDigit(char ch, int idx) throws IgniteCheckedException {
+        int digit = Character.digit(ch, 16);
+
+        if (digit == -1)
+            throw new IgniteCheckedException("Illegal hexadecimal character " + ch + " at index " + idx);
+
+        return digit;
+    }
+
+    /**
+     * Creates SQL types set.
+     *
+     * @return SQL types set.
+     */
+    @NotNull private static Set<Class<?>> createSqlTypes() {
+        Set<Class<?>> sqlClasses = new HashSet<>(Arrays.<Class<?>>asList(
+            Integer.class,
+            Boolean.class,
+            Byte.class,
+            Short.class,
+            Long.class,
+            BigDecimal.class,
+            Double.class,
+            Float.class,
+            Time.class,
+            Timestamp.class,
+            Date.class,
+            java.sql.Date.class,
+            LocalTime.class,
+            LocalDate.class,
+            LocalDateTime.class,
+            String.class,
+            UUID.class,
+            byte[].class
+        ));
+
+        return sqlClasses;
     }
 }

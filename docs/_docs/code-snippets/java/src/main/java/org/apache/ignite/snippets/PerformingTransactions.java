@@ -42,6 +42,7 @@ public class PerformingTransactions {
     public static void runAll() {
         enablingTransactions();
         executingTransactionsExample();
+        transactionSavepointsExample();
         optimisticTransactionExample();
         deadlockDetectionExample();
 
@@ -95,6 +96,38 @@ public class PerformingTransactions {
             // end::executing[]
             System.out.println(cache.get("Hello"));
             System.out.println(cache.get("World"));
+        }
+    }
+
+    public static void transactionSavepointsExample() {
+        try (Ignite ignite = Ignition.start()) {
+            // tag::savepoints[]
+            CacheConfiguration<String, Integer> cfg = new CacheConfiguration<>();
+            cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+            cfg.setName("myCache");
+
+            IgniteCache<String, Integer> cache = ignite.getOrCreateCache(cfg);
+
+            try (Transaction tx = ignite.transactions().txStart(TransactionConcurrency.PESSIMISTIC,
+                    TransactionIsolation.REPEATABLE_READ)) {
+                cache.put("order:1", 10);
+
+                tx.savepoint("before-shipping");
+
+                cache.put("shipping:1", 5);
+                cache.put("order:1", 15);
+
+                tx.rollbackToSavepoint("before-shipping");
+
+                cache.put("order:1", 11);
+
+                tx.releaseSavepoint("before-shipping");
+
+                tx.commit();
+            }
+            // end::savepoints[]
+            System.out.println(cache.get("order:1"));
+            System.out.println(cache.get("shipping:1"));
         }
     }
 

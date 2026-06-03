@@ -19,9 +19,12 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
 import java.util.Collection;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cdc.CdcCacheEvent;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.MarshallableMessage;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -29,7 +32,10 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /**
  * Cache data to write to and read from {@link IgnitePageStoreManager}. In a nutshell, contains (most importantly)
@@ -39,7 +45,7 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
  * <p>
  * All changes must be made with the respect of RU rules.
  */
-public class StoredCacheData implements Serializable, CdcCacheEvent {
+public class StoredCacheData implements Serializable, CdcCacheEvent, MarshallableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -47,15 +53,25 @@ public class StoredCacheData implements Serializable, CdcCacheEvent {
     @GridToStringInclude
     private CacheConfiguration<?, ?> ccfg;
 
+    /** Serialized {@link #ccfg}. */
+    @Order(0)
+    transient byte[] ccfgBytes;
+
     /** Query entities. */
     @GridToStringInclude
     private Collection<QueryEntity> qryEntities;
 
+    /** Serialized {@link #qryEntities}. */
+    @Order(1)
+    transient byte[] qryEntitiesBytes;
+
     /** SQL flag - {@code true} if cache was created with {@code CREATE TABLE}. */
-    private boolean sql;
+    @Order(2)
+    boolean sql;
 
     /** Cache configuration enrichment. */
-    private CacheConfigurationEnrichment cacheConfigurationEnrichment;
+    @Order(3)
+    CacheConfigurationEnrichment cacheConfigurationEnrichment;
 
     /**
      * Encryption key. {@code Null} if encryption is disabled.
@@ -64,7 +80,13 @@ public class StoredCacheData implements Serializable, CdcCacheEvent {
      * Metastore. But it is currently unreadable as simple structure. Once it is done, we should move snapshot
      * encryption keys there.
      */
-    private GroupKeyEncrypted grpKeyEncrypted;
+    @Order(4)
+    GroupKeyEncrypted grpKeyEncrypted;
+
+    /** Default constructor for {@link MessageFactory}. */
+    public StoredCacheData() {
+        // No-op.
+    }
 
     /**
      * Constructor.
@@ -75,18 +97,18 @@ public class StoredCacheData implements Serializable, CdcCacheEvent {
         A.notNull(ccfg, "ccfg");
 
         this.ccfg = ccfg;
-        this.qryEntities = ccfg.getQueryEntities();
+        qryEntities = ccfg.getQueryEntities();
     }
 
     /**
      * @param cacheData Cache data.
      */
     public StoredCacheData(StoredCacheData cacheData) {
-        this.ccfg = cacheData.ccfg;
-        this.qryEntities = cacheData.qryEntities;
-        this.sql = cacheData.sql;
-        this.cacheConfigurationEnrichment = cacheData.cacheConfigurationEnrichment;
-        this.grpKeyEncrypted = cacheData.grpKeyEncrypted;
+        ccfg = cacheData.ccfg;
+        qryEntities = cacheData.qryEntities;
+        sql = cacheData.sql;
+        cacheConfigurationEnrichment = cacheData.cacheConfigurationEnrichment;
+        grpKeyEncrypted = cacheData.grpKeyEncrypted;
     }
 
     /**
@@ -151,7 +173,7 @@ public class StoredCacheData implements Serializable, CdcCacheEvent {
      * @param ccfgEnrichment Configuration enrichment.
      */
     public StoredCacheData cacheConfigurationEnrichment(CacheConfigurationEnrichment ccfgEnrichment) {
-        this.cacheConfigurationEnrichment = ccfgEnrichment;
+        cacheConfigurationEnrichment = ccfgEnrichment;
 
         return this;
     }
@@ -200,5 +222,29 @@ public class StoredCacheData implements Serializable, CdcCacheEvent {
     /** {@inheritDoc} */
     @Override public CacheConfiguration<?, ?> configuration() {
         return ccfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (ccfg != null)
+            ccfgBytes = U.marshal(marsh, ccfg);
+
+        if (qryEntities != null)
+            qryEntitiesBytes = U.marshal(marsh, qryEntities);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (ccfgBytes != null) {
+            ccfg = U.unmarshal(marsh, ccfgBytes, clsLdr);
+
+            ccfgBytes = null;
+        }
+
+        if (qryEntitiesBytes != null) {
+            qryEntities = U.unmarshal(marsh, qryEntitiesBytes, clsLdr);
+
+            qryEntitiesBytes = null;
+        }
     }
 }

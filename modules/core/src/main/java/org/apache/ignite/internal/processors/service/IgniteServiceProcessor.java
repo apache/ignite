@@ -418,7 +418,9 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         if (data.joiningNodeData() == null)
             return null;
 
-        List<ServiceInfo> svcs = ((ServiceProcessorJoinNodeDiscoveryData)data.joiningNodeData()).services();
+        ServiceProcessorJoinNodeDiscoveryData srvcProcData = data.joiningNodeData();
+
+        List<ServiceInfo> svcs = srvcProcData.services();
 
         if (ctx.security().enabled()) {
             SecurityException err = checkDeployPermissionDuringJoin(node, svcs);
@@ -429,7 +431,10 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
 
         for (ServiceInfo svc : svcs) {
             try {
-                unmarshalNodeFilterIfNeeded(svc.configuration());
+                // Returned value is ignored, because we only need to check possibility of marshalling.
+                // We don't need to save node filter in lazy configuration at this moment.
+                // Filter will be unmarhshalled and saved during adding node to topology (see #onGridDataReceived).
+                unmarshalNodeFilter(svc.configuration());
             }
             catch (IgniteCheckedException e) {
                 return new IgniteNodeValidationResult(node.id(), "Node join is rejected [joiningNodeId=" + node.id() +
@@ -445,7 +450,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         if (data.joiningNodeData() == null)
             return;
 
-        ServiceProcessorJoinNodeDiscoveryData joinData = (ServiceProcessorJoinNodeDiscoveryData)data.joiningNodeData();
+        ServiceProcessorJoinNodeDiscoveryData joinData = data.joiningNodeData();
 
         for (ServiceInfo desc : joinData.services()) {
             assert desc.topologySnapshot().isEmpty();
@@ -966,7 +971,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                 if (timeout == 0 && desc == null)
                     return null;
 
-                if (desc != null && desc.topologyInitialized())
+                if (desc != null && !desc.serviceTopology().isTransitional())
                     return desc.topologySnapshot();
 
                 long wait = 0;
@@ -1442,12 +1447,17 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         if (cfg.getNodeFilter() != null)
             return;
 
+        cfg.setNodeFilter(unmarshalNodeFilter(cfg));
+    }
+
+    /** @param cfg Lazy service configuration. */
+    private IgnitePredicate<ClusterNode> unmarshalNodeFilter(LazyServiceConfiguration cfg) throws IgniteCheckedException {
         GridDeployment dep = ctx.deploy().getDeployment(cfg.serviceClassName());
 
         ClassLoader clsLdr = U.resolveClassLoader(dep != null ? dep.classLoader() : null, ctx.config());
 
         try {
-            cfg.setNodeFilter(U.unmarshal(marsh, cfg.nodeFilterBytes(), clsLdr));
+            return U.unmarshal(marsh, cfg.nodeFilterBytes(), clsLdr);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Failed to unmarshal class of service node filter [cfg=" + cfg + ']', e);
@@ -1566,7 +1576,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      *
      * @param fullTops Deployment topologies.
      */
-    void updateServicesTopologies(@NotNull final Map<IgniteUuid, Map<UUID, Integer>> fullTops) {
+    void updateServicesTopologies(@NotNull final Map<IgniteUuid, ServiceTopology> fullTops) {
         if (!enterBusy())
             return;
 
@@ -1936,7 +1946,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * @param msg Message.
      */
     private void processServicesFullDeployments(ServiceClusterDeploymentResultBatch msg) {
-        final Map<IgniteUuid, Map<UUID, Integer>> fullTops = new HashMap<>();
+        final Map<IgniteUuid, ServiceTopology> fullTops = new HashMap<>();
         final Map<IgniteUuid, Collection<Throwable>> fullErrors = new HashMap<>();
 
         for (ServiceClusterDeploymentResult depRes : msg.results()) {
@@ -1959,7 +1969,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
             if (!errors.isEmpty())
                 fullErrors.computeIfAbsent(srvcId, e -> new ArrayList<>()).addAll(errors);
 
-            fullTops.put(srvcId, top);
+            fullTops.put(srvcId, new ServiceTopology(top, depRes.isServiceTopologyTransitional()));
         }
 
         synchronized (servicesTopsUpdateMux) {
@@ -1990,14 +2000,12 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * @param services Services info to update.
      * @param tops Deployment topologies.
      */
-    private void updateServicesMap(Map<IgniteUuid, ServiceInfo> services,
-        Map<IgniteUuid, Map<UUID, Integer>> tops) {
-
+    private void updateServicesMap(Map<IgniteUuid, ServiceInfo> services, Map<IgniteUuid, ServiceTopology> tops) {
         tops.forEach((srvcId, top) -> {
             ServiceInfo desc = services.get(srvcId);
 
             if (desc != null)
-                desc.topologySnapshot(top);
+                desc.updateServiceTopology(top);
         });
     }
 

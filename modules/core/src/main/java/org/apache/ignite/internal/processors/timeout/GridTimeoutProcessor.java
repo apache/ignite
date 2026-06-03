@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.timeout;
 
 import java.io.Closeable;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
@@ -26,6 +25,10 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.thread.context.OperationContext;
+import org.apache.ignite.internal.thread.context.OperationContextSnapshot;
+import org.apache.ignite.internal.thread.context.Scope;
+import org.apache.ignite.internal.thread.context.function.OperationContextAwareWrapper;
 import org.apache.ignite.internal.util.GridConcurrentSkipListSet;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.X;
@@ -35,9 +38,11 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
+import static org.apache.ignite.internal.IgniteInternalWrapper.unwrap;
 
 /**
  * Detects timeout events and processes them.
@@ -47,24 +52,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
     private final TimeoutWorker timeoutWorker;
 
     /** Time-based sorted set for timeout objects. */
-    private final GridConcurrentSkipListSet<GridTimeoutObject> timeoutObjs =
-        new GridConcurrentSkipListSet<>(new Comparator<GridTimeoutObject>() {
-            /** {@inheritDoc} */
-            @Override public int compare(GridTimeoutObject o1, GridTimeoutObject o2) {
-                int res = Long.compare(o1.endTime(), o2.endTime());
-
-                if (res != 0)
-                    return res;
-
-                res = o1.timeoutId().compareTo(o2.timeoutId());
-
-                if (res != 0)
-                    return res;
-
-                // There can be an intersection between timeouts and ids for different subsystems.
-                return o1.getClass().getName().compareTo(o2.getClass().getName());
-            }
-        });
+    private final GridConcurrentSkipListSet<TimeoutObjectWrapper> timeoutObjs = new GridConcurrentSkipListSet<>();
 
     /** */
     private final Object mux = new Object();
@@ -105,11 +93,11 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
             // Timeout will never happen.
             return false;
 
-        boolean added = timeoutObjs.add(timeoutObj);
+        boolean added = timeoutObjs.add(new TimeoutObjectWrapper(timeoutObj, OperationContext.createSnapshot()));
 
         assert added : "Duplicate timeout object found: " + timeoutObj;
 
-        if (timeoutObjs.firstx() == timeoutObj) {
+        if (unwrap(timeoutObjs.firstx()) == timeoutObj) {
             synchronized (mux) {
                 mux.notify(); // No need to notifyAll since we only have one thread.
             }
@@ -143,7 +131,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
      * @return {@code True} if timeout object was removed.
      */
     public boolean removeTimeoutObject(GridTimeoutObject timeoutObj) {
-        return timeoutObjs.remove(timeoutObj);
+        return timeoutObjs.remove(new TimeoutObjectWrapper(timeoutObj));
     }
 
     /**
@@ -225,10 +213,10 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
 
                     onIdle();
 
-                    for (Iterator<GridTimeoutObject> iter = timeoutObjs.iterator(); iter.hasNext(); ) {
-                        GridTimeoutObject timeoutObj = iter.next();
+                    for (Iterator<TimeoutObjectWrapper> iter = timeoutObjs.iterator(); iter.hasNext(); ) {
+                        TimeoutObjectWrapper timeoutObj = iter.next();
 
-                        if (timeoutObj.endTime() <= now) {
+                        if (timeoutObj.delegate().endTime() <= now) {
                             try {
                                 boolean rmvd = timeoutObjs.remove(timeoutObj);
 
@@ -262,10 +250,10 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
                             // synchronization block, so we don't miss out
                             // on thread notification events sent from
                             // 'addTimeoutObject(..)' method.
-                            GridTimeoutObject first = timeoutObjs.firstx();
+                            TimeoutObjectWrapper first = timeoutObjs.firstx();
 
                             if (first != null) {
-                                long waitTime = first.endTime() - U.currentTimeMillis();
+                                long waitTime = first.delegate().endTime() - U.currentTimeMillis();
 
                                 if (waitTime > 0) {
                                     blockingSectionBegin();
@@ -430,6 +418,67 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(WaitFutureTimeoutObject.class, this);
+        }
+    }
+
+    /** */
+    private static class TimeoutObjectWrapper
+        extends OperationContextAwareWrapper<GridTimeoutObject>
+        implements Comparable<TimeoutObjectWrapper> {
+        /** */
+        TimeoutObjectWrapper(GridTimeoutObject delegate) {
+            super(delegate, null);
+        }
+
+        /** */
+        TimeoutObjectWrapper(GridTimeoutObject delegate, OperationContextSnapshot snapshot) {
+            super(delegate, snapshot);
+        }
+
+        /** */
+        void onTimeout() {
+            try (Scope ignored = OperationContext.restoreSnapshot(snapshot)) {
+                delegate.onTimeout();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public int compareTo(@NotNull GridTimeoutProcessor.TimeoutObjectWrapper o) {
+            int res = Long.compare(delegate.endTime(), o.delegate.endTime());
+
+            if (res != 0)
+                return res;
+
+            res = delegate.timeoutId().compareTo(o.delegate.timeoutId());
+
+            if (res != 0)
+                return res;
+
+            // There can be an intersection between timeouts and ids for different subsystems.
+            return delegate.name().compareTo(o.delegate.name());
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            TimeoutObjectWrapper timeoutObj = (TimeoutObjectWrapper)o;
+
+            return delegate.equals(timeoutObj.delegate);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return delegate.hashCode();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return delegate.toString();
         }
     }
 }

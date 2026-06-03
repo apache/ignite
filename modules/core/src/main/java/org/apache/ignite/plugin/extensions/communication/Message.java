@@ -17,10 +17,10 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
-import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.managers.communication.UnknownMessageException;
 
 /**
  * Base class for all communication messages.
@@ -33,32 +33,6 @@ public interface Message {
     Map<Class<?>, Short> REGISTRATIONS = new ConcurrentHashMap<>();
 
     /**
-     * Writes this message to provided byte buffer.
-     *
-     * @param buf Byte buffer.
-     * @param writer Writer.
-     * @return Whether message was fully written.
-     * @deprecated Use the code-generated {@code MessageSerializer} instead.
-     */
-    @Deprecated
-    default boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Reads this message from provided byte buffer.
-     *
-     * @param buf Byte buffer.
-     * @param reader Reader.
-     * @return Whether message was fully read.
-     * @deprecated Use the code-generated {@code MessageSerializer} instead.
-     */
-    @Deprecated
-    default boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
      * Gets message type.
      *
      * @return Message type.
@@ -68,7 +42,7 @@ public interface Message {
         Short type = REGISTRATIONS.get(clazz);
 
         if (type == null)
-            throw new IgniteException("No registration for class " + clazz.getSimpleName());
+            throw new UnknownMessageException(clazz);
 
         return type;
     }
