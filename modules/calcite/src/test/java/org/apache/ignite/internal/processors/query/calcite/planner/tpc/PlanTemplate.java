@@ -60,7 +60,7 @@ public class PlanTemplate {
      * @return {@code True} if any expanded plan equals to the parameter.
      */
     public boolean match(String actualPlan) {
-        return  expandOneof(template).stream()
+        return expandOneof(template).stream()
             .flatMap(PlanTemplate::expandIndexCase)
             .anyMatch(possiblePlan -> possiblePlan.equals(actualPlan));
     }
