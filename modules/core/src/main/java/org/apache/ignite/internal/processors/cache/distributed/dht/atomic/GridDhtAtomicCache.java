@@ -2695,7 +2695,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             null,
                             compRes.get1(),
                             compRes.get2(),
-                            req.keepBinary());
+                            true);
                     }
                 }
                 else {
