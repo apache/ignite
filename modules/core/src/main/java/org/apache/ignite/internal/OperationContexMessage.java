@@ -91,6 +91,8 @@ public class OperationContexMessage implements Message {
 
         assert attrType.id() >= 0 && attrType.id() < msg.attrsMapping.length;
 
+        assert attrVal == null || attrType.type().isAssignableFrom(attrVal.getClass());
+
         msg.opCtxAttrs.add(new OperationContexAttributeMessage(attrType, attrVal));
 
         msg.attrsMapping[attrType.id()] = (byte)msg.opCtxAttrs.size();

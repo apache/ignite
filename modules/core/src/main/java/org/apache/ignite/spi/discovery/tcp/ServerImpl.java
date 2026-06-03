@@ -80,6 +80,8 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.OperationContexMessage;
+import org.apache.ignite.internal.OperationContextAttributeType;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.communication.UnknownMessageException;
 import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
@@ -94,6 +96,9 @@ import org.apache.ignite.internal.processors.tracing.SpanTags;
 import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessage;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesTable;
+import org.apache.ignite.internal.thread.context.OperationContext;
+import org.apache.ignite.internal.thread.context.OperationContextAttribute;
+import org.apache.ignite.internal.thread.context.OperationContextSnapshot;
 import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.GridBoundedLinkedHashSet;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -117,6 +122,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.IgniteSpiContext;
@@ -1102,6 +1108,20 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         // This root span will be parent both from local and remote nodes.
         msg.spanContainer().serializedSpanBytes(tracing.serialize(rootSpan));
+
+        OperationContextSnapshot opCtxSnp = OperationContext.createSnapshot();
+
+        if (opCtxSnp != null) {
+            for (T2<OperationContextAttribute<?>, ?> ap : opCtxSnp) {
+                int attrId = Integer.numberOfTrailingZeros(ap.get1().bitmask());
+
+                OperationContextAttributeType opAttrType = OperationContextAttributeType.of(attrId);
+
+                assert ap.get2() == null || ap.get2() instanceof Message;
+
+                msg.opCtxMessage = OperationContexMessage.enrich(msg.opCtxMessage, opAttrType, (Message)ap.get2());
+            }
+        }
 
         msgWorker.addMessage(msg);
 

@@ -73,7 +73,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.OperationContexMessage;
 import org.apache.ignite.internal.OperationContextAttributeType;
 import org.apache.ignite.internal.cluster.NodeOrderComparator;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
@@ -100,6 +99,8 @@ import org.apache.ignite.internal.systemview.ClusterNodeViewWalker;
 import org.apache.ignite.internal.systemview.NodeAttributeViewWalker;
 import org.apache.ignite.internal.systemview.NodeMetricsViewWalker;
 import org.apache.ignite.internal.thread.OomExceptionHandler;
+import org.apache.ignite.internal.thread.context.OperationContext;
+import org.apache.ignite.internal.thread.context.OperationContextAttribute;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
@@ -939,13 +940,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 @Override public void run() {
                     DiscoverySpiCustomMessage customMsg = notification.customMessage();
 
-                    assert customMsg instanceof TcpDiscoveryAbstractMessage;
-
-                    TcpDiscoveryAbstractMessage msg0 = (TcpDiscoveryAbstractMessage)customMsg;
-
-                    SecuritySubjectMessage secSubjMsg = msg0.opCtxMessage == null
+                    // Custom event/message is currently always a {@link TcpDiscoveryAbstractMessage}.
+                    SecuritySubjectMessage secSubjMsg = !(customMsg instanceof TcpDiscoveryAbstractMessage) 
+                        || ((TcpDiscoveryAbstractMessage)customMsg).opCtxMessage == null
                         ? null
-                        : msg0.opCtxMessage.attributeValue(OperationContextAttributeType.SECURITY);
+                        : ((TcpDiscoveryAbstractMessage)customMsg).opCtxMessage.attributeValue(OperationContextAttributeType.SECURITY);
 
                     if (secSubjMsg != null) {
                         try (Scope ignored = ctx.security().withContext(secSubjMsg.id)) {
@@ -2347,10 +2346,20 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @throws IgniteCheckedException If failed.
      */
     public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteCheckedException {
-        wrapMessage(msg);
+        IgniteSecurity sec = ctx.security();
 
         try {
-            getSpi().sendCustomEvent(msg);
+            if (sec.enabled()) {
+                SecuritySubjectMessage secAttrVal = new SecuritySubjectMessage(sec.securityContext().subject().id());
+
+                OperationContextAttribute<SecuritySubjectMessage> secAttr = OperationContextAttributeType.SECURITY.create(null);
+
+                try (Scope scope = OperationContext.set(secAttr, secAttrVal)) {
+                    getSpi().sendCustomEvent(msg);
+                }
+            }
+            else
+                getSpi().sendCustomEvent(msg);
         }
         catch (IgniteClientDisconnectedException e) {
             IgniteFuture<?> reconnectFut = ctx.cluster().clientReconnectFuture();
@@ -2359,20 +2368,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
         catch (IgniteException e) {
             throw new IgniteCheckedException(e);
-        }
-    }
-
-    /** */
-    private void wrapMessage(DiscoverySpiCustomMessage msg) {
-        assert msg instanceof TcpDiscoveryAbstractMessage;
-
-        IgniteSecurity sec = ctx.security();
-
-        if (sec.enabled()) {
-            TcpDiscoveryAbstractMessage msg0 = (TcpDiscoveryAbstractMessage)msg;
-
-            OperationContexMessage.enrich(msg0.opCtxMessage, OperationContextAttributeType.SECURITY,
-                new SecuritySubjectMessage(sec.securityContext().subject().id()));
         }
     }
 

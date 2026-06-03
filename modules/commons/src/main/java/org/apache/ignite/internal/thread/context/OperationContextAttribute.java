@@ -59,7 +59,7 @@ public class OperationContextAttribute<T> {
      * Unique attribute bitmask calculated by shifting one from 0 to {@link Integer#SIZE}. It provides an ability to
      * use {@link OperationContext} Attribute with bit fields.
      */
-    int bitmask() {
+    public int bitmask() {
         return bitmask;
     }
 
@@ -82,12 +82,11 @@ public class OperationContextAttribute<T> {
     /**
      * Creates new instance of the {@link OperationContext} Attribute with Initial Value set to {@code null}.
      * <p>
-     * Note, that the maximum number of attribute instances that can be created is currently limited to
-     * {@link #MAX_ATTR_CNT} for implementation reasons.
+     * Note, that the maximum {@code id} of attribute is currently limited to {@link #MAX_ATTR_CNT}.
      * </p>
      */
-    public static <T> OperationContextAttribute<T> newInstance() {
-        return newInstance(null);
+    public static <T> OperationContextAttribute<T> newInstance(int id) {
+        return newInstance(id, null);
     }
 
     /**
@@ -95,13 +94,11 @@ public class OperationContextAttribute<T> {
      * Value is returned by {@link OperationContext#get} method if the Attribute's value is not explicitly set in the
      * {@link OperationContext}.
      * <p>
-     * Note, that the maximum number of attribute instances that can be created is currently limited to
-     * {@link #MAX_ATTR_CNT} for implementation reasons.
+     * Note, that the maximum {@code id} of attribute is currently limited to {@link #MAX_ATTR_CNT}.
      * </p>
      */
-    public static <T> OperationContextAttribute<T> newInstance(T initVal) {
-        int id = ID_GEN.getAndIncrement();
-
+    public static <T> OperationContextAttribute<T> newInstance(int id, T initVal) {
+        assert id >= 0 : "Attribute id cannot be negative.";
         assert id < MAX_ATTR_CNT : "Exceeded maximum supported number of created Attributes instances [maxCnt=" + MAX_ATTR_CNT + ']';
 
         return new OperationContextAttribute<>(1 << id, initVal);

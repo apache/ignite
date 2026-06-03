@@ -18,11 +18,15 @@
 package org.apache.ignite.internal.thread.context;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.internal.thread.context.concurrent.OperationContextAwareExecutor;
 import org.apache.ignite.internal.thread.context.function.OperationContextAwareCallable;
 import org.apache.ignite.internal.thread.context.function.OperationContextAwareRunnable;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.thread.context.Scope.NOOP_SCOPE;
@@ -300,9 +304,14 @@ public class OperationContext {
             return res;
         }
 
-        /** */
+        /** {@inheritDoc} */
         @Override public void close() {
             undo(this);
+        }
+
+        /** {@inheritDoc} */
+        @Override public @NotNull Iterator<T2<OperationContextAttribute<?>, ?>> iterator() {
+            return F.iterator(Arrays.asList(attrVals), avh -> new T2<>(avh.attr, avh.val), true);
         }
     }
 

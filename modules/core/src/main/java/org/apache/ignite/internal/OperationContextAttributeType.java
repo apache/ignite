@@ -37,8 +37,22 @@ public enum OperationContextAttributeType {
     }
 
     /** */
+    public static OperationContextAttributeType of(int id) {
+        assert id >= 0 && id < values().length;
+
+        return values()[id];
+    }
+
+    /** */
     public Class<? extends Message> type() {
         return valType;
+    }
+
+    /** */
+    public <T extends Message> OperationContextAttribute<T> create(T val) {
+        assert val == null || val.getClass().isAssignableFrom(valType);
+
+        return OperationContextAttribute.newInstance(id(), val);
     }
 
     /**

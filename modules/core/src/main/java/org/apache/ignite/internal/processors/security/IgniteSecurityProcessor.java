@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.OperationContextAttributeType;
 import org.apache.ignite.internal.processors.security.sandbox.AccessControllerSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.NoOpSandbox;
@@ -89,7 +90,8 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
     }
 
     /** Context attribute that holds Security Context. */
-    private static final OperationContextAttribute<SecurityContext> SEC_CTX = OperationContextAttribute.newInstance();
+    private static final OperationContextAttribute<SecurityContext> SEC_CTX
+        = OperationContextAttribute.newInstance(OperationContextAttributeType.SECURITY.id());
 
     /** Security processor. */
     private final GridSecurityProcessor secPrc;

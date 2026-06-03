@@ -63,10 +63,10 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
     private static final int DFLT_INT_VAL = -1;
 
     /** */
-    private static final OperationContextAttribute<String> STR_ATTR = OperationContextAttribute.newInstance(DFLT_STR_VAL);
+    private static final OperationContextAttribute<String> STR_ATTR = OperationContextAttribute.newInstance(0, DFLT_STR_VAL);
 
     /** */
-    private static final OperationContextAttribute<Integer> INT_ATTR = OperationContextAttribute.newInstance(DFLT_INT_VAL);
+    private static final OperationContextAttribute<Integer> INT_ATTR = OperationContextAttribute.newInstance(1, DFLT_INT_VAL);
 
     /** */
     private ExecutorService poolToShutdownAfterTest;
@@ -248,7 +248,7 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
     @Test
     public void testRuntimeAttributeCreation() {
         try (Scope ignored1 = OperationContext.set(INT_ATTR, 1)) {
-            OperationContextAttribute<Object> attr = OperationContextAttribute.newInstance();
+            OperationContextAttribute<Object> attr = OperationContextAttribute.newInstance(0);
 
             assertNull(OperationContext.get(attr));
 
@@ -269,7 +269,7 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
         LinkedList<Scope> scopes = new LinkedList<>();
 
         for (int i = 0; i < cnt; i++) {
-            attrs.add(OperationContextAttribute.newInstance());
+            attrs.add(OperationContextAttribute.newInstance(0));
 
             scopes.push(OperationContext.set(attrs.get(i), i));
         }
@@ -286,7 +286,7 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
 
         assertThrowsAnyCause(
             log,
-            OperationContextAttribute::newInstance,
+            () -> OperationContextAttribute.newInstance(0),
             AssertionError.class,
             "Exceeded maximum supported number of created Attributes instances"
         );
