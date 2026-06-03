@@ -144,7 +144,7 @@ public class LongJVMPauseDetector {
                         if (pauseMillis >= THRESHOLD) {
                             log.warning("Possible too long JVM pause: " +
                                     "between " + pauseMillis + " and " + (pauseMillis + PRECISION) + " ms. ");
-                            final int next = (int) (longPausesCnt++ % EVT_CNT);
+                            final int next = (int)(longPausesCnt++ % EVT_CNT);
                             longPausesTotalDurationNanos += pause;
                             longPausesTimestamps[next] = System.currentTimeMillis();
                             longPausesMonotonicTimestamps[next] = nanoTime;

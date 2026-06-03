@@ -98,12 +98,12 @@ public class LongJVMPauseDetectorTest extends GridCommonAbstractTest {
     @Test
     public void testFullCycle() throws InterruptedException {
         long[] monotonicTimes = new long[] {
-                0, // init field
-                100, // first renew of last wake-up time
-                100, // check we didn't wake up spuriously
-                100, // we need to get real wait time, so now time is
-                50_000_100, // so we waited 50 ms, and previous time is 100 ns, so it's that time now
-                550_000_100}; // something happend! Waited for 500 ms (equals to 500ms + previous nanotime)!
+            0, // init field
+            100, // first renew of last wake-up time
+            100, // check we didn't wake up spuriously
+            100, // we need to get real wait time, so now time is
+            50_000_100, // so we waited 50 ms, and previous time is 100 ns, so it's that time now
+            550_000_100}; // something happend! Waited for 500 ms (equals to 500ms + previous nanotime)!
         CountDownLatch cntDownLatch = new CountDownLatch(7);
         LongJVMPauseDetector longJVMPauseDetector = getLongJVMPauseDetector(monotonicTimes, cntDownLatch);
         longJVMPauseDetector.start();
