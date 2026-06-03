@@ -51,7 +51,7 @@ public class IgniteVersionUtils {
     }
 
     /** */
-    public static IgniteProductVersion withNoStage(IgniteProductVersion ver) {
+    public static IgniteProductVersion clearStage(IgniteProductVersion ver) {
         if (F.isEmpty(ver.stage()))
             return ver;
 

@@ -179,7 +179,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_COMP
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SHUTDOWN_POLICY;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_USER_NAME;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER;
-import static org.apache.ignite.internal.IgniteVersionUtils.withNoStage;
+import static org.apache.ignite.internal.IgniteVersionUtils.clearStage;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.isSecurityCompatibilityMode;
@@ -342,7 +342,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     @Override public void onBeforeSpiStart() {
         DiscoverySpi spi = getSpi();
 
-        spi.setNodeAttributes(ctx.nodeAttributes(), withNoStage(VER));
+        spi.setNodeAttributes(ctx.nodeAttributes(), clearStage(VER));
     }
 
     /**
