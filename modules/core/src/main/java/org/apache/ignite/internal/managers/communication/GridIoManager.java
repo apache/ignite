@@ -1176,6 +1176,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
             byte plc = initMsg.policy();
 
+            MessageSerializer ser = ctx.messageFactory().serializer(initMsg.directType());
+
+            ser.finishUnmarshal(initMsg, ctx, null);
+
             pools.poolForPolicy(plc).execute(new Runnable() {
                 @Override public void run() {
                     processOpenedChannel(initMsg.topic(), rmtNodeId, (SessionChannelMessage)initMsg.message(),
