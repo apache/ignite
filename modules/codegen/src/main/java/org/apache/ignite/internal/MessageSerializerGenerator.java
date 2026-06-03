@@ -350,7 +350,7 @@ public class MessageSerializerGenerator {
         if (marshallableMessage()) {
             marshall.add(EMPTY);
 
-            marshall.add(indentedLine("msg.finishUnmarshal(marshaller, clsLdr);"));
+            marshall.add(indentedLine("msg.finishUnmarshal(marshaller, ctx != null ? ctx.deploy().globalLoader() : clsLdr);"));
         }
 
         indent--;
