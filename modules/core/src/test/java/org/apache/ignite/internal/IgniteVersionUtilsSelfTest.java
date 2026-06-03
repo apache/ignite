@@ -17,18 +17,18 @@
 
 package org.apache.ignite.internal;
 
-import java.util.Calendar;
+import java.time.LocalDate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.h2.util.DateTimeUtils.UTC;
+import static java.time.ZoneOffset.UTC;
 
 /** */
 public class IgniteVersionUtilsSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testIgniteCopyrights() {
-        final String COPYRIGHT = Calendar.getInstance(UTC).get(Calendar.YEAR) + " Copyright(C) Apache Software Foundation";
+        final String COPYRIGHT = LocalDate.now(UTC).getYear() + " Copyright(C) Apache Software Foundation";
 
         assertNotNull(IgniteVersionUtils.COPYRIGHT);
 
