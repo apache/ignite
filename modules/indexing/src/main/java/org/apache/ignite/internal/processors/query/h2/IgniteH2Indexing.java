@@ -1687,7 +1687,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /**
      * @param topic Topic.
-     * @param topicOrd Topic ordinal for {@link GridTopic}.
      * @param nodes Nodes.
      * @param msg Message.
      * @param specialize Optional closure to specialize message for each node.
@@ -1698,7 +1697,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     public boolean send(
         Object topic,
-        int topicOrd,
         Collection<ClusterNode> nodes,
         Message msg,
         @Nullable IgniteBiClosure<ClusterNode, Message, Message> specialize,
@@ -1731,7 +1729,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         ((GridCacheQueryMarshallable)msg).marshall(marshaller);
                 }
 
-                ctx.io().sendGeneric(node, topic, topicOrd, msg, plc);
+                ctx.io().sendGeneric(node, topic, msg, plc);
             }
             catch (IgniteCheckedException e) {
                 ok = false;

@@ -77,7 +77,7 @@
         <grpc-context.version>1.62.2</grpc-context.version>
         <h2.version>1.4.197</h2.version>
         <hamcrest.version>2.2</hamcrest.version>
-        <jackson.version>2.21.1</jackson.version>
+        <jackson.version>2.21.3</jackson.version>
         <jackson-annotations.version>2.21</jackson-annotations.version>
         <javassist.version>3.28.0-GA</javassist.version>
         <javax.cache.bundle.version>1.0.0_1</javax.cache.bundle.version>
@@ -94,7 +94,7 @@
         <jtidy.version>1.0.5</jtidy.version>
         <log4j2.version>2.25.4</log4j2.version>
         <lucene.bundle.version>7.4.0_1</lucene.bundle.version>
-        <lucene.version>8.11.2</lucene.version>
+        <lucene.version>8.11.4</lucene.version>
         <lz4.version>1.10.1</lz4.version>
         <maven.bundle.plugin.version>5.1.9</maven.bundle.plugin.version>
         <maven.checkstyle.plugin.version>3.6.0</maven.checkstyle.plugin.version>
@@ -108,11 +108,11 @@
         <slf4j.version>2.0.17</slf4j.version>
         <snappy.version>1.1.10.7</snappy.version>
         <spring.version>5.3.39</spring.version>
-        <surefire.version>3.5.4</surefire.version>
+        <surefire.version>3.5.5</surefire.version>
         <tomcat.version>10.0.27</tomcat.version>
         <yardstick.version>0.8.3</yardstick.version>
         <zookeeper.version>3.9.5</zookeeper.version>
-        <zstd.version>1.5.5-5</zstd.version>
+        <zstd.version>1.5.7-8</zstd.version>
         <opencensus.version>0.31.1</opencensus.version>
         <commons.lang3.version>3.20.0</commons.lang3.version>
         <ignite-kafka-ext.version>1.0.0</ignite-kafka-ext.version>
@@ -1067,10 +1067,14 @@
                                 --add-opens=java.base/java.security=ALL-UNNAMED
                                 --add-opens=java.logging/java.util.logging=ALL-UNNAMED
                                 --add-opens=java.management/sun.management=ALL-UNNAMED
-                                --add-opens java.desktop/java.awt.font=ALL-UNNAMED
+                                --add-opens=java.desktop/java.awt.font=ALL-UNNAMED
                                 --add-opens=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED
                                 --add-opens=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED
                                 --add-opens=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED
+                                --add-opens=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED
+                                --add-opens=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED
+                                --add-opens=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED
+                                --add-opens=java.base/java.util.regex=ALL-UNNAMED
                             </argLine>
                         </configuration>
                     </plugin>

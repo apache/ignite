@@ -845,8 +845,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> DataStreamProcessor<K, V> dataStream() {
-        return (DataStreamProcessor<K, V>)dataLdrProc;
+    @Override public DataStreamProcessor dataStream() {
+        return dataLdrProc;
     }
 
     /** {@inheritDoc} */
