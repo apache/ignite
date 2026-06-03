@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.planner.tpc;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Scanner;
 import java.util.regex.Pattern;
@@ -60,7 +59,7 @@ public class PlanTemplate {
      * @return {@code True} if any expanded plan equals to the parameter.
      */
     public boolean match(String actualPlan) {
-        return expandOneof(template).stream()
+        return expandOneOf(template)
             .flatMap(PlanTemplate::expandIndexCase)
             .anyMatch(possiblePlan -> possiblePlan.equals(actualPlan));
     }
@@ -94,11 +93,11 @@ public class PlanTemplate {
     }
 
     /** Expands plans. Replace {ONEOF} tag with the possible cases. */
-    private static List<String> expandOneof(String plan) {
+    private static Stream<String> expandOneOf(String plan) {
         String oneOf = "{ONEOF}";
 
         if (!plan.contains(oneOf))
-            return Collections.singletonList(plan);
+            return Stream.of(plan);
 
         List<StringBuffer> res = new ArrayList<>();
 
@@ -141,12 +140,11 @@ public class PlanTemplate {
         while (sc.hasNextLine()) {
             String line = sc.nextLine();
 
-            for (StringBuffer expanded : res) {
+            for (StringBuffer expanded : res)
                 expanded.append(line).append('\n');
-            }
         }
 
         // Recursively expanding next ONEOF.
-        return res.stream().flatMap(p -> expandOneof(p.toString()).stream()).collect(Collectors.toList());
+        return res.stream().flatMap(p -> expandOneOf(p.toString()));
     }
 }
