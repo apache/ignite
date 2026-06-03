@@ -25,6 +25,7 @@ import org.apache.calcite.rel.core.Window;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.RowTracker;
 
 /** Buffering implementation of the ROWS / RANGE window partition. */
 final class BufferingWindowPartition<Row> extends WindowPartitionBase<Row> {
@@ -33,6 +34,9 @@ final class BufferingWindowPartition<Row> extends WindowPartitionBase<Row> {
 
     /** Frame within partition. */
     private final WindowFunctionFrame<Row> frame;
+
+    /** */
+    private RowTracker<Row> memoryTracker;
 
     /** */
     BufferingWindowPartition(
@@ -95,6 +99,11 @@ final class BufferingWindowPartition<Row> extends WindowPartitionBase<Row> {
         return false;
     }
 
+    /** {@inheritDoc} */
+    @Override public void attachMemoryTracker(RowTracker<Row> memoryTracker) {
+        this.memoryTracker = memoryTracker;
+    }
+
     /** Creates frame for partition. */
     private static <Row> WindowFunctionFrame<Row> createFrame(
         ExecutionContext<Row> ctx,
@@ -107,5 +116,17 @@ final class BufferingWindowPartition<Row> extends WindowPartitionBase<Row> {
             return new RowWindowPartitionFrame<>(buf, ctx, grp, inputRowType);
         else
             return new RangeWindowPartitionFrame<>(buf, ctx, peerCmp, grp, inputRowType);
+    }
+
+    /** Adds row to memory tracker. */
+    private void onRowAdded(Row row) {
+        if (memoryTracker != null)
+            memoryTracker.onRowAdded(row);
+    }
+
+    /** Removes row from memory tracker. */
+    private void onRowRemoved(Row row) {
+        if (memoryTracker != null)
+            memoryTracker.onRowRemoved(row);
     }
 }

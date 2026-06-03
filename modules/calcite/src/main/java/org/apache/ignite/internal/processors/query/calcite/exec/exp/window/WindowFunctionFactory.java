@@ -50,11 +50,12 @@ final class WindowFunctionFactory<Row> extends AccumulatorsFactoryBase<Row> {
         this.inputRowType = inputRowType;
 
         ImmutableList.Builder<WindowFunctionPrototype<Row>> prototypes = ImmutableList.builder();
-        for (AggregateCall aggCall : aggCalls)
+        for (AggregateCall aggCall : aggCalls) {
             if (WindowFunctions.isWindowFunction(aggCall))
                 prototypes.add(new WindowFunctionWrapperPrototype(aggCall));
             else
                 prototypes.add(new WindowFunctionAccumulatorAdapterPrototype(aggCall));
+        }
 
         this.prototypes = prototypes.build();
     }

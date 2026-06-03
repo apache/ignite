@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.exec.exp.window;
 import java.util.Comparator;
 import java.util.List;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
-import org.apache.ignite.internal.processors.query.calcite.exec.tracker.RowTracker;
 import org.jetbrains.annotations.Nullable;
 
 /** Base implementation of window partition. */
@@ -33,9 +32,6 @@ abstract class WindowPartitionBase<Row> implements WindowPartition<Row> {
 
     /** */
     private final RowHandler.RowFactory<Row> rowFactory;
-
-    /** */
-    private RowTracker<Row> memoryTracker;
 
     /** */
     WindowPartitionBase(
@@ -53,11 +49,6 @@ abstract class WindowPartitionBase<Row> implements WindowPartition<Row> {
         return funcFactory.createWrappers();
     }
 
-    /** */
-    @Override public void attachMemoryTracker(RowTracker<Row> memoryTracker) {
-        this.memoryTracker = memoryTracker;
-    }
-
     /** Compares two rows and return true if current row peer not equal to the previous row peer. */
     protected final boolean isNewPeer(Row cur, @Nullable Row prev) {
         if (prev == null)
@@ -72,17 +63,5 @@ abstract class WindowPartitionBase<Row> implements WindowPartition<Row> {
     protected final Row createResultRow(RowHandler.RowFactory<Row> rowFactory, Row src, Object... results) {
         Row resultsRow = this.rowFactory.create(results);
         return rowFactory.handler().concat(src, resultsRow);
-    }
-
-    /** Adds row to memory tracker. */
-    protected final void onRowAdded(Row row) {
-        if (memoryTracker != null)
-            memoryTracker.onRowAdded(row);
-    }
-
-    /** Removes row from memory tracker. */
-    protected final void onRowRemoved(Row row) {
-        if (memoryTracker != null)
-            memoryTracker.onRowRemoved(row);
     }
 }

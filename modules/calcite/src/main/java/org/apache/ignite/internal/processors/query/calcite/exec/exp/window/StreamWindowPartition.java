@@ -21,6 +21,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.RowTracker;
 
 /** Non-buffering implementation of the ROWS / RANGE window partition. */
 final class StreamWindowPartition<Row> extends WindowPartitionBase<Row> {
@@ -96,5 +97,10 @@ final class StreamWindowPartition<Row> extends WindowPartitionBase<Row> {
     /** {@inheritDoc} */
     @Override public boolean isStreaming() {
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void attachMemoryTracker(RowTracker<Row> memoryTracker) {
+        // Streaming partition does not use memory tracker.
     }
 }
