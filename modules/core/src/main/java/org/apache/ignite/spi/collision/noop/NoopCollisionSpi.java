@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.collision.noop;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;

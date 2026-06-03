@@ -39,7 +39,7 @@ public class IgniteConfigurationTest extends GridCommonAbstractTest {
             "Ignite configuration log message contains objects with default toString implementation!";
 
     /** Pattern to check any object has default {@link Object#toString()} implementation */
-    private static final Pattern ERROR_PATTERN = Pattern.compile("^(?=.*IgniteConfiguration \\[)(?!.*@\\d+).*$");
+    private static final Pattern ERROR_PATTERN = Pattern.compile("^(?=.*IgniteConfiguration \\[)(?!.*@[a-fA-F0-9]+).*$");
 
     /** */
     private final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
