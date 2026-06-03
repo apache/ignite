@@ -18,7 +18,6 @@
 package org.apache.ignite.internal;
 
 import java.time.LocalDate;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteProductVersion;
 
 import static java.time.ZoneOffset.UTC;
@@ -48,14 +47,6 @@ public class IgniteVersionUtils {
         int year = revTs == 0 ? LocalDate.now(UTC).getYear() : VER.buildTime().atZone(UTC).getYear();
 
         COPYRIGHT = year + " Copyright(C) Apache Software Foundation";
-    }
-
-    /** */
-    public static IgniteProductVersion clearStage(IgniteProductVersion ver) {
-        if (F.isEmpty(ver.stage()))
-            return ver;
-
-        return new IgniteProductVersion(ver.major(), ver.minor(), ver.maintenance(), ver.revisionTimestamp(), ver.revisionHash());
     }
 
     /**
