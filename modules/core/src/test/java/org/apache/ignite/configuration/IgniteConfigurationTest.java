@@ -34,12 +34,19 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
  */
 @WithSystemProperty(key = IGNITE_QUIET, value = "false")
 public class IgniteConfigurationTest extends GridCommonAbstractTest {
-    /** Error message to be prompted */
+    /** Error message to be prompted for ignite configuration */
     private static final String ASSERTION_ERROR_MESSAGE =
             "Ignite configuration log message contains objects with default toString implementation!";
 
+    /** Error message to be prompted for node start log message */
+    private static final String NODE_START_ASSERTION_ERROR_MESSAGE =
+            "Node start log message contains objects with default toString implementation!";
+
     /** Pattern to check any object has default {@link Object#toString()} implementation */
     private static final Pattern ERROR_PATTERN = Pattern.compile("^(?=.*IgniteConfiguration \\[)(?!.*@[a-fA-F0-9]+).*$");
+
+    /** Pattern to check any object has default {@link Object#toString()} implementation */
+    private static final Pattern NODE_START_ERROR_PATTERN = Pattern.compile("^(?=.*Node started with the following configuration \\[id=)(?!.*@[a-fA-F0-9]+).*$");
 
     /** */
     private final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
@@ -54,9 +61,15 @@ public class IgniteConfigurationTest extends GridCommonAbstractTest {
                 .matches(ERROR_PATTERN)
                 .atLeast(1)
                 .build();
+        LogListener nodeStartIgniteConfigurationLogListener = LogListener
+                .matches(NODE_START_ERROR_PATTERN)
+                .atLeast(1)
+                .build();
         listeningLog.registerListener(igniteConfigurationLogListener);
+        listeningLog.registerListener(nodeStartIgniteConfigurationLogListener);
         try (IgniteEx ignored = startGrid(0)) {
             Assert.assertTrue(ASSERTION_ERROR_MESSAGE, igniteConfigurationLogListener.check());
+            Assert.assertTrue(NODE_START_ASSERTION_ERROR_MESSAGE, nodeStartIgniteConfigurationLogListener.check(10_000));
         }
     }
 

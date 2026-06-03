@@ -1324,7 +1324,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
                 IgniteConfiguration nodeCfg = node.configuration();
 
-                log.info("Node started with the following configuration [id=" + node.cluster().localNode().id()
+                nodeCfg.getGridLogger().getLogger(getClass().getName()).info("Node started with the following configuration [id=" + node.cluster().localNode().id()
                     + ", discovery=" + nodeCfg.getDiscoverySpi()
                     + ", binaryCfg=" + nodeCfg.getBinaryConfiguration()
                     + ", lateAff=" + nodeCfg.isLateAffinityAssignment() + "]");

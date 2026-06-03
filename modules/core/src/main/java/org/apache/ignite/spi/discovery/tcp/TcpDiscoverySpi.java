@@ -350,9 +350,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     protected long connRecoveryTimeout = DFLT_CONNECTION_RECOVERY_TIMEOUT;
 
     /** Grid discovery listener. */
+    @GridToStringExclude
     protected volatile DiscoverySpiListener lsnr;
 
     /** Data exchange. */
+    @GridToStringExclude
     protected DiscoverySpiDataExchange exchange;
 
     /** Metrics provider. */
@@ -456,9 +458,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     private IgniteBiTuple<Collection<String>, Collection<String>> addrs;
 
     /** */
+    @GridToStringExclude
     protected IgniteSpiContext spiCtx;
 
     /** Discovery messages factory. */
+    @GridToStringExclude
     private MessageFactory msgFactory;
 
     /** For test purposes. */
