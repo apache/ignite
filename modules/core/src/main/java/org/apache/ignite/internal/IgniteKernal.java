@@ -577,11 +577,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         return X.timeSpan2DHMSM(upTime());
     }
 
-    /** @return String representation of version of current Ignite instance. */
-    String fullVersion() {
-        return VER.toString();
-    }
-
     /** @return String representation of the checkpoint SPI. */
     String checkpointSpiFormatted() {
         assert cfg != null;
@@ -3413,7 +3408,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
         MetricRegistry reg = ctx.metric().registry(GridMetricManager.IGNITE_METRICS);
 
-        reg.register("fullVersion", this::fullVersion, String.class, FULL_VER_DESC);
+        reg.register("fullVersion", VER::toString, String.class, FULL_VER_DESC);
         reg.register("copyright", () -> COPYRIGHT, String.class, COPYRIGHT_DESC);
 
         reg.register("startTimestampFormatted", this::startTimeFormatted, String.class,
