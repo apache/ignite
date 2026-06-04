@@ -17,91 +17,36 @@
 
 package org.apache.ignite.internal;
 
-import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.util.Locale;
 import org.apache.ignite.lang.IgniteProductVersion;
+
+import static java.time.ZoneOffset.UTC;
 
 /**
  * Ignite version utils.
  */
 public class IgniteVersionUtils {
-    /** Ignite version in String form. */
+    /** Ignite artifact version. See {@link IgniteProperties} file generation by Maven build scripts. */
     public static final String VER_STR;
 
     /** Ignite version. */
     public static final IgniteProductVersion VER;
 
-    /** UTC build date formatter. */
-    private static final DateTimeFormatter BUILD_TSTAMP_DATE_FORMATTER;
-
-    /** Formatted build date. */
-    public static final String BUILD_TSTAMP_STR;
-
-    /** Build timestamp in seconds. */
-    public static final long BUILD_TSTAMP;
-
-    /** Build timestamp string property value. */
-    private static final String BUILD_TSTAMP_FROM_PROPERTY;
-
-    /** Revision hash. */
-    public static final String REV_HASH_STR;
-
-    /** Release date. */
-    public static final LocalDate RELEASE_DATE;
-
-    /** Compound version. */
-    public static final String ACK_VER_STR;
-
     /** Copyright blurb. */
     public static final String COPYRIGHT;
 
-    /**
-     * Static initializer.
-     */
     static {
-        VER_STR = IgniteProperties.get("ignite.version")
-            .replace(".a", "-a") // Backward compatibility fix.
-            .replace(".b", "-b")
-            .replace(".final", "-final");
+        VER_STR = IgniteProperties.get("ignite.version");
 
-        BUILD_TSTAMP_FROM_PROPERTY = IgniteProperties.get("ignite.build");
+        long revTs = Long.parseLong(IgniteProperties.get("ignite.build"));
 
-        //Development ignite.properties file contains ignite.build = 0, so we will add the check for it.
-        BUILD_TSTAMP = !BUILD_TSTAMP_FROM_PROPERTY.isEmpty() && Long.parseLong(BUILD_TSTAMP_FROM_PROPERTY) != 0
-            ? Long.parseLong(BUILD_TSTAMP_FROM_PROPERTY) : System.currentTimeMillis() / 1000;
+        String revHash = IgniteProperties.get("ignite.revision");
 
-        BUILD_TSTAMP_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd").withZone(ZoneId.of("UTC"));
+        VER = IgniteProductVersion.fromString(VER_STR + '-' + revTs + '-' + revHash);
 
-        BUILD_TSTAMP_STR = formatBuildTimeStamp(BUILD_TSTAMP * 1000);
+        int year = revTs == 0 ? LocalDate.now(UTC).getYear() : VER.buildTime().atZone(UTC).getYear();
 
-        COPYRIGHT = BUILD_TSTAMP_STR.substring(0, 4) + " Copyright(C) Apache Software Foundation";
-
-        REV_HASH_STR = IgniteProperties.get("ignite.revision");
-
-        String releaseDateStr = IgniteProperties.get("ignite.rel.date");
-
-        DateTimeFormatter releaseDateFormatter = DateTimeFormatter.ofPattern("ddMMyyyy", Locale.US);
-
-        RELEASE_DATE = LocalDate.parse(releaseDateStr, releaseDateFormatter);
-
-        String rev = REV_HASH_STR.length() > 8 ? REV_HASH_STR.substring(0, 8) : REV_HASH_STR;
-
-        ACK_VER_STR = VER_STR + '#' + BUILD_TSTAMP_STR + "-sha1:" + rev;
-
-        VER = IgniteProductVersion.fromString(VER_STR + '-' + BUILD_TSTAMP + '-' + REV_HASH_STR);
-    }
-
-    /**
-     * Builds string date representation in "yyyyMMdd" format.
-     *
-     * @param ts Timestamp.
-     * @return Timestamp date in UTC timezone.
-     */
-    public static String formatBuildTimeStamp(long ts) {
-        return BUILD_TSTAMP_DATE_FORMATTER.format(Instant.ofEpochMilli(ts));
+        COPYRIGHT = year + " Copyright(C) Apache Software Foundation";
     }
 
     /**

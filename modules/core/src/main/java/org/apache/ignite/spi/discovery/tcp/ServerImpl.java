@@ -5263,6 +5263,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 assert n.internalOrder() < node.internalOrder() :
                                     "Invalid node [topNode=" + n + ", added=" + node + ']';
 
+                                spi.restoreRemoteNodeVersion(n);
+
                                 // Make all preceding nodes and local node visible.
                                 n.visible(true);
                             }
@@ -5405,8 +5407,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 assert node.internalOrder() > locNode.internalOrder() : "Invalid order [node=" + node +
                     ", locNode=" + locNode + ", msg=" + msg + ", ring=" + ring + ']';
 
-                if (spi.locNodeVer.equals(node.version()))
-                    node.version(spi.locNodeVer);
+                spi.restoreRemoteNodeVersion(node);
 
                 if (!locNodeCoord) {
                     boolean b = ring.topologyVersion(topVer);

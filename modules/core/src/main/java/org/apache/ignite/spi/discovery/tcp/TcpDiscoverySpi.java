@@ -2483,6 +2483,15 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     }
 
     /**
+     * Tries to restore the node's {@link IgniteProductVersion#stage()} field, since it is transient and is not
+     * automatically restored after Cluster Node deserialization.
+     */
+    protected void restoreRemoteNodeVersion(TcpDiscoveryNode rmtNode) {
+        if (locNodeVer.equals(rmtNode.version()))
+            rmtNode.version(locNodeVer);
+    }
+
+    /**
      * Socket timeout object.
      */
     private class SocketTimeoutObject implements IgniteSpiTimeoutObject, AutoCloseable {
