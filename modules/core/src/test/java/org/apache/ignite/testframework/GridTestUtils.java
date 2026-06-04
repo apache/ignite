@@ -2638,7 +2638,7 @@ public final class GridTestUtils {
 
     /** */
     public static <T extends Message> MessageSerializer<T> loadSerializer(Class<? extends Message> msgCls,
-        @Nullable Marshaller dfltMarsh, @Nullable ClassLoader dfltClsLdr) {
+        @Nullable Marshaller dfltMarsh) {
         try {
             boolean isMarshallable = MarshallableMessage.class.isAssignableFrom(msgCls);
 
@@ -2648,11 +2648,9 @@ public final class GridTestUtils {
                 .loadClass(msgCls.getPackage().getName() + "." + clsPref + "Serializer");
 
             Marshaller marsh = dfltMarsh != null ? dfltMarsh : jdk();
-            ClassLoader cldLdr = dfltClsLdr != null ? dfltClsLdr : U.gridClassLoader();
 
             Object msgSer = isMarshallable ?
-                serCls.getConstructor(Marshaller.class, ClassLoader.class)
-                     .newInstance(marsh, cldLdr) :
+                serCls.getConstructor(Marshaller.class).newInstance(marsh) :
                 U.newInstance(serCls);
 
             return (MessageSerializer<T>)msgSer;
