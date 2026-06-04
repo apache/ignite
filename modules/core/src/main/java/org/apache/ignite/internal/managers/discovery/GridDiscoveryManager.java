@@ -71,6 +71,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.OperationContextAttributeType;
 import org.apache.ignite.internal.cluster.NodeOrderComparator;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
@@ -96,6 +97,8 @@ import org.apache.ignite.internal.systemview.ClusterNodeViewWalker;
 import org.apache.ignite.internal.systemview.NodeAttributeViewWalker;
 import org.apache.ignite.internal.systemview.NodeMetricsViewWalker;
 import org.apache.ignite.internal.thread.OomExceptionHandler;
+import org.apache.ignite.internal.thread.context.OperationContext;
+import org.apache.ignite.internal.thread.context.OperationContextAttribute;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.thread.context.function.OperationContextAwareWrapper;
 import org.apache.ignite.internal.util.GridAtomicLong;
@@ -143,6 +146,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.systemview.view.ClusterNodeView;
 import org.apache.ignite.spi.systemview.view.NodeAttributeView;
 import org.apache.ignite.spi.systemview.view.NodeMetricsView;
@@ -926,10 +930,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 @Override public void run() {
                     DiscoverySpiCustomMessage customMsg = notification.customMessage();
 
-                    if (customMsg instanceof SecurityAwareCustomMessageWrapper) {
-                        UUID secSubjId = ((SecurityAwareCustomMessageWrapper)customMsg).securitySubjectId();
+                    // Custom event/message is currently always a {@link TcpDiscoveryAbstractMessage}.
+                    SecuritySubjectMessage secSubjMsg = !(customMsg instanceof TcpDiscoveryAbstractMessage)
+                        || ((TcpDiscoveryAbstractMessage)customMsg).opCtxMessage == null
+                        ? null
+                        : ((TcpDiscoveryAbstractMessage)customMsg).opCtxMessage.attributeValue(OperationContextAttributeType.SECURITY);
 
-                        try (Scope ignored = ctx.security().withContext(secSubjId)) {
+                    if (secSubjMsg != null) {
+                        try (Scope ignored = ctx.security().withContext(secSubjMsg.id)) {
                             super.run();
                         }
                     }
@@ -2324,12 +2332,20 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @throws IgniteCheckedException If failed.
      */
     public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteCheckedException {
-        try {
-            IgniteSecurity security = ctx.security();
+        IgniteSecurity sec = ctx.security();
 
-            getSpi().sendCustomEvent(security.enabled()
-                ? new SecurityAwareCustomMessageWrapper(msg, security.securityContext().subject().id())
-                : msg);
+        try {
+            if (sec.enabled()) {
+                SecuritySubjectMessage secAttrVal = new SecuritySubjectMessage(sec.securityContext().subject().id());
+
+                OperationContextAttribute<SecuritySubjectMessage> secAttr = OperationContextAttributeType.SECURITY.create(null);
+
+                try (Scope scope = OperationContext.set(secAttr, secAttrVal)) {
+                    getSpi().sendCustomEvent(msg);
+                }
+            }
+            else
+                getSpi().sendCustomEvent(msg);
         }
         catch (IgniteClientDisconnectedException e) {
             IgniteFuture<?> reconnectFut = ctx.cluster().clientReconnectFuture();

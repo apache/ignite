@@ -82,16 +82,11 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
     /** */
     private ExecutorService poolToShutdownAfterTest;
 
-    /** */
-    private int beforeTestReservedAttrIds;
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
         AttributeValueChecker.CHECKS.clear();
-
-        beforeTestReservedAttrIds = OperationContextAttribute.ID_GEN.get();
     }
 
     /** {@inheritDoc} */
@@ -100,9 +95,6 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
 
         if (poolToShutdownAfterTest != null)
             poolToShutdownAfterTest.shutdownNow();
-
-        // Releases attribute IDs reserved during the test.
-        OperationContextAttribute.ID_GEN.set(beforeTestReservedAttrIds);
     }
 
     /** */
@@ -274,13 +266,13 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testMaximumAttributesInstanceCount() {
-        int cnt = OperationContextAttribute.MAX_ATTR_CNT - OperationContextAttribute.ID_GEN.get();
+        int cnt = OperationContextAttribute.MAX_ATTR_CNT;
 
         List<OperationContextAttribute<Integer>> attrs = new ArrayList<>(cnt);
         LinkedList<Scope> scopes = new LinkedList<>();
 
         for (int i = 0; i < cnt; i++) {
-            attrs.add(OperationContextAttribute.newInstance(0));
+            attrs.add(OperationContextAttribute.newInstance(i));
 
             scopes.push(OperationContext.set(attrs.get(i), i));
         }
@@ -297,7 +289,7 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
 
         assertThrowsAnyCause(
             log,
-            () -> OperationContextAttribute.newInstance(0),
+            () -> OperationContextAttribute.newInstance(cnt + 1),
             AssertionError.class,
             "Exceeded maximum supported number of created Attributes instances"
         );
