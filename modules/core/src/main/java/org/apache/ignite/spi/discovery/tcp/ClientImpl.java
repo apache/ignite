@@ -64,12 +64,17 @@ import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.OperationContexMessage;
+import org.apache.ignite.internal.OperationContextAttributeType;
 import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.processors.tracing.SpanTags;
 import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessage;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesTable;
+import org.apache.ignite.internal.thread.context.OperationContext;
+import org.apache.ignite.internal.thread.context.OperationContextSnapshot;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -81,6 +86,7 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -516,6 +522,18 @@ class ClientImpl extends TcpDiscoveryImpl {
 
         // This root span will be parent both from local and remote nodes.
         msg.spanContainer().serializedSpanBytes(tracing.serialize(rootSpan));
+
+        OperationContextSnapshot opCtxSnp = OperationContext.createSnapshot();
+
+        if (opCtxSnp != null) {
+            for (T2<Byte, ?> ap : opCtxSnp) {
+                OperationContextAttributeType opAttrType = OperationContextAttributeType.of(ap.get1());
+
+                assert ap.get2() == null || ap.get2() instanceof Message;
+
+                msg.opCtxMessage = OperationContexMessage.enrich(msg.opCtxMessage, opAttrType, (Message)ap.get2());
+            }
+        }
 
         sockWriter.sendMessage(msg);
 
@@ -2586,8 +2604,16 @@ class ClientImpl extends TcpDiscoveryImpl {
                     TcpDiscoveryNode node = nodeId.equals(getLocalNodeId()) ? locNode : rmtNodes.get(nodeId);
 
                     if (node != null && node.visible()) {
-                        notifyDiscovery(
-                            EVT_DISCOVERY_CUSTOM_EVT, topVer, node, allVisibleNodes(), msg.message(), msg.spanContainer());
+                        if (msg.opCtxMessage != null) {
+                            try (Scope ignored = OperationContext.restoreSnapshot(msg.opCtxMessage)) {
+                                notifyDiscovery(
+                                    EVT_DISCOVERY_CUSTOM_EVT, topVer, node, allVisibleNodes(), msg.message(), msg.spanContainer());
+                            }
+                        }
+                        else {
+                            notifyDiscovery(
+                                EVT_DISCOVERY_CUSTOM_EVT, topVer, node, allVisibleNodes(), msg.message(), msg.spanContainer());
+                        }
                     }
                     else if (log.isDebugEnabled())
                         log.debug("Received metrics from unknown node: " + nodeId);

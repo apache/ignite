@@ -6281,7 +6281,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     if (pendingMsgs.procCustomMsgs.add(msg.id())) {
                         if (msg.opCtxMessage != null) {
-                            try (Scope scope = OperationContext.restoreSnapshot(msg.opCtxMessage)) {
+                            try (Scope ignored = OperationContext.restoreSnapshot(msg.opCtxMessage)) {
                                 notifyDiscoveryListener(msg, waitForNotification);
                             }
                         }

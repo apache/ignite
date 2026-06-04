@@ -929,9 +929,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     SecuritySubjectMessage secSubjMsg = OperationContextAttributeType.SECURITY.get();
 
                     if (secSubjMsg != null) {
-                        // TODO: remove
-                        log.error("TEST | found subjId: " + secSubjMsg.id + " on " + locNode.order());
-
                         try (Scope ignored = ctx.security().withContext(secSubjMsg.id)) {
                             super.run();
                         }
