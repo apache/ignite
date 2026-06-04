@@ -1999,7 +1999,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             ser.prepareMarshal(ioMsg, ctx, null);
 
             if (locNodeId.equals(node.id())) {
-
                 assert plc != P2P_POOL;
 
                 CommunicationListener commLsnr = this.commLsnr;
