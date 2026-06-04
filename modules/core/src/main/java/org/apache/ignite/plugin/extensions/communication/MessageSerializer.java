@@ -69,6 +69,7 @@ public interface MessageSerializer<M extends Message> {
 
     /**
      * Unmarshalls message fields.
+     * 
      * @param msg Message instance.
      * @param kctx Kernal context.
      * @throws IgniteCheckedException If unmarshalling fails.
