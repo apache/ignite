@@ -152,7 +152,6 @@ public class OpenCensusTracingSpi extends IgniteSpiAdapter implements TracingSpi
         return TracingSpiType.OPEN_CENSUS_TRACING_SPI.index();
     }
 
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return "OpenCensusTracingSpi";

@@ -30,30 +30,37 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
 
 /**
  * Test covers cases where Ignite configuration,
- * or it's nested objects has default implementation of {@link Object#toString()}
+ * or it's nested objects have default implementation of {@link Object#toString()}
  */
 @WithSystemProperty(key = IGNITE_QUIET, value = "false")
 public class IgniteConfigurationTest extends GridCommonAbstractTest {
     /** Error message to be prompted for ignite configuration */
     private static final String ASSERTION_ERROR_MESSAGE =
-            "Ignite configuration log message contains objects with default toString implementation";
+            "Ignite configuration log message contains objects with default #toString() implementation";
 
     /** Error message to be prompted for node start log message */
     private static final String NODE_START_ASSERTION_ERROR_MESSAGE =
-            "Node start log message contains objects with default toString implementation";
+            "Node start log message contains objects with default #toString() implementation";
+
+    /** Contains not identity hash fragments ("@...") */
+    public static final String CONTAINS_NOT_DEFAULT_TO_STRING = "(?!.*@[a-fA-F0-9]+).*";
 
     /** Pattern to check any object has default {@link Object#toString()} implementation */
-    private static final Pattern ERROR_PATTERN = Pattern.compile("^(?=.*IgniteConfiguration \\[)(?!.*@[a-fA-F0-9]+).*$");
+    private static final Pattern ERROR_PATTERN =
+            Pattern.compile("^(?=.*IgniteConfiguration \\[)"
+                    + CONTAINS_NOT_DEFAULT_TO_STRING + "$");
 
     /** Pattern to check any object has default {@link Object#toString()} implementation */
-    private static final Pattern NODE_START_ERROR_PATTERN = Pattern.compile("^(?=.*Node started with the following configuration \\[id=)(?!.*@[a-fA-F0-9]+).*$");
+    private static final Pattern NODE_START_ERROR_PATTERN =
+            Pattern.compile("^(?=.*Node started with the following configuration \\[id=)"
+                    + CONTAINS_NOT_DEFAULT_TO_STRING + "$");
 
     /** */
     private final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
     /**
-     * Check ignite configuration log message contains no @ letters
-     * It's a common way to ensure all objects in prompt has {@link Object#toString()} overriden
+     * Checks that Ignite configuration log message contains no identity hash fragments ("@...").
+     * This is a common heuristic to ensure all logged objects override {@link Object#toString()}.
      */
     @Test
     public void testIgniteConfigurationPrompt() throws Exception {
