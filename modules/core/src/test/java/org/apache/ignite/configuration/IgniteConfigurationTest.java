@@ -74,7 +74,7 @@ public class IgniteConfigurationTest extends GridCommonAbstractTest {
         listeningLog.registerListener(nodeStartIgniteConfigurationLogListener);
         try (IgniteEx ignored = startGrid(0)) {
             Assert.assertTrue(ASSERTION_ERROR_MESSAGE, igniteConfigurationLogListener.check());
-            Assert.assertTrue(NODE_START_ASSERTION_ERROR_MESSAGE, nodeStartIgniteConfigurationLogListener.check(10_000));
+            Assert.assertTrue(NODE_START_ASSERTION_ERROR_MESSAGE, nodeStartIgniteConfigurationLogListener.check());
         }
     }
 
