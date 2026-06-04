@@ -679,7 +679,6 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         register(cls, schemaAwareMarsh);
     }
     
-
     /** Registers message using incrementing {@link #msgIdx} as the message id/type. */
     private <T extends Message> void register(Class<T> cls, Marshaller marsh) {
         register(factory, cls, msgIdx++, marsh);

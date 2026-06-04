@@ -62,7 +62,8 @@ public interface MessageSerializer<M extends Message> {
      * @param clsLdr Classloader.
      * @throws IgniteCheckedException If unmarshalling fails.
      */
-    public default void finishUnmarshal(M msg, GridKernalContext kctx, GridCacheContext<?, ?> nested, ClassLoader clsLdr) throws IgniteCheckedException {
+    public default void finishUnmarshal(M msg, GridKernalContext kctx, GridCacheContext<?, ?> nested, ClassLoader clsLdr) 
+        throws IgniteCheckedException {
         // No-op by default.
     }
 
