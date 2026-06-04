@@ -3449,7 +3449,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             try {
                 MessageSerializer ser = cctx.kernalContext().messageFactory().serializer(cacheMsg.directType());
 
-                ser.finishUnmarshal(cacheMsg, cctx.kernalContext(), null);
+                ser.finishUnmarshal(cacheMsg, cctx.kernalContext());
+                ser.finishUnmarshal(cacheMsg, cctx.kernalContext(), null, cctx.deploy().globalLoader());
             }
             catch (IgniteCheckedException e) {
                 cacheMsg.onClassError(e);

@@ -36,18 +36,18 @@ public class CalciteMessageFactory extends AbstractMarshallableMessageFactoryPro
 
     /** {@inheritDoc} */
     @Override public void registerAll(MessageFactory factory) {
-        register(factory, QueryStartRequest.class, (short)300, schemaAwareMarsh, resolvedClsLdr);
-        register(factory, QueryStartResponse.class, (short)301, dfltMarsh, dftlClsLdr);
-        register(factory, CalciteErrorMessage.class, (short)302, dfltMarsh, resolvedClsLdr);
-        register(factory, QueryBatchMessage.class, (short)303, dfltMarsh, dftlClsLdr);
-        register(factory, QueryBatchAcknowledgeMessage.class, (short)304, dfltMarsh, dftlClsLdr);
-        register(factory, QueryInboxCloseMessage.class, (short)305, dfltMarsh, dftlClsLdr);
-        register(factory, QueryCloseMessage.class, (short)306, dfltMarsh, dftlClsLdr);
-        register(factory, GenericValueMessage.class, (short)307, schemaAwareMarsh, resolvedClsLdr);
-        register(factory, FragmentMapping.class, (short)308, dfltMarsh, dftlClsLdr);
-        register(factory, ColocationGroup.class, (short)309, dfltMarsh, dftlClsLdr);
-        register(factory, FragmentDescription.class, (short)310, dfltMarsh, dftlClsLdr);
-        register(factory, QueryTxEntry.class, (short)311, dfltMarsh, dftlClsLdr);
+        register(factory, QueryStartRequest.class, (short)300, schemaAwareMarsh);
+        register(factory, QueryStartResponse.class, (short)301, dfltMarsh);
+        register(factory, CalciteErrorMessage.class, (short)302, dfltMarsh);
+        register(factory, QueryBatchMessage.class, (short)303, dfltMarsh);
+        register(factory, QueryBatchAcknowledgeMessage.class, (short)304, dfltMarsh);
+        register(factory, QueryInboxCloseMessage.class, (short)305, dfltMarsh);
+        register(factory, QueryCloseMessage.class, (short)306, dfltMarsh);
+        register(factory, GenericValueMessage.class, (short)307, schemaAwareMarsh);
+        register(factory, FragmentMapping.class, (short)308, dfltMarsh);
+        register(factory, ColocationGroup.class, (short)309, dfltMarsh);
+        register(factory, FragmentDescription.class, (short)310, dfltMarsh);
+        register(factory, QueryTxEntry.class, (short)311, dfltMarsh);
     }
 
     /** */

@@ -50,7 +50,7 @@ public class DirectMarshallingMessagesTest extends GridCommonAbstractTest {
             factory -> factory.register(
                 TestNestedContainersMessage.TYPE,
                 TestNestedContainersMessage::new,
-                new TestNestedContainersMessageSerializer(U.gridClassLoader())
+                new TestNestedContainersMessageSerializer()
             )
         });
 

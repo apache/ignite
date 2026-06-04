@@ -24,7 +24,6 @@ import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -37,6 +36,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.CacheMarshallableMessage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -45,7 +45,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 /**
  *
  */
-public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingleUpdateRequest implements MarshallableMessage {
+public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingleUpdateRequest implements CacheMarshallableMessage {
     /** Optional arguments for entry processor. */
     private @Nullable Object[] invokeArgs;
 

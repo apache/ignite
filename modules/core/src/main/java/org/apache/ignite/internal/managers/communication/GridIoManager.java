@@ -1178,7 +1178,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
             MessageSerializer ser = ctx.messageFactory().serializer(initMsg.directType());
 
-            ser.finishUnmarshal(initMsg, ctx, null);
+            ser.finishUnmarshal(initMsg, ctx);
 
             pools.poolForPolicy(plc).execute(new Runnable() {
                 @Override public void run() {
@@ -1207,7 +1207,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
         MessageSerializer ser = ctx.messageFactory().serializer(msg.directType());
 
-        ser.finishUnmarshal(msg, ctx, null);
+        ser.finishUnmarshal(msg, ctx);
 
         Lock busyLock0 = busyLock.readLock();
 

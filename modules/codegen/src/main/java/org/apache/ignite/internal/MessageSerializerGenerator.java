@@ -174,8 +174,6 @@ public class MessageSerializerGenerator {
         if (marshallableMessage())
             fields.add("private final Marshaller marshaller;");
 
-        fields.add("private final ClassLoader clsLdr;");
-
         try (Writer writer = new StringWriter()) {
             writeClassHeader(writer, env.getElementUtils().getPackageOf(type).toString(), serClsName);
 
@@ -216,9 +214,9 @@ public class MessageSerializerGenerator {
         writer.write(NL);
 
         if (marshallableMessage())
-            writer.write(indentedLine("public " + serClsName + "(Marshaller marshaller, ClassLoader clsLdr) {"));
+            writer.write(indentedLine("public " + serClsName + "(Marshaller marshaller) {"));
         else
-            writer.write(indentedLine("public " + serClsName + "(ClassLoader clsLdr) {"));
+            writer.write(indentedLine("public " + serClsName + "() {"));
 
         writer.write(NL);
 
@@ -228,8 +226,6 @@ public class MessageSerializerGenerator {
             writer.write(indentedLine("this.marshaller = marshaller;"));
             writer.write(NL);
         }
-        
-        writer.write(indentedLine("this.clsLdr = clsLdr;"));
 
         --indent;
 
@@ -298,7 +294,7 @@ public class MessageSerializerGenerator {
         }
 
         for (VariableElement field : orderedFields) {
-            List<String> marshalled = marshall(field.asType(), fieldAccessor(field), false);
+            List<String> marshalled = marshall(field.asType(), fieldAccessor(field), false, false);
 
             if (!marshalled.isEmpty()) {
                 if (!marshall.get(marshall.size() - 1).equals(EMPTY))
@@ -323,7 +319,7 @@ public class MessageSerializerGenerator {
 
         marshall.add(indentedLine(
             "@Override public void finishUnmarshal(" + simpleNameWithGeneric(type) +
-                " msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {"));
+                " msg, GridKernalContext kctx, GridCacheContext<?, ?> nested, ClassLoader clsLdr) throws IgniteCheckedException {"));
 
         indent++;
 
@@ -337,7 +333,7 @@ public class MessageSerializerGenerator {
             marshall.add(indentedLine("GridCacheContext<?, ?> ctx = nested;"));
 
         for (VariableElement field : orderedFields) {
-            List<String> unmarshalled = marshall(field.asType(), fieldAccessor(field), true);
+            List<String> unmarshalled = marshall(field.asType(), fieldAccessor(field), true, false);
 
             if (!unmarshalled.isEmpty()) {
                 if (!marshall.get(marshall.size() - 1).equals(EMPTY))
@@ -347,10 +343,47 @@ public class MessageSerializerGenerator {
             }
         }
 
-        if (marshallableMessage()) {
+        if (isCacheMarshallableMessage(type)) {
             marshall.add(EMPTY);
 
-            marshall.add(indentedLine("msg.finishUnmarshal(marshaller, ctx != null ? ctx.deploy().globalLoader() : clsLdr);"));
+            marshall.add(indentedLine("msg.finishUnmarshal(marshaller, clsLdr);"));
+        }
+
+        indent--;
+
+        marshall.add(indentedLine("}"));
+
+        imports.add("org.apache.ignite.internal.util.typedef.internal.U");
+
+        marshall.add(EMPTY);
+
+        marshall.add(indentedLine(METHOD_JAVADOC));
+
+        marshall.add(indentedLine(
+            "@Override public void finishUnmarshal(" + simpleNameWithGeneric(type) + 
+                " msg, GridKernalContext kctx) throws IgniteCheckedException {"));
+
+        indent++;
+
+        boolean first = true;
+        
+        for (VariableElement field : orderedFields) {
+            List<String> unmarshalled = marshall(field.asType(), fieldAccessor(field), true, true);
+
+            if (!unmarshalled.isEmpty()) {
+                if (!first)
+                    marshall.add(EMPTY);
+                
+                first = false;
+
+                marshall.addAll(unmarshalled);
+            }
+        }
+        
+        if (marshallableMessage() && !isCacheMarshallableMessage(type)) {
+            marshall.add(EMPTY);
+            
+            marshall.add(indentedLine("msg.finishUnmarshal(marshaller, U.gridClassLoader());"));
         }
 
         indent--;
@@ -359,7 +392,7 @@ public class MessageSerializerGenerator {
     }
 
     /** */
-    private List<String> marshall(TypeMirror t, String accessor, boolean unmarshall) {
+    private List<String> marshall(TypeMirror t, String accessor, boolean unmarshall, boolean cache) {
         if (t.getKind() == TypeKind.ARRAY) {
             TypeMirror comp = ((ArrayType)t).getComponentType();
 
@@ -378,7 +411,7 @@ public class MessageSerializerGenerator {
 
                 indent++;
 
-                List<String> res = marshall(comp, el, unmarshall);
+                List<String> res = marshall(comp, el, unmarshall, cache);
 
                 code.addAll(res);
 
@@ -409,17 +442,27 @@ public class MessageSerializerGenerator {
                         "kctx.messageFactory().serializer(%s.directType()).prepareMarshal(%s, kctx, ctx);",
                         accessor,
                         accessor));
-                else
-                    code.add(indentedLine(
-                        "kctx.messageFactory().serializer(%s.directType()).finishUnmarshal(%s, kctx, ctx);",
-                        accessor,
-                        accessor));
+                else {
+                    if (cache)
+                        code.add(indentedLine(
+                            "kctx.messageFactory().serializer(%s.directType()).finishUnmarshal(%s, kctx);",
+                            accessor,
+                            accessor));
+                    else
+                        code.add(indentedLine(
+                            "kctx.messageFactory().serializer(%s.directType()).finishUnmarshal(%s, kctx, ctx, clsLdr);",
+                            accessor,
+                            accessor));
+                }
 
                 indent--;
 
                 return code;
             }
             else if (isCacheObject(t)) {
+                if (cache && unmarshall)
+                    return Collections.emptyList();
+                
                 List<String> code = new ArrayList<>();
 
                 code.add(indentedLine("if (%s != null && ctx != null)", accessor));
@@ -450,8 +493,8 @@ public class MessageSerializerGenerator {
                 String el = "e" + indent;
 
                 indent++; // Emulating subsequent indent.
-                List<String> keyRes = marshall(keyType, el, unmarshall);
-                List<String> valRes = marshall(valType, el, unmarshall);
+                List<String> keyRes = marshall(keyType, el, unmarshall, cache);
+                List<String> valRes = marshall(valType, el, unmarshall, cache);
                 indent--;
 
                 if (!keyRes.isEmpty() && (keyType.getKind() == TypeKind.DECLARED || keyType.getKind() == TypeKind.TYPEVAR)) {
@@ -526,7 +569,7 @@ public class MessageSerializerGenerator {
 
                     indent++;
 
-                    List<String> res = marshall(arg, el, unmarshall);
+                    List<String> res = marshall(arg, el, unmarshall, cache);
 
                     code.addAll(res);
 
@@ -562,6 +605,11 @@ public class MessageSerializerGenerator {
     /** */
     private boolean isNonMarshallableMessage(TypeElement te) {
         return assignableFrom(te.asType(), type("org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage"));
+    }
+
+    /** */
+    private boolean isCacheMarshallableMessage(TypeElement te) {
+        return assignableFrom(te.asType(), type("org.apache.ignite.plugin.extensions.communication.CacheMarshallableMessage"));
     }
 
     /** True if {@code te} extends {@code CacheIdAware} and therefore carries its own per-cache {@code cacheId()}. */

@@ -20,6 +20,7 @@ package org.apache.ignite.internal;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 
 public class TestMarshallableMessage implements MarshallableMessage {
     @Order(0)

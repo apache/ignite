@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -32,11 +31,12 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.CacheMarshallableMessage;
 
 /**
  * Transactions lock list response.
  */
-public class TxLocksResponse extends GridCacheMessage implements MarshallableMessage {
+public class TxLocksResponse extends GridCacheMessage implements CacheMarshallableMessage {
     /** Future ID. */
     @Order(0)
     long futId;

@@ -34,7 +34,6 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.util.typedef.CI2;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.PluginContext;
@@ -232,11 +231,11 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
             registry.registerExtension(MessageFactoryProvider.class, factory -> {
-                factory.register(TestMessage.DIRECT_TYPE, TestMessage::new, new TestMessageSerializer(U.gridClassLoader()));
-                factory.register(GridTestMessage.DIRECT_TYPE, GridTestMessage::new, new GridTestMessageSerializer(U.gridClassLoader()));
-                factory.register(TestMessage1.DIRECT_TYPE, TestMessage1::new, new TestMessage1Serializer(U.gridClassLoader()));
-                factory.register(TestMessage2.DIRECT_TYPE, TestMessage2::new, new TestMessage2Serializer(U.gridClassLoader()));
-                factory.register(TestBadMessage.DIRECT_TYPE, TestBadMessage::new, new TestBadMessageSerializer(U.gridClassLoader()));
+                factory.register(TestMessage.DIRECT_TYPE, TestMessage::new, new TestMessageSerializer());
+                factory.register(GridTestMessage.DIRECT_TYPE, GridTestMessage::new, new GridTestMessageSerializer());
+                factory.register(TestMessage1.DIRECT_TYPE, TestMessage1::new, new TestMessage1Serializer());
+                factory.register(TestMessage2.DIRECT_TYPE, TestMessage2::new, new TestMessage2Serializer());
+                factory.register(TestBadMessage.DIRECT_TYPE, TestBadMessage::new, new TestBadMessageSerializer());
             });
         }
     }

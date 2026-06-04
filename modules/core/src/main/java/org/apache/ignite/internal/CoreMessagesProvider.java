@@ -343,7 +343,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         // [5000 - 5500]: Utility messages. Most of them originally come from Discovery.
         msgIdx = 5000;
         withNoSchema(CompressedMessage.class);
-        withNoSchemaResolvedClassLoader(ErrorMessage.class);
+        withNoSchema(ErrorMessage.class);
         withNoSchema(InetSocketAddressMessage.class);
         withNoSchema(InetAddressMessage.class);
         withNoSchema(TcpDiscoveryNode.class);
@@ -353,8 +353,8 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(GridCacheVersion.class);
         withNoSchema(GridCacheVersionEx.class);
         withNoSchema(WALPointer.class);
-        withNoSchemaResolvedClassLoader(ObjectData.class);
-        withSchemaResolvedClassLoader(GridTopicMessage.class);
+        withNoSchema(ObjectData.class);
+        withSchema(GridTopicMessage.class);
 
         // [5700 - 5900]: Discovery originated messages.
         msgIdx = 5700;
@@ -639,7 +639,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(MetadataRequestMessage.class);
         withNoSchema(MetadataResponseMessage.class);
         withNoSchema(MarshallerMappingItem.class);
-        withSchemaResolvedClassLoader(BinaryMetadataVersionInfo.class);
+        withSchema(BinaryMetadataVersionInfo.class);
         withNoSchema(BinaryMetadataVersionsData.class);
         withNoSchema(MappedName.class);
         withNoSchema(MarshallerMappingsData.class);
@@ -662,35 +662,26 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(IgniteDiagnosticResponse.class);
         withNoSchema(WalStateAckMessage.class);
         withNoSchema(CacheConfigurationEnrichment.class);
-        withNoSchemaResolvedClassLoader(DynamicCacheChangeRequest.class);
+        withNoSchema(DynamicCacheChangeRequest.class);
         withNoSchema(PartitionHashRecord.class);
         withNoSchema(TransactionsHashRecord.class);
 
         assert msgIdx <= MAX_MESSAGE_ID;
     }
 
-    /** Registers message using {@link #dfltMarsh} and {@link #dftlClsLdr}. */
+    /** Registers message using {@link #dfltMarsh}. */
     private <T extends Message> void withNoSchema(Class<T> cls) {
-        register(cls, dfltMarsh, dftlClsLdr);
+        register(cls, dfltMarsh);
     }
 
-    /** Registers message using {@link #schemaAwareMarsh} and {@link #dftlClsLdr}. */
+    /** Registers message using {@link #schemaAwareMarsh}. */
     private <T extends Message> void withSchema(Class<T> cls) {
-        register(cls, schemaAwareMarsh, dftlClsLdr);
+        register(cls, schemaAwareMarsh);
     }
-
-    /** Registers message using {@link #dfltMarsh} and {@link #resolvedClsLdr}. */
-    private <T extends Message> void withNoSchemaResolvedClassLoader(Class<T> cls) {
-        register(cls, dfltMarsh, resolvedClsLdr);
-    }
-
-    /** Registers message using {@link #schemaAwareMarsh} and {@link #resolvedClsLdr}. */
-    private <T extends Message> void withSchemaResolvedClassLoader(Class<T> cls) {
-        register(cls, schemaAwareMarsh, resolvedClsLdr);
-    }
+    
 
     /** Registers message using incrementing {@link #msgIdx} as the message id/type. */
-    private <T extends Message> void register(Class<T> cls, Marshaller marsh, ClassLoader clsLrd) {
-        register(factory, cls, msgIdx++, marsh, clsLrd);
+    private <T extends Message> void register(Class<T> cls, Marshaller marsh) {
+        register(factory, cls, msgIdx++, marsh);
     }
 }

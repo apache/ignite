@@ -198,7 +198,7 @@ public class TcpDiscoveryIoSession {
             }
             while (!finished);
 
-            msgSer.finishUnmarshal(msg, ((IgniteEx)spi.ignite()).context(), null);
+            msgSer.finishUnmarshal(msg, ((IgniteEx)spi.ignite()).context());
 
             return (T)msg;
         }

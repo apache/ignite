@@ -20,11 +20,10 @@ package org.apache.ignite.internal.plugin;
 import java.lang.reflect.Constructor;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -38,14 +37,8 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
     /** Default schema-less marshaller. */
     protected Marshaller dfltMarsh;
 
-    /** Default class loader. */
-    protected final ClassLoader dftlClsLdr = U.gridClassLoader();
-
     /** Schema-aware marshaller like {@link BinaryMarshaller}. */
     protected Marshaller schemaAwareMarsh;
-
-    /** Resolved (configured) class loader like {@link IgniteConfiguration#setClassLoader(ClassLoader)}. */
-    protected ClassLoader resolvedClsLdr;
 
     /**
      * @param dfltMarsh Default schema-less marshaller like {@link JdkMarshaller}.
@@ -55,12 +48,10 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
     public void init(Marshaller dfltMarsh, Marshaller schemaAwareMarsh, ClassLoader resolvedClsLdr) {
         this.dfltMarsh = dfltMarsh;
         this.schemaAwareMarsh = schemaAwareMarsh;
-        this.resolvedClsLdr = resolvedClsLdr;
     }
 
     /** Registers message automatically generating message supplier and serializer. */
-    protected static <T extends Message> void register(MessageFactory factory, Class<T> cls, short id, Marshaller marsh, 
-        ClassLoader clsLrd) {
+    protected static <T extends Message> void register(MessageFactory factory, Class<T> cls, short id, Marshaller marsh) {
         Constructor<T> ctor;
         MessageSerializer<T> serializer;
 
@@ -72,8 +63,8 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
             Class<?> serCls = Class.forName(cls.getName() + (marshallable ? "MarshallableSerializer" : "Serializer"));
 
             serializer = marshallable
-                ? (MessageSerializer<T>)serCls.getConstructor(Marshaller.class, ClassLoader.class).newInstance(marsh, clsLrd)
-                : (MessageSerializer<T>)serCls.getConstructor(ClassLoader.class).newInstance(clsLrd);
+                ? (MessageSerializer<T>)serCls.getConstructor(Marshaller.class).newInstance(marsh)
+                : (MessageSerializer<T>)serCls.getConstructor().newInstance();
         }
         catch (Exception e) {
             throw new IgniteException("Failed to register message of type " + cls.getSimpleName(), e);

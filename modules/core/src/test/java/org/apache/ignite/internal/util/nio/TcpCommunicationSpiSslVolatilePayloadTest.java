@@ -97,7 +97,7 @@ public class TcpCommunicationSpiSslVolatilePayloadTest extends GridAbstractCommu
     @Override protected MessageFactoryProvider customMessageFactory() {
         return f -> f.register(
             TestVolatilePayloadMessage.DIRECT_TYPE, 
-            TestVolatilePayloadMessage::new, new TestVolatilePayloadMessageSerializer(U.gridClassLoader())
+            TestVolatilePayloadMessage::new, new TestVolatilePayloadMessageSerializer()
         );
     }
 

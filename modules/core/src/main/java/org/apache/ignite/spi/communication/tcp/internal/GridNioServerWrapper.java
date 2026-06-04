@@ -826,7 +826,7 @@ public class GridNioServerWrapper {
                     @Override public MessageSerializer serializer(short type) {
                         // Enable sending wait message for a communication peer while context isn't initialized.
                         if (impl == null && type == CoreMessagesProvider.HANDSHAKE_WAIT_MSG_TYPE)
-                            return new HandshakeWaitMessageSerializer(U.gridClassLoader());
+                            return new HandshakeWaitMessageSerializer();
 
                         return get().serializer(type);
                     }

@@ -235,8 +235,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
         if (clearKey)
             key = null;
     }
-
-
+    
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridNearAtomicSingleUpdateRequest.class, this, "parent", super.toString());

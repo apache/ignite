@@ -92,6 +92,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
@@ -1550,6 +1551,10 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 if (log.isDebugEnabled())
                     log.debug("Set P2P context [senderId=" + nodeId + ", msg=" + cacheMsg + ']');
             }
+
+            MessageSerializer ser = cctx.kernalContext().messageFactory().serializer(cacheMsg.directType());
+
+            ser.finishUnmarshal(cacheMsg, cctx.kernalContext(), null, cctx.deploy().globalLoader());
         }
         catch (IgniteCheckedException e) {
             cacheMsg.onClassError(e);

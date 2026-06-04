@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -37,12 +36,13 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.CacheMarshallableMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Near cache prepare response.
  */
-public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse implements MarshallableMessage {
+public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse implements CacheMarshallableMessage {
     /** Versions that are less than lock version ({@link #version()}). */
     @GridToStringInclude
     @Order(0)

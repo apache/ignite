@@ -59,9 +59,20 @@ public interface MessageSerializer<M extends Message> {
      * @param msg Message instance.
      * @param kctx Kernal context.
      * @param nested Nested context.
+     * @param clsLdr Classloader.
      * @throws IgniteCheckedException If unmarshalling fails.
      */
-    public default void finishUnmarshal(M msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {
+    public default void finishUnmarshal(M msg, GridKernalContext kctx, GridCacheContext<?, ?> nested, ClassLoader clsLdr) throws IgniteCheckedException {
+        // No-op by default.
+    }
+
+    /**
+     * Unmarshalls message fields.
+     * @param msg Message instance.
+     * @param kctx Kernal context.
+     * @throws IgniteCheckedException If unmarshalling fails.
+     */
+    public default void finishUnmarshal(M msg, GridKernalContext kctx) throws IgniteCheckedException {
         // No-op by default.
     }
 }
