@@ -678,6 +678,9 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 long cntr,
                 AffinityTopologyVersion topVer,
                 boolean primary) {
+                if (locOnly)
+                    return skipCtx;
+
                 if (skipCtx == null)
                     skipCtx = new CounterSkipContext(part, cntr, topVer);
 
