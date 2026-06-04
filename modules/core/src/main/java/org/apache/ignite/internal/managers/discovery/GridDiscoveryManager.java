@@ -104,6 +104,7 @@ import org.apache.ignite.internal.thread.context.function.OperationContextAwareW
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
@@ -2332,7 +2333,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 OperationContextAttribute<SecuritySubjectMessage> secAttr = OperationContextAttributeType.SECURITY.create(null);
 
-                try (Scope scope = OperationContext.set(secAttr, secAttrVal)) {
+                try (Scope ignored = OperationContext.set(secAttr, secAttrVal)) {
                     getSpi().sendCustomEvent(msg);
                 }
             }

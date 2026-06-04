@@ -30,6 +30,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.junit.Test;
 
@@ -137,7 +138,14 @@ public class CacheCreateDestroyEventSecurityContextTest extends AbstractEventSec
 
         checkCacheEvents(() -> ignite.getOrCreateCache(cacheConfiguration()), EVT_CACHE_STARTED);
 
+        ///log.error("TEST | start");
+
+        IgniteUtils.TEST = true;
+
         checkCacheEvents(() -> ignite.cluster().state(INACTIVE), EVT_CACHE_STOPPED);
+
+        IgniteUtils.TEST = false;
+
         checkCacheEvents(() -> ignite.cluster().state(ACTIVE), EVT_CACHE_STARTED);
 
         operationInitiatorLogin = "joining_" + (isClient ? "client_" : "server_") + "node";

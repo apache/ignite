@@ -21,7 +21,9 @@ import java.io.Serializable;
 import java.util.UUID;
 import org.apache.ignite.internal.OperationContextAttributeType;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.jetbrains.annotations.Nullable;
 
 /** A message for {@link OperationContextAttributeType#SECURITY}. */
@@ -41,5 +43,10 @@ public class SecuritySubjectMessage implements Message, Serializable {
     /** */
     public SecuritySubjectMessage(@Nullable UUID id) {
         this.id = id;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(SecuritySubjectMessage.class, this);
     }
 }
