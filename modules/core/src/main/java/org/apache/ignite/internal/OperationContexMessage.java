@@ -18,10 +18,14 @@
 package org.apache.ignite.internal;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.internal.thread.context.OperationContextAttribute;
 import org.apache.ignite.internal.thread.context.OperationContextSnapshot;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -29,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * @see OperationContextSnapshot
  */
-public class OperationContexMessage implements Message {
+public class OperationContexMessage implements Message, OperationContextSnapshot {
     /** Expected maximal number of operation context attributes. Is for message size optimization.  */
     private static final int DFLT_EXPECTED_MAX_ATTRIBUTES_NUMBER = 5;
 
@@ -47,6 +51,11 @@ public class OperationContexMessage implements Message {
     /** Empty constructor for serialization purposes. */
     public OperationContexMessage() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public @NotNull Iterator<T2<Byte, ?>> iterator() {
+        return F.iterator(opCtxAttrs, attrMsg -> new T2<>(attrMsg.type.id(), attrMsg.val), true);
     }
 
     /** */

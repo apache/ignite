@@ -137,7 +137,6 @@ import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.DiscoveryNotification;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiDataExchange;
 import org.apache.ignite.spi.discovery.DiscoverySpiHistorySupport;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
@@ -146,7 +145,6 @@ import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.systemview.view.ClusterNodeView;
 import org.apache.ignite.spi.systemview.view.NodeAttributeView;
 import org.apache.ignite.spi.systemview.view.NodeMetricsView;
@@ -928,13 +926,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 /** */
                 @Override public void run() {
-                    DiscoverySpiCustomMessage customMsg = notification.customMessage();
-
-                    // Custom event/message is currently always a {@link TcpDiscoveryAbstractMessage}.
-                    SecuritySubjectMessage secSubjMsg = !(customMsg instanceof TcpDiscoveryAbstractMessage)
-                        || ((TcpDiscoveryAbstractMessage)customMsg).opCtxMessage == null
-                        ? null
-                        : ((TcpDiscoveryAbstractMessage)customMsg).opCtxMessage.attributeValue(OperationContextAttributeType.SECURITY);
+                    SecuritySubjectMessage secSubjMsg = OperationContextAttributeType.SECURITY.get();
 
                     if (secSubjMsg != null) {
                         try (Scope ignored = ctx.security().withContext(secSubjMsg.id)) {

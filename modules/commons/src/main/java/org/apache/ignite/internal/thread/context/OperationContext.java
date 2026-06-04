@@ -154,6 +154,32 @@ public class OperationContext {
     }
 
     /**
+     * Creates a {@link Update} based on {@code OperationContextSnapshot}.
+     */
+    private Update createUpdate(@Nullable OperationContextSnapshot opCtxSnp) {
+        if (opCtxSnp == null || opCtxSnp instanceof Update)
+            return (Update)opCtxSnp;
+
+        List<AttributeValueHolder<?>> attrVals = new ArrayList<>();
+
+        for (T2<Byte, ?> attrIdValPair : opCtxSnp) {
+            OperationContextAttribute<Object> attr = OperationContextAttribute.newInstance(attrIdValPair.get1());
+
+            AttributeValueHolder<?> curValHldr = lastUpd == null ? null : lastUpd.value(attr);
+
+            if (curValHldr != null && curValHldr.attr.initialValue() != null) {
+                assert curValHldr.attr.initialValue().getClass().isAssignableFrom(attrIdValPair.get2().getClass());
+
+                attr = OperationContextAttribute.newInstance(attrIdValPair.get1(), curValHldr.attr.initialValue());
+            }
+
+            attrVals.add(new AttributeValueHolder<>(attr, attrIdValPair.get2()));
+        }
+
+        return new Update(attrVals.toArray(new AttributeValueHolder[attrVals.size()]), null);
+    }
+
+    /**
      * Restores values of all attributes for {@link OperationContext} bound to the thread this method is called from.
      *
      * @param snp Context Snapshot.
@@ -162,7 +188,7 @@ public class OperationContext {
      * encouraged to use a try-with-resource block to close the returned Scope. Note, updates must be undone in the
      * same order and in the same thread they were applied.
      */
-    public static Scope restoreSnapshot(OperationContextSnapshot snp) {
+    public static Scope restoreSnapshot(@Nullable OperationContextSnapshot snp) {
         return INSTANCE.get().restoreSnapshotInternal(snp);
     }
 
@@ -217,22 +243,20 @@ public class OperationContext {
     }
 
     /** */
-    private Scope restoreSnapshotInternal(OperationContextSnapshot newSnp) {
+    private Scope restoreSnapshotInternal(@Nullable OperationContextSnapshot newSnp) {
         OperationContextSnapshot prevSnp = createSnapshotInternal();
 
         if (newSnp == prevSnp)
             return NOOP_SCOPE;
 
-        changeState(prevSnp, newSnp);
+        changeState(newSnp);
 
-        return () -> changeState(newSnp, prevSnp);
+        return () -> changeState(prevSnp);
     }
 
     /** */
-    private void changeState(OperationContextSnapshot expState, OperationContextSnapshot newState) {
-        assert lastUpd == expState;
-
-        lastUpd = (Update)newState;
+    private void changeState(@Nullable OperationContextSnapshot newState) {
+        lastUpd = createUpdate(newState);
     }
 
     /** Represents Update applied to the {@link OperationContext}. */
@@ -310,8 +334,9 @@ public class OperationContext {
         }
 
         /** {@inheritDoc} */
-        @Override public @NotNull Iterator<T2<OperationContextAttribute<?>, ?>> iterator() {
-            return F.iterator(Arrays.asList(attrVals), avh -> new T2<>(avh.attr, avh.val), true);
+        @Override public @NotNull Iterator<T2<Byte, ?>> iterator() {
+            return F.iterator(Arrays.asList(attrVals),
+                avh -> new T2<>((byte)Integer.numberOfTrailingZeros(avh.attr.bitmask()), avh.val), true);
         }
     }
 

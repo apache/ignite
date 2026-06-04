@@ -24,7 +24,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 public class OperationContexAttributeMessage implements Message {
     /** Operation context attribute type.  */
     @Order(0)
-    OperationContextAttributeType type;
+    public OperationContextAttributeType type;
 
     /** Operation context attribute value. */
     @Order(1)

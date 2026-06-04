@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.thread.context;
 
-import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -28,9 +27,6 @@ import org.jetbrains.annotations.Nullable;
  * @see OperationContext#set(OperationContextAttribute, Object)
  */
 public class OperationContextAttribute<T> {
-    /** */
-    static final AtomicInteger ID_GEN = new AtomicInteger();
-
     /** */
     public static final int MAX_ATTR_CNT = Integer.SIZE;
 

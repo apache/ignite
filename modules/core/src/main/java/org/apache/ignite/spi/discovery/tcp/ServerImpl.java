@@ -97,8 +97,8 @@ import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessage;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesTable;
 import org.apache.ignite.internal.thread.context.OperationContext;
-import org.apache.ignite.internal.thread.context.OperationContextAttribute;
 import org.apache.ignite.internal.thread.context.OperationContextSnapshot;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.GridBoundedLinkedHashSet;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -1112,10 +1112,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         OperationContextSnapshot opCtxSnp = OperationContext.createSnapshot();
 
         if (opCtxSnp != null) {
-            for (T2<OperationContextAttribute<?>, ?> ap : opCtxSnp) {
-                int attrId = Integer.numberOfTrailingZeros(ap.get1().bitmask());
-
-                OperationContextAttributeType opAttrType = OperationContextAttributeType.of(attrId);
+            for (T2<Byte, ?> ap : opCtxSnp) {
+                OperationContextAttributeType opAttrType = OperationContextAttributeType.of(ap.get1());
 
                 assert ap.get2() == null || ap.get2() instanceof Message;
 
@@ -6282,7 +6280,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                     msg.topologyVersion(ring.topologyVersion());
 
                     if (pendingMsgs.procCustomMsgs.add(msg.id())) {
-                        notifyDiscoveryListener(msg, waitForNotification);
+                        if (msg.opCtxMessage != null) {
+                            try (Scope scope = OperationContext.restoreSnapshot(msg.opCtxMessage)) {
+                                notifyDiscoveryListener(msg, waitForNotification);
+                            }
+                        }
+                        else
+                            notifyDiscoveryListener(msg, waitForNotification);
 
                         if (sendMessageToRemotes(msg))
                             sendMessageAcrossRing(msg);

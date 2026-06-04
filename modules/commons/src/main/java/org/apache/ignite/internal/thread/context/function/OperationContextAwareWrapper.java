@@ -21,6 +21,7 @@ import java.util.function.BiFunction;
 import org.apache.ignite.internal.IgniteInternalWrapper;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.OperationContextSnapshot;
+import org.jetbrains.annotations.Nullable;
 
 /** Represents wrapper containing an arbitrary object along with {@link OperationContextSnapshot}. */
 public class OperationContextAwareWrapper<T> implements IgniteInternalWrapper<T> {
@@ -28,7 +29,7 @@ public class OperationContextAwareWrapper<T> implements IgniteInternalWrapper<T>
     protected final T delegate;
 
     /** */
-    protected final OperationContextSnapshot snapshot;
+    protected final @Nullable OperationContextSnapshot snapshot;
 
     /** */
     public OperationContextAwareWrapper(T delegate, OperationContextSnapshot snapshot) {

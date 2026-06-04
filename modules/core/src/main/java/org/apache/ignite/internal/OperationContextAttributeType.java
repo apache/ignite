@@ -18,8 +18,10 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.internal.processors.security.SecuritySubjectMessage;
+import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.OperationContextAttribute;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Type of {@link OperationContextAttribute}.
@@ -53,6 +55,15 @@ public enum OperationContextAttributeType {
         assert val == null || val.getClass().isAssignableFrom(valType);
 
         return OperationContextAttribute.newInstance(id(), val);
+    }
+
+    /** */
+    public <T extends Message> @Nullable T get() {
+        Object res = OperationContext.get(create(null));
+
+        assert res == null || valType.isAssignableFrom(res.getClass());
+
+        return (T)res;
     }
 
     /**

@@ -34,6 +34,6 @@ import org.apache.ignite.internal.util.typedef.T2;
  * @see OperationContextAwareCallable
  * @see OperationContextAwareRunnable
  */
-public interface OperationContextSnapshot extends Iterable<T2<OperationContextAttribute<?>, ?>> {
+public interface OperationContextSnapshot extends Iterable<T2<Byte, ?>> {
     // No-op.
 }
