@@ -121,7 +121,7 @@
         <!-- Maven plugins versions -->
         <maven.javadoc.plugin.version>3.12.0</maven.javadoc.plugin.version>
         <maven.enforcer.plugin.version>3.6.2</maven.enforcer.plugin.version>
-        <maven.compiler.plugin.version>3.14.1</maven.compiler.plugin.version>
+        <maven.compiler.plugin.version>3.15.0</maven.compiler.plugin.version>
         <maven.surefire.plugin.version>3.5.4</maven.surefire.plugin.version>
         <maven.failsafe.plugin.version>3.5.4</maven.failsafe.plugin.version>
         <maven.shade.plugin.version>3.6.1</maven.shade.plugin.version>
