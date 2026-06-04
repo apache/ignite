@@ -541,7 +541,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
 
                 <configuration>
-                    <forkCount>1</forkCount>
+                    <forkCount>0</forkCount>
                     <statelessTestsetInfoReporter implementation="org.apache.ignite.tools.surefire.TestSuiteAwareTestsetReporter"/>
                     <properties>
                         <property>
