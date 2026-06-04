@@ -82,6 +82,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteAsyncCallback;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -1066,6 +1067,10 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                         );
                     }
                 }
+
+                MessageSerializer ser = cctx.kernalContext().messageFactory().serializer(e.directType());
+
+                ser.finishUnmarshal(e, cctx.kernalContext(), null, cctx.deploy().globalLoader());
 
                 Collection<CacheEntryEvent<? extends K, ? extends V>> evts = handleEvent(ctx, e);
 
