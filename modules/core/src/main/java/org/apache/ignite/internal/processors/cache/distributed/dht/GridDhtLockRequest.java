@@ -32,7 +32,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.CacheMarshallableMessage;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -40,7 +40,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * DHT lock request.
  */
-public class GridDhtLockRequest extends GridDistributedLockRequest implements MarshallableMessage {
+public class GridDhtLockRequest extends GridDistributedLockRequest implements CacheMarshallableMessage {
     /** Invalidate reader flags. */
     @Order(0)
     BitSet invalidateEntries;
