@@ -110,7 +110,9 @@ public class SBLimitedLength extends GridStringBuilder {
             }
             catch (NullPointerException npe) {
                 System.out.println("IGNITE-27232 Current string: " + this);
+                System.out.println("IGNITE-27232 New string: " + str);
                 System.out.println("IGNITE-27232 Current string length: " + length());
+                System.out.println("IGNITE-27232 New string length: " + str.length());
                 System.out.println("IGNITE-27232 Current thread name: " + Thread.currentThread().getName());
                 npe.printStackTrace();
                 throw npe;
