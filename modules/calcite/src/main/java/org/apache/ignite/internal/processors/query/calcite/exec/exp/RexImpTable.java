@@ -263,6 +263,7 @@ import static org.apache.ignite.internal.processors.query.calcite.sql.fun.Ignite
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.QUERY_ENGINE;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.SYSTEM_RANGE;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.TYPEOF;
+import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.XML_TABLE;
 
 /**
  * Contains implementations of Rex operators as Java code.
@@ -568,6 +569,7 @@ public class RexImpTable {
         // System functions.
         final SystemFunctionImplementor sysFunctionImplementor = new SystemFunctionImplementor();
         map.put(SYSTEM_RANGE, sysFunctionImplementor);
+        map.put(XML_TABLE, sysFunctionImplementor);
 
         // Current time functions.
         map.put(CURRENT_TIME, sysFunctionImplementor);
@@ -1748,6 +1750,9 @@ public class RexImpTable {
                     return createTableFunctionImplementor(IgniteMethod.SYSTEM_RANGE3.method())
                         .implement(translator, call, NullAs.NULL);
             }
+            else if (op == XML_TABLE)
+                return createTableFunctionImplementor(IgniteMethod.XML_TABLE.method())
+                    .implement(translator, call, NullAs.NULL);
             else if (op == TYPEOF) {
                 assert call.getOperands().size() == 1 : call.getOperands();
 
