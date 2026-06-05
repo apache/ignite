@@ -62,7 +62,7 @@ public class WindowPlannerTest extends AbstractPlannerTest {
                 "ID", SqlTypeName.INTEGER, "VALUE", SqlTypeName.INTEGER),
             createTable("INDEXED_AFFINITY_TBL", affinity,
                 "ID", SqlTypeName.INTEGER, "VALUE", SqlTypeName.INTEGER)
-                .addIndex("INDEXED_AFFINITY_TBL_IDX", 1),
+                .addIndex(RelCollations.of(TraitUtils.createFieldCollation(1, false)), "INDEXED_AFFINITY_TBL_IDX"),
             createTable("HASH_TBL", hash,
                 "ID", SqlTypeName.INTEGER, "VALUE", SqlTypeName.INTEGER),
             createTable("INDEXED_TBL", IgniteDistributions.single(),

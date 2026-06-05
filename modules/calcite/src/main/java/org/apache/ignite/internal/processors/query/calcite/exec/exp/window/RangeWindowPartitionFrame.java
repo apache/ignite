@@ -56,9 +56,6 @@ final class RangeWindowPartitionFrame<Row> extends WindowFunctionFrame<Row> {
     /** */
     private final boolean cacheableUpperBound;
 
-    /** Total number of peers in the current partition. */
-    private int peerCnt = -1;
-
     /** Cached peer idx for which the frame start row has been computed. */
     private int cachedStartPeerIdx = -1;
 
@@ -70,6 +67,12 @@ final class RangeWindowPartitionFrame<Row> extends WindowFunctionFrame<Row> {
 
     /** Cached end row idx of frame. */
     private int cachedEndIdx;
+
+    /** Index of last processed row in frame start. */
+    private int cachedStartRowIdx = -1;
+
+    /** Index of last processed row in frame end. */
+    private int cachedEndRowIdx = -1;
 
     /** */
     RangeWindowPartitionFrame(
@@ -89,10 +92,11 @@ final class RangeWindowPartitionFrame<Row> extends WindowFunctionFrame<Row> {
 
     /** {@inheritDoc} */
     @Override int getFrameStart(int rowIdx, int peerIdx) {
-        if (cacheableLowerBound && cachedStartPeerIdx == peerIdx)
+        if (cachedStartRowIdx == rowIdx || (cacheableLowerBound && cachedStartPeerIdx == peerIdx))
             return cachedStartIdx;
 
         cachedStartPeerIdx = peerIdx;
+        cachedStartRowIdx = rowIdx;
 
         Row row = get(rowIdx);
         Row lowerBoundRow = lowerBound.apply(row);
@@ -106,10 +110,11 @@ final class RangeWindowPartitionFrame<Row> extends WindowFunctionFrame<Row> {
 
     /** {@inheritDoc} */
     @Override int getFrameEnd(int rowIdx, int peerIdx) {
-        if (cacheableUpperBound && cachedEndPeerIdx == peerIdx)
+        if (cachedEndRowIdx == rowIdx || (cacheableUpperBound && cachedEndPeerIdx == peerIdx))
             return cachedEndIdx;
 
         cachedEndPeerIdx = peerIdx;
+        cachedEndRowIdx = rowIdx;
 
         Row row = get(rowIdx);
         Row upperBoundRow = upperBound.apply(row);
@@ -126,7 +131,8 @@ final class RangeWindowPartitionFrame<Row> extends WindowFunctionFrame<Row> {
         // Reseting index cache.
         cachedStartPeerIdx = -1;
         cachedEndPeerIdx = -1;
-        peerCnt = -1;
+        cachedStartRowIdx = -1;
+        cachedEndRowIdx = -1;
     }
 
     /** Binary search bound. */

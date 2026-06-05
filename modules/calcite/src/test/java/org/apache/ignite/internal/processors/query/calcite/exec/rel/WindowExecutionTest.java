@@ -24,6 +24,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.Window;
@@ -61,25 +63,7 @@ public class WindowExecutionTest extends AbstractExecutionTest {
     /** row_number() over (partition by {0}). */
     @Test
     public void testRowNumber() {
-        Window.RexWinAggCall aggCall = new Window.RexWinAggCall(
-            SqlStdOperatorTable.ROW_NUMBER,
-            relIntType,
-            F.asList(),
-            0,
-            false,
-            false
-        );
-        Window.Group grp = new Window.Group(
-            ImmutableBitSet.of(0),
-            true,
-            UNBOUNDED_PRECEDING,
-            UNBOUNDED_FOLLOWING,
-            RexWindowExclusion.EXCLUDE_NO_OTHER,
-            RelCollations.EMPTY,
-            F.asList(aggCall)
-        );
-
-        checkWindow(grp, true,
+        checkWindow(rowNumber(), true,
             new Object[][] {{1}, {2}, {1}, {2}, {3}, {1}});
     }
 
@@ -508,13 +492,40 @@ public class WindowExecutionTest extends AbstractExecutionTest {
             new Object[][] {{2, 1}, {2, 2}, {6, 1}, {6, 2}, {6, 3}, {3, 1}});
     }
 
+    /** row_number() over (partition by {0}). */
+    @Test
+    public void testStreamLargeInput() {
+        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+        Object[][] exp = IntStream.range(0, 10000)
+            .mapToObj(i -> row(i + 1))
+            .toArray(Object[][]::new);
+
+        checkWindow(ctx, rowNumber(), true, createSeqInputNode(ctx, 10000), exp);
+    }
+
+    /** count(*) over (partition by {0} rows between unbounded prescending and unbounded following). */
+    @Test
+    public void testBufLargeInput() {
+        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+        Object[][] exp = IntStream.range(0, 10000)
+            .mapToObj(i -> row(10000))
+            .toArray(Object[][]::new);
+
+        checkWindow(ctx, count(true, UNBOUNDED_PRECEDING, UNBOUNDED_FOLLOWING), false,
+            createSeqInputNode(ctx, 10000), exp);
+    }
+
     /** */
     private void checkWindow(Window.Group grp, boolean streaming, Object[][] expRes) {
-        Assert.assertEquals(streaming, WindowFunctions.streamable(grp));
-
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+        Node<Object[]> input = createSmallInputNode(ctx);
+        checkWindow(ctx, grp, streaming, input, expRes);
+    }
 
-        Node<Object[]> input = createInputNode(ctx);
+    /** */
+    private void checkWindow(ExecutionContext<Object[]> ctx, Window.Group grp, boolean streaming,
+        Node<Object[]> input, Object[][] expRes) {
+        Assert.assertEquals(streaming, WindowFunctions.streamable(grp));
 
         WindowNode<Object[]> window = createWindowNode(ctx, grp, input);
 
@@ -583,7 +594,7 @@ public class WindowExecutionTest extends AbstractExecutionTest {
     }
 
     /** */
-    private Node<Object[]> createInputNode(ExecutionContext<Object[]> ctx) {
+    private Node<Object[]> createSmallInputNode(ExecutionContext<Object[]> ctx) {
         RelDataType inputRowType = TypeUtils.createRowType(typeFactory, int.class, int.class, int.class, int.class);
         List<Object[]> data = F.asList(
             row(1, 1, 1, 4),
@@ -596,6 +607,14 @@ public class WindowExecutionTest extends AbstractExecutionTest {
         return new ScanNode<>(ctx, inputRowType, data);
     }
 
+    /** */
+    private Node<Object[]> createSeqInputNode(ExecutionContext<Object[]> ctx, int size) {
+        assert size > 0;
+        RelDataType inputRowType = TypeUtils.createRowType(typeFactory, int.class);
+        List<Object[]> data = IntStream.range(0, size).mapToObj(ignored -> row(1)).collect(Collectors.toList());
+        return new ScanNode<>(ctx, inputRowType, data);
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -603,6 +622,27 @@ public class WindowExecutionTest extends AbstractExecutionTest {
     @Override public void setup() throws Exception {
         nodesCnt = 1;
         super.setup();
+    }
+
+    /** row_number() over (partition by {0}). */
+    private static Window.Group rowNumber() {
+        Window.RexWinAggCall aggCall = new Window.RexWinAggCall(
+            SqlStdOperatorTable.ROW_NUMBER,
+            relIntType,
+            F.asList(),
+            0,
+            false,
+            false
+        );
+        return new Window.Group(
+            ImmutableBitSet.of(0),
+            true,
+            UNBOUNDED_PRECEDING,
+            UNBOUNDED_FOLLOWING,
+            RexWindowExclusion.EXCLUDE_NO_OTHER,
+            RelCollations.EMPTY,
+            F.asList(aggCall)
+        );
     }
 
     /**

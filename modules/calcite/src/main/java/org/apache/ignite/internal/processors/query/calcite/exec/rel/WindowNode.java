@@ -79,12 +79,10 @@ public class WindowNode<Row> extends MemoryTrackingNode<Row> implements SingleNo
 
         requested = rowsCnt;
 
-        if (!inLoop) {
+        if (waiting == 0 && outBuf.isEmpty())
+            source().request(waiting = IN_BUFFER_SIZE);
+        else if (!inLoop)
             flush();
-
-            if (waiting == 0)
-                source().request(waiting = IN_BUFFER_SIZE);
-        }
     }
 
     /** {@inheritDoc} */
@@ -103,7 +101,6 @@ public class WindowNode<Row> extends MemoryTrackingNode<Row> implements SingleNo
         else if (prevRow != null && partCmp != null && partCmp.compare(prevRow, row) != 0) {
             part.evalTo(rowFactory, this::appendToOutBuf);
             part.reset();
-            flush();
         }
 
         part.add(row);
@@ -115,11 +112,10 @@ public class WindowNode<Row> extends MemoryTrackingNode<Row> implements SingleNo
 
         prevRow = row;
 
-        if (waiting == 0 && requested > 0) {
-            waiting = IN_BUFFER_SIZE;
-
-            context().execute(() -> source().request(IN_BUFFER_SIZE), this::onError);
-        }
+        if (waiting == 0 && outBuf.isEmpty())
+            source().request(waiting = IN_BUFFER_SIZE);
+        else if (!inLoop)
+            flush();
     }
 
     /** {@inheritDoc} */
@@ -177,12 +173,17 @@ public class WindowNode<Row> extends MemoryTrackingNode<Row> implements SingleNo
                 nodeMemoryTracker.onRowRemoved(row);
                 downstream().push(row);
             }
-
-            if (waiting < 0 && outBuf.isEmpty())
-                downstream().end();
         }
         finally {
             inLoop = false;
+        }
+
+        if (waiting == 0 && outBuf.isEmpty())
+            source().request(waiting = IN_BUFFER_SIZE);
+
+        if (waiting < 0 && requested > 0 && outBuf.isEmpty()) {
+            requested = 0;
+            downstream().end();
         }
     }
 }

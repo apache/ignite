@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
+import java.util.ArrayList;
 import java.util.List;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
@@ -42,7 +43,8 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteC
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.internal.util.collection.IntHashMap;
+import org.apache.ignite.internal.util.collection.IntMap;
 
 import static org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost.AGG_CALL_MEM_COST;
 import static org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost.AVERAGE_FIELD_SIZE;
@@ -135,6 +137,46 @@ public class IgniteWindow extends Window implements IgniteRel {
     }
 
     /** {@inheritDoc} */
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughTraits(RelTraitSet required) {
+        if (required.getConvention() != IgniteConvention.INSTANCE)
+            return null;
+
+        if (!satisfiesDistribution(TraitUtils.distribution(required)))
+            return null;
+
+        RelCollation requiredCollation = TraitUtils.collation(required);
+        RelCollation relCollation = TraitUtils.collation(traitSet);
+        if (satisfiesCollationSansGroupFields(relCollation, requiredCollation))
+            required = required.replace(adjustGroupFieldsCollation(relCollation, requiredCollation));
+        else if (satisfiesCollationSansGroupFields(requiredCollation, relCollation))
+            required = required.replace(truncateCollation(requiredCollation));
+        else
+            return null;
+
+        return Pair.of(required, ImmutableList.of(required));
+    }
+
+    /** {@inheritDoc} */
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> deriveTraits(RelTraitSet childTraits, int childId) {
+        assert childId == 0;
+
+        if (childTraits.getConvention() != IgniteConvention.INSTANCE)
+            return null;
+
+        if (!satisfiesDistribution(TraitUtils.distribution(childTraits)))
+            return null;
+
+        RelCollation childCollation = TraitUtils.collation(childTraits);
+        RelCollation relCollation = TraitUtils.collation(traitSet);
+        if (satisfiesCollationSansGroupFields(relCollation, childCollation))
+            childTraits = childTraits.replace(adjustGroupFieldsCollation(relCollation, childCollation));
+        else if (!satisfiesCollationSansGroupFields(childCollation, relCollation))
+            return null;
+
+        return Pair.of(childTraits, ImmutableList.of(childTraits));
+    }
+
+    /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
 
@@ -153,75 +195,13 @@ public class IgniteWindow extends Window implements IgniteRel {
         return cost;
     }
 
-    /** {@inheritDoc} */
-    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughTraits(RelTraitSet required) {
-        RelTraitSet traits = passThroughOrDerivedTraits(required, true);
-        if (traits == null)
-            return null;
-
-        return Pair.of(traits, ImmutableList.of(traits));
-    }
-
-    /** {@inheritDoc} */
-    @Override public Pair<RelTraitSet, List<RelTraitSet>> deriveTraits(RelTraitSet childTraits, int childId) {
-        assert childId == 0;
-
-        RelTraitSet traits = passThroughOrDerivedTraits(childTraits, false);
-        if (traits == null)
-            return null;
-
-        return Pair.of(traits, ImmutableList.of(traits));
-    }
-
-    /**
-     * Propagates the trait set from the parent to the child, or derives it from the child node.
-     *
-     * <p>The Window node cannot independently satisfy any traits. Therefore:
-     * - Validate that collation and distribution traits are compatible with the Window node.
-     * - If they are not, replace them with suitable traits.
-     * - Request a new trait set from the input accordingly.
-     */
-    private @Nullable RelTraitSet passThroughOrDerivedTraits(RelTraitSet target, boolean passThrough) {
-        if (target.getConvention() != IgniteConvention.INSTANCE)
-            return null;
-
-        RelTraitSet traits = target;
-        RelCollation requiredCollation = TraitUtils.collation(target);
-        if (!satisfiesCollationSansGroupFields(requiredCollation))
-            traits = traits.replace(collation());
-        else if (passThrough) {
-            // In case of pass through, required collation can use fields outside of input row type.
-            // So, we should truncate required collation to input row type.
-            // We do not need any additional range checks, since current collation keys is a prefix to required collation keys.
-            // Therefore, only additional keys in suffix can be removed here.
-            List<RelFieldCollation> requiredCollationFields = requiredCollation.getFieldCollations();
-            for (int i = 0; i < requiredCollationFields.size(); i++) {
-                if (requiredCollationFields.get(i).getFieldIndex() >= input.getRowType().getFieldCount()) {
-                    traits = traits.replace(RelCollations.of(requiredCollationFields.subList(0, i)));
-                    break;
-                }
-            }
-        }
-
-        IgniteDistribution distribution = TraitUtils.distribution(target);
-        if (!satisfiesDistribution(distribution))
-            traits = traits.replace(distribution());
-
-        if (traits == traitSet)
-            // New traits equal to current traits of window.
-            // No need to pass throught or derive any.
-            return null;
-
-        return traits;
-    }
-
     /** Check input distribution satisfies collation of this window. */
-    private boolean satisfiesDistribution(IgniteDistribution desiredDistribution) {
-        if (desiredDistribution.satisfies(IgniteDistributions.single()) || desiredDistribution.function().correlated())
+    private boolean satisfiesDistribution(IgniteDistribution required) {
+        if (required.satisfies(IgniteDistributions.single()) || required.function().correlated())
             return true;
 
-        if (desiredDistribution.getType() == RelDistribution.Type.HASH_DISTRIBUTED)
-            return grp.keys.contains(ImmutableBitSet.of(desiredDistribution.getKeys()));
+        if (required.getType() == RelDistribution.Type.HASH_DISTRIBUTED)
+            return grp.keys.contains(ImmutableBitSet.of(required.getKeys()));
 
         return false;
     }
@@ -232,26 +212,79 @@ public class IgniteWindow extends Window implements IgniteRel {
      * - Group fields sort direction can be changed to desired collation.
      * - Order fields sort direction should be the same as in desired collation.
      */
-    private boolean satisfiesCollationSansGroupFields(RelCollation desiredCollation) {
-        RelCollation collation = collation();
-        if (desiredCollation.satisfies(collation))
+    private boolean satisfiesCollationSansGroupFields(RelCollation left, RelCollation right) {
+        if (left.satisfies(right))
             return true;
 
-        if (desiredCollation.getFieldCollations().size() < collation.getFieldCollations().size())
+        int leftFldCnt = left.getFieldCollations().size();
+        int rightFldCnt = right.getFieldCollations().size();
+        if (leftFldCnt < rightFldCnt)
             return false;
 
         int grpKeysSize = grp.keys.cardinality();
 
+        assert leftFldCnt >= grpKeysSize || rightFldCnt >= grpKeysSize;
+
         // Check group keys (collation field order and direction meaningless).
         // Since window collation starts with group keys with 'default' sorting direction,
         // desired collation should start with same fields in any order / with any direction.
-        ImmutableBitSet desiredGrpFields = ImmutableBitSet.of(Util.first(desiredCollation.getKeys(), grpKeysSize));
-        if (!desiredGrpFields.equals(grp.keys))
+        int rightGrpFldsCnt = Math.min(grpKeysSize, rightFldCnt);
+        ImmutableBitSet leftGrpFlds = ImmutableBitSet.of(Util.first(left.getKeys(), grpKeysSize));
+        ImmutableBitSet rightGrpFlds = ImmutableBitSet.of(Util.first(right.getKeys(), Math.min(grpKeysSize, rightGrpFldsCnt)));
+        if (!leftGrpFlds.contains(rightGrpFlds))
             return false;
+        else if (grpKeysSize >= rightGrpFldsCnt)
+            return true;
 
         // Check remaining collation (collation field order and direction meaningfull).
-        List<RelFieldCollation> desiredFieldCollations = Util.skip(desiredCollation.getFieldCollations(), grpKeysSize);
-        List<RelFieldCollation> fieldCollations = Util.skip(collation.getFieldCollations(), grpKeysSize);
-        return Util.startsWith(desiredFieldCollations, fieldCollations);
+        List<RelFieldCollation> leftFldCollations = Util.skip(left.getFieldCollations(), grpKeysSize);
+        List<RelFieldCollation> rightFldCollations = Util.skip(right.getFieldCollations(), grpKeysSize);
+        return Util.startsWith(rightFldCollations, leftFldCollations);
+    }
+
+    /** */
+    private RelCollation adjustGroupFieldsCollation(RelCollation relCollation, RelCollation requiredCollation) {
+        // Current collation satisfies required collation, but group fields in prefix may have invalid field collation.
+        // So, we should replace it with field collation from required.
+        List<RelFieldCollation> fldCollations = new ArrayList<>(relCollation.getFieldCollations().size());
+
+        int grpFldCnt = grp.keys.cardinality();
+        IntMap<RelFieldCollation> currGrpFldCollations = new IntHashMap<>(grpFldCnt);
+        for (int i = 0; i < grpFldCnt; i++) {
+            RelFieldCollation grpFldCollation = relCollation.getFieldCollations().get(i);
+            currGrpFldCollations.put(grpFldCollation.getFieldIndex(), grpFldCollation);
+        }
+
+        int requiredGrpFldCnt = Math.min(requiredCollation.getFieldCollations().size(), grpFldCnt);
+        for (int i = 0; i < requiredGrpFldCnt; i++) {
+            RelFieldCollation requiredGrpFldCollation = requiredCollation.getFieldCollations().get(i);
+            fldCollations.add(requiredGrpFldCollation);
+
+            assert currGrpFldCollations.containsKey(requiredGrpFldCollation.getFieldIndex());
+            currGrpFldCollations.remove(requiredGrpFldCollation.getFieldIndex());
+        }
+
+        // Add remaining group fields collation.
+        fldCollations.addAll(currGrpFldCollations.values());
+
+        // Add remaining fields collation.
+        fldCollations.addAll(Util.skip(relCollation.getFieldCollations(), grpFldCnt));
+
+        return RelCollations.of(fldCollations);
+    }
+
+    /** */
+    private RelCollation truncateCollation(RelCollation requiredCollation) {
+        // In case of pass through, required collation can use fields outside of input row type.
+        // So, we should truncate required collation to input row type.
+        // We do not need any additional range checks, since current collation keys is a prefix to required collation keys.
+        // Therefore, only additional keys in suffix can be removed here.
+        List<RelFieldCollation> requiredCollationFields = requiredCollation.getFieldCollations();
+        for (int i = 0; i < requiredCollationFields.size(); i++) {
+            if (requiredCollationFields.get(i).getFieldIndex() >= input.getRowType().getFieldCount()) {
+                return RelCollations.of(requiredCollationFields.subList(0, i));
+            }
+        }
+        return requiredCollation;
     }
 }
