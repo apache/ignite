@@ -163,15 +163,19 @@ public class IgniteWindow extends Window implements IgniteRel {
         if (childTraits.getConvention() != IgniteConvention.INSTANCE)
             return null;
 
-        if (!satisfiesDistribution(TraitUtils.distribution(childTraits)))
-            return null;
-
         RelCollation childCollation = TraitUtils.collation(childTraits);
         RelCollation relCollation = TraitUtils.collation(traitSet);
         if (satisfiesCollationSansGroupFields(relCollation, childCollation))
             childTraits = childTraits.replace(adjustGroupFieldsCollation(relCollation, childCollation));
         else if (!satisfiesCollationSansGroupFields(childCollation, relCollation))
             return null;
+
+        // If a child node has the appropriate collation but not the required distribution
+        // (e.g., a randomly distributed table that has the index we need),
+        // we can use its collation to eliminate extra sorting.
+        // However, we must then replace the distribution with our desired one.
+        if (!satisfiesDistribution(TraitUtils.distribution(childTraits)))
+            childTraits = childTraits.replace(distribution());
 
         return Pair.of(childTraits, ImmutableList.of(childTraits));
     }
@@ -233,7 +237,8 @@ public class IgniteWindow extends Window implements IgniteRel {
         ImmutableBitSet rightGrpFlds = ImmutableBitSet.of(Util.first(right.getKeys(), Math.min(grpKeysSize, rightGrpFldsCnt)));
         if (!leftGrpFlds.contains(rightGrpFlds))
             return false;
-        else if (grpKeysSize >= rightGrpFldsCnt)
+        else if (grpKeysSize >= rightFldCnt)
+            // Right collation fiels in group keys only
             return true;
 
         // Check remaining collation (collation field order and direction meaningfull).

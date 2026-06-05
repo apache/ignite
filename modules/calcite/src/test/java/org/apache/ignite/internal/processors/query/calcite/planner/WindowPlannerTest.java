@@ -1,4 +1,5 @@
 
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,74 +19,90 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Predicate;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
+import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.Window;
 import org.apache.calcite.rex.RexLiteral;
+import org.apache.calcite.rex.RexWindowBound;
+import org.apache.calcite.sql.SqlAggFunction;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteWindow;
+import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteColocatedAggregateBase;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
-import org.junit.Before;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.util.function.Predicate.not;
+import static org.apache.calcite.rex.RexWindowBounds.CURRENT_ROW;
+import static org.apache.calcite.rex.RexWindowBounds.UNBOUNDED_FOLLOWING;
+import static org.apache.calcite.rex.RexWindowBounds.UNBOUNDED_PRECEDING;
 
 /** */
 public class WindowPlannerTest extends AbstractPlannerTest {
-    /** Public schema. */
-    private IgniteSchema publicSchema;
-
-    /** */
-    private final IgniteDistribution affinity = IgniteDistributions.affinity(1, "affinity_tbl", "hash");
-
-    /** */
-    private final IgniteDistribution hash = IgniteDistributions.hash(ImmutableIntList.of(0));
-
-    /** {@inheritDoc} */
-    @Before
-    @Override public void setup() {
-        super.setup();
-        publicSchema = createSchema(
-            createTable("RANDOM_TBL", IgniteDistributions.random(),
-                "ID", SqlTypeName.INTEGER, "VALUE", SqlTypeName.INTEGER),
-            createTable("SINGLE_TBL", IgniteDistributions.single(),
-                "ID", SqlTypeName.INTEGER, "VALUE", SqlTypeName.INTEGER),
-            createTable("AFFINITY_TBL", affinity,
-                "ID", SqlTypeName.INTEGER, "VALUE", SqlTypeName.INTEGER),
-            createTable("INDEXED_AFFINITY_TBL", affinity,
-                "ID", SqlTypeName.INTEGER, "VALUE", SqlTypeName.INTEGER)
-                .addIndex(RelCollations.of(TraitUtils.createFieldCollation(1, false)), "INDEXED_AFFINITY_TBL_IDX"),
-            createTable("HASH_TBL", hash,
-                "ID", SqlTypeName.INTEGER, "VALUE", SqlTypeName.INTEGER),
-            createTable("INDEXED_TBL", IgniteDistributions.single(),
-                "ID1", SqlTypeName.INTEGER, "ID2", SqlTypeName.INTEGER, "ID3", SqlTypeName.INTEGER)
-                .addIndex("INDEXED_TBL_IDX", 1, 0, 2)
+    /**
+     * @throws Exception if failed
+     */
+    @Test
+    public void testSplitWindowRelsByGroup() throws Exception {
+        IgniteSchema schema = createSchema(
+            createTable("TBL", IgniteDistributions.single(),
+                "A", SqlTypeName.INTEGER, "B", SqlTypeName.INTEGER,
+                "C", SqlTypeName.INTEGER, "D", SqlTypeName.INTEGER)
         );
+
+        String sql = "SELECT " +
+            "SUM(d) OVER (PARTITION BY a, b ORDER BY c, d), " +
+            "ROW_NUMBER() OVER (), " +
+            "MIN(a) OVER (PARTITION BY a, b ORDER BY c, d), " +
+            "MAX(a) OVER (PARTITION BY a, b ORDER BY c, d RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING)" +
+            "FROM TBL";
+        assertPlan(sql, schema,
+            nodeOrAnyChild(isInstanceOf(IgniteWindow.class)
+                .and(isWindow(F.asList(0, 1), F.asList(0, 1, 2, 3), CURRENT_ROW, UNBOUNDED_FOLLOWING,
+                    SqlStdOperatorTable.MAX)))
+                .and(nodeOrAnyChild(isInstanceOf(IgniteWindow.class)
+                    .and(IgniteWindow::isStreaming)
+                    .and(isWindow(F.asList(), F.asList(0, 1, 2, 3), UNBOUNDED_PRECEDING, CURRENT_ROW, SqlStdOperatorTable.ROW_NUMBER))))
+                .and(nodeOrAnyChild(isInstanceOf(IgniteWindow.class)
+                    .and(not(IgniteWindow::isStreaming))
+                    .and(isWindow(F.asList(0, 1), F.asList(0, 1, 2, 3), UNBOUNDED_PRECEDING, CURRENT_ROW,
+                        SqlStdOperatorTable.COUNT, SqlStdOperatorTable.SUM, SqlStdOperatorTable.MIN)))));
     }
 
     /**
      * @throws Exception if failed
      */
     @Test
-    public void testSplitWindowRelsByGroup() throws Exception {
-        String sql = "SELECT SUM(VALUE) OVER (PARTITION BY ID), ROW_NUMBER() OVER (), " +
-            "MIN(VALUE) OVER (PARTITION BY ID) FROM SINGLE_TBL";
+    public void testMergeWindowRelsByGroup() throws Exception {
+        // Different agg calls but with the same window definition.
+        IgniteSchema schema = createSchema(
+            createTable("TBL", IgniteDistributions.single(),
+                "A", SqlTypeName.INTEGER, "B", SqlTypeName.INTEGER)
+        );
 
-        assertPlan(sql, publicSchema,
+        String sql = "SELECT " +
+            "SUM(a) OVER (PARTITION BY a ORDER BY b ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING), " +
+            "MIN(b) OVER (PARTITION BY a ORDER BY b ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) " +
+            "FROM TBL";
+        assertPlan(sql, schema,
             hasChildThat(isInstanceOf(IgniteWindow.class)
-                .and(IgniteWindow::isStreaming)
-                .and(it -> "window(rows between UNBOUNDED PRECEDING and CURRENT ROW aggs [ROW_NUMBER()])".equals(it.getGroup().toString()))
-                .and(hasChildThat(isInstanceOf(IgniteWindow.class)
-                    .and(not(IgniteWindow::isStreaming))
-                    .and(it -> "window(partition {0} aggs [COUNT($1), SUM($1), MIN($1)])".equals(it.getGroup().toString()))))));
+                .and(hasChildThat(isInstanceOf(IgniteWindow.class)).negate())));
     }
 
     /**
@@ -93,11 +110,15 @@ public class WindowPlannerTest extends AbstractPlannerTest {
      */
     @Test
     public void testProjectWindowConstantsUsedInAggCalls() throws Exception {
-        String sql = "SELECT ID, VALUE, " +
-            "MAX(2) OVER (PARTITION BY ID ORDER BY VALUE ROWS BETWEEN 10 PRECEDING AND 20 FOLLOWING) " +
-            "FROM SINGLE_TBL";
+        IgniteSchema schema = createSchema(
+            createTable("TBL", IgniteDistributions.single(),
+                "A", SqlTypeName.INTEGER, "B", SqlTypeName.INTEGER)
+        );
 
-        assertPlan(sql, publicSchema,
+        String sql = "SELECT a, b, " +
+            "MAX(2) OVER (PARTITION BY a ORDER BY b ROWS BETWEEN 10 PRECEDING AND 20 FOLLOWING) " +
+            "FROM TBL";
+        assertPlan(sql, schema,
             isInstanceOf(IgniteProject.class)
                 // The top project should remove constants from the window rel on position 2..4.
                 .and(project -> "[$0, $1, $3]".equals(project.getProjects().toString()))
@@ -115,71 +136,162 @@ public class WindowPlannerTest extends AbstractPlannerTest {
      */
     @Test
     public void testProjectWindowConstantsUnusedInAggCalls() throws Exception {
-        String sql = "SELECT ID, VALUE, " +
-            "MAX(VALUE) OVER (PARTITION BY ID ORDER BY VALUE ROWS BETWEEN 10 PRECEDING AND 20 FOLLOWING) " +
-            "FROM SINGLE_TBL";
+        IgniteSchema schema = createSchema(
+            createTable("TBL", IgniteDistributions.single(),
+                "A", SqlTypeName.INTEGER, "B", SqlTypeName.INTEGER)
+        );
 
-        assertPlan(sql, publicSchema,
+        String sql = "SELECT a, b, " +
+            "MAX(a) OVER (PARTITION BY a ORDER BY b ROWS BETWEEN 10 PRECEDING AND 20 FOLLOWING) " +
+            "FROM TBL";
+        assertPlan(sql, schema,
             isInstanceOf(IgniteWindow.class)
                     .and(it -> it.getGroup().lowerBound.getOffset() instanceof RexLiteral
                         && it.getGroup().upperBound.getOffset() instanceof RexLiteral)
                     .and(not(hasChildThat(isInstanceOf(IgniteProject.class)))),
-            "ProjectTableScanMergeRule", "ProjectTableScanMergeSkipCorrelatedRule", "ProjectMergeRule", "ProjectWindowTransposeRule");
+            "ProjectTableScanMergeRule", "ProjectMergeRule", "ProjectWindowTransposeRule");
     }
 
     /**
      * @throws Exception if failed
      */
     @Test
-    public void testProjectWindowTranspose() throws Exception {
-        String sql = "SELECT MAX(VALUE) OVER (ORDER BY VALUE ROWS BETWEEN VALUE PRECEDING AND 10 FOLLOWING) FROM SINGLE_TBL";
-
-        assertPlan(sql, publicSchema,
-            hasChildThat(isInstanceOf(IgniteWindow.class)
-                .and(hasChildThat(isInstanceOf(IgniteProject.class)
-                    // ProjectWindowTransposeRule should eliminate constant (10) in projection.
-                    .and(project -> project.getProjects().stream().noneMatch(it -> it instanceof RexLiteral))))),
-            "ProjectTableScanMergeRule", "ProjectTableScanMergeSkipCorrelatedRule");
-    }
-
-    /**
-     * @throws Exception if failed
-     */
-    @Test
-    public void testOrderByWithWindow() throws Exception {
-        String sql = "SELECT MAX(VALUE) OVER (PARTITION BY ID) FROM RANDOM_TBL ORDER BY ID DESC, VALUE";
+    public void testPassThroughOrderByWithWindow() throws Exception {
+        IgniteSchema schema = createSchema(
+            createTable("TBL", IgniteDistributions.random(),
+                "A", SqlTypeName.INTEGER, "B", SqlTypeName.INTEGER, "C", SqlTypeName.INTEGER)
+        );
 
         RelCollation derivedCollation = RelCollations.of(
             TraitUtils.createFieldCollation(0, false),
             TraitUtils.createFieldCollation(1, true)
         );
-        assertPlan(sql, publicSchema,
-            nodeOrAnyChild(isInstanceOf(IgniteWindow.class)
-                .and(window -> window.collation().equals(derivedCollation))
-                .and(input(isInstanceOf(IgniteExchange.class)))
-                .and(exchange -> exchange.collation().equals(derivedCollation))));
+
+        String sql = "SELECT MAX(c) OVER (PARTITION BY a ORDER BY b) FROM tbl ORDER BY a DESC, b";
+        assertPlan(sql, schema,
+            nodeOrAnyChild(isInstanceOf(IgniteSort.class).negate())
+                .and(hasChildThat(isInstanceOf(IgniteWindow.class)
+                    .and(window -> window.collation().equals(derivedCollation))
+                    .and(input(isInstanceOf(IgniteExchange.class)
+                        .and(exchange -> exchange.collation().equals(derivedCollation)))))));
     }
 
     /**
      * @throws Exception if failed
      */
     @Test
-    public void testHashTableAndWindow() throws Exception {
-        String sql = "SELECT FIRST_VALUE(VALUE) OVER (PARTITION BY ID) FROM HASH_TBL";
+    public void testNotPassThroughOrderByWithWindow() throws Exception {
+        IgniteSchema schema = createSchema(
+            createTable("TBL", IgniteDistributions.random(),
+                "A", SqlTypeName.INTEGER, "B", SqlTypeName.INTEGER, "C", SqlTypeName.INTEGER)
+        );
 
-        assertPlan(sql, publicSchema, isInstanceOf(IgniteExchange.class)
+        RelCollation windowCollation = RelCollations.of(
+            TraitUtils.createFieldCollation(0, true),
+            TraitUtils.createFieldCollation(1, false)
+        );
+
+        Predicate<RelNode> predicate = nodeOrAnyChild(isInstanceOf(IgniteSort.class)
+            .and(not(sort -> sort.collation().equals(windowCollation)))
             .and(hasChildThat(isInstanceOf(IgniteWindow.class)
-                .and(hasDistribution(hash)))));
+                .and(window -> window.collation().equals(windowCollation))
+                .and(hasChildThat(isInstanceOf(IgniteSort.class)
+                    .and(sort -> sort.collation().equals(windowCollation)))))));
+
+        String sql = "SELECT MAX(b) OVER (PARTITION BY a ORDER BY b DESC) FROM tbl ORDER BY a, c, b DESC";
+        assertPlan(sql, schema, predicate);
+
+        sql = "SELECT MAX(b) OVER (PARTITION BY a ORDER BY b DESC) FROM tbl ORDER BY a, c";
+        assertPlan(sql, schema, predicate);
+
+        sql = "SELECT MAX(b) OVER (PARTITION BY a ORDER BY b DESC) FROM tbl ORDER BY a, b";
+        assertPlan(sql, schema, predicate);
     }
 
     /**
      * @throws Exception if failed
      */
     @Test
-    public void testHashTableWithAnotherDistAndWindow() throws Exception {
-        String sql = "SELECT FIRST_VALUE(VALUE) OVER (PARTITION BY VALUE) FROM HASH_TBL";
+    public void testHashTableDistributionAndWindow() throws Exception {
+        IgniteDistribution hash = IgniteDistributions.hash(ImmutableIntList.of(0));
 
-        assertPlan(sql, publicSchema, hasChildThat(isInstanceOf(IgniteWindow.class)
+        RelCollation collation = RelCollations.of(
+            TraitUtils.createFieldCollation(1, false),
+            TraitUtils.createFieldCollation(0, false)
+        );
+
+        IgniteSchema schema = createSchema(
+            createTable("TBL", hash,
+                "A", SqlTypeName.INTEGER, "B", SqlTypeName.INTEGER)
+                .addIndex(collation, "TBL_IDX")
+        );
+
+        checkDistributionAndCollationDeriviation(schema, hash, collation);
+    }
+
+    /**
+     * @throws Exception if failed
+     */
+    @Test
+    public void testAffinityTableDistributionAndWindow() throws Exception {
+        IgniteDistribution aff = IgniteDistributions.affinity(0, "affinity_tbl", "hash");
+
+        RelCollation collation = RelCollations.of(
+            TraitUtils.createFieldCollation(1, false),
+            TraitUtils.createFieldCollation(0, false)
+        );
+
+        IgniteSchema schema = createSchema(
+            createTable("TBL", aff,
+                "A", SqlTypeName.INTEGER, "B", SqlTypeName.INTEGER)
+                .addIndex(collation, "TBL_IDX")
+        );
+
+        checkDistributionAndCollationDeriviation(schema, aff, collation);
+    }
+
+    /** */
+    private void checkDistributionAndCollationDeriviation(IgniteSchema schema, IgniteDistribution dist,
+        RelCollation collation) throws Exception {
+        // Both collation and distribution derivation.
+        String sql = "SELECT FIRST_VALUE(b) OVER (PARTITION BY a, b) FROM tbl";
+        assertPlan(sql, schema, isInstanceOf(IgniteExchange.class)
+            .and(hasChildThat(isInstanceOf(IgniteWindow.class)
+                .and(hasDistribution(dist))
+                .and(window -> window.collation().equals(collation))
+                .and(hasChildThat(isIndexScan("TBL", "TBL_IDX"))))));
+
+        // Collation only deriviation.
+        sql = "SELECT FIRST_VALUE(b) OVER (PARTITION BY b ORDER BY a DESC) FROM tbl";
+        assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(IgniteWindow.class)
+            .and(window -> window.collation().equals(collation))
+            .and(hasChildThat(isInstanceOf(IgniteExchange.class)))));
+
+        // Distribution only deriviation.
+        sql = "SELECT FIRST_VALUE(b) OVER (PARTITION BY a ORDER BY a DESC) FROM tbl";
+        assertPlan(sql, schema, isInstanceOf(IgniteExchange.class)
+            .and(hasChildThat(isInstanceOf(IgniteWindow.class))
+                .and(hasChildThat(isInstanceOf(IgniteSort.class)))));
+
+        // None deriviation.
+        sql = "SELECT FIRST_VALUE(b) OVER (PARTITION BY b ORDER BY a) FROM tbl";
+        assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(IgniteWindow.class)
+            .and(hasChildThat(isInstanceOf(IgniteExchange.class)))
+            .and(hasChildThat(isInstanceOf(IgniteSort.class)))));
+    }
+
+    /**
+     * @throws Exception if failed
+     */
+    @Test
+    public void testHashTableAndWindowWithAnotherDistribution() throws Exception {
+        IgniteSchema schema = createSchema(
+            createTable("TBL", IgniteDistributions.hash(ImmutableIntList.of(0)),
+                "A", SqlTypeName.INTEGER, "B", SqlTypeName.INTEGER)
+        );
+
+        String sql = "SELECT FIRST_VALUE(a) OVER (PARTITION BY b) FROM tbl";
+        assertPlan(sql, schema, hasChildThat(isInstanceOf(IgniteWindow.class)
             .and(hasDistribution(IgniteDistributions.single())))
             .and(hasChildThat(isInstanceOf(IgniteExchange.class))));
     }
@@ -188,13 +300,47 @@ public class WindowPlannerTest extends AbstractPlannerTest {
      * @throws Exception if failed
      */
     @Test
-    public void testIndexedAffinityTableAndWindow() throws Exception {
-        String sql = "SELECT MAX(ID) OVER (PARTITION BY VALUE) FROM (SELECT * FROM INDEXED_AFFINITY_TBL) S";
+    public void testIndexedTableAndWindow() throws Exception {
+        IgniteSchema schema = createSchema(
+            createTable("TBL", IgniteDistributions.single(),
+                "A", SqlTypeName.INTEGER, "B", SqlTypeName.INTEGER, "C", SqlTypeName.INTEGER)
+                .addIndex("TBL_IDX", 1, 0, 2)
+        );
 
-        assertPlan(sql, publicSchema, isInstanceOf(IgniteExchange.class)
+        // Should derive collation (can use index scan).
+        String sql = "SELECT row_number() OVER (PARTITION BY a, b ORDER BY c) FROM tbl";
+        assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(IgniteWindow.class)
+            .and(input(isIndexScan("TBL", "TBL_IDX")))));
+
+        // Should not derive collation (cannot use index scan).
+        sql = "SELECT row_number() OVER (PARTITION BY a, c) FROM tbl";
+        assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(IgniteWindow.class)
+            .and(input(isIndexScan("TBL", "TBL_IDX")).negate())));
+    }
+
+    /**
+     * @throws Exception if failed
+     */
+    @Test
+    public void testIndexedAffinityTableAndWindow() throws Exception {
+        IgniteDistribution aff = IgniteDistributions.affinity(0, "tbl", "hash");
+        RelCollation collation = TraitUtils.createCollation(F.asList(0, 1, 2));
+
+        IgniteSchema schema = createSchema(
+            createTable("TBL", aff,
+                "A", SqlTypeName.INTEGER, "B", SqlTypeName.INTEGER, "C", SqlTypeName.INTEGER)
+                .addIndex(collation, "TBL_IDX")
+        );
+
+        // Affinity distribution and index collation deriviation.
+        // Table index cover more columns than partition/order by,
+        // table index has different directions than partition fields.
+        String sql = "SELECT MAX(c) OVER (PARTITION BY a ORDER BY b) FROM (SELECT * FROM tbl) S";
+        assertPlan(sql, schema, isInstanceOf(IgniteExchange.class)
             .and(input(hasChildThat(isInstanceOf(IgniteWindow.class)
-                .and(hasDistribution(affinity))
-                .and(input(isIndexScan("INDEXED_AFFINITY_TBL", "INDEXED_AFFINITY_TBL_IDX")))))));
+                .and(it -> it.collation().equals(collation))
+                .and(hasDistribution(aff))
+                .and(input(isIndexScan("TBL", "TBL_IDX")))))));
     }
 
     /**
@@ -202,10 +348,15 @@ public class WindowPlannerTest extends AbstractPlannerTest {
      */
     @Test
     public void testCorrelatedSubqueryWithWindow() throws Exception {
-        String sql = "SELECT ID, (SELECT row_number() OVER (ORDER BY ID)) FROM RANDOM_TBL i1 ORDER BY ID";
+        IgniteSchema schema = createSchema(
+            createTable("TBL", IgniteDistributions.single(),
+                "A", SqlTypeName.INTEGER, "B", SqlTypeName.INTEGER)
+        );
 
-        assertPlan(sql, publicSchema, nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
-            .and(input(0, nodeOrAnyChild(isTableScan("random_tbl"))))
+        String sql = "SELECT a, (SELECT row_number() OVER (ORDER BY a)) FROM tbl ORDER BY a";
+
+        assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
+            .and(input(0, nodeOrAnyChild(isTableScan("TBL"))))
             .and(input(1, nodeOrAnyChild(isInstanceOf(IgniteWindow.class))))));
     }
 
@@ -213,54 +364,23 @@ public class WindowPlannerTest extends AbstractPlannerTest {
      * @throws Exception if failed
      */
     @Test
-    public void testWindowCollationAndCompatibleTableIndex() throws Exception {
-        String sql = "SELECT row_number() OVER (PARTITION BY ID1, ID2 ORDER BY ID3) FROM INDEXED_TBL";
-
-        assertPlan(sql, publicSchema, nodeOrAnyChild(isInstanceOf(IgniteWindow.class)
-            .and(input(isIndexScan("INDEXED_TBL", "INDEXED_TBL_IDX")))));
-    }
-
-    /**
-     * @throws Exception if failed
-     */
-    @Test
-    public void testWindowCollationAndIncompatibleTableIndex() throws Exception {
-        String sql = "SELECT row_number() OVER (PARTITION BY ID3, ID2 ORDER BY ID1) FROM INDEXED_TBL";
-
-        assertPlan(sql, publicSchema, nodeOrAnyChild(isInstanceOf(IgniteWindow.class)
-            .and(input(not(isIndexScan("INDEXED_TBL", "INDEXED_TBL_IDX"))))));
-    }
-
-    /**
-     * @throws Exception if failed
-     */
-    @Test
     public void testPassThroughCollationWiderThanInputRow() throws Exception {
-        String sql = "SELECT ID, VALUE, row_number() OVER (ORDER BY ID) FROM RANDOM_TBL ORDER BY 1, 3, 2";
+        IgniteSchema schema = createSchema(
+            createTable("TBL", IgniteDistributions.single(),
+                "A", SqlTypeName.INTEGER, "B", SqlTypeName.INTEGER)
+        );
+
+        String sql = "SELECT a, b, row_number() OVER (ORDER BY a) FROM tbl ORDER BY 1, 3, 2";
 
         RelCollation sortCollation = TraitUtils.createCollation(F.asList(0, 2, 1));
+        RelCollation windowCollation = TraitUtils.createCollation(F.asList(0));
 
-        RelCollation derivedCollation = TraitUtils.createCollation(F.asList(0));
-
-        assertPlan(sql, publicSchema, nodeOrAnyChild(isInstanceOf(IgniteSort.class)
+        assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(IgniteSort.class)
             .and(it -> it.collation().equals(sortCollation))
             .and(input(isInstanceOf(IgniteWindow.class)
-                .and(it -> it.collation().equals(derivedCollation))
+                .and(it -> it.collation().equals(windowCollation))
                 .and(input(nodeOrAnyChild(isInstanceOf(IgniteSort.class)
-                    .and(it -> it.collation().equals(derivedCollation)))))))));
-    }
-
-    /**
-     * @throws Exception if failed
-     */
-    @Test
-    public void testDeriveAffinityDistribution() throws Exception {
-        String sql = "SELECT row_number() OVER (PARTITION BY VALUE ORDER BY ID) FROM AFFINITY_TBL";
-
-        assertPlan(sql, publicSchema, nodeOrAnyChild(isInstanceOf(IgniteWindow.class)
-            .and(it -> it.distribution().equals(affinity))
-            .and(input(isInstanceOf(IgniteSort.class)
-                .and(it -> it.distribution().equals(affinity))))));
+                    .and(it -> it.collation().equals(windowCollation)))))))));
     }
 
     /**
@@ -268,11 +388,68 @@ public class WindowPlannerTest extends AbstractPlannerTest {
      */
     @Test
     public void testConstantsInPartitionByAndOrderBy() throws Exception {
-        String sql = "SELECT MAX(VALUE) OVER (PARTITION BY 1 ORDER BY 2) FROM AFFINITY_TBL";
+        IgniteSchema schema = createSchema(
+            createTable("TBL", IgniteDistributions.single(),
+                "A", SqlTypeName.INTEGER)
+        );
 
-        assertPlan(sql, publicSchema, nodeOrAnyChild(isInstanceOf(IgniteWindow.class)
+        String sql = "SELECT MAX(a) OVER (PARTITION BY 1 ORDER BY 2) FROM tbl";
+
+        assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(IgniteWindow.class)
             .and(it -> it.getGroup().keys.isEmpty()
                 && it.collation().getKeys().isEmpty())
             .and(not(input(nodeOrAnyChild(isInstanceOf(IgniteProject.class)))))));
+    }
+
+    /**
+     * @throws Exception if failed
+     */
+    @Test
+    public void testCorrelatedDistribution() throws Exception {
+        IgniteSchema schema = createSchema(
+            createTable("TA1", IgniteDistributions.affinity(0, "cache1", "hash"),
+                "A", Integer.class, "B", Integer.class, "C", Integer.class),
+            createTable("TA2", IgniteDistributions.affinity(1, "cache2", "hash"),
+                "A", Integer.class, "B", Integer.class, "C", Integer.class),
+            createTable("TH1", IgniteDistributions.hash(Arrays.asList(0, 1)),
+                "A", Integer.class, "B", Integer.class, "C", Integer.class),
+            createTable("TH2", IgniteDistributions.hash(Arrays.asList(1, 2)),
+                "A", Integer.class, "B", Integer.class, "C", Integer.class)
+        );
+
+        Predicate<RelNode> colocatedPredicate = nodeOrAnyChild(isInstanceOf(IgniteColocatedAggregateBase.class)
+            .and(hasChildThat(isInstanceOf(IgniteExchange.class)).negate())
+            .and(hasChildThat(isInstanceOf(IgniteWindow.class))
+                .and(window -> TraitUtils.correlation(window).correlated())));
+
+        // Affinity distribution and window with one correlated variable.
+        String sql = "SELECT a FROM ta1 WHERE EXISTS (SELECT s.a FROM ( " +
+            "SELECT a, ROW_NUMBER() OVER ( PARTITION BY ta1.a ORDER BY ta2.b ) rn " +
+            "FROM ta2 WHERE ta2.b = ta1.a) s WHERE rn > 1 )";
+        assertPlan(sql, schema, colocatedPredicate);
+
+        // Hash distribution on two columns and window without correlated variables.
+        sql = "SELECT a FROM th1 WHERE EXISTS (SELECT s.a FROM ( " +
+            "SELECT a, ROW_NUMBER() OVER ( PARTITION BY th2.a ORDER BY th2.b ) rn " +
+            "FROM th2 WHERE th2.b = th1.a AND th2.c = th1.b) s WHERE rn > 1 )";
+        assertPlan(sql, schema, colocatedPredicate);
+
+        // Hash distribution on two columns and window with two correlated variables.
+        sql = "SELECT a FROM th1 WHERE EXISTS (SELECT s.a FROM ( " +
+            "SELECT a, ROW_NUMBER() OVER ( PARTITION BY th1.a ORDER BY th1.b ) rn " +
+            "FROM th2 WHERE th2.b = th1.a AND th2.c = th1.b) s WHERE rn > 1 )";
+        assertPlan(sql, schema, colocatedPredicate);
+    }
+
+    /** */
+    private Predicate<IgniteWindow> isWindow(List<Integer> keys, @Nullable List<Integer> collation,
+        RexWindowBound lower, RexWindowBound upper, SqlAggFunction... functions) {
+        return isInstanceOf(IgniteWindow.class)
+            .and(window -> ImmutableBitSet.of(keys).equals(window.getGroup().keys))
+            .and(window -> TraitUtils.createCollation(collation).equals(window.collation()))
+            .and(window -> lower.equals(window.getGroup().lowerBound))
+            .and(window -> upper.equals(window.getGroup().upperBound))
+            .and(window -> F.asList(functions).equals(
+                Commons.transform(window.getGroup().aggCalls, Window.RexWinAggCall::getOperator)));
     }
 }
