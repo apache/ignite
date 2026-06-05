@@ -105,9 +105,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <systemPropertyVariables>
-                        <java.util.logging.config.file>
-                            ${project.basedir}/src/test/resources/config/java.util.logging.properties
-                        </java.util.logging.config.file>
+                        <java.util.logging.config.file>${project.build.testOutputDirectory}/config/java.util.logging.properties</java.util.logging.config.file>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
