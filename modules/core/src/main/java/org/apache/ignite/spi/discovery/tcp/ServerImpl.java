@@ -255,6 +255,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     private long connCheckTick;
 
     /** */
+    @GridToStringExclude
     private final IgniteThreadPoolExecutor utilityPool;
 
     /** Pool size to ping remote DC if a corner node loses the ring connection. */
@@ -292,6 +293,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     private StatisticsPrinter statsPrinter;
 
     /** Metric for max message queue size. */
+    @GridToStringExclude
     private MaxValueMetric maxMsgQueueSizeMetric;
 
     /** Failed nodes (but still in topology). */
@@ -310,6 +312,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     private Queue<TcpDiscoveryCustomEventMessage> pendingCustomMsgs = new ArrayDeque<>();
 
     /** Messages history used for client reconnect. */
+    @GridToStringExclude
     private final EnsuredMessageHistory msgHist = new EnsuredMessageHistory();
 
     /** If non-shared IP finder is used this flag shows whether IP finder contains local address. */
