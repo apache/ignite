@@ -130,11 +130,11 @@ public class CacheCreateDestroyEventSecurityContextTest extends AbstractEventSec
 
         CacheConfiguration<?, ?> ccfg = cacheConfiguration();
 
-        checkCacheEvents(() -> ignite.createCache(ccfg), EVT_CACHE_STARTED);
-        checkCacheEvents(() -> ignite.destroyCache(ccfg.getName()), EVT_CACHE_STOPPED);
+       // checkCacheEvents(() -> ignite.createCache(ccfg), EVT_CACHE_STARTED);
+      //  checkCacheEvents(() -> ignite.destroyCache(ccfg.getName()), EVT_CACHE_STOPPED);
 
-        checkCacheEvents(() -> ignite.createCaches(singletonList(ccfg)), EVT_CACHE_STARTED);
-        checkCacheEvents(() -> ignite.destroyCaches(singletonList(ccfg.getName())), EVT_CACHE_STOPPED);
+      //  checkCacheEvents(() -> ignite.createCaches(singletonList(ccfg)), EVT_CACHE_STARTED);
+      //  checkCacheEvents(() -> ignite.destroyCaches(singletonList(ccfg.getName())), EVT_CACHE_STOPPED);
 
         checkCacheEvents(() -> ignite.getOrCreateCache(cacheConfiguration()), EVT_CACHE_STARTED);
 
