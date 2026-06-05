@@ -27,13 +27,13 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.CacheMarshallableMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public class QueryStartRequest implements MarshallableMessage, CalciteContextMarshallableMessage, ExecutionContextAware {
+public class QueryStartRequest implements CacheMarshallableMessage, CalciteContextMarshallableMessage, ExecutionContextAware {
     /** */
     @Order(0)
     String schema;

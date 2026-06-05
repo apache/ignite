@@ -21,10 +21,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.CacheMarshallableMessage;
 
 /** */
-public final class GenericValueMessage implements MarshallableMessage {
+public final class GenericValueMessage implements CacheMarshallableMessage {
     /** */
     private Object val;
 
