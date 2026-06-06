@@ -39,6 +39,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /** */
 public class IncrementalSnapshotWarnAtomicCachesTest extends GridCommonAbstractTest {
     /** */
@@ -172,7 +174,7 @@ public class IncrementalSnapshotWarnAtomicCachesTest extends GridCommonAbstractT
 
         g.snapshot().createSnapshot(SNP).get(getTestTimeout());
 
-        assertTrue(warnAtomicCaches, lsnr.check());
+        assertTrue(lsnr.check(), warnAtomicCaches);
 
         for (CacheConfiguration<Integer, Integer> c: ccfgs) {
             for (int i = 1_000; i < 2_000; i++)
@@ -185,7 +187,7 @@ public class IncrementalSnapshotWarnAtomicCachesTest extends GridCommonAbstractT
 
         g.snapshot().createIncrementalSnapshot(SNP).get(getTestTimeout());
 
-        assertTrue(warnAtomicCaches, lsnr.check());
+        assertTrue(lsnr.check(), warnAtomicCaches);
     }
 
     /** */
@@ -211,7 +213,7 @@ public class IncrementalSnapshotWarnAtomicCachesTest extends GridCommonAbstractT
 
         g.snapshot().restoreSnapshot(SNP, restoreCacheGrps).get(getTestTimeout());
 
-        assertTrue(warnAtomicCaches + " " + restoreCacheGrps, lsnr.check());
+        assertTrue(lsnr.check(), warnAtomicCaches + " " + restoreCacheGrps);
 
         g.destroyCaches(g.cacheNames());
 
@@ -223,7 +225,7 @@ public class IncrementalSnapshotWarnAtomicCachesTest extends GridCommonAbstractT
 
         g.snapshot().restoreSnapshot(SNP, restoreCacheGrps, 1).get(getTestTimeout());
 
-        assertTrue(warnAtomicCaches + " " + restoreCacheGrps, lsnr.check());
+        assertTrue(lsnr.check(), warnAtomicCaches + " " + restoreCacheGrps);
     }
 
     /** */

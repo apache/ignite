@@ -46,6 +46,8 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_ACTIVATED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_DEACTIVATED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 
 /**
  * Tests cluster activation events.
@@ -252,7 +254,7 @@ public class ClusterActivationEventTest extends GridCommonAbstractTest {
             crd.cluster().state(initState);
 
         for (Ignite ignite : G.allGrids())
-            assertEquals(ignite.name(), initState, ignite.cluster().state());
+            assertEquals(initState, ignite.cluster().state(), ignite.name());
 
         Map<Ignite, Long> maxLocEvtId = new HashMap<>();
         Map<Ignite, IgniteFuture<Event>> evtFuts = new HashMap<>();
@@ -277,7 +279,7 @@ public class ClusterActivationEventTest extends GridCommonAbstractTest {
 
             Collection<Event> evts = ignite.events().localQuery(e -> e.localOrder() > maxLocEvtId.get(ignite), evtType);
 
-            assertEquals(ignite.name() + " events: " + evts, evtCnt, evts.size());
+            assertEquals(evtCnt, evts.size(), ignite.name() + " events: " + evts);
         }
     }
 

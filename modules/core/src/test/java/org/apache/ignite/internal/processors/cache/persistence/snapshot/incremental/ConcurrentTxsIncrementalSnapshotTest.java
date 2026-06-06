@@ -44,6 +44,8 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Load Ignite with transactions and starts incremental snapshots concurrently. */
 @ParameterizedClass(name = "nodes={0}, backups={1}, withNearCache={2}")

@@ -42,6 +42,8 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /***/
 public class IncrementalSnapshotTxRecoveryTest extends AbstractIncrementalSnapshotTest {
@@ -138,7 +140,7 @@ public class IncrementalSnapshotTxRecoveryTest extends AbstractIncrementalSnapsh
                     expFinRec = !startRec.id().equals(failSnpId);
                 }
                 else if (rec.type() == WALRecord.RecordType.INCREMENTAL_SNAPSHOT_FINISH_RECORD) {
-                    assertTrue("Unexpect Finish Record: " + failSnpId, expFinRec);
+                    assertTrue(expFinRec, "Unexpect Finish Record: " + failSnpId);
 
                     expFinRec = false;
 
@@ -146,7 +148,7 @@ public class IncrementalSnapshotTxRecoveryTest extends AbstractIncrementalSnapsh
                 }
             }
 
-            assertEquals("Incorrect count of FinishRecords: " + actIncSnpCnt, failSnpId == null ? 3 : 2, actIncSnpCnt);
+            assertEquals(failSnpId == null ? 3 : 2, actIncSnpCnt, "Incorrect count of FinishRecords: " + actIncSnpCnt);
         }
     }
 

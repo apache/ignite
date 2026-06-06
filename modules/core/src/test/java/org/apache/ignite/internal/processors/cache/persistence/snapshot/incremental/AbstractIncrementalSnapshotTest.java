@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
@@ -60,6 +59,8 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.INCREMENTAL_SNAPSHOT_FINISH_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.INCREMENTAL_SNAPSHOT_START_RECORD;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Base class for testing incremental snapshot algorithm. */
 public abstract class AbstractIncrementalSnapshotTest extends GridCommonAbstractTest {
@@ -183,9 +184,9 @@ public abstract class AbstractIncrementalSnapshotTest extends GridCommonAbstract
                     T2<UUID, Integer> prev = txMap.put(xid, new T2<>(snp.id, nodeIdx));
 
                     if (prev != null) {
-                        assertTrue("Transaction missed: [xid=" + xid + ", node" + prev.get2() + "=" + prev.get1() +
-                            ", node" + nodeIdx + "=" + snp.id,
-                            Objects.equals(prev == null ? null : prev.get1(), snp.id));
+                        assertEquals(prev == null ? null : prev.get1(), snp.id, "Transaction missed: [xid=" + xid +
+                            ", node" + prev.get2() + "=" + prev.get1() +
+                            ", node" + nodeIdx + "=" + snp.id);
                     }
                 }
             }

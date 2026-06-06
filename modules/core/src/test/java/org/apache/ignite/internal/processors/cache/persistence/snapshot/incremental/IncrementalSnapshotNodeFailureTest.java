@@ -37,6 +37,9 @@ import org.apache.ignite.transactions.Transaction;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** */
 public class IncrementalSnapshotNodeFailureTest extends AbstractIncrementalSnapshotTest {
@@ -136,7 +139,7 @@ public class IncrementalSnapshotNodeFailureTest extends AbstractIncrementalSnaps
                     assert rec.type() != WALRecord.RecordType.INCREMENTAL_SNAPSHOT_FINISH_RECORD : "Unexpect Finish Record.";
             }
 
-            assertTrue("Should reach StartRecord for bad snapshot", reachInconsistent);
+            assertTrue(reachInconsistent, "Should reach StartRecord for bad snapshot");
         }
     }
 

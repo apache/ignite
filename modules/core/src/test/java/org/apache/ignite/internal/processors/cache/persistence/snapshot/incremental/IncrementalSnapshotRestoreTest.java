@@ -89,6 +89,11 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** */
 public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotTest {
@@ -441,7 +446,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
         else if (ex instanceof AssertionError)
             expExc = true;
 
-        assertTrue(ex.getMessage(), expExc);
+        assertTrue(expExc, ex.getMessage());
 
         awaitPartitionMapExchange();
 
@@ -836,7 +841,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
         assertEquals(actData.size(), expData.size());
 
         for (Cache.Entry<Object, Object> e: actData) {
-            assertTrue("Missed: " + e, expData.containsKey(e.getKey()));
+            assertTrue(expData.containsKey(e.getKey()), "Missed: " + e);
             assertEquals(e.getValue(), expData.get(e.getKey()));
         }
 
@@ -868,8 +873,8 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
             )
         ).result();
 
-        assertFalse(res.message(), res.cancelled());
-        assertFalse(res.message(), res.failed());
+        assertFalse(res.cancelled(), res.message());
+        assertFalse(res.failed(), res.message());
 
         assertFalse(readRepairCheckFailed.get());
     }
@@ -999,7 +1004,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
     private void assertNoCaches(Collection<String> caches) {
         for (int i = 0; i < nodes(); i++) {
             for (String cache: caches)
-                assertNull("[node=" + i + ", cache=" + cache + ']', grid(i).cache(cache));
+                assertNull(grid(i).cache(cache), "[node=" + i + ", cache=" + cache + ']');
         }
     }
 

@@ -36,7 +36,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_CHECK_ON_RESTORE;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 /**
  * Incremental snapshots checks tests.
@@ -68,7 +69,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
         super.beforeTestSnapshot();
 
         if (encryption)
-            assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
+            assumeFalse(encryption, "https://issues.apache.org/jira/browse/IGNITE-17819");
 
         srv = startGridsWithCache(
             GRID_CNT,

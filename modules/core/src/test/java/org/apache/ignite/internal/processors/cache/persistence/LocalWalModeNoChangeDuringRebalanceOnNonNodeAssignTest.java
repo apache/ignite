@@ -47,6 +47,7 @@ import static java.lang.String.valueOf;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.METASTORE_DATA_RECORD;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  *

@@ -53,7 +53,11 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 /**
  * Basic tests for incremental snapshots.
@@ -91,7 +95,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
     /** */
     @Test
     public void testCreation() throws Exception {
-        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
+        assumeFalse(encryption, "https://issues.apache.org/jira/browse/IGNITE-17819");
 
         IgniteEx srv = startGridsWithCache(
             GRID_CNT,
@@ -102,7 +106,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
 
         File snpDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "ex_snapshots", true);
 
-        assertTrue("Target directory is not empty: " + snpDir, F.isEmpty(snpDir.list()));
+        assertTrue(F.isEmpty(snpDir.list()), "Target directory is not empty: " + snpDir);
 
         IgniteEx cli = startClientGrid(
             GRID_CNT,
@@ -136,12 +140,12 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
                         snpCreate.createSnapshot(snpName, snpPath.getAbsolutePath(), true, false).get(TIMEOUT);
 
                     for (int gridIdx = 0; gridIdx < GRID_CNT; gridIdx++) {
-                        assertTrue("Incremental snapshot must exists on node " + gridIdx, checkIncremental(
+                        assertTrue(checkIncremental(
                             grid(gridIdx),
                             snpName,
                             snpPath == null ? null : snpPath.getAbsolutePath(),
                             incIdx
-                        ));
+                        ), "Incremental snapshot must exists on node " + gridIdx);
                     }
                 }
             }
@@ -164,7 +168,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
     /** */
     @Test
     public void testFailForUnknownBaseSnapshot() throws Exception {
-        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
+        assumeFalse(encryption, "https://issues.apache.org/jira/browse/IGNITE-17819");
 
         IgniteEx ign = startGridsWithCache(1, CACHE_KEYS_RANGE, key -> new Account(key, key),
             new CacheConfiguration<>(DEFAULT_CACHE_NAME));
@@ -185,7 +189,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
     /** */
     @Test
     public void testFailIfPreviousIncrementNotAvailable() throws Exception {
-        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
+        assumeFalse(encryption, "https://issues.apache.org/jira/browse/IGNITE-17819");
 
         IgniteEx srv = startGridsWithCache(
             GRID_CNT,
@@ -222,7 +226,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
     /** */
     @Test
     public void testFailIfSegmentNotFound() throws Exception {
-        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
+        assumeFalse(encryption, "https://issues.apache.org/jira/browse/IGNITE-17819");
 
         IgniteEx srv = startGridsWithCache(
             1,
@@ -252,7 +256,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
     /** */
     @Test
     public void testIncrementalSnapshotFailsOnTopologyChange() throws Exception {
-        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
+        assumeFalse(encryption, "https://issues.apache.org/jira/browse/IGNITE-17819");
 
         IgniteEx srv = startGridsWithCache(
             GRID_CNT,
@@ -282,7 +286,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
     /** */
     @Test
     public void testIncrementalSnapshotFailsOnCacheDestroy() throws Exception {
-        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
+        assumeFalse(encryption, "https://issues.apache.org/jira/browse/IGNITE-17819");
 
         checkFailWhenCacheDestroyed(OTHER_CACHE, "Create incremental snapshot request has been rejected. " +
             "Cache group destroyed [groupId=" + CU.cacheId(OTHER_CACHE) + ']');
@@ -291,7 +295,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
     /** */
     @Test
     public void testIncrementalSnapshotFailsOnGroupedCacheDestroy() throws Exception {
-        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
+        assumeFalse(encryption, "https://issues.apache.org/jira/browse/IGNITE-17819");
 
         checkFailWhenCacheDestroyed(GROUPED_CACHE, "Create incremental snapshot request has been rejected. " +
             "Cache destroyed [cacheId=" + CU.cacheId(GROUPED_CACHE) + ", cacheName=" + GROUPED_CACHE + ']');
@@ -300,7 +304,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
     /** */
     @Test
     public void testIncrementalSnapshotFailsOnCacheChange() throws Exception {
-        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
+        assumeFalse(encryption, "https://issues.apache.org/jira/browse/IGNITE-17819");
 
         CacheConfiguration<Integer, Account> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
@@ -331,7 +335,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
     /** */
     @Test
     public void testIncrementalSnapshotFailOnDirtyDir() throws Exception {
-        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
+        assumeFalse(encryption, "https://issues.apache.org/jira/browse/IGNITE-17819");
 
         IgniteEx srv = startGridsWithCache(
             GRID_CNT,
@@ -364,7 +368,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
     /** */
     @Test
     public void testFailIfWalCompactionDisabled() throws Exception {
-        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
+        assumeFalse(encryption, "https://issues.apache.org/jira/browse/IGNITE-17819");
 
         walCompactionEnabled = false;
 
@@ -394,7 +398,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
     /** @throws Exception if failed. */
     @Test
     public void testStagesFail() throws Exception {
-        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
+        assumeFalse(encryption, "https://issues.apache.org/jira/browse/IGNITE-17819");
 
         DistributedProcess.DistributedProcessType[] stages = new DistributedProcess.DistributedProcessType[] {
             RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE,
@@ -450,7 +454,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
     /** */
     @Test
     public void testDefaultConsistentId() throws Exception {
-        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
+        assumeFalse(encryption, "https://issues.apache.org/jira/browse/IGNITE-17819");
 
         IgniteEx ignite = startGrid(getConfiguration().setConsistentId(null));
 

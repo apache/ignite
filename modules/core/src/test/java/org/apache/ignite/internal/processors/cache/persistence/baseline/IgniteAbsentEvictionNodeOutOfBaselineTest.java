@@ -31,6 +31,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Test absenting eviction for joined node if it is out of baseline.
  */
@@ -113,6 +115,6 @@ public class IgniteAbsentEvictionNodeOutOfBaselineTest extends GridCommonAbstrac
 
         List<GridDhtLocalPartition> partitions = ignite2.cachex(TEST_CACHE_NAME).context().topology().localPartitions();
 
-        assertTrue("Should be empty : " + partitions, partitions.isEmpty());
+        assertTrue(partitions.isEmpty(), "Should be empty : " + partitions);
     }
 }

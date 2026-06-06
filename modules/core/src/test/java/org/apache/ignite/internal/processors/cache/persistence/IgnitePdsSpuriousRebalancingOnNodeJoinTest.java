@@ -43,6 +43,9 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests the rebalancing not happens on node join for partitions belonging to coordinator even if counters are different.
@@ -168,7 +171,7 @@ public class IgnitePdsSpuriousRebalancingOnNodeJoinTest extends GridCommonAbstra
             // Expecting no rebalancing.
             List<Object> msgs = TestRecordingCommunicationSpi.spi(crd).recordedMessages(true);
 
-            assertTrue("Rebalancing is not expected " + msgs, msgs.isEmpty());
+            assertTrue(msgs.isEmpty(), "Rebalancing is not expected " + msgs);
         }
         finally {
             stopAllGrids();

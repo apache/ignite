@@ -32,6 +32,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test checks correctness of simultaneous node join and massive caches stopping.
@@ -141,8 +143,8 @@ public class IgnitePdsNodeJoinWithCachesStopping extends GridCommonAbstractTest 
         });
 
         assertTrue(
-            "Failed to wait for DynamicCacheChangeBatch message (destroy, step 1)",
-            waitForCondition(() -> crd.context().discovery().topologyVersionEx().minorTopologyVersion() == 2, getTestTimeout()));
+            waitForCondition(() -> crd.context().discovery().topologyVersionEx().minorTopologyVersion() == 2, getTestTimeout()),
+            "Failed to wait for DynamicCacheChangeBatch message (destroy, step 1)");
 
         // Let's start and stop the cache once again to clean up ClusterCachesInfo, i.e.
         // registeredCaches and markedForDeletionCaches will be cleaned,
@@ -157,8 +159,8 @@ public class IgnitePdsNodeJoinWithCachesStopping extends GridCommonAbstractTest 
         });
 
         assertTrue(
-            "Failed to wait for DynamicCacheChangeBatch message (create, step 2)",
-            waitForCondition(() -> crd.context().discovery().topologyVersionEx().minorTopologyVersion() == 3, getTestTimeout()));
+            waitForCondition(() -> crd.context().discovery().topologyVersionEx().minorTopologyVersion() == 3, getTestTimeout()),
+            "Failed to wait for DynamicCacheChangeBatch message (create, step 2)");
 
         IgniteInternalFuture<?> stopFut2 = GridTestUtils.runAsync(() -> {
             try {
@@ -170,8 +172,8 @@ public class IgnitePdsNodeJoinWithCachesStopping extends GridCommonAbstractTest 
         });
 
         assertTrue(
-            "Failed to wait for DynamicCacheChangeBatch message (create, step 2)",
-            waitForCondition(() -> crd.context().discovery().topologyVersionEx().minorTopologyVersion() == 4, getTestTimeout()));
+            waitForCondition(() -> crd.context().discovery().topologyVersionEx().minorTopologyVersion() == 4, getTestTimeout()),
+            "Failed to wait for DynamicCacheChangeBatch message (create, step 2)");
 
         // Unblock the initial PME.
         spi1.stopBlock();
@@ -181,6 +183,6 @@ public class IgnitePdsNodeJoinWithCachesStopping extends GridCommonAbstractTest 
         startFut2.get();
         stopFut2.get();
 
-        assertNull("The '" + DEFAULT_CACHE_NAME + "' cache is not destroyed.", crd.cache(DEFAULT_CACHE_NAME));
+        assertNull(crd.cache(DEFAULT_CACHE_NAME), "The '" + DEFAULT_CACHE_NAME + "' cache is not destroyed.");
     }
 }

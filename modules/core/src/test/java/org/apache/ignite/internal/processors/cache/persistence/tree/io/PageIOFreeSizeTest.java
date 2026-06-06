@@ -38,6 +38,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.internal.util.IgniteUtils.KB;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /** Tests {@link PageIO#getFreeSpace(int, long)} method for different {@link PageIO} implementations. */
 @ParameterizedClass(name = "pageSz={0}")

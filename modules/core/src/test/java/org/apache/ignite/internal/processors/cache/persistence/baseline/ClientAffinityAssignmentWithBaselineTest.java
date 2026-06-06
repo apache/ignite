@@ -63,6 +63,9 @@ import org.apache.ignite.transactions.TransactionRollbackException;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+
 /**
  * Checks that client affinity assignment cache is calculated correctly regardless of current baseline topology.
  */

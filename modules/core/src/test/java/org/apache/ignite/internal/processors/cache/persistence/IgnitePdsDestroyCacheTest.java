@@ -48,6 +48,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test correct clean up cache configuration data after destroying cache.
