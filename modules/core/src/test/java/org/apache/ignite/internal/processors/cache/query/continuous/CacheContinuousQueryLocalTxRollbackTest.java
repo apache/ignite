@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import javax.cache.Cache;
 import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
@@ -85,9 +86,6 @@ public class CacheContinuousQueryLocalTxRollbackTest extends GridCommonAbstractT
     private static final int KEYS_PER_TX = 10;
 
     /** */
-    private IgniteEx ignite;
-
-    /** */
     @Parameterized.Parameter
     public CacheMode cacheMode;
 
@@ -102,7 +100,6 @@ public class CacheContinuousQueryLocalTxRollbackTest extends GridCommonAbstractT
         CacheConfiguration<?, ?> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME)
             .setCacheMode(cacheMode)
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
-            .setReadFromBackup(true)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         if (cacheMode == PARTITIONED)
@@ -118,9 +115,9 @@ public class CacheContinuousQueryLocalTxRollbackTest extends GridCommonAbstractT
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        cleanPersistenceDir();
-
         super.beforeTest();
+
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -138,7 +135,7 @@ public class CacheContinuousQueryLocalTxRollbackTest extends GridCommonAbstractT
      */
     @Test
     public void checkLocalAndDistributedCqAfterNodeFail() throws Exception {
-        ignite = startGrids(NODE_CNT);
+        IgniteEx ignite = startGrids(NODE_CNT);
 
         ignite.cluster().state(ClusterState.ACTIVE);
 
@@ -147,42 +144,55 @@ public class CacheContinuousQueryLocalTxRollbackTest extends GridCommonAbstractT
         AtomicBoolean stopTxLoad = new AtomicBoolean();
         AtomicBoolean nodeFailed = new AtomicBoolean();
 
-        AtomicInteger updatesDistr = new AtomicInteger();
-        AtomicInteger updatesALoc = new AtomicInteger();
+        AtomicInteger updatesDistrBeforeFail = new AtomicInteger();
+        AtomicInteger updatesLocBeforeFail = new AtomicInteger();
+
+        AtomicInteger updatesDistrAfterFail = new AtomicInteger();
+        AtomicInteger updatesLocAfterFail = new AtomicInteger();
 
         IgniteCache<Object, Object> cache1 = grid(1).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> cache0 = grid(0).cache(DEFAULT_CACHE_NAME);
 
         IgniteInternalFuture<?> txLoadFut = launchTxLoad(grid(1), cache1, stopTxLoad);
 
-        doSleep(5_000);
-
-        IgniteCache<Object, Object> cache0 = grid(0).cache(DEFAULT_CACHE_NAME);
-
         try (
             QueryCursor<Cache.Entry<Object, Object>> locCur = cache0.query(
-                buildContinuousQuery(true, nodeFailed, updatesALoc));
+                buildContinuousQuery(true, nodeFailed, updatesLocBeforeFail, updatesLocAfterFail));
 
             QueryCursor<Cache.Entry<Object, Object>> distrCur = cache0.query(
-                buildContinuousQuery(false, nodeFailed, updatesDistr))
+                buildContinuousQuery(false, nodeFailed, updatesDistrBeforeFail, updatesDistrAfterFail))
         ) {
-            doSleep(3_000);
+            assertTrue(
+                String.format("Failed to receive expected updates before node failure [locUpdates=%s, distrUpdates=%s]",
+                    updatesLocBeforeFail.get(), updatesDistrBeforeFail.get()),
+                waitForCondition(() -> updatesLocBeforeFail.get() > 0 && updatesDistrBeforeFail.get() > 0, 3_000)
+            );
 
             failNode(NODE_CNT - 1);
 
-            assertFalse("Cluster stopped/stopping after target node failure", waitForCondition(() ->
-                ignite.context().gateway().getState() == GridKernalState.STOPPED ||
+            assertFalse("Cluster stopped/stopping after target node failure",
+                waitForCondition(() ->
+                    ignite.context().gateway().getState() == GridKernalState.STOPPED ||
                     ignite.context().gateway().getState() == GridKernalState.STOPPING,
-                10_000));
+                    10_000)
+            );
 
             assertEquals("Not enogh nodes sirvuved after target node failure",
                 NODE_CNT - 1, ignite.cluster().nodes().size());
 
+            for (int i : IntStream.range(0, NODE_CNT - 1).toArray()) {
+                IgniteEx grid = grid(i);
+
+                assertFalse("Grid " + i + " is stopping", grid.context().isStopping());
+                assertNull("Failure context is not null for grid " + i, grid.context().failure().failureContext());
+            }
+
             nodeFailed.set(true);
 
             assertTrue(
-                String.format("Failed to receive expected updates [localUpdates=%s, distributedUpdates=%s]",
-                    updatesALoc.get(), updatesDistr.get()),
-                waitForCondition(() -> updatesALoc.get() > 0 && updatesDistr.get() > 0, 3_000)
+                String.format("Failed to receive expected updates after node failure [locUpdates=%s, distrUpdates=%s]",
+                    updatesLocAfterFail.get(), updatesDistrAfterFail.get()),
+                waitForCondition(() -> updatesLocAfterFail.get() > 0 && updatesDistrAfterFail.get() > 0, 3_000)
             );
         }
         finally {
@@ -227,15 +237,18 @@ public class CacheContinuousQueryLocalTxRollbackTest extends GridCommonAbstractT
     private ContinuousQuery<Object, Object> buildContinuousQuery(
         boolean locOnly,
         AtomicBoolean nodeFailed,
-        AtomicInteger updateCntr
+        AtomicInteger cntrBeforeFail,
+        AtomicInteger cntrAfterFail
     ) {
         return new ContinuousQuery<>()
             .setLocal(locOnly)
             .setLocalListener(new CacheEntryUpdatedListener<>() {
                 @Override public void onUpdated(Iterable iterable) throws CacheEntryListenerException {
                     for (Object ignored : iterable) {
-                        if (nodeFailed.get())
-                            updateCntr.incrementAndGet();
+                        if (!nodeFailed.get())
+                            cntrBeforeFail.incrementAndGet();
+                        else
+                            cntrAfterFail.incrementAndGet();
                     }
 
                     doSleep(1);
