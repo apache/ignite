@@ -18,15 +18,15 @@
 package org.apache.ignite.internal.processors.rollingupgrade;
 
 import java.util.Objects;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
-import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
@@ -39,14 +39,13 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
-import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNodesRing;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.events.EventType.EVT_NODE_VALIDATION_FAILED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage.IGNITE_INTERNAL_KEY_PREFIX;
 
@@ -58,14 +57,8 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
     /** Metastorage with the write access. */
     @Nullable private volatile DistributedMetaStorage metastorage;
 
-    /** TCP discovery nodes ring. */
-    private TcpDiscoveryNodesRing ring;
-
     /** Last joining node. */
     private ClusterNode lastJoiningNode;
-
-    /** Last joining node timestamp. */
-    private long lastJoiningNodeTimestamp;
 
     /** Lock for synchronization between tcp-disco-msg-worker thread and management operations. */
     private final Object lock = new Object();
@@ -85,26 +78,25 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
     /** {@inheritDoc} */
     @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
-        DiscoverySpi spi = ctx.config().getDiscoverySpi();
-
-        if (spi instanceof TcpDiscoverySpi)
-            ring = ((TcpDiscoverySpi)spi).discoveryRing();
-
         startLatch.countDown();
     }
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        ctx.event().addLocalEventListener(new GridLocalEventListener() {
-            @Override public void onEvent(Event evt) {
+        ctx.event().addLocalEventListener(
+            evt -> {
                 UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 
                 synchronized (lock) {
                     if (lastJoiningNode != null && lastJoiningNode.id().equals(nodeId))
                         lastJoiningNode = null;
                 }
-            }
-        }, EVT_NODE_JOINED, EVT_NODE_FAILED, EVT_NODE_LEFT);
+            },
+            EVT_NODE_JOINED,
+            EVT_NODE_FAILED,
+            EVT_NODE_LEFT,
+            EVT_NODE_VALIDATION_FAILED
+        );
 
         ctx.internalSubscriptionProcessor().registerDistributedMetastorageListener(new DistributedMetastorageLifecycleListener() {
             @Override public void onReadyForWrite(DistributedMetaStorage metastorage) {
@@ -131,8 +123,6 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
     @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode node) {
         synchronized (lock) {
             lastJoiningNode = node;
-
-            lastJoiningNodeTimestamp = U.currentTimeMillis();
         }
 
         ClusterNode locNode = ctx.discovery().localNode();
@@ -247,22 +237,13 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
         if (rollUpVers == null)
             return;
 
-        IgnitePair<IgniteProductVersion> minMaxVerPair = ring.minMaxNodeVersions();
+        IgnitePair<IgniteProductVersion> minMaxVerPair = resolveMinMaxNodeVersions();
 
         if (!minMaxVerPair.get1().equals(minMaxVerPair.get2()))
             throw new IgniteCheckedException("Can't disable rolling upgrade with different versions in cluster: "
                 + minMaxVerPair.get1() + ", " + minMaxVerPair.get2());
 
         synchronized (lock) {
-            if (lastJoiningNode != null) {
-                // Use 3 * joinTimeout as an upper time bound for joining nodes that may drop during validation
-                // without sending NODE_LEFT / NODE_FAILED events.
-                long timeout = ((TcpDiscoverySpi)ctx.config().getDiscoverySpi()).getJoinTimeout() * 3;
-
-                if (ring.node(lastJoiningNode.id()) != null || (timeout > 0 && U.currentTimeMillis() - lastJoiningNodeTimestamp > timeout))
-                    lastJoiningNode = null;
-            }
-
             if (lastJoiningNode != null) {
                 IgniteProductVersion lastJoiningNodeVer = IgniteProductVersion.fromString(lastJoiningNode.attribute(ATTR_BUILD_VER));
 
@@ -278,6 +259,18 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
         if (log.isInfoEnabled())
             log.info("Rolling upgrade disabled. Current version of nodes in cluster: " + minMaxVerPair.get1());
+    }
+
+    /** */
+    private IgnitePair<IgniteProductVersion> resolveMinMaxNodeVersions() {
+        SortedSet<IgniteProductVersion> clusterNodes = new TreeSet<>();
+
+        for (ClusterNode node : ctx.discovery().discoverySpiRemoteNodes())
+            clusterNodes.add(node.version());
+
+        clusterNodes.add(ctx.discovery().localNode().version());
+
+        return new IgnitePair<>(clusterNodes.first(), clusterNodes.last());
     }
 
     /**
