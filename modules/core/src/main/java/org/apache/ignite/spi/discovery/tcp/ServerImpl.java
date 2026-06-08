@@ -83,7 +83,7 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.OperationContexMessage;
 import org.apache.ignite.internal.OperationContextAttributeType;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
-import org.apache.ignite.internal.managers.communication.UnknownMessageException;
+import org.apache.ignite.plugin.extensions.communication.UnknownMessageException;
 import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;

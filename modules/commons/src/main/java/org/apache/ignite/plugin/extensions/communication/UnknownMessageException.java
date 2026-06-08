@@ -15,10 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers.communication;
+package org.apache.ignite.plugin.extensions.communication;
 
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Exception to be thrown when unregistered class serialized or unknown message deserialized.

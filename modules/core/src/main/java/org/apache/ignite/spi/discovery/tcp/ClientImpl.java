@@ -67,7 +67,6 @@ import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.OperationContexMessage;
 import org.apache.ignite.internal.OperationContextAttributeType;
 import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
-import org.apache.ignite.internal.processors.security.SecuritySubjectMessage;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.processors.tracing.SpanTags;
 import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
@@ -76,7 +75,6 @@ import org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesT
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.OperationContextSnapshot;
 import org.apache.ignite.internal.thread.context.Scope;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;

@@ -20,7 +20,6 @@ package org.apache.ignite.plugin.extensions.communication;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.managers.communication.UnknownMessageException;
 
 /**
  * Base class for all communication messages.

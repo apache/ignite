@@ -36,7 +36,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE;
-import static org.apache.ignite.internal.managers.communication.UnknownMessageException.INVALID_TYPE_MSG;
+import static org.apache.ignite.plugin.extensions.communication.UnknownMessageException.INVALID_TYPE_MSG;
 
 /** */
 public class DiscoveryDeserializationExceptionTest extends GridCommonAbstractTest {
