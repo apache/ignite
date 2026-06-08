@@ -199,7 +199,7 @@ public class IgniteWindow extends Window implements IgniteRel {
         return cost;
     }
 
-    /** Check input distribution satisfies collation of this window. */
+    /** Check input distribution satisfies distribution of this window. */
     private boolean satisfiesDistribution(IgniteDistribution required) {
         if (required.satisfies(IgniteDistributions.single()) || required.function().correlated())
             return true;
@@ -211,8 +211,8 @@ public class IgniteWindow extends Window implements IgniteRel {
     }
 
     /**
-     * Check input collation satisfies collation of this window.
-     * - Collations field indicies of the window should be a prefix for desired collation.
+     * Check left collation satisfies right one.
+     * - Collations field indicies of the left should be a prefix for right collation.
      * - Group fields sort direction can be changed to desired collation.
      * - Order fields sort direction should be the same as in desired collation.
      */

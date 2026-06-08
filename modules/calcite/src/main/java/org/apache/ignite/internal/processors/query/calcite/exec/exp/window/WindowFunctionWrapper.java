@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec.exp.window;
 
 import org.jetbrains.annotations.Nullable;
 
-/** interface for window function wrapper. */
+/** */
 interface WindowFunctionWrapper<Row> {
     /** Performs the window function computation for a given row in streaming mode. */
     @Nullable Object callStreaming(Row row, int rowIdx, int peerIdx);

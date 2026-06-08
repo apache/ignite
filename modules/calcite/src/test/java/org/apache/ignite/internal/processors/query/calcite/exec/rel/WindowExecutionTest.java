@@ -58,7 +58,7 @@ import static org.apache.calcite.rex.RexWindowBounds.CURRENT_ROW;
 import static org.apache.calcite.rex.RexWindowBounds.UNBOUNDED_FOLLOWING;
 import static org.apache.calcite.rex.RexWindowBounds.UNBOUNDED_PRECEDING;
 
-/**  */
+/** */
 public class WindowExecutionTest extends AbstractExecutionTest {
     /** row_number() over (partition by {0}). */
     @Test
