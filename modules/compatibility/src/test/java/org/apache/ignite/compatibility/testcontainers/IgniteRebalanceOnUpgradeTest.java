@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testcontainers;
+package org.apache.ignite.compatibility.testcontainers;
 
 import java.io.File;
 import java.util.List;
@@ -30,9 +30,9 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.apache.ignite.testcontainers.IgniteContainer.LOCAL_WORK_DIR_PATH;
-import static org.apache.ignite.testcontainers.IgniteContainer.RollingUpgradeStatus.DISABLED;
-import static org.apache.ignite.testcontainers.IgniteContainer.RollingUpgradeStatus.ENABLED;
+import static org.apache.ignite.compatibility.testcontainers.IgniteContainer.LOCAL_WORK_DIR_PATH;
+import static org.apache.ignite.compatibility.testcontainers.IgniteContainer.RollingUpgradeStatus.DISABLED;
+import static org.apache.ignite.compatibility.testcontainers.IgniteContainer.RollingUpgradeStatus.ENABLED;
 import static org.junit.Assert.assertEquals;
 
 /** Smoke test for rolling upgrade with persistence. */

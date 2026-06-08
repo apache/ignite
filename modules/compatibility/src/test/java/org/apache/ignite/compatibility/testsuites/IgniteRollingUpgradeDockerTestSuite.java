@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.compatibility.testsuites;
 
-import org.apache.ignite.testcontainers.IgniteRebalanceOnUpgradeTest;
+import org.apache.ignite.compatibility.testcontainers.IgniteRebalanceOnUpgradeTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
