@@ -173,7 +173,7 @@ public class IgniteWindow extends Window implements IgniteRel {
         // If a child node has the appropriate collation but not the required distribution
         // (e.g., a randomly distributed table that has the index we need),
         // we can use its collation to eliminate extra sorting.
-        // However, we must then replace the distribution with our desired one.
+        // However, we must replace the distribution with current window one.
         if (!satisfiesDistribution(TraitUtils.distribution(childTraits)))
             childTraits = childTraits.replace(distribution());
 
