@@ -255,6 +255,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     private long connCheckTick;
 
     /** */
+    @GridToStringExclude
     private final IgniteThreadPoolExecutor utilityPool;
 
     /** Pool size to ping remote DC if a corner node loses the ring connection. */
@@ -292,6 +293,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     private StatisticsPrinter statsPrinter;
 
     /** Metric for max message queue size. */
+    @GridToStringExclude
     private MaxValueMetric maxMsgQueueSizeMetric;
 
     /** Failed nodes (but still in topology). */
@@ -310,6 +312,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     private Queue<TcpDiscoveryCustomEventMessage> pendingCustomMsgs = new ArrayDeque<>();
 
     /** Messages history used for client reconnect. */
+    @GridToStringExclude
     private final EnsuredMessageHistory msgHist = new EnsuredMessageHistory();
 
     /** If non-shared IP finder is used this flag shows whether IP finder contains local address. */
@@ -5263,6 +5266,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 assert n.internalOrder() < node.internalOrder() :
                                     "Invalid node [topNode=" + n + ", added=" + node + ']';
 
+                                spi.restoreRemoteNodeVersion(n);
+
                                 // Make all preceding nodes and local node visible.
                                 n.visible(true);
                             }
@@ -5405,8 +5410,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 assert node.internalOrder() > locNode.internalOrder() : "Invalid order [node=" + node +
                     ", locNode=" + locNode + ", msg=" + msg + ", ring=" + ring + ']';
 
-                if (spi.locNodeVer.equals(node.version()))
-                    node.version(spi.locNodeVer);
+                spi.restoreRemoteNodeVersion(node);
 
                 if (!locNodeCoord) {
                     boolean b = ring.topologyVersion(topVer);

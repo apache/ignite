@@ -270,11 +270,11 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SPI_CLASS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_AWARE_QUERIES_ENABLED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_SERIALIZABLE_ENABLED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_USER_NAME;
-import static org.apache.ignite.internal.IgniteVersionUtils.BUILD_TSTAMP_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 import static org.apache.ignite.internal.util.IgniteUtils.validateRamUsage;
+import static org.apache.ignite.lang.IgniteProductVersion.BUILD_TIME_FORMAT;
 import static org.apache.ignite.lifecycle.LifecycleEventType.AFTER_NODE_START;
 import static org.apache.ignite.lifecycle.LifecycleEventType.BEFORE_NODE_START;
 import static org.apache.ignite.mxbean.IgniteMXBean.ACTIVE_DESC;
@@ -576,11 +576,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     /** @return String representation of the uptime. */
     public String upTimeFormatted() {
         return X.timeSpan2DHMSM(upTime());
-    }
-
-    /** @return String representation of version of current Ignite instance. */
-    String fullVersion() {
-        return VER_STR + '-' + BUILD_TSTAMP_STR;
     }
 
     /** @return String representation of the checkpoint SPI. */
@@ -1562,7 +1557,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         // Stick in some system level attributes
         add(ATTR_JIT_NAME, U.getCompilerMx() == null ? "" : U.getCompilerMx().getName());
         add(ATTR_BUILD_VER, VER_STR);
-        add(ATTR_BUILD_DATE, BUILD_TSTAMP_STR);
+        add(ATTR_BUILD_DATE, BUILD_TIME_FORMAT.format(VER.buildTime()));
         add(ATTR_MARSHALLER, ctx.marshaller().getClass().getName());
         add(ATTR_MARSHALLER_USE_DFLT_SUID,
             getBoolean(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID, Marshallers.USE_DFLT_SUID));
@@ -3415,7 +3410,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
         MetricRegistry reg = ctx.metric().registry(GridMetricManager.IGNITE_METRICS);
 
-        reg.register("fullVersion", this::fullVersion, String.class, FULL_VER_DESC);
+        reg.register("fullVersion", VER::toString, String.class, FULL_VER_DESC);
         reg.register("copyright", () -> COPYRIGHT, String.class, COPYRIGHT_DESC);
 
         reg.register("startTimestampFormatted", this::startTimeFormatted, String.class,
