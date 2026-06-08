@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testcontainers;
+package org.apache.ignite.compatibility.testcontainers;
 
 import java.util.ArrayList;
 import java.util.List;

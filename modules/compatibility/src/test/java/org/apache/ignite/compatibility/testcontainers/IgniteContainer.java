@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testcontainers;
+package org.apache.ignite.compatibility.testcontainers;
 
 import java.io.IOException;
 import java.time.Duration;
