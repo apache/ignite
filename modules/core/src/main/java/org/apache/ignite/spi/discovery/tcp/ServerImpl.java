@@ -2909,7 +2909,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      */
     protected class RingMessageWorker extends MessageWorker<TcpDiscoveryAbstractMessage> {
         /** */
-        private final List<Function<TcpDiscoveryJoinRequestMessage, IgniteNodeValidationResult>> nodeValidators = Arrays.asList(
+        private final Collection<Function<TcpDiscoveryJoinRequestMessage, IgniteNodeValidationResult>> nodeValidators = Arrays.asList(
             this::validateByIgniteComponents,
             this::validateByIgniteComponentsWithJoiningNodeData,
             this::validateMarshallerName,
@@ -4706,7 +4706,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** */
         private IgniteNodeValidationResult validateLateAffinityAssignment(TcpDiscoveryJoinRequestMessage req) {
             boolean locLateAssign = booleanAttribute(locNode, ATTR_LATE_AFFINITY_ASSIGNMENT, false);
-
             boolean rmtLateAssign = booleanAttribute(req.node(), ATTR_LATE_AFFINITY_ASSIGNMENT, false);
 
             if (locLateAssign == rmtLateAssign)
