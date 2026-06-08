@@ -15,20 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.compatibility.testcontainers;
+package org.apache.ignite.compatibility.testframework.testcontainers;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.ListIterator;
 import org.testcontainers.containers.Network;
 import org.testcontainers.lifecycle.Startable;
 import org.testcontainers.lifecycle.Startables;
 
 /** Ignite cluster container. */
 public class IgniteClusterContainer implements Startable {
-    /** Source version. */
-    private final String ver;
-
     /** Containers. */
     private final List<IgniteContainer> containers;
 
@@ -37,7 +33,6 @@ public class IgniteClusterContainer implements Startable {
 
     /** @param nodeIds Node ids. */
     public IgniteClusterContainer(String ver, List<String> nodeIds) {
-        this.ver = ver;
         containers = new ArrayList<>(nodeIds.size());
 
         for (int i = 0; i < nodeIds.size(); i++) {
@@ -62,31 +57,13 @@ public class IgniteClusterContainer implements Startable {
         net.close();
     }
 
+    /** */
+    public List<IgniteContainer> containers() {
+        return containers;
+    }
+
     /** @return First started node in cluster. */
     public IgniteContainer firstNode() {
         return containers.get(0);
-    }
-
-    /** Rolling upgrade cluster.
-     *
-     * @param ver Target version.
-     */
-    public void upgrade(String ver) {
-        if (this.ver.equals(ver))
-            throw new IllegalArgumentException("Target version matches the current version.");
-
-        ListIterator<IgniteContainer> it = containers.listIterator();
-
-        while (it.hasNext()) {
-            IgniteContainer oldNode = it.next();
-
-            oldNode.stop();
-
-            IgniteContainer newNode = new IgniteContainer(ver, net, oldNode.hostname(), oldNode.nodeId());
-
-            newNode.start();
-
-            it.set(newNode);
-        }
     }
 }

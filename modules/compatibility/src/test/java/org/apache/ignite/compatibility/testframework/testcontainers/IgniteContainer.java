@@ -15,9 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.compatibility.testcontainers;
+package org.apache.ignite.compatibility.testframework.testcontainers;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.util.Arrays;
@@ -33,6 +36,7 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
+import org.testcontainers.utility.MountableFile;
 
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.testcontainers.utility.MountableFile.forClasspathResource;
@@ -43,7 +47,7 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
     static final String LOCAL_WORK_DIR_PROP = "local.work.dir";
 
     /** Local work directory. */
-    static final String LOCAL_WORK_DIR_PATH = System.getProperty(LOCAL_WORK_DIR_PROP,
+    public static final String LOCAL_WORK_DIR_PATH = System.getProperty(LOCAL_WORK_DIR_PROP,
         System.getProperty("user.home") + "/test-ignite-work");
 
     /** Logger. */
@@ -64,9 +68,6 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
     /** */
     private static final Pattern CLUSTER_STATE_PATTERN = Pattern.compile("Cluster state: (ACTIVE|INACTIVE)");
 
-    /** */
-    private static final Pattern RU_STATUS_PATTERN = Pattern.compile("Rolling upgrade status: (enabled|disabled)");
-
     /** Default thin client port. */
     private static final int THIN_CLIENT_PORT = 10800;
 
@@ -76,29 +77,69 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
     /** Node ID. */
     private final String nodeId;
 
+    /** Path to work directory. */
+    private final String workDirPath;
+
     /** Constructor. */
     public IgniteContainer(String ver, Network net, String hostname, String nodeId) {
         super(DockerImageName.parse("apacheignite/ignite:" + ver));
 
         this.hostname = hostname;
         this.nodeId = nodeId;
+        workDirPath = WORK_DIR_PATH + "/" + hostname;
 
         withEnv("CONFIG_URI", "file://" + CFG_PATH);
         withEnv("IGNITE_QUIET", "false");
         withEnv("IGNITE_NODE_NAME", nodeId);
-        withEnv("IGNITE_WORK_DIR", WORK_DIR_PATH + "/" + hostname);
+        withEnv("IGNITE_WORK_DIR", workDirPath);
+        withEnv("IGNITE_LOCAL_HOST", "0.0.0.0");
         withEnv("TZ", ZoneId.systemDefault().toString());
 
         withFileSystemBind(LOCAL_WORK_DIR_PATH, WORK_DIR_PATH, BindMode.READ_WRITE);
 
         withCopyFileToContainer(forClasspathResource("docker/test-config.xml"), CFG_PATH);
 
+        // Copy compatibility JAR if it exists
+        copyCompatibilityJar();
+
         withNetwork(net);
         withNetworkAliases(hostname);
-        withExposedPorts(THIN_CLIENT_PORT);
+        withExposedPorts(THIN_CLIENT_PORT, 47100, 47500);
 
         waitingFor(Wait.forLogMessage(".*Node started.*", 1)
             .withStartupTimeout(Duration.ofSeconds(60)));
+    }
+
+    /** */
+    private void copyCompatibilityJar() {
+        String projectDir = System.getProperty("user.dir");
+        Path compatTarget = Paths.get(projectDir + "/target");
+
+        System.out.println(">>> KEK=" + compatTarget);
+
+        if (Files.exists(compatTarget)) {
+            try {
+                Files.walk(compatTarget)
+                    .filter(p -> {
+                        System.out.println(">>> P=" + p);
+
+                        return p.toString().endsWith("tests.jar") && p.toString().contains("ignite-compatibility");
+                    })
+                    .findFirst()
+                    .ifPresent(jarPath -> {
+                        System.out.println(">>> JAR PATH=" + jarPath);
+
+                        withCopyFileToContainer(MountableFile.forHostPath(jarPath), ROOT_DIR_PATH + "libs/test-compatability.jar");
+
+                        LOGGER.info("Bound compatibility JAR: " + jarPath);
+                    });
+            }
+            catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        else
+            throw new IllegalStateException("Please run `mvn clean install -DskipTests -pl modules/compatibility -am` first");
     }
 
     /** @return Hostname. */
@@ -109,6 +150,11 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
     /** @return Node ID. */
     public String nodeId() {
         return nodeId;
+    }
+
+    /** */
+    public String localWorkDirectory() {
+        return LOCAL_WORK_DIR_PATH + "/" + hostname;
     }
 
     /** Activate cluster. */
@@ -132,63 +178,15 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
         }
     }
 
-    /** @return Rolling upgrade status. */
-    public RollingUpgradeStatus rollingUpgradeStatus() {
-        String out = execControl("--rolling-upgrade", "status");
-
-        LOGGER.info(">>> Rolling upgrade status: {}", out);
-
-        Matcher matcher = RU_STATUS_PATTERN.matcher(out);
-
-        if (matcher.find())
-            return RollingUpgradeStatus.valueOf(matcher.group(1).toUpperCase());
-
-        throw new IllegalStateException("Failed to parse rolling upgrade status from output:\n" + out);
-    }
-
-    /** Enable rolling upgrade. */
-    public void rollingUpgradeEnable(String targetVer) {
-        execControl("--rolling-upgrade", "enable", targetVer, "--yes");
-    }
-
-    /** Disable rolling upgrade. */
-    public void rollingUpgradeDisable() {
-        execControl("--rolling-upgrade", "disable");
-    }
-
-    /** @return Number of cluster nodes for given release version. */
-    public int nodesCountForVersion(String targetVer) {
-        String out = execControl("--rolling-upgrade", "status");
-
-        // Match the version block
-        Pattern verPattern = Pattern.compile(
-            "Version\\s+" + Pattern.quote(targetVer) + ".*?:\\s*\n" +
-                "((?:\\s*Node\\[.*?\\]\\s*\n)*)",
-            Pattern.DOTALL
-        );
-
-        Matcher verMatcher = verPattern.matcher(out);
-
-        if (!verMatcher.find())
-            return 0;
-
-        String nodesBlock = verMatcher.group(1);
-
-        // Count Node entries
-        Pattern nodePattern = Pattern.compile("^\\s*Node\\[.*?\\]", Pattern.MULTILINE);
-        Matcher nodeMatcher = nodePattern.matcher(nodesBlock);
-
-        int cnt = 0;
-
-        while (nodeMatcher.find())
-            cnt++;
-
-        return cnt;
-    }
-
     /** @return Client address. */
     public String clientAddress() {
         return getHost() + ":" + getMappedPort(THIN_CLIENT_PORT);
+    }
+
+    /** */
+    public String discoveryAddress() {
+        // Возвращаем IPv4 адрес явно
+        return "127.0.0.1:" + getMappedPort(47500);
     }
 
     /** */
@@ -215,14 +213,5 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
             throw new IllegalStateException(result.toString());
 
         return result.getStdout();
-    }
-
-    /** Rolling upgrade status. */
-    public enum RollingUpgradeStatus {
-        /** */
-        ENABLED,
-
-        /** */
-        DISABLED
     }
 }
