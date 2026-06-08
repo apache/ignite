@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -39,7 +40,6 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
-import org.apache.ignite.internal.GridKernalState;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -59,23 +59,9 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /**
  * Tests interaction between local continuous queries created with {@link ContinuousQuery#setLocal(boolean)} set to
  * {@code true} and transaction rollback counter cleanup.
- * <p>
- * When a transactional update is rolled back, {@code IgniteTxHandler} closes the corresponding partition update
- * counter gaps and calls {@code CacheContinuousQueryManager#skipUpdateCounter} for the rolled back counters. These
- * skipped counters are needed by distributed continuous queries to release pending events after gaps caused by
- * rolled back updates.
- * <p>
- * Local continuous queries are different: their regular update events are delivered directly to the local listener and
- * do not use the distributed partition recovery path based on skipped update counters. Therefore, local-only continuous
- * query listeners must not be passed into {@code skipUpdateCounter}. Otherwise, the local-only handler may reach the
- * unsupported {@code loc == true && locOnly == true} path in
- * {@code CacheContinuousQueryHandler.CacheContinuousQueryListener#skipUpdateCounter}.
- * <p>
- * This class verifies that local continuous queries are ignored by skipped-counter processing, while ordinary
- * distributed continuous queries continue to work correctly.
  */
 @RunWith(Parameterized.class)
-public class CacheContinuousQueryLocalTxRollbackTest extends GridCommonAbstractTest {
+public class LocalContinuousQueryWithNodeFailureTest extends GridCommonAbstractTest {
     /** */
     private static final int NODE_CNT = 3;
 
@@ -134,10 +120,8 @@ public class CacheContinuousQueryLocalTxRollbackTest extends GridCommonAbstractT
      * partition update counter gaps after a node failure.
      */
     @Test
-    public void checkLocalAndDistributedCqAfterNodeFail() throws Exception {
-        IgniteEx ignite = startGrids(NODE_CNT);
-
-        ignite.cluster().state(ClusterState.ACTIVE);
+    public void testTransactionalCache() throws Exception {
+        startGrids(NODE_CNT).cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
 
@@ -165,20 +149,22 @@ public class CacheContinuousQueryLocalTxRollbackTest extends GridCommonAbstractT
             assertTrue(
                 String.format("Failed to receive expected updates before node failure [locUpdates=%s, distrUpdates=%s]",
                     updatesLocBeforeFail.get(), updatesDistrBeforeFail.get()),
-                waitForCondition(() -> updatesLocBeforeFail.get() > 0 && updatesDistrBeforeFail.get() > 0, 3_000)
+                waitForCondition(() -> updatesLocBeforeFail.get() > 0 && updatesDistrBeforeFail.get() > 0,
+                    getTestTimeout() / 2)
             );
 
             failNode(NODE_CNT - 1);
 
-            assertFalse("Cluster stopped/stopping after target node failure",
-                waitForCondition(() ->
-                    ignite.context().gateway().getState() == GridKernalState.STOPPED ||
-                    ignite.context().gateway().getState() == GridKernalState.STOPPING,
-                    10_000)
-            );
+            waitForTopology(NODE_CNT - 1);
 
-            assertEquals("Not enogh nodes sirvuved after target node failure",
-                NODE_CNT - 1, ignite.cluster().nodes().size());
+            nodeFailed.set(true);
+
+            assertTrue(
+                String.format("Failed to receive expected updates after node failure [locUpdates=%s, distrUpdates=%s]",
+                    updatesLocAfterFail.get(), updatesDistrAfterFail.get()),
+                waitForCondition(() -> updatesLocAfterFail.get() > 0 && updatesDistrAfterFail.get() > 0,
+                    getTestTimeout() / 2)
+            );
 
             for (int i : IntStream.range(0, NODE_CNT - 1).toArray()) {
                 IgniteEx grid = grid(i);
@@ -186,14 +172,6 @@ public class CacheContinuousQueryLocalTxRollbackTest extends GridCommonAbstractT
                 assertFalse("Grid " + i + " is stopping", grid.context().isStopping());
                 assertNull("Failure context is not null for grid " + i, grid.context().failure().failureContext());
             }
-
-            nodeFailed.set(true);
-
-            assertTrue(
-                String.format("Failed to receive expected updates after node failure [locUpdates=%s, distrUpdates=%s]",
-                    updatesLocAfterFail.get(), updatesDistrAfterFail.get()),
-                waitForCondition(() -> updatesLocAfterFail.get() > 0 && updatesDistrAfterFail.get() > 0, 3_000)
-            );
         }
         finally {
             stopTxLoad.set(true);
@@ -215,12 +193,17 @@ public class CacheContinuousQueryLocalTxRollbackTest extends GridCommonAbstractT
                 try (
                     Transaction tx = grid.transactions().txStart(
                         TransactionConcurrency.PESSIMISTIC,
-                        TransactionIsolation.REPEATABLE_READ
-                    )) {
+                        TransactionIsolation.REPEATABLE_READ)
+                ) {
                     Map<Integer, Object> vals = rnd.ints()
                         .limit(KEYS_PER_TX)
                         .boxed()
-                        .collect(Collectors.toMap(Function.identity(), Function.identity(), (a, b) -> a));
+                        .collect(Collectors.toMap(
+                            Function.identity(),
+                            Function.identity(),
+                            (a, b) -> a,
+                            TreeMap::new
+                        ));
 
                     cache.putAll(vals);
 

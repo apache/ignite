@@ -25,7 +25,6 @@ import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinu
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryDeploymentToClientTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryEntriesExpireTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFilterDeploymentFailedTest;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryLocalTxRollbackTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryOperationP2PTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryOrderingEventTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryRandomOperationsTest;
@@ -41,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheCon
 import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryReplicatedAtomicOneNodeTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryReplicatedAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.IgniteCacheContinuousQueryClientTest;
+import org.apache.ignite.internal.processors.cache.query.continuous.LocalContinuousQueryWithNodeFailureTest;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsQueryTest;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsSystemViewTablesTest;
 import org.apache.ignite.internal.processors.query.DropTableAfterCteSqlQueryTest;
@@ -87,7 +87,7 @@ import org.junit.runners.Suite;
     QueryEntityAliasesTest.class,
     CacheContinuousQueryEntriesExpireTest.class,
     DropTableAfterCteSqlQueryTest.class,
-    CacheContinuousQueryLocalTxRollbackTest.class,
+    LocalContinuousQueryWithNodeFailureTest.class,
 })
 public class IgniteCacheQuerySelfTestSuite6 {
 }
