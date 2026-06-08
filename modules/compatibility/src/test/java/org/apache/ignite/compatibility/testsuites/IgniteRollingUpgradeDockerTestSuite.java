@@ -17,7 +17,7 @@
 
 package org.apache.ignite.compatibility.testsuites;
 
-import org.apache.ignite.compatibility.testcontainers.IgniteRebalanceOnUpgradeTest;
+import org.apache.ignite.compatibility.ru.IgniteRebalanceOnUpgradeTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 

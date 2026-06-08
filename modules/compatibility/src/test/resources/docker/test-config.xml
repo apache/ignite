@@ -30,13 +30,30 @@
             <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
                 <property name="defaultDataRegionConfiguration">
                     <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
-                        <property name="name" value="default_data_region"/>
+                        <property name="name" value="testRegion"/>
                         <property name="initialSize" value="#{1L * 1024 * 1024 * 1024}"/>
                         <property name="maxSize" value="#{10L * 1024 * 1024 * 1024}"/>
                         <property name="persistenceEnabled" value="true"/>
                     </bean>
                 </property>
             </bean>
+        </property>
+<!--        <property name="discoverySpi">-->
+<!--            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">-->
+<!--                <property name="localAddress" value="0.0.0.0"/>-->
+<!--                <property name="ipFinder">-->
+<!--                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">-->
+<!--                        <property name="addresses">-->
+<!--                            <list>-->
+<!--                                <value>127.0.0.1:47500</value>-->
+<!--                            </list>-->
+<!--                        </property>-->
+<!--                    </bean>-->
+<!--                </property>-->
+<!--            </bean>-->
+<!--        </property>-->
+        <property name="pluginProviders">
+            <bean class="org.apache.ignite.compatibility.testframework.plugins.TestCompatibilityPluginProvider"/>
         </property>
     </bean>
 </beans>
