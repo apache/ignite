@@ -212,7 +212,7 @@ public class IgniteWindow extends Window implements IgniteRel {
 
     /**
      * Check left collation satisfies right one.
-     * - Collations field indicies of the left should be a prefix for right collation.
+     * - Collations field indicies of the right should be a prefix for left collation.
      * - Group fields sort direction can be changed to desired collation.
      * - Order fields sort direction should be the same as in desired collation.
      */
@@ -234,7 +234,7 @@ public class IgniteWindow extends Window implements IgniteRel {
         // desired collation should start with same fields in any order / with any direction.
         int rightGrpFldsCnt = Math.min(grpKeysSize, rightFldCnt);
         ImmutableBitSet leftGrpFlds = ImmutableBitSet.of(Util.first(left.getKeys(), grpKeysSize));
-        ImmutableBitSet rightGrpFlds = ImmutableBitSet.of(Util.first(right.getKeys(), Math.min(grpKeysSize, rightGrpFldsCnt)));
+        ImmutableBitSet rightGrpFlds = ImmutableBitSet.of(Util.first(right.getKeys(), rightGrpFldsCnt));
         if (!leftGrpFlds.contains(rightGrpFlds))
             return false;
         else if (grpKeysSize >= rightFldCnt)
