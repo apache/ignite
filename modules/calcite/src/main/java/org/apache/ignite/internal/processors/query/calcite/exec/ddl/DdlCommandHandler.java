@@ -28,12 +28,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
-import javax.annotation.Nullable;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Table;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.MarshallerContextImpl;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
@@ -64,7 +65,9 @@ import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityPermission;
+import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
 import static org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal.SAVEPOINTS_EXPLICIT_TX_ONLY;
 import static org.apache.ignite.internal.processors.query.QueryUtils.convert;
 import static org.apache.ignite.internal.processors.query.QueryUtils.isDdlOnSchemaSupported;
@@ -179,6 +182,12 @@ public class DdlCommandHandler {
         checkKVWrappedParam(cmd);
 
         CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(cmd.tableName());
+
+        if (!F.isEmpty(cmd.valueTypeName()))
+            validateTypeName(cmd.valueTypeName());
+
+        if (!F.isEmpty(cmd.keyTypeName()))
+            validateTypeName(cmd.keyTypeName());
 
         QueryEntity e = toQueryEntity(cmd);
 
@@ -436,14 +445,23 @@ public class DdlCommandHandler {
         if (!F.isEmpty(scale))
             res.setFieldsScale(scale);
 
-        String valTypeName = QueryUtils.createTableValueTypeName(cmd.schemaName(), cmd.tableName());
+        String generatedValTypeName;
+        String generatedKeyTypeName;
+
+        do {
+            generatedValTypeName = QueryUtils.createTableValueTypeName(cmd.schemaName(), cmd.tableName());
+            generatedKeyTypeName = QueryUtils.createTableKeyTypeName(generatedValTypeName);
+        }
+        while (hasTypeIdCollisions(generatedValTypeName) || hasTypeIdCollisions(generatedKeyTypeName));
+
+        String valTypeName = generatedValTypeName;
 
         String keyTypeName;
         if ((!F.isEmpty(cmd.primaryKeyColumns()) && cmd.primaryKeyColumns().size() > 1) || !F.isEmpty(cmd.keyTypeName())) {
             keyTypeName = cmd.keyTypeName();
 
             if (F.isEmpty(keyTypeName))
-                keyTypeName = QueryUtils.createTableKeyTypeName(valTypeName);
+                keyTypeName = generatedKeyTypeName;
 
             if (!F.isEmpty(cmd.primaryKeyColumns())) {
                 res.setKeyFields(new LinkedHashSet<>(cmd.primaryKeyColumns()));
@@ -457,7 +475,7 @@ public class DdlCommandHandler {
             if (cmd.wrapKey()) {
                 res.setKeyFields(Set.copyOf(cmd.primaryKeyColumns()));
 
-                keyTypeName = QueryUtils.createTableKeyTypeName(valTypeName);
+                keyTypeName = generatedKeyTypeName;
 
                 res.setPreserveKeysOrder(true);
             }
@@ -497,5 +515,36 @@ public class DdlCommandHandler {
             res.setNotNullFields(notNullFields);
 
         return res;
+    }
+
+    /** */
+    private void validateTypeName(String typeName) {
+        String duplicatedTypeName = duplicatedTypeName(typeName);
+        if (duplicatedTypeName != null) {
+            throw new IgniteSQLException(
+                "Duplicate ID [typeId=" + qryProc.objectContext().binaryContext().typeId(typeName) +
+                ", oldCls=" + duplicatedTypeName +
+                ", newCls=" + typeName + ']');
+        }
+    }
+
+    /** */
+    private boolean hasTypeIdCollisions(String typeName) {
+        return duplicatedTypeName(typeName) != null;
+    }
+
+    /** */
+    private @Nullable String duplicatedTypeName(String typeName) {
+        BinaryContext binCtx = qryProc.objectContext().binaryContext();
+
+        int typeId = binCtx.typeId(typeName);
+
+        String anotherTypeName = ((MarshallerContextImpl)binCtx.marshaller().getContext()).resolveClassName(JAVA_ID, typeId);
+
+        if (anotherTypeName == null || anotherTypeName.equals(typeName)
+            || binCtx.userTypeName(anotherTypeName).equals(binCtx.userTypeName(typeName)))
+            return null;
+
+        return anotherTypeName;
     }
 }

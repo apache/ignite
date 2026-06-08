@@ -541,19 +541,36 @@ public class MarshallerContextImpl implements MarshallerContext {
     /**
      * @param platformId Platform id.
      * @param typeId Type id.
+     * @param ensureAccepted Ensure that mapping is accepted.
      */
-    public String resolveMissedMapping(byte platformId, int typeId) {
+    private @Nullable String resolveClassName(byte platformId, int typeId, boolean ensureAccepted) {
         ConcurrentMap<Integer, MappedName> cache = getCacheFor(platformId);
 
         MappedName mappedName = cache.get(typeId);
 
         if (mappedName != null) {
-            assert mappedName.accepted() : mappedName;
+            assert !ensureAccepted && mappedName.accepted() : mappedName;
 
             return mappedName.className();
         }
 
         return null;
+    }
+
+    /**
+     * @param platformId Platform id.
+     * @param typeId Type id.
+     */
+    public @Nullable String resolveClassName(byte platformId, int typeId) {
+        return resolveClassName(platformId, typeId, false);
+    }
+
+    /**
+     * @param platformId Platform id.
+     * @param typeId Type id.
+     */
+    public @Nullable String resolveMissedMapping(byte platformId, int typeId) {
+        return resolveClassName(platformId, typeId, true);
     }
 
     /** {@inheritDoc} */
