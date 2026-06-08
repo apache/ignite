@@ -31,7 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.classpath.IgniteClassPathState.CREATING;
+import static org.apache.ignite.internal.classpath.IgniteClassPathState.NEW;
 
 /**
  * TODO:
@@ -43,7 +43,7 @@ import static org.apache.ignite.internal.classpath.IgniteClassPathState.CREATING
  */
 public class ClassPathProcessor extends GridProcessorAdapter {
     /** Prefix for metastorage keys. */
-    public static final String METASTORE_PREFIX = "classpath.";
+    public static final String METASTORE_PREFIX = "icp.";
 
     /** */
     public final DeployToAllProcess deployToAllProcess;
@@ -69,33 +69,36 @@ public class ClassPathProcessor extends GridProcessorAdapter {
     public UUID startCreation(String name, String[] files, long[] lengths) {
         assert files.length == lengths.length : "wrong arrays lengths";
 
+        // TODO: allow dot here.
         A.ensure(U.alphanumericUnderscore(name), "Classpath name must satisfy the following name pattern: a-zA-Z0-9_");
 
-        IgniteClassPath icp = new IgniteClassPath(UUID.randomUUID(), name, files, lengths);
+        IgniteClassPath icp = new IgniteClassPath(UUID.randomUUID(), name, files, lengths, NEW);
 
-        casToMetastorage(icp, null);
+        NodeFileTree ft = ctx.pdsFolderResolver().fileTree();
+
+        File root = ft.classPath(name);
 
         try {
-            NodeFileTree ft = ctx.pdsFolderResolver().fileTree();
-
-            File root = ft.classPath(name);
+            casToMetastorage(null, icp);
 
             NodeFileTree.mkdir(root, "Ignite Class Path root: " + name);
-
-            log.info("New classpath registered [root = " + root + ", icp=" + icp + ']');
-
-            return icp.id();
         }
         catch (Exception e) {
             try {
                 ctx.distributedMetastorage().remove(metastorageKey(icp));
+
+                U.delete(root);
             }
             catch (IgniteCheckedException ex) {
-                log.error("Can't remove metastorage key for IgniteClassPath: " + metastorageKey(icp), e);
+                log.error("Cleanup after IgniteClassPath creation failed [key=" + metastorageKey(icp) + ", root=" + root + ']', e);
             }
 
             throw e;
         }
+
+        log.info("New classpath created [root = " + root + ", icp=" + icp + ']');
+
+        return icp.id();
     }
 
     /**
@@ -145,7 +148,7 @@ public class ClassPathProcessor extends GridProcessorAdapter {
     }
 
     /** */
-    private void casToMetastorage(IgniteClassPath icp, @Nullable IgniteClassPath prev) {
+    private void casToMetastorage(@Nullable IgniteClassPath prev, IgniteClassPath icp) {
         try {
             if (!ctx.distributedMetastorage().compareAndSet(metastorageKey(icp), prev, icp))
                 throw new IgniteException("Classpath alreay exists: " + icp.name());
@@ -157,6 +160,7 @@ public class ClassPathProcessor extends GridProcessorAdapter {
 
     /**
      * @param icpID ClassPath ID.
+     * @param ctx Kernal context.
      * @return Class path.
      */
     static IgniteClassPath fromMetastorage(UUID icpID, GridKernalContext ctx) {
@@ -171,8 +175,8 @@ public class ClassPathProcessor extends GridProcessorAdapter {
             if (icp[0] == null)
                 throw new IgniteException("ClassPath not found: " + icpID);
 
-            if (icp[0].state() != CREATING)
-                throw new IgniteException("ClassPath in wrong state [expected=" + CREATING + ", status=" + icp[0].state() + ']');
+            if (icp[0].state() != NEW)
+                throw new IgniteException("ClassPath in wrong state [expected=" + NEW + ", status=" + icp[0].state() + ']');
 
             return icp[0];
         }

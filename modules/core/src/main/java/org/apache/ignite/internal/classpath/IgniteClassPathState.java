@@ -20,7 +20,7 @@ package org.apache.ignite.internal.classpath;
 /** */
 public enum IgniteClassPathState {
     /** Creationg process in progress. */
-    CREATING,
+    NEW,
 
     /** Ready for usage. */
     READY,

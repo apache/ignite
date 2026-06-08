@@ -86,7 +86,7 @@ public class DeployToAllProcess {
     private IgniteInternalFuture<ClassPathDeployToAllResponse> startDeployToAllProcess(ClassPathDeployToAllRequest req) {
         IgniteClassPath icp = fromMetastorage(req.icpId, ctx);
 
-        if (deployToAllFuts.containsKey(req.icpId)) {
+        if (req.uploadNodeId.equals(ctx.localNodeId())) {
             log.info("Upload node skip download [icp=" + icp + ']');
 
             return new GridFinishedFuture<>(new ClassPathDeployToAllResponse(icp.id()));

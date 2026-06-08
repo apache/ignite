@@ -644,7 +644,7 @@ public class TcpIgniteClient implements IgniteClient {
         byte[] batch = new byte[(int)(U.MB)];
 
         try (InputStream fis = Files.newInputStream(file)) {
-            long[] offset = new long[] {0};
+            long[] offset = new long[]{0};
             int[] bytesCnt = new int[1];
 
             // We want to create empty file on the server side.

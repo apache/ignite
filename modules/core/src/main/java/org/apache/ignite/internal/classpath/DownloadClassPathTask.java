@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.classpath;
 
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
@@ -38,6 +38,8 @@ public class DownloadClassPathTask implements Callable<IgniteInternalFuture<Clas
     /** Ignite class path. */
     private final IgniteClassPath icp;
 
+    private final AtomicInteger cntr;
+
     /** Resulting future. */
     private final GridFutureAdapter<ClassPathDeployToAllResponse> res;
 
@@ -50,30 +52,20 @@ public class DownloadClassPathTask implements Callable<IgniteInternalFuture<Clas
         this.log = ctx.log(DownloadClassPathTask.class);
         this.icp = icp;
         this.res = new GridFutureAdapter<>();
+        this.cntr = new AtomicInteger(icp.files().length);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<ClassPathDeployToAllResponse> call() {
-        Stream.of(icp.files())
-            .map(DownloadClassPathFileTask::new)
-            .map(ctx.pools().getPeerClassLoadingExecutorService()::submit)
-            .forEach(fileFut -> {
-                if (res.isDone())
-                    fileFut.cancel(true);
-
-                try {
-                    fileFut.get();
-                }
-                catch (ExecutionException | InterruptedException e) {
-                    if (!res.isDone()) {
-                        log.warning("Classpath download files error: " + icp, e);
-
-                        res.onDone(e);
-                    }
-                }
-            });
-
-        res.onDone(new ClassPathDeployToAllResponse(icp.id()));
+        try {
+            // TODO: check correct executor used.
+            Stream.of(icp.files())
+                .map(DownloadClassPathFileTask::new)
+                .map(ctx.pools().getPeerClassLoadingExecutorService()::submit);
+        }
+        catch (Throwable e) {
+            res.onDone(e);
+        }
 
         return res;
     }
@@ -90,7 +82,26 @@ public class DownloadClassPathTask implements Callable<IgniteInternalFuture<Clas
 
         /** {@inheritDoc} */
         @Override public void run() {
+            try {
+                run0();
+            }
+            catch (Throwable e) {
+                res.onDone(e);
+            }
+        }
+
+        /** */
+        private void run0() {
             log.info("Downloading file: " + name);
+
+            if (!res.isDone()) {
+                int filesToDownload = cntr.addAndGet(-1);
+
+                log.info("File downloaded [name=" + name + ", filesToDownload=" + filesToDownload + ']');
+
+                if (filesToDownload == 0)
+                    res.onDone(new ClassPathDeployToAllResponse(icp.id()));
+            }
         }
     }
 }

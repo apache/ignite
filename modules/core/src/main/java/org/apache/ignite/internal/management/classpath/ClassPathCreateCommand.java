@@ -27,6 +27,7 @@ import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.classpath.IgniteClassPath;
 import org.apache.ignite.internal.client.thin.TcpIgniteClient;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.NativeCommand;
@@ -34,7 +35,9 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 /**
+ * Ignite classpath creation command.
  *
+ * @see IgniteClassPath
  */
 public class ClassPathCreateCommand implements NativeCommand<ClassPathCreateCommandArg, Void> {
     /** {@inheritDoc} */
@@ -85,6 +88,7 @@ public class ClassPathCreateCommand implements NativeCommand<ClassPathCreateComm
         // We don't want to send full path to server nodes.
         // Server nodes require files names, only.
         arg.files = fileNames(files);
+        // TODO: add CRC or other check of file integrity.
 
         ClusterNode uploadNode = uploadNode(cli);
 
@@ -92,7 +96,7 @@ public class ClassPathCreateCommand implements NativeCommand<ClassPathCreateComm
 
         UUID icpID = CommandUtils.execute(client, null, ClassPathStartCreationTask.class, arg, Collections.singletonList(uploadNode));
 
-        printer.accept("New classpath registered [uploadNode=" + uploadNode.id() + ", name=" + arg.name + ", id=" + icpID.toString() + ']');
+        printer.accept("New classpath created [uploadNode=" + uploadNode.id() + ", name=" + arg.name + ", id=" + icpID.toString() + ']');
         printer.accept("Starting to upload files:");
 
         // TODO: add pretty print here.

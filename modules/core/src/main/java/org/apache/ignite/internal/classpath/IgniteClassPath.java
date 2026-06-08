@@ -48,12 +48,12 @@ public class IgniteClassPath implements Serializable {
      * @param name User provided name.
      * @param files Files to include to classpath.
      */
-    public IgniteClassPath(UUID id, String name, String[] files, long[] lengths) {
+    public IgniteClassPath(UUID id, String name, String[] files, long[] lengths, IgniteClassPathState state) {
         this.id = id;
         this.name = name;
         this.files = files;
         this.lengths = lengths;
-        this.state = IgniteClassPathState.CREATING;
+        this.state = state;
     }
 
     /** */
