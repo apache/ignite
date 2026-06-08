@@ -249,13 +249,17 @@ public class OperationContext {
         if (newSnp == prevSnp)
             return NOOP_SCOPE;
 
-        changeState(newSnp);
+        changeState(prevSnp, newSnp);
 
-        return () -> changeState(prevSnp);
+        OperationContextSnapshot curSnpImpl = lastUpd;
+
+        return () -> changeState(curSnpImpl, prevSnp);
     }
 
     /** */
-    private void changeState(@Nullable OperationContextSnapshot newState) {
+    private void changeState(OperationContextSnapshot expState, @Nullable OperationContextSnapshot newState) {
+        assert lastUpd == expState;
+
         lastUpd = createUpdate(newState);
     }
 

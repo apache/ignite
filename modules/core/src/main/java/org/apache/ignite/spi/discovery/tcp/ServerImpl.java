@@ -3395,12 +3395,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                         }
                     }
 
-                    // TODO: remove
-                    if (IgniteUtils.TEST && msg0.opCtxMessage != null) {
-                        log.error("TEST | sending SecurityAwareCustomMessageWrapper to a client "
-                            + clientMsgWorker.clientNodeId + " from " + locNode.order());
-                    }
-
                     clientMsgWorker.addMessage(msg0, msgBytes0);
                 }
             }
@@ -6273,9 +6267,6 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param waitForNotification If {@code true} then thread will wait when discovery event notification has finished.
          */
         private void processCustomMessage(TcpDiscoveryCustomEventMessage msg, boolean waitForNotification) {
-            if(msg.opCtxMessage != null && IgniteUtils.TEST)
-                log.error("TEST | processCustomMessage on server " + locNode.order());
-
             if (isLocalNodeCoordinator()) {
                 if (postponeUndeliveredMessages(msg))
                     return;

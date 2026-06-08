@@ -544,9 +544,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /** {@inheritDoc} */
     @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
-        if (OperationContext.createSnapshot() != null && IgniteUtils.TEST)
-            log.error("TEST | initializing SecurityAwareCustomMessageWrapper from " + locNode.order());
-
         impl.sendCustomEvent(msg);
     }
 

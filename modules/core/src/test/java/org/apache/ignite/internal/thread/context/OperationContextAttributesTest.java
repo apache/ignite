@@ -468,7 +468,7 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
             try (Scope ignored1 = OperationContext.set(INT_ATTR, 2)) {
                 checkAttributeValues("test1", 2);
 
-                assertThrowsWithCause(snpScope::close, AssertionError.class);
+                assertThrowsWithCause(()->snpScope.close(), AssertionError.class);
             }
         }
 

@@ -930,9 +930,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     SecuritySubjectMessage secSubjMsg = OperationContextAttributeType.SECURITY.get();
 
                     if (secSubjMsg != null) {
-                        if (IgniteUtils.TEST && locNode.isClient())
-                            log.error("TEST | found subjId: " + secSubjMsg.id + " on client " + locNode.order());
-
                         try (Scope ignored = ctx.security().withContext(secSubjMsg.id)) {
                             super.run();
                         }
@@ -2329,9 +2326,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      */
     public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteCheckedException {
         IgniteSecurity sec = ctx.security();
-
-        if(sec.enabled() && IgniteUtils.TEST)
-            log.error("TEST | sendCustomEvent from " + locNode.order() + ':' + locNode.id() +  " with subj " + sec.securityContext().subject().id());
 
         try {
             if (sec.enabled()) {

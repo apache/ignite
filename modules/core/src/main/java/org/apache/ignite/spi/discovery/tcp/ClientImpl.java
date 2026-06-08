@@ -528,8 +528,6 @@ class ClientImpl extends TcpDiscoveryImpl {
         OperationContextSnapshot opCtxSnp = OperationContext.createSnapshot();
 
         if (opCtxSnp != null) {
-            if(IgniteUtils.TEST) log.error("TEST | sending SecurityAwareCustomMessageWrapper from client " + locNode.order());
-
             for (T2<Byte, ?> ap : opCtxSnp) {
                 OperationContextAttributeType opAttrType = OperationContextAttributeType.of(ap.get1());
 
@@ -2601,10 +2599,6 @@ class ClientImpl extends TcpDiscoveryImpl {
         private void processCustomMessage(TcpDiscoveryCustomEventMessage msg) {
             if (state == CONNECTED) {
                 DiscoverySpiListener lsnr = spi.lsnr;
-
-                if (IgniteUtils.TEST && msg.opCtxMessage != null) {
-                    log.error("TEST | processCustomMessage on client " + locNode.order());
-                }
 
                 if (lsnr != null) {
                     UUID nodeId = msg.creatorNodeId();

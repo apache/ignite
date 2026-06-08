@@ -192,7 +192,7 @@ public abstract class AbstractEventSecurityContextTest extends AbstractSecurityT
             })
             .map(subjId -> {
                 try {
-                    return grid(node).context().security().authenticatedSubject(subjId).login();
+                    return ((IgniteEx)grid(node)).context().security().authenticatedSubject(subjId).login();
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException(e);

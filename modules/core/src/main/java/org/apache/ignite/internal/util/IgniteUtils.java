@@ -271,8 +271,6 @@ import static org.apache.ignite.internal.util.GridUnsafe.staticFieldOffset;
  */
 @SuppressWarnings({"UnusedReturnValue"})
 public abstract class IgniteUtils extends CommonUtils {
-    public static volatile boolean TEST = false;
-
     /** Logger. */
     private static final Logger log = Logger.getLogger(IgniteUtils.class.getName());
 
