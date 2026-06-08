@@ -4616,7 +4616,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** */
         private IgniteNodeValidationResult validateMarshallerSuid(TcpDiscoveryJoinRequestMessage req) {
-            boolean locMarshUseDfltSuid = booleanAttribute(locNode, ATTR_MARSHALLER_USE_DFLT_SUID, true); // True by default.
+            boolean locMarshUseDfltSuid = booleanAttribute(locNode, ATTR_MARSHALLER_USE_DFLT_SUID, true);
             boolean rmtMarshUseDfltSuid = booleanAttribute(req.node(), ATTR_MARSHALLER_USE_DFLT_SUID, true);
 
             if (locMarshUseDfltSuid == rmtMarshUseDfltSuid)
