@@ -20,9 +20,11 @@ package org.apache.ignite.util;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Collectors;
+import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
+import static org.hamcrest.Matchers.is;
 
 /**
  * Test for --classpath command.
@@ -40,6 +42,8 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
     /** Tests --create command. */
     @Test
     public void testCreate() throws Exception {
+        Assume.assumeThat("Only cli mode supported", commandHandler, is(CLI_CMD_HND));
+
         //grid(0).cluster().state(ClusterState.ACTIVE);
 
         String jars = Files.list(Path.of(getClass().getClassLoader().getResource(".").getPath() + "../"))
