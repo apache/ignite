@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -44,10 +43,13 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
+import org.apache.ignite.internal.thread.context.OperationContext;
+import org.apache.ignite.internal.thread.context.Scope;
+import org.apache.ignite.internal.thread.context.function.OperationContextAwareWrapper;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.thread.IgniteThread;
+import org.apache.ignite.internal.util.worker.queue.IgniteAsyncObjectHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -94,7 +96,7 @@ public class ServiceDeploymentManager {
     private final IgniteLogger log;
 
     /** Deployment worker. */
-    private final ServicesDeploymentWorker depWorker;
+    private final ServicesDeploymentTaskHandler depTaskHandler;
 
     /** Default dump operation limit. */
     private final long dfltDumpTimeoutLimit;
@@ -112,7 +114,7 @@ public class ServiceDeploymentManager {
 
         ctx.io().addMessageListener(TOPIC_SERVICES, commLsnr);
 
-        depWorker = new ServicesDeploymentWorker();
+        depTaskHandler = new ServicesDeploymentTaskHandler();
 
         long limit = getLong(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT_LIMIT, 0);
 
@@ -123,9 +125,9 @@ public class ServiceDeploymentManager {
      * Starts processing of services deployments tasks.
      */
     void startProcessing() {
-        assert depWorker.runner() == null : "Method shouldn't be called twice during lifecycle;";
+        assert depTaskHandler.runner() == null : "Method shouldn't be called twice during lifecycle;";
 
-        new IgniteThread(ctx.igniteInstanceName(), "services-deployment-worker", depWorker).start();
+        depTaskHandler.start();
     }
 
     /**
@@ -141,11 +143,11 @@ public class ServiceDeploymentManager {
 
             ctx.io().removeMessageListener(commLsnr);
 
-            U.cancel(depWorker);
+            U.cancel(depTaskHandler);
 
-            U.join(depWorker, log);
+            U.join(depTaskHandler, log);
 
-            depWorker.tasksQueue.clear();
+            depTaskHandler.clearQueue();
 
             pendingEvts.clear();
 
@@ -178,25 +180,25 @@ public class ServiceDeploymentManager {
     }
 
     /**
-     * Invokes {@link GridWorker#blockingSectionBegin()} for service deployment worker.
+     * Invokes {@link GridWorker#blockingSectionBegin()} for service deployment task handler.
      * <p/>
      * Should be called from service deployment worker thread.
      */
     void deployerBlockingSectionBegin() {
-        assert depWorker != null && Thread.currentThread() == depWorker.runner();
+        assert depTaskHandler != null && Thread.currentThread() == depTaskHandler.runner();
 
-        depWorker.blockingSectionBegin();
+        depTaskHandler.blockingSectionBegin();
     }
 
     /**
-     * Invokes {@link GridWorker#blockingSectionEnd()} for service deployment worker.
+     * Invokes {@link GridWorker#blockingSectionEnd()} for service deployment task handler.
      * <p/>
      * Should be called from service deployment worker thread.
      */
     void deployerBlockingSectionEnd() {
-        assert depWorker != null && Thread.currentThread() == depWorker.runner();
+        assert depTaskHandler != null && Thread.currentThread() == depTaskHandler.runner();
 
-        depWorker.blockingSectionEnd();
+        depTaskHandler.blockingSectionEnd();
     }
 
     /**
@@ -252,7 +254,7 @@ public class ServiceDeploymentManager {
 
         task.onEvent(evt, topVer, depActions);
 
-        depWorker.tasksQueue.add(task);
+        depTaskHandler.addToQueue(task);
     }
 
     /**
@@ -438,16 +440,12 @@ public class ServiceDeploymentManager {
     }
 
     /**
-     * Services deployment worker.
+     * Services deployment task handler.
      */
-    private class ServicesDeploymentWorker extends GridWorker {
-        /** Queue to process. */
-        private final LinkedBlockingQueue<ServiceDeploymentTask> tasksQueue = new LinkedBlockingQueue<>();
-
+    private class ServicesDeploymentTaskHandler extends IgniteAsyncObjectHandler<ServiceDeploymentTask> {
         /** {@inheritDoc} */
-        private ServicesDeploymentWorker() {
-            super(ctx.igniteInstanceName(), "services-deployment-worker",
-                ServiceDeploymentManager.this.log, ctx.workersRegistry());
+        private ServicesDeploymentTaskHandler() {
+            super(ctx.igniteInstanceName(), "services-deployment-worker", ServiceDeploymentManager.this.log, ctx.workersRegistry());
         }
 
         /** {@inheritDoc} */
@@ -455,65 +453,60 @@ public class ServiceDeploymentManager {
             Throwable err = null;
 
             try {
-                ServiceDeploymentTask task;
-
                 while (!isCancelled()) {
                     onIdle();
 
-                    blockingSectionBegin();
-
-                    try {
-                        task = tasksQueue.take();
-                    }
-                    finally {
-                        blockingSectionEnd();
-                    }
+                    OperationContextAwareWrapper<ServiceDeploymentTask> contextualTask = takeQueuedElement();
 
                     if (isCancelled())
                         Thread.currentThread().interrupt();
 
-                    task.init();
+                    try (Scope ignored = OperationContext.restoreSnapshot(contextualTask.contextSnapshot())) {
+                        ServiceDeploymentTask task = contextualTask.delegate();
 
-                    final long dumpTimeout = 2 * ctx.config().getNetworkTimeout();
+                        task.init();
 
-                    long dumpCnt = 0;
-                    long nextDumpTime = 0;
+                        final long dumpTimeout = 2 * ctx.config().getNetworkTimeout();
 
-                    while (true) {
-                        try {
-                            blockingSectionBegin();
+                        long dumpCnt = 0;
+                        long nextDumpTime = 0;
 
+                        while (true) {
                             try {
-                                task.waitForComplete(dumpTimeout);
+                                blockingSectionBegin();
+
+                                try {
+                                    task.waitForComplete(dumpTimeout);
+                                }
+                                finally {
+                                    blockingSectionEnd();
+                                }
+
+                                taskPostProcessing(task);
+
+                                break;
                             }
-                            finally {
-                                blockingSectionEnd();
+                            catch (IgniteFutureTimeoutCheckedException ignoredErr) {
+                                if (isCancelled())
+                                    return;
+
+                                if (nextDumpTime <= U.currentTimeMillis()) {
+                                    log.warning("Failed to wait service deployment process or timeout had been" +
+                                        " reached, timeout=" + dumpTimeout +
+                                        (log.isDebugEnabled() ? ", task=" + task : ", taskDepId=" + task.deploymentId()));
+
+                                    long nextTimeout = dumpTimeout * (2 + dumpCnt++);
+
+                                    nextDumpTime = U.currentTimeMillis() + Math.min(nextTimeout, dfltDumpTimeoutLimit);
+                                }
                             }
+                            catch (ClusterTopologyServerNotFoundException e) {
+                                U.error(log, e);
 
-                            taskPostProcessing(task);
+                                taskPostProcessing(task);
 
-                            break;
-                        }
-                        catch (IgniteFutureTimeoutCheckedException ignored) {
-                            if (isCancelled())
-                                return;
-
-                            if (nextDumpTime <= U.currentTimeMillis()) {
-                                log.warning("Failed to wait service deployment process or timeout had been" +
-                                    " reached, timeout=" + dumpTimeout +
-                                    (log.isDebugEnabled() ? ", task=" + task : ", taskDepId=" + task.deploymentId()));
-
-                                long nextTimeout = dumpTimeout * (2 + dumpCnt++);
-
-                                nextDumpTime = U.currentTimeMillis() + Math.min(nextTimeout, dfltDumpTimeoutLimit);
+                                break;
                             }
-                        }
-                        catch (ClusterTopologyServerNotFoundException e) {
-                            U.error(log, e);
-
-                            taskPostProcessing(task);
-
-                            break;
                         }
                     }
                 }

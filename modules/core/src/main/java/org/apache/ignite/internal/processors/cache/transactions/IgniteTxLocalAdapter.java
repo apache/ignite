@@ -475,6 +475,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     }
                 }
 
+                msg.finishUpdating();
+
                 if (msg.size() > 0)
                     cntrMsgs.add(msg);
             }

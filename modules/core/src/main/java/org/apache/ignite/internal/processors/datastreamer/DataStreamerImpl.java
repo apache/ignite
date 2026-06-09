@@ -35,7 +35,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.DelayQueue;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -113,6 +112,7 @@ import org.apache.ignite.internal.util.typedef.internal.GPC;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.queue.IgniteDelayedObjectHandler;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -205,9 +205,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /** Communication topic for responses. */
     private final Object topic;
 
-    /** */
-    private byte[] topicBytes;
-
     /** {@code True} if data loader has been cancelled. */
     private volatile boolean cancelled;
 
@@ -271,7 +268,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     private volatile long lastFlushTime = U.currentTimeMillis();
 
     /** */
-    private final DelayQueue<DataStreamerImpl<K, V>> flushQ;
+    private final IgniteDelayedObjectHandler<DataStreamerImpl<?, ?>> flusher;
 
     /** */
     private boolean skipStore;
@@ -300,12 +297,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /**
      * @param ctx Grid kernal context.
      * @param cacheName Cache name.
-     * @param flushQ Flush queue.
+     * @param flusher Data Streamer flusher.
      */
     public DataStreamerImpl(
         final GridKernalContext ctx,
         @Nullable final String cacheName,
-        DelayQueue<DataStreamerImpl<K, V>> flushQ
+        IgniteDelayedObjectHandler<DataStreamerImpl<?, ?>> flusher
     ) {
         assert ctx != null;
 
@@ -325,7 +322,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         }
 
         this.cacheName = cacheName;
-        this.flushQ = flushQ;
+        this.flusher = flusher;
 
         discoLsnr = new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {
@@ -583,9 +580,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             this.autoFlushFreq = autoFlushFreq;
 
             if (autoFlushFreq != 0 && old == 0)
-                flushQ.add(this);
+                flusher.addToQueue(this);
             else if (autoFlushFreq == 0)
-                flushQ.remove(this);
+                flusher.removeQueuedElement(this);
         }
     }
 
@@ -1947,9 +1944,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                         updaterBytes = U.marshal(ctx, rcvr);
                     }
-
-                    if (topicBytes == null)
-                        topicBytes = U.marshal(ctx, topic);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to marshal.", e);
@@ -1994,7 +1988,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                 DataStreamerRequest req = new DataStreamerRequest(
                     reqId,
-                    topicBytes,
+                    topic,
                     cacheName,
                     updaterBytes,
                     entries,

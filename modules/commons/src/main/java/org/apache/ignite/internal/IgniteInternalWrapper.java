@@ -21,4 +21,15 @@ package org.apache.ignite.internal;
 public interface IgniteInternalWrapper<T> {
     /** @return Wrapped object. */
     public T delegate();
+
+    /**
+     * @param target Object to unwrap.
+     * @return Original object.
+     */
+    public static Object unwrap(Object target) {
+        while (target instanceof IgniteInternalWrapper)
+            target = ((IgniteInternalWrapper<?>)target).delegate();
+
+        return target;
+    }
 }
