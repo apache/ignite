@@ -107,6 +107,9 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
     /** Row cache. */
     private final @Nullable IndexRowCache idxRowCache;
 
+    /** Full row load count metric. */
+    @Nullable private final LongAdderMetric fullRowLoadCnt;
+
     /**
      * Constructor.
      */
@@ -193,6 +196,18 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         initTree(initNew, inlineSize);
 
         this.recommender = recommender;
+
+        fullRowLoadCnt = fullRowLoadMetric(def);
+    }
+
+    /** */
+    @Nullable private static LongAdderMetric fullRowLoadMetric(SortedIndexDefinition def) {
+        MetricRegistryImpl mreg = indexMetricRegistry(def);
+
+        if (mreg == null)
+            return null;
+
+        return mreg.longAdderMetric("FullRowLoadCount", "Count of full entry loads during index search");
     }
 
     /** */
@@ -249,12 +264,42 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         }
     }
 
+    /** */
+    @Nullable private static MetricRegistryImpl indexMetricRegistry(SortedIndexDefinition def) {
+        if (def == null || def.cacheInfo().cacheContext() == null)
+            return null;
+
+        if (IgniteSystemProperties.getBoolean(IGNITE_BPLUS_TREE_DISABLE_METRICS))
+            return null;
+
+        return def.cacheInfo().cacheContext().shared().kernalContext().metric().registry(
+            metricName(INDEX_METRIC_PREFIX, def.idxName().fullName()));
+    }
+
+    /**
+     * Gets full index row and updates related metrics.
+     *
+     * @param io B+Tree IO.
+     * @param pageAddr Page address.
+     * @param idx Row index in page.
+     * @param searchRow Search row.
+     * @return Full index row.
+     * @throws IgniteCheckedException If failed.
+     */
+    private IndexRow getFullRow(BPlusIO<IndexRow> io, long pageAddr, int idx, IndexRow searchRow)
+        throws IgniteCheckedException {
+        if (fullRowLoadCnt != null && def.cacheInfo().cacheContext().statisticsEnabled() && searchRow.indexPlainRow())
+            fullRowLoadCnt.increment();
+
+        return getRow(io, pageAddr, idx);
+    }
+
     /** {@inheritDoc} */
     @Override protected int compare(BPlusIO<IndexRow> io, long pageAddr, int idx, IndexRow row)
         throws IgniteCheckedException {
 
         if (inlineSize == 0) {
-            IndexRow currRow = getRow(io, pageAddr, idx);
+            IndexRow currRow = getFullRow(io, pageAddr, idx, row);
 
             return compareFullRows(currRow, row, 0, rowHandler(), def.rowComparator());
         }
@@ -304,7 +349,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             recommender.recommend(row, inlineSize, pageSize());
 
             if (currRow == null)
-                currRow = getRow(io, pageAddr, idx);
+                currRow = getFullRow(io, pageAddr, idx, row);
 
             return compareFullRows(currRow, row, keyIdx, rowHandler(), def.rowComparator());
         }
@@ -604,18 +649,14 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
     /** */
     private static PageHandlerWrapper<Result> wrapper(SortedIndexDefinition def) {
-        if (def == null || def.cacheInfo().cacheContext() == null)
-            return null;
+        MetricRegistryImpl mreg = indexMetricRegistry(def);
 
-        if (IgniteSystemProperties.getBoolean(IGNITE_BPLUS_TREE_DISABLE_METRICS))
+        if (mreg == null)
             return null;
 
         return new PageHandlerWrapper<Result>() {
             @Override public PageHandler<?, Result> wrap(BPlusTree<?, ?> tree, PageHandler<?, Result> hnd) {
                 GridCacheContext<?, ?> cctx = def.cacheInfo().cacheContext();
-
-                MetricRegistryImpl mreg = cctx.shared().kernalContext().metric().registry(
-                    metricName(INDEX_METRIC_PREFIX, def.idxName().fullName()));
 
                 LongAdderMetric cnt = mreg.longAdderMetric(hnd.getClass().getSimpleName() + "Count",
                     "Count of " + hnd.getClass().getSimpleName() + " operations");
