@@ -276,16 +276,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             metricName(INDEX_METRIC_PREFIX, def.idxName().fullName()));
     }
 
-    /**
-     * Gets full index row and updates related metrics.
-     *
-     * @param io B+Tree IO.
-     * @param pageAddr Page address.
-     * @param idx Row index in page.
-     * @param searchRow Search row.
-     * @return Full index row.
-     * @throws IgniteCheckedException If failed.
-     */
+    /** */
     private IndexRow getFullRow(BPlusIO<IndexRow> io, long pageAddr, int idx, IndexRow searchRow)
         throws IgniteCheckedException {
         if (fullRowLoadCnt != null && def.cacheInfo().cacheContext().statisticsEnabled() && searchRow.indexPlainRow())

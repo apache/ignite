@@ -149,10 +149,7 @@ public class InlineIndexTreeTest extends AbstractIndexingCommonTest {
             assertFalse(reg.name().startsWith(InlineIndexImpl.INDEX_METRIC_PREFIX));
     }
 
-    /**
-     * @param cacheName Cache name.
-     * @return Cache configuration.
-     */
+    /** */
     private CacheConfiguration<Integer, TestClass> cacheConfiguration(String cacheName) {
         CacheConfiguration<Integer, TestClass> ccfg = new CacheConfiguration<>(cacheName);
 
@@ -162,13 +159,7 @@ public class InlineIndexTreeTest extends AbstractIndexingCommonTest {
         return ccfg;
     }
 
-    /**
-     * Starts node, creates cache and creates index for long string field.
-     *
-     * @param inlineSize Inline size.
-     * @return Test context.
-     * @throws Exception If failed.
-     */
+    /** */
     private TestContext prepareCluster(int inlineSize) throws Exception {
         IgniteEx ignite = startGrid(0);
 
@@ -181,46 +172,26 @@ public class InlineIndexTreeTest extends AbstractIndexingCommonTest {
         return new TestContext(cache, longStrFieldReg);
     }
 
-    /**
-     * Creates index for long string field with configured inline size.
-     *
-     * @param cache Cache.
-     * @param inlineSize Inline size.
-     */
+    /** */
     private void createLongStrIdx(IgniteCache<Integer, TestClass> cache, int inlineSize) {
         cache.query(new SqlFieldsQuery(
             "CREATE INDEX " + LONG_STR_IDX + " ON TESTCLASS(longStrField) INLINE_SIZE " + inlineSize
         )).getAll();
     }
 
-    /**
-     * Inserts test rows.
-     *
-     * @param cache Cache.
-     */
+    /** */
     private void insertRows(IgniteCache<Integer, TestClass> cache) {
         for (int i = 0; i < ROWS; i++)
             cache.put(i, new TestClass(i));
     }
 
-    /**
-     * Executes query by long string field.
-     *
-     * @param cache Cache.
-     * @param val Value.
-     */
+    /** */
     private void queryByLongStrField(IgniteCache<Integer, TestClass> cache, int val) {
         cache.query(new SqlFieldsQuery("SELECT * FROM TESTCLASS WHERE LONGSTRFIELD = ?")
             .setArgs(longStrField(val))).getAll();
     }
 
-    /**
-     * Finds index metric registry.
-     *
-     * @param ignite Ignite node.
-     * @param idxName Index name.
-     * @return Metric registry.
-     */
+    /** */
     private ReadOnlyMetricRegistry findRegistry(IgniteEx ignite, String idxName) {
         for (ReadOnlyMetricRegistry reg : ignite.context().metric()) {
             if (reg.name().startsWith(InlineIndexImpl.INDEX_METRIC_PREFIX) &&
@@ -231,12 +202,7 @@ public class InlineIndexTreeTest extends AbstractIndexingCommonTest {
         throw new AssertionError("Not found metric registry for index " + idxName);
     }
 
-    /**
-     * Returns full row load metric value.
-     *
-     * @param reg Metric registry.
-     * @return Metric value.
-     */
+    /** */
     private long metric(ReadOnlyMetricRegistry reg) {
         LongMetric m = reg.findMetric(FULL_ROW_LOAD_CNT);
 
@@ -246,10 +212,7 @@ public class InlineIndexTreeTest extends AbstractIndexingCommonTest {
         return m.value();
     }
 
-    /**
-     * @param val Value.
-     * @return Long string value.
-     */
+    /** */
     private static String longStrField(int val) {
         return LONG_STR_PREFIX + val;
     }
@@ -261,9 +224,7 @@ public class InlineIndexTreeTest extends AbstractIndexingCommonTest {
         super.afterTest();
     }
 
-    /**
-     * Test context.
-     */
+    /** */
     private static class TestContext {
         /** */
         private final IgniteCache<Integer, TestClass> cache;
@@ -271,10 +232,7 @@ public class InlineIndexTreeTest extends AbstractIndexingCommonTest {
         /** */
         private final ReadOnlyMetricRegistry longStrFieldReg;
 
-        /**
-         * @param cache Cache.
-         * @param longStrFieldReg Long string field index metric registry.
-         */
+        /** */
         private TestContext(
             IgniteCache<Integer, TestClass> cache,
             ReadOnlyMetricRegistry longStrFieldReg
@@ -284,9 +242,7 @@ public class InlineIndexTreeTest extends AbstractIndexingCommonTest {
         }
     }
 
-    /**
-     * Test value class.
-     */
+    /** */
     private static class TestClass {
         /** */
         @QuerySqlField(index = true)
@@ -296,9 +252,7 @@ public class InlineIndexTreeTest extends AbstractIndexingCommonTest {
         @QuerySqlField
         private final String longStrField;
 
-        /**
-         * @param val Value.
-         */
+        /** */
         public TestClass(int val) {
             intField = val;
             longStrField = longStrField(val);
