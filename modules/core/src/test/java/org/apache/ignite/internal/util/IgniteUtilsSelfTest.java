@@ -1616,17 +1616,6 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test that remote HTTP URL in Spring cfg is blocked by default.
-     */
-    @Test
-    public void testResolveSpringUrlBlocksHttpByDefault() {
-        assertThrows(log, () -> {
-            IgniteUtils.resolveSpringUrl("http://attacker.example.com/evil.xml");
-            return null;
-        }, IgniteCheckedException.class, "Remote Spring configuration URLs");
-    }
-
-    /**
      * Test that remote HTTPS URL in Spring cfg is blocked by default.
      */
     @Test
@@ -1649,10 +1638,11 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test that error message contains guidance on how to enable remote URLs.
+     * Test that remote HTTP URL in Spring cfg is blocked by default
+     * and error message contains guidance on how to enable remote URLs.
      */
     @Test
-    public void testResolveSpringUrlErrorMessageContainsGuidance() {
+    public void testResolveSpringUrlBlocksHttpByDefault() {
         try {
             IgniteUtils.resolveSpringUrl("http://attacker.example.com/evil.xml");
             fail("Expected IgniteCheckedException");
@@ -1660,7 +1650,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         catch (IgniteCheckedException e) {
             assertTrue(
                 "Error message should contain system property name",
-                e.getMessage().contains(IgniteUtils.IGNITE_ALLOW_REMOTE_SPRING_CFG_URL)
+                e.getMessage().contains(IgniteSystemProperties.IGNITE_ALLOW_REMOTE_SPRING_CFG_URL)
             );
             assertFalse(
                 "Error message should not contain full URL to avoid credential leak",
