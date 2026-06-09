@@ -28,57 +28,76 @@ import static org.apache.ignite.internal.thread.context.OperationContextAttribut
 /** */
 public class DistributedOperationAttributeRegistry {
     /** */
-    public static final DistributedOperationAttributeRegistry INSTANCE = new DistributedOperationAttributeRegistry();
+    private static final DistributedOperationAttributeRegistry INSTANCE = new DistributedOperationAttributeRegistry();
 
     /** */
-    private final AtomicInteger idGen = new AtomicInteger();
+    private final AtomicInteger bitmaskGen = new AtomicInteger();
 
-    /** Attributes by their message type. */
+    /** Attributes by message type. */
     private final Map<Class<? extends Message>, OperationContextAttribute<? extends Message>> msgAttrs = new ConcurrentHashMap<>();
 
-    /** Attributes by their bitmask. */
-    private final Map<Integer, OperationContextAttribute<Message>> bitmaskAttrs = new ConcurrentHashMap<>();
+    /** Attributes by message id. */
+    private final Map<Byte, OperationContextAttribute<? extends Message>> idAttrs = new ConcurrentHashMap<>();
+
+    /** Attributes mapping: bitmask -> id */
+    private final Map<Integer, Byte> attrsMaskIdMap = new ConcurrentHashMap<>();
 
     /** */
-    public <T extends Message> OperationContextAttribute<T> register(Class<T> msgType, @Nullable T initVal) {
+    public static DistributedOperationAttributeRegistry get() {
+        return INSTANCE;
+    }
+
+    /** */
+    public <T extends Message> OperationContextAttribute<T> register(int id, Class<T> msgType, @Nullable T initVal) {
+        assert id >= 0;
         assert initVal == null || msgType.isAssignableFrom(initVal.getClass());
 
-        OperationContextAttribute<T> attr = null;
+        OperationContextAttribute<T> attr;
 
-        synchronized (idGen) {
-            int id = idGen.getAndIncrement();
-
+        synchronized (bitmaskGen) {
             try {
-                assert id < MAX_ATTR_CNT 
-                    : "Exceeded maximum supported number of created Attributes instances [maxCnt=" + MAX_ATTR_CNT + ']';
+                assert msgAttrs.size() < MAX_ATTR_CNT
+                    : "Exceeded maximum number of created Attributes instances [maxCnt=" + MAX_ATTR_CNT + ']';
+                assert id < MAX_ATTR_CNT : "Exceeded maximum attribute id " + (MAX_ATTR_CNT - 1);
 
-                attr = new OperationContextAttribute<>(1 << id, initVal);
+                byte id0 = (byte)id;
 
-                if (msgAttrs.putIfAbsent(msgType, attr) != null) {
-                    throw new IgniteException("Attribute with distributed id " + id + " and message type "
-                        + msgType.getSimpleName() + " already exists.");
-                }
+                int bitmask = 1 << bitmaskGen.getAndIncrement();
+
+                assert attrsMaskIdMap.get(bitmask) == null;
+                assert idAttrs.get(id0) == null;
+
+                attr = new OperationContextAttribute<>(bitmask, initVal);
+
+                if (msgAttrs.putIfAbsent(msgType, attr) != null)
+                    throw new IgniteException("Attribute with message type " + msgType.getSimpleName() + " already exists.");
+
+                attrsMaskIdMap.put(bitmask, id0);
+                idAttrs.put(id0, attr);
             }
             catch (Throwable t) {
-                idGen.decrementAndGet();
+                bitmaskGen.decrementAndGet();
 
                 throw t;
             }
         }
 
-        bitmaskAttrs.put(attr.bitmask(), (OperationContextAttribute<Message>)attr);
-
         return attr;
     }
 
     /** */
-    public static @Nullable OperationContextAttribute<Message> attribute(int bitmask) {
-        return INSTANCE.bitmaskAttrs.get(bitmask);
+    public @Nullable <T extends Message> OperationContextAttribute<T> attribute(Class<T> msgType) {
+        return (OperationContextAttribute<T>)INSTANCE.msgAttrs.get(msgType);
     }
 
     /** */
-    public static @Nullable <T extends Message> OperationContextAttribute<T> attribute(Class<T> msgType) {
-        return (OperationContextAttribute<T>)INSTANCE.msgAttrs.get(msgType);
+    public @Nullable <T extends Message> OperationContextAttribute<T> attribute(byte attrId) {
+        return (OperationContextAttribute<T>)INSTANCE.idAttrs.get(attrId);
+    }
+
+    /** */
+    public @Nullable Byte attributeId(OperationContextAttribute<Object> attr) {
+        return attrsMaskIdMap.get(attr.bitmask());
     }
 
     /** */
@@ -97,7 +116,7 @@ public class DistributedOperationAttributeRegistry {
     /** Mostly for testing purposes. */
     public void clear() {
         msgAttrs.clear();
-        bitmaskAttrs.clear();
-        idGen.set(0);
+        attrsMaskIdMap.clear();
+        bitmaskGen.set(0);
     }
 }

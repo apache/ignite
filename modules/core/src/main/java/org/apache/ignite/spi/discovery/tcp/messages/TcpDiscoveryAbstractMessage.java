@@ -79,10 +79,10 @@ public abstract class TcpDiscoveryAbstractMessage implements Message {
     @Order(4)
     Set<UUID> failedNodes;
 
-    /** Operation context attributes: bitmask -> attribute value. */
+    /** Operation context attributes: id -> attribute value. */
     @GridToStringInclude
     @Order(5)
-    public @Nullable Map<Integer, Message> opCtxAttrs;
+    public @Nullable Map<Byte, Message> opCtxAttrs;
 
     /**
      * Default no-arg constructor for serialization purposes.
@@ -303,8 +303,11 @@ public abstract class TcpDiscoveryAbstractMessage implements Message {
 
         opCtxAttrs = new HashMap<>();
 
-        opCtxSnp.forEach(snpE -> opCtxAttrs.put(snpE.attribute().bitmask(),
-                DistributedOperationAttributeRegistry.attributeMessage(snpE.attribute(), snpE.value())));
+        opCtxSnp.forEach(snpE -> opCtxAttrs.put(
+                DistributedOperationAttributeRegistry.get().attributeId(snpE.attribute()),
+                DistributedOperationAttributeRegistry.attributeMessage(snpE.attribute(), snpE.value())
+            )
+        );
     }
 
     /** {@inheritDoc} */

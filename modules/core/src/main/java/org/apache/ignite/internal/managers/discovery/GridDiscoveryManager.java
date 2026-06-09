@@ -926,8 +926,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 /** */
                 @Override public void run() {
-                    OperationContextAttribute<SecurityContextImpl> attr =
-                        DistributedOperationAttributeRegistry.attribute(SecurityContextImpl.class);
+                    OperationContextAttribute<SecurityContextImpl> attr = DistributedOperationAttributeRegistry.get()
+                        .attribute(SecurityContextImpl.class);
 
                     SecurityContext secCtxMsg = OperationContext.get(attr);
 
@@ -2331,8 +2331,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         try {
             if (sec.enabled()) {
-                OperationContextAttribute<SecurityContextImpl> secAttr =
-                    DistributedOperationAttributeRegistry.attribute(SecurityContextImpl.class);
+                OperationContextAttribute<SecurityContextImpl> secAttr = DistributedOperationAttributeRegistry.get()
+                    .attribute(SecurityContextImpl.class);
 
                 try (Scope ignored = OperationContext.set(secAttr, SecurityContextImpl.of(sec.securityContext()))) {
                     getSpi().sendCustomEvent(msg);

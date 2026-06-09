@@ -473,12 +473,12 @@ abstract class TcpDiscoveryImpl {
 
         Map<OperationContextAttribute<Object>, Object> attrs = U.newHashMap(msg.opCtxAttrs.size());
 
-        msg.opCtxAttrs.forEach((bitmask, attrMsgVal) -> {
-            OperationContextAttribute<?> attr = DistributedOperationAttributeRegistry.attribute(bitmask);
+        msg.opCtxAttrs.forEach((attrId, attrMsgVal) -> {
+            OperationContextAttribute<?> attr = DistributedOperationAttributeRegistry.get().attribute(attrId);
 
             if (attr == null) {
                 if (log.isDebugEnabled())
-                    log.debug("Not found distributed operation context attribute with bitmask " + bitmask + ". Ignored.");
+                    log.debug("Not found distributed operation context attribute with id " + attrId + ". Ignored.");
             }
             else
                 attrs.put((OperationContextAttribute<Object>)attr, attrMsgVal);

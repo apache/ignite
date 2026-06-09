@@ -92,7 +92,7 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
 
         AttributeValueChecker.CHECKS.clear();
 
-        DistributedOperationAttributeRegistry.INSTANCE.clear();
+        DistributedOperationAttributeRegistry.get().clear();
     }
 
     /** {@inheritDoc} */
@@ -298,8 +298,8 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
         assert msgs.size() >= cnt;
 
         for (int i = 0; i < cnt; i++) {
-            OperationContextAttribute<Message> attr =
-                DistributedOperationAttributeRegistry.INSTANCE.register((Class<Message>)msgs.get(i).getClass(), null);
+            OperationContextAttribute<Message> attr = DistributedOperationAttributeRegistry.get()
+                .register(i, (Class<Message>)msgs.get(i).getClass(), null);
 
             attrs.add(attr);
 
@@ -318,9 +318,9 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
 
         assertThrowsAnyCause(
             log,
-            () -> DistributedOperationAttributeRegistry.INSTANCE.register(msgs.get(cnt + 1).getClass(), null),
+            () -> DistributedOperationAttributeRegistry.get().register(cnt + 1, msgs.get(cnt + 1).getClass(), null),
             AssertionError.class,
-            "Exceeded maximum supported number of created Attributes instances"
+            "Exceeded maximum number of created Attributes instances"
         );
     }
 

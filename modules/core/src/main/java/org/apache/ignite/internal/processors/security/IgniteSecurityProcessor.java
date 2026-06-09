@@ -91,8 +91,8 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
     }
 
     /** Context attribute that holds Security Context. */
-    private static final OperationContextAttribute<SecurityContextImpl> SEC_CTX
-        = DistributedOperationAttributeRegistry.INSTANCE.register(SecurityContextImpl.class, null);
+    private static final OperationContextAttribute<SecurityContextImpl> SEC_CTX = DistributedOperationAttributeRegistry.get()
+        .register(0, SecurityContextImpl.class, null);
 
     /** Security processor. */
     private final GridSecurityProcessor secPrc;
