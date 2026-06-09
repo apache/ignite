@@ -89,20 +89,20 @@ public class ContinuousQueryUserCodeExceptionTest extends GridCommonAbstractTest
     /** */
     @Test
     public void testExceptionInLocalListener() throws Exception {
-        checkCQ(new ContinuousQuery<>().setLocalListener(evts -> { throw new RuntimeException(); }));
+        checkCQ(new ContinuousQuery<>().setLocalListener(evts -> { throw new AssertionError(); }));
     }
 
     /** */
     @Test
     public void testExceptionInRemoteFilter() throws Exception {
-        checkCQ(new ContinuousQuery<>().setRemoteFilterFactory(() -> evts -> { throw new RuntimeException(); }));
+        checkCQ(new ContinuousQuery<>().setRemoteFilterFactory(() -> evts -> { throw new AssertionError(); }));
     }
 
     /** */
     @Test
     public void testExceptionInTransformer() throws Exception {
         checkCQ(new ContinuousQueryWithTransformer<>().setLocalListener(evts -> {})
-            .setRemoteTransformerFactory(() -> e -> { throw new RuntimeException(); }));
+            .setRemoteTransformerFactory(() -> e -> { throw new AssertionError(); }));
     }
 
     /** */

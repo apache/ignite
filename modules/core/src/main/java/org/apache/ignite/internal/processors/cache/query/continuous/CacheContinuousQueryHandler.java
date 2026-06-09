@@ -1132,7 +1132,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         catch (NoClassDefFoundError e) {
             P2PClassLoadingIssues.rethrowDisarmedP2PClassLoadingFailure(e);
         }
-        catch (Exception e) {
+        catch (Throwable e) {
             U.error(log, "CacheEntryEventFilter failed: " + e);
         }
 
@@ -1805,7 +1805,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         catch (NoClassDefFoundError e) {
             P2PClassLoadingIssues.rethrowDisarmedP2PClassLoadingFailure(e);
         }
-        catch (Exception e) {
+        catch (Throwable e) {
             U.error(log, "Failed to transform entry", e);
         }
 
