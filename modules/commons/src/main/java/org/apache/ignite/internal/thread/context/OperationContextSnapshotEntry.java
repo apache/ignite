@@ -14,18 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.thread.context;
 
-package org.apache.ignite.internal.processors.security;
+/** */
+public interface OperationContextSnapshotEntry<T> {
+    /** */
+    T value();
 
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.security.SecuritySubject;
-
-/**
- * This interface should be used to get security subject and perform checks for specific permissions.
- */
-public interface SecurityContext extends Message {
-    /**
-     * @return Security subject.
-     */
-    public SecuritySubject subject();
+    /** */
+    OperationContextAttribute<T> attribute();
 }

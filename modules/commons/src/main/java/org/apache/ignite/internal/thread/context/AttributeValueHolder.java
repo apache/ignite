@@ -15,29 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.internal.thread.context;
 
-import org.apache.ignite.internal.thread.context.OperationContextAttribute;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.jetbrains.annotations.Nullable;
 
-/** Transport of {@link OperationContextAttribute}. */
-public class OperationContexAttributeMessage implements Message {
-    /** Operation context attribute type.  */
-    @Order(0)
-    public OperationContextAttributeType type;
+/** Immutable container that stores an attribute and its corresponding value. */
+public class AttributeValueHolder<T> implements OperationContextSnapshotEntry<T> {
+    /** */
+    final OperationContextAttribute<T> attr;
 
-    /** Operation context attribute value. */
-    @Order(1)
-    Message val;
+    /** */
+    final T val;
 
-    /** Empty constructor for serialization purposes. */
-    public OperationContexAttributeMessage() {
-        // No-op.
+    /** */
+    public AttributeValueHolder(OperationContextAttribute<T> attr, @Nullable T val) {
+        this.attr = attr;
+        this.val = val;
     }
 
-    /** Creates operation context attribute message. */
-    public OperationContexAttributeMessage(OperationContextAttributeType type, Message val) {
-        this.type = type;
-        this.val = val;
+    /** {@inheritDoc} */
+    @Override public @Nullable T value() {
+        return val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public OperationContextAttribute<T> attribute() {
+        return attr;
     }
 }

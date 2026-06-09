@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -43,9 +44,15 @@ import org.apache.ignite.internal.processors.cluster.NodeFullMetricsMessage;
 import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.processors.tracing.NoopTracing;
 import org.apache.ignite.internal.processors.tracing.Tracing;
+import org.apache.ignite.internal.thread.context.AttributeValueHolder;
+import org.apache.ignite.internal.thread.context.DistributedOperationAttributeRegistry;
+import org.apache.ignite.internal.thread.context.OperationContextAttribute;
+import org.apache.ignite.internal.thread.context.OperationContextSnapshot;
+import org.apache.ignite.internal.thread.context.OperationContextSnapshotEntry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiThread;
@@ -55,6 +62,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientNodesMetricsMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheckMessage;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_METRICS_QNT_WARN;
@@ -408,6 +416,32 @@ abstract class TcpDiscoveryImpl {
     }
 
     /** */
+    protected static @Nullable OperationContextSnapshot operationContextSnapshot(@Nullable Map<Integer, Message> opCtxAttrs) {
+        if (F.isEmpty(opCtxAttrs))
+            return null;
+
+        return new OperationContextSnapshot() {
+            @Override public @NotNull Iterator<OperationContextSnapshotEntry<Object>> iterator() {
+                return new Iterator<>() {
+                    private final Iterator<Map.Entry<Integer, Message>> mapIt = opCtxAttrs.entrySet().iterator();
+
+                    @Override public boolean hasNext() {
+                        return mapIt.hasNext();
+                    }
+
+                    @Override public OperationContextSnapshotEntry<Object> next() {
+                        Map.Entry<Integer, Message> mapE = mapIt.next();
+
+                        OperationContextAttribute attr = DistributedOperationAttributeRegistry.attribute(mapE.getKey());
+
+                        return new AttributeValueHolder<>(attr, mapE.getValue());
+                    }
+                };
+            }
+        };
+    }
+
+    /** */
     public void processCacheMetricsMessage(TcpDiscoveryMetricsUpdateMessage msg, long tsNanos) {
         for (Map.Entry<UUID, NodeFullMetricsMessage> e : msg.serversFullMetricsMessages().entrySet()) {
             UUID srvrId = e.getKey();
@@ -462,6 +496,27 @@ abstract class TcpDiscoveryImpl {
         Collections.sort(res);
 
         return res;
+    }
+
+    /** */
+    protected @Nullable Map<OperationContextAttribute<Object>, Object> operationContextAttributes(TcpDiscoveryAbstractMessage msg) {
+        if (F.isEmpty(msg.opCtxAttrs))
+            return null;
+
+        Map<OperationContextAttribute<Object>, Object> attrs = U.newHashMap(msg.opCtxAttrs.size());
+
+        msg.opCtxAttrs.forEach((bitmask, attrMsgVal) -> {
+            OperationContextAttribute<?> attr = DistributedOperationAttributeRegistry.attribute(bitmask);
+
+            if (attr == null) {
+                if (log.isDebugEnabled())
+                    log.debug("Not found distributed operation context attribute with bitmask " + bitmask + ". Ignored.");
+            }
+            else
+                attrs.put((OperationContextAttribute<Object>)attr, attrMsgVal);
+        });
+
+        return attrs;
     }
 
     /**

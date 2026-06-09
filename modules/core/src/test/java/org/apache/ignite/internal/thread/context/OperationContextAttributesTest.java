@@ -74,10 +74,10 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
     private static final int DFLT_INT_VAL = -1;
 
     /** */
-    private static final OperationContextAttribute<String> STR_ATTR = OperationContextAttribute.newInstance(0, DFLT_STR_VAL);
+    private static final OperationContextAttribute<String> STR_ATTR = new OperationContextAttribute<>(1, DFLT_STR_VAL);
 
     /** */
-    private static final OperationContextAttribute<Integer> INT_ATTR = OperationContextAttribute.newInstance(1, DFLT_INT_VAL);
+    private static final OperationContextAttribute<Integer> INT_ATTR = new OperationContextAttribute<>(2, DFLT_INT_VAL);
 
     /** */
     private ExecutorService poolToShutdownAfterTest;
@@ -251,7 +251,7 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
     @Test
     public void testRuntimeAttributeCreation() {
         try (Scope ignored1 = OperationContext.set(INT_ATTR, 1)) {
-            OperationContextAttribute<Object> attr = OperationContextAttribute.newInstance(0);
+            OperationContextAttribute<Object> attr = new OperationContextAttribute<>(1, null);
 
             assertNull(OperationContext.get(attr));
 
@@ -272,7 +272,7 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
         LinkedList<Scope> scopes = new LinkedList<>();
 
         for (int i = 0; i < cnt; i++) {
-            attrs.add(OperationContextAttribute.newInstance(i));
+            attrs.add(new OperationContextAttribute<>(1 << i, null));
 
             scopes.push(OperationContext.set(attrs.get(i), i));
         }
@@ -289,7 +289,7 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
 
         assertThrowsAnyCause(
             log,
-            () -> OperationContextAttribute.newInstance(cnt + 1),
+            () -> new OperationContextAttribute(1 << (cnt + 1), null),
             AssertionError.class,
             "Exceeded maximum supported number of created Attributes instances"
         );
@@ -468,7 +468,7 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
             try (Scope ignored1 = OperationContext.set(INT_ATTR, 2)) {
                 checkAttributeValues("test1", 2);
 
-                assertThrowsWithCause(()->snpScope.close(), AssertionError.class);
+                assertThrowsWithCause(snpScope::close, AssertionError.class);
             }
         }
 

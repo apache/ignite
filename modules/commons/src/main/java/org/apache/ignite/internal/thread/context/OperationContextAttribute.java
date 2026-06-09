@@ -37,7 +37,9 @@ public class OperationContextAttribute<T> {
     @Nullable private final T initVal;
 
     /** */
-    private OperationContextAttribute(int bitmask, @Nullable T initVal) {
+    OperationContextAttribute(int bitmask, @Nullable T initVal) {
+        assert Integer.numberOfTrailingZeros(bitmask) + Integer.numberOfLeadingZeros(bitmask) == Integer.SIZE - 1;
+
         this.bitmask = bitmask;
         this.initVal = initVal;
     }
@@ -73,30 +75,5 @@ public class OperationContextAttribute<T> {
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return bitmask;
-    }
-
-    /**
-     * Creates new instance of the {@link OperationContext} Attribute with Initial Value set to {@code null}.
-     * <p>
-     * Note, that the maximum {@code id} of attribute is currently limited to {@link #MAX_ATTR_CNT}.
-     * </p>
-     */
-    public static <T> OperationContextAttribute<T> newInstance(int id) {
-        return newInstance(id, null);
-    }
-
-    /**
-     * Creates new instance of the {@link OperationContext} Attribute with the specified Initial Value. The Initial
-     * Value is returned by {@link OperationContext#get} method if the Attribute's value is not explicitly set in the
-     * {@link OperationContext}.
-     * <p>
-     * Note, that the maximum {@code id} of attribute is currently limited to {@link #MAX_ATTR_CNT}.
-     * </p>
-     */
-    public static <T> OperationContextAttribute<T> newInstance(int id, T initVal) {
-        assert id >= 0 : "Attribute id cannot be negative.";
-        assert id < MAX_ATTR_CNT : "Exceeded maximum supported number of created Attributes instances [maxCnt=" + MAX_ATTR_CNT + ']';
-
-        return new OperationContextAttribute<>(1 << id, initVal);
     }
 }

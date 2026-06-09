@@ -71,12 +71,12 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.OperationContextAttributeType;
 import org.apache.ignite.internal.cluster.NodeOrderComparator;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.authentication.SecurityContextImpl;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.ClientCacheChangeDummyDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
@@ -91,12 +91,12 @@ import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IGridClusterStateProcessor;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.SecurityContext;
-import org.apache.ignite.internal.processors.security.SecuritySubjectMessage;
 import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
 import org.apache.ignite.internal.systemview.ClusterNodeViewWalker;
 import org.apache.ignite.internal.systemview.NodeAttributeViewWalker;
 import org.apache.ignite.internal.systemview.NodeMetricsViewWalker;
 import org.apache.ignite.internal.thread.OomExceptionHandler;
+import org.apache.ignite.internal.thread.context.DistributedOperationAttributeRegistry;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.OperationContextAttribute;
 import org.apache.ignite.internal.thread.context.Scope;
@@ -104,7 +104,6 @@ import org.apache.ignite.internal.thread.context.function.OperationContextAwareW
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
@@ -927,22 +926,27 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 /** */
                 @Override public void run() {
-                    SecuritySubjectMessage secSubjMsg = OperationContextAttributeType.SECURITY.get();
+                    OperationContextAttribute<SecurityContextImpl> attr =
+                        DistributedOperationAttributeRegistry.attribute(SecurityContextImpl.class);
 
-                    if (secSubjMsg != null) {
-                        try (Scope ignored = ctx.security().withContext(secSubjMsg.id)) {
+                    SecurityContext secCtxMsg = OperationContext.get(attr);
+
+                    if (secCtxMsg != null) {
+                        try (Scope ignored = ctx.security().withContext(secCtxMsg.subject().id())) {
                             super.run();
                         }
                     }
                     else {
-                        SecurityContext initiatorNodeSecCtx = nodeSecurityContext(
-                            marshaller,
-                            U.resolveClassLoader(ctx.config()),
-                            notification.getNode()
-                        );
+                        if (!notification.getNode().isLocal() && ctx.security().isDefaultContext()) {
+                            SecurityContext initiatorNodeSecCtx = nodeSecurityContext(
+                                marshaller,
+                                U.resolveClassLoader(ctx.config()),
+                                notification.getNode()
+                            );
 
-                        try (Scope ignored = ctx.security().withContext(initiatorNodeSecCtx)) {
-                            super.run();
+                            try (Scope ignored = ctx.security().withContext(initiatorNodeSecCtx)) {
+                                super.run();
+                            }
                         }
                     }
                 }
@@ -2329,11 +2333,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         try {
             if (sec.enabled()) {
-                SecuritySubjectMessage secAttrVal = new SecuritySubjectMessage(sec.securityContext().subject().id());
+                OperationContextAttribute<SecurityContextImpl> secAttr =
+                    DistributedOperationAttributeRegistry.attribute(SecurityContextImpl.class);
 
-                OperationContextAttribute<SecuritySubjectMessage> secAttr = OperationContextAttributeType.SECURITY.create(null);
-
-                try (Scope ignored = OperationContext.set(secAttr, secAttrVal)) {
+                try (Scope ignored = OperationContext.set(secAttr, SecurityContextImpl.message(sec.securityContext()))) {
                     getSpi().sendCustomEvent(msg);
                 }
             }

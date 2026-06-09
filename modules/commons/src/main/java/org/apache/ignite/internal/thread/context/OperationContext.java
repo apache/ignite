@@ -18,14 +18,14 @@
 package org.apache.ignite.internal.thread.context;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
 import org.apache.ignite.internal.thread.context.concurrent.OperationContextAwareExecutor;
 import org.apache.ignite.internal.thread.context.function.OperationContextAwareCallable;
 import org.apache.ignite.internal.thread.context.function.OperationContextAwareRunnable;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -100,6 +100,15 @@ public class OperationContext {
         return ctx.getInternal(attr) == val ? NOOP_SCOPE : ctx.applyAttributeUpdates(new AttributeValueHolder<>(attr, val));
     }
 
+    /** */
+    public static Scope set(Map<OperationContextAttribute<Object>, Object> attrs) {
+        ContextUpdater updater = ContextUpdater.create();
+
+        attrs.forEach(updater::set);
+
+        return updater.apply();
+    }
+
     /**
      * Updates the values of the specified attributes for the {@link OperationContext} bound to the thread this method
      * is called from.
@@ -160,20 +169,20 @@ public class OperationContext {
         if (opCtxSnp == null || opCtxSnp instanceof Update)
             return (Update)opCtxSnp;
 
-        List<AttributeValueHolder<?>> attrVals = new ArrayList<>();
+        List<AttributeValueHolder<Object>> attrVals = new ArrayList<>();
 
-        for (T2<Byte, ?> attrIdValPair : opCtxSnp) {
-            OperationContextAttribute<Object> attr = OperationContextAttribute.newInstance(attrIdValPair.get1());
+        for (OperationContextSnapshotEntry<Object> e : opCtxSnp) {
+            OperationContextAttribute<Object> attr = e.attribute();
 
-            AttributeValueHolder<?> curValHldr = lastUpd == null ? null : lastUpd.value(attr);
+            AttributeValueHolder<?> curValHldr = findAttributeValue(attr);
 
-            if (curValHldr != null && curValHldr.attr.initialValue() != null) {
-                assert curValHldr.attr.initialValue().getClass().isAssignableFrom(attrIdValPair.get2().getClass());
+            if (curValHldr != null && curValHldr.attr.initialValue() != null && e.value() != null) {
+                assert curValHldr.attr.initialValue().getClass().isAssignableFrom(e.value().getClass());
 
-                attr = OperationContextAttribute.newInstance(attrIdValPair.get1(), curValHldr.attr.initialValue());
+                attr = new OperationContextAttribute<>(attr.bitmask(), curValHldr.attr.initialValue());
             }
 
-            attrVals.add(new AttributeValueHolder<>(attr, attrIdValPair.get2()));
+            attrVals.add(new AttributeValueHolder<>(attr, e.value()));
         }
 
         return new Update(attrVals.toArray(new AttributeValueHolder[attrVals.size()]), null);
@@ -338,24 +347,54 @@ public class OperationContext {
         }
 
         /** {@inheritDoc} */
-        @Override public @NotNull Iterator<T2<Byte, ?>> iterator() {
-            return F.iterator(Arrays.asList(attrVals),
-                avh -> new T2<>((byte)Integer.numberOfTrailingZeros(avh.attr.bitmask()), avh.val), true);
-        }
-    }
+        @Override public @NotNull Iterator<OperationContextSnapshotEntry<Object>> iterator() {
+            return new Iterator<>() {
+                private int cur = -1;
+                private int next = -1;
 
-    /** Immutable container that stores an attribute and its corresponding value. */
-    private static class AttributeValueHolder<T> {
-        /** */
-        private final OperationContextAttribute<T> attr;
+                @Override public boolean hasNext() {
+                    if (next >= 0)
+                        return true;
 
-        /** */
-        private final T val;
+                    int i0 = cur + 1;
 
-        /** */
-        AttributeValueHolder(OperationContextAttribute<T> attr, T val) {
-            this.attr = attr;
-            this.val = val;
+                    while (i0 < OperationContextAttribute.MAX_ATTR_CNT) {
+                        if (((1 << i0) & updAttrBits) == 1) {
+                            next = i0;
+
+                            return true;
+                        }
+
+                        ++i0;
+                    }
+
+                    return false;
+                }
+
+                @Override public OperationContextSnapshotEntry<Object> next() {
+                    hasNext();
+
+                    if (next < 0)
+                        throw new NoSuchElementException();
+
+                    cur = next;
+                    next = -1;
+
+                    Update updt = Update.this;
+                    int bitmask = 1 << next;
+
+                    while (updt != null) {
+                        for (AttributeValueHolder<?> valHolder : updt.attrVals) {
+                            if (valHolder.attribute().bitmask() == bitmask)
+                                return (OperationContextSnapshotEntry<Object>)valHolder;
+                        }
+
+                        updt = prev;
+                    }
+
+                    throw new IllegalStateException("No next attribute value holder found.");
+                }
+            };
         }
     }
 

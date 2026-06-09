@@ -24,11 +24,12 @@ import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Security subject representing authenticated node with a set of permissions.
  */
-public interface SecuritySubject extends Serializable {
+public interface SecuritySubject extends Message, Serializable {
     /**
      * Gets subject ID.
      *

@@ -29,10 +29,11 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.OperationContextAttributeType;
+import org.apache.ignite.internal.processors.authentication.SecurityContextImpl;
 import org.apache.ignite.internal.processors.security.sandbox.AccessControllerSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.NoOpSandbox;
+import org.apache.ignite.internal.thread.context.DistributedOperationAttributeRegistry;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.OperationContextAttribute;
 import org.apache.ignite.internal.thread.context.Scope;
@@ -90,8 +91,8 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
     }
 
     /** Context attribute that holds Security Context. */
-    private static final OperationContextAttribute<SecurityContext> SEC_CTX
-        = OperationContextAttribute.newInstance(OperationContextAttributeType.SECURITY.id());
+    private static final OperationContextAttribute<SecurityContextImpl> SEC_CTX
+        = DistributedOperationAttributeRegistry.INSTANCE.register(SecurityContextImpl.class, null);
 
     /** Security processor. */
     private final GridSecurityProcessor secPrc;
@@ -128,7 +129,7 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
 
     /** {@inheritDoc} */
     @Override public Scope withContext(SecurityContext secCtx) {
-        return OperationContext.set(SEC_CTX, secCtx == dfltSecCtx ? null : secCtx);
+        return OperationContext.set(SEC_CTX, secCtx == dfltSecCtx ? null : SecurityContextImpl.message(secCtx));
     }
 
     /** {@inheritDoc} */
@@ -179,9 +180,11 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
 
     /** {@inheritDoc} */
     @Override public SecurityContext securityContext() {
-        SecurityContext res = OperationContext.get(SEC_CTX);
+        SecurityContextImpl secCtxSubjMsg = OperationContext.get(SEC_CTX);
 
-        return res == null ? dfltSecCtx : res;
+        UUID subjId = secCtxSubjMsg == null ? null : secCtxSubjMsg.subject().id();
+
+        return subjId == null ? dfltSecCtx : secCtxs.get(subjId);
     }
 
     /** {@inheritDoc} */

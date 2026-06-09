@@ -19,14 +19,13 @@ package org.apache.ignite.internal.thread.context;
 
 import org.apache.ignite.internal.thread.context.function.OperationContextAwareCallable;
 import org.apache.ignite.internal.thread.context.function.OperationContextAwareRunnable;
-import org.apache.ignite.internal.util.typedef.T2;
 
 /**
  * Represents snapshot of all Attributes and their corresponding values for a particular {@link OperationContext}
  * instance. Its main purpose to save {@link OperationContext} state and restore it later, possible for
  * {@link OperationContext} bound to another thread.
  * <p>
- * Iterates over its {@link OperationContextAttribute} providing attribute's id and value.
+ * Iterates over its {@link OperationContextAttribute} providing attribute's bitmask and value.
  *
  * @see OperationContext
  * @see OperationContext#createSnapshot()
@@ -34,6 +33,6 @@ import org.apache.ignite.internal.util.typedef.T2;
  * @see OperationContextAwareCallable
  * @see OperationContextAwareRunnable
  */
-public interface OperationContextSnapshot extends Iterable<T2<Byte, ?>> {
+public interface OperationContextSnapshot extends Iterable<OperationContextSnapshotEntry<Object>> {
     // No-op.
 }

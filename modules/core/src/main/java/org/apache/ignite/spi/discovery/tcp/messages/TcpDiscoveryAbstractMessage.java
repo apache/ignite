@@ -17,11 +17,14 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.ignite.internal.OperationContexMessage;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.thread.context.DistributedOperationAttributeRegistry;
+import org.apache.ignite.internal.thread.context.OperationContextSnapshot;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -76,10 +79,10 @@ public abstract class TcpDiscoveryAbstractMessage implements Message {
     @Order(4)
     Set<UUID> failedNodes;
 
-    /** */
+    /** Operation context attributes: bitmask -> attribute value. */
     @GridToStringInclude
     @Order(5)
-    public @Nullable OperationContexMessage opCtxMessage;
+    public @Nullable Map<Integer, Message> opCtxAttrs;
 
     /**
      * Default no-arg constructor for serialization purposes.
@@ -291,6 +294,17 @@ public abstract class TcpDiscoveryAbstractMessage implements Message {
      */
     @Nullable public Set<UUID> failedNodes() {
         return failedNodes;
+    }
+
+    /** @param opCtxSnp Operation context snapshot. */
+    public void operationContext(@Nullable OperationContextSnapshot opCtxSnp) {
+        if (opCtxSnp != null)
+            return;
+
+        opCtxAttrs = new HashMap<>();
+
+        opCtxSnp.forEach(snpE -> opCtxAttrs.put(snpE.attribute().bitmask(),
+                DistributedOperationAttributeRegistry.attributeMessage(snpE.attribute(), snpE.value())));
     }
 
     /** {@inheritDoc} */

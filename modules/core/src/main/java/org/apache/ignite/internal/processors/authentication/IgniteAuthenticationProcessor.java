@@ -74,7 +74,6 @@ import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecuritySubject;
-import org.apache.ignite.plugin.security.SecuritySubjectType;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -1363,73 +1362,4 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         }
     }
 
-    /** Represents {@link SecuritySubject} implementation. */
-    private static class SecuritySubjectImpl implements SecuritySubject {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Security subject identifier. */
-        private final UUID id;
-
-        /** Security subject login.  */
-        private final String login;
-
-        /** Security subject type. */
-        private final SecuritySubjectType type;
-
-        /** Security subject address. */
-        private final InetSocketAddress addr;
-
-        /** */
-        public SecuritySubjectImpl(UUID id, String login, SecuritySubjectType type, InetSocketAddress addr) {
-            this.id = id;
-            this.login = login;
-            this.type = type;
-            this.addr = addr;
-        }
-
-        /** {@inheritDoc} */
-        @Override public UUID id() {
-            return id;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String login() {
-            return login;
-        }
-
-        /** {@inheritDoc} */
-        @Override public SecuritySubjectType type() {
-            return type;
-        }
-
-        /** {@inheritDoc} */
-        @Override public InetSocketAddress address() {
-            return addr;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(SecuritySubjectImpl.class, this);
-        }
-    }
-
-    /** Represents {@link SecurityContext} implementation that ignores any security permission checks. */
-    private static class SecurityContextImpl implements SecurityContext, Serializable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private final SecuritySubject subj;
-
-        /** */
-        public SecurityContextImpl(UUID id, String login, SecuritySubjectType type, InetSocketAddress addr) {
-            subj = new SecuritySubjectImpl(id, login, type, addr);
-        }
-
-        /** {@inheritDoc} */
-        @Override public SecuritySubject subject() {
-            return subj;
-        }
-    }
 }

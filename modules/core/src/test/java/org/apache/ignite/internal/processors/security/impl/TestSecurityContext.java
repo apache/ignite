@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.security.impl;
 
 import java.io.Serializable;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.plugin.security.SecuritySubject;
 
@@ -26,25 +27,26 @@ import org.apache.ignite.plugin.security.SecuritySubject;
  */
 public class TestSecurityContext implements SecurityContext, Serializable {
     /** Subject. */
-    private final SecuritySubject subject;
+    @Order(0)
+    SecuritySubject subj;
 
     /**
-     * @param subject Subject.
+     * @param subj Subject.
      */
-    public TestSecurityContext(SecuritySubject subject) {
-        this.subject = subject;
+    public TestSecurityContext(SecuritySubject subj) {
+        this.subj = subj;
     }
 
     /** {@inheritDoc} */
     @Override public SecuritySubject subject() {
-        return subject;
+        return subj;
     }
 
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return "TestSecurityContext{" +
-            "subject=" + subject +
+            "subject=" + subj +
             '}';
     }
 }

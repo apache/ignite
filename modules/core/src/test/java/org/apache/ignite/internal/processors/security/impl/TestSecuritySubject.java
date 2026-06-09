@@ -21,6 +21,7 @@ import java.net.InetSocketAddress;
 import java.security.PermissionCollection;
 import java.security.cert.Certificate;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.security.SecuritySubject;
 import org.apache.ignite.plugin.security.SecuritySubjectType;
 
@@ -29,7 +30,8 @@ import org.apache.ignite.plugin.security.SecuritySubjectType;
  */
 public class TestSecuritySubject implements SecuritySubject {
     /** Id. */
-    private UUID id;
+    @Order(0)
+    UUID id;
 
     /** Type. */
     private SecuritySubjectType type = SecuritySubjectType.REMOTE_NODE;

@@ -43,6 +43,8 @@ import org.apache.ignite.internal.managers.encryption.MasterKeyChangeRequest;
 import org.apache.ignite.internal.managers.encryption.NodeEncryptionKeys;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageMessage;
 import org.apache.ignite.internal.plugin.AbstractMarshallableMessageFactoryProvider;
+import org.apache.ignite.internal.processors.authentication.SecurityContextImpl;
+import org.apache.ignite.internal.processors.authentication.SecuritySubjectImpl;
 import org.apache.ignite.internal.processors.authentication.User;
 import org.apache.ignite.internal.processors.authentication.UserAcceptedMessage;
 import org.apache.ignite.internal.processors.authentication.UserAuthenticateRequestMessage;
@@ -228,7 +230,6 @@ import org.apache.ignite.internal.processors.query.stat.messages.StatisticsReque
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsResponse;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultRequest;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultResponse;
-import org.apache.ignite.internal.processors.security.SecuritySubjectMessage;
 import org.apache.ignite.internal.processors.service.ServiceChangeBatchRequest;
 import org.apache.ignite.internal.processors.service.ServiceClusterDeploymentResult;
 import org.apache.ignite.internal.processors.service.ServiceClusterDeploymentResultBatch;
@@ -668,9 +669,8 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
 
         // [13400 - 13600]: Operation context messages.
         msgIdx = 13400;
-        withNoSchema(OperationContexAttributeMessage.class);
-        withNoSchema(OperationContexMessage.class);
-        withNoSchema(SecuritySubjectMessage.class);
+        withNoSchema(SecuritySubjectImpl.class);
+        withNoSchema(SecurityContextImpl.class);
 
         assert msgIdx <= MAX_MESSAGE_ID;
     }
