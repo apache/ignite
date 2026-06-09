@@ -172,7 +172,7 @@ public class MessageProcessor extends AbstractProcessor {
 
         processingEnv.getMessager().printMessage(
             Diagnostic.Kind.ERROR,
-            "Class must have default constructor: " + clazz.getQualifiedName(),
+            "A class must have a default constructor: " + clazz.getQualifiedName(),
             clazz
         );
 
