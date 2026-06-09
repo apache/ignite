@@ -937,16 +937,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         }
                     }
                     else {
-                        if (!notification.getNode().isLocal() && ctx.security().isDefaultContext()) {
-                            SecurityContext initiatorNodeSecCtx = nodeSecurityContext(
-                                marshaller,
-                                U.resolveClassLoader(ctx.config()),
-                                notification.getNode()
-                            );
+                        SecurityContext initiatorNodeSecCtx = nodeSecurityContext(
+                            marshaller,
+                            U.resolveClassLoader(ctx.config()),
+                            notification.getNode()
+                        );
 
-                            try (Scope ignored = ctx.security().withContext(initiatorNodeSecCtx)) {
-                                super.run();
-                            }
+                        try (Scope ignored = ctx.security().withContext(initiatorNodeSecCtx)) {
+                            super.run();
                         }
                     }
                 }
@@ -2336,7 +2334,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 OperationContextAttribute<SecurityContextImpl> secAttr =
                     DistributedOperationAttributeRegistry.attribute(SecurityContextImpl.class);
 
-                try (Scope ignored = OperationContext.set(secAttr, SecurityContextImpl.message(sec.securityContext()))) {
+                try (Scope ignored = OperationContext.set(secAttr, SecurityContextImpl.of(sec.securityContext()))) {
                     getSpi().sendCustomEvent(msg);
                 }
             }

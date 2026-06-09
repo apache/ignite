@@ -59,6 +59,14 @@ public class SecuritySubjectImpl implements SecuritySubject {
         this.addr = addr;
     }
 
+    /** */
+    public static SecuritySubjectImpl of(SecuritySubject subj) {
+        if (subj instanceof SecuritySubjectImpl)
+            return (SecuritySubjectImpl)subj;
+
+        return new SecuritySubjectImpl(subj.id(), subj.login().toString(), subj.type(), subj.address());
+    }
+
     /** {@inheritDoc} */
     @Override public UUID id() {
         return id;

@@ -42,14 +42,20 @@ public class SecurityContextImpl implements SecurityContext, Serializable {
 
     /** */
     public SecurityContextImpl(UUID id, String login, SecuritySubjectType type, InetSocketAddress addr) {
-        subj = new SecuritySubjectImpl(id, login, type, addr);
+        this(new SecuritySubjectImpl(id, login, type, addr));
+    }
+
+    /** */
+    private SecurityContextImpl(SecuritySubjectImpl subj) {
+        this.subj = subj;
     }
 
     /** Creates {@link Message} of {@code context}. */
-    public static SecurityContextImpl message(SecurityContext ctx) {
-        assert ctx instanceof SecurityContextImpl;
+    public static SecurityContextImpl of(SecurityContext ctx) {
+        if (ctx instanceof SecurityContextImpl)
+            return (SecurityContextImpl)ctx;
 
-        return (SecurityContextImpl)ctx;
+        return new SecurityContextImpl(SecuritySubjectImpl.of(ctx.subject()));
     }
 
     /** {@inheritDoc} */

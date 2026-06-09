@@ -362,7 +362,7 @@ public class OperationContext {
                     next = -1;
 
                     Update updt = Update.this;
-                    int bitmask = 1 << next;
+                    int bitmask = 1 << cur;
 
                     while (updt != null) {
                         for (AttributeValueHolder<?> valHolder : updt.attrVals) {

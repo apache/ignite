@@ -277,12 +277,12 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
         List<OperationContextAttribute<Message>> attrs = new ArrayList<>(cnt);
         LinkedList<Scope> scopes = new LinkedList<>();
 
-        CoreMessagesProvider messages = new CoreMessagesProvider();
-
+        CoreMessagesProvider msgsProvider = new CoreMessagesProvider();
         List<Message> msgs = new ArrayList<>(500);
 
-        messages.registerAll(new MessageFactory() {
-            @Override public void register(short directType, Supplier<Message> supplier, MessageSerializer serializer) throws IgniteException {
+        msgsProvider.registerAll(new MessageFactory() {
+            @Override public void register(short directType, Supplier<Message> supplier, MessageSerializer serializer)
+                throws IgniteException {
                 msgs.add(supplier.get());
             }
 
@@ -298,7 +298,8 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
         assert msgs.size() >= cnt;
 
         for (int i = 0; i < cnt; i++) {
-            OperationContextAttribute<Message> attr = DistributedOperationAttributeRegistry.INSTANCE.register((Class<Message>)msgs.get(i).getClass(), null);
+            OperationContextAttribute<Message> attr =
+                DistributedOperationAttributeRegistry.INSTANCE.register((Class<Message>)msgs.get(i).getClass(), null);
 
             attrs.add(attr);
 

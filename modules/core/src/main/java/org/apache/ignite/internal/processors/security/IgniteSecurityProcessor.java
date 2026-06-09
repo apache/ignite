@@ -129,7 +129,7 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
 
     /** {@inheritDoc} */
     @Override public Scope withContext(SecurityContext secCtx) {
-        return OperationContext.set(SEC_CTX, secCtx == dfltSecCtx ? null : SecurityContextImpl.message(secCtx));
+        return OperationContext.set(SEC_CTX, secCtx == dfltSecCtx ? null : SecurityContextImpl.of(secCtx));
     }
 
     /** {@inheritDoc} */
@@ -180,11 +180,9 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
 
     /** {@inheritDoc} */
     @Override public SecurityContext securityContext() {
-        SecurityContextImpl secCtxSubjMsg = OperationContext.get(SEC_CTX);
+        SecurityContext res = OperationContext.get(SEC_CTX);
 
-        UUID subjId = secCtxSubjMsg == null ? null : secCtxSubjMsg.subject().id();
-
-        return subjId == null ? dfltSecCtx : secCtxs.get(subjId);
+        return res == null ? dfltSecCtx : res;
     }
 
     /** {@inheritDoc} */
