@@ -18,9 +18,6 @@
 package org.apache.ignite.compatibility.testframework.testcontainers;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.util.Arrays;
@@ -36,7 +33,6 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
-import org.testcontainers.utility.MountableFile;
 
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.testcontainers.utility.MountableFile.forClasspathResource;
@@ -81,8 +77,8 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
     private final String workDirPath;
 
     /** Constructor. */
-    public IgniteContainer(String ver, Network net, String hostname, String nodeId) {
-        super(DockerImageName.parse("apacheignite/ignite:" + ver));
+    public IgniteContainer(String commitHash, Network net, String hostname, String nodeId) {
+        super(DockerImageName.parse("apacheignite/ignite:" + commitHash));
 
         this.hostname = hostname;
         this.nodeId = nodeId;
@@ -99,52 +95,12 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
 
         withCopyFileToContainer(forClasspathResource("docker/test-config.xml"), CFG_PATH);
 
-        // Copy compatibility JAR if it exists
-        copyCompatibilityJar();
-
         withNetwork(net);
         withNetworkAliases(hostname);
         withExposedPorts(THIN_CLIENT_PORT, 47100, 47500);
 
         waitingFor(Wait.forLogMessage(".*Node started.*", 1)
             .withStartupTimeout(Duration.ofSeconds(60)));
-    }
-
-    /** */
-    private void copyCompatibilityJar() {
-        String projectDir = System.getProperty("user.dir");
-        Path compatTarget = Paths.get(projectDir + "/target");
-
-        System.out.println(">>> KEK=" + compatTarget);
-
-        if (Files.exists(compatTarget)) {
-            try {
-                Files.walk(compatTarget)
-                    .filter(p -> {
-                        System.out.println(">>> P=" + p);
-
-                        return p.toString().endsWith("tests.jar") && p.toString().contains("ignite-compatibility");
-                    })
-                    .findFirst()
-                    .ifPresent(jarPath -> {
-                        System.out.println(">>> JAR PATH=" + jarPath);
-
-                        withCopyFileToContainer(MountableFile.forHostPath(jarPath), ROOT_DIR_PATH + "libs/test-compatability.jar");
-
-                        LOGGER.info("Bound compatibility JAR: " + jarPath);
-                    });
-            }
-            catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        else
-            throw new IllegalStateException("Please run `mvn clean install -DskipTests -pl modules/compatibility -am` first");
-    }
-
-    /** @return Hostname. */
-    public String hostname() {
-        return hostname;
     }
 
     /** @return Node ID. */

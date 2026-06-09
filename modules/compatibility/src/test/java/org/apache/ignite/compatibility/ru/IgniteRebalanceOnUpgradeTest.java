@@ -29,7 +29,6 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.compatibility.testframework.junits.IgniteCompatibilityAbstractTest;
 import org.apache.ignite.compatibility.testframework.testcontainers.IgniteClusterContainer;
 import org.apache.ignite.compatibility.testframework.testcontainers.IgniteContainer;
 import org.apache.ignite.configuration.ClientConfiguration;
@@ -59,8 +58,8 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
         "7b880b69-8a9e-4b84-b555-250d365e2e67"
     );
 
-    /** Source version. */
-    private static final String SOURCE_VER = "2.18.0";
+    /** Source commit hash. */
+    private static final String SOURCE_COMMIT_HASH = "6b172a8b";
 
     /** Cache name. */
     private static final String CACHE_NAME = "ru-test-cache";
@@ -88,12 +87,6 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
         // Установка свойства для предпочтения IPv4 адресов
         System.setProperty("java.net.preferIPv4Stack", "true");
         
-        // Проверка, что свойство установлено корректно
-        String preferIPv4 = System.getProperty("java.net.preferIPv4Stack");
-        if (!"true".equals(preferIPv4)) {
-            throw new IllegalStateException("Failed to set java.net.preferIPv4Stack property to true");
-        }
-        
         // Также устанавливаем свойство для принудительного использования IPv4
         System.setProperty("java.net.preferIPv6Addresses", "false");
     }
@@ -117,7 +110,7 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
     /** Basic RU test. */
     @Test
     public void testRollingUpgrade() throws Exception {
-        try (IgniteClusterContainer cluster = new IgniteClusterContainer(SOURCE_VER, NODE_IDS)) {
+        try (IgniteClusterContainer cluster = new IgniteClusterContainer(SOURCE_COMMIT_HASH, NODE_IDS)) {
             cluster.start();
 
             for (IgniteContainer container : cluster.containers()) {
@@ -171,34 +164,7 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
 
             System.out.println(">>> CONNECT TO=" + addrs.values());
 
-            // Создаем список адресов с явным указанием IPv4
-            Collection<String> ipv4Addrs = new ArrayList<>();
-            for (String addr : addrs.values()) {
-                // Преобразуем адреса в формат IPv4, если они указаны как IPv6
-                if (addr.contains("/")) {
-                    // Если адрес содержит IPv6 формат, преобразуем его в IPv4
-                    int colonIndex = addr.lastIndexOf(':');
-                    if (colonIndex > 0) {
-                        String hostPart = addr.substring(0, colonIndex);
-                        String portPart = addr.substring(colonIndex + 1);
-                        // Заменяем IPv6 localhost на IPv4 localhost
-                        if (hostPart.equals("0:0:0:0:0:0:0:1") || hostPart.equals("[0:0:0:0:0:0:0:1]")) {
-                            ipv4Addrs.add("127.0.0.1:" + portPart);
-                        } else {
-                            ipv4Addrs.add(addr);
-                        }
-                    } else {
-                        ipv4Addrs.add(addr);
-                    }
-                } else {
-                    ipv4Addrs.add(addr);
-                }
-            }
-
-            // Если список пустой, то не передаем никакие адреса для подключения
-            // Это позволяет ноде самой выбрать порт и быть доступной для других нод
-            IgniteEx ignite = startGrid(configuration(container.nodeId(), container.localWorkDirectory(),
-                ipv4Addrs));
+            IgniteEx ignite = startGrid(configuration(container.nodeId(), container.localWorkDirectory(), addrs.values()));
 
             waitForCondition(() -> NODE_IDS.size() == ignite.cluster().nodes().size(), DFLT_TEST_TIMEOUT);
 
@@ -220,9 +186,7 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
             .setPersistenceEnabled(true);
 
         TcpDiscoverySpi discoverySpi = new TcpDiscoverySpi()
-            .setLocalAddress("127.0.0.1")
             .setIpFinder(ipFinder.setAddresses(addrs))
-            .setLocalPort(47500)
             .setNetworkTimeout(10000)
             .setAckTimeout(5000)
             .setJoinTimeout(10000);
