@@ -1308,7 +1308,7 @@ class ClientImpl extends TcpDiscoveryImpl {
          * @param msg Message.
          */
         private void sendMessage(TcpDiscoveryAbstractMessage msg) {
-            msg.operationContext(OperationContext.createSnapshot());
+            fillOperationContext(msg);
 
             synchronized (mux) {
                 queue.add(msg);

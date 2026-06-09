@@ -31,6 +31,6 @@ import org.apache.ignite.internal.thread.context.function.OperationContextAwareR
  * @see OperationContextAwareCallable
  * @see OperationContextAwareRunnable
  */
-public interface OperationContextSnapshot extends Iterable<OperationContextSnapshotEntry<Object>> {
+public interface OperationContextSnapshot {
     // No-op.
 }

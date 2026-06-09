@@ -44,10 +44,12 @@ import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.processors.tracing.NoopTracing;
 import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.thread.context.DistributedOperationAttributeRegistry;
+import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.OperationContextAttribute;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiThread;
@@ -464,6 +466,20 @@ abstract class TcpDiscoveryImpl {
         Collections.sort(res);
 
         return res;
+    }
+
+    /** */
+    protected void fillOperationContext(TcpDiscoveryAbstractMessage msg) {
+        DistributedOperationAttributeRegistry.get().attributes().forEach(da -> {
+            Message distrAttrVal = OperationContext.get(da);
+
+            if (distrAttrVal != null) {
+                if (msg.opCtxAttrs == null)
+                    msg.opCtxAttrs = new HashMap<>();
+
+                msg.opCtxAttrs.put(DistributedOperationAttributeRegistry.get().attributeId(da), distrAttrVal);
+            }
+        });
     }
 
     /** */

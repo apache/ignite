@@ -16,6 +16,8 @@
  */
 package org.apache.ignite.internal.thread.context;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -86,6 +88,11 @@ public class DistributedOperationAttributeRegistry {
     }
 
     /** */
+    public Collection<OperationContextAttribute<? extends Message>> attributes() {
+        return Collections.unmodifiableCollection(msgAttrs.values());
+    }
+
+    /** */
     public @Nullable <T extends Message> OperationContextAttribute<T> attribute(Class<T> msgType) {
         return (OperationContextAttribute<T>)INSTANCE.msgAttrs.get(msgType);
     }
@@ -96,7 +103,7 @@ public class DistributedOperationAttributeRegistry {
     }
 
     /** */
-    public @Nullable Byte attributeId(OperationContextAttribute<Object> attr) {
+    public @Nullable Byte attributeId(OperationContextAttribute<? extends Message> attr) {
         return attrsMaskIdMap.get(attr.bitmask());
     }
 

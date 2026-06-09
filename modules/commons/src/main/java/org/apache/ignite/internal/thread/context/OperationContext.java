@@ -18,15 +18,12 @@
 package org.apache.ignite.internal.thread.context;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import org.apache.ignite.internal.thread.context.concurrent.OperationContextAwareExecutor;
 import org.apache.ignite.internal.thread.context.function.OperationContextAwareCallable;
 import org.apache.ignite.internal.thread.context.function.OperationContextAwareRunnable;
 import org.apache.ignite.internal.util.typedef.F;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.thread.context.Scope.NOOP_SCOPE;
@@ -326,56 +323,20 @@ public class OperationContext {
         @Override public void close() {
             undo(this);
         }
+    }
 
-        /** {@inheritDoc} */
-        @Override public @NotNull Iterator<OperationContextSnapshotEntry<Object>> iterator() {
-            return new Iterator<>() {
-                private int cur = -1;
-                private int next = -1;
+    /** Immutable container that stores an attribute and its corresponding value. */
+    private static class AttributeValueHolder<T> {
+        /** */
+        private final OperationContextAttribute<T> attr;
 
-                @Override public boolean hasNext() {
-                    if (next >= 0)
-                        return true;
+        /** */
+        private final T val;
 
-                    int i0 = cur + 1;
-
-                    while (i0 < OperationContextAttribute.MAX_ATTR_CNT) {
-                        if (((1 << i0) & updAttrBits) == 1) {
-                            next = i0;
-
-                            return true;
-                        }
-
-                        ++i0;
-                    }
-
-                    return false;
-                }
-
-                @Override public OperationContextSnapshotEntry<Object> next() {
-                    hasNext();
-
-                    if (next < 0)
-                        throw new NoSuchElementException();
-
-                    cur = next;
-                    next = -1;
-
-                    Update updt = Update.this;
-                    int bitmask = 1 << cur;
-
-                    while (updt != null) {
-                        for (AttributeValueHolder<?> valHolder : updt.attrVals) {
-                            if (valHolder.attribute().bitmask() == bitmask)
-                                return (OperationContextSnapshotEntry<Object>)valHolder;
-                        }
-
-                        updt = prev;
-                    }
-
-                    throw new IllegalStateException("No next attribute value holder found.");
-                }
-            };
+        /** */
+        AttributeValueHolder(OperationContextAttribute<T> attr, T val) {
+            this.attr = attr;
+            this.val = val;
         }
     }
 

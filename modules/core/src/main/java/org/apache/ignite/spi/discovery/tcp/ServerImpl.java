@@ -3037,7 +3037,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (!fromSocket)
-                msg.operationContext(OperationContext.createSnapshot());
+                fillOperationContext(msg);
 
             if (msg instanceof TraceableMessage) {
                 TraceableMessage tMsg = (TraceableMessage)msg;
