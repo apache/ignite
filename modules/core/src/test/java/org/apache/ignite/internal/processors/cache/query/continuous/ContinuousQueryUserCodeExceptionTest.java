@@ -82,31 +82,40 @@ public class ContinuousQueryUserCodeExceptionTest extends GridCommonAbstractTest
             .setAtomicityMode(cacheAtomicity);
 
         return super.getConfiguration(igniteInstanceName)
-            .setFailureHandler((ignite, ctx) -> { fail.set(true); return true; })
+            .setFailureHandler((ignite, ctx) -> {
+                fail.set(true);
+                return true;
+            })
             .setCacheConfiguration(cacheCfg);
     }
 
     /** */
     @Test
     public void testExceptionInLocalListener() throws Exception {
-        checkCQ(new ContinuousQuery<>().setLocalListener(evts -> { throw new AssertionError(); }));
+        checkCQ(new ContinuousQuery<>().setLocalListener(evts -> {
+            throw new AssertionError();
+        }));
     }
 
     /** */
     @Test
     public void testExceptionInRemoteFilter() throws Exception {
-        checkCQ(new ContinuousQuery<>().setRemoteFilterFactory(() -> evts -> { throw new AssertionError(); }));
+        checkCQ(new ContinuousQuery<>().setRemoteFilterFactory(() -> evts -> {
+            throw new AssertionError();
+        }));
     }
 
     /** */
     @Test
     public void testExceptionInTransformer() throws Exception {
         checkCQ(new ContinuousQueryWithTransformer<>().setLocalListener(evts -> {})
-            .setRemoteTransformerFactory(() -> e -> { throw new AssertionError(); }));
+            .setRemoteTransformerFactory(() -> e -> {
+                throw new AssertionError();
+            }));
     }
 
     /** */
-    private void checkCQ(AbstractContinuousQuery<?, ?> cq) throws Exception{
+    private void checkCQ(AbstractContinuousQuery<?, ?> cq) throws Exception {
         fail.set(false);
 
         if (locQry)
