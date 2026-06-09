@@ -105,18 +105,7 @@ public class SBLimitedLength extends GridStringBuilder {
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(String str) {
         if (lenLimit.overflowed(this)) {
-            try {
-                tail.append(str);
-            }
-            catch (NullPointerException npe) {
-                System.out.println("IGNITE-27232 Current string: " + this);
-                System.out.println("IGNITE-27232 New string: " + str);
-                System.out.println("IGNITE-27232 Current string length: " + length());
-                System.out.println("IGNITE-27232 New string length: " + str.length());
-                System.out.println("IGNITE-27232 Current thread name: " + Thread.currentThread().getName());
-                npe.printStackTrace();
-                throw npe;
-            }
+            tail.append(str);
             return this;
         }
 
