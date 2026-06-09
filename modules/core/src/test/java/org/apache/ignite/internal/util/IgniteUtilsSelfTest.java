@@ -1615,6 +1615,95 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * Test that remote HTTP URL in Spring cfg is blocked by default.
+     */
+    @Test
+    public void testResolveSpringUrlBlocksHttpByDefault() {
+        assertThrows(log, () -> {
+            IgniteUtils.resolveSpringUrl("http://attacker.example.com/evil.xml");
+            return null;
+        }, IgniteCheckedException.class, "Remote Spring configuration URLs");
+    }
+
+    /**
+     * Test that remote HTTPS URL in Spring cfg is blocked by default.
+     */
+    @Test
+    public void testResolveSpringUrlBlocksHttpsByDefault() {
+        assertThrows(log, () -> {
+            IgniteUtils.resolveSpringUrl("https://attacker.example.com/evil.xml");
+            return null;
+        }, IgniteCheckedException.class, "Remote Spring configuration URLs");
+    }
+
+    /**
+     * Test that remote FTP URL in Spring cfg is blocked by default.
+     */
+    @Test
+    public void testResolveSpringUrlBlocksFtpByDefault() {
+        assertThrows(log, () -> {
+            IgniteUtils.resolveSpringUrl("ftp://attacker.example.com/evil.xml");
+            return null;
+        }, IgniteCheckedException.class, "always blocked");
+    }
+
+    /**
+     * Test that error message contains guidance on how to enable remote URLs.
+     */
+    @Test
+    public void testResolveSpringUrlErrorMessageContainsGuidance() {
+        try {
+            IgniteUtils.resolveSpringUrl("http://attacker.example.com/evil.xml");
+            fail("Expected IgniteCheckedException");
+        }
+        catch (IgniteCheckedException e) {
+            assertTrue(
+                "Error message should contain system property name",
+                e.getMessage().contains(IgniteUtils.IGNITE_ALLOW_REMOTE_SPRING_CFG_URL)
+            );
+            assertFalse(
+                "Error message should not contain full URL to avoid credential leak",
+                e.getMessage().contains("http://attacker.example.com/evil.xml")
+            );
+            assertTrue(
+                "Error message should contain host",
+                e.getMessage().contains("attacker.example.com")
+            );
+        }
+    }
+
+    /**
+     * Test that remote HTTP URL is allowed when system property is set.
+     */
+    @Test
+    @WithSystemProperty(key = "ignite.spring.cfg.allowRemoteUrl", value = "true")
+    public void testResolveSpringUrlAllowsHttpWhenPropertySet() {
+        // Should not throw — validation passes when flag is true.
+        // Will throw MalformedURLException or connection error, not our security check.
+        try {
+            IgniteUtils.resolveSpringUrl("http://127.0.0.1:1/nonexistent.xml");
+        }
+        catch (IgniteCheckedException e) {
+            assertFalse(
+                "Should not throw security exception when flag is enabled",
+                e.getMessage().contains("Remote Spring configuration URLs")
+            );
+        }
+    }
+
+    /**
+     * Test that FTP is always blocked even when remote URL property is set.
+     */
+    @Test
+    @WithSystemProperty(key = "ignite.spring.cfg.allowRemoteUrl", value = "true")
+    public void testResolveSpringUrlFtpAlwaysBlocked() {
+        assertThrows(log, () -> {
+            IgniteUtils.resolveSpringUrl("ftp://attacker.example.com/evil.xml");
+            return null;
+        }, IgniteCheckedException.class, "always blocked");
+    }
+
     /** */
     private byte[] asByteArray(String text) {
         String[] split = text.split("-");
