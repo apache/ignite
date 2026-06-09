@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.jta;
 
-import javax.cache.configuration.Factory;
 import jakarta.transaction.TransactionManager;
+import javax.cache.configuration.Factory;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 

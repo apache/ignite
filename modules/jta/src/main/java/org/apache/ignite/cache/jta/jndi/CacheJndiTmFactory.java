@@ -20,10 +20,10 @@ package org.apache.ignite.cache.jta.jndi;
 import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.Map;
+import jakarta.transaction.TransactionManager;
 import javax.cache.configuration.Factory;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
-import jakarta.transaction.TransactionManager;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 

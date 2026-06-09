@@ -108,7 +108,7 @@
         <slf4j.version>2.0.17</slf4j.version>
         <snappy.version>1.1.10.7</snappy.version>
         <spring.version>6.2.18</spring.version>
-        <surefire.version>3.5.4</surefire.version>
+        <surefire.version>3.5.5</surefire.version>
         <tomcat.version>10.0.27</tomcat.version>
         <yardstick.version>0.8.3</yardstick.version>
         <zookeeper.version>3.9.5</zookeeper.version>
@@ -1005,10 +1005,6 @@
             <activation>
                 <jdk>[15,)</jdk>
             </activation>
-            <properties>
-                <maven.compiler.source>11</maven.compiler.source>
-                <maven.compiler.target>15</maven.compiler.target>
-            </properties>
             <dependencies/>
             <build>
                 <plugins>

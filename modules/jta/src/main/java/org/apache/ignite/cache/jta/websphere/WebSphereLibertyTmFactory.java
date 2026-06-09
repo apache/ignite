@@ -18,8 +18,8 @@
 package org.apache.ignite.cache.jta.websphere;
 
 import java.lang.reflect.InvocationTargetException;
-import javax.cache.configuration.Factory;
 import jakarta.transaction.TransactionManager;
+import javax.cache.configuration.Factory;
 import org.apache.ignite.IgniteException;
 
 /**

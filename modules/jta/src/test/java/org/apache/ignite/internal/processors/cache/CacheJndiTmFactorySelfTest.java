@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.concurrent.Callable;
-import javax.naming.Context;
-import javax.naming.InitialContext;
 import jakarta.transaction.HeuristicMixedException;
 import jakarta.transaction.HeuristicRollbackException;
 import jakarta.transaction.InvalidTransactionException;
@@ -28,6 +26,8 @@ import jakarta.transaction.RollbackException;
 import jakarta.transaction.SystemException;
 import jakarta.transaction.Transaction;
 import jakarta.transaction.TransactionManager;
+import javax.naming.Context;
+import javax.naming.InitialContext;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.jta.jndi.CacheJndiTmFactory;
 import org.apache.ignite.testframework.GridTestUtils;
