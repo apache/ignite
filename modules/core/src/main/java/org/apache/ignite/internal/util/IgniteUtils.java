@@ -387,6 +387,21 @@ public abstract class IgniteUtils extends CommonUtils {
     /** Ignite Work Directory. */
     public static final String IGNITE_WORK_DIR = System.getenv(IgniteSystemProperties.IGNITE_WORK_DIR);
 
+    /**
+     * System property to allow remote HTTP/HTTPS URLs when loading Spring XML configuration.
+     * Remote URLs are blocked by default to prevent RCE via attacker-controlled Spring XML.
+     * FTP is always blocked regardless of this property due to MITM risk.
+     */
+    public static final String IGNITE_ALLOW_REMOTE_SPRING_CFG_URL = "ignite.spring.cfg.allowRemoteUrl";
+
+    /** URL schemes that load remote content and are blocked by default in Spring configuration. */
+    private static final Set<String> REMOTE_CFG_SCHEMES = Collections.unmodifiableSet(
+        new HashSet<>(Arrays.asList("http", "https", "ftp", "ftps")));
+
+    /** URL schemes that are always blocked regardless of system property due to security risk. */
+    private static final Set<String> ALWAYS_BLOCKED_CFG_SCHEMES = Collections.unmodifiableSet(
+        new HashSet<>(Arrays.asList("ftp", "ftps")));
+
     /** Random is used to get random server node to authentication from client node. */
     private static final Random RND = new Random(System.currentTimeMillis());
 
@@ -2600,6 +2615,31 @@ public abstract class IgniteUtils extends CommonUtils {
 
         try {
             url = new URL(springCfgPath);
+
+            String scheme = url.getProtocol().toLowerCase();
+
+            if (REMOTE_CFG_SCHEMES.contains(scheme)) {
+                // FTP is always blocked — unencrypted, susceptible to MITM
+                if (ALWAYS_BLOCKED_CFG_SCHEMES.contains(scheme))
+                    throw new IgniteCheckedException(
+                        "Spring configuration URLs with scheme '" + scheme + "' are always blocked " +
+                        "due to security risk (unencrypted transfer, MITM vulnerability). " +
+                        "Use HTTPS or a local file/classpath reference instead. " +
+                        "Provided host: " + url.getHost()
+                    );
+
+                // HTTP/HTTPS blocked by default, allowed via system property
+                boolean allowRemote = Boolean.getBoolean(IGNITE_ALLOW_REMOTE_SPRING_CFG_URL);
+
+                if (!allowRemote)
+                    throw new IgniteCheckedException(
+                        "Remote Spring configuration URLs (http/https) are not allowed by default " +
+                        "to prevent remote code execution via attacker-controlled Spring XML. " +
+                        "Provided host: " + url.getHost() + ". " +
+                        "To allow remote URLs set system property: -D" +
+                        IGNITE_ALLOW_REMOTE_SPRING_CFG_URL + "=true"
+                    );
+            }
         }
         catch (MalformedURLException e) {
             url = resolveIgniteUrl(springCfgPath);
