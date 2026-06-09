@@ -24,8 +24,6 @@ import org.apache.ignite.internal.thread.context.function.OperationContextAwareR
  * Represents snapshot of all Attributes and their corresponding values for a particular {@link OperationContext}
  * instance. Its main purpose to save {@link OperationContext} state and restore it later, possible for
  * {@link OperationContext} bound to another thread.
- * <p>
- * Iterates over its {@link OperationContextAttribute} providing attribute's bitmask and value.
  *
  * @see OperationContext
  * @see OperationContext#createSnapshot()

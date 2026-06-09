@@ -61,6 +61,8 @@ public class DistributedOperationAttributeRegistry {
             }
             catch (Throwable t) {
                 idGen.decrementAndGet();
+
+                throw t;
             }
         }
 
@@ -90,5 +92,12 @@ public class DistributedOperationAttributeRegistry {
         assert attr.initialValue() == null || attr.initialValue().getClass() == val.getClass();
 
         return (Message)val;
+    }
+
+    /** Mostly for testing purposes. */
+    public void clear() {
+        msgAttrs.clear();
+        bitmaskAttrs.clear();
+        idGen.set(0);
     }
 }

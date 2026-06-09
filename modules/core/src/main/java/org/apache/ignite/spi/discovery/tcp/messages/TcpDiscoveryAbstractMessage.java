@@ -298,7 +298,7 @@ public abstract class TcpDiscoveryAbstractMessage implements Message {
 
     /** @param opCtxSnp Operation context snapshot. */
     public void operationContext(@Nullable OperationContextSnapshot opCtxSnp) {
-        if (opCtxSnp != null)
+        if (opCtxSnp == null)
             return;
 
         opCtxAttrs = new HashMap<>();

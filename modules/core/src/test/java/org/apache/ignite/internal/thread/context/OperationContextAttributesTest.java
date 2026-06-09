@@ -36,6 +36,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
@@ -56,6 +57,9 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThread;
 import org.junit.Test;
@@ -87,6 +91,8 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
         super.beforeTest();
 
         AttributeValueChecker.CHECKS.clear();
+
+        DistributedOperationAttributeRegistry.INSTANCE.clear();
     }
 
     /** {@inheritDoc} */
@@ -268,18 +274,40 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
     public void testMaximumAttributesInstanceCount() {
         int cnt = OperationContextAttribute.MAX_ATTR_CNT;
 
-        List<OperationContextAttribute<Integer>> attrs = new ArrayList<>(cnt);
+        List<OperationContextAttribute<Message>> attrs = new ArrayList<>(cnt);
         LinkedList<Scope> scopes = new LinkedList<>();
 
-        for (int i = 0; i < cnt; i++) {
-            attrs.add(new OperationContextAttribute<>(1 << i, null));
+        CoreMessagesProvider messages = new CoreMessagesProvider();
 
-            scopes.push(OperationContext.set(attrs.get(i), i));
+        List<Message> msgs = new ArrayList<>(500);
+
+        messages.registerAll(new MessageFactory() {
+            @Override public void register(short directType, Supplier<Message> supplier, MessageSerializer serializer) throws IgniteException {
+                msgs.add(supplier.get());
+            }
+
+            @Override public Message create(short type) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override public MessageSerializer serializer(short type) {
+                throw new UnsupportedOperationException();
+            }
+        });
+
+        assert msgs.size() >= cnt;
+
+        for (int i = 0; i < cnt; i++) {
+            OperationContextAttribute<Message> attr = DistributedOperationAttributeRegistry.INSTANCE.register((Class<Message>)msgs.get(i).getClass(), null);
+
+            attrs.add(attr);
+
+            scopes.push(OperationContext.set(attr, msgs.get(i)));
         }
 
         try {
             for (int i = 0; i < cnt; i++)
-                assertTrue(i == OperationContext.get(attrs.get(i)));
+                assertTrue(msgs.get(i) == OperationContext.get(attrs.get(i)));
         }
         finally {
             scopes.forEach(Scope::close);
@@ -289,7 +317,7 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
 
         assertThrowsAnyCause(
             log,
-            () -> new OperationContextAttribute(1 << (cnt + 1), null),
+            () -> DistributedOperationAttributeRegistry.INSTANCE.register(msgs.get(cnt + 1).getClass(), null),
             AssertionError.class,
             "Exceeded maximum supported number of created Attributes instances"
         );

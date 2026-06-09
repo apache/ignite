@@ -100,7 +100,16 @@ public class OperationContext {
         return ctx.getInternal(attr) == val ? NOOP_SCOPE : ctx.applyAttributeUpdates(new AttributeValueHolder<>(attr, val));
     }
 
-    /** */
+    /**
+     * Updates the value of the specified attribute for the {@link OperationContext} bound to the thread this method
+     * is called from.
+     *
+     * @param attrs Context attributes.
+     * @return Scope instance that, when closed, undoes the applied update. It is crucial to undo all applied
+     * {@link OperationContext} updates to free up thread-bound resources and avoid memory leaks, so it is highly
+     * encouraged to use a try-with-resource block to close the returned Scope. Note, updates must be undone in the
+     * same order and in the same thread they were applied.
+     */
     public static Scope set(Map<OperationContextAttribute<Object>, Object> attrs) {
         ContextUpdater updater = ContextUpdater.create();
 
@@ -163,32 +172,6 @@ public class OperationContext {
     }
 
     /**
-     * Creates a {@link Update} based on {@code OperationContextSnapshot}.
-     */
-    private Update createUpdate(@Nullable OperationContextSnapshot opCtxSnp) {
-        if (opCtxSnp == null || opCtxSnp instanceof Update)
-            return (Update)opCtxSnp;
-
-        List<AttributeValueHolder<Object>> attrVals = new ArrayList<>();
-
-        for (OperationContextSnapshotEntry<Object> e : opCtxSnp) {
-            OperationContextAttribute<Object> attr = e.attribute();
-
-            AttributeValueHolder<?> curValHldr = findAttributeValue(attr);
-
-            if (curValHldr != null && curValHldr.attr.initialValue() != null && e.value() != null) {
-                assert curValHldr.attr.initialValue().getClass().isAssignableFrom(e.value().getClass());
-
-                attr = new OperationContextAttribute<>(attr.bitmask(), curValHldr.attr.initialValue());
-            }
-
-            attrVals.add(new AttributeValueHolder<>(attr, e.value()));
-        }
-
-        return new Update(attrVals.toArray(new AttributeValueHolder[attrVals.size()]), null);
-    }
-
-    /**
      * Restores values of all attributes for {@link OperationContext} bound to the thread this method is called from.
      *
      * @param snp Context Snapshot.
@@ -197,7 +180,7 @@ public class OperationContext {
      * encouraged to use a try-with-resource block to close the returned Scope. Note, updates must be undone in the
      * same order and in the same thread they were applied.
      */
-    public static Scope restoreSnapshot(@Nullable OperationContextSnapshot snp) {
+    public static Scope restoreSnapshot(OperationContextSnapshot snp) {
         return INSTANCE.get().restoreSnapshotInternal(snp);
     }
 
@@ -252,7 +235,7 @@ public class OperationContext {
     }
 
     /** */
-    private Scope restoreSnapshotInternal(@Nullable OperationContextSnapshot newSnp) {
+    private Scope restoreSnapshotInternal(OperationContextSnapshot newSnp) {
         OperationContextSnapshot prevSnp = createSnapshotInternal();
 
         if (newSnp == prevSnp)
@@ -260,16 +243,14 @@ public class OperationContext {
 
         changeState(prevSnp, newSnp);
 
-        OperationContextSnapshot curSnpImpl = lastUpd;
-
-        return () -> changeState(curSnpImpl, prevSnp);
+        return () -> changeState(newSnp, prevSnp);
     }
 
     /** */
-    private void changeState(OperationContextSnapshot expState, @Nullable OperationContextSnapshot newState) {
+    private void changeState(OperationContextSnapshot expState, OperationContextSnapshot newState) {
         assert lastUpd == expState;
 
-        lastUpd = createUpdate(newState);
+        lastUpd = (Update)newState;
     }
 
     /** Represents Update applied to the {@link OperationContext}. */

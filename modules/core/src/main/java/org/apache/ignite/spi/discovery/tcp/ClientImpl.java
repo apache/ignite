@@ -2000,6 +2000,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                                 break;
                             }
                         }
+
                         TcpDiscoveryAbstractMessage msg0 = (TcpDiscoveryAbstractMessage)msg;
 
                         Map<OperationContextAttribute<Object>, Object> distrOpCtxAttrs = operationContextAttributes(msg0);
