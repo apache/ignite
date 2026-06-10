@@ -823,6 +823,35 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends AbstractBinaryArr
     }
 
     /**
+     */
+    @Test
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public void testSetBinaryEnumFieldWithEnumClass() {
+        IgniteBinary binary = binaries();
+
+        binary.registerEnum(BuilderEnum.class.getName(), F.asMap(
+            BuilderEnum.ONE.name(), BuilderEnum.ONE.ordinal(),
+            BuilderEnum.TWO.name(), BuilderEnum.TWO.ordinal()));
+
+        String typeName = "org.test.EnumMetaTest";
+        String fld = "enumField";
+
+        BinaryObject bo = builder(typeName)
+            .setField(fld, binary.buildEnum(BuilderEnum.class.getName(), BuilderEnum.ONE.name()))
+            .build();
+
+        assertEquals("Enum", bo.type().fieldTypeName(fld));
+        assertEquals(BuilderEnum.ONE.ordinal(), bo.<BinaryObject>field(fld).enumOrdinal());
+
+        bo = builder(typeName)
+            .setField(fld, binary.buildEnum(BuilderEnum.class.getName(), BuilderEnum.TWO.name()), (Class)Enum.class)
+            .build();
+
+        assertEquals("Enum", bo.type().fieldTypeName(fld));
+        assertEquals(BuilderEnum.TWO.ordinal(), bo.<BinaryObject>field(fld).enumOrdinal());
+    }
+
+    /**
      * @param fullClsName Class name.
      * @return Expected type name according to configuration.
      */
@@ -1075,6 +1104,15 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends AbstractBinaryArr
 
         /** */
         private int i = 10;
+    }
+
+    /** */
+    private enum BuilderEnum {
+        /** */
+        ONE,
+
+        /** */
+        TWO
     }
 
     /**
