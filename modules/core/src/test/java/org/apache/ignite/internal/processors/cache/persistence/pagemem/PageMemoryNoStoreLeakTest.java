@@ -17,13 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
+import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryAllocator;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
-import org.apache.ignite.internal.util.typedef.internal.D;
+import org.apache.ignite.mem.MemoryAllocator;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -42,18 +45,34 @@ public class PageMemoryNoStoreLeakTest extends GridCommonAbstractTest {
     /** */
     private static final int MAX_MEMORY_SIZE = 10 * 1024 * 1024;
 
-    /** Allow delta between GC executions. */
-    private static final int ALLOWED_DELTA = 10 * 1024 * 1024;
-
     /**
      * @throws Exception If failed.
      */
     @Test
     public void testPageDoubleInitMemoryLeak() throws Exception {
-        long initVMsize = D.getCommittedVirtualMemorySize();
+        Map<Long, Long> chunks = new HashMap<>();
+
+        MemoryAllocator memAllocator = new UnsafeMemoryAllocator() {
+            @Override public long allocateMemory(long size) {
+                long addr = super.allocateMemory(size);
+
+                Long old = chunks.put(addr, size);
+
+                assertNull(old);
+
+                return addr;
+            }
+
+            @Override public void freeMemory(long addr) {
+                super.freeMemory(addr);
+
+                Long val = chunks.remove(addr);
+                assertNotNull(val);
+            }
+        };
 
         for (int i = 0; i < 1_000; i++) {
-            final DirectMemoryProvider provider = new UnsafeMemoryProvider(log());
+            final DirectMemoryProvider provider = new UnsafeMemoryProvider(log(), memAllocator);
 
             final DataRegionConfiguration plcCfg = new DataRegionConfiguration()
                 .setMaxSize(MAX_MEMORY_SIZE).setInitialSize(MAX_MEMORY_SIZE);
@@ -71,16 +90,14 @@ public class PageMemoryNoStoreLeakTest extends GridCommonAbstractTest {
             try {
                 mem.start();
 
-                //Second initialization, introduces leak
+                // Second initialization, introduces leak.
                 mem.start();
             }
             finally {
                 mem.stop(true);
             }
-
-            long committedVMSize = D.getCommittedVirtualMemorySize();
-
-            assertTrue(committedVMSize - initVMsize <= ALLOWED_DELTA);
         }
+
+        assertTrue(chunks.isEmpty());
     }
 }
