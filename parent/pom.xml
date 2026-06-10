@@ -1187,5 +1187,20 @@
                 <maven.javadoc.skip>true</maven.javadoc.skip>
             </properties>
         </profile>
+
+        <profile>
+            <id>check-test-suites</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <forkCount>1</forkCount>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 </project>
