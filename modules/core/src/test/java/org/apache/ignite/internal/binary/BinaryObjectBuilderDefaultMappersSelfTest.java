@@ -822,8 +822,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends AbstractBinaryArr
         assertEquals("Object", meta.fieldTypeName("objectField"));
     }
 
-    /**
-     */
+    /** */
     @Test
     @SuppressWarnings({"rawtypes", "unchecked"})
     public void testSetBinaryEnumFieldWithEnumClass() {
