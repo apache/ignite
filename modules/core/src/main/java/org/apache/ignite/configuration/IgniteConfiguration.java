@@ -49,6 +49,7 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -314,6 +315,7 @@ public class IgniteConfiguration implements IgniteConfigurationDefaults {
     private String igniteWorkDir;
 
     /** MBean server. */
+    @GridToStringExclude
     private MBeanServer mbeanSrv;
 
     /** Local node ID. */
@@ -398,6 +400,7 @@ public class IgniteConfiguration implements IgniteConfigurationDefaults {
     private LoadBalancingSpi[] loadBalancingSpi;
 
     /** Indexing SPI. */
+    @GridToStringExclude
     private IndexingSpi indexingSpi;
 
     /** Address resolver. */
