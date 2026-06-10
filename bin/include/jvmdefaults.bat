@@ -24,7 +24,7 @@ set value=""
 :: First argument is the version of the java
 :: Second argument is the current value of the jvm options
 :: Third value is the name of the environment variable that jvm options should be set to
-if %java_version% GEQ 15 (
+if %java_version% GEQ 17 (
     set value= ^
     --add-opens=java.base/jdk.internal.access=ALL-UNNAMED ^
     --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED ^

@@ -24,7 +24,7 @@ getJavaSpecificOpts() {
   current_value=$2
   value=""
 
-  if [ "${version}" -ge 15 ] ; then
+  if [ "${version}" -ge 17 ] ; then
       value="\
           --add-opens=java.base/jdk.internal.access=ALL-UNNAMED \
           --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED \
