@@ -767,6 +767,10 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             @Override public boolean isPrimaryOnly() {
                 return locOnly && !skipPrimaryCheck;
             }
+
+            @Override public boolean isLocalOnly() {
+                return locOnly;
+            }
         };
 
         CacheContinuousQueryManager mgr = manager(ctx);
