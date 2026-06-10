@@ -1132,7 +1132,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         catch (NoClassDefFoundError e) {
             P2PClassLoadingIssues.rethrowDisarmedP2PClassLoadingFailure(e);
         }
-        catch (Exception e) {
+        catch (Throwable e) {
             U.error(log, "CacheEntryEventFilter failed: " + e);
         }
 
@@ -1251,11 +1251,16 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         if (F.isEmpty(evts))
             return;
 
-        if (locLsnr != null)
-            locLsnr.onUpdated(evts);
+        try {
+            if (locLsnr != null)
+                locLsnr.onUpdated(evts);
 
-        if (locTransLsnr != null)
-            locTransLsnr.onUpdated(transform(trans, evts));
+            if (locTransLsnr != null)
+                locTransLsnr.onUpdated(transform(trans, evts));
+        }
+        catch (Throwable e) {
+            log.warning("Failed to invoke continues query listener", e);
+        }
     }
 
     /**
@@ -1800,8 +1805,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         catch (NoClassDefFoundError e) {
             P2PClassLoadingIssues.rethrowDisarmedP2PClassLoadingFailure(e);
         }
-        catch (Exception e) {
-            U.error(log, e);
+        catch (Throwable e) {
+            U.error(log, "Failed to transform entry", e);
         }
 
         return transVal;
