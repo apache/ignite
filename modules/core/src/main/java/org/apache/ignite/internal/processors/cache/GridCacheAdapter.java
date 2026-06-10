@@ -98,6 +98,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.consistency.
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
@@ -159,6 +160,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_RETRIES_COUNT;
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_LOAD;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
@@ -538,7 +540,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /**
      * @param keys Keys to lock.
-     * @param timeout Lock timeout.
+     * @param timeout Transaction timeout.
+     * @param waitTimeout Lock wait timeout.
      * @param tx Transaction.
      * @param isRead {@code True} for read operations.
      * @param retval Flag to return value.
@@ -551,6 +554,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     public abstract IgniteInternalFuture<Boolean> txLockAsync(
         Collection<KeyCacheObject> keys,
         long timeout,
+        long waitTimeout,
         IgniteTxLocalEx tx,
         boolean isRead,
         boolean retval,
@@ -3026,6 +3030,196 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 // No-op.
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean lockTxEntry(CacheEntry<K, V> entry, long waitTimeout) throws IgniteCheckedException {
+        A.notNull(entry, "entry");
+
+        return lockTxEntryAsync(entry, waitTimeout).get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean lockTxEntries(Collection<CacheEntry<K, V>> entries, long waitTimeout)
+        throws IgniteCheckedException {
+        A.notNull(entries, "entries");
+
+        return lockTxEntriesAsync(entries, waitTimeout).get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<Boolean> lockTxEntryAsync(CacheEntry<K, V> entry, long waitTimeout) {
+        A.notNull(entry, "entry");
+
+        return lockTxEntriesAsync(Collections.singleton(entry), waitTimeout);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<Boolean> lockTxEntriesAsync(
+        Collection<CacheEntry<K, V>> entries,
+        long waitTimeout
+    ) {
+        A.notNull(entries, "entries");
+
+        GridNearTxLocal tx = tx();
+
+        if (tx == null)
+            return new GridFinishedFuture<>(
+                new IgniteCheckedException("Failed to acquire transactional lock without transaction."));
+
+        if (!tx.pessimistic())
+            return new GridFinishedFuture<>(
+                new IgniteCheckedException("Failed to acquire transactional lock in optimistic transaction."));
+
+        // Wait for previous per-transaction async operations to finish.
+        tx.txState().awaitLastFuture();
+
+        if (!tx.init())
+            return new GridFinishedFuture<>(new IgniteTxRollbackCheckedException(
+                "Failed to acquire transactional lock because transaction has been completed: " + tx));
+
+        if (entries.isEmpty())
+            return new GridFinishedFuture<>(true);
+
+        try {
+            tx.addActiveCache(ctx, false);
+        }
+        catch (IgniteCheckedException e) {
+            return new GridFinishedFuture<>(e);
+        }
+
+        Collection<KeyCacheObject> keys = new ArrayList<>(entries.size());
+        List<IgniteTxEntry> txEntries = new ArrayList<>(entries.size());
+        List<GridCacheVersion> expVers = new ArrayList<>(entries.size());
+        Set<IgniteTxKey> txKeys = new HashSet<>(entries.size());
+
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
+        for (CacheEntry<K, V> entry : entries) {
+            A.notNull(entry, "entry");
+
+            KeyCacheObject key = ctx.toCacheKeyObject(entry.getKey());
+            IgniteTxKey txKey = ctx.txKey(key);
+
+            if (!txKeys.add(txKey))
+                continue;
+
+            IgniteTxEntry lockedTxEntry = tx.entry(txKey);
+
+            if (lockedTxEntry != null && (lockedTxEntry.op() != READ || lockedTxEntry.locked()))
+                continue;
+
+            if (!(entry.version() instanceof GridCacheVersion)) {
+                tx.removeAndUnlockTxEntries(txEntries);
+
+                return new GridFinishedFuture<>(new IgniteCheckedException("Failed to acquire transactional lock for entry with " +
+                    "unsupported version type [entry=" + entry + ", version=" + entry.version() + ']'));
+            }
+
+            CacheObject val = ctx.toCacheObject(entry.getValue());
+            GridCacheEntryEx entryEx = ctx.isColocated() ? ctx.colocated().entryExx(key, tx.topologyVersion(), true) : entryEx(key);
+
+            IgniteTxEntry txEntry = tx.addEntry(
+                READ,
+                val,
+                null,
+                null,
+                entryEx,
+                null,
+                null,
+                true,
+                -1L,
+                -1L,
+                null,
+                opCtx != null && opCtx.skipStore(),
+                opCtx != null && opCtx.skipReadThrough(),
+                opCtx != null && opCtx.keepBinaryInInterceptor(),
+                opCtx != null && opCtx.isKeepBinary(),
+                CU.isNearEnabled(ctx)
+            );
+
+            keys.add(key);
+            txEntries.add(txEntry);
+            expVers.add((GridCacheVersion)entry.version());
+        }
+
+        if (keys.isEmpty())
+            return new GridFinishedFuture<>(true);
+
+        // Acquire transactional lock future from concrete cache implementation. Use txLockAsync which
+        // delegates to cache-specific lockAllAsync implementations for distributed caches.
+        long timeout = tx.remainingTime();
+
+        IgniteInternalFuture<Boolean> lockFut = txLockAsync(keys,
+            timeout,
+            waitTimeout == 0 ? timeout : waitTimeout,
+            tx,
+            /*isRead*/true,
+            /*retval*/false,
+            tx.isolation(),
+            /*invalidate*/false,
+            /*createTtl*/0L,
+            /*accessTtl*/0L);
+
+        IgniteInternalFuture<Boolean> res = new GridEmbeddedFuture<>(
+            lockFut,
+            (locked, ex) -> {
+                if (ex != null)
+                    return new GridFinishedFuture<>(ex);
+
+                if (!locked) {
+                    tx.removeAndUnlockTxEntries(txEntries);
+
+                    return new GridFinishedFuture<>(false);
+                }
+
+                try {
+                    for (int i = 0; i < txEntries.size(); i++) {
+                        GridCacheEntryEx cached = txEntries.get(i).cached();
+                        EntryGetResult getRes = cached.innerGetVersioned(
+                            null,
+                            tx,
+                            /*update-metrics*/false,
+                            /*event*/false,
+                            null,
+                            tx.resolveTaskName(),
+                            null,
+                            false,
+                            null);
+
+                        if (getRes == null || !expVers.get(i).equals(getRes.version())) {
+                            tx.removeAndUnlockTxEntries(txEntries);
+
+                            return new GridFinishedFuture<>(false);
+                        }
+                    }
+
+                    return new GridFinishedFuture<>(true);
+                }
+                catch (IgniteCheckedException | GridCacheEntryRemovedException e) {
+                    tx.removeAndUnlockTxEntries(txEntries);
+
+                    return new GridFinishedFuture<>(e);
+                }
+            }
+        );
+
+        // Register this future in transaction's async-holder so that subsequent operations
+        // that call tx.txState().awaitLastFuture() will wait for it.
+        GridCacheAdapter.FutureHolder holder = tx.txState().lastAsyncFuture();
+
+        if (holder != null) {
+            holder.lock();
+
+            try {
+                holder.saveFuture(res);
+            }
+            finally {
+                holder.unlock();
+            }
+        }
+
+        return res;
     }
 
     /** {@inheritDoc} */

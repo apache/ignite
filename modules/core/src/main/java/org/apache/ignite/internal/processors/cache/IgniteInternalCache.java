@@ -1346,6 +1346,61 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public boolean isLocked(K key);
 
     /**
+     * Acquires a transactional lock for the cached object represented by the given entry if the current cached version
+     * matches the entry version. This method works only in a {@link TransactionConcurrency#PESSIMISTIC} transaction.
+     *
+     * @param entry Entry whose key, value and version should be used.
+     * @param waitTimeout Timeout in milliseconds to wait for lock to be acquired
+     *      ({@code 0} to use the transaction timeout, {@code -1} for immediate failure if
+     *      lock cannot be acquired immediately).
+     * @return {@code True} if lock was acquired with the same entry version.
+     * @throws IgniteCheckedException If lock acquisition resulted in an error.
+     */
+    public boolean lockTxEntry(CacheEntry<K, V> entry, long waitTimeout) throws IgniteCheckedException;
+
+    /**
+     * Acquires transactional locks for the cached objects represented by the given entries if all current cached
+     * versions match the corresponding entry versions. This method works only in a
+     * {@link TransactionConcurrency#PESSIMISTIC} transaction.
+     *
+     * @param entries Entries whose keys, values and versions should be used.
+     * @param waitTimeout Timeout in milliseconds to wait for locks to be acquired
+     *      ({@code 0} to use the transaction timeout, {@code -1} for immediate failure if
+     *      locks cannot be acquired immediately).
+     * @return {@code True} if all locks were acquired with the same entry versions.
+     * @throws IgniteCheckedException If lock acquisition resulted in an error.
+     */
+    public boolean lockTxEntries(Collection<CacheEntry<K, V>> entries, long waitTimeout) throws IgniteCheckedException;
+
+    /**
+     * Asynchronously acquires a transactional lock for the cached object represented by the given entry if the current
+     * cached version matches the entry version. This method works only in a
+     * {@link TransactionConcurrency#PESSIMISTIC} transaction.
+     *
+     * @param entry Entry whose key, value and version should be used.
+     * @param waitTimeout Timeout in milliseconds to wait for lock to be acquired
+     *      ({@code 0} to use the transaction timeout, {@code -1} for immediate failure if
+     *      lock cannot be acquired immediately).
+     * @return Future that resolves to {@code true} if the lock was acquired and the versions matched, or to
+     *      {@code false} otherwise.
+     */
+    public IgniteInternalFuture<Boolean> lockTxEntryAsync(CacheEntry<K, V> entry, long waitTimeout);
+
+    /**
+     * Asynchronously acquires transactional locks for the cached objects represented by the given entries if all
+     * current cached versions match the corresponding entry versions. This method works only in a
+     * {@link TransactionConcurrency#PESSIMISTIC} transaction.
+     *
+     * @param entries Entries whose keys, values and versions should be used.
+     * @param waitTimeout Timeout in milliseconds to wait for locks to be acquired
+     *      ({@code 0} to use the transaction timeout, {@code -1} for immediate failure if
+     *      locks cannot be acquired immediately).
+     * @return Future that resolves to {@code true} if all locks were acquired and all versions matched, or to
+     *      {@code false} otherwise.
+     */
+    public IgniteInternalFuture<Boolean> lockTxEntriesAsync(Collection<CacheEntry<K, V>> entries, long waitTimeout);
+
+    /**
      * Checks if current thread owns a lock on this key.
      * <p>
      * This is a local in-VM operation and does not involve any network trips
