@@ -237,13 +237,15 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
         if (rollUpVers == null)
             return;
 
-        IgnitePair<IgniteProductVersion> minMaxVerPair = resolveMinMaxNodeVersions();
-
-        if (!minMaxVerPair.get1().equals(minMaxVerPair.get2()))
-            throw new IgniteCheckedException("Can't disable rolling upgrade with different versions in cluster: "
-                + minMaxVerPair.get1() + ", " + minMaxVerPair.get2());
+        IgnitePair<IgniteProductVersion> minMaxVerPair;
 
         synchronized (lock) {
+            minMaxVerPair = resolveMinMaxNodeVersions();
+
+            if (!minMaxVerPair.get1().equals(minMaxVerPair.get2()))
+                throw new IgniteCheckedException("Can't disable rolling upgrade with different versions in cluster: "
+                    + minMaxVerPair.get1() + ", " + minMaxVerPair.get2());
+
             if (lastJoiningNode != null) {
                 IgniteProductVersion lastJoiningNodeVer = IgniteProductVersion.fromString(lastJoiningNode.attribute(ATTR_BUILD_VER));
 
@@ -263,6 +265,8 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
     /** */
     private IgnitePair<IgniteProductVersion> resolveMinMaxNodeVersions() {
+        assert Thread.holdsLock(lock);
+
         SortedSet<IgniteProductVersion> clusterNodes = new TreeSet<>();
 
         for (ClusterNode node : ctx.discovery().discoverySpiRemoteNodes())
