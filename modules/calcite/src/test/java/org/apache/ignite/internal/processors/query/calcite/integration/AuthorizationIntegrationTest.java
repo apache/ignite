@@ -21,7 +21,8 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
@@ -93,7 +94,14 @@ public class AuthorizationIntegrationTest extends AbstractSecurityTest {
     /** */
     @Parameterized.Parameters(name = "allowDdl = {0}")
     public static Iterable<Object> parameters() {
-        return Arrays.asList(false, true);
+        List<Object> res = new ArrayList<>();
+
+        for (int i = 0; i < 500; i++) {
+            res.add(false);
+            res.add(true);
+        }
+
+        return res;
     }
 
     /** {@inheritDoc} */
