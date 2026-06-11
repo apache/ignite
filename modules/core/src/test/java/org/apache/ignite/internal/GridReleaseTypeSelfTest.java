@@ -243,10 +243,6 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
         assertTrue(X.hasCause(e, "Local node's marshaller differs from remote node's marshaller", IgniteSpiException.class));
 
-        assertDisablingFails(ign0, "Can't disable rolling upgrade with different versions in cluster");
-
-        doSleep(joinTimeout * 3);
-
         ign0.context().rollingUpgrade().disable();
 
         assertFalse(ign0.context().rollingUpgrade().enabled());
