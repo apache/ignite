@@ -553,7 +553,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                 return;
             }
 
-            if (isDone() || timedOut) {
+            if (timedOut) {
                 if (msgLog.isDebugEnabled()) {
                     msgLog.debug("DHT lock fut, response for finished future [txId=" + nearLockVer +
                         ", dhtTxId=" + lockVer +

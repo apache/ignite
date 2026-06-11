@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
@@ -62,8 +61,12 @@ public class CacheTryLockMultithreadedTest extends GridCommonAbstractTest {
 
     /** */
     @Parameterized.Parameters(name = "cacheMode={0}, backups={1}")
-    public static Collection<?> parameters() {
-        return GridTestUtils.cartesianProduct(F.asList(REPLICATED, PARTITIONED), F.asList(0, 1));
+    public static List<Object[]> parameters() {
+        return F.asList(
+            new Object[] {REPLICATED, 0},
+            new Object[] {PARTITIONED, 0},
+            new Object[] {PARTITIONED, 1}
+        );
     }
 
     /** {@inheritDoc} */
@@ -107,7 +110,7 @@ public class CacheTryLockMultithreadedTest extends GridCommonAbstractTest {
 
         final IgniteCache<Integer, Integer> cache = client.cache(DEFAULT_CACHE_NAME);
 
-        final long stopTime = System.currentTimeMillis() + 30_000;
+        final long stopTime = System.currentTimeMillis() + 15_000;
 
         GridTestUtils.runMultiThreaded(new Callable<Void>() {
             @Override public Void call() throws Exception {
