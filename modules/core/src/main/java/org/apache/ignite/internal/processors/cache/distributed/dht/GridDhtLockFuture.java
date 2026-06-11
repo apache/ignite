@@ -553,6 +553,17 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                 return;
             }
 
+            if (timedOut) {
+                if (msgLog.isDebugEnabled()) {
+                    msgLog.debug("DHT lock fut, response for finished future [txId=" + nearLockVer +
+                        ", dhtTxId=" + lockVer +
+                        ", inTx=" + inTx() +
+                        ", node=" + nodeId + ']');
+                }
+
+                return;
+            }
+
             U.warn(msgLog, "DHT lock fut, failed to find mini future [txId=" + nearLockVer +
                 ", dhtTxId=" + lockVer +
                 ", inTx=" + inTx() +
@@ -661,7 +672,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
      * @param entry Entry whose lock ownership changed.
      */
     @Override public boolean onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner) {
-        if (isDone() || (inTx() && (tx.remainingTime() == -1 || tx.isRollbackOnly())))
+        if (checkDone() || (inTx() && (tx.remainingTime() == -1 || tx.isRollbackOnly())))
             return false; // Check other futures.
 
         if (log.isDebugEnabled())
@@ -671,6 +682,9 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
             boolean isEmpty;
 
             synchronized (this) {
+                if (checkDone())
+                    return false;
+
                 if (!pendingLocks.remove(entry.key()))
                     return false;
 
@@ -743,6 +757,9 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         if (log.isDebugEnabled())
             log.debug("Received onComplete(..) callback [success=" + success + ", fut=" + this + ']');
 
+        if (isDone())
+            return false;
+
         if (!success && !stopping && unlock)
             undoLocks(true);
 
@@ -809,7 +826,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
      * @return {@code True} if future is done.
      */
     private boolean checkDone() {
-        if (isDone()) {
+        if (isDone() || timedOut) {
             if (log.isDebugEnabled())
                 log.debug("Mapping won't proceed because future is done: " + this);
 
@@ -824,7 +841,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
      */
     private void map(Iterable<GridDhtCacheEntry> entries) {
         synchronized (this) {
-            if (mapped)
+            if (mapped || checkDone())
                 return;
 
             mapped = true;
@@ -970,15 +987,27 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
                                     GridCacheMvccCandidate added = e.candidate(lockVer);
 
-                                    assert added != null;
+                                    // Possible in case of lock cancellation.
+                                    if (added == null) {
+                                        onFailed();
+
+                                        return;
+                                    }
+
                                     assert added.dhtLocal();
 
                                     if (added.ownerVersion() != null)
                                         req.owned(e.key(), added.ownerVersion());
                                 }
                                 catch (GridCacheEntryRemovedException ex) {
-                                    assert false : "Entry cannot become obsolete when DHT local candidate is added " +
-                                        "[e=" + e + ", ex=" + ex + ']';
+                                    if (log.isDebugEnabled()) {
+                                        log.debug("Entry was removed while mapping DHT lock future (will fail) " +
+                                            "[e=" + e + ", ex=" + ex + ", fut=" + this + ']');
+                                    }
+
+                                    onFailed();
+
+                                    return;
                                 }
                             }
 
