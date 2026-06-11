@@ -859,7 +859,7 @@ public class ConnectionClientPool {
                 totalLifetime += (now - client.creationTime());
             }
 
-            return totalLifetime / connCnt;
+            return connCnt != 0 ? totalLifetime / connCnt : 0;
         }
 
         /** */

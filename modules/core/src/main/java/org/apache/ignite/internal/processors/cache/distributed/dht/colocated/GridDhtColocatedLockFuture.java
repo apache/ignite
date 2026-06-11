@@ -1283,16 +1283,18 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                     log.debug("Acquired lock for local DHT mapping [locId=" + cctx.nodeId() +
                         ", mappedKeys=" + keys + ", fut=" + this + ']');
 
-                if (inTx()) {
-                    for (KeyCacheObject key : keys)
-                        tx.entry(cctx.txKey(key)).markLocked();
-                }
-                else {
-                    for (KeyCacheObject key : keys)
-                        cctx.mvcc().markExplicitOwner(cctx.txKey(key), threadId);
-                }
-
                 try {
+                    if (timeoutObj == null)
+                        markLocalDhtLocksAcquired(keys);
+                    else {
+                        synchronized (timeoutObj) {
+                            if (isDone())
+                                return false;
+
+                            markLocalDhtLocksAcquired(keys);
+                        }
+                    }
+
                     // Proceed and add new future (if any) before completing embedded future.
                     if (mappings != null)
                         proceedMapping();
@@ -1306,6 +1308,18 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                 return true;
             },
             fut));
+    }
+
+    /** @param keys Locally locked keys. */
+    private void markLocalDhtLocksAcquired(Collection<KeyCacheObject> keys) {
+        if (inTx()) {
+            for (KeyCacheObject key : keys)
+                tx.entry(cctx.txKey(key)).markLocked();
+        }
+        else {
+            for (KeyCacheObject key : keys)
+                cctx.mvcc().markExplicitOwner(cctx.txKey(key), threadId);
+        }
     }
 
     /**

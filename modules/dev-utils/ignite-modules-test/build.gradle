@@ -20,10 +20,10 @@ plugins {
 }
 
 group 'org.apache.ignite'
-version '1.0'
+version '1.1'
 
-sourceCompatibility = 11
-targetCompatibility = 11
+sourceCompatibility = 17
+targetCompatibility = 17
 
 ext {
     ignVer = '2.19.0-SNAPSHOT'

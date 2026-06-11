@@ -28,8 +28,6 @@ import java.util.zip.InflaterInputStream;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Internal message used when transmitting fields annotated with @Compress over the network.
@@ -41,22 +39,22 @@ public class CompressedMessage implements Message {
     static final int CHUNK_SIZE = 10 * 1024;
 
     /** Reader buffer capacity. */
-    private static final int BUFFER_CAPACITY = 10 * CHUNK_SIZE;
+    static final int BUFFER_CAPACITY = 10 * CHUNK_SIZE;
 
     /** Temporary buffer for compressed data received over the network. */
-    private ByteBuffer tmpBuf;
+    ByteBuffer tmpBuf;
 
     /** Raw data size. */
-    private int dataSize;
+    int dataSize;
 
     /** Chunked byte reader. */
-    private ChunkedByteReader chunkedReader;
+    ChunkedByteReader chunkedReader;
 
     /** Chunk. */
-    private byte[] chunk;
+    byte[] chunk;
 
     /** Flag indicating whether this is the last chunk. */
-    private boolean finalChunk;
+    boolean finalChunk;
 
     /** Compression level. */
     private int compressionLvl;
@@ -90,114 +88,9 @@ public class CompressedMessage implements Message {
         return uncompress();
     }
 
-    /** {@inheritDoc} */
-    @SuppressWarnings("deprecation")
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        while (true) {
-            if (chunk == null && chunkedReader != null) {
-                chunk = chunkedReader.nextChunk();
-
-                finalChunk = (chunk == null);
-            }
-
-            switch (writer.state()) {
-                case 0:
-                    if (!writer.writeInt(dataSize))
-                        return false;
-
-                    writer.incrementState();
-
-                    if (dataSize == 0)
-                        return true;
-
-                case 1:
-                    if (!writer.writeBoolean(finalChunk))
-                        return false;
-
-                    writer.incrementState();
-
-                    if (finalChunk)
-                        return true;
-
-                case 2:
-                    if (!writer.writeByteArray(chunk))
-                        return false;
-
-                    chunk = null;
-
-                    writer.decrementState();
-            }
-        }
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("deprecation")
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (tmpBuf == null)
-            tmpBuf = ByteBuffer.allocateDirect(BUFFER_CAPACITY);
-
-        assert chunk == null : chunk;
-
-        while (true) {
-            switch (reader.state()) {
-                case 0:
-                    dataSize = reader.readInt();
-
-                    if (!reader.isLastRead())
-                        return false;
-
-                    if (dataSize == 0)
-                        return true;
-
-                    reader.incrementState();
-
-                case 1:
-                    finalChunk = reader.readBoolean();
-
-                    if (!reader.isLastRead())
-                        return false;
-
-                    if (finalChunk)
-                        return true;
-
-                    reader.incrementState();
-
-                case 2:
-                    chunk = reader.readByteArray();
-
-                    if (!reader.isLastRead())
-                        return false;
-
-                    if (chunk != null) {
-                        if (tmpBuf.remaining() <= CHUNK_SIZE) {
-                            ByteBuffer newTmpBuf = ByteBuffer.allocateDirect(tmpBuf.capacity() * 2);
-
-                            tmpBuf.flip();
-
-                            newTmpBuf.put(tmpBuf);
-
-                            tmpBuf = newTmpBuf;
-                        }
-
-                        tmpBuf.put(chunk);
-
-                        reader.decrementState();
-
-                        chunk = null;
-                    }
-            }
-        }
+    /** @return Next chunk of data or null. */
+    public byte[] nextChunk() {
+        return chunkedReader.nextChunk();
     }
 
     /**

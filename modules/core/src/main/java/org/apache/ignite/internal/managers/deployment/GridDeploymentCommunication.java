@@ -29,7 +29,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -376,7 +375,7 @@ class GridDeploymentCommunication {
                     ", requesters=" + nodeIds + ']');
         }
 
-        GridTopic.T1 resTopic = TOPIC_CLASSLOAD.topic(IgniteUuid.fromUuid(ctx.localNodeId()));
+        Object resTopic = TOPIC_CLASSLOAD.topic(IgniteUuid.fromUuid(ctx.localNodeId()));
 
         GridDeploymentRequest req = new GridDeploymentRequest(resTopic, clsLdrId, rsrcName);
 

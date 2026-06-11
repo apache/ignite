@@ -21,7 +21,6 @@ import java.net.URL;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -99,7 +98,7 @@ public class DeploymentRequestOfUnknownClassProcessingTest extends GridCommonAbs
 
         remNodeLog.registerListener(remNodeLogLsnr);
 
-        GridTopic.T1 topic = TOPIC_CLASSLOAD.topic(IgniteUuid.fromUuid(locNode.localNode().id()));
+        Object topic = TOPIC_CLASSLOAD.topic(IgniteUuid.fromUuid(locNode.localNode().id()));
 
         locNode.context().io().addMessageListener(topic, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
