@@ -74,7 +74,7 @@ public class CdcCacheDataResendTask extends VisorMultiNodeTask<CdcResendCommandA
     @Override protected Collection<UUID> jobNodes(VisorTaskArgument<CdcResendCommandArg> arg) {
         // Check if cluster is inactive.
         if (ignite.cluster().state() == INACTIVE)
-            throw new IgniteException("CDC cache data resend cancelled. Cluster is inactive.");
+            throw new IgniteException("CDC resend command was cancelled because Ignite cluster is inactive.");
 
         // Check there is no rebalance.
         GridDhtPartitionsExchangeFuture fut = ignite.context().cache().context().exchange().lastFinishedFuture();
