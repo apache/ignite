@@ -47,9 +47,9 @@ public class MdcCacheMetricsTest extends GridCommonAbstractTest {
     /** */
     private static final int NODES_NUMBER = 5;
     /** */
-    private static final String MDC_SAFE_CACHE_0 = "mdcSafeCache0";
+    private static final String CACHE_WITH_MDC_FILTER = "mdcSafeCache0";
     /** */
-    private static final String MDC_SAFE_CACHE_1 = "mdcSafeCache1";
+    private static final String CACHE_WITH_COLOCATED_FILTER = "mdcSafeCache1";
     /** */
     private static final String MDC_UNSAFE_CACHE = "mdcUnsafeCache";
     /** */
@@ -59,9 +59,17 @@ public class MdcCacheMetricsTest extends GridCommonAbstractTest {
     /** */
     private static final String DC_ID_1 = "DC_1";
     /** */
-    private String curNodeDcId;
+    private static final String[] STRETCHED_CELL_IDS = {"CELL_0", "CELL_1"};
+    /** */
+    private static final String MDC_SAFE_FILTER_METRIC_NAME = "IsCacheAffinityMdcReady";
+    /** */
+    private static final String PARTITION_DISTRIBUTION_SAFE_METRIC_NAME = "IsCachePartitionDistributionSafe";
+    /** */
+    private String cellId;
     /** */
     private boolean useStaticCaches;
+    /** */
+    private boolean persistenceEnabled;
     /** */
     private Set<String> allCaches = new HashSet<>();
     /** */
@@ -99,15 +107,15 @@ public class MdcCacheMetricsTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setPersistenceEnabled(true)
+                .setPersistenceEnabled(persistenceEnabled)
                 .setMaxSize(32 * 1024 * 1024)
             ));
 
         if (useStaticCaches) {
-            CacheConfiguration mdcSafeCacheCfg0 = prepareCacheCfg(MDC_SAFE_CACHE_0, new MdcAffinityBackupFilter(2, 1));
+            CacheConfiguration mdcSafeCacheCfg0 = prepareCacheCfg(CACHE_WITH_MDC_FILTER, new MdcAffinityBackupFilter(2, 1));
 
             CacheConfiguration mdcSafeCacheCfg1 = prepareCacheCfg(
-                MDC_SAFE_CACHE_1,
+                CACHE_WITH_COLOCATED_FILTER,
                 new ClusterNodeAttributeColocatedBackupFilter(STRETCHED_CELL_ATTR_NAME));
 
             CacheConfiguration mdcUnsafeCacheCfg = prepareCacheCfg(MDC_UNSAFE_CACHE, null);
@@ -116,7 +124,7 @@ public class MdcCacheMetricsTest extends GridCommonAbstractTest {
         }
 
         if (!cfg.isClientMode())
-            cfg.setUserAttributes(F.asMap(STRETCHED_CELL_ATTR_NAME, curNodeDcId));
+            cfg.setUserAttributes(F.asMap(STRETCHED_CELL_ATTR_NAME, cellId));
 
         return cfg;
     }
@@ -124,17 +132,17 @@ public class MdcCacheMetricsTest extends GridCommonAbstractTest {
     /** */
     private CacheConfiguration prepareCacheCfg(
         String cacheName,
-        IgniteBiPredicate<ClusterNode, List<ClusterNode>> affinityBackupFilter)
+        IgniteBiPredicate<ClusterNode, List<ClusterNode>> affBackupFilter)
     {
         CacheConfiguration cacheCfg = new CacheConfiguration(cacheName)
             .setCacheMode(PARTITIONED)
             .setBackups(1);
 
-        if (affinityBackupFilter != null) {
+        if (affBackupFilter != null) {
             cacheCfg.setAffinity(
                 new RendezvousAffinityFunction()
                     .setPartitions(32)
-                    .setAffinityBackupFilter(affinityBackupFilter));
+                    .setAffinityBackupFilter(affBackupFilter));
 
             mdcSafeCaches.add(cacheName);
         }
@@ -155,9 +163,9 @@ public class MdcCacheMetricsTest extends GridCommonAbstractTest {
 
         client.cluster().state(ClusterState.ACTIVE);
 
-        client.getOrCreateCache(prepareCacheCfg(MDC_SAFE_CACHE_0, new MdcAffinityBackupFilter(2, 1)));
+        client.getOrCreateCache(prepareCacheCfg(CACHE_WITH_MDC_FILTER, new MdcAffinityBackupFilter(2, 1)));
 
-        client.getOrCreateCache(prepareCacheCfg(MDC_SAFE_CACHE_1, new ClusterNodeAttributeColocatedBackupFilter(STRETCHED_CELL_ATTR_NAME)));
+        client.getOrCreateCache(prepareCacheCfg(CACHE_WITH_COLOCATED_FILTER, new ClusterNodeAttributeColocatedBackupFilter(STRETCHED_CELL_ATTR_NAME)));
 
         client.getOrCreateCache(prepareCacheCfg(MDC_UNSAFE_CACHE, null));
 
@@ -178,21 +186,85 @@ public class MdcCacheMetricsTest extends GridCommonAbstractTest {
         checkMdcReadyMetric();
     }
 
+    /** */
     @Test
-    public void testExchangeResearch() throws Exception {
-        useStaticCaches = false;
+    public void testPartitionDistributionMetricInMemoryCaches() throws Exception {
+        persistenceEnabled = false;
 
-        startClusterAcrossDataCenters(new String[] {DC_ID_0, DC_ID_1}, 1);
+        startClusterAcrossDataCenters(new String[] {DC_ID_0, DC_ID_1}, 2);
+
+        IgniteEx client = startClientGrid(NODES_NUMBER - 1);
+
+        client.getOrCreateCache(prepareCacheCfg(CACHE_WITH_MDC_FILTER, new MdcAffinityBackupFilter(2, 1)));
+        client.getOrCreateCache(prepareCacheCfg(CACHE_WITH_COLOCATED_FILTER,
+            new ClusterNodeAttributeColocatedBackupFilter(STRETCHED_CELL_ATTR_NAME)));
+
+        BooleanMetric cacheWithMdcFilterDistributionSafeMetric = findMetricForCache(
+            grid(1),
+            CACHE_WITH_MDC_FILTER,
+            PARTITION_DISTRIBUTION_SAFE_METRIC_NAME);
+        BooleanMetric cacheWithColocatedFilterDistributionSafeMetric = findMetricForCache(
+            grid(1),
+            CACHE_WITH_COLOCATED_FILTER,
+            PARTITION_DISTRIBUTION_SAFE_METRIC_NAME);
+
+        assertNotNull(cacheWithMdcFilterDistributionSafeMetric);
+        assertNotNull(cacheWithColocatedFilterDistributionSafeMetric);
+        assertTrue(cacheWithMdcFilterDistributionSafeMetric.value());
+        assertTrue(cacheWithColocatedFilterDistributionSafeMetric.value());
+
+        stopGrid(0);
+
+        assertTrue(cacheWithMdcFilterDistributionSafeMetric.value());
+        assertFalse(cacheWithColocatedFilterDistributionSafeMetric.value());
+    }
+
+    /** */
+    @Test
+    public void testPartitionDistributionMetricPersistentCaches() throws Exception {
+        persistenceEnabled = true;
+
+        startClusterAcrossDataCenters(new String[] {DC_ID_0, DC_ID_1}, 2);
 
         IgniteEx client = startClientGrid(NODES_NUMBER - 1);
 
         client.cluster().state(ClusterState.ACTIVE);
 
-        client.getOrCreateCache(prepareCacheCfg(MDC_SAFE_CACHE_0, new MdcAffinityBackupFilter(2, 1)));
+        client.getOrCreateCache(prepareCacheCfg(CACHE_WITH_MDC_FILTER, new MdcAffinityBackupFilter(2, 1)));
+        client.getOrCreateCache(prepareCacheCfg(CACHE_WITH_COLOCATED_FILTER,
+            new ClusterNodeAttributeColocatedBackupFilter(STRETCHED_CELL_ATTR_NAME)));
+
+        BooleanMetric cacheWithMdcFilterDistributionSafeMetric = findMetricForCache(
+            grid(1),
+            CACHE_WITH_MDC_FILTER,
+            PARTITION_DISTRIBUTION_SAFE_METRIC_NAME);
+        BooleanMetric cacheWithColocatedFilterDistributionSafeMetric = findMetricForCache(
+            grid(1),
+            CACHE_WITH_COLOCATED_FILTER,
+            PARTITION_DISTRIBUTION_SAFE_METRIC_NAME);
+
+        assertNotNull(cacheWithMdcFilterDistributionSafeMetric);
+        assertNotNull(cacheWithColocatedFilterDistributionSafeMetric);
+        assertTrue(cacheWithMdcFilterDistributionSafeMetric.value());
+        assertTrue(cacheWithColocatedFilterDistributionSafeMetric.value());
 
         stopGrid(0);
 
-        Thread.sleep(1000);
+        assertFalse(cacheWithMdcFilterDistributionSafeMetric.value());
+        assertFalse(cacheWithColocatedFilterDistributionSafeMetric.value());
+
+        client.cluster().setBaselineTopology(client.cluster().topologyVersion());
+
+        assertTrue(cacheWithMdcFilterDistributionSafeMetric.value());
+        assertFalse(cacheWithColocatedFilterDistributionSafeMetric.value());
+    }
+
+    /** */
+    private BooleanMetric findMetricForCache(IgniteEx grid, String cacheName, String metricName) {
+        GridCacheContext<Object, Object> cacheCtx = grid.cachex(cacheName).context();
+
+        return cacheCtx.kernalContext().metric().registry(cacheMetricsRegistryName(
+            cacheCtx.name(), cacheCtx.cache().isNear())).findMetric(metricName);
     }
 
     /** */
@@ -201,13 +273,7 @@ public class MdcCacheMetricsTest extends GridCommonAbstractTest {
             IgniteEx ig = grid(i);
 
             for (String cacheName : allCaches) {
-                GridCacheContext<Object, Object> cctx = ig.cachex(cacheName).context();
-
-                MetricRegistryImpl mReg = cctx.kernalContext().metric().registry(cacheMetricsRegistryName(cctx.name(), cctx.cache().isNear()));
-
-                BooleanMetric cacheMdcSafeMetric = mReg.findMetric("IsCacheAffinityMdcReady");
-
-                System.out.println("-->>-->> [" + System.currentTimeMillis() + "][" + Thread.currentThread().getName() + "] checking cache: " + cacheName);
+                BooleanMetric cacheMdcSafeMetric = findMetricForCache(ig, cacheName, MDC_SAFE_FILTER_METRIC_NAME);
 
                 if (ig.localNode().isClient()) {
                     assertNull(cacheMdcSafeMetric);
@@ -232,10 +298,11 @@ public class MdcCacheMetricsTest extends GridCommonAbstractTest {
         for (String dcId : dcIds) {
             System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, dcId);
 
-            curNodeDcId = dcId;
+            for (int i = 0; i < nodesPerDc; i++) {
+                cellId = STRETCHED_CELL_IDS[i];
 
-            for (int i = 0; i < nodesPerDc; i++)
                 lastNode = startGrid(nodeIdx++);
+            }
         }
 
         System.clearProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID);

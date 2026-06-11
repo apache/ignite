@@ -256,6 +256,9 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** */
     private Boolean mdcReadyAff;
 
+    /** */
+    private Boolean mdcSafePartDistrib;
+
     /**
      * Creates cache metrics.
      *
@@ -1694,6 +1697,11 @@ public class CacheMetricsImpl implements CacheMetrics {
         return mdcReadyAff != null && mdcReadyAff;
     }
 
+    /** */
+    private boolean isMdcSafePartitionDistribution() {
+        return mdcSafePartDistrib == null || mdcSafePartDistrib;
+    }
+
     /** {@inheritDoc} */
     @Override public long getIndexRebuildKeysProcessed() {
         return idxRebuildKeyProcessed.value();
@@ -1761,34 +1769,49 @@ public class CacheMetricsImpl implements CacheMetrics {
     }
 
     /** */
-    public void updateMdcMetrics() {
-        // Calculate this metric only once.
-        if (mdcReadyAff == null) {
-            GridKernalContext kCtx = cctx.kernalContext();
+    public void registerMdcMetrics() {
+        GridKernalContext kCtx = cctx.kernalContext();
 
-            if (kCtx.clientNode())
-                return;
+        if (kCtx.clientNode())
+            return;
 
-            if (kCtx.discovery().localNode() == null || kCtx.discovery().localNode().dataCenterId() == null)
-                return;
+        if (kCtx.discovery().localNode() == null || kCtx.discovery().localNode().dataCenterId() == null)
+            return;
 
-            mdcReadyAff = Boolean.TRUE;
+        registerMdcReadyAffinityMetric();
 
-            mreg.register("IsCacheAffinityMdcReady", this::isMdcReadyAffinity,
-                "True if cache affinity guarantees having a copy of partition in each data center.");
+        registerPartitionDistributionSafeMetric();
+    }
 
-            AffinityFunction affFunc = cctx.config().getAffinity();
+    /** */
+    private void registerPartitionDistributionSafeMetric() {
+        mreg.register("IsCachePartitionDistributionSafe", this::isMdcSafePartitionDistribution,
+            "True if current cache partition distribution maintains guarantee 'one partition copy in each datacenter'.");
+    }
 
-            if (affFunc instanceof RendezvousAffinityFunction) {
-                IgniteBiPredicate<ClusterNode, List<ClusterNode>> filter = ((RendezvousAffinityFunction)affFunc).getAffinityBackupFilter();
+    /** */
+    private void registerMdcReadyAffinityMetric() {
+        mdcReadyAff = Boolean.TRUE;
 
-                if (!(filter instanceof MdcAffinityBackupFilter) && !(filter instanceof ClusterNodeAttributeColocatedBackupFilter))
-                    mdcReadyAff = Boolean.FALSE;
-            }
+        mreg.register("IsCacheAffinityMdcReady", this::isMdcReadyAffinity,
+            "True if cache affinity guarantees having a copy of partition in each data center.");
+
+        AffinityFunction affFunc = cctx.config().getAffinity();
+
+        if (affFunc instanceof RendezvousAffinityFunction) {
+            IgniteBiPredicate<ClusterNode, List<ClusterNode>> filter = ((RendezvousAffinityFunction)affFunc).getAffinityBackupFilter();
+
+            if (!(filter instanceof MdcAffinityBackupFilter) && !(filter instanceof ClusterNodeAttributeColocatedBackupFilter))
+                mdcReadyAff = Boolean.FALSE;
         }
     }
 
-
+    /**
+     *
+     */
+    public void setMdcSafePartitionDistribution(boolean safeDistribution) {
+        mdcSafePartDistrib = safeDistribution;
+    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

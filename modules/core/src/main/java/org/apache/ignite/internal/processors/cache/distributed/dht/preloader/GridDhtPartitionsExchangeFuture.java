@@ -2475,9 +2475,26 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     grp.topology().onExchangeDone(this, assignment, false);
 
+                    int numberOfDataCenters = cctx.discovery().discoCache().state().baselineTopology().numberOfDatacenters();
+
                     if (!grp.isReplicated()) {
+                        boolean mdcSafeDistribution = true;
+
+                        for (List<ClusterNode> nodes : assignment.assignment()) {
+                            int dcsCount = (int)nodes.stream().map(ClusterNode::dataCenterId).distinct().count();
+
+                            if (dcsCount < numberOfDataCenters) {
+                                mdcSafeDistribution = false;
+
+                                break;
+                            }
+                        }
                         System.out.println("-->>-->> [" + System.currentTimeMillis() + "][" + Thread.currentThread().getName() + "] " +
-                            "exchange done for grp " + grp.cacheOrGroupName());
+                            "mdcSafeDistribution=" + mdcSafeDistribution + " for cache " + grp.cacheOrGroupName());
+
+                        boolean finalMdcSafeDistribution = mdcSafeDistribution;
+
+                        grp.caches().forEach(cache -> cache.cache().metrics0().setMdcSafePartitionDistribution(finalMdcSafeDistribution));
                     }
                 }
 
