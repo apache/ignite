@@ -81,4 +81,22 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
     }
     // TODO check empty file creation.
     // TODO add in production code checks of files integriy. Perform file integrity check on startup.
+
+    /** Tests --create command. */
+    @Test
+    public void testEmptyFilesArgument() {
+        final TestCommandHandler hnd = newCommandHandler(createTestLogger());
+
+        try {
+            assertEquals(EXIT_CODE_OK, execute(hnd, "--class-path", "create", "--name", "mysuperapp", "--files"));
+        }
+        finally {
+            String outStr = testOut.toString();
+
+            stopAllGrids();
+
+            System.out.println(outStr);
+        }
+
+    }
 }

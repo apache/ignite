@@ -15,16 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.classpath;
+package org.apache.ignite.internal.processors.odbc;
 
-/** State of {@link IgniteClassPath}. */
-public enum IgniteClassPathState {
-    /** Creationg process in progress. */
-    NEW,
+import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 
-    /** Ready for usage. */
-    READY,
-
-    /** Marked for removal. Newly started code can't use corresponding classpath. */
-    REMOVING
+/**
+ * Marker interface for requests that can be executed by control.sh, only
+ * @see ClientConnectionContext#managementClient()
+ */
+public interface ClientListenerInternalRequest extends ClientListenerRequest {
+    /** {@inheritDoc} */
+    @Override default boolean internal() {
+        return true;
+    }
 }

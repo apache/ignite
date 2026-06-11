@@ -19,13 +19,17 @@ package org.apache.ignite.internal.classpath;
 
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.util.distributed.DistributedProcess;
+import org.apache.ignite.internal.managers.communication.TransmissionHandler;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
- * Class path deploy to all response for {@link DistributedProcess} initiate message.
+ * Message sent by node in case it can't send classpath to receiver.
+ *
+ * @see TransmissionHandler
+ * @see ClassPathFilesTransmissionHandler
+ * @see DownloadClassPathFailureMessage
  */
-public class ClassPathDeployToAllResponse implements Message {
+public class DownloadClassPathFailureMessage implements Message {
     /**
      * Classpath ID.
      *
@@ -34,13 +38,18 @@ public class ClassPathDeployToAllResponse implements Message {
     @Order(0)
     UUID icpId;
 
+    /** Error message. */
+    @Order(1)
+    String err;
+
     /** */
-    public ClassPathDeployToAllResponse() {
+    public DownloadClassPathFailureMessage() {
         // No-op.
     }
 
     /** */
-    public ClassPathDeployToAllResponse(UUID icpId) {
-        this.icpId = icpId;
+    public DownloadClassPathFailureMessage(IgniteClassPath icp, String err) {
+        this.icpId = icp.id();
+        this.err = err;
     }
 }

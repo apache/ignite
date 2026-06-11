@@ -17,14 +17,34 @@
 
 package org.apache.ignite.internal.classpath;
 
-/** State of {@link IgniteClassPath}. */
-public enum IgniteClassPathState {
-    /** Creationg process in progress. */
-    NEW,
+import java.util.UUID;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.communication.TransmissionHandler;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
-    /** Ready for usage. */
-    READY,
+/**
+ * Message to initiate download of classpath files from remote node.
+ *
+ * @see TransmissionHandler
+ * @see ClassPathFilesTransmissionHandler
+ * @see DownloadClassPathFailureMessage
+ */
+public class DownloadClassPathMessage implements Message {
+    /**
+     * Classpath ID.
+     *
+     * @see IgniteClassPath#id()
+     */
+    @Order(0)
+    UUID icpId;
 
-    /** Marked for removal. Newly started code can't use corresponding classpath. */
-    REMOVING
+    /** */
+    public DownloadClassPathMessage() {
+        // No-op.
+    }
+
+    /** */
+    public DownloadClassPathMessage(IgniteClassPath icp) {
+        this.icpId = icp.id();
+    }
 }

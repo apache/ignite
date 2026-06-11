@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
+import org.apache.ignite.client.ClientException;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
@@ -76,7 +77,7 @@ import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheRe
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheScanQueryRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheSqlFieldsQueryRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheSqlQueryRequest;
-import org.apache.ignite.internal.processors.platform.client.classpath.ClientFileUploadRequest;
+import org.apache.ignite.internal.processors.platform.client.classpath.ClientClassPathFileUploadRequest;
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterChangeStateRequest;
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterGetDataCenterNodesRequest;
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterGetStateRequest;
@@ -116,6 +117,8 @@ import org.apache.ignite.internal.processors.platform.client.streamer.ClientData
 import org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerStartRequest;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxEndRequest;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxStartRequest;
+import org.apache.ignite.internal.thread.context.Scope;
+import org.apache.ignite.plugin.security.SecurityPermission;
 
 /**
  * Thin client message parser.
@@ -455,6 +458,9 @@ public class ClientMessageParser implements ClientListenerMessageParser {
         if (ctx.kernalContext().recoveryMode() && !req.beforeStartupRequest())
             return new ClientRawRequest(req.requestId(), ClientStatus.FAILED, "Node in recovery mode.");
 
+        if (req.internal())
+            checkPermissionsForInternalRequest();
+
         return req;
     }
 
@@ -740,7 +746,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
                 return new ClientServiceTopologyRequest(reader);
 
             case FILE_UPLOAD:
-                return new ClientFileUploadRequest(reader);
+                return new ClientClassPathFileUploadRequest(reader);
 
             case OP_STOP_WARMUP:
                 return new ClientCacheStopWarmupRequest(reader);
@@ -777,5 +783,23 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     /** {@inheritDoc} */
     @Override public long decodeRequestId(ClientMessage msg) {
         return 0;
+    }
+
+    /**
+     * Check permissions to invoke internal requests.
+     */
+    private void checkPermissionsForInternalRequest() {
+        if (!ctx.managementClient())
+            throw new ClientException("Only management client are allowed to execute this");
+
+        // When security is enabled, only an administrator can connect and execute commands.
+        if (ctx.securityContext() != null) {
+            try (Scope ignored = ctx.kernalContext().security().withContext(ctx.securityContext())) {
+                ctx.kernalContext().security().authorize(SecurityPermission.ADMIN_OPS);
+            }
+            catch (SecurityException e) {
+                throw new ClientException("ADMIN_OPS permission required");
+            }
+        }
     }
 }

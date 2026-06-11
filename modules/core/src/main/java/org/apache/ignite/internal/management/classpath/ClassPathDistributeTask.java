@@ -21,11 +21,12 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.classpath.IgniteClassPath;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.jetbrains.annotations.Nullable;
 
-/** */
+/** Task to start deploy process of newly created {@link IgniteClassPath}. */
 public class ClassPathDistributeTask extends VisorOneNodeTask<UUID, Void> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -47,7 +48,7 @@ public class ClassPathDistributeTask extends VisorOneNodeTask<UUID, Void> {
 
         /** {@inheritDoc} */
         @Override protected Void run(@Nullable UUID arg) throws IgniteException {
-            IgniteInternalFuture<?> fut = ignite.context().classPath().deployToAllProcess.start(arg);
+            IgniteInternalFuture<?> fut = ignite.context().classPath().deployToAll(arg);
 
             try {
                 fut.get();

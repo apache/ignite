@@ -660,8 +660,7 @@ public class TcpIgniteClient implements IgniteClient {
                             w.writeUuid(icpID);
                             w.writeString(name);
                             w.writeLong(offset[0]);
-                            w.writeInt(bytesCnt[0]);
-                            w.writeByteArray(batch);
+                            w.writeByteArray(batch, 0, bytesCnt[0]);
                         }
                     },
                     in -> null

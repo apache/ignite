@@ -1096,7 +1096,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param name IgniteClassPath name.
      * @return IgniteClassPath directory.
      */
-    public File classPath(String name) {
+    public File classPathRoot(String name) {
         return new File(icp, name);
     }
 

@@ -26,11 +26,15 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  * Class path deploy to all request for {@link DistributedProcess} initiate message.
  */
 public class ClassPathDeployToAllRequest implements Message {
-    /** Ignite class path id. */
+    /**
+     * Classpath ID.
+     *
+     * @see IgniteClassPath#id()
+     */
     @Order(0)
     UUID icpId;
 
-    /** Node containing class path files received from client. */
+    /** Node containing class path files. */
     @Order(1)
     UUID uploadNodeId;
 

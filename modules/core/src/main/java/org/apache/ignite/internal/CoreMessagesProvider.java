@@ -25,6 +25,8 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.classpath.ClassPathDeployToAllRequest;
 import org.apache.ignite.internal.classpath.ClassPathDeployToAllResponse;
+import org.apache.ignite.internal.classpath.DownloadClassPathFailureMessage;
+import org.apache.ignite.internal.classpath.DownloadClassPathMessage;
 import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointRequest;
 import org.apache.ignite.internal.managers.communication.CompressedMessage;
@@ -670,6 +672,8 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
 
         withNoSchema(ClassPathDeployToAllRequest.class);
         withNoSchema(ClassPathDeployToAllResponse.class);
+        withNoSchema(DownloadClassPathMessage.class);
+        withNoSchema(DownloadClassPathFailureMessage.class);
 
         assert msgIdx <= MAX_MESSAGE_ID;
     }
