@@ -421,6 +421,9 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     /** Stop warmup. */
     private static final short OP_STOP_WARMUP = 10000;
 
+    /** */
+    public static final String INTERNAL_REQ_ERR_MSG = "Only management client are allowed to execute this";
+
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
 
@@ -459,7 +462,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
             return new ClientRawRequest(req.requestId(), ClientStatus.FAILED, "Node in recovery mode.");
 
         if (req.internal())
-            checkPermissionsForInternalRequest();
+            checkInternalRequestAllowed();
 
         return req;
     }
@@ -788,9 +791,9 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     /**
      * Check permissions to invoke internal requests.
      */
-    private void checkPermissionsForInternalRequest() {
+    private void checkInternalRequestAllowed() {
         if (!ctx.managementClient())
-            throw new ClientException("Only management client are allowed to execute this");
+            throw new ClientException(INTERNAL_REQ_ERR_MSG);
 
         // When security is enabled, only an administrator can connect and execute commands.
         if (ctx.securityContext() != null) {

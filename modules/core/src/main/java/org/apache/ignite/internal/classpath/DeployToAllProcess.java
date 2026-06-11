@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 
 import static org.apache.ignite.internal.classpath.ClassPathProcessor.fromMetastorage;
+import static org.apache.ignite.internal.classpath.IgniteClassPathState.NEW;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CLASSPATH_DEPLOY_TO_ALL;
 
 /** Distributed process to spread {@link IgniteClassPath} files across cluster. */
@@ -36,16 +37,16 @@ class DeployToAllProcess {
     /** Logger. */
     private final IgniteLogger log;
 
-    /** */
+    /** Kernal context. */
     private final GridKernalContext ctx;
 
-    /** */
+    /** Files handler. */
     private final ClassPathFilesTransmissionHandler icpFilesHnd;
 
     /** Distribute process that distributes new Ignite class path across all server nodes. */
     private final DistributedProcess<ClassPathDeployToAllRequest, ClassPathDeployToAllResponse> deployToAllProc;
 
-    /** */
+    /** Future results of started distributed process. */
     private final Map<UUID, GridFutureAdapter<String>> futs = new ConcurrentHashMap<>();
 
     /** */
@@ -58,7 +59,7 @@ class DeployToAllProcess {
         deployToAllProc = new DistributedProcess<>(
             ctx,
             CLASSPATH_DEPLOY_TO_ALL,
-            this::startDeployToAllProcess,
+            this::downloadLocally,
             this::processDeployToAllResult
         );
     }
@@ -68,28 +69,40 @@ class DeployToAllProcess {
      * @return Future for deploy process result.
      */
     public IgniteInternalFuture<?> start(UUID icpId) {
-        GridFutureAdapter<String> deployRes = new GridFutureAdapter<>();
+        boolean added = false;
 
-        synchronized (this) {
-            IgniteClassPath icp = fromMetastorage(icpId, ctx);
+        try {
+            GridFutureAdapter<String> deployRes = new GridFutureAdapter<>();
 
-            ClassPathDeployToAllRequest req = new ClassPathDeployToAllRequest(icpId, ctx.localNodeId());
+            synchronized (this) {
+                IgniteClassPath icp = fromMetastorage(icpId, NEW, ctx);
 
-            if (futs.put(icpId, deployRes) != null)
-                return new GridFinishedFuture<>(new IllegalStateException("Deploy to all process started, already: " + icp.name()));
+                ClassPathDeployToAllRequest req = new ClassPathDeployToAllRequest(icpId, ctx.localNodeId());
 
-            deployToAllProc.start(icpId, req);
+                added = futs.putIfAbsent(icpId, deployRes) == null;
+
+                if (!added)
+                    return new GridFinishedFuture<>(new IllegalStateException("Deploy to all process started, already: " + icp.name()));
+
+                deployToAllProc.start(icpId, req);
+            }
+
+            return deployRes;
         }
+        catch (Exception e) {
+            if (added)
+                futs.remove(icpId);
 
-        return deployRes;
+            return new GridFinishedFuture<>(e);
+        }
     }
 
     /**
      * @param req Request on snapshot creation.
      * @return Future which will be completed when a snapshot has been started.
      */
-    private IgniteInternalFuture<ClassPathDeployToAllResponse> startDeployToAllProcess(ClassPathDeployToAllRequest req) {
-        return icpFilesHnd.downloadLocally(req.icpId, req.uploadNodeId).chain(f -> {
+    private IgniteInternalFuture<ClassPathDeployToAllResponse> downloadLocally(ClassPathDeployToAllRequest req) {
+        return icpFilesHnd.downloadLocally(req.uploadNodeId, req.icpId).chain(f -> {
             if (f.error() != null)
                 throw new GridClosureException(f.error());
 
@@ -113,7 +126,7 @@ class DeployToAllProcess {
             return;
         }
 
-        IgniteClassPath icp = fromMetastorage(id, ctx);
+        IgniteClassPath icp = fromMetastorage(id, NEW, ctx);
 
         if (!fut.onDone("OK")) {
             log.warning("Distribute process in wrong state " +
@@ -122,7 +135,7 @@ class DeployToAllProcess {
             return;
         }
 
-        icp.state(IgniteClassPathState.READY);
+        ctx.classPath().casToMetastorage(icp, icp.newState(IgniteClassPathState.READY));
 
         log.info("Deploy to all DONE!");
     }

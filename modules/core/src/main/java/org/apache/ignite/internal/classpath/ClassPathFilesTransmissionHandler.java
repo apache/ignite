@@ -25,12 +25,16 @@ import org.apache.ignite.internal.managers.communication.TransmissionCancelledEx
 import org.apache.ignite.internal.managers.communication.TransmissionHandler;
 import org.apache.ignite.internal.managers.communication.TransmissionMeta;
 import org.apache.ignite.internal.managers.communication.TransmissionPolicy;
+import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.classpath.ClassPathProcessor.fromMetastorage;
+import static org.apache.ignite.internal.classpath.IgniteClassPathState.NEW;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_NODE_STOPPING_ERR_MSG;
 
@@ -46,6 +50,9 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
 
     /** Transmission parameter for {@link IgniteClassPath} file name. */
     private static final String NAME_PARAM = "name";
+
+    /** System discovery message listener. */
+    private DiscoveryEventListener discoLsnr;
 
     /** */
     private volatile DownloadClassPathTask active;
@@ -73,21 +80,21 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
 
     /**
      * Downloads {@link IgniteClassPath} files locally from the remote node specified by {@code rmtNodeId}.
-     * @param icpId ClassPath id.
      * @param rmtNodeId Remote node id.
+     * @param icpId ClassPath id.
      * @return Future for download operation.
      */
-    IgniteInternalFuture<Void> downloadLocally(UUID icpId, UUID rmtNodeId) {
-        if (rmtNodeId.equals(ctx.localNodeId())) {
-            log.info("Upload node skip download [icpId=" + icpId + ']');
-
-            return new GridFinishedFuture<>();
-        }
-
+    IgniteInternalFuture<Void> downloadLocally(UUID rmtNodeId, UUID icpId) {
         try {
-            IgniteClassPath icp = fromMetastorage(icpId, ctx);
+            IgniteClassPath icp = fromMetastorage(icpId, NEW, ctx);
 
-            log.info("Start download ClassPath files [icp=" + icp.name() + ']');
+            if (rmtNodeId.equals(ctx.localNodeId())) {
+                log.info("Skip download ClassPath files for upload node [name=" + icp.name() + ", id=" + icp.id() + ']');
+
+                return new GridFinishedFuture<>();
+            }
+
+            log.info("Start download ClassPath files [name=" + icp.name() + ", id=" + icp.id() + ']');
 
             DownloadClassPathTask task = new DownloadClassPathTask(rmtNodeId, icp);
 
@@ -105,9 +112,28 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
         }
     }
 
+    /** Starts handler. */
+    synchronized void start() {
+        ctx.event().addDiscoveryEventListener(discoLsnr = (evt, discoCache) -> {
+            UUID leftNodeId = evt.eventNode().id();
+
+            if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED)
+                onNodeLeft(leftNodeId);
+        }, EVT_NODE_LEFT, EVT_NODE_FAILED);
+
+        ctx.io().addMessageListener(FILES_TOPIC, this);
+        ctx.io().addTransmissionHandler(FILES_TOPIC, this);
+    }
+
     /** Stopping handler. */
     void stop() {
         synchronized (this) {
+            if (discoLsnr != null)
+                ctx.event().removeDiscoveryEventListener(discoLsnr);
+
+            ctx.io().removeMessageListener(FILES_TOPIC);
+            ctx.io().removeTransmissionHandler(FILES_TOPIC);
+
             stopping = true;
         }
 
@@ -153,7 +179,7 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
                 IgniteClassPath icp = null;
 
                 try {
-                    icp = fromMetastorage(msg.icpId, ctx);
+                    icp = fromMetastorage(msg.icpId, NEW, ctx);
 
                     NodeFileTree ft = ctx.pdsFolderResolver().fileTree();
 
@@ -224,7 +250,7 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
         UUID icpId = (UUID)fileMeta.params().get(ICP_ID_PARAM);
         String name = (String)fileMeta.params().get(NAME_PARAM);
 
-        IgniteClassPath icp = fromMetastorage(icpId, ctx);
+        IgniteClassPath icp = fromMetastorage(icpId, NEW, ctx);
 
         DownloadClassPathTask task = active;
 
@@ -247,7 +273,7 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
         UUID icpId = (UUID)initMeta.params().get(ICP_ID_PARAM);
         String name = (String)initMeta.params().get(NAME_PARAM);
 
-        IgniteClassPath icp = fromMetastorage(icpId, ctx);
+        IgniteClassPath icp = fromMetastorage(icpId, NEW, ctx);
 
         return file -> {
             DownloadClassPathTask task = active;
@@ -313,6 +339,8 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
             );
         }
         catch (IgniteCheckedException e) {
+            log.warning("Can't start download ClassPath files:", e);
+
             next.res.onDone(new IgniteException("Can't download classpath files. " +
                 "Remote node left the grid [rmtNodeId=" + next.rmtNodeId + ']'));
 

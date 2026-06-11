@@ -20,11 +20,11 @@ package org.apache.ignite.util;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Collectors;
-import org.junit.Assume;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
-import static org.hamcrest.Matchers.is;
+import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 
 /**
  * Test for --classpath command.
@@ -39,11 +39,12 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
         super.beforeTestsStarted();
     }
 
+    // TODO check empty file creation.
+    // TODO add in production code checks of files integriy. Perform file integrity check on startup.
+
     /** Tests --create command. */
     @Test
     public void testCreate() throws Exception {
-        Assume.assumeThat("Only cli mode supported", commandHandler, is(CLI_CMD_HND));
-
         //grid(0).cluster().state(ClusterState.ACTIVE);
 
         String jars = Files.list(Path.of(getClass().getClassLoader().getResource(".").getPath() + "../"))
@@ -74,29 +75,37 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
         finally {
             String outStr = testOut.toString();
 
-            stopAllGrids();
-
             System.out.println(outStr);
         }
     }
-    // TODO check empty file creation.
-    // TODO add in production code checks of files integriy. Perform file integrity check on startup.
 
-    /** Tests --create command. */
+    /** Tests --create command arguments format. */
     @Test
     public void testEmptyFilesArgument() {
-        final TestCommandHandler hnd = newCommandHandler(createTestLogger());
+        injectTestSystemOut();
 
-        try {
-            assertEquals(EXIT_CODE_OK, execute(hnd, "--class-path", "create", "--name", "mysuperapp", "--files"));
-        }
-        finally {
-            String outStr = testOut.toString();
+        assertContains(
+            log,
+            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, "--class-path", "create", "--name", "mysuperapp", "--files"),
+            "Please specify a value for argument: --files"
+        );
 
-            stopAllGrids();
+        assertContains(
+            log,
+            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, "--class-path", "create", "--name", "mysuperapp"),
+            "Mandatory argument(s) missing: [--files]"
+        );
 
-            System.out.println(outStr);
-        }
+        assertContains(
+            log,
+            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, "--class-path", "create", "--name", "--files", "some_files"),
+            "Please specify a value for argument: --name"
+        );
 
+        assertContains(
+            log,
+            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, "--class-path", "create", "--files", "some_files"),
+            "Mandatory argument(s) missing: [--name]"
+        );
     }
 }

@@ -25,7 +25,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.typedef.F;
@@ -33,8 +32,6 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
-import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.classpath.IgniteClassPathState.NEW;
 
 /**
@@ -55,9 +52,6 @@ public class ClassPathProcessor extends GridProcessorAdapter {
     /** Distributed process that deploys classpath files to all nodes. */
     private final DeployToAllProcess deployToAllProc;
 
-    /** System discovery message listener. */
-    private DiscoveryEventListener discoLsnr;
-
     /**
      * @param ctx Kernal context.
      */
@@ -70,21 +64,12 @@ public class ClassPathProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        ctx.event().addDiscoveryEventListener(discoLsnr = (evt, discoCache) -> {
-            // TODO: check busyLock required. See IgniteSnapshotManager.
-            UUID leftNodeId = evt.eventNode().id();
-
-            if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED)
-                icpFilesHnd.onNodeLeft(leftNodeId);
-        }, EVT_NODE_LEFT, EVT_NODE_FAILED);
+        icpFilesHnd.start();
     }
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
         icpFilesHnd.stop();
-
-        if (discoLsnr != null)
-            ctx.event().removeDiscoveryEventListener(discoLsnr);
     }
 
     /**
@@ -146,7 +131,7 @@ public class ClassPathProcessor extends GridProcessorAdapter {
         byte[] batch
     ) throws IOException {
         try {
-            IgniteClassPath icp = fromMetastorage(icpId, ctx);
+            IgniteClassPath icp = fromMetastorage(icpId, NEW, ctx);
 
             if (F.indexOf(icp.files(), name) == -1)
                 throw new IllegalArgumentException("Unknown lib [icp=" + icp.name() + ", unknown_lib=" + name + ']');
@@ -187,10 +172,15 @@ public class ClassPathProcessor extends GridProcessorAdapter {
     }
 
     /** */
-    private void casToMetastorage(@Nullable IgniteClassPath prev, IgniteClassPath icp) {
+    void casToMetastorage(@Nullable IgniteClassPath prev, IgniteClassPath icp) {
         try {
-            if (!ctx.distributedMetastorage().compareAndSet(metastorageKey(icp), prev, icp))
-                throw new IgniteException("Classpath alreay exists: " + icp.name());
+            String key = metastorageKey(icp);
+
+            if (!ctx.distributedMetastorage().compareAndSet(key, prev, icp)) {
+                IgniteClassPath val = ctx.distributedMetastorage().read(key);
+
+                throw new IgniteException("Fail to write new ClassPath state[exp=" + icp + ", actual=" + val + ", new=" + icp);
+            }
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -202,7 +192,7 @@ public class ClassPathProcessor extends GridProcessorAdapter {
      * @param ctx Kernal context.
      * @return Class path.
      */
-    static IgniteClassPath fromMetastorage(UUID icpId, GridKernalContext ctx) {
+    static IgniteClassPath fromMetastorage(UUID icpId, IgniteClassPathState expState, GridKernalContext ctx) {
         try {
             IgniteClassPath[] icp = new IgniteClassPath[1];
 
@@ -214,8 +204,8 @@ public class ClassPathProcessor extends GridProcessorAdapter {
             if (icp[0] == null)
                 throw new IgniteException("ClassPath not found: " + icpId);
 
-            if (icp[0].state() != NEW)
-                throw new IgniteException("ClassPath in wrong state [expected=" + NEW + ", status=" + icp[0].state() + ']');
+            if (icp[0].state() != expState)
+                throw new IgniteException("ClassPath in wrong state [expected=" + expState + ", status=" + icp[0].state() + ']');
 
             return icp[0];
         }

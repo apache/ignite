@@ -56,14 +56,16 @@ public class IgniteClassPath implements Serializable {
         this.state = state;
     }
 
-    /** */
-    public IgniteClassPathState state() {
-        return state;
+    /**
+     * @param state New state.
+     */
+    IgniteClassPath newState(IgniteClassPathState state) {
+        return new IgniteClassPath(id, name, files, lengths, state);
     }
 
     /** */
-    public void state(IgniteClassPathState state) {
-        this.state = state;
+    public IgniteClassPathState state() {
+        return state;
     }
 
     /** */
