@@ -1263,16 +1263,20 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
         // Maximize probability of collision.
         for (int i = 0; i < 20_000_000; i++)
             mappings.putIfAbsent(i, dummyName);
-
-        for (int i = 0; i < 100; i++) {
-            sql("CREATE TABLE test (id1 int, id2 int, val int, primary key (id1, id2))");
-            sql("INSERT INTO test VALUES (0, 0, 0)");
-            sql("DROP TABLE test");
+        try {
+            for (int i = 0; i < 100; i++) {
+                sql("CREATE TABLE test (id1 int, id2 int, val int, primary key (id1, id2))");
+                sql("INSERT INTO test VALUES (0, 0, 0)");
+                sql("DROP TABLE test");
+            }
+        }
+        finally {
+            mappings.values().removeIf(v -> v == dummyName);
         }
     }
 
     /**
-     * Tests that table with excplicetly provided types with type id collisions cannot be created.
+     * Tests that table with explicitly provided types with type id collisions cannot be created.
      */
     @Test
     public void testExplicitTypeIdCollision() {
