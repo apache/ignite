@@ -23,10 +23,10 @@ FROM  s390x/ubuntu:20.04
 ARG IGNITE_VER
 
 # Set Environment Variables
-ENV JAVA_HOME="/opt/jdk-17.0.9.9"
+ENV JAVA_HOME="/opt/jdk-17.0.19.0"
 ENV IGNITE_HOME="/opt/apache-ignite-${IGNITE_VER}-bin"
 ENV PATH="${JAVA_HOME}/bin:/opt/apache-ignite-${IGNITE_VER}-bin/bin:${PATH}"
-ENV JDK_FILE="ibm-semeru-open-jdk_s390x_linux_17.0.9_9_openj9-0.41.0.tar.gz"
+ENV JDK_FILE="ibm-semeru-open-jdk_s390x_linux_17.0.19.0.tar.gz"
 
 # The Author
 LABEL maintainer="LoZ Open Source Ecosystem (https://www.ibm.com/community/z/usergroups/opensource)"
@@ -45,7 +45,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Download JDK 17
-RUN wget https://github.com/ibmruntimes/semeru17-binaries/releases/download/jdk-17.0.9%2B9_openj9-0.41.0/${JDK_FILE} && \
+RUN wget https://github.com/ibmruntimes/semeru17-binaries/releases/download/jdk-17.0.19.0/${JDK_FILE} && \
     tar xvf ${JDK_FILE} && \
     rm -rf ${JDK_FILE}
 
