@@ -62,6 +62,7 @@ import org.jetbrains.annotations.Nullable;
  * @see EventType#EVT_NODE_JOINED
  * @see EventType#EVT_NODE_LEFT
  * @see EventType#EVT_NODE_SEGMENTED
+ * @see EventType#EVT_NODE_VALIDATION_FAILED
  * @see EventType#EVTS_DISCOVERY_ALL
  * @see EventType#EVTS_DISCOVERY
  */
