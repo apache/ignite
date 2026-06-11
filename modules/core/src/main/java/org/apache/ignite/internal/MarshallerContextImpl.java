@@ -549,7 +549,7 @@ public class MarshallerContextImpl implements MarshallerContext {
         MappedName mappedName = cache.get(typeId);
 
         if (mappedName != null) {
-            assert !ensureAccepted && mappedName.accepted() : mappedName;
+            assert !ensureAccepted || mappedName.accepted() : mappedName;
 
             return mappedName.className();
         }
