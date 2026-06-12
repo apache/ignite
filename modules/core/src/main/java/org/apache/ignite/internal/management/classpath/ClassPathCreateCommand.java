@@ -32,6 +32,7 @@ import org.apache.ignite.internal.client.thin.TcpIgniteClient;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.NativeCommand;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -74,6 +75,8 @@ public class ClassPathCreateCommand implements NativeCommand<ClassPathCreateComm
         long[] lengths = new long[arg.files.length];
 
         for (int i = 0; i < arg.files.length; i++) {
+            A.notEmpty(arg.files[i], "File name");
+
             Path f = Path.of(arg.files[i]);
 
             if (!Files.exists(f))

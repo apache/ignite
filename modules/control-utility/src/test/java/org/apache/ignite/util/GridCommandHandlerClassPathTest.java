@@ -17,9 +17,14 @@
 
 package org.apache.ignite.util;
 
+import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
@@ -30,52 +35,58 @@ import static org.apache.ignite.testframework.GridTestUtils.assertContains;
  * Test for --classpath command.
  */
 public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractTest {
+    /** */
+    public static final int GRID_CNT = 3;
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         cleanPersistenceDir();
 
-        startGrids(2);
+        startGrids(GRID_CNT);
 
         super.beforeTestsStarted();
     }
 
     // TODO check empty file creation.
     // TODO add in production code checks of files integriy. Perform file integrity check on startup.
+    // Support JXM handler.
+    // Support pretty print for command.
+    // Test for different failure types: node fail, file write fail, etc.
+    // Concurrent creation of CP with the same name.
 
     /** Tests --create command. */
     @Test
-    public void testCreate() throws Exception {
+    public void testCreate() {
         //grid(0).cluster().state(ClusterState.ACTIVE);
 
-        String jars = Files.list(Path.of(getClass().getClassLoader().getResource(".").getPath() + "../"))
-            .map(Path::toAbsolutePath)
-            .map(Path::toString)
-            .filter(f -> f.endsWith("jar"))
-            .collect(Collectors.joining(","));
-
-        Path dir = Path.of(getClass().getClassLoader().getResource(".").getPath() + "../../../core/target");
-
-        System.out.println("dir = " + dir);
-
-        String coreJars = Files.list(dir)
-            .map(Path::toAbsolutePath)
-            .map(Path::toString)
-            .filter(f -> f.endsWith("jar"))
-            .collect(Collectors.joining(","));
-
-        jars += "," + coreJars;
+        Set<Path> jars = jars(
+                Path.of(getClass().getClassLoader().getResource(".").getPath() + "../"),
+                Path.of(getClass().getClassLoader().getResource(".").getPath() + "../../../core/target")
+        );
 
         injectTestSystemOut();
 
         final TestCommandHandler hnd = newCommandHandler(createTestLogger());
 
+        String cpName = "mysuperapp";
+
         try {
-            assertEquals(EXIT_CODE_OK, execute(hnd, "--class-path", "create", "--name", "mysuperapp", "--files", jars));
+            String files = jars.stream().map(Path::toFile).map(File::getAbsolutePath).collect(Collectors.joining(","));
+
+            assertEquals(EXIT_CODE_OK, execute(hnd, "--class-path", "create", "--name", cpName, "--files", files));
         }
         finally {
             String outStr = testOut.toString();
 
             System.out.println(outStr);
+        }
+
+        Set<String> cpFilesNames = fileNames(jars);
+
+        for (int i = 0; i < GRID_CNT; i++) {
+            NodeFileTree ft = grid(i).context().pdsFolderResolver().fileTree();
+
+            assertEquals("Files must be deployed on each node", cpFilesNames, fileNames(jars(ft.classPathRoot(cpName).toPath())));
         }
     }
 
@@ -107,5 +118,28 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
             executeCommand(EXIT_CODE_INVALID_ARGUMENTS, "--class-path", "create", "--files", "some_files"),
             "Mandatory argument(s) missing: [--name]"
         );
+
+        assertContains(
+            log,
+            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, "--class-path", "create", "--name", "mysuperapp", "--files", ""),
+            cliCommandHandler() ? "File name must not be empty" : "Argument --files required"
+        );
+    }
+
+    /** */
+    private Set<String> fileNames(Set<Path> dirs) {
+        return dirs.stream().map(Path::getFileName).map(Path::toString).collect(Collectors.toSet());
+    }
+
+    /** */
+    private Set<Path> jars(Path... dirs) {
+        return Stream.of(dirs).flatMap(dir -> {
+            try {
+                return Files.list(dir).filter(p -> p.getFileName().toString().endsWith("jar"));
+            }
+            catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }).map(Path::toAbsolutePath).collect(Collectors.toSet());
     }
 }
