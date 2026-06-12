@@ -95,6 +95,8 @@ import org.apache.ignite.internal.processors.tracing.SpanTags;
 import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessage;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesTable;
+import org.apache.ignite.internal.thread.context.DistributedOperationContextAttributeRegistry;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.GridBoundedLinkedHashSet;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -3046,6 +3048,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                 return;
             }
 
+            if (!fromSocket)
+                msg.opCtxAttrs = DistributedOperationContextAttributeRegistry.instance().collectContext();
+
             if (msg instanceof TraceableMessage) {
                 TraceableMessage tMsg = (TraceableMessage)msg;
 
@@ -3173,11 +3178,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 task.run();
         }
 
-        /** {@inheritDoc} */
-        @Override protected void processMessage(TcpDiscoveryAbstractMessage msg) {
-            if (msg == WAKEUP)
-                return;
-
+        /** */
+        private void processMessage0(TcpDiscoveryAbstractMessage msg) {
             notifiedDiscovery.set(false);
 
             if (msg instanceof TraceableMessage) {
@@ -3312,6 +3314,20 @@ class ServerImpl extends TcpDiscoveryImpl {
                 TraceableMessage tMsg = (TraceableMessage)msg;
 
                 tracing.messages().finishProcessing(tMsg);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void processMessage(TcpDiscoveryAbstractMessage msg) {
+            if (msg == WAKEUP)
+                return;
+
+            if (F.isEmpty(msg.opCtxAttrs))
+                processMessage0(msg);
+            else {
+                try (Scope ignored = DistributedOperationContextAttributeRegistry.instance().restoreContext(msg.opCtxAttrs)) {
+                    processMessage0(msg);
+                }
             }
         }
 

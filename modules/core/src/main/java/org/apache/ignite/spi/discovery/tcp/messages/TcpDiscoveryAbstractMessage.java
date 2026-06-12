@@ -19,6 +19,7 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.io.Externalizable;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
@@ -75,6 +76,11 @@ public abstract class TcpDiscoveryAbstractMessage implements Message {
     @GridToStringInclude
     @Order(4)
     Set<UUID> failedNodes;
+
+    /** Operation context attributes: id -> attribute value. */
+    @GridToStringInclude
+    @Order(5)
+    public @Nullable Map<Byte, Message> opCtxAttrs;
 
     /**
      * Default no-arg constructor for {@link Externalizable} interface.

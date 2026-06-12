@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.thread.context;
 
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -35,9 +36,17 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.managers.discovery.CustomEventListener;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.thread.context.concurrent.IgniteCompletableFuture;
@@ -48,20 +57,24 @@ import org.apache.ignite.internal.thread.pool.IgniteStripedExecutor;
 import org.apache.ignite.internal.thread.pool.IgniteStripedThreadPoolExecutor;
 import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.queue.IgniteAsyncObjectHandler;
 import org.apache.ignite.internal.util.worker.queue.IgniteDelayedObjectHandler;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.discovery.tcp.messages.InetSocketAddressMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThread;
 import org.junit.Test;
 import org.springframework.lang.NonNull;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
@@ -85,6 +98,9 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
     /** */
     private int beforeTestReservedAttrIds;
 
+    /** */
+    private IgnitePredicate<? extends Event> evtLsnr;
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
@@ -98,11 +114,23 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
+        stopAllGrids();
+
         if (poolToShutdownAfterTest != null)
             poolToShutdownAfterTest.shutdownNow();
 
         // Releases attribute IDs reserved during the test.
         OperationContextAttribute.ID_GEN.set(beforeTestReservedAttrIds);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        if (evtLsnr != null)
+            cfg.setLocalEventListeners(Collections.singletonMap(evtLsnr, new int[] {EVT_DISCOVERY_CUSTOM_EVT}));
+
+        return cfg;
     }
 
     /** */
@@ -809,6 +837,51 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
+    public void testSendAttributesByDiscovery() throws Exception {
+        byte attrId = (byte)(OperationContextAttribute.MAX_ATTR_CNT + 1);
+
+        InetSocketAddressMessage dfltAttrVal = new InetSocketAddressMessage(InetAddress.getLoopbackAddress(), 80);
+
+        OperationContextAttribute<InetSocketAddressMessage> attr = OperationContextAttribute.newInstance();
+
+        DistributedOperationContextAttributeRegistry.instance().register(attrId, attr);
+
+        startGrids(2);
+        Ignite cli = startClientGrid();
+
+        CountDownLatch clientLatch = new CountDownLatch(1);
+        CountDownLatch srvrLatch = new CountDownLatch(1);
+
+        for (int i = 1; i < G.allGrids().size(); ++i) {
+            int i0 = i;
+
+            grid(i).context().discovery().setCustomEventListener(
+                DynamicCacheChangeBatch.class, new CustomEventListener<>() {
+                    @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd,
+                        DynamicCacheChangeBatch msg) {
+
+                        if (grid(i0).localNode().isClient())
+                            clientLatch.countDown();
+                        else
+                            srvrLatch.countDown();
+                    }
+                });
+        }
+
+        InetSocketAddressMessage newAttrVal = new InetSocketAddressMessage(dfltAttrVal.address(), 443);
+
+        assertFalse(newAttrVal.equals(dfltAttrVal));
+
+        try (Scope ignored = OperationContext.set(attr, newAttrVal)) {
+            grid(0).createCache(defaultCacheConfiguration());
+        }
+
+        assertTrue(clientLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+        assertTrue(srvrLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+    }
+
+    /** */
     private void doContextAwareExecutorServiceTest(ExecutorService pool) throws Exception {
         CountDownLatch poolUnblockedLatch = blockPool(pool);
 
@@ -923,9 +996,8 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
 
         /** */
         static void assertAllCreatedChecksPassed() throws Exception {
-            for (AttributeValueChecker check : CHECKS) {
+            for (AttributeValueChecker check : CHECKS)
                 check.get(5_000, MILLISECONDS);
-            }
         }
 
         /** */
