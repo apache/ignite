@@ -42,7 +42,7 @@ public class DistributedOperationContextAttributeRegistry {
     public <T extends Message> void register(byte id, OperationContextAttribute<T> attr) {
         assert id >= 0;
 
-        if(attributes.size() == OperationContextAttribute.MAX_ATTR_CNT)
+        if (attributes.size() == OperationContextAttribute.MAX_ATTR_CNT)
             throw new IgniteException("Maximum number of attributes is exceeded [" + OperationContextAttribute.MAX_ATTR_CNT + "].");
 
         if (attributes.putIfAbsent(id, attr) != null)

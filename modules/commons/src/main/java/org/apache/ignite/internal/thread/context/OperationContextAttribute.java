@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.thread.context;
 
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
