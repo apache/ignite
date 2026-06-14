@@ -208,7 +208,7 @@ public enum IgniteComponentType {
         try {
             Class.forName(cls);
         }
-        catch (ClassNotFoundException e) {
+        catch (ClassNotFoundException | LinkageError e) {
             if (mandatory)
                 throw componentException(e);
 
@@ -263,7 +263,11 @@ public enum IgniteComponentType {
         try {
             cls = Class.forName(clsName);
         }
-        catch (ClassNotFoundException ignored) {
+        catch (ClassNotFoundException | LinkageError ignored) {
+            // Implementation class is present, but an optional API dependency
+            // (e.g. jakarta.transaction-api for JTA) is missing on classpath —
+            // LinkageError covers NoClassDefFoundError + VerifyError + co.,
+            // fall back to the no-op implementation.
             try {
                 cls = Class.forName(noOpClsName);
             }
