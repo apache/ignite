@@ -607,7 +607,7 @@ public class BinaryUtils {
         if (type != null)
             return type;
 
-        if (CommonUtils.isEnum(cls))
+        if (CommonUtils.isEnum(cls) || cls == Enum.class)
             return GridBinaryMarshaller.ENUM;
 
         if (cls.isArray())
