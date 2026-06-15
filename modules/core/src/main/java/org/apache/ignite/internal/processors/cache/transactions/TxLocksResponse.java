@@ -183,8 +183,14 @@ public class TxLocksResponse extends GridCacheMessage implements CacheMarshallab
         if (txKeysArr != null) {
             txKeys = U.newHashSet(txKeysArr.length);
 
-            for (IgniteTxKey txKey : txKeysArr)
-                txKeys.add(txKey);
+            for (IgniteTxKey txKey : txKeysArr) {
+                try {
+                    txKeys.add(txKey);
+                }
+                catch (IllegalStateException th) {
+                    // Skipping entries for removed cache.    
+                }
+            }
 
             txKeysArr = null;
         }
