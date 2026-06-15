@@ -24,9 +24,10 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
 
 /** */
-public final class TxEntriesInfo extends IgniteDiagnosticRequest.DiagnosticBaseInfo {
+public final class TxEntriesInfo extends IgniteDiagnosticRequest.DiagnosticBaseInfo implements CacheIdAware {
     /** */
     @Order(0)
     int cacheId;
@@ -99,5 +100,10 @@ public final class TxEntriesInfo extends IgniteDiagnosticRequest.DiagnosticBaseI
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return Objects.hash(getClass(), cacheId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int cacheId() {
+        return cacheId;
     }
 }
