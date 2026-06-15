@@ -200,7 +200,7 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
         try {
             MessageSerializer ser = ctx.kernalContext().messageFactory().serializer(msg.directType());
 
-            ser.finishUnmarshal(msg, ctx.kernalContext(), null, ctx.deploy().globalLoader());
+            ser.finishUnmarshal(msg, ctx.kernalContext(), null, clsLdr);
             
             if (msg instanceof CalciteContextMarshallableMessage)
                 ((CalciteContextMarshallableMessage)msg).finishUnmarshal(ctx, clsLdr);

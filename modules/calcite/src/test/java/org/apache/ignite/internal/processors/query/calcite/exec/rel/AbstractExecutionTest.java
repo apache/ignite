@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
+import java.lang.reflect.Field;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
@@ -40,6 +41,7 @@ import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.query.calcite.QueryRegistryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
@@ -72,6 +74,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.mockito.Mockito;
 
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME;
 
@@ -195,6 +198,16 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
             kernal.add(new NoOpIgniteSecurityProcessor(kernal));
             kernal.add(new GridCacheProcessor(kernal));
             kernal.add(new PoolProcessor(kernal));
+
+            Field ctx = kernal.cache().getClass().getDeclaredField("sharedCtx");
+            
+            ctx.setAccessible(true);
+            
+            GridCacheSharedContext sharedCtx = Mockito.mock(GridCacheSharedContext.class);
+            
+            Mockito.when(sharedCtx.kernalContext()).thenReturn(kernal);
+            
+            ctx.set(kernal.cache(), sharedCtx);
 
             AbstractQueryTaskExecutor taskExecutor;
 

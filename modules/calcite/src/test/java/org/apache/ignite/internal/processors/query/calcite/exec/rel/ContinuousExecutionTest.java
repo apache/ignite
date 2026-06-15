@@ -27,6 +27,7 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
@@ -34,7 +35,9 @@ import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessag
 import org.apache.ignite.internal.processors.query.calcite.trait.AllNodes;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
+import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runners.Parameterized;
@@ -58,6 +61,9 @@ public class ContinuousExecutionTest extends AbstractExecutionTest {
     /** */
     @Parameter(REMOTE_FRAGMENTS_PARAM_NUM)
     public int remoteFragmentsCnt;
+    
+    /** */
+    private MessageFactory messageFactory;
 
     /** */
     @Parameterized.Parameters(name = PARAMS_STRING + ", " +
@@ -96,10 +102,20 @@ public class ContinuousExecutionTest extends AbstractExecutionTest {
     @Before
     @Override public void setup() throws Exception {
         nodesCnt = remoteFragmentsCnt + 1;
-        super.setup();
 
         // Register messages in Message#REGISTRATIONS and avoids failure in Message#directType().
-        new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{new CalciteMessageFactory()});
+        messageFactory = new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{new CalciteMessageFactory()});
+        
+        super.setup();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected GridTestKernalContext newContext() throws IgniteCheckedException {
+        GridTestKernalContext kctx = super.newContext();
+        
+        kctx.messageFactory = messageFactory;
+        
+        return kctx;
     }
 
     /** */
