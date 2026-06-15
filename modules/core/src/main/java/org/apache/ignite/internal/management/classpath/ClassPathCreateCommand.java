@@ -80,6 +80,7 @@ public class ClassPathCreateCommand implements NativeCommand<ClassPathCreateComm
         return null;
     }
 
+    /** */
     private static void uploadFiles(
         @Nullable IgniteClient client,
         @Nullable Ignite ignite,
@@ -93,11 +94,13 @@ public class ClassPathCreateCommand implements NativeCommand<ClassPathCreateComm
         // TODO: add pretty print here.
         for (Path file : files) {
             printer.accept(String.valueOf(file.toAbsolutePath()));
+
             if (client != null)
                 ((TcpIgniteClient)client).uploadClasspathFile(uploadNode, icpId, file);
             else {
                 ((IgniteEx)ignite).context().classPath().copyClassPathFileLocally(icpId, file);
             }
+
             printer.accept("DONE");
         }
     }

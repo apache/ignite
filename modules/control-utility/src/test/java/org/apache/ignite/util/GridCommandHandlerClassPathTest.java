@@ -29,6 +29,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 
 /**
@@ -49,12 +50,10 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
 
     // TODO: add test that classpath can be created only with ADMIN_OPS privelege.
     // TODO: add CRC or other check of file integrity.
-    // TODO check empty file creation.
     // TODO add in production code checks of files integriy. Perform file integrity check on startup.
     // Support pretty print for command.
     // Test for different failure types: node fail, file write fail, etc.
     // Concurrent creation of CP with the same name.
-    // Just create CP with the same name after first creation.
 
     /** Tests --create command. */
     @Test
@@ -74,17 +73,9 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
         final TestCommandHandler hnd = newCommandHandler(createTestLogger());
 
         String cpName = "mysuperapp_" + commandHandler;
+        String files = cpFiles.stream().map(Path::toFile).map(File::getAbsolutePath).collect(Collectors.joining(","));
 
-        try {
-            String files = cpFiles.stream().map(Path::toFile).map(File::getAbsolutePath).collect(Collectors.joining(","));
-
-            assertEquals(EXIT_CODE_OK, execute(hnd, "--class-path", "create", "--name", cpName, "--files", files));
-        }
-        finally {
-            String outStr = testOut.toString();
-
-            System.out.println(outStr);
-        }
+        assertEquals(EXIT_CODE_OK, execute(hnd, "--class-path", "create", "--name", cpName, "--files", files));
 
         Set<String> cpFilesNames = fileNames(cpFiles);
 
@@ -92,6 +83,14 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
             NodeFileTree ft = grid(i).context().pdsFolderResolver().fileTree();
 
             assertEquals("Files must be deployed on each node", cpFilesNames, fileNames(files(ft.classPathRoot(cpName).toPath())));
+        }
+
+        try {
+            // Attemp to create ClassPath with the same name must fail.
+            assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(hnd, "--class-path", "create", "--name", cpName, "--files", files));
+        }
+        finally {
+            assertTrue(testOut.toString().contains("Fail to register ClassPath. Same ClassPath exists, already?"));
         }
     }
 
