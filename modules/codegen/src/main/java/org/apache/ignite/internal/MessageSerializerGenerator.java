@@ -38,6 +38,7 @@ import javax.annotation.processing.FilerException;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.Name;
 import javax.lang.model.element.QualifiedNameable;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
@@ -111,8 +112,8 @@ public class MessageSerializerGenerator {
     /** Stored type of the message being processed. */
     private TypeElement type;
 
-    /** The marshallable message type. */
-    private final TypeMirror marshallableMsgType;
+    /** {@link Name} for the marshallable message type. */
+    private Name marshallableMessageName;
 
     /** */
     private int indent;
@@ -121,7 +122,7 @@ public class MessageSerializerGenerator {
     MessageSerializerGenerator(ProcessingEnvironment env) {
         this.env = env;
 
-        marshallableMsgType = env.getElementUtils().getTypeElement(MARSHALLABLE_MESSAGE_INTERFACE).asType();
+        marshallableMessageName = env.getElementUtils().getName(MARSHALLABLE_MESSAGE_INTERFACE);
     }
 
     /** */
@@ -1059,7 +1060,13 @@ public class MessageSerializerGenerator {
 
     /** */
     private boolean marshallableMessage() {
-        return env.getTypeUtils().isAssignable(type.asType(), marshallableMsgType);
+        for (TypeMirror tm : type.getInterfaces()) {
+            if (tm.getKind() == TypeKind.DECLARED && ((DeclaredType)tm).asElement().getKind() == ElementKind.INTERFACE
+                && ((QualifiedNameable)((DeclaredType)tm).asElement()).getQualifiedName().equals(marshallableMessageName))
+                return true;
+        }
+
+        return false;
     }
 
     /** */
