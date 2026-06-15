@@ -742,7 +742,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             accessTtl,
             opCtx != null && opCtx.skipStore(),
             opCtx != null && opCtx.skipReadThrough(),
-            opCtx != null && opCtx.calciteEngine(),
+            opCtx != null && opCtx.handleBinaryInInterceptor(),
             opCtx != null && opCtx.isKeepBinary());
     }
 
@@ -760,7 +760,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param accessTtl TTL for read operation.
      * @param skipStore Skip store flag.
      * @param skipReadThrough Skip read-through cache store flag.
-     * @param calciteOpCall Calcite engine operation call.
+     * @param handleBinaryInInterceptor Handle binary in interceptor operation flag.
      * @return Lock future.
      */
     public GridDhtFuture<Boolean> lockAllAsyncInternal(@Nullable Collection<KeyCacheObject> keys,
@@ -774,7 +774,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         long accessTtl,
         boolean skipStore,
         boolean skipReadThrough,
-        boolean calciteOpCall,
+        boolean handleBinaryInInterceptor,
         boolean keepBinary) {
         if (keys == null || keys.isEmpty())
             return new GridDhtFinishedFuture<>(true);
@@ -798,7 +798,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             accessTtl,
             skipStore,
             skipReadThrough,
-            calciteOpCall,
+            handleBinaryInInterceptor,
             keepBinary);
 
         if (fut.isDone()) // Possible in case of cancellation or timeout or rollback.
@@ -982,7 +982,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                         req.accessTtl(),
                         req.skipStore(),
                         req.skipReadThrough(),
-                        req.calciteOpCall(),
+                        req.handleBinaryInInterceptor(),
                         req.keepBinary());
 
                     // Add before mapping.
@@ -1056,7 +1056,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     req.accessTtl(),
                     req.skipStore(),
                     req.skipReadThrough(),
-                    req.calciteOpCall(),
+                    req.handleBinaryInInterceptor(),
                     req.keepBinary(),
                     req.nearCache());
 

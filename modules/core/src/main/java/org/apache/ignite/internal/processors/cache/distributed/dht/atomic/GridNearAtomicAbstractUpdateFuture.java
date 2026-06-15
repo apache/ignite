@@ -150,8 +150,8 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
     /** Operation result. */
     protected GridCacheReturn opRes;
 
-    /** Calcite operation call. */
-    protected boolean calciteOpCall;
+    /** Handle binary in interceptor operation flag. */
+    protected boolean handleBinaryInInterceptor;
 
     /**
      * Constructor.
@@ -170,7 +170,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
      * @param recovery {@code True} if cache operation is called in recovery mode.
      * @param remapCnt Remap count.
      * @param appAttrs Application attributes.
-     * @param calciteOpCall Calcite engine call flag.
+     * @param handleBinaryInInterceptor Handle binary in interceptor operation flag.
      */
     protected GridNearAtomicAbstractUpdateFuture(
         GridCacheContext cctx,
@@ -188,7 +188,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
         boolean recovery,
         int remapCnt,
         @Nullable Map<String, String> appAttrs,
-        boolean calciteOpCall
+        boolean handleBinaryInInterceptor
     ) {
         if (log == null) {
             msgLog = cctx.shared().atomicMessageLogger();
@@ -214,7 +214,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
 
         this.remapCnt = remapCnt;
         this.appAttrs = appAttrs;
-        this.calciteOpCall = calciteOpCall;
+        this.handleBinaryInInterceptor = handleBinaryInInterceptor;
     }
 
     /**
@@ -366,7 +366,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
             : (this.retval || op == TRANSFORM)
                 ? cctx.unwrapBinaryIfNeeded(
                     ret.value(),
-                    calciteOpCall || keepBinary,
+                    handleBinaryInInterceptor || keepBinary,
                     U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId))
                 : ret.success();
 

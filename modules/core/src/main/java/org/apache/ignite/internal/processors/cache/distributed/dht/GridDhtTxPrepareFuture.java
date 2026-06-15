@@ -499,7 +499,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                             if (retVal) {
                                 if (err != null || procRes != null)
                                     ret.addEntryProcessResult(txEntry.context(), key, null, procRes, err,
-                                        txEntry.calciteOpCall() || keepBinary);
+                                        txEntry.handleBinaryInInterceptor() || keepBinary);
                                 else
                                     ret.invokeResult(true);
                             }

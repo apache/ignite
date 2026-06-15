@@ -170,8 +170,8 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     /** Skip read-through cache store flag. */
     private final boolean skipReadThrough;
 
-    /** Calcite engine operation flag. */
-    private final boolean calciteOpCall;
+    /** Handle binary in interceptor operation flag. */
+    private final boolean handleBinaryInInterceptor;
 
     /** */
     private Deque<GridNearLockMapping> mappings;
@@ -202,7 +202,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      * @param accessTtl TTL for read operation.
      * @param skipStore Skip store flag.
      * @param skipReadThrough Skip read-through cache store flag.
-     * @param calciteOpCall Calcite engine operation call.
+     * @param handleBinaryInInterceptor Handle binary in interceptor operation flag.
      */
     public GridDhtColocatedLockFuture(
         GridCacheContext<?, ?> cctx,
@@ -215,7 +215,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         long accessTtl,
         boolean skipStore,
         boolean skipReadThrough,
-        boolean calciteOpCall,
+        boolean handleBinaryInInterceptor,
         boolean keepBinary,
         boolean recovery
     ) {
@@ -235,7 +235,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         this.skipReadThrough = skipReadThrough;
         this.keepBinary = keepBinary;
         this.recovery = recovery;
-        this.calciteOpCall = calciteOpCall;
+        this.handleBinaryInInterceptor = handleBinaryInInterceptor;
 
         ignoreInterrupts();
 
@@ -1091,7 +1091,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                                         read ? accessTtl : -1L,
                                         skipStore,
                                         skipReadThrough,
-                                        calciteOpCall,
+                                        handleBinaryInInterceptor,
                                         keepBinary,
                                         clientFirst,
                                         false,
@@ -1262,7 +1262,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             accessTtl,
             skipStore,
             skipReadThrough,
-            calciteOpCall,
+            handleBinaryInInterceptor,
             keepBinary);
 
         // Add new future.

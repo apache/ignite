@@ -187,8 +187,8 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
     /** Skip read-through cache store flag. */
     private final boolean skipReadThrough;
 
-    /** Calcite engine operation flag. */
-    private final boolean calciteOpCall;
+    /** Handle binary in interceptor operation flag. */
+    private final boolean handleBinaryInInterceptor;
 
     /** Keep binary. */
     private final boolean keepBinary;
@@ -207,7 +207,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
      * @param accessTtl TTL for read operation.
      * @param skipStore Skip store flag.
      * @param skipReadThrough Skip read-through cache store flag.
-     * @param calciteOpCall Calcite engine operation call.
+     * @param handleBinaryInInterceptor Handle binary in interceptor operation flag.
      * @param keepBinary Keep binary flag.
      */
     public GridDhtLockFuture(
@@ -225,7 +225,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         long accessTtl,
         boolean skipStore,
         boolean skipReadThrough,
-        boolean calciteOpCall,
+        boolean handleBinaryInInterceptor,
         boolean keepBinary) {
         super(CU.boolReducer());
 
@@ -246,7 +246,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         this.accessTtl = accessTtl;
         this.skipStore = skipStore;
         this.skipReadThrough = skipReadThrough;
-        this.calciteOpCall = calciteOpCall;
+        this.handleBinaryInInterceptor = handleBinaryInInterceptor;
         this.keepBinary = keepBinary;
 
         if (tx != null)
@@ -930,7 +930,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                             read ? accessTtl : -1L,
                             skipStore,
                             skipReadThrough,
-                            calciteOpCall,
+                            handleBinaryInInterceptor,
                             cctx.store().configured(),
                             keepBinary,
                             inTx() ? tx.label() : null);

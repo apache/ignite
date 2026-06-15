@@ -623,7 +623,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 ret,
                 opCtx != null && opCtx.skipStore(),
                 opCtx != null && opCtx.skipReadThrough(),
-                opCtx != null && opCtx.calciteEngine(),
+                opCtx != null && opCtx.handleBinaryInInterceptor(),
                 keepBinary,
                 opCtx != null && opCtx.recovery(),
                 dataCenterId);
@@ -800,7 +800,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 null,
                 opCtx != null && opCtx.skipStore(),
                 opCtx != null && opCtx.skipReadThrough(),
-                opCtx != null && opCtx.calciteEngine(),
+                opCtx != null && opCtx.handleBinaryInInterceptor(),
                 false,
                 keepBinary,
                 opCtx != null && opCtx.recovery(),
@@ -901,7 +901,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param ret Return value.
      * @param skipStore Skip store flag.
      * @param skipReadThrough Skip read-through cache store flag.
-     * @param calciteOpCall Calcite engine operation call.
+     * @param handleBinaryInInterceptor Handle binary in interceptor operation flag.
      * @param recovery Recovery flag.
      * @param dataCenterId Optional data center Id.
      * @return Future for entry values loading.
@@ -919,7 +919,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final GridCacheReturn ret,
         boolean skipStore,
         boolean skipReadThrough,
-        boolean calciteOpCall,
+        boolean handleBinaryInInterceptor,
         boolean keepBinary,
         boolean recovery,
         Byte dataCenterId) {
@@ -958,7 +958,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     /*enlisted*/null,
                     skipStore,
                     skipReadThrough,
-                    calciteOpCall,
+                    handleBinaryInInterceptor,
                     false,
                     hasFilters,
                     needVal,
@@ -1026,7 +1026,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param drRmvMap DR remove map (optional).
      * @param skipStore Skip store flag.
      * @param skipReadThrough Skip read-through cache store flag.
-     * @param calciteOpCall Calcite engine operation call.
+     * @param handleBinaryInInterceptor Handle binary in interceptor operation flag.
      * @param singleRmv {@code True} for single key remove operation ({@link Cache#remove(Object)}.
      * @param keepBinary Keep binary flag.
      * @param recovery Recovery flag.
@@ -1049,7 +1049,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         @Nullable Map<KeyCacheObject, GridCacheVersion> drRmvMap,
         boolean skipStore,
         boolean skipReadThrough,
-        boolean calciteOpCall,
+        boolean handleBinaryInInterceptor,
         final boolean singleRmv,
         final boolean keepBinary,
         final boolean recovery,
@@ -1155,7 +1155,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         enlisted,
                         skipStore,
                         skipReadThrough,
-                        calciteOpCall,
+                        handleBinaryInInterceptor,
                         singleRmv,
                         hasFilters,
                         needVal,
@@ -1228,7 +1228,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param enlisted Enlisted keys collection.
      * @param skipStore Skip store flag.
      * @param skipReadThrough Skip read-through cache store flag.
-     * @param calciteOpCall Calcite engine operation call.
+     * @param handleBinaryInInterceptor Handle binary in interceptor operation flag.
      * @param singleRmv {@code True} for single remove operation.
      * @param hasFilters {@code True} if filters not empty.
      * @param needVal {@code True} if value is needed.
@@ -1252,7 +1252,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         @Nullable final Collection<KeyCacheObject> enlisted,
         boolean skipStore,
         boolean skipReadThrough,
-        boolean calciteOpCall,
+        boolean handleBinaryInInterceptor,
         boolean singleRmv,
         boolean hasFilters,
         final boolean needVal,
@@ -1373,7 +1373,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                     drVer,
                                     skipStore,
                                     skipReadThrough,
-                                    calciteOpCall,
+                                    handleBinaryInInterceptor,
                                     keepBinary,
                                     CU.isNearEnabled(cacheCtx));
                             }
@@ -1391,7 +1391,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                     null,
                                     skipStore,
                                     skipReadThrough,
-                                    calciteOpCall,
+                                    handleBinaryInInterceptor,
                                     keepBinary,
                                     CU.isNearEnabled(cacheCtx));
                             }
@@ -1429,7 +1429,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         drVer,
                         skipStore,
                         skipReadThrough,
-                        calciteOpCall,
+                        handleBinaryInInterceptor,
                         keepBinary,
                         CU.isNearEnabled(cacheCtx));
 
@@ -1550,7 +1550,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     drVer,
                     skipStore,
                     skipReadThrough,
-                    calciteOpCall,
+                    handleBinaryInInterceptor,
                     keepBinary,
                     CU.isNearEnabled(cacheCtx));
 
@@ -1703,7 +1703,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             drMap,
             opCtx != null && opCtx.skipStore(),
             opCtx != null && opCtx.skipReadThrough(),
-            opCtx != null && opCtx.calciteEngine(),
+            opCtx != null && opCtx.handleBinaryInInterceptor(),
             singleRmv,
             keepBinary,
             opCtx != null && opCtx.recovery(),
@@ -1840,7 +1840,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param keepCacheObjects Keep cache objects
      * @param skipStore Skip store flag.
      * @param skipReadThrough Skip read-through cache store flag.
-     * @param calciteOpCall Calcite engine operation call.
+     * @param handleBinaryInInterceptor Handle binary in interceptor operation flag.
      * @param readRepairStrategy Read Repair strategy.
      * @return Future for this get.
      */
@@ -1854,7 +1854,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final boolean keepCacheObjects,
         final boolean skipStore,
         final boolean skipReadThrough,
-        boolean calciteOpCall,
+        boolean handleBinaryInInterceptor,
         final boolean recovery,
         final ReadRepairStrategy readRepairStrategy,
         final boolean needVer) {
@@ -1898,7 +1898,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     keepCacheObjects,
                     skipStore,
                     skipReadThrough,
-                    calciteOpCall,
+                    handleBinaryInInterceptor,
                     recovery,
                     readRepairStrategy,
                     needVer);
@@ -2087,7 +2087,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                                     null,
                                                     skipStore,
                                                     skipReadThrough,
-                                                    calciteOpCall,
+                                                    handleBinaryInInterceptor,
                                                     !deserializeBinary,
                                                     recovery,
                                                     null);
@@ -2222,7 +2222,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param keepCacheObjects Keep cache objects flag.
      * @param skipStore Skip store flag.
      * @param skipReadThrough Skip read-through cache store flag.
-     * @param calciteOpCall Calcite engine operation call.
+     * @param handleBinaryInInterceptor Handle binary in interceptor operation flag.
      * @param recovery Recovery flag.
      * @return Enlisted keys.
      * @throws IgniteCheckedException If failed.
@@ -2241,7 +2241,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         boolean keepCacheObjects,
         boolean skipStore,
         boolean skipReadThrough,
-        boolean calciteOpCall,
+        boolean handleBinaryInInterceptor,
         boolean recovery,
         ReadRepairStrategy readRepairStrategy,
         final boolean needVer
@@ -2490,7 +2490,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                     null,
                                     skipStore,
                                     skipReadThrough,
-                                    calciteOpCall,
+                                    handleBinaryInInterceptor,
                                     !deserializeBinary,
                                     CU.isNearEnabled(cacheCtx));
 
@@ -4221,7 +4221,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param <K> Key type.
      * @param skipStore Skip store flag.
      * @param skipReadThrough Skip read-through cache store flag.
-     * @param calciteOpCall Calcite engine operation call.
+     * @param handleBinaryInInterceptor Handle binary in interceptor operation flag.
      * @param keepBinary Keep binary flag.
      * @return Future with respond.
      */
@@ -4233,7 +4233,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         long accessTtl,
         boolean skipStore,
         boolean skipReadThrough,
-        boolean calciteOpCall,
+        boolean handleBinaryInInterceptor,
         boolean keepBinary) {
         assert pessimistic();
 
@@ -4270,7 +4270,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             accessTtl,
             skipStore,
             skipReadThrough,
-            calciteOpCall,
+            handleBinaryInInterceptor,
             keepBinary);
 
         return new GridEmbeddedFuture<>(

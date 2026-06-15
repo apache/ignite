@@ -49,8 +49,8 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     /** */
     private static final int SKIP_READ_THROUGH_FLAG_MASK = 0x08;
 
-    /** Calcite engine operation call flag bit mask. */
-    private static final int CALCITE_OP_CALL_FLAG_MASK = 0x10;
+    /** Handle binary in interceptor operation flag bit mask. */
+    private static final int HANDLE_BINARY_INTERCEPTOR_FLAG_MASK = 0x10;
 
     /** Sender node ID. */
     @Order(0)
@@ -131,7 +131,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
      * @param txSize Expected transaction size.
      * @param skipStore Skip store flag.
      * @param skipReadThrough Skip read-through cache store flag.
-     * @param calciteOpCall Calcite engine operation call.
+     * @param handleBinaryInInterceptor Handle binary in interceptor operation flag.
      */
     public GridDistributedLockRequest(
         int cacheId,
@@ -149,7 +149,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         int txSize,
         boolean skipStore,
         boolean skipReadThrough,
-        boolean calciteOpCall,
+        boolean handleBinaryInInterceptor,
         boolean keepBinary
     ) {
         super(lockVer, keyCnt, false);
@@ -175,7 +175,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         skipStore(skipStore);
         skipReadThrough(skipReadThrough);
         keepBinary(keepBinary);
-        calciteOpCall(calciteOpCall);
+        handleBinaryInInterceptor(handleBinaryInInterceptor);
     }
 
     /**
@@ -267,16 +267,16 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         return isFlag(SKIP_READ_THROUGH_FLAG_MASK);
     }
 
-    /** Sets calcite operation flag. */
-    public void calciteOpCall(boolean calciteOpCall) {
-        setFlag(calciteOpCall, CALCITE_OP_CALL_FLAG_MASK);
+    /** Sets flag indicating whether to handle binary in interceptor. */
+    public void handleBinaryInInterceptor(boolean handleBinary) {
+        setFlag(handleBinary, HANDLE_BINARY_INTERCEPTOR_FLAG_MASK);
     }
 
     /**
-     * @return Calcite engine operation flag.
+     * @return Flag indicating whether to handle binary in interceptor.
      */
-    public boolean calciteOpCall() {
-        return isFlag(CALCITE_OP_CALL_FLAG_MASK);
+    public boolean handleBinaryInInterceptor() {
+        return isFlag(HANDLE_BINARY_INTERCEPTOR_FLAG_MASK);
     }
 
     /**

@@ -1607,20 +1607,20 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalCache<K, V> withCalciteEngine() {
+    @Override public IgniteInternalCache<K, V> withHandleBinaryInInterceptor() {
         CacheOperationContext prev = gate.enter(opCtx);
 
         CacheOperationContext newOpCtx;
 
         try {
             if (opCtx != null) {
-                if (opCtx.calciteEngine())
+                if (opCtx.handleBinaryInInterceptor())
                     return this;
                 else
-                    newOpCtx = opCtx.withCalciteEngine();
+                    newOpCtx = opCtx.withHandleBinaryInInterceptor();
             }
             else
-                newOpCtx = CacheOperationContext.builder().calciteEngine(true).build();
+                newOpCtx = CacheOperationContext.builder().handleBinaryInInterceptor(true).build();
 
             return new GridCacheProxyImpl<>(ctx, delegate, newOpCtx);
         }

@@ -67,18 +67,18 @@ public class CacheOperationContext implements Serializable {
     /** Application attributes. */
     private final @Nullable Map<String, String> appAttrs;
 
-    /** Calcite engine call flag. */
-    private final boolean calciteEngineCall;
+    /** Handle binary in interceptor operation flag. */
+    private final boolean handleBinaryInInterceptor;
 
     /**
-     * @param skipStore          Skip store flag.
-     * @param skipReadThrough    Skip read-through cache store flag.
-     * @param keepBinary         Keep binary flag.
-     * @param expiryPlc          Expiry policy.
-     * @param dataCenterId       Data center id.
-     * @param readRepairStrategy Read-repair strategy.
-     * @param appAttrs           Application attributes.
-     * @param calciteEngineCall  Calcite engine call flag.
+     * @param skipStore                  Skip store flag.
+     * @param skipReadThrough            Skip read-through cache store flag.
+     * @param keepBinary                 Keep binary flag.
+     * @param expiryPlc                  Expiry policy.
+     * @param dataCenterId               Data center id.
+     * @param readRepairStrategy         Read-repair strategy.
+     * @param appAttrs                   Application attributes.
+     * @param handleBinaryInInterceptor  Handle binary in interceptor operation flag.
      */
     private CacheOperationContext(
         boolean skipStore,
@@ -90,7 +90,7 @@ public class CacheOperationContext implements Serializable {
         boolean recovery,
         @Nullable ReadRepairStrategy readRepairStrategy,
         @Nullable Map<String, String> appAttrs,
-        boolean calciteEngineCall
+        boolean handleBinaryInInterceptor
     ) {
         this.skipStore = skipStore;
         this.skipReadThrough = skipReadThrough;
@@ -101,7 +101,7 @@ public class CacheOperationContext implements Serializable {
         this.recovery = recovery;
         this.readRepairStrategy = readRepairStrategy;
         this.appAttrs = appAttrs;
-        this.calciteEngineCall = calciteEngineCall;
+        this.handleBinaryInInterceptor = handleBinaryInInterceptor;
     }
 
     /**
@@ -209,14 +209,14 @@ public class CacheOperationContext implements Serializable {
         return builder(this).skipReadThrough(true).build();
     }
 
-    /** @return Calcite engine execution flag. */
-    public boolean calciteEngine() {
-        return calciteEngineCall;
+    /** @return Whether to handle binary in interceptor. */
+    public boolean handleBinaryInInterceptor() {
+        return handleBinaryInInterceptor;
     }
 
-    /** Context with {@link CacheOperationContext#calciteEngine} flag. */
-    public CacheOperationContext withCalciteEngine() {
-        return builder(this).calciteEngine(true).build();
+    /** Context with {@link CacheOperationContext#handleBinaryInInterceptor} flag. */
+    public CacheOperationContext withHandleBinaryInInterceptor() {
+        return builder(this).handleBinaryInInterceptor(true).build();
     }
 
     /**
@@ -286,8 +286,8 @@ public class CacheOperationContext implements Serializable {
         /** Application attributes. */
         private Map<String, String> appAttrs;
 
-        /** Calcite engine execution flag. */
-        private boolean calciteEngine;
+        /** Flag indicating whether to handle binary in interceptor. */
+        private boolean handleBinary;
 
         /** */
         Builder() {
@@ -305,7 +305,7 @@ public class CacheOperationContext implements Serializable {
             expiryPlc = ctx.expiryPlc;
             dataCenterId = ctx.dataCenterId;
             appAttrs = ctx.appAttrs;
-            calciteEngine = ctx.calciteEngineCall;
+            handleBinary = ctx.handleBinaryInInterceptor;
         }
 
         /**
@@ -349,12 +349,12 @@ public class CacheOperationContext implements Serializable {
         }
 
         /**
-         * CacheOperationContext with calcite execution flag.
+         * CacheOperationContext with handle binary in interceptor execution flag.
          *
-         * @see IgniteInternalCache#withCalciteEngine()
+         * @see IgniteInternalCache#withHandleBinaryInInterceptor()
          */
-        public Builder calciteEngine(boolean calciteEngine) {
-            this.calciteEngine = calciteEngine;
+        public Builder handleBinaryInInterceptor(boolean handleBinary) {
+            this.handleBinary = handleBinary;
             return this;
         }
 
@@ -416,7 +416,7 @@ public class CacheOperationContext implements Serializable {
                 recovery,
                 readRepairStrategy,
                 appAttrs,
-                calciteEngine);
+                handleBinary);
         }
     }
 }

@@ -494,14 +494,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalCache<K, V> withCalciteEngine() {
+    @Override public IgniteInternalCache<K, V> withHandleBinaryInInterceptor() {
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
         if (opCtx == null)
-            opCtx = CacheOperationContext.builder().calciteEngine(true).build();
+            opCtx = CacheOperationContext.builder().handleBinaryInInterceptor(true).build();
         else {
-            if (!opCtx.calciteEngine())
-                opCtx = opCtx.withCalciteEngine();
+            if (!opCtx.handleBinaryInInterceptor())
+                opCtx = opCtx.withHandleBinaryInInterceptor();
         }
 
         return new GridCacheProxyImpl<>(ctx, this, opCtx);
