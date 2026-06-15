@@ -20,6 +20,7 @@ package org.apache.ignite.internal.classpath;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -135,8 +136,16 @@ class DeployToAllProcess {
             // Perform CAS async to release discovery thread and let CAS proceed.
             ctx.classPath().casToMetastorageAsync(icp, icp.newState(IgniteClassPathState.READY)).listen(casFut -> {
                 log.info("Deploy to all DONE!");
+                
+                boolean metastorageWritten = casFut.error() == null && casFut.result() != null && casFut.result();
 
-                if (!fut.onDone(casFut.error() == null ? "OK" : null, casFut.error())) {
+                Throwable t = metastorageWritten
+                    ?  null
+                    : casFut.error() != null
+                        ? casFut.error()
+                        : new IgniteException("Fail to change ClassPath state. Concurrent removal?");
+
+                if (!fut.onDone(metastorageWritten ? "OK" : null, t)) {
                     log.warning("Distribute process in wrong state " +
                         "[canceled=" + fut.isCancelled() + ", failed=" + fut.isFailed() + ", done=" + fut.isDone() + ']');
                 }

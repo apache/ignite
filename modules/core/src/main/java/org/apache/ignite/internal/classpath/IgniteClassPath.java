@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.classpath;
 
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -91,5 +93,17 @@ public class IgniteClassPath implements Serializable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgniteClassPath.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        IgniteClassPath that = (IgniteClassPath)o;
+        return Objects.equals(id, that.id) && Objects.equals(name, that.name) && Objects.deepEquals(files, that.files) && Objects.deepEquals(lengths, that.lengths) && state == that.state;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return Objects.hash(id, name, Arrays.hashCode(files), Arrays.hashCode(lengths), state);
     }
 }

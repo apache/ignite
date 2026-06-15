@@ -119,6 +119,8 @@ public class ClassPathProcessor extends GridProcessorAdapter {
             catch (IgniteCheckedException ex) {
                 log.error("Cleanup after IgniteClassPath creation failed [key=" + metastorageKey(icp) + ", root=" + root + ']', e);
             }
+
+            throw e;
         }
 
         log.info("New classpath created [root = " + root + ", icp=" + icp + ']');
