@@ -384,7 +384,7 @@ public class MessageSerializerGenerator {
             if (!first)
                 marshall.add(EMPTY);
             
-            marshall.add(indentedLine("msg.finishUnmarshal(marshaller, U.gridClassLoader());"));
+            marshall.add(indentedLine("msg.finishUnmarshal(marshaller, U.resolveClassLoader(kctx.config()));"));
         }
 
         indent--;
