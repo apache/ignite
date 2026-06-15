@@ -990,6 +990,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         boolean evt,
         boolean metrics,
         boolean keepBinary,
+        boolean unwrapVal,
         boolean oldValPresent,
         @Nullable CacheObject oldVal,
         AffinityTopologyVersion topVer,
@@ -1056,7 +1057,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 intercept = !skipInterceptor(explicitVer);
 
             if (intercept) {
-                val0 = cctx.unwrapBinaryIfNeeded(val, keepBinary, false, null);
+                val0 = cctx.unwrapBinaryIfNeeded(val, unwrapVal, false, null);
 
                 CacheLazyEntry e = new CacheLazyEntry(cctx, key, old, keepBinary);
 
@@ -1205,6 +1206,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         boolean evt,
         boolean metrics,
         boolean keepBinary,
+        boolean unwrapVal,
         boolean oldValPresent,
         @Nullable CacheObject oldVal,
         AffinityTopologyVersion topVer,
@@ -1274,15 +1276,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 intercept = !skipInterceptor(explicitVer);
 
             if (intercept) {
-                entry0 = new CacheLazyEntry(cctx, key, old, keepBinary);
+                entry0 = new CacheLazyEntry(cctx, key, old, unwrapVal);
 
                 interceptRes = cctx.config().getInterceptor().onBeforeRemove(entry0);
 
-                if (cctx.cancelRemove(interceptRes)) {
-                    CacheObject ret = cctx.toCacheObject(cctx.unwrapTemporary(interceptRes.get2()));
-
+                if (cctx.cancelRemove(interceptRes))
                     return new GridCacheUpdateTxResult(false, logPtr);
-                }
             }
 
             DumpEntryChangeListener dumpLsnr = cctx.dumpListener();
@@ -1448,6 +1447,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         final boolean readThrough,
         final boolean retval,
         final boolean keepBinary,
+        boolean unwrapVal,
         @Nullable final IgniteCacheExpiryPolicy expiryPlc,
         final boolean evt,
         final boolean metrics,
@@ -1501,6 +1501,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 readFromStore,
                 writeThrough,
                 keepBinary,
+                unwrapVal,
                 expiryPlc,
                 primary,
                 verCheck,
@@ -4521,6 +4522,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         private final boolean keepBinary;
 
         /** */
+        private final boolean unwrapVal;
+
+        /** */
         private final IgniteCacheExpiryPolicy expiryPlc;
 
         /** */
@@ -4585,6 +4589,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             boolean readThrough,
             boolean writeThrough,
             boolean keepBinary,
+            boolean unwrapVal,
             @Nullable IgniteCacheExpiryPolicy expiryPlc,
             boolean primary,
             boolean verCheck,
@@ -4608,6 +4613,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             this.readThrough = readThrough;
             this.writeThrough = writeThrough;
             this.keepBinary = keepBinary;
+            this.unwrapVal = unwrapVal;
             this.expiryPlc = expiryPlc;
             this.primary = primary;
             this.verCheck = verCheck;
@@ -4807,12 +4813,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (op == UPDATE) {
                 assert writeObj != null;
 
-                update(conflictCtx, invokeRes, storeLoadedVal != null, transformed);
+                update(conflictCtx, invokeRes, storeLoadedVal != null, unwrapVal, transformed);
             }
             else {
                 assert op == DELETE && writeObj == null : op;
 
-                remove(conflictCtx, invokeRes, storeLoadedVal != null, transformed);
+                remove(conflictCtx, invokeRes, storeLoadedVal != null, unwrapVal, transformed);
             }
 
             assert updateRes != null && treeOp != null;
@@ -4937,12 +4943,14 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
          * @param conflictCtx Conflict context.
          * @param invokeRes Entry processor result (for invoke operation).
          * @param readFromStore {@code True} if initial entry value was {@code null} and it was read from store.
+         * @param unwrapVal {@code true} if value need to be unwrapped.
          * @param transformed {@code True} if update caused by transformation operation.
          * @throws IgniteCheckedException If failed.
          */
         private void update(@Nullable GridCacheVersionConflictContext<?, ?> conflictCtx,
             @Nullable IgniteBiTuple<Object, Exception> invokeRes,
             boolean readFromStore,
+            boolean unwrapVal,
             boolean transformed)
             throws IgniteCheckedException {
             GridCacheContext cctx = entry.context();
@@ -4999,18 +5007,18 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 writeObj = null;
 
-                remove(conflictCtx, invokeRes, readFromStore, false);
+                remove(conflictCtx, invokeRes, readFromStore, unwrapVal, false);
 
                 return;
             }
 
             if (intercept && (conflictVer == null || !skipInterceptorOnConflict)) {
-                Object updated0 = cctx.unwrapBinaryIfNeeded(updated, keepBinary, false, null);
+                Object updated0 = cctx.unwrapBinaryIfNeeded(updated, unwrapVal, false, null);
 
                 CacheLazyEntry<Object, Object> interceptEntry =
-                    new CacheLazyEntry<>(cctx, entry.key, null, oldVal, null, keepBinary);
+                    new CacheLazyEntry<>(cctx, entry.key, null, oldVal, null, unwrapVal);
 
-                Object interceptorVal = null;
+                Object interceptorVal;
 
                 try {
                     interceptorVal = cctx.config().getInterceptor().onBeforePut(interceptEntry, updated0);
@@ -5125,6 +5133,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         private void remove(@Nullable GridCacheVersionConflictContext<?, ?> conflictCtx,
             @Nullable IgniteBiTuple<Object, Exception> invokeRes,
             boolean readFromStore,
+            boolean unwrapVal,
             boolean transformed)
             throws IgniteCheckedException {
             GridCacheContext cctx = entry.context();
@@ -5135,7 +5144,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             if (intercept && (conflictVer == null || !skipInterceptorOnConflict)) {
                 CacheLazyEntry<Object, Object> intercepEntry =
-                    new CacheLazyEntry<>(cctx, entry.key, null, oldVal, null, keepBinary);
+                    new CacheLazyEntry<>(cctx, entry.key, null, oldVal, null, unwrapVal);
 
                 interceptRes = cctx.config().getInterceptor().onBeforeRemove(intercepEntry);
 

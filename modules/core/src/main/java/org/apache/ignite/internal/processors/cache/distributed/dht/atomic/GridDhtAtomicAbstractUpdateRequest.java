@@ -58,6 +58,9 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     /** Flag indicating recovery on read repair. */
     protected static final int DHT_ATOMIC_READ_REPAIR_RECOVERY_FLAG_MASK = 0x80;
 
+    /** */
+    protected static final int DHT_ATOMIC_UNWRAP_VALUE_FLAG_MASK = 0x100;
+
     /** Message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
 
@@ -115,6 +118,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
         @NotNull AffinityTopologyVersion topVer,
         int taskNameHash,
         boolean keepBinary,
+        boolean unwrapVal,
         boolean skipStore,
         boolean readRepairRecovery
     ) {
@@ -133,6 +137,8 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
             setFlag(true, DHT_ATOMIC_KEEP_BINARY_FLAG_MASK);
         if (readRepairRecovery)
             setFlag(true, DHT_ATOMIC_READ_REPAIR_RECOVERY_FLAG_MASK);
+        if (unwrapVal)
+            setFlag(true, DHT_ATOMIC_UNWRAP_VALUE_FLAG_MASK);
     }
 
     /** {@inheritDoc} */
@@ -196,6 +202,11 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
      */
     public final boolean keepBinary() {
         return isFlag(DHT_ATOMIC_KEEP_BINARY_FLAG_MASK);
+    }
+
+    /** */
+    public final boolean unwrapValue() {
+        return isFlag(DHT_ATOMIC_UNWRAP_VALUE_FLAG_MASK);
     }
 
     /**

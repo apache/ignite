@@ -153,6 +153,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
         int taskNameHash,
         Object[] invokeArgs,
         boolean keepBinary,
+        boolean unwrapVal,
         boolean skipStore,
         boolean forceTransformBackups,
         boolean readRepairRecovery
@@ -164,6 +165,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
             topVer,
             taskNameHash,
             keepBinary,
+            unwrapVal,
             skipStore,
             readRepairRecovery);
 

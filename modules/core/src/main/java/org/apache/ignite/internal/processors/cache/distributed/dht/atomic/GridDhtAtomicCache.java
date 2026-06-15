@@ -2257,7 +2257,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     if (updated == null) {
                         if (intercept) {
-                            CacheLazyEntry e = new CacheLazyEntry(ctx, entry.key(), invokeEntry.key(), old, oldVal, req.keepBinary());
+                            CacheLazyEntry e = new CacheLazyEntry(ctx, entry.key(), invokeEntry.key(), old, oldVal, req.calciteOpCall());
 
                             IgniteBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor().onBeforeRemove(e);
 
@@ -2302,7 +2302,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     }
                     else {
                         if (intercept) {
-                            CacheLazyEntry e = new CacheLazyEntry(ctx, entry.key(), invokeEntry.key(), old, oldVal, req.keepBinary());
+                            CacheLazyEntry e = new CacheLazyEntry(ctx, entry.key(), invokeEntry.key(), old, oldVal, req.calciteOpCall());
 
                             Object val = ctx.config().getInterceptor().onBeforePut(e, updatedVal);
 
@@ -2585,6 +2585,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     !req.skipStore() && !req.skipReadThrough(),
                     sndPrevVal || req.returnValue(),
                     req.keepBinary(),
+                    req.calciteOpCall(),
                     expiry,
                     /*event*/true,
                     /*metrics*/true,
@@ -2870,6 +2871,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         /*read-through*/false,
                         /*retval*/sndPrevVal,
                         req.keepBinary(),
+                        req.calciteOpCall(),
                         expiry,
                         /*event*/true,
                         /*metrics*/true,
@@ -3342,6 +3344,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 /*read-through*/false,
                                 /*retval*/false,
                                 req.keepBinary(),
+                                req.unwrapValue(),
                                 /*expiry policy*/null,
                                 /*event*/true,
                                 /*metrics*/true,

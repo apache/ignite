@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.benchmarks.jmh.sql;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -49,11 +48,6 @@ import org.openjdk.jmh.annotations.Warmup;
 /**
  * Abstract SQL queries benchmark.
  */
-@Fork(1)
-@BenchmarkMode(Mode.Throughput)
-@OutputTimeUnit(TimeUnit.SECONDS)
-@Warmup(iterations = 3, time = 5)
-@Measurement(iterations = 3, time = 5)
 @State(Scope.Benchmark)
 public abstract class JmhSqlAbstractBenchmark {
     /** Count of server nodes. */

@@ -87,6 +87,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         @NotNull AffinityTopologyVersion topVer,
         int taskNameHash,
         boolean keepBinary,
+        boolean unwrapVal,
         boolean skipStore,
         boolean readRepairRecovery
     ) {
@@ -97,6 +98,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
             topVer,
             taskNameHash,
             keepBinary,
+            unwrapVal,
             skipStore,
             readRepairRecovery);
     }

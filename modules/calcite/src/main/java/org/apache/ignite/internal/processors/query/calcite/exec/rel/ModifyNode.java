@@ -232,16 +232,14 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
         this.tuples = new ArrayList<>(MODIFY_BATCH_SIZE);
 
         GridCacheContext<Object, Object> cctx = desc.cacheContext();
-        IgniteInternalCache<Object, Object> cache = cctx.cache();
+        IgniteInternalCache<Object, Object> cache = cctx.cache().keepBinary();
         GridNearTxLocal tx = Commons.queryTransaction(context(), cctx.shared());
 
         QueryProperties props = context().unwrap(QueryProperties.class);
         boolean keepBinaryMode = props == null || props.keepBinary();
 
         if (keepBinaryMode)
-            cache = cache.keepBinary();
-
-        cache = cache.withCalciteEngine();
+            cache = cache.withCalciteEngine();
 
         if (tx == null)
             invokeOutsideTransaction(tuples, cache);

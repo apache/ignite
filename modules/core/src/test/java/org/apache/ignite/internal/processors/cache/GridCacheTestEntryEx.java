@@ -448,6 +448,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         boolean evt,
         boolean metrics,
         boolean keepBinary,
+        boolean unwrapVal,
         boolean hasOldVal,
         @Nullable CacheObject oldVal,
         AffinityTopologyVersion topVer,
@@ -457,7 +458,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         String taskName,
         @Nullable GridCacheVersion dhtVer,
         @Nullable Long updateCntr
-    ) throws IgniteCheckedException, GridCacheEntryRemovedException {
+    ) {
         rawPut(val, ttl);
 
         return new GridCacheUpdateTxResult(true);
@@ -475,6 +476,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         boolean readThrough,
         boolean retval,
         boolean keepBinary,
+        boolean unwrapVal,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean evt,
         boolean metrics,
@@ -493,8 +495,8 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         @Nullable CacheObject prevVal,
         @Nullable Long updateCntr,
         @Nullable GridDhtAtomicAbstractUpdateFuture fut,
-        boolean transformOp)
-        throws IgniteCheckedException, GridCacheEntryRemovedException {
+        boolean transformOp
+    ) {
         assert false;
 
         return null;
@@ -509,6 +511,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         boolean evt,
         boolean metrics,
         boolean keepBinary,
+        boolean unwrapVal,
         boolean oldValPresent,
         @Nullable CacheObject oldVal,
         AffinityTopologyVersion topVer,
