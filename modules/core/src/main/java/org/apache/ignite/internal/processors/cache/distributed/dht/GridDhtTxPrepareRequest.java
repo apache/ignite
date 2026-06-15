@@ -21,7 +21,6 @@ import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -97,9 +96,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /** Preload keys. */
     @Order(11)
     BitSet preloadKeys;
-
-    /** */
-    private List<IgniteTxKey> nearWritesCacheMissed;
 
     /** {@code True} if remote tx should skip adding itself to completed versions map on finish. */
     @Order(12)
@@ -185,13 +181,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
      */
     public Collection<PartitionUpdateCountersMessage> updateCounters() {
         return updCntrs;
-    }
-
-    /**
-     * @return Near cache writes for which cache was not found (possible if client near cache was closed).
-     */
-    @Nullable public List<IgniteTxKey> nearWritesCacheMissed() {
-        return nearWritesCacheMissed;
     }
 
     /**
@@ -359,7 +348,12 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
             while (keyIter.hasNext()) {
                 IgniteTxKey key = keyIter.next();
 
-                owned.put(key, valIter.next());
+                try {
+                    owned.put(key, valIter.next());
+                }
+                catch (IllegalStateException th) {
+                    // Skipping entries for removed cache.    
+                }
             }
         }
     }
