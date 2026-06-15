@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.classpath;
 
 import java.io.File;
@@ -155,14 +172,22 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
      * @param filter Filter to select tasks for cancel.
      */
     private synchronized void cancelAll(Throwable err, Predicate<DownloadClassPathTask> filter) {
-        queue.forEach(r -> {
-            if (filter.test(r)) {
-                r.res.onDone(err);
-            }
-        });
+        queue.forEach(r -> cancel(r, err, filter));
 
-        if (active != null && filter.test(active))
-            active.res.onDone(err);
+        cancel(active, err, filter);
+    }
+
+    /**
+     * @param r Task to cancel.
+     * @param err Result error.
+     * @param filter Task filter.
+     * @return {@code True} if task was canceled.
+     */
+    private synchronized boolean cancel(DownloadClassPathTask r, Throwable err, Predicate<DownloadClassPathTask> filter) {
+        if (r == null || !filter.test(r))
+            return false;
+
+        return r.res.onDone(err);
     }
 
     /** {@inheritDoc} */
@@ -173,8 +198,7 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
     /** {@inheritDoc} */
     @Override public void onMessage(UUID nodeId, Object msg0, byte plc) {
         try {
-            if (msg0 instanceof DownloadClassPathMessage) {
-                DownloadClassPathMessage msg = (DownloadClassPathMessage)msg0;
+            if (msg0 instanceof DownloadClassPathMessage msg) {
 
                 IgniteClassPath icp = null;
 
@@ -212,24 +236,19 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
                     }
                 }
             }
-            else if (msg0 instanceof DownloadClassPathFailureMessage) {
-                DownloadClassPathFailureMessage msg = (DownloadClassPathFailureMessage)msg0;
-
-                if (active == null || !active.icp.id().equals(msg.icpId)) {
-                    if (log.isInfoEnabled()) {
-                        log.warning("A stale ClassPath failure message has been received. Will be ignored " +
-                            "[fromNodeId=" + nodeId + ", icpId=" + msg.icpId + "]: " + msg.err);
-                    }
-
-                    return;
-                }
+            else if (msg0 instanceof DownloadClassPathFailureMessage msg) {
 
                 String errMsg = "File download cancelled. ClassPath operation stopped on the remote node. Error: " + msg.err;
 
                 if (log.isDebugEnabled())
                     log.debug(errMsg);
 
-                active.res.onDone(new IgniteException(errMsg));
+                if (!cancel(active, new IgniteException(errMsg), t -> t.icp.id().equals(msg.icpId))) {
+                    if (log.isInfoEnabled()) {
+                        log.warning("A stale ClassPath failure message has been received. Will be ignored " +
+                            "[fromNodeId=" + nodeId + ", icpId=" + msg.icpId + "]: " + msg.err);
+                    }
+                }
             }
         }
         catch (Throwable e) {
