@@ -22,7 +22,6 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /** */
@@ -31,7 +30,7 @@ public class DistributedOperationContextAttributeRegistry {
     private static final DistributedOperationContextAttributeRegistry INSTANCE = new DistributedOperationContextAttributeRegistry();
 
     /** Attributes by their id. */
-    private final Map<Byte, OperationContextAttribute<? extends Message>> attributes = new ConcurrentHashMap<>();
+    private final Map<Byte, OperationContextAttribute<?>> attributes = new ConcurrentHashMap<>();
 
     /** */
     public static DistributedOperationContextAttributeRegistry instance() {
@@ -39,7 +38,7 @@ public class DistributedOperationContextAttributeRegistry {
     }
 
     /** */
-    public <T extends Message> void register(byte id, OperationContextAttribute<T> attr) {
+    public void register(byte id, OperationContextAttribute<?> attr) {
         assert id >= 0;
 
         if (attributes.size() == OperationContextAttribute.MAX_ATTR_CNT)
@@ -50,19 +49,19 @@ public class DistributedOperationContextAttributeRegistry {
     }
 
     /** @return Values for all registered operation context attributes. */
-    public @Nullable Map<Byte, Message> collectContext() {
-        Map<Byte, Message> res = null;
+    public @Nullable <T> Map<Byte, T> collectContext() {
+        Map<Byte, T> res = null;
 
-        for (Map.Entry<Byte, OperationContextAttribute<? extends Message>> e : attributes.entrySet()) {
-            OperationContextAttribute<? extends Message> attr = e.getValue();
+        for (Map.Entry<Byte, OperationContextAttribute<?>> e : attributes.entrySet()) {
+            OperationContextAttribute<?> attr = e.getValue();
 
-            Message curVal = OperationContext.get(attr);
+            Object curVal = OperationContext.get(attr);
 
             if (!Objects.equals(attr.initialValue(), curVal)) {
                 if (res == null)
                     res = new HashMap<>(attributes.size(), 1.0f);
 
-                res.put(e.getKey(), curVal);
+                res.put(e.getKey(), (T)curVal);
             }
         }
 
@@ -70,13 +69,13 @@ public class DistributedOperationContextAttributeRegistry {
     }
 
     /** */
-    public Scope restoreContext(Map<Byte, Message> res) {
+    public <T> Scope restoreContext(Map<Byte, T> res) {
         if (F.isEmpty(res))
             return Scope.NOOP_SCOPE;
 
         OperationContext.ContextUpdater updater = OperationContext.ContextUpdater.create();
 
-        res.forEach((id, attr) -> updater.set((OperationContextAttribute<Message>)attributes.get(id), attr));
+        res.forEach((id, attr) -> updater.set((OperationContextAttribute<T>)attributes.get(id), attr));
 
         return updater.apply();
     }
