@@ -59,7 +59,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     protected static final int DHT_ATOMIC_READ_REPAIR_RECOVERY_FLAG_MASK = 0x80;
 
     /** */
-    protected static final int DHT_ATOMIC_UNWRAP_VALUE_FLAG_MASK = 0x100;
+    protected static final int DHT_ATOMIC_UNWRAP_VALUE_ON_INTERCEPTOR_FLAG_MASK = 0x100;
 
     /** Message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
@@ -138,7 +138,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
         if (readRepairRecovery)
             setFlag(true, DHT_ATOMIC_READ_REPAIR_RECOVERY_FLAG_MASK);
         if (unwrapVal)
-            setFlag(true, DHT_ATOMIC_UNWRAP_VALUE_FLAG_MASK);
+            setFlag(true, DHT_ATOMIC_UNWRAP_VALUE_ON_INTERCEPTOR_FLAG_MASK);
     }
 
     /** {@inheritDoc} */
@@ -206,7 +206,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
 
     /** */
     public final boolean unwrapValue() {
-        return isFlag(DHT_ATOMIC_UNWRAP_VALUE_FLAG_MASK);
+        return isFlag(DHT_ATOMIC_UNWRAP_VALUE_ON_INTERCEPTOR_FLAG_MASK);
     }
 
     /**
