@@ -22,19 +22,13 @@ import java.util.List;
 import java.util.Objects;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.SupplierX;
-import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-
-import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
-import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 
 /**
  * Test "keep binary" in cache queries.
@@ -164,80 +158,48 @@ public class KeepBinaryIntegrationTest extends AbstractBasicIntegrationTransacti
 
     /** */
     @Test
-    public void testSimpleInsert() {
-        IgniteCache<Object, Object> cache = null;
+    public void testDmlWithCompositePk() {
+        IgniteCache<Object, Object> cache = client.createCache(cacheConfiguration().setName("testInsert"));
 
-        try {
-            cache = client.createCache("testInsert");
+        if (sqlTxMode != SqlTransactionMode.NONE && tx == null)
+            startTransaction(client);
 
-            runQuery(0, nodeCount() * 10, false, cache);
+        SupplierX<?> checker = () -> {
+            runQuery(0, nodeCount() * 10, cache);
 
-            cache = cache.withKeepBinary();
+            IgniteCache<Object, Object> cacheBin = cache.withKeepBinary();
 
-            runQuery(nodeCount() * 10, 2 * nodeCount() * 10, false, cache);
+            runQuery(nodeCount() * 10, 2 * nodeCount() * 10, cacheBin);
 
-            List<List<?>> res = cache.query(new SqlFieldsQuery("SELECT * FROM emp")).getAll();
+            List<List<?>> res = cacheBin.query(new SqlFieldsQuery("SELECT * FROM emp")).getAll();
 
             assertEquals("Unexpected result set size: " + res.size(), 1, res.size());
-        }
-        finally {
-            if (cache != null)
-                cache.destroy();
 
-            sql("DROP TABLE IF EXISTS emp");
-        }
+            return null;
+        };
+
+        if (sqlTxMode == SqlTransactionMode.NONE)
+            checker.get();
+        else
+            txAction(client, checker);
     }
 
     /** */
-    @Test
-    public void testTxInsert() {
-        IgniteCache<?, ?> cache = null;
-
-        try {
-            CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>("testInsert");
-            ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-
-            cache = client.createCache(ccfg);
-
-            runQuery(0, nodeCount() * 10, true, cache);
-
-            cache = cache.withKeepBinary();
-
-            runQuery(nodeCount() * 10, 2 * nodeCount() * 10, true, cache);
-
-            List<List<?>> res = cache.query(new SqlFieldsQuery("SELECT * FROM emp")).getAll();
-
-            assertEquals("Unexpected result set size: " + res.size(), 1, res.size());
-        }
-        finally {
-            if (cache != null)
-                cache.destroy();
-
-            sql("DROP TABLE IF EXISTS emp");
-        }
-    }
-
-    /** */
-    private void runQuery(int begin, int end, boolean transactional, IgniteCache<?, ?> cache) {
+    private void runQuery(int begin, int end, IgniteCache<?, ?> cache) {
         cache.query(new SqlFieldsQuery("CREATE TABLE IF NOT EXISTS emp(empid INTEGER, deptid INTEGER, name VARCHAR, salary INTEGER, " +
-                "PRIMARY KEY(empid, deptid)) WITH \"AFFINITY_KEY=deptid" + (transactional ? ", ATOMICITY=transactional" : "") + "\""))
+                "PRIMARY KEY(empid, deptid)) WITH \"AFFINITY_KEY=deptid," + atomicity() + "\""))
             .getAll();
 
-        try (Transaction tx = transactional ? client.transactions().txStart(PESSIMISTIC, READ_COMMITTED) : null) {
-            for (int i = begin; i < end; i++) {
-                cache.query(new SqlFieldsQuery("INSERT INTO emp (empid, deptid, name, salary) VALUES (?, ?, ?, ?)").setArgs(
-                    i, i % 2, "Employee " + i, i)).getAll();
+        for (int i = begin; i < end; i++) {
+            cache.query(new SqlFieldsQuery("INSERT INTO emp (empid, deptid, name, salary) VALUES (?, ?, ?, ?)").setArgs(
+                i, i % 2, "Employee " + i, i)).getAll();
 
-                cache.query(new SqlFieldsQuery("UPDATE emp SET name = '' WHERE empid = ? AND deptid = ?").setArgs(i, i % 2)).getAll();
-                cache.query(new SqlFieldsQuery("DELETE FROM emp WHERE empid = ?").setArgs(i - 1)).getAll();
+            cache.query(new SqlFieldsQuery("UPDATE emp SET name = '' WHERE empid = ? AND deptid = ?").setArgs(i, i % 2)).getAll();
+            cache.query(new SqlFieldsQuery("DELETE FROM emp WHERE empid = ?").setArgs(i - 1)).getAll();
 
-                cache.query(new SqlFieldsQuery(
-                    "MERGE INTO emp dst USING table(system_range(1, 1000)) src ON dst.salary = src.x " +
-                        "WHEN MATCHED THEN UPDATE SET dst.salary = src.x")).getAll();
-            }
-
-            if (tx != null)
-                tx.commit();
+            cache.query(new SqlFieldsQuery(
+                "MERGE INTO emp dst USING table(system_range(1, 1000)) src ON dst.salary = src.x " +
+                    "WHEN MATCHED THEN UPDATE SET dst.salary = src.x")).getAll();
         }
     }
 
