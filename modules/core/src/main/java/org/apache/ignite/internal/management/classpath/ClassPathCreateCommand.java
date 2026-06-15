@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.classpath;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -27,6 +28,7 @@ import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.classpath.IgniteClassPath;
 import org.apache.ignite.internal.client.thin.TcpIgniteClient;
 import org.apache.ignite.internal.management.api.CommandUtils;
@@ -58,21 +60,53 @@ public class ClassPathCreateCommand implements NativeCommand<ClassPathCreateComm
         ClassPathCreateCommandArg arg,
         Consumer<String> printer
     ) throws Exception {
-        if (client != null) {
-            create(client, arg, printer);
+        if (client == null && !(ignite instanceof IgniteEx))
+            throw new IllegalStateException("Client or IgniteEx required");
 
-            return null;
+        List<Path> files = prepareFiles(arg);
+
+        ClusterNode uploadNode = uploadNode(client, ignite);
+
+        printer.accept("Upload node: " + uploadNode.id());
+
+        UUID icpID = CommandUtils.execute(client, ignite, ClassPathStartCreationTask.class, arg, Collections.singletonList(uploadNode));
+
+        printer.accept("New classpath created [uploadNode=" + uploadNode.id() + ", name=" + arg.name + ", id=" + icpID.toString() + ']');
+
+        uploadFiles(client, ignite, printer, files, uploadNode, icpID);
+
+        CommandUtils.execute(client, ignite, ClassPathDistributeTask.class, icpID, Collections.singletonList(uploadNode));
+
+        return null;
+    }
+
+    private static void uploadFiles(
+        @Nullable IgniteClient client,
+        @Nullable Ignite ignite,
+        Consumer<String> printer,
+        List<Path> files,
+        ClusterNode uploadNode,
+        UUID icpId
+    ) throws IOException {
+        printer.accept("Starting to upload files:");
+
+        // TODO: add pretty print here.
+        for (Path file : files) {
+            printer.accept(String.valueOf(file.toAbsolutePath()));
+            if (client != null)
+                ((TcpIgniteClient)client).uploadClasspathFile(uploadNode, icpId, file);
+            else {
+                ((IgniteEx)ignite).context().classPath().copyClassPathFileLocally(icpId, file);
+            }
+            printer.accept("DONE");
         }
-
-        throw new UnsupportedOperationException("Creating with the Ignite instance not supported at a time.");
     }
 
     /** */
-    private void create(@Nullable IgniteClient client, ClassPathCreateCommandArg arg, Consumer<String> printer) throws Exception {
-        TcpIgniteClient cli = (TcpIgniteClient)client;
-
+    private static List<Path> prepareFiles(ClassPathCreateCommandArg arg) throws IOException {
         List<Path> files = new ArrayList<>(arg.files.length);
-        long[] lengths = new long[arg.files.length];
+
+        arg.lengths = new long[arg.files.length];
 
         for (int i = 0; i < arg.files.length; i++) {
             A.notEmpty(arg.files[i], "File name");
@@ -84,51 +118,27 @@ public class ClassPathCreateCommand implements NativeCommand<ClassPathCreateComm
 
             files.add(f);
 
-            lengths[i] = Files.size(f);
+            arg.lengths[i] = Files.size(f);
+
+            // Don't want to send full path to server nodes.
+            // Server nodes require files names, only.
+            arg.files[i] = f.getFileName().toString();
         }
 
-        arg.lengths = lengths;
-        // We don't want to send full path to server nodes.
-        // Server nodes require files names, only.
-        arg.files = fileNames(files);
-        // TODO: add CRC or other check of file integrity.
-
-        ClusterNode uploadNode = uploadNode(cli);
-
-        printer.accept("Upload node: " + uploadNode.id());
-
-        UUID icpID = CommandUtils.execute(client, null, ClassPathStartCreationTask.class, arg, Collections.singletonList(uploadNode));
-
-        printer.accept("New classpath created [uploadNode=" + uploadNode.id() + ", name=" + arg.name + ", id=" + icpID.toString() + ']');
-        printer.accept("Starting to upload files:");
-
-        // TODO: add pretty print here.
-        for (Path file : files) {
-            printer.accept(String.valueOf(file.toAbsolutePath()));
-            cli.uploadClasspathFile(uploadNode, icpID, file);
-            printer.accept("DONE");
-        }
-
-        CommandUtils.execute(client, null, ClassPathDistributeTask.class, icpID, Collections.singletonList(uploadNode));
+        return files;
     }
 
     /** */
-    private static ClusterNode uploadNode(TcpIgniteClient client) {
-        List<UUID> nodes = client.connectedToNodes();
+    private static ClusterNode uploadNode(IgniteClient client, Ignite ignite) {
+        if (client != null) {
+            List<UUID> nodes = ((TcpIgniteClient)client).connectedToNodes();
 
-        if (F.isEmpty(nodes))
-            throw new IllegalStateException("Not connected to node");
+            if (F.isEmpty(nodes))
+                throw new IllegalStateException("Not connected to node");
 
-        return client.cluster().node(F.first(nodes));
-    }
+            return client.cluster().node(F.first(nodes));
+        }
 
-    /** */
-    private static String[] fileNames(List<Path> files) {
-        String[] fileNames = new String[files.size()];
-
-        for (int i = 0; i < fileNames.length; i++)
-            fileNames[i] = files.get(i).getFileName().toString();
-
-        return fileNames;
+        return ignite.cluster().localNode();
     }
 }

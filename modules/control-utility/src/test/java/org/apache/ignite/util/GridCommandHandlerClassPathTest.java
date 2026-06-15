@@ -47,31 +47,36 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
         super.beforeTestsStarted();
     }
 
+    // TODO: add test that classpath can be created only with ADMIN_OPS privelege.
+    // TODO: add CRC or other check of file integrity.
     // TODO check empty file creation.
     // TODO add in production code checks of files integriy. Perform file integrity check on startup.
-    // Support JXM handler.
     // Support pretty print for command.
     // Test for different failure types: node fail, file write fail, etc.
     // Concurrent creation of CP with the same name.
+    // Just create CP with the same name after first creation.
 
     /** Tests --create command. */
     @Test
-    public void testCreate() {
-        //grid(0).cluster().state(ClusterState.ACTIVE);
+    public void testCreate() throws IOException {
+        File emptyFile = File.createTempFile("empty", ".txt");
 
-        Set<Path> jars = jars(
-                Path.of(getClass().getClassLoader().getResource(".").getPath() + "../"),
-                Path.of(getClass().getClassLoader().getResource(".").getPath() + "../../../core/target")
+        emptyFile.deleteOnExit();
+
+        Set<Path> cpFiles = files(
+            Path.of(getClass().getClassLoader().getResource(".").getPath() + "../"),
+            Path.of(getClass().getClassLoader().getResource(".").getPath() + "../../../core/target"),
+            emptyFile.toPath()
         );
 
         injectTestSystemOut();
 
         final TestCommandHandler hnd = newCommandHandler(createTestLogger());
 
-        String cpName = "mysuperapp";
+        String cpName = "mysuperapp_" + commandHandler;
 
         try {
-            String files = jars.stream().map(Path::toFile).map(File::getAbsolutePath).collect(Collectors.joining(","));
+            String files = cpFiles.stream().map(Path::toFile).map(File::getAbsolutePath).collect(Collectors.joining(","));
 
             assertEquals(EXIT_CODE_OK, execute(hnd, "--class-path", "create", "--name", cpName, "--files", files));
         }
@@ -81,12 +86,12 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
             System.out.println(outStr);
         }
 
-        Set<String> cpFilesNames = fileNames(jars);
+        Set<String> cpFilesNames = fileNames(cpFiles);
 
         for (int i = 0; i < GRID_CNT; i++) {
             NodeFileTree ft = grid(i).context().pdsFolderResolver().fileTree();
 
-            assertEquals("Files must be deployed on each node", cpFilesNames, fileNames(jars(ft.classPathRoot(cpName).toPath())));
+            assertEquals("Files must be deployed on each node", cpFilesNames, fileNames(files(ft.classPathRoot(cpName).toPath())));
         }
     }
 
@@ -132,10 +137,12 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
     }
 
     /** */
-    private Set<Path> jars(Path... dirs) {
-        return Stream.of(dirs).flatMap(dir -> {
+    private Set<Path> files(Path... paths) {
+        return Stream.of(paths).flatMap(path -> {
             try {
-                return Files.list(dir).filter(p -> p.getFileName().toString().endsWith("jar"));
+                return Files.isDirectory(path)
+                    ? Files.list(path).filter(p -> p.getFileName().toString().endsWith("jar") || p.getFileName().toString().endsWith("txt"))
+                    : Stream.of(path);
             }
             catch (IOException e) {
                 throw new RuntimeException(e);

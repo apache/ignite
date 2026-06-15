@@ -666,7 +666,9 @@ public class TcpIgniteClient implements IgniteClient {
                     in -> null
                 );
 
-                offset[0] += bytesCnt[0];
+                if (bytesCnt[0] > 0)
+                    offset[0] += bytesCnt[0];
+
                 bytesCnt[0] = fis.read(batch);
             }
             while (bytesCnt[0] > 0);

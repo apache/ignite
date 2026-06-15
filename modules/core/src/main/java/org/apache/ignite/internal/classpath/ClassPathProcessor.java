@@ -20,6 +20,8 @@ package org.apache.ignite.internal.classpath;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -27,6 +29,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -89,26 +92,33 @@ public class ClassPathProcessor extends GridProcessorAdapter {
 
         IgniteClassPath icp = new IgniteClassPath(UUID.randomUUID(), name, files, lengths, NEW);
 
-        NodeFileTree ft = ctx.pdsFolderResolver().fileTree();
-
-        File root = ft.classPathRoot(name);
+        Boolean metastorageWritten;
 
         try {
-            casToMetastorage(null, icp);
+            metastorageWritten = casToMetastorageAsync(null, icp).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
 
+        if (metastorageWritten != null && !metastorageWritten)
+            throw new IgniteException("Fail to register ClassPath. Same ClassPath exists, already?");
+
+        File root = ctx.pdsFolderResolver().fileTree().classPathRoot(name);
+
+        try {
             NodeFileTree.mkdir(root, "Ignite Class Path root: " + name);
         }
         catch (Exception e) {
             try {
-                ctx.distributedMetastorage().remove(metastorageKey(icp));
+                if (metastorageWritten != null && metastorageWritten)
+                    ctx.distributedMetastorage().remove(metastorageKey(icp));
 
                 U.delete(root);
             }
             catch (IgniteCheckedException ex) {
                 log.error("Cleanup after IgniteClassPath creation failed [key=" + metastorageKey(icp) + ", root=" + root + ']', e);
             }
-
-            throw e;
         }
 
         log.info("New classpath created [root = " + root + ", icp=" + icp + ']');
@@ -163,6 +173,28 @@ public class ClassPathProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Copies local file to class path directory.
+     *
+     * @param icpId ClassPath id.
+     * @param file File to copy.
+     */
+    public void copyClassPathFileLocally(UUID icpId, Path file) throws IOException {
+        IgniteClassPath icp = fromMetastorage(icpId, NEW, ctx);
+
+        Path f = new File(ctx.pdsFolderResolver().fileTree().classPathRoot(icp.name()), file.getFileName().toString()).toPath();
+
+        log.info("Copying new classpath file: " + f);
+
+        if (Files.exists(f) && Files.isSameFile(file, f)) {
+            log.info("Skip copying new classpath file, already there: " + f);
+
+            return;
+        }
+
+        Files.copy(file, f);
+    }
+
+    /**
      * Deploy {@link IgniteClassPath} to all nodes.
      * @param icpId ClassPath id.
      * @return Future for process result.
@@ -171,16 +203,33 @@ public class ClassPathProcessor extends GridProcessorAdapter {
         return deployToAllProc.start(icpId);
     }
 
-    /** */
-    void casToMetastorage(@Nullable IgniteClassPath prev, IgniteClassPath icp) {
+    /**
+     *
+     */
+    GridFutureAdapter<Boolean> casToMetastorageAsync(@Nullable IgniteClassPath prev, IgniteClassPath icp) {
         try {
             String key = metastorageKey(icp);
 
-            if (!ctx.distributedMetastorage().compareAndSet(key, prev, icp)) {
-                IgniteClassPath val = ctx.distributedMetastorage().read(key);
+            if (log.isDebugEnabled())
+                log.debug("Writing new ClassPath state [new=" + icp + ", prev=" + prev + ']');
 
-                throw new IgniteException("Fail to write new ClassPath state[exp=" + icp + ", actual=" + val + ", new=" + icp);
-            }
+            GridFutureAdapter<Boolean> res = ctx.distributedMetastorage().compareAndSetAsync(key, prev, icp);
+
+            res.listen(casFut -> {
+                if (casFut.error() == null)
+                    return;
+
+                try {
+                    Object val = ctx.distributedMetastorage().read(key);
+
+                    log.warning("Fail to write new ClassPath state [exp=" + prev + ", actual=" + val + ']');
+                }
+                catch (IgniteCheckedException e) {
+                    log.warning("Can't read metastore key", e);
+                }
+            });
+
+            return res;
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);

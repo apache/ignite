@@ -126,17 +126,24 @@ class DeployToAllProcess {
             return;
         }
 
-        IgniteClassPath icp = fromMetastorage(id, NEW, ctx);
+        try {
+            IgniteClassPath icp = fromMetastorage(id, NEW, ctx);
 
-        if (!fut.onDone("OK")) {
-            log.warning("Distribute process in wrong state " +
-                "[canceled=" + fut.isCancelled() + ", failed=" + fut.isFailed() + ", done=" + fut.isDone() + ']');
+            if (log.isDebugEnabled())
+                log.debug("Starting CAS to metastorage: " + icp);
 
-            return;
+            // Perform CAS async to release discovery thread and let CAS proceed.
+            ctx.classPath().casToMetastorageAsync(icp, icp.newState(IgniteClassPathState.READY)).listen(casFut -> {
+                log.info("Deploy to all DONE!");
+
+                if (!fut.onDone(casFut.error() == null ? "OK" : null, casFut.error())) {
+                    log.warning("Distribute process in wrong state " +
+                        "[canceled=" + fut.isCancelled() + ", failed=" + fut.isFailed() + ", done=" + fut.isDone() + ']');
+                }
+            });
         }
-
-        ctx.classPath().casToMetastorage(icp, icp.newState(IgniteClassPathState.READY));
-
-        log.info("Deploy to all DONE!");
+        catch (Exception e) {
+            fut.onDone(e);
+        }
     }
 }
