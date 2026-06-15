@@ -212,6 +212,25 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
                     }
                 }
             }
+            else if (msg0 instanceof DownloadClassPathFailureMessage) {
+                DownloadClassPathFailureMessage msg = (DownloadClassPathFailureMessage)msg0;
+
+                if (active == null || !active.icp.id().equals(msg.icpId)) {
+                    if (log.isInfoEnabled()) {
+                        log.warning("A stale ClassPath failure message has been received. Will be ignored " +
+                            "[fromNodeId=" + nodeId + ", icpId=" + msg.icpId + "]: " + msg.err);
+                    }
+
+                    return;
+                }
+
+                String errMsg = "File download cancelled. ClassPath operation stopped on the remote node. Error: " + msg.err;
+
+                if (log.isDebugEnabled())
+                    log.debug(errMsg);
+
+                active.res.onDone(new IgniteException(errMsg));
+            }
         }
         catch (Throwable e) {
             U.error(log, "Processing snapshot request from remote node fails with an error", e);

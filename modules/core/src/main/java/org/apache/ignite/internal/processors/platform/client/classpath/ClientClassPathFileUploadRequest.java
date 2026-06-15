@@ -17,16 +17,20 @@
 
 package org.apache.ignite.internal.processors.platform.client.classpath;
 
-import java.io.IOException;
 import java.util.UUID;
 import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.internal.classpath.IgniteClassPath;
 import org.apache.ignite.internal.processors.odbc.ClientListenerInternalRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
- * TODO: only for admin client!
+ * Must be used only from control.sh command.
+ * Writes part of {@link IgniteClassPath} file.
+ *
+ * @see ClientListenerInternalRequest
+ * @see IgniteClassPath
  */
 public class ClientClassPathFileUploadRequest extends ClientRequest implements ClientListenerInternalRequest {
     /** Upload node ID. */
@@ -66,13 +70,8 @@ public class ClientClassPathFileUploadRequest extends ClientRequest implements C
         if (!uploadNodeId.equals(locNodeId))
             throw new IllegalStateException("Wrong node [uploadNode=" + uploadNodeId + ", localNode=" + locNodeId + ']');
 
-        try {
-            ctx.kernalContext().classPath().writeFilePartFromClient(icpId, name, offset, batch);
+        ctx.kernalContext().classPath().writeFilePartFromClient(icpId, name, offset, batch);
 
-            return new ClientResponse(requestId());
-        }
-        catch (IOException e) {
-            return new ClientResponse(requestId(), e.getMessage());
-        }
+        return new ClientResponse(requestId());
     }
 }

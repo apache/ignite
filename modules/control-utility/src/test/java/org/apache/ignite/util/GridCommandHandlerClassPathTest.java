@@ -104,15 +104,6 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
         }
     }
 
-    /** */
-    private void checkFilesExists(Set<String> cpFilesNames, String cpName) {
-        for (int i = 0; i < GRID_CNT; i++) {
-            NodeFileTree ft = grid(i).context().pdsFolderResolver().fileTree();
-
-            assertEquals("Files must be deployed on each node", cpFilesNames, fileNames(files(ft.classPathRoot(cpName).toPath())));
-        }
-    }
-
     /** Tests --create command arguments format. */
     @Test
     public void testEmptyFilesArgument() {
@@ -166,6 +157,15 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
                 throw new RuntimeException(e);
             }
         }).map(Path::toAbsolutePath).collect(Collectors.toSet());
+    }
+
+    /** */
+    private void checkFilesExists(Set<String> cpFilesNames, String cpName) {
+        for (int i = 0; i < GRID_CNT; i++) {
+            NodeFileTree ft = grid(i).context().pdsFolderResolver().fileTree();
+
+            assertEquals("Files must be deployed on each node", cpFilesNames, fileNames(files(ft.classPathRoot(cpName).toPath())));
+        }
     }
 
     /** */

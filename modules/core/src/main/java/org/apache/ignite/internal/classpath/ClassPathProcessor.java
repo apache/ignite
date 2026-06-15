@@ -87,8 +87,10 @@ public class ClassPathProcessor extends GridProcessorAdapter {
     public UUID startCreation(String name, String[] files, long[] lengths) {
         assert files.length == lengths.length : "wrong arrays lengths";
 
-        // TODO: allow dot here.
         A.ensure(U.alphanumericUnderscore(name), "Classpath name must satisfy the following name pattern: a-zA-Z0-9_");
+
+        for (String file : files)
+            ensureFilename(file);
 
         IgniteClassPath icp = new IgniteClassPath(UUID.randomUUID(), name, files, lengths, NEW);
 
@@ -136,21 +138,24 @@ public class ClassPathProcessor extends GridProcessorAdapter {
      * @param offset Offset to write data to.
      * @param batch Batch.
      */
-    public void writeFilePartFromClient(
+    public synchronized void writeFilePartFromClient(
         UUID icpId,
         String name,
         long offset,
         byte[] batch
-    ) throws IOException {
+    ) {
         try {
             IgniteClassPath icp = fromMetastorage(icpId, NEW, ctx);
 
-            if (F.indexOf(icp.files(), name) == -1)
-                throw new IllegalArgumentException("Unknown lib [icp=" + icp.name() + ", unknown_lib=" + name + ']');
+            ensureKnownFilename(name, icp);
 
-            File f = new File(ctx.pdsFolderResolver().fileTree().classPathRoot(icp.name()), name);
+            File root = ctx.pdsFolderResolver().fileTree().classPathRoot(icp.name());
+
+            File f = new File(root, name);
 
             if (offset == 0) {
+                A.ensure(root.equals(f.getParentFile()), "filename");
+
                 log.info("Creating new classpath file: " + f);
 
                 if (!f.createNewFile())
@@ -167,10 +172,10 @@ public class ClassPathProcessor extends GridProcessorAdapter {
                 raf.write(batch);
             }
         }
-        catch (Exception e) {
+        catch (IOException e) {
             log.error("Upload file part error :", e);
 
-            throw e;
+            throw new IgniteException(e);
         }
     }
 
@@ -183,7 +188,15 @@ public class ClassPathProcessor extends GridProcessorAdapter {
     public void copyClassPathFileLocally(UUID icpId, Path file) throws IOException {
         IgniteClassPath icp = fromMetastorage(icpId, NEW, ctx);
 
-        Path f = new File(ctx.pdsFolderResolver().fileTree().classPathRoot(icp.name()), file.getFileName().toString()).toPath();
+        String name = file.getFileName().toString();
+
+        ensureKnownFilename(name, icp);
+
+        File root = ctx.pdsFolderResolver().fileTree().classPathRoot(icp.name());
+
+        Path f = new File(root, name).toPath();
+
+        A.ensure(root.equals(f.toFile().getParentFile()), "filename");
 
         log.info("Copying new classpath file: " + f);
 
@@ -268,5 +281,20 @@ public class ClassPathProcessor extends GridProcessorAdapter {
     /** */
     private static String metastorageKey(IgniteClassPath icp) {
         return METASTORE_PREFIX + icp.name();
+    }
+
+    /** */
+    private static void ensureFilename(String file) {
+        Path path = Path.of(file);
+
+        A.ensure(path.getNameCount() == 1 && !path.isAbsolute(), "simple filename expected");
+    }
+
+    /** */
+    private static void ensureKnownFilename(String name, IgniteClassPath icp) {
+        ensureFilename(name);
+
+        if (F.indexOf(icp.files(), name) == -1)
+            throw new IllegalArgumentException("Unknown lib [icp=" + icp.name() + ", unknown_lib=" + name + ']');
     }
 }

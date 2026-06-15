@@ -116,8 +116,8 @@ public class ClassPathCreateCommand implements NativeCommand<ClassPathCreateComm
 
             Path f = Path.of(arg.files[i]);
 
-            if (!Files.exists(f))
-                throw new IllegalArgumentException("File not exists: " + f);
+            if (!Files.exists(f) || Files.isDirectory(f))
+                throw new IllegalArgumentException("File not exists or directory: " + f);
 
             files.add(f);
 
