@@ -262,7 +262,7 @@ public class IgniteFeatureSet implements Iterable<Integer>, Externalizable {
         for (; idx < featureIds.size(); idx++) {
             int nextFeatureId = featureIds.get(idx);
 
-            assert nextFeatureId != rangeEnd : "Duplication of Ignite Feature ID";
+            assert nextFeatureId != rangeEnd : "Duplication of Ignite Feature ID [duplicatedFeatureId=" + nextFeatureId + ']';
 
             if (nextFeatureId == rangeEnd + 1)
                 rangeEnd = nextFeatureId;
@@ -282,17 +282,18 @@ public class IgniteFeatureSet implements Iterable<Integer>, Externalizable {
         List<IgniteFeature> features = new ArrayList<>();
 
         for (Field field : cls.getFields()) {
-            if (Modifier.isStatic(field.getModifiers()) && field.getType().equals(IgniteFeature.class)) {
-                if (field.getName().endsWith("_FEATURE")) {
-                    try {
-                        IgniteFeature feature = (IgniteFeature)field.get(null);
+            if (Modifier.isStatic(field.getModifiers()) &&
+                field.getType().equals(IgniteFeature.class) &&
+                field.getName().endsWith("_FEATURE")
+            ) {
+                try {
+                    IgniteFeature feature = (IgniteFeature)field.get(null);
 
-                        features.add(feature);
-                    }
-                    catch (IllegalAccessException e) {
-                        throw new IgniteException(
-                            "Failed to parse specified file to class to collect feature definitions [cls=" + cls.getName() + ']', e);
-                    }
+                    features.add(feature);
+                }
+                catch (IllegalAccessException e) {
+                    throw new IgniteException(
+                        "Failed to parse specified class to collect feature definitions [cls=" + cls.getName() + ']', e);
                 }
             }
         }

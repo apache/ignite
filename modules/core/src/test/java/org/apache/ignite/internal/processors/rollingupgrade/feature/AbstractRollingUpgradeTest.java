@@ -39,7 +39,57 @@ import org.jspecify.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-/** */
+/**
+ * Provides the ability to override a node's version and supported {@link IgniteFeature}s in order to
+ * simulate a Rolling Upgrade procedure.
+ *
+ * <p>For testing purposes, the following "fake" Ignite versions and their corresponding
+ * {@link IgniteFeature}s have been introduced. These versions are used solely for testing and do not
+ * correspond to any actual Ignite releases.
+ *
+ * <table border="1">
+ *   <tr>
+ *     <th>Version</th>
+ *     <th>Features</th>
+ *   </tr>
+ *   <tr>
+ *     <td>2.18.0</td>
+ *     <td>not supported</td>
+ *   </tr>
+ *   <tr>
+ *     <td>2.19.0</td>
+ *     <td>{@code IgniteFeatureSet [0]}</td>
+ *   </tr>
+ *   <tr>
+ *     <td>2.19.1</td>
+ *     <td>{@code IgniteFeatureSet [0, 1]}</td>
+ *   </tr>
+ *   <tr>
+ *     <td>2.19.2</td>
+ *     <td>{@code IgniteFeatureSet [0 -> 2]}</td>
+ *   </tr>
+ *   <tr>
+ *     <td>2.19.3</td>
+ *     <td>{@code IgniteFeatureSet [0 -> 2, 6]}</td>
+ *   </tr>
+ *   <tr>
+ *     <td>2.20.0</td>
+ *     <td>{@code IgniteFeatureSet [0 -> 4]}</td>
+ *   </tr>
+ *   <tr>
+ *     <td>2.20.1</td>
+ *     <td>{@code IgniteFeatureSet [0 -> 4, 6]}</td>
+ *   </tr>
+ *   <tr>
+ *     <td>2.21.0</td>
+ *     <td>{@code IgniteFeatureSet [3 -> 6]}</td>
+ *   </tr>
+ *   <tr>
+ *     <td>2.21.1</td>
+ *     <td>{@code IgniteFeatureSet [3 -> 7]}</td>
+ *   </tr>
+ * </table>
+ */
 public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest {
     /** */
     protected static final String TEST_DEFAULT_VER = "2.19.0";

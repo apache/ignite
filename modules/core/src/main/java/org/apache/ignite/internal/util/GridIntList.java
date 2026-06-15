@@ -224,8 +224,8 @@ public class GridIntList implements Externalizable {
     }
 
     /**
-     * @param from the initial index of the range to be copied, inclusive.
-     * @param to the final index of the range to be copied, exclusive.
+     * @param from The initial index of the range to be copied, inclusive.
+     * @param to The final index of the range to be copied, exclusive.
      * @return a new {@link GridIntList} containing the specified range from the current {@link GridIntList}.
      */
     public GridIntList copyOfRange(int from, int to) {
