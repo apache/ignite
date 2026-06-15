@@ -363,13 +363,13 @@ public class MessageProcessorTest {
         for (String srcFile: srcFiles)
             input.add(javaFile(srcFile));
 
+        File igniteCommonsJar = jarForClass(CommonUtils.class);
+        File igniteBinaryApiJar = jarForClass(IgniteUuid.class);
         File igniteCoreJar = jarForClass(Message.class);
         File igniteCodegenJar = jarForClass(Order.class);
-        File igniteBinaryApiJar = jarForClass(IgniteUuid.class);
-        File igniteCommonsJar = jarForClass(CommonUtils.class);
 
         return Compiler.javac()
-            .withClasspath(F.asList(igniteCoreJar, igniteCodegenJar, igniteBinaryApiJar, igniteCommonsJar))
+            .withClasspath(F.asList(igniteCommonsJar, igniteBinaryApiJar, igniteCoreJar, igniteCodegenJar))
             .withProcessors(proc)
             .compile(input);
     }
