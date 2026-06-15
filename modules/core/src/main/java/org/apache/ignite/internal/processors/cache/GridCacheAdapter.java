@@ -466,62 +466,53 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public final GridCacheProxyImpl<K, V> setSkipStore(boolean skipStore) {
-        CacheOperationContext opCtx = new CacheOperationContext(
-            true,
-            false,
-            false,
-            null,
-            false,
-            null,
-            false,
-            null,
-            null,
-            false);
+    @Override public IgniteInternalCache<K, V> withSkipStore() {
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
+        if (opCtx == null)
+            opCtx = CacheOperationContext.builder().skipStore(true).build();
+        else {
+            if (!opCtx.skipStore())
+                opCtx = opCtx.withSkipStore();
+        }
 
         return new GridCacheProxyImpl<>(ctx, this, opCtx);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalCache<K, V> withSkipReadThrough() {
-        CacheOperationContext opCtx = this.ctx.operationContextPerCall();
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        if (opCtx == null) {
-            opCtx = new CacheOperationContext(
-                false,
-                true,
-                false,
-                null,
-                false,
-                null,
-                false,
-                null,
-                null,
-                false);
+        if (opCtx == null)
+            opCtx = CacheOperationContext.builder().skipReadThrough(true).build();
+        else {
+            if (!opCtx.skipReadThrough())
+                opCtx = opCtx.withSkipReadThrough();
         }
-        else
-            opCtx = opCtx.withSkipReadThrough();
 
-        return new GridCacheProxyImpl<>(this.ctx, this, opCtx);
+        return new GridCacheProxyImpl<>(ctx, this, opCtx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalCache<K, V> withKeepBinaryInInterceptor() {
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
+        if (opCtx == null)
+            opCtx = CacheOperationContext.builder().keepBinaryInInterceptor(true).build();
+        else {
+            if (!opCtx.keepBinaryInInterceptor())
+                opCtx = opCtx.withKeepBinaryInInterceptor();
+        }
+
+        return new GridCacheProxyImpl<>(ctx, this, opCtx);
     }
 
     /** @return New internal cache instance based on this one, but with application attributes. */
     @Override public GridCacheProxyImpl<K, V> withApplicationAttributes(Map<String, String> attrs) {
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        if (opCtx == null) {
-            opCtx = new CacheOperationContext(
-                false,
-                false,
-                false,
-                null,
-                false,
-                null,
-                false,
-                null,
-                new HashMap<>(attrs),
-                false);
-        }
+        if (opCtx == null)
+            opCtx = CacheOperationContext.builder().applicationAttributes(attrs).build();
         else
             opCtx = opCtx.withApplicationAttributes(attrs);
 
@@ -530,42 +521,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public final <K1, V1> GridCacheProxyImpl<K1, V1> keepBinary() {
-        CacheOperationContext opCtx = new CacheOperationContext(
-            false,
-            false,
-            true,
-            null,
-            false,
-            null,
-            false,
-            null,
-            null,
-            false);
+        CacheOperationContext opCtx = CacheOperationContext.builder().keepBinary(true).keepBinaryInInterceptor(false).build();
 
         return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx, (GridCacheAdapter<K1, V1>)this, opCtx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheProxyImpl<K, V> withKeepBinaryInInterceptor() {
-        CacheOperationContext opCtx = this.ctx.operationContextPerCall();
-
-        if (opCtx == null) {
-            opCtx = new CacheOperationContext(
-                false,
-                false,
-                false,
-                null,
-                false,
-                null,
-                false,
-                null,
-                null,
-                true);
-        }
-        else
-            opCtx = opCtx.withKeepBinaryInInterceptor();
-
-        return new GridCacheProxyImpl<>(this.ctx, this, opCtx);
     }
 
     /** {@inheritDoc} */
@@ -577,34 +535,21 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Override public final GridCacheProxyImpl<K, V> withExpiryPolicy(ExpiryPolicy plc) {
         assert !CU.isUtilityCache(ctx.name());
 
-        CacheOperationContext opCtx = new CacheOperationContext(
-            false,
-            false,
-            false,
-            plc,
-            false,
-            null,
-            false,
-            null,
-            null,
-            false);
+        CacheOperationContext opCtx = CacheOperationContext.builder().expiryPolicy(plc).build();
 
         return new GridCacheProxyImpl<>(ctx, this, opCtx);
     }
 
     /** {@inheritDoc} */
     @Override public final IgniteInternalCache<K, V> withNoRetries() {
-        CacheOperationContext opCtx = new CacheOperationContext(
-            false,
-            false,
-            false,
-            null,
-            true,
-            null,
-            false,
-            null,
-            null,
-            false);
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
+        if (opCtx == null)
+            opCtx = CacheOperationContext.builder().noRetries(true).build();
+        else {
+            if (!opCtx.noRetries())
+                opCtx = opCtx.withNoRetries();
+        }
 
         return new GridCacheProxyImpl<>(ctx, this, opCtx);
     }
@@ -4507,7 +4452,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             @Override public Boolean call() throws IgniteCheckedException {
                 CacheOperationContext prevOpCtx = ctx.operationContextPerCall();
 
-                ctx.operationContextPerCall(opCtx.keepBinary());
+                ctx.operationContextPerCall(opCtx.withKeepBinary());
 
                 try {
                     return invoke((K)key, new AtomicReadRepairEntryProcessor<>(correctedVal, primVer)).get();
