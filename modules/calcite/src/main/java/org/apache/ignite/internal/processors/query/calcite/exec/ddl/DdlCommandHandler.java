@@ -524,7 +524,7 @@ public class DdlCommandHandler {
             throw new IgniteSQLException(
                 "Duplicate ID [typeId=" + qryProc.objectContext().binaryContext().typeId(typeName) +
                 ", oldCls=" + duplicatedTypeName +
-                ", newCls=" + typeName + ']');
+                ", newCls=" + typeName + "], please retry with another type name.");
         }
     }
 
