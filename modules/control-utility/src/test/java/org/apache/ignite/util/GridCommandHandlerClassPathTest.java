@@ -170,6 +170,12 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
         assertTrue(waitForCondition(cpReadyLsnr::check, 30_000));
     }
 
+    /** Tests --create command. */
+    @Test
+    public void testFailToUploadFile() throws Exception {
+        // TODO: imitate file upload error and check it will stop ClassPath creation.
+    }
+
     /** Tests --create command arguments format. */
     @Test
     public void testEmptyFilesArgument() {
