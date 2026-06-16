@@ -30,6 +30,7 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProcessor.RollingUpgradeState;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.AbstractRollingUpgradeTest;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeature;
@@ -442,7 +443,7 @@ public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTes
         TestRollingUpgradeProcessor.nodeJoinUnblockedLatch = new CountDownLatch(1);
 
         try {
-            IgniteInternalFuture<IgniteEx> startFut = GridTestUtils.runAsync(() -> startGrid(3, "2.19.2", false));
+            IgniteInternalFuture<IgniteEx> startFut = GridTestUtils.runAsync(() -> startGrid(3, "2.19.2"));
 
             assertTrue(TestRollingUpgradeProcessor.nodeJoinValidationCompletedLatch.await(getTestTimeout(), MILLISECONDS));
 
@@ -475,6 +476,54 @@ public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTes
 
     /** */
     @Test
+    public void testCoordinatorChangeAfterVersionFinalizationFailedOnCoordinator() throws Exception {
+        startCluster();
+        startGrid(3, TEST_DEFAULT_VER);
+
+        ru(1).enableVersionUpgrade();
+
+        TestRollingUpgradeProcessor.nodeJoinValidationCompletedLatch = new CountDownLatch(1);
+        TestNodeValidationFailedEventListener.nodeValidationFailedEventUnblockedLatch = new CountDownLatch(1);
+
+        try {
+            IgniteConfiguration cfg = getConfiguration(4, "2.19.1")
+                .setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(false));
+
+            IgniteInternalFuture<IgniteEx> startFut = GridTestUtils.runAsync(() -> startGrid(cfg));
+
+            assertTrue(TestRollingUpgradeProcessor.nodeJoinValidationCompletedLatch.await(getTestTimeout(), MILLISECONDS));
+
+            IgniteInternalFuture<Object> finalizeFut = GridTestUtils.runAsync(() -> finalizeClusterVersion(1, TEST_DEFAULT_VER));
+
+            GridTestUtils.assertThrowsAnyCause(
+                log,
+                () -> finalizeFut.get(getTestTimeout(), MILLISECONDS),
+                IgniteCheckedException.class,
+                "Cluster version finalization failed. The topology contains nodes running multiple different versions"
+            );
+
+            TestNodeValidationFailedEventListener.nodeValidationFailedEventUnblockedLatch.countDown();
+
+            GridTestUtils.assertThrowsAnyCause(
+                log,
+                () -> startFut.get(getTestTimeout(), MILLISECONDS),
+                IgniteCheckedException.class,
+                "Local node's binary configuration is not equal to remote node's binary configuration"
+            );
+        }
+        finally {
+            TestNodeValidationFailedEventListener.nodeValidationFailedEventUnblockedLatch.countDown();
+        }
+
+        stopGrid(coordinatorIndex());
+
+        forAllNodes(n -> upgradeNodeVersion(n, "2.19.1"));
+
+        finalizeClusterVersion(1, "2.19.1");
+    }
+
+    /** */
+    @Test
     public void testFailedNodeDoesNotAffectFinalization() throws Exception {
         startCluster();
 
@@ -502,9 +551,9 @@ public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTes
 
     /** */
     private void startCluster(String ver) throws Exception {
-        startGrid(0, ver, false);
-        startGrid(1, ver, false);
-        startGrid(2, ver, true);
+        startGrid(0, ver);
+        startGrid(1, ver);
+        startClientGrid(2, ver);
     }
 
     /** */
@@ -539,8 +588,8 @@ public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTes
     private void checkJoinFailed(int nodeIdx, String ver, String msg) {
         int expClusterSize = clusterNode().cluster().nodes().size();
 
-        GridTestUtils.assertThrowsAnyCause(log, () -> startGrid(nodeIdx, ver, false), IgniteSpiException.class, msg);
-        GridTestUtils.assertThrowsAnyCause(log, () -> startGrid(nodeIdx, ver, true), IgniteSpiException.class, msg);
+        GridTestUtils.assertThrowsAnyCause(log, () -> startGrid(nodeIdx, ver ), IgniteSpiException.class, msg);
+        GridTestUtils.assertThrowsAnyCause(log, () -> startClientGrid(nodeIdx, ver), IgniteSpiException.class, msg);
 
         assertEquals(expClusterSize, clusterNode().cluster().nodes().size());
     }
@@ -674,13 +723,13 @@ public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTes
     }
 
     /** */
-    private void checkUpgradeFailed(int nodeIdx, String targetVer, String msg) throws Exception {
+    private void checkUpgradeFailed(int nodeIdx, String targetVer, String errMsg) throws Exception {
         String srcVer = grid(nodeIdx).context().discovery().localNode().version().semanticName();
         boolean isClient = grid(nodeIdx).context().clientNode();
 
         stopGrid(nodeIdx);
 
-        GridTestUtils.assertThrowsAnyCause(log, () -> startGrid(nodeIdx, targetVer, isClient), IgniteSpiException.class, msg);
+        GridTestUtils.assertThrowsAnyCause(log, () -> startGrid(nodeIdx, targetVer, isClient), IgniteSpiException.class, errMsg);
 
         startGrid(nodeIdx, srcVer, isClient);
     }
@@ -706,5 +755,17 @@ public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTes
     /** */
     private static RollingUpgradeProcessor ru(Ignite ignite) {
         return ((IgniteEx)ignite).context().rollingUpgrade();
+    }
+
+    /** */
+    private int coordinatorIndex() {
+        for (Ignite grid : IgnitionEx.allGridsx()) {
+            if (U.isLocalNodeCoordinator(((IgniteEx)grid).context().discovery()))
+                return getTestIgniteInstanceIndex(grid.name());
+        }
+
+        fail("Failed to resolve coordinator node");
+
+        return -1;
     }
 }

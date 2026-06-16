@@ -21,11 +21,15 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.managers.eventstorage.HighPriorityListener;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProcessor;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -38,6 +42,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jspecify.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.events.EventType.EVT_NODE_VALIDATION_FAILED;
 
 /**
  * Provides the ability to override a node's version and supported {@link IgniteFeature}s in order to
@@ -105,6 +110,7 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
 
         TestRollingUpgradeProcessor.nodeJoinValidationCompletedLatch = null;
         TestRollingUpgradeProcessor.nodeJoinUnblockedLatch = null;
+        TestNodeValidationFailedEventListener.nodeValidationFailedEventUnblockedLatch = null;
     }
 
     /** {@inheritDoc} */
@@ -157,11 +163,18 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
     }
 
     /** */
-    public IgniteEx startGrid(int idx, String ver, boolean isClient) throws Exception {
-        if (isClient)
-            return startClientGrid(getConfiguration(idx, ver));
-
+    protected IgniteEx startGrid(int idx, String ver) throws Exception {
         return startGrid(getConfiguration(idx, ver));
+    }
+
+    /** */
+    protected IgniteEx startClientGrid(int idx, String ver) throws Exception {
+        return startClientGrid(getConfiguration(idx, ver));
+    }
+
+    /** */
+    protected IgniteEx startGrid(int idx, String ver, boolean isClient) throws Exception {
+        return isClient ? startClientGrid(idx, ver) : startGrid(idx, ver);
     }
 
     /** */
@@ -183,6 +196,8 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
         /** */
         public TestRollingUpgradeProcessor(GridKernalContext ctx, IgniteProductFeatures testNodeVerFeatures) {
             super(ctx, () -> testNodeVerFeatures);
+
+            ctx.event().addLocalEventListener(new TestNodeValidationFailedEventListener(), EVT_NODE_VALIDATION_FAILED);
         }
 
         /** {@inheritDoc} */
@@ -192,9 +207,10 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
             if (res != null)
                 return res;
 
-            if (nodeJoinValidationCompletedLatch != null) {
+            if (nodeJoinValidationCompletedLatch != null)
                 nodeJoinValidationCompletedLatch.countDown();
 
+            if (nodeJoinUnblockedLatch != null) {
                 try {
                     assertTrue(nodeJoinUnblockedLatch.await(5_000, MILLISECONDS));
                 }
@@ -219,5 +235,31 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
     /** */
     protected void listenFeatureActivation(Ignite ignite, IgniteFeature feature, IgniteRunnable lsnr) {
         ((IgniteEx)ignite).context().rollingUpgrade().features().listenActivation(feature, lsnr);
+    }
+
+    /** */
+    protected static class TestNodeValidationFailedEventListener implements GridLocalEventListener, HighPriorityListener {
+        /** */
+        public static CountDownLatch nodeValidationFailedEventUnblockedLatch;
+
+        /** {@inheritDoc} */
+        @Override public void onEvent(Event evt) {
+            try {
+                if (nodeValidationFailedEventUnblockedLatch != null)
+                    assertTrue(nodeValidationFailedEventUnblockedLatch.await(5_000, MILLISECONDS));
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+
+                log.error(e.getMessage(), e);
+
+                throw new IgniteException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public int order() {
+            return 0;
+        }
     }
 }

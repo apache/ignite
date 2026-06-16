@@ -97,7 +97,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
         enableProc = new ClusterVersionUpgradeEnableProcess();
         finalizeProc = new ClusterVersionFinalizationProcess();
-        featureMgr = new IgniteFeatureManager(locVerFeaturesProv);
+        featureMgr = new IgniteFeatureManager(ctx, locVerFeaturesProv);
     }
 
     /** @return Whether nodes running a higher Ignite version are allowed to join the cluster. */
@@ -368,6 +368,9 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
         private final DistributedProcess<Message, Message> completePhase;
 
         /** */
+        private volatile boolean isInProgress;
+
+        /** */
         public ClusterVersionFinalizationProcess() {
             preparePhase = new DistributedProcess<>(
                 ctx,
@@ -393,13 +396,22 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
             return reqId;
         }
 
+        /** {@inheritDoc} */
+        @Override protected synchronized void finishProcess(UUID reqId, @Nullable Throwable err) {
+            isInProgress = false;
+
+            super.finishProcess(reqId, err);
+        }
+
         /** */
         private IgniteInternalFuture<Message> executePreparePhase(Message req) {
             synchronized (topGuard) {
-                if (isNodeFenceActive) {
+                if (isInProgress) {
                     return new GridFinishedFuture<>(new IgniteCheckedException(
                         "Cluster version finalization procedure is already in progress"));
                 }
+
+                isInProgress = true;
 
                 Set<IgniteProductVersion> distinctNodeVersions = distinctClusterProductVersions();
 
@@ -418,8 +430,11 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
         /** */
         private void finishPreparePhase(UUID reqId, Map<UUID, Message> responses, Map<UUID, Throwable> errors) {
-            if (!F.isEmpty(errors))
+            if (!F.isEmpty(errors)) {
+                isNodeFenceActive = false;
+
                 finishProcess(reqId, F.firstValue(errors));
+            }
             else if (U.isLocalNodeCoordinator(ctx.discovery()))
                 completePhase.start(reqId, null);
         }

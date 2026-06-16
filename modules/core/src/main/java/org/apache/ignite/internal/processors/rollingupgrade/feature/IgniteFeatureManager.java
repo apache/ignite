@@ -18,11 +18,15 @@
 package org.apache.ignite.internal.processors.rollingupgrade.feature;
 
 import java.util.function.Supplier;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.lang.IgniteRunnable;
 
 /** Maintains the set of active cluster {@link IgniteProductFeatures} used by Rolling Upgrade logic. */
 public class IgniteFeatureManager {
+    /** */
+    private final GridKernalContext ctx;
+
     /** */
     private final IgniteProductFeatures locVerFeatures;
 
@@ -33,7 +37,8 @@ public class IgniteFeatureManager {
     private volatile IgniteProductFeatures activeFeatures;
 
     /** */
-    public IgniteFeatureManager(Supplier<IgniteProductFeatures> locVerFeaturesProv) {
+    public IgniteFeatureManager(GridKernalContext ctx, Supplier<IgniteProductFeatures> locVerFeaturesProv) {
+        this.ctx = ctx;
         locVerFeatures = locVerFeaturesProv.get();
         locVerFeaturesActivationFut = new GridFutureAdapter<>();
     }
@@ -47,8 +52,10 @@ public class IgniteFeatureManager {
     public IgniteProductFeatures activeFeatures() {
         final IgniteProductFeatures finalActiveFeatures = activeFeatures;
 
-        if (finalActiveFeatures == null)
-            throw new IllegalStateException("Local node features are not yet initialized");
+        if (finalActiveFeatures == null) {
+            throw new IllegalStateException("Local node features are not yet initialized [locNodeId=" +
+                ctx.discovery().localNode().id() + ']');
+        }
 
         return finalActiveFeatures;
     }
@@ -57,8 +64,10 @@ public class IgniteFeatureManager {
     public boolean isActive(IgniteFeature feature) {
         final IgniteProductFeatures finalActiveFeatures = activeFeatures;
 
-        if (finalActiveFeatures == null)
-            throw new IllegalStateException("Local node features are not yet initialized");
+        if (finalActiveFeatures == null) {
+            throw new IllegalStateException("Local node features are not yet initialized [locNodeId=" +
+                ctx.discovery().localNode().id() + ']');
+        }
 
         return finalActiveFeatures.contains(feature);
     }
