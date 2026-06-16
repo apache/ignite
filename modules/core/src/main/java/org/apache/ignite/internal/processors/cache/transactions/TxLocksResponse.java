@@ -173,7 +173,12 @@ public class TxLocksResponse extends GridCacheMessage implements CacheMarshallab
             for (int i = 0; i < nearTxKeysArr.length; i++) {
                 IgniteTxKey txKey = nearTxKeysArr[i];
 
-                txLocks().put(txKey, locksArr[i]);
+                try {
+                    txLocks().put(txKey, locksArr[i]);
+                }
+                catch (IllegalStateException ignored) {
+                    // Skipping entries for missed cache.    
+                }
             }
 
             nearTxKeysArr = null;
