@@ -70,7 +70,7 @@ public class MdcCacheMetricsTest extends GridCommonAbstractTest {
     private static final String STRETCHED_CELL_ATTR_NAME = "DC_CELL_ATTR";
 
     /** */
-    private static final String ATTR_FOR_UNSAFE_ATTR_FILTER = "MDC_UNAWARE_ATTR" ;
+    private static final String ATTR_FOR_UNSAFE_ATTR_FILTER = "MDC_UNAWARE_ATTR";
 
     /** */
     private static final String[] STRETCHED_CELL_IDS = {"CELL_0", "CELL_1"};
@@ -189,7 +189,11 @@ public class MdcCacheMetricsTest extends GridCommonAbstractTest {
         return cacheCfg;
     }
 
-    /** */
+    /**
+     * Test verifies correctness of metric for cache configuration related to data distribution across DCs for dynamically started caches.
+     * Metric should take a {@code false} value if cache configuration doesn't guarantee presence of data copy in each DC
+     * and {@code true} otherwise.
+     */
     @Test
     public void testAffinityCfgMdcSafeMetricForDynamicCaches() throws Exception {
         useStaticCaches = false;
@@ -216,7 +220,11 @@ public class MdcCacheMetricsTest extends GridCommonAbstractTest {
         checkMdcReadyMetric();
     }
 
-    /** */
+    /**
+     * Test verifies correctness of metric for cache configuration related to data distribution across DCs for statically configured caches.
+     * Metric should take a {@code false} value if cache configuration doesn't guarantee presence of data copy in each DC
+     * and {@code true} otherwise.
+     */
     @Test
     public void testAffinityCfgMdcSafeMetricForStaticCaches() throws Exception {
         useStaticCaches = true;
@@ -230,7 +238,13 @@ public class MdcCacheMetricsTest extends GridCommonAbstractTest {
         checkMdcReadyMetric();
     }
 
-    /** */
+    /**
+     * Test verifies correctness of metric for partition copies distribution across DCs.
+     * Metric should take a {@code false} value if there is at least one partition which doesn't have copies in all DCs
+     * and {@code true} otherwise.
+     * <p/>
+     * This test considers in-memory caches only.
+     */
     @Test
     public void testPartitionDistributionMetricInMemoryCaches() throws Exception {
         persistenceEnabled = false;
@@ -273,7 +287,13 @@ public class MdcCacheMetricsTest extends GridCommonAbstractTest {
         assertFalse(cacheWithColocatedFilterDistributionSafeMetric.value());
     }
 
-    /** */
+    /**
+     * Test verifies correctness of metric for partition copies distribution across DCs.
+     * Metric should take a {@code false} value if there is at least one partition which doesn't have copies in all DCs
+     * and {@code true} otherwise.
+     * <p/>
+     * This test considers persistent caches only and takes into account changes of BaselineTopology.
+     */
     @Test
     public void testPartitionDistributionMetricPersistentCaches() throws Exception {
         persistenceEnabled = true;

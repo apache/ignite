@@ -277,7 +277,9 @@ public class BaselineTopology implements Serializable {
     }
 
     /**
-     * @return Number of unique datacenters present in the baseline or {@code -1} if unknown.
+     * Calculates number of datacenters presented in current baseline.
+     *
+     * @return Number of datacenters presented in the baseline or {@code -1} if unknown.
      */
     public int numberOfDatacenters() {
         if (nodeMap.values().iterator().next().get(ATTR_DATA_CENTER_ID) != null)
