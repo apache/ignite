@@ -18,6 +18,7 @@
 package org.apache.ignite.compatibility.ru;
 
 import java.io.File;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -37,9 +38,9 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -77,7 +78,9 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
     private final Map<String, String> addrs = new HashMap<>();
 
     /** */
-    public final TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
+    public IgniteRebalanceOnUpgradeTest() {
+        // Конструктор остается пустым, так как ipFinder инициализируется в методе configuration
+    }
 
     /** */
     @BeforeClass
@@ -113,15 +116,12 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
         try (IgniteClusterContainer cluster = new IgniteClusterContainer(SOURCE_COMMIT_HASH, NODE_IDS)) {
             cluster.start();
 
-            for (IgniteContainer container : cluster.containers()) {
-                // Явно используем IPv4 адреса
-                String ipv4Addr = "127.0.0.1:" + container.getMappedPort(47500);
-                addrs.put(container.nodeId(), ipv4Addr);
-            }
+            for (IgniteContainer container : cluster.containers())
+                addrs.put(container.nodeId(), container.discoveryAddress());
 
             System.out.println(">>> Addresses=" + addrs);
 
-            IgniteContainer node = cluster.firstNode();
+            IgniteContainer node = cluster.containers().get(0);
 
             node.activateCluster();
 
@@ -136,7 +136,7 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
                 cache.put(i, i);
 
             closeClient();
-
+            
             upgradeCluster(cluster);
 
             IgniteCache<Integer, Integer> targetCache = nodes.get(0).cache(CACHE_NAME);
@@ -168,17 +168,14 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
 
             waitForCondition(() -> NODE_IDS.size() == ignite.cluster().nodes().size(), DFLT_TEST_TIMEOUT);
 
-            // Обновляем адреса для новой ноды
-            addrs.put(container.nodeId(), "127.0.0.1:" + ((TcpDiscoveryNode)ignite.localNode()).discoveryPort());
+            addrs.put(container.nodeId(), ignite.cluster().localNode().addresses().stream().findFirst().orElseThrow());
 
             nodes.add(ignite);
-
-            System.out.println(">>> Upgrade -> addresses=" + addrs);
         }
     }
 
     /** */
-    private IgniteConfiguration configuration(String nodeId, String workDir, Collection<String> addrs) {
+    private IgniteConfiguration configuration(String nodeId, String workDir, Collection<String> addrs0) throws UnknownHostException {
         DataRegionConfiguration dataRegionCfg = new DataRegionConfiguration()
             .setName("testRegion")
             .setInitialSize(1024L * 1024 * 1024)
@@ -186,16 +183,27 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
             .setPersistenceEnabled(true);
 
         TcpDiscoverySpi discoverySpi = new TcpDiscoverySpi()
-            .setIpFinder(ipFinder.setAddresses(addrs))
+            .setIpFinder(new TcpDiscoveryVmIpFinder().setAddresses(addrs0))
             .setNetworkTimeout(10000)
             .setAckTimeout(5000)
-            .setJoinTimeout(10000);
+            .setJoinTimeout(10000)
+            // Установим локальный адрес для связи с контейнерами
+            .setLocalAddress("127.0.0.1")
+            // Установим порты для дисковери
+            .setLocalPort(47520)
+            .setLocalPortRange(20);
+
+        TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
+            //.setLocalAddress("127.0.0.1")
+            //.setLocalPort(47100)
+            //.setLocalPortRange(100);
 
         return new IgniteConfiguration()
             .setConsistentId(nodeId)
             .setWorkDirectory(workDir)
             .setDataStorageConfiguration(new DataStorageConfiguration().setDataRegionConfigurations(dataRegionCfg))
-            .setDiscoverySpi(discoverySpi);
+            .setDiscoverySpi(discoverySpi)
+            .setCommunicationSpi(commSpi);
     }
 
     /** */

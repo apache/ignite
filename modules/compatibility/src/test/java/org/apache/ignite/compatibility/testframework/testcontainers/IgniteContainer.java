@@ -25,7 +25,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.BindMode;
@@ -64,9 +66,6 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
     /** */
     private static final Pattern CLUSTER_STATE_PATTERN = Pattern.compile("Cluster state: (ACTIVE|INACTIVE)");
 
-    /** Default thin client port. */
-    private static final int THIN_CLIENT_PORT = 10800;
-
     /** Hostname. */
     private final String hostname;
 
@@ -97,10 +96,10 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
 
         withNetwork(net);
         withNetworkAliases(hostname);
-        withExposedPorts(THIN_CLIENT_PORT, 47100, 47500);
+        withExposedPorts(ClientConnectorConfiguration.DFLT_PORT, 47100, TcpDiscoverySpi.DFLT_PORT);
 
         waitingFor(Wait.forLogMessage(".*Node started.*", 1)
-            .withStartupTimeout(Duration.ofSeconds(60)));
+            .withStartupTimeout(Duration.ofSeconds(600)));
     }
 
     /** @return Node ID. */
@@ -136,13 +135,12 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
 
     /** @return Client address. */
     public String clientAddress() {
-        return getHost() + ":" + getMappedPort(THIN_CLIENT_PORT);
+        return getHost() + ":" + getMappedPort(ClientConnectorConfiguration.DFLT_PORT);
     }
 
     /** */
     public String discoveryAddress() {
-        // Возвращаем IPv4 адрес явно
-        return "127.0.0.1:" + getMappedPort(47500);
+        return getHost() + ":" + getMappedPort(TcpDiscoverySpi.DFLT_PORT);
     }
 
     /** */

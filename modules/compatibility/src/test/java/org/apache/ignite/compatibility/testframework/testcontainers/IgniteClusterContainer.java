@@ -61,9 +61,4 @@ public class IgniteClusterContainer implements Startable {
     public List<IgniteContainer> containers() {
         return containers;
     }
-
-    /** @return First started node in cluster. */
-    public IgniteContainer firstNode() {
-        return containers.get(0);
-    }
 }
