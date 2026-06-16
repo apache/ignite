@@ -90,7 +90,7 @@ public class PageMemoryNoStoreLeakTest extends GridCommonAbstractTest {
             try {
                 mem.start();
 
-                // Second initialization, introduces leak.
+                // Second initialization attempt.
                 mem.start();
             }
             finally {
