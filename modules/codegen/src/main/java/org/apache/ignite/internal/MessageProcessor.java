@@ -86,7 +86,8 @@ public class MessageProcessor extends AbstractProcessor {
     static final String[] SKIP_MESSAGES = {
         "org.apache.ignite.internal.processors.odbc.ClientMessage",
         COMPRESSED_MESSAGE_CLASS,
-        "org.apache.ignite.loadtests.communication.GridTestMessage"
+        "org.apache.ignite.loadtests.communication.GridTestMessage",
+        "org.apache.ignite.spi.communication.tcp.TestDelayMessage"
     };
 
     /** */
