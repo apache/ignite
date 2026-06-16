@@ -22,9 +22,6 @@
        xsi:schemaLocation="
        http://www.springframework.org/schema/beans
        http://www.springframework.org/schema/beans/spring-beans.xsd">
-    <!--
-        Alter configuration below as needed.
-    -->
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <property name="dataStorageConfiguration">
             <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
@@ -38,20 +35,34 @@
                 </property>
             </bean>
         </property>
-<!--        <property name="discoverySpi">-->
-<!--            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">-->
+        <property name="discoverySpi">
+            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
 <!--                <property name="localAddress" value="0.0.0.0"/>-->
-<!--                <property name="ipFinder">-->
-<!--                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">-->
-<!--                        <property name="addresses">-->
-<!--                            <list>-->
-<!--                                <value>127.0.0.1:47500</value>-->
-<!--                            </list>-->
-<!--                        </property>-->
-<!--                    </bean>-->
-<!--                </property>-->
-<!--            </bean>-->
-<!--        </property>-->
+                <property name="localPort" value="47500"/>
+                <property name="localPortRange" value="20"/>
+                <property name="ipFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
+                        <property name="addresses">
+                            <list>
+                                <value>node1:47500..47520</value>
+                                <value>node2:47500..47520</value>
+                                <value>node3:47500..47520</value>
+                                <value>0.0.0.0:47520..47540</value>
+                                <value>localhost:47520..47540</value>
+                                <value>host.docker.internal:47520..47540</value>
+                                <value>127.0.0.1:47520..47540</value>
+                            </list>
+                        </property>
+                    </bean>
+                </property>
+            </bean>
+        </property>
+        <property name="communicationSpi">
+            <bean class="org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi">
+                <property name="localPort" value="47100"/>
+                <property name="localPortRange" value="20"/>
+            </bean>
+        </property>
         <property name="pluginProviders">
             <bean class="org.apache.ignite.compatibility.testframework.plugins.TestCompatibilityPluginProvider"/>
         </property>
