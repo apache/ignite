@@ -25,8 +25,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.classpath.IgniteClassPath;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.classpath.ClassPathProcessor.METASTORE_PREFIX;
@@ -35,6 +38,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_IN
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Test for --classpath command.
@@ -43,13 +47,43 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
     /** */
     public static final int GRID_CNT = 3;
 
+    /** */
+    public static final int FAIL_NODE_IDX = 2;
+
+    /** */
+    private Set<Path> cpFiles;
+
+    /** */
+    private String filesArg;
+
+    /** */
+    private ListeningTestLogger lsnrLog;
+
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setGridLogger(lsnrLog);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        cpFiles = cpFiles();
+
+        filesArg = cpFiles.stream().map(Path::toFile).map(File::getAbsolutePath).collect(Collectors.joining(","));
+
         cleanPersistenceDir();
 
-        startGrids(GRID_CNT);
+        lsnrLog = new ListeningTestLogger(log);
 
-        super.beforeTestsStarted();
+        startGrids(GRID_CNT);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
     }
 
     // TODO: add test that classpath can be created only with ADMIN_OPS privelege.
@@ -64,44 +98,76 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
     /** Tests --create command. */
     @Test
     public void testCreate() throws Exception {
-        File emptyFile = File.createTempFile("empty", ".txt");
-
-        emptyFile.deleteOnExit();
-
-        Set<Path> cpFiles = files(
-            Path.of(getClass().getClassLoader().getResource(".").getPath() + "../"),
-            Path.of(getClass().getClassLoader().getResource(".").getPath() + "../../../core/target"),
-            emptyFile.toPath()
-        );
-
         injectTestSystemOut();
 
         final TestCommandHandler hnd = newCommandHandler(createTestLogger());
 
         String cpName = "mysuperapp_" + commandHandler;
-        String files = cpFiles.stream().map(Path::toFile).map(File::getAbsolutePath).collect(Collectors.joining(","));
 
-        assertEquals(EXIT_CODE_OK, execute(hnd, "--class-path", "create", "--name", cpName, "--files", files));
+        // Empty root doesn't affect ClassPath creation.
+        if (commandHandler.equals(JMX_CMD_HND))
+            assertTrue(grid(0).context().pdsFolderResolver().fileTree().classPathRoot(cpName).mkdirs());
+
+        LogListener cpReadyLsnr = readyLogListener(GRID_CNT);
+
+        lsnrLog.registerListener(cpReadyLsnr);
+
+        assertEquals(EXIT_CODE_OK, execute(hnd, "--class-path", "create", "--name", cpName, "--files", filesArg));
 
         IgniteClassPath icp = classPath(cpName);
 
         assertEquals(READY, icp.state());
 
-        Set<String> cpFilesNames = fileNames(cpFiles);
+        checkFilesExists(cpName, -1);
 
-        checkFilesExists(cpFilesNames, cpName);
+        assertTrue(waitForCondition(cpReadyLsnr::check, 30_000));
 
         try {
             // Attemp to create ClassPath with the same name must fail.
-            assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(hnd, "--class-path", "create", "--name", cpName, "--files", files));
+            assertEquals(
+                EXIT_CODE_UNEXPECTED_ERROR,
+                execute(hnd, "--class-path", "create", "--name", cpName, "--files", filesArg)
+            );
         }
         finally {
             assertTrue(testOut.toString().contains("Fail to register ClassPath. Same ClassPath exists, already?"));
 
             assertEquals("Metastorage state must not change", icp, classPath(cpName));
 
-            checkFilesExists(cpFilesNames, cpName);
+            checkFilesExists(cpName, -1);
         }
+    }
+
+    /** Tests --create command. */
+    @Test
+    public void testCreateWhenRootExists() throws Exception {
+        injectTestSystemOut();
+
+        String cpName = "mysuperapp_" + commandHandler;
+
+        final TestCommandHandler hnd = newCommandHandler(createTestLogger());
+
+        File cpRoot = grid(FAIL_NODE_IDX).context().pdsFolderResolver().fileTree().classPathRoot(cpName);
+
+        assertTrue(cpRoot.mkdirs());
+
+        File f = new File(cpRoot, ".must_fail_cp_creation");
+
+        assertTrue(f.createNewFile());
+
+        LogListener cpReadyLsnr = readyLogListener(GRID_CNT - 1);
+
+        lsnrLog.registerListener(cpReadyLsnr);
+
+        assertEquals(EXIT_CODE_OK, execute(hnd, "--class-path", "create", "--name", cpName, "--files", filesArg));
+
+        IgniteClassPath icp = classPath(cpName);
+
+        assertEquals(READY, icp.state());
+
+        checkFilesExists(cpName, FAIL_NODE_IDX);
+
+        assertTrue(waitForCondition(cpReadyLsnr::check, 30_000));
     }
 
     /** Tests --create command arguments format. */
@@ -135,8 +201,24 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
 
         assertContains(
             log,
-            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, "--class-path", "create", "--name", "mysuperapp", "--files", ""),
+            executeCommand(
+                EXIT_CODE_INVALID_ARGUMENTS,
+                "--class-path", "create", "--name", "mysuperapp", "--files", ""
+            ),
             cliCommandHandler() ? "File name must not be empty" : "Argument --files required"
+        );
+    }
+
+    /** */
+    private Set<Path> cpFiles() throws IOException {
+        File emptyFile = File.createTempFile("empty", ".txt");
+
+        emptyFile.deleteOnExit();
+
+        return files(
+            Path.of(getClass().getClassLoader().getResource(".").getPath() + "../"),
+            Path.of(getClass().getClassLoader().getResource(".").getPath() + "../../../core/target"),
+            emptyFile.toPath()
         );
     }
 
@@ -150,7 +232,8 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
         return Stream.of(paths).flatMap(path -> {
             try {
                 return Files.isDirectory(path)
-                    ? Files.list(path).filter(p -> p.getFileName().toString().endsWith("jar") || p.getFileName().toString().endsWith("txt"))
+                    ? Files.list(path).filter(p -> p.getFileName().toString().endsWith("jar")
+                        || p.getFileName().toString().endsWith("txt"))
                     : Stream.of(path);
             }
             catch (IOException e) {
@@ -160,16 +243,31 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
     }
 
     /** */
-    private void checkFilesExists(Set<String> cpFilesNames, String cpName) {
+    private void checkFilesExists(String cpName, int skip) {
         for (int i = 0; i < GRID_CNT; i++) {
+            if (skip == i)
+                continue;
+
             NodeFileTree ft = grid(i).context().pdsFolderResolver().fileTree();
 
-            assertEquals("Files must be deployed on each node", cpFilesNames, fileNames(files(ft.classPathRoot(cpName).toPath())));
+            assertEquals(
+                "Files must be deployed on each node",
+                fileNames(cpFiles),
+                fileNames(files(ft.classPathRoot(cpName).toPath()))
+            );
         }
     }
 
     /** */
     private IgniteClassPath classPath(String cpName) throws IgniteCheckedException {
         return grid(0).context().distributedMetastorage().read(METASTORE_PREFIX + cpName);
+    }
+
+    /** */
+    private static LogListener readyLogListener(int succeed) {
+        return LogListener
+            .matches("ClassPath is READY. " + succeed + " of " + GRID_CNT + " nodes has its files")
+            .times(1)
+            .build();
     }
 }

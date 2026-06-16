@@ -24,11 +24,15 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridClosureException;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.classpath.ClassPathProcessor.createRootAndCheckIsEmpty;
 import static org.apache.ignite.internal.classpath.ClassPathProcessor.fromMetastorage;
 import static org.apache.ignite.internal.classpath.IgniteClassPathState.NEW;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CLASSPATH_DEPLOY_TO_ALL;
@@ -56,8 +60,7 @@ class DeployToAllProcess {
 
         this.ctx = ctx;
         this.icpFilesHnd = icpFilesHnd;
-
-        deployToAllProc = new DistributedProcess<>(
+        this.deployToAllProc = new DistributedProcess<>(
             ctx,
             CLASSPATH_DEPLOY_TO_ALL,
             this::downloadLocally,
@@ -103,12 +106,32 @@ class DeployToAllProcess {
      * @return Future which will be completed when a snapshot has been started.
      */
     private IgniteInternalFuture<ClassPathDeployToAllResponse> downloadLocally(ClassPathDeployToAllRequest req) {
-        return icpFilesHnd.downloadLocally(req.uploadNodeId, req.icpId).chain(f -> {
-            if (f.error() != null)
-                throw new GridClosureException(f.error());
+        try {
+            if (req.uploadNodeId.equals(ctx.localNodeId())) {
+                if (log.isDebugEnabled())
+                    log.debug("Skip download ClassPath files for upload node [id=" + req.icpId + ']');
 
-            return new ClassPathDeployToAllResponse(req.icpId);
-        });
+                return new GridFinishedFuture<>();
+            }
+
+            IgniteClassPath icp = fromMetastorage(req.icpId, NEW, ctx);
+
+            createRootAndCheckIsEmpty(ctx.pdsFolderResolver().fileTree().classPathRoot(icp.name()));
+
+            return icpFilesHnd.downloadLocally(req.uploadNodeId, icp).chain(f -> {
+                if (f.error() == null)
+                    return new ClassPathDeployToAllResponse(icp.id());
+
+                NodeFileTree ft = ctx.pdsFolderResolver().fileTree();
+
+                U.delete(ft.classPathRoot(icp.name()));
+
+                throw new GridClosureException(f.error());
+            });
+        }
+        catch (Throwable e) {
+            return new GridFinishedFuture<>(e);
+        }
     }
 
     /**
@@ -116,7 +139,11 @@ class DeployToAllProcess {
      * @param res Results.
      * @param err Errors.
      */
-    private void processDeployToAllResult(UUID id, Map<UUID, ClassPathDeployToAllResponse> res, Map<UUID, Throwable> err) {
+    private void processDeployToAllResult(
+        UUID id,
+        Map<UUID, ClassPathDeployToAllResponse> res,
+        Map<UUID, Throwable> err
+    ) {
         GridFutureAdapter<String> fut = futs.remove(id);
 
         // Only upload node manage the process.
@@ -135,8 +162,19 @@ class DeployToAllProcess {
 
             // Perform CAS async to release discovery thread and let CAS proceed.
             ctx.classPath().casToMetastorageAsync(icp, icp.newState(IgniteClassPathState.READY)).listen(casFut -> {
-                log.info("Deploy to all DONE!");
-                
+                log.info("ClassPath is READY. " + res.size() + " of " + (res.size() + err.size()) +
+                    " nodes has its files");
+
+                if (!F.isEmpty(res)) {
+                    log.info("Node that successfully download ClassPath files:");
+                    res.forEach((nodeId, resp) -> log.info("  ^-- " + nodeId));
+                }
+
+                if (!F.isEmpty(err)) {
+                    log.info("Node that fail to download ClassPath file (will retry on first usage):");
+                    err.forEach((nodeId, t) -> log.info("  ^-- " + nodeId + ": " + t.getMessage()));
+                }
+
                 boolean metastorageWritten = casFut.error() == null && casFut.result() != null && casFut.result();
 
                 Throwable t = metastorageWritten

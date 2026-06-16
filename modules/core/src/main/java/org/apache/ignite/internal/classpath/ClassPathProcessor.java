@@ -92,11 +92,20 @@ public class ClassPathProcessor extends GridProcessorAdapter {
         for (String file : files)
             ensureFilename(file);
 
-        IgniteClassPath icp = new IgniteClassPath(UUID.randomUUID(), name, files, lengths, NEW);
+        IgniteClassPath icp;
 
         Boolean metastorageWritten;
 
         try {
+            icp = new IgniteClassPath(
+                UUID.randomUUID(),
+                ctx.pdsFolderResolver().resolveFolders().consistentId(),
+                name,
+                files,
+                lengths,
+                NEW
+            );
+
             metastorageWritten = casToMetastorageAsync(null, icp).get();
         }
         catch (IgniteCheckedException e) {
@@ -109,7 +118,7 @@ public class ClassPathProcessor extends GridProcessorAdapter {
         File root = ctx.pdsFolderResolver().fileTree().classPathRoot(name);
 
         try {
-            NodeFileTree.mkdir(root, "Ignite Class Path root: " + name);
+            createRootAndCheckIsEmpty(root);
         }
         catch (Exception e) {
             try {
@@ -296,5 +305,13 @@ public class ClassPathProcessor extends GridProcessorAdapter {
 
         if (F.indexOf(icp.files(), name) == -1)
             throw new IllegalArgumentException("Unknown lib [icp=" + icp.name() + ", unknown_lib=" + name + ']');
+    }
+
+    /** */
+    static void createRootAndCheckIsEmpty(File root) {
+        if (!root.exists())
+            NodeFileTree.mkdir(root, "Ignite Class Path root");
+        else if (!F.isEmpty(root.listFiles()))
+            throw new IgniteException("ClassPath root exists and not empty: " + root);
     }
 }

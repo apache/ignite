@@ -27,7 +27,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -45,7 +44,6 @@ import org.apache.ignite.internal.managers.communication.TransmissionMeta;
 import org.apache.ignite.internal.managers.communication.TransmissionPolicy;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -99,35 +97,24 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
     /**
      * Downloads {@link IgniteClassPath} files locally from the remote node specified by {@code rmtNodeId}.
      * @param rmtNodeId Remote node id.
-     * @param icpId ClassPath id.
+     * @param icp ClassPath.
      * @return Future for download operation.
      */
-    IgniteInternalFuture<Void> downloadLocally(UUID rmtNodeId, UUID icpId) {
+    IgniteInternalFuture<Void> downloadLocally(UUID rmtNodeId, IgniteClassPath icp) {
+        assert !rmtNodeId.equals(ctx.localNodeId());
+
+        log.info("Start download ClassPath files [name=" + icp.name() + ", id=" + icp.id() + ']');
+
+        DownloadClassPathTask task = new DownloadClassPathTask(rmtNodeId, icp);
+
         try {
-            IgniteClassPath icp = fromMetastorage(icpId, NEW, ctx);
-
-            if (rmtNodeId.equals(ctx.localNodeId())) {
-                log.info("Skip download ClassPath files for upload node [name=" + icp.name() + ", id=" + icp.id() + ']');
-
-                return new GridFinishedFuture<>();
-            }
-
-            log.info("Start download ClassPath files [name=" + icp.name() + ", id=" + icp.id() + ']');
-
-            DownloadClassPathTask task = new DownloadClassPathTask(rmtNodeId, icp);
-
-            try {
-                submit(task);
-            }
-            catch (Throwable t) {
-                task.res.onDone(t);
-            }
-
-            return task.res;
+            submit(task);
         }
-        catch (Throwable e) {
-            return new GridFinishedFuture<>(e);
+        catch (Throwable t) {
+            task.res.onDone(t);
         }
+
+        return task.res;
     }
 
     /** Starts handler. */
@@ -200,7 +187,6 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
     @Override public void onMessage(UUID nodeId, Object msg0, byte plc) {
         try {
             if (msg0 instanceof DownloadClassPathMessage msg) {
-
                 IgniteClassPath icp = null;
 
                 try {
@@ -226,7 +212,11 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
                     }
                 }
                 catch (Throwable t) {
-                    U.error(log, "Error processing classpath file request [request=" + msg + ", nodeId=" + nodeId + ']', t);
+                    U.error(
+                        log,
+                        "Error processing classpath file request [request=" + msg + ", nodeId=" + nodeId + ']',
+                        t
+                    );
 
                     if (icp != null) {
                         ctx.io().sendToCustomTopic(nodeId,
@@ -238,8 +228,8 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
                 }
             }
             else if (msg0 instanceof DownloadClassPathFailureMessage msg) {
-
-                String errMsg = "File download cancelled. ClassPath operation stopped on the remote node. Error: " + msg.err;
+                String errMsg = "File download cancelled. ClassPath operation stopped on the remote node. " +
+                    "Error: " + msg.err;
 
                 if (log.isDebugEnabled())
                     log.debug(errMsg);
@@ -269,7 +259,8 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
         int filesLeft = task.filesLeft.get();
 
         if (filesLeft != 0) {
-            String msg = "onEnd invoked, but more files left: " + filesLeft + ", completing download process with an error";
+            String msg = "onEnd invoked, but more files left: " + filesLeft +
+                ", completing download process with an error";
 
             log.warning(msg);
 
@@ -379,7 +370,7 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
         try {
             // submit can be invoked from discovery thread.
             // sendOrderedMessage can be blocking so invok it in separate thread to release discovery.
-            ctx.pools().getPeerClassLoadingExecutorService().submit(() -> {
+            ctx.pools().getSystemExecutorService().submit(() -> {
                 try {
                     ctx.cache().context().gridIO().sendOrderedMessage(
                         rmtNode,
@@ -390,17 +381,16 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
                         true
                     );
                 }
-                catch (IgniteCheckedException e) {
-                    log.warning("Can't start download ClassPath files:", e);
+                catch (Throwable e) {
+                    log.warning("Can't start download ClassPath files", e);
 
                     next.res.onDone(new IgniteException("Can't download classpath files. " +
                         "Remote node left the grid [rmtNodeId=" + next.rmtNodeId + ']'));
-
                 }
             });
         }
         catch (RejectedExecutionException e) {
-            log.warning("Submit to P2P pool rejected", e);
+            log.warning("Submit to system pool rejected", e);
 
             next.res.onDone(e);
         }
