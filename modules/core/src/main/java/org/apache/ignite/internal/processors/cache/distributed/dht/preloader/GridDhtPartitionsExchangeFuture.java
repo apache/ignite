@@ -2463,24 +2463,26 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     grp.topology().onExchangeDone(this, assignment, false);
 
-                    int numberOfDataCenters = cctx.discovery().discoCache().state().baselineTopology().numberOfDatacenters();
-
                     if (!grp.isReplicated()) {
-                        boolean mdcSafeDistribution = true;
+                        BaselineTopology top = cctx.discovery().discoCache().state().baselineTopology();
+                        if (top != null) {
+                            int numberOfDataCenters = top.numberOfDatacenters();
+                            boolean mdcSafeDistribution = true;
 
-                        for (List<ClusterNode> nodes : assignment.assignment()) {
-                            int dcsCnt = (int)nodes.stream().map(ClusterNode::dataCenterId).distinct().count();
+                            for (List<ClusterNode> nodes : assignment.assignment()) {
+                                int dcsCnt = (int)nodes.stream().map(ClusterNode::dataCenterId).distinct().count();
 
-                            if (dcsCnt < numberOfDataCenters) {
-                                mdcSafeDistribution = false;
+                                if (dcsCnt < numberOfDataCenters) {
+                                    mdcSafeDistribution = false;
 
-                                break;
+                                    break;
+                                }
                             }
+
+                            boolean finalMdcSafeDistribution = mdcSafeDistribution;
+
+                            grp.caches().forEach(cache -> cache.cache().metrics0().setMdcSafePartitionDistribution(finalMdcSafeDistribution));
                         }
-
-                        boolean finalMdcSafeDistribution = mdcSafeDistribution;
-
-                        grp.caches().forEach(cache -> cache.cache().metrics0().setMdcSafePartitionDistribution(finalMdcSafeDistribution));
                     }
                 }
 
