@@ -100,10 +100,10 @@ public class MdcCacheMetricsTest extends GridCommonAbstractTest {
     private boolean persistenceEnabled;
 
     /** */
-    private Set<String> allCaches = new HashSet<>();
+    private final Set<String> allCaches = new HashSet<>();
 
     /** */
-    private Set<String> mdcSafeCaches = new HashSet<>();
+    private final Set<String> mdcSafeCaches = new HashSet<>();
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -172,9 +172,21 @@ public class MdcCacheMetricsTest extends GridCommonAbstractTest {
         String cacheName,
         IgniteBiPredicate<ClusterNode, List<ClusterNode>> affBackupFilter,
         boolean affCfgMdcSafe) {
+        return prepareCacheCfg(cacheName, affBackupFilter, affCfgMdcSafe, null);
+    }
+
+    /** */
+    private CacheConfiguration prepareCacheCfg(
+        String cacheName,
+        IgniteBiPredicate<ClusterNode, List<ClusterNode>> affBackupFilter,
+        boolean affCfgMdcSafe,
+        String cacheGroupName) {
         CacheConfiguration cacheCfg = new CacheConfiguration(cacheName)
             .setCacheMode(PARTITIONED)
             .setBackups(1);
+
+        if (cacheGroupName != null)
+            cacheCfg.setGroupName(cacheGroupName);
 
         cacheCfg.setAffinity(
             new RendezvousAffinityFunction()
@@ -190,14 +202,101 @@ public class MdcCacheMetricsTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test verifies correctness of metric for cache configuration related to data distribution across DCs
+     * if caches are organized into groups.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testAffinityCfgMdcSafeMetricForCacheGroup() throws Exception {
+        startClusterAcrossDataCenters(new String[] {DC_ID_0, DC_ID_1}, 2);
+
+        IgniteEx client = startClientGrid(NODES_NUMBER - 1);
+
+        client.getOrCreateCache(
+            prepareCacheCfg(
+                CACHE_WITH_MDC_FILTER + "_0",
+                new MdcAffinityBackupFilter(2, 1),
+                true,
+                "mdcSafeCachesGroup"));
+
+        client.getOrCreateCache(
+            prepareCacheCfg(
+                CACHE_WITH_MDC_FILTER + "_1",
+                new MdcAffinityBackupFilter(2, 1),
+                true,
+                "mdcSafeCachesGroup"));
+
+        client.getOrCreateCache(
+            prepareCacheCfg(MDC_UNSAFE_CACHE + "_0", null, false, "mdcUnsafeCachesGroup"));
+
+        client.getOrCreateCache(
+            prepareCacheCfg(MDC_UNSAFE_CACHE + "_1", null, false, "mdcUnsafeCachesGroup"));
+
+        checkMdcReadyMetric();
+    }
+
+    /**
+     * Test verifies correctness of metric for partition copies distribution across DCs
+     * if caches are organized into groups.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPartitionDistributionMetricForCacheGroups() throws Exception {
+        persistenceEnabled = true;
+
+        startClusterAcrossDataCenters(new String[] {DC_ID_0, DC_ID_1}, 2);
+
+        IgniteEx client = startClientGrid(NODES_NUMBER - 1);
+
+        client.cluster().state(ClusterState.ACTIVE);
+
+        client.getOrCreateCache(prepareCacheCfg(
+            CACHE_WITH_MDC_FILTER + "_0",
+            new MdcAffinityBackupFilter(2, 1),
+            true,
+            "mdcFilterCacheGroup"));
+        client.getOrCreateCache(prepareCacheCfg(
+            CACHE_WITH_MDC_FILTER + "_1",
+            new MdcAffinityBackupFilter(2, 1),
+            true,
+            "mdcFilterCacheGroup"));
+
+        BooleanMetric cache0DistributionSafeMetric = findMetricForCache(
+            grid(1),
+            CACHE_WITH_MDC_FILTER + "_0",
+            PARTITION_DISTRIBUTION_SAFE_METRIC_NAME);
+        BooleanMetric cache1DistributionSafeMetric = findMetricForCache(
+            grid(1),
+            CACHE_WITH_MDC_FILTER + "_1",
+            PARTITION_DISTRIBUTION_SAFE_METRIC_NAME);
+
+        assertNotNull(cache0DistributionSafeMetric);
+        assertNotNull(cache1DistributionSafeMetric);
+        assertTrue(cache0DistributionSafeMetric.value());
+        assertTrue(cache1DistributionSafeMetric.value());
+
+        stopGrid(0);
+
+        assertFalse(cache0DistributionSafeMetric.value());
+        assertFalse(cache1DistributionSafeMetric.value());
+
+        client.cluster().setBaselineTopology(client.cluster().topologyVersion());
+
+        assertTrue(cache0DistributionSafeMetric.value());
+        assertTrue(cache1DistributionSafeMetric.value());
+    }
+
+    /**
      * Test verifies correctness of metric for cache configuration related to data distribution across DCs for dynamically started caches.
      * Metric should take a {@code false} value if cache configuration doesn't guarantee presence of data copy in each DC
      * and {@code true} otherwise.
+     *
+     * @throws Exception If failed.
      */
     @Test
     public void testAffinityCfgMdcSafeMetricForDynamicCaches() throws Exception {
-        useStaticCaches = false;
-
         startClusterAcrossDataCenters(new String[] {DC_ID_0, DC_ID_1}, 2);
 
         IgniteEx client = startClientGrid(NODES_NUMBER - 1);
@@ -224,6 +323,8 @@ public class MdcCacheMetricsTest extends GridCommonAbstractTest {
      * Test verifies correctness of metric for cache configuration related to data distribution across DCs for statically configured caches.
      * Metric should take a {@code false} value if cache configuration doesn't guarantee presence of data copy in each DC
      * and {@code true} otherwise.
+     *
+     * @throws Exception If failed.
      */
     @Test
     public void testAffinityCfgMdcSafeMetricForStaticCaches() throws Exception {
@@ -244,11 +345,11 @@ public class MdcCacheMetricsTest extends GridCommonAbstractTest {
      * and {@code true} otherwise.
      * <p/>
      * This test considers in-memory caches only.
+     *
+     * @throws Exception If failed.
      */
     @Test
     public void testPartitionDistributionMetricInMemoryCaches() throws Exception {
-        persistenceEnabled = false;
-
         startClusterAcrossDataCenters(new String[] {DC_ID_0, DC_ID_1}, 2);
 
         IgniteEx client = startClientGrid(NODES_NUMBER - 1);
@@ -293,6 +394,8 @@ public class MdcCacheMetricsTest extends GridCommonAbstractTest {
      * and {@code true} otherwise.
      * <p/>
      * This test considers persistent caches only and takes into account changes of BaselineTopology.
+     *
+     * @throws Exception If failed.
      */
     @Test
     public void testPartitionDistributionMetricPersistentCaches() throws Exception {
@@ -304,7 +407,8 @@ public class MdcCacheMetricsTest extends GridCommonAbstractTest {
 
         client.cluster().state(ClusterState.ACTIVE);
 
-        client.getOrCreateCache(prepareCacheCfg(CACHE_WITH_MDC_FILTER, new MdcAffinityBackupFilter(2, 1), true));
+        client.getOrCreateCache(prepareCacheCfg(
+            CACHE_WITH_MDC_FILTER, new MdcAffinityBackupFilter(2, 1), true));
         client.getOrCreateCache(prepareCacheCfg(CACHE_WITH_COLOCATED_FILTER,
             new ClusterNodeAttributeColocatedBackupFilter(STRETCHED_CELL_ATTR_NAME), true));
         client.getOrCreateCache(prepareCacheCfg(CACHE_WITH_MDC_SAFE_ATTRIBUTE_FILTER,
@@ -339,14 +443,13 @@ public class MdcCacheMetricsTest extends GridCommonAbstractTest {
 
         client.cluster().setBaselineTopology(client.cluster().topologyVersion());
 
-        // MdcAffinityBackupFilter and ClusterNodeAttributeAffinityBackupFilter are able to reassing partitions
+        // MdcAffinityBackupFilter and ClusterNodeAttributeAffinityBackupFilter are able to reassign partitions
         // after BaselineTopology change, thus distribution safe metric restores to true.
         assertTrue(cacheWithMdcFilterDistributionSafeMetric.value());
         assertTrue(cacheWithMdcSafeAttrFilterDistributionSafeMetric.value());
-        // But ClusterNodeAttributeColocatedBackupFilter doesn't reassing partitions after BaselineTopology change
+        // But ClusterNodeAttributeColocatedBackupFilter doesn't reassign partitions after BaselineTopology change
         // so distribution safe metric for this cache remains false.
         assertFalse(cacheWithColocatedFilterDistributionSafeMetric.value());
-
     }
 
     /** */
