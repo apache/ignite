@@ -371,14 +371,16 @@ public class IgniteTxHandler {
      * @return First entry.
      * @throws IgniteCheckedException If failed.
      */
-    private IgniteTxEntry unmarshal(@Nullable Collection<IgniteTxEntry> entries) throws IgniteCheckedException {
+    private IgniteTxEntry initialize(
+        @Nullable Collection<IgniteTxEntry> entries,
+        AffinityTopologyVersion topVer) throws IgniteCheckedException {
         if (entries == null)
             return null;
 
         IgniteTxEntry firstEntry = null;
 
         for (IgniteTxEntry e : entries) {
-            e.initializeContext(ctx, false);
+            e.initializeContext(ctx, topVer, false);
 
             if (firstEntry == null)
                 firstEntry = e;
@@ -427,12 +429,21 @@ public class IgniteTxHandler {
         IgniteTxEntry firstEntry;
 
         try {
-            IgniteTxEntry firstWrite = unmarshal(req.writes());
-            IgniteTxEntry firstRead = unmarshal(req.reads());
+            IgniteTxEntry firstWrite = initialize(req.writes(), req.topologyVersion());
+            IgniteTxEntry firstRead = initialize(req.reads(), req.topologyVersion());
 
             firstEntry = firstWrite != null ? firstWrite : firstRead;
         }
         catch (IgniteCheckedException e) {
+            try {
+                req.onClassError(e);
+                
+                ctx.io().processFailedMessage(nearNode.id(), req, null, req.policy());
+            }
+            catch (IgniteCheckedException ex) {
+                throw new IgniteException(ex);
+            }
+
             return new GridFinishedFuture<>(e);
         }
 
@@ -1229,7 +1240,7 @@ public class IgniteTxHandler {
                     else {
                         e.context(cacheCtx);
 
-                        e.initializeContext(ctx, true);
+                        e.initializeContext(ctx, req.topologyVersion(), true);
                     }
                 }
 
@@ -1765,7 +1776,7 @@ public class IgniteTxHandler {
                     int idx = 0;
 
                     for (IgniteTxEntry entry : req.writes()) {
-                        entry.initializeContext(ctx, false);
+                        entry.initializeContext(ctx, req.topologyVersion(), false);
                         
                         GridCacheContext cacheCtx = entry.context();
 

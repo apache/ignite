@@ -26,6 +26,7 @@ import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
@@ -1052,14 +1053,19 @@ public class IgniteTxEntry implements GridPeerDeployAware, CacheMarshallableMess
 
     /**
      * @param ctx Cache context.
+     * @param topVer Topology version that is used to validate a cache context.
+     *               If this parameter is {@code null} then validation will be skipped.
      * @param near Near flag.
      * @throws IgniteCheckedException If un-marshalling failed.
      */
-    public void initializeContext(GridCacheSharedContext<?, ?> ctx, boolean near) throws IgniteCheckedException {
+    public void initializeContext(GridCacheSharedContext<?, ?> ctx,
+        AffinityTopologyVersion topVer,
+        boolean near
+    ) throws IgniteCheckedException {
         if (this.ctx == null) {
             GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(cacheId);
 
-            if (cacheCtx == null)
+            if (cacheCtx == null || (topVer != null && topVer.before(cacheCtx.startTopologyVersion())))
                 throw new CacheInvalidStateException(
                     "Failed to perform cache operation (cache is stopped), cacheId=" + cacheId);
 

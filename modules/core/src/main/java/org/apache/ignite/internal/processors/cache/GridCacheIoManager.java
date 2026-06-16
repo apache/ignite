@@ -742,7 +742,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param plc Message policy.
      * @throws IgniteCheckedException If failed.
      */
-    private void processFailedMessage(UUID nodeId,
+    public void processFailedMessage(UUID nodeId,
         GridCacheMessage msg,
         IgniteBiInClosure<UUID, GridCacheMessage> c,
         byte plc)
