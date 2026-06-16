@@ -2481,7 +2481,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                             boolean finalMdcSafeDistribution = mdcSafeDistribution;
 
-                            grp.caches().forEach(cache -> cache.cache().metrics0().setMdcSafePartitionDistribution(finalMdcSafeDistribution));
+                            grp.caches().forEach(
+                                cache -> cache.cache().metrics0().setMdcSafePartitionDistribution(finalMdcSafeDistribution));
                         }
                     }
                 }
