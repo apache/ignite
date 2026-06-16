@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -116,7 +117,7 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
             DownloadClassPathTask task = new DownloadClassPathTask(rmtNodeId, icp);
 
             try {
-                start(task);
+                submit(task);
             }
             catch (Throwable t) {
                 task.res.onDone(t);
@@ -265,7 +266,15 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
         if (!ensureTask(nodeId, task))
             return;
 
-        assert task.filesLeft.get() == 0 : task;
+        int filesLeft = task.filesLeft.get();
+
+        if (filesLeft != 0) {
+            String msg = "onEnd invoked, but more files left: " + filesLeft + ", completing download process with an error";
+
+            log.warning(msg);
+
+            task.res.onDone(new IllegalStateException(msg));
+        }
 
         if (log.isInfoEnabled())
             log.info("Classpath files from remote node has been fully received [icp=" + task.icp.name() + ']');
@@ -335,7 +344,7 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
      *
      * @param next Task to execute.
      */
-    private void start(DownloadClassPathTask next) {
+    private void submit(DownloadClassPathTask next) {
         ClusterNode rmtNode;
 
         synchronized (this) {
@@ -346,8 +355,9 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
             }
 
             if (active != null && !active.res.isDone()) {
-                if (!queue.offer(next))
+                if (!queue.offer(next)) {
                     next.res.onDone(new IgniteException("Can't put task in queue: " + next.icp));
+                }
 
                 return;
             }
@@ -367,21 +377,32 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
         }
 
         try {
-            ctx.cache().context().gridIO().sendOrderedMessage(
-                rmtNode,
-                FILES_TOPIC,
-                new DownloadClassPathMessage(next.icp),
-                SYSTEM_POOL,
-                Long.MAX_VALUE,
-                true
-            );
+            // submit can be invoked from discovery thread.
+            // sendOrderedMessage can be blocking so invok it in separate thread to release discovery.
+            ctx.pools().getPeerClassLoadingExecutorService().submit(() -> {
+                try {
+                    ctx.cache().context().gridIO().sendOrderedMessage(
+                        rmtNode,
+                        FILES_TOPIC,
+                        new DownloadClassPathMessage(next.icp),
+                        SYSTEM_POOL,
+                        Long.MAX_VALUE,
+                        true
+                    );
+                }
+                catch (IgniteCheckedException e) {
+                    log.warning("Can't start download ClassPath files:", e);
+
+                    next.res.onDone(new IgniteException("Can't download classpath files. " +
+                        "Remote node left the grid [rmtNodeId=" + next.rmtNodeId + ']'));
+
+                }
+            });
         }
-        catch (IgniteCheckedException e) {
-            log.warning("Can't start download ClassPath files:", e);
+        catch (RejectedExecutionException e) {
+            log.warning("Submit to P2P pool rejected", e);
 
-            next.res.onDone(new IgniteException("Can't download classpath files. " +
-                "Remote node left the grid [rmtNodeId=" + next.rmtNodeId + ']'));
-
+            next.res.onDone(e);
         }
     }
 
@@ -402,7 +423,7 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
         }
 
         if (next != null)
-            start(next);
+            submit(next);
     }
 
     /** */
