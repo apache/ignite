@@ -351,7 +351,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 try {
                     owned.put(key, valIter.next());
                 }
-                catch (IllegalStateException th) {
+                catch (IllegalStateException ignored) {
                     // Skipping entries for removed cache.    
                 }
             }

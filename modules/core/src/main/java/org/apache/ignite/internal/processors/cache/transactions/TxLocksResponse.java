@@ -187,7 +187,7 @@ public class TxLocksResponse extends GridCacheMessage implements CacheMarshallab
                 try {
                     txKeys.add(txKey);
                 }
-                catch (IllegalStateException th) {
+                catch (IllegalStateException ignored) {
                     // Skipping entries for removed cache.    
                 }
             }
