@@ -132,8 +132,8 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
 
                     addEntry(entry);
                 }
-                catch (IgniteCheckedException e) {
-                    assert e instanceof CacheInvalidStateException; // Cache was destroyed.
+                catch (CacheInvalidStateException e) {
+                    // Cache was destroyed.
                 }
             }
         }
