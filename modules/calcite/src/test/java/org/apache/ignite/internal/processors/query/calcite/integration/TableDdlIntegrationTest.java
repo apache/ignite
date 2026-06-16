@@ -29,13 +29,17 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
@@ -62,6 +66,12 @@ import static org.junit.Assert.assertThat;
 
 /** */
 public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setBinaryConfiguration(
+            new BinaryConfiguration().setNameMapper(new BinaryBasicNameMapper(true)));
+    }
+
     /**
      * Creates table with two columns, where the first column is PK,
      * and verifies created cache.
@@ -1280,15 +1290,39 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
      */
     @Test
     public void testExplicitTypeIdCollision() {
+        IgniteBinary bin = client.binary();
+        String type0 = "TestType";
+
         // Register user binary type.
-        client.binary().builder("TestType").build();
+        bin.builder(type0).build();
 
         // Check that explicit type can be used.
-        sql("CREATE TABLE test (id1 int, id2 int, val int, primary key (id1, id2)) WITH KEY_TYPE=\"TestType\"");
+        sql("CREATE TABLE test (id1 int, id2 int, val int, primary key (id1, id2)) WITH KEY_TYPE=\"" + type0 + "\"");
         sql("INSERT INTO test VALUES (0, 0, 0)");
         sql("DROP TABLE test");
 
-        sql("CREATE TABLE test (id1 int, id2 int, val int, primary key (id1, id2)) WITH VALUE_TYPE=\"TestType\"");
+        sql("CREATE TABLE test (id1 int, id2 int, val int, primary key (id1, id2)) WITH VALUE_TYPE=\"" + type0 + "\"");
+        sql("INSERT INTO test VALUES (0, 0, 0)");
+        sql("DROP TABLE test");
+
+        // Check that explicit different types mapped with name mapper to the same type can be used.
+        String pkg = "org.apache.ignite.";
+        String type1 = pkg + type0;
+        String type2 = pkg.toUpperCase() + type0;
+
+        // Use default type ID mapper, which use lowercase chars for type ID generation, but name mapper with "simple name" flag.
+        // So both "org.apache.ignite.TestType" and "ORG.APACHE.IGNITE.TestType" types are converted to the "TestType"
+        // by name mapper, and have the same type ID, but have different type ID with "TestType".
+        assertNotSame(bin.typeId(type0), bin.typeId(type1));
+        assertEquals(bin.typeId(type1), bin.typeId(type2));
+
+        bin.builder(type1).build();
+
+        sql("CREATE TABLE test (id1 int, id2 int, val int, primary key (id1, id2)) WITH KEY_TYPE=\"" + type2 + "\"");
+        sql("INSERT INTO test VALUES (0, 0, 0)");
+        sql("DROP TABLE test");
+
+        sql("CREATE TABLE test (id1 int, id2 int, val int, primary key (id1, id2)) WITH VALUE_TYPE=\"" + type2 + "\"");
         sql("INSERT INTO test VALUES (0, 0, 0)");
         sql("DROP TABLE test");
 
