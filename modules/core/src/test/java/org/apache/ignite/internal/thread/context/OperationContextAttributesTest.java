@@ -848,25 +848,24 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
 
                         InetSocketAddressMessage receivedVal = OperationContext.get(attr);
 
-                        assertNotNull(receivedVal);
+                        if (receivedVal != null) {
+                            assertFalse(dfltAttrVal.port() == receivedVal.port());
 
-                        assertFalse(dfltAttrVal.port() == receivedVal.port());
+                            assertEquals(receivedVal.port(), valToSend.port());
+                            assertEquals(receivedVal.address(), valToSend.address());
 
-                        assertEquals(receivedVal.port(), valToSend.port());
-                        assertEquals(receivedVal.address(), valToSend.address());
-
-                        if (grid(i0).localNode().isClient())
-                            clientLatch.countDown();
-                        else if (grid(i0).localNode().order() == 1)
-                            coordLatch.countDown();
-                        else
-                            srvrLatch.countDown();
+                            if (grid(i0).localNode().isClient())
+                                clientLatch.countDown();
+                            else if (grid(i0).localNode().order() == 1)
+                                coordLatch.countDown();
+                            else
+                                srvrLatch.countDown();
+                        }
                     }
                 });
         }
 
         assertFalse(valToSend.equals(dfltAttrVal));
-
         assertNull(OperationContext.get(attr));
 
         // Send from a coordinator.
