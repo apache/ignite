@@ -2469,16 +2469,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         boolean mdcSafeDistribution = true;
 
                         for (List<ClusterNode> nodes : assignment.assignment()) {
-                            int dcsCount = (int)nodes.stream().map(ClusterNode::dataCenterId).distinct().count();
+                            int dcsCnt = (int)nodes.stream().map(ClusterNode::dataCenterId).distinct().count();
 
-                            if (dcsCount < numberOfDataCenters) {
+                            if (dcsCnt < numberOfDataCenters) {
                                 mdcSafeDistribution = false;
 
                                 break;
                             }
                         }
-                        System.out.println("-->>-->> [" + System.currentTimeMillis() + "][" + Thread.currentThread().getName() + "] " +
-                            "mdcSafeDistribution=" + mdcSafeDistribution + " for cache " + grp.cacheOrGroupName());
 
                         boolean finalMdcSafeDistribution = mdcSafeDistribution;
 

@@ -22,13 +22,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMetrics;
-import org.apache.ignite.cache.affinity.AffinityFunction;
-import org.apache.ignite.cache.affinity.rendezvous.ClusterNodeAttributeColocatedBackupFilter;
-import org.apache.ignite.cache.affinity.rendezvous.MdcAffinityBackupFilter;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
@@ -49,7 +43,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -254,7 +247,7 @@ public class CacheMetricsImpl implements CacheMetrics {
     private LongAdderMetric rslvrMergedCnt;
 
     /** */
-    private Boolean mdcReadyAff;
+    private Boolean affCfgMdcSafe;
 
     /** */
     private Boolean mdcSafePartDistrib;
@@ -1693,8 +1686,8 @@ public class CacheMetricsImpl implements CacheMetrics {
     }
 
     /** */
-    private boolean isMdcReadyAffinity() {
-        return mdcReadyAff != null && mdcReadyAff;
+    private boolean isAffinityCfgMdcSafe() {
+        return affCfgMdcSafe != null && affCfgMdcSafe;
     }
 
     /** */
@@ -1769,41 +1762,17 @@ public class CacheMetricsImpl implements CacheMetrics {
     }
 
     /** */
-    public void registerMdcMetrics() {
-        GridKernalContext kCtx = cctx.kernalContext();
-
-        if (kCtx.clientNode())
-            return;
-
-        if (kCtx.discovery().localNode() == null || kCtx.discovery().localNode().dataCenterId() == null)
-            return;
-
-        registerMdcReadyAffinityMetric();
-
-        registerPartitionDistributionSafeMetric();
-    }
-
-    /** */
-    private void registerPartitionDistributionSafeMetric() {
+    public void registerPartitionDistributionSafeMetric() {
         mreg.register("IsCachePartitionDistributionSafe", this::isMdcSafePartitionDistribution,
             "True if current cache partition distribution maintains guarantee 'one partition copy in each datacenter'.");
     }
 
     /** */
-    private void registerMdcReadyAffinityMetric() {
-        mdcReadyAff = Boolean.TRUE;
+    public void registerAffinityConfigurationSafeMetric(boolean affCfgMdcSafe) {
+        mreg.register("IsCacheAffinityConfigurationMdcSafe", this::isAffinityCfgMdcSafe,
+            "True if cache affinity guarantees having a copy of each partition in each data center.");
 
-        mreg.register("IsCacheAffinityMdcReady", this::isMdcReadyAffinity,
-            "True if cache affinity guarantees having a copy of partition in each data center.");
-
-        AffinityFunction affFunc = cctx.config().getAffinity();
-
-        if (affFunc instanceof RendezvousAffinityFunction) {
-            IgniteBiPredicate<ClusterNode, List<ClusterNode>> filter = ((RendezvousAffinityFunction)affFunc).getAffinityBackupFilter();
-
-            if (!(filter instanceof MdcAffinityBackupFilter) && !(filter instanceof ClusterNodeAttributeColocatedBackupFilter))
-                mdcReadyAff = Boolean.FALSE;
-        }
+        this.affCfgMdcSafe = affCfgMdcSafe;
     }
 
     /**
