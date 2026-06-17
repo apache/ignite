@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.thread.context;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -23,7 +24,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.jetbrains.annotations.Nullable;
 
 /** */
 public class DistributedOperationContextAttributeRegistry {
@@ -50,19 +50,19 @@ public class DistributedOperationContextAttributeRegistry {
     }
 
     /** @return Values for all registered operation context attributes. */
-    public @Nullable Map<Byte, Message> collectContext() {
-        Map<Byte, Message> res = null;
+    public Map<Byte, Message> collectContext() {
+        Map<Byte, Message> res = Collections.emptyMap();
 
         for (Map.Entry<Byte, OperationContextAttribute<? extends Message>> e : attributes.entrySet()) {
-            OperationContextAttribute<? extends Message> attr = e.getValue();
+            OperationContextAttribute<?> attr = e.getValue();
 
-            Message curVal = OperationContext.get(attr);
+            Object curVal = OperationContext.get(attr);
 
             if (!Objects.equals(attr.initialValue(), curVal)) {
-                if (res == null)
+                if (res == Collections.EMPTY_MAP)
                     res = new HashMap<>(attributes.size(), 1.0f);
 
-                res.put(e.getKey(), curVal);
+                res.put(e.getKey(), (Message)curVal);
             }
         }
 
@@ -70,13 +70,22 @@ public class DistributedOperationContextAttributeRegistry {
     }
 
     /** */
-    public Scope restoreContext(Map<Byte, Message> res) {
-        if (F.isEmpty(res))
+    public Scope restoreContext(int idBitmask, Message[] values) {
+        if (F.isEmpty(values) || idBitmask == 0)
             return Scope.NOOP_SCOPE;
 
         OperationContext.ContextUpdater updater = OperationContext.ContextUpdater.create();
 
-        res.forEach((id, attr) -> updater.set((OperationContextAttribute<Message>)attributes.get(id), attr));
+        for (byte attrId = 0; attrId < OperationContextAttribute.MAX_ATTR_CNT; attrId++) {
+            assert attrId < Integer.SIZE;
+
+            int mask = 1 << attrId;
+
+            if ((mask & idBitmask) == 0)
+                continue;
+
+            updater.set((OperationContextAttribute<Message>)attributes.get(attrId), values[attrId]);
+        }
 
         return updater.apply();
     }

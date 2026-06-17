@@ -821,7 +821,7 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testSendAttributesByDiscovery() throws Exception {
-        byte attrId = (byte)(OperationContextAttribute.MAX_ATTR_CNT + 1);
+        byte attrId = (byte)(OperationContextAttribute.MAX_ATTR_CNT - 1);
 
         InetSocketAddressMessage dfltAttrVal = new InetSocketAddressMessage(InetAddress.getLoopbackAddress(), 80);
 
@@ -848,24 +848,25 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
 
                         InetSocketAddressMessage receivedVal = OperationContext.get(attr);
 
-                        if (receivedVal != null) {
-                            assertFalse(dfltAttrVal.port() == receivedVal.port());
+                        assertNotNull(receivedVal);
 
-                            assertEquals(receivedVal.port(), valToSend.port());
-                            assertEquals(receivedVal.address(), valToSend.address());
+                        assertFalse(dfltAttrVal.port() == receivedVal.port());
 
-                            if (grid(i0).localNode().isClient())
-                                clientLatch.countDown();
-                            else if (grid(i0).localNode().order() == 1)
-                                coordLatch.countDown();
-                            else
-                                srvrLatch.countDown();
-                        }
+                        assertEquals(receivedVal.port(), valToSend.port());
+                        assertEquals(receivedVal.address(), valToSend.address());
+
+                        if (grid(i0).localNode().isClient())
+                            clientLatch.countDown();
+                        else if (grid(i0).localNode().order() == 1)
+                            coordLatch.countDown();
+                        else
+                            srvrLatch.countDown();
                     }
                 });
         }
 
         assertFalse(valToSend.equals(dfltAttrVal));
+
         assertNull(OperationContext.get(attr));
 
         // Send from a coordinator.

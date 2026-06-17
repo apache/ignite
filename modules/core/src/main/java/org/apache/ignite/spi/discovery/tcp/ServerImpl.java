@@ -3049,7 +3049,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (!fromSocket)
-                msg.opCtxAttrs = DistributedOperationContextAttributeRegistry.instance().collectContext();
+                fillOperationContextAttributes(msg);
 
             if (msg instanceof TraceableMessage) {
                 TraceableMessage tMsg = (TraceableMessage)msg;
@@ -3322,10 +3322,11 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (msg == WAKEUP)
                 return;
 
-            if (F.isEmpty(msg.opCtxAttrs))
+            if (msg.opCtxMsg == null)
                 processMessage0(msg);
             else {
-                try (Scope ignored = DistributedOperationContextAttributeRegistry.instance().restoreContext(msg.opCtxAttrs)) {
+                try (Scope ignored = DistributedOperationContextAttributeRegistry.instance()
+                    .restoreContext(msg.opCtxMsg.idBitmask, msg.opCtxMsg.vals)) {
                     processMessage0(msg);
                 }
             }

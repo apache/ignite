@@ -37,15 +37,19 @@ import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.OperationContexMessage;
 import org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot;
 import org.apache.ignite.internal.processors.cluster.CacheMetricsMessage;
 import org.apache.ignite.internal.processors.cluster.NodeFullMetricsMessage;
 import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.processors.tracing.NoopTracing;
 import org.apache.ignite.internal.processors.tracing.Tracing;
+import org.apache.ignite.internal.thread.context.DistributedOperationContextAttributeRegistry;
+import org.apache.ignite.internal.thread.context.OperationContextAttribute;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiThread;
@@ -448,6 +452,26 @@ abstract class TcpDiscoveryImpl {
             clientsMetricsMsg.nodesMetricsMessages().forEach((clientId, clientNodeMetricsMsg) ->
                 updateMetrics(clientId, new ClusterMetricsSnapshot(clientNodeMetricsMsg), cacheMetrics, tsNanos));
         }
+    }
+
+    /** */
+    protected static void fillOperationContextAttributes(TcpDiscoveryAbstractMessage msg) {
+        DistributedOperationContextAttributeRegistry.instance().collectContext().forEach((attrId, msgVal) -> {
+            assert attrId >= 0 && attrId < OperationContextAttribute.MAX_ATTR_CNT;
+
+            if (msg.opCtxMsg == null) {
+                msg.opCtxMsg = new OperationContexMessage();
+
+                msg.opCtxMsg.vals = new Message[OperationContextAttribute.MAX_ATTR_CNT];
+            }
+
+            int mask = 1 << attrId;
+
+            assert (msg.opCtxMsg.idBitmask & mask) == 0;
+
+            msg.opCtxMsg.idBitmask |= mask;
+            msg.opCtxMsg.vals[attrId] = msgVal;
+        });
     }
 
     /**
