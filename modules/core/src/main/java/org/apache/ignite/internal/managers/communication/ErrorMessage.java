@@ -23,14 +23,14 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.CacheMarshallableMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Message used to transfer {@link Throwable} objects.
  */
 @SuppressWarnings({"NullableProblems", "unused"})
-public class ErrorMessage implements MarshallableMessage {
+public class ErrorMessage implements CacheMarshallableMessage {
     /** Error bytes. */
     @Order(0)
     @GridToStringExclude

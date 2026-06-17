@@ -24,12 +24,12 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.CacheMarshallableMessage;
 
 /**
  * Enabling indexing on cache operation.
  */
-public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation implements MarshallableMessage {
+public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation implements CacheMarshallableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 

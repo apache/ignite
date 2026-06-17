@@ -24,10 +24,10 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.CacheMarshallableMessage;
 
 /** Represents committed transactions hash for a pair of nodes. */
-public class TransactionsHashRecord implements MarshallableMessage, Serializable {
+public class TransactionsHashRecord implements CacheMarshallableMessage, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 

@@ -38,10 +38,10 @@ import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.CacheMarshallableMessage;
 
 /** */
-public class ColocationGroup implements MarshallableMessage {
+public class ColocationGroup implements CacheMarshallableMessage {
     /** */
     @Order(0)
     long[] srcIds;
