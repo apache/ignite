@@ -206,6 +206,8 @@ CacheConfiguration<Integer, Account> cacheCfg =
 
 If these requirements are not met, the filter either rejects the configuration or cannot place copies predictably.
 
+For other backup placement strategies, see link:configuring-caches/configuring-backups#affinity-backup-filters[Affinity Backup Filters].
+
 == Reading from Local Data Center
 
 When `CacheConfiguration#readFromBackup` is `true`, Ignite can read from a backup copy instead of the primary copy.
@@ -216,8 +218,9 @@ The Java thin client also uses the data center ID for partition awareness.
 Set the client's data center ID with the `IGNITE_DATA_CENTER_ID` system property or in
 `ClientConfiguration#setUserAttributes(...)`.
 If both are configured, the system property takes precedence.
-For partition-aware read operations, the client sends requests to a node from its own data center when the
-cache has `readFromBackup=true` and the local data center has a partition copy.
+For partition-aware read operations, the client sends requests to a node from its own data center when the cache has
+`readFromBackup=true`, its write synchronization mode is not `PRIMARY_SYNC`, and the local data center has a
+partition copy.
 Writes are still routed to the primary node.
 
 [source,java]
