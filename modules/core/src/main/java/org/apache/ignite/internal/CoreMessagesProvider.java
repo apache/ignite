@@ -242,7 +242,6 @@ import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -337,19 +336,17 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
 
         this.factory = factory;
 
-        // [-44, 0..2, 42, 200..204, 210, 302] - Use in tests.
-        // [300..307, 350..352] - CalciteMessageFactory.
+        // [-44, 0..2, 42, 200..204, 210] - Use in tests.
+        // [300 - 500] - CalciteMessageFactory.
         // [-4..-22, -30..-35, -54..-57] - SQL
 
         // [5000 - 5500]: Utility messages. Most of them originally come from Discovery.
         msgIdx = 5000;
-        // We don't use the code‑generated serializer for CompressedMessage - serialization is highly customized.
-        factory.register(msgIdx++, CompressedMessage::new);
+        withNoSchema(CompressedMessage.class);
         withNoSchemaResolvedClassLoader(ErrorMessage.class);
         withNoSchema(InetSocketAddressMessage.class);
         withNoSchema(InetAddressMessage.class);
         withNoSchema(TcpDiscoveryNode.class);
-        withNoSchema(IgniteProductVersion.class);
         withNoSchema(DiscoveryDataPacket.class);
         withNoSchema(GridByteArrayList.class);
         withNoSchema(CacheVersionedValue.class);
@@ -448,8 +445,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(ExchangeFailureMessage.class);
         withNoSchema(CacheStatisticsClearMessage.class);
         withNoSchema(ClientCacheChangeDummyDiscoveryMessage.class);
-        // TODO: revise using resolved class loader, https://issues.apache.org/jira/browse/IGNITE-28637
-        withNoSchemaResolvedClassLoader(DynamicCacheChangeBatch.class);
+        withNoSchema(DynamicCacheChangeBatch.class);
 
         // [10000 - 10200]: Transaction and lock related messages. Most of them originally comes from Communication.
         msgIdx = 10000;

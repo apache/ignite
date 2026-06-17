@@ -493,16 +493,16 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     public void testQueryInitiatorId() {
         ListeningTestLogger testLog = testLog();
 
-        checkInitiatorId(testLog, "LOCAL", "SELECT sleep_func(?, 0)", LONG_QUERY_WARNING_TIMEOUT);
+        checkInitiatorId(testLog, "LOCAL", "SELECT sleep_func(?, 0)", LONG_QUERY_WARNING_TIMEOUT + 1);
 
         checkInitiatorId(testLog, "MAP", "SELECT val FROM test WHERE id = sleep_func(?, 0)",
-            LONG_QUERY_WARNING_TIMEOUT);
+            LONG_QUERY_WARNING_TIMEOUT + 1);
 
         checkInitiatorId(testLog, "REDUCE", "SELECT sleep_func(?, sum(val)) FROM test WHERE id + 1 = 1",
-            LONG_QUERY_WARNING_TIMEOUT);
+            LONG_QUERY_WARNING_TIMEOUT + 1);
 
         checkInitiatorId(testLog, "DML", "UPDATE test SET val = sleep_func(?, val) WHERE id = 0",
-            LONG_QUERY_WARNING_TIMEOUT);
+            LONG_QUERY_WARNING_TIMEOUT + 1);
     }
 
     /** Verifies map query information in long-query logs. */

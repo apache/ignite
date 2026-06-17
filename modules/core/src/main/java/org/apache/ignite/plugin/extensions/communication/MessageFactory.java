@@ -21,7 +21,7 @@ import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
 
 /**
- * Message factory for all communication messages registered using {@link #register(short, Supplier)} method call.
+ * Message factory for all communication messages registered using {@link #register(short, Supplier, MessageSerializer)} method call.
  */
 public interface MessageFactory {
     /**
@@ -34,8 +34,12 @@ public interface MessageFactory {
      * @throws IgniteException In case of attempt to register message with direct type which is already registered.
      * @throws IllegalStateException On any invocation of this method when class which implements this interface
      * is alredy constructed.
+     * @deprecated Use {@link #register(short, Supplier, MessageSerializer)} instead.
      */
-    public void register(short directType, Supplier<Message> supplier) throws IgniteException;
+    @Deprecated(forRemoval = true)
+    default void register(short directType, Supplier<Message> supplier) throws IgniteException {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Register message factory with given direct type. All messages must be registered during construction
@@ -47,7 +51,9 @@ public interface MessageFactory {
      * @throws IgniteException In case of attempt to register message with direct type which is already registered.
      * @throws IllegalStateException On any invocation of this method when class which implements this interface
      * is alredy constructed.
+     * @deprecated Use {@link #register(int, Supplier, MessageSerializer)} instead.
      */
+    @Deprecated(forRemoval = true)
     default void register(int directType, Supplier<Message> supplier) throws IgniteException {
         register((short)directType, supplier);
     }

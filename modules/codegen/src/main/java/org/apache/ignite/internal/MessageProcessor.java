@@ -64,13 +64,13 @@ import static org.apache.ignite.internal.MessageSerializerGenerator.DLFT_ENUM_MA
  * service file and triggered during the compilation phase.
  */
 @SupportedAnnotationTypes("org.apache.ignite.internal.Order")
-@SupportedSourceVersion(SourceVersion.RELEASE_11)
+@SupportedSourceVersion(SourceVersion.RELEASE_17)
 public class MessageProcessor extends AbstractProcessor {
     /** Base interface that every message must implement. */
     static final String MESSAGE_INTERFACE = "org.apache.ignite.plugin.extensions.communication.Message";
 
     /** Compressed message. */
-    static final String COMPRESSED_MESSAGE_INTERFACE = "org.apache.ignite.internal.managers.communication.CompressedMessage";
+    static final String COMPRESSED_MESSAGE_CLASS = "org.apache.ignite.internal.managers.communication.CompressedMessage";
 
     /** Externalizable message. */
     static final String MARSHALLABLE_MESSAGE_INTERFACE = "org.apache.ignite.internal.MarshallableMessage";
@@ -85,7 +85,7 @@ public class MessageProcessor extends AbstractProcessor {
     /** Messages with no fields. A serializer generation intentionally skipped. */
     static final String[] SKIP_MESSAGES = {
         "org.apache.ignite.internal.processors.odbc.ClientMessage",
-        "org.apache.ignite.internal.managers.communication.CompressedMessage",
+        COMPRESSED_MESSAGE_CLASS,
         "org.apache.ignite.loadtests.communication.GridTestMessage"
     };
 

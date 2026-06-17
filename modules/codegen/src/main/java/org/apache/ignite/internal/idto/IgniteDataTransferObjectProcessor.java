@@ -56,7 +56,7 @@ import static org.apache.ignite.internal.idto.IDTOSerializerGenerator.simpleName
  * insight of using serializers.
  */
 @SupportedAnnotationTypes("org.apache.ignite.internal.management.api.Argument")
-@SupportedSourceVersion(SourceVersion.RELEASE_11)
+@SupportedSourceVersion(SourceVersion.RELEASE_17)
 public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
     /** Package for serializers. */
     private static final String FACTORY_PKG_NAME = "org.apache.ignite.internal.codegen.idto";

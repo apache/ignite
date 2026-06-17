@@ -77,6 +77,12 @@
 
         <dependency>
             <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-thin-client-api</artifactId>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-codegen</artifactId>
             <scope>provided</scope>
         </dependency>
@@ -228,7 +234,7 @@
         <dependency>
             <groupId>com.google.testing.compile</groupId>
             <artifactId>compile-testing</artifactId>
-            <version>0.21.0</version>
+            <version>0.23.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -353,6 +359,7 @@
                                     <include>${project.groupId}:ignite-binary-api</include>
                                     <include>${project.groupId}:ignite-binary-impl</include>
                                     <include>${project.groupId}:ignite-grid-unsafe</include>
+                                    <include>${project.groupId}:ignite-thin-client-api</include>
                                 </includes>
                             </artifactSet>
                         </configuration>
@@ -456,20 +463,11 @@
                                 <configuration>
                                     <failOnError>false</failOnError>
                                     <target>
-                                        <tstamp>
-                                            <format property="ignite.rel.date" pattern="ddMMyyyy" locale="en" />
-                                        </tstamp>
-
                                         <property name="props.file" value="../../modules/core/target/classes/ignite.properties" />
 
                                         <replaceregexp file="${props.file}" byline="true">
                                             <regexp pattern="ignite.update.notifier.enabled.by.default=.*" />
                                             <substitution expression="ignite.update.notifier.enabled.by.default=${update.notifier.enabled.by.default}" />
-                                        </replaceregexp>
-
-                                        <replaceregexp file="${props.file}" byline="true">
-                                            <regexp pattern="ignite.rel.date=.*" />
-                                            <substitution expression="ignite.rel.date=${ignite.rel.date}" />
                                         </replaceregexp>
 
                                         <replaceregexp file="${props.file}" byline="true">
