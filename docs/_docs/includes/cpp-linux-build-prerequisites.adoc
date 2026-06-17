@@ -26,20 +26,20 @@ Installation instructions for several popular distributions are listed below:
 tab:Ubuntu 18.04/20.04[]
 [source,bash,subs="attributes,specialchars"]
 ----
-sudo apt-get install -y build-essential cmake openjdk-11-jdk unixodbc-dev libssl-dev
+sudo apt-get install -y build-essential cmake openjdk-17-jdk unixodbc-dev libssl-dev
 ----
 
 tab:CentOS/RHEL 7[]
 [source,shell,subs="attributes,specialchars"]
 ----
 sudo yum install -y epel-release
-sudo yum install -y java-11-openjdk-devel cmake3 unixODBC-devel openssl-devel make gcc-c++
+sudo yum install -y java-17-openjdk-devel cmake3 unixODBC-devel openssl-devel make gcc-c++
 ----
 
 tab:CentOS/RHEL 8[]
 [source,shell,subs="attributes,specialchars"]
 ----
-sudo yum install -y java-11-openjdk-devel cmake3 unixODBC-devel openssl-devel make gcc-c++
+sudo yum install -y java-17-openjdk-devel cmake3 unixODBC-devel openssl-devel make gcc-c++
 ----
 
 --

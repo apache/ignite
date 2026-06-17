@@ -15,14 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.typedef.internal;
+package org.apache.ignite.loadtests.communication;
 
-import org.apache.ignite.internal.util.GridDebug;
+import org.apache.ignite.plugin.PluginContext;
+import org.apache.ignite.spi.MessagesPluginProvider;
 
-/**
- * Convenience alias for {@link GridDebug} class.
- */
-@SuppressWarnings("ExtendsUtilityClass")
-public class D extends GridDebug {
-    // No-op.
+/** Registers communication messages used by load tests. */
+public class LoadTestsCommunicationPluginProvider extends MessagesPluginProvider {
+    /** */
+    public LoadTestsCommunicationPluginProvider() {
+        super(GridTestMessage.class);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start(PluginContext ctx) {
+        // No-op.
+    }
 }
