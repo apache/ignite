@@ -45,7 +45,7 @@
                                 <value>node1:47500</value>
                                 <value>node2:47500</value>
                                 <value>node3:47500</value>
-                                <value>localnode:48500..48520</value>
+                                <value>host-gateway:48500..48520</value>
                             </list>
                         </property>
                     </bean>
