@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -38,8 +39,11 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.managers.communication.IgniteIoTestMessage;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
@@ -849,9 +853,7 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
                         InetSocketAddressMessage receivedVal = OperationContext.get(attr);
 
                         assertNotNull(receivedVal);
-
                         assertFalse(dfltAttrVal.port() == receivedVal.port());
-
                         assertEquals(receivedVal.port(), valToSend.port());
                         assertEquals(receivedVal.address(), valToSend.address());
 
@@ -897,6 +899,65 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
         assertTrue(coordLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
         assertTrue(srvrLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
         assertTrue(clientLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+    }
+
+    /** */
+    @Test
+    public void testSendAttributesByCommunication() throws Exception {
+        byte attrId = DistributedOperationContextAttributeRegistry.MAX_DISTRIBUTED_ATTR_ID;
+
+        InetSocketAddressMessage dfltAttrVal = new InetSocketAddressMessage(InetAddress.getLoopbackAddress(), 80);
+
+        OperationContextAttribute<InetSocketAddressMessage> attr = OperationContextAttribute.newInstance();
+
+        DistributedOperationContextAttributeRegistry.instance().register(attrId, attr);
+
+        startGrids(2);
+        startClientGrid(2);
+
+        CountDownLatch coordLatch = new CountDownLatch(2);
+        CountDownLatch srvrLatch = new CountDownLatch(2);
+        CountDownLatch clientLatch = new CountDownLatch(2);
+
+        InetSocketAddressMessage attrValToSend = new InetSocketAddressMessage(dfltAttrVal.address(), 443);
+
+        for (int i = 0; i < G.allGrids().size(); ++i) {
+            int i0 = i;
+
+            grid(i).context().io().addMessageListener(GridTopic.TOPIC_IO_TEST, new GridMessageListener() {
+                @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
+                    if(msg instanceof IgniteIoTestMessage) {
+                        InetSocketAddressMessage receivedVal = OperationContext.get(attr);
+
+                        assertNotNull(receivedVal);
+                        assertFalse(dfltAttrVal.port() == receivedVal.port());
+                        assertEquals(receivedVal.port(), attrValToSend.port());
+                        assertEquals(receivedVal.address(), attrValToSend.address());
+
+                        if (grid(i0).localNode().isClient())
+                            clientLatch.countDown();
+                        else if (grid(i0).localNode().order() == 1)
+                            coordLatch.countDown();
+                        else
+                            srvrLatch.countDown();
+                    }
+                }
+            });
+        }
+
+        assertFalse(attrValToSend.equals(dfltAttrVal));
+        assertNull(OperationContext.get(attr));
+
+        // Send from the coordinator.
+        try (Scope ignored = OperationContext.set(attr, attrValToSend)) {
+            grid(0).context().io().sendIoTest(grid(1).localNode(), null, false);
+            grid(0).context().io().sendIoTest(grid(1).localNode(), null, true);
+        }
+
+        assertTrue(waitForCondition(() -> coordLatch.getCount() == 2, getTestTimeout()));
+        assertTrue(waitForCondition(() -> srvrLatch.getCount() == 2, getTestTimeout()));
+        assertTrue(waitForCondition(() -> clientLatch.getCount() == 2, getTestTimeout()));
+        assertNull(OperationContext.get(attr));
     }
 
     /** */
