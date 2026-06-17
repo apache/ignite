@@ -51,8 +51,9 @@ public class DistributedOperationContextAttributeRegistry {
 
     /**
      * TODO : Declare distributed attributes as 'extends Message' after https://issues.apache.org/jira/browse/IGNITE-28766
+     *
      * @return Values for all registered operation context attributes.
-     * */
+     */
     public <T> Map<Byte, T> collectContext(@Nullable Class<T> checkValuesType) {
         Map<Byte, T> res = Collections.emptyMap();
 

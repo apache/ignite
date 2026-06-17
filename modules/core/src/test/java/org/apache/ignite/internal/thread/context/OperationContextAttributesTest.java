@@ -38,8 +38,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
@@ -62,7 +60,6 @@ import org.apache.ignite.internal.util.worker.queue.IgniteDelayedObjectHandler;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.tcp.messages.InetSocketAddressMessage;
@@ -72,7 +69,6 @@ import org.junit.Test;
 import org.springframework.lang.NonNull;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -97,9 +93,6 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
     /** */
     private int beforeTestReservedAttrIds;
 
-    /** */
-    private IgnitePredicate<? extends Event> evtLsnr;
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
@@ -120,16 +113,6 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
 
         // Releases attribute IDs reserved during the test.
         OperationContextAttribute.ID_GEN.set(beforeTestReservedAttrIds);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        if (evtLsnr != null)
-            cfg.setLocalEventListeners(Collections.singletonMap(evtLsnr, new int[] {EVT_DISCOVERY_CUSTOM_EVT}));
-
-        return cfg;
     }
 
     /** */
