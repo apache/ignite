@@ -33,8 +33,12 @@ import com.google.testing.compile.JavaFileObjects;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.MessageProcessor;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.cache.query.QueryIndexMessage;
 import org.apache.ignite.internal.util.CommonUtils;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.mappers.DefaultEnumMapper;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
@@ -359,7 +363,13 @@ public class MessageProcessorTest {
         for (String srcFile: srcFiles)
             input.add(javaFile(srcFile));
 
+        File igniteCoreJar = jarForClass(Message.class);
+        File igniteCodegenJar = jarForClass(Order.class);
+        File igniteBinaryApiJar = jarForClass(IgniteUuid.class);
+        File igniteCommonsJar = jarForClass(CommonUtils.class);
+
         return Compiler.javac()
+            .withClasspath(F.asList(igniteCoreJar, igniteCodegenJar, igniteBinaryApiJar, igniteCommonsJar))
             .withProcessors(proc)
             .compile(input);
     }

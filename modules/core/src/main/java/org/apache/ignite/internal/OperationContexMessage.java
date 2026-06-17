@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal;
 
+import java.util.Map;
 import org.apache.ignite.internal.thread.context.OperationContext;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.jetbrains.annotations.Nullable;
 
 /** ransport for {@link OperationContext} attributes. */
 public class OperationContexMessage implements Message {
@@ -33,5 +36,33 @@ public class OperationContexMessage implements Message {
     /** Empty constructor for serialization purposes. */
     public OperationContexMessage() {
         // No-op.
+    }
+
+    /** */
+    public static @Nullable OperationContexMessage instance(Map<Byte, Message> attrs) {
+        if (F.isEmpty(attrs))
+            return null;
+
+        OperationContexMessage res = new OperationContexMessage();
+
+        res.vals = new Message[attrs.size()];
+
+        int idx = 0;
+
+        for (Map.Entry<Byte, Message> e : attrs.entrySet()) {
+            byte attrId = e.getKey();
+            Message msgVal = e.getValue();
+
+            assert attrId >= 0 && attrId < Byte.SIZE;
+
+            byte mask = (byte)(1 << attrId);
+
+            assert (res.idBitmask & mask) == 0;
+
+            res.idBitmask |= mask;
+            res.vals[idx++] = msgVal;
+        }
+
+        return res;
     }
 }

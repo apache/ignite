@@ -121,6 +121,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.IgniteSpiContext;
@@ -3049,8 +3050,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                 return;
             }
 
-            if (!fromSocket)
-                fillOperationContextAttributes(msg);
+            if (!fromSocket) {
+                msg.opCtxMsg = OperationContexMessage.instance(DistributedOperationContextAttributeRegistry.instance()
+                    .collectContext(Message.class));
+            }
 
             if (msg instanceof TraceableMessage) {
                 TraceableMessage tMsg = (TraceableMessage)msg;

@@ -666,7 +666,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(PartitionHashRecord.class);
         withNoSchema(TransactionsHashRecord.class);
 
-        // [13400 - 13600]: Operation context messages.
+        // [13400 - 13500]: Operation context messages.
         msgIdx = 13400;
         withNoSchema(OperationContexMessage.class);
 

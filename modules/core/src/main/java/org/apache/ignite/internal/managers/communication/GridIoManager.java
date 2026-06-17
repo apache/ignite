@@ -83,6 +83,7 @@ import org.apache.ignite.internal.IgniteDeploymentCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.OperationContexMessage;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
@@ -102,6 +103,7 @@ import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.processors.tracing.SpanTags;
+import org.apache.ignite.internal.thread.context.DistributedOperationContextAttributeRegistry;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -455,10 +457,20 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
         ioMetric.register(RCVD_BYTES_CNT, spi::getReceivedBytesCount, "Received bytes count.");
 
-        getSpi().setListener(commLsnr = new CommunicationListenerEx<Object>() {
+        getSpi().setListener(commLsnr = new CommunicationListenerEx<>() {
             @Override public void onMessage(UUID nodeId, Object msg, IgniteRunnable msgC) {
                 try {
-                    onMessage0(nodeId, (GridIoMessage)msg, msgC);
+                    GridIoMessage msg0 = (GridIoMessage)msg;
+
+                    if (!locNodeId.equals(nodeId) && msg0.opCtxMsg != null) {
+                        OperationContexMessage cm = msg0.opCtxMsg;
+
+                        try (Scope ignored = DistributedOperationContextAttributeRegistry.instance().restoreContext(cm.idBitmask, cm.vals)) {
+                            onMessage0(nodeId, msg0, msgC);
+                        }
+                    }
+                    else
+                        onMessage0(nodeId, msg0, msgC);
                 }
                 catch (ClassCastException ignored) {
                     U.error(log, "Communication manager received message of unknown type (will ignore): " +
@@ -2037,16 +2049,22 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         long timeout,
         boolean skipOnTimeout
     ) {
+        GridIoMessage res;
+
         if (ctx.security().enabled()) {
             UUID secSubjId = null;
 
             if (!ctx.security().isDefaultContext())
                 secSubjId = ctx.security().securityContext().subject().id();
 
-            return new GridIoSecurityAwareMessage(secSubjId, plc, topic, msg, ordered, timeout, skipOnTimeout);
-        }
+            res = new GridIoSecurityAwareMessage(secSubjId, plc, topic, msg, ordered, timeout, skipOnTimeout);
+        } else
+            res = new GridIoMessage(plc, topic, msg, ordered, timeout, skipOnTimeout);
 
-        return new GridIoMessage(plc, topic, msg, ordered, timeout, skipOnTimeout);
+        res.opCtxMsg = OperationContexMessage.instance(DistributedOperationContextAttributeRegistry.instance()
+            .collectContext(Message.class));
+
+        return res;
     }
 
     /**

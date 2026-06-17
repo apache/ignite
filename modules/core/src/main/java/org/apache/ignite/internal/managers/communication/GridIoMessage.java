@@ -19,6 +19,7 @@ package org.apache.ignite.internal.managers.communication;
 
 import org.apache.ignite.internal.ExecutorAwareMessage;
 import org.apache.ignite.internal.GridTopicMessage;
+import org.apache.ignite.internal.OperationContexMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
@@ -63,6 +64,11 @@ public class GridIoMessage implements Message, SpanTransport {
     /** Serialized span */
     @Order(6)
     byte[] span;
+
+    /** Effective operation context attributes. */
+    @Order(7)
+    @GridToStringInclude
+    public @Nullable OperationContexMessage opCtxMsg;
 
     /**
      * Default constructor.

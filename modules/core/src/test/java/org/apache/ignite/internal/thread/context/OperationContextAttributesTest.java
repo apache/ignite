@@ -916,7 +916,7 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
         startClientGrid(2);
 
         CountDownLatch coordLatch = new CountDownLatch(2);
-        CountDownLatch srvrLatch = new CountDownLatch(2);
+        CountDownLatch srvrLatch = new CountDownLatch(4);
         CountDownLatch clientLatch = new CountDownLatch(2);
 
         InetSocketAddressMessage attrValToSend = new InetSocketAddressMessage(dfltAttrVal.address(), 443);
@@ -948,15 +948,40 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
         assertFalse(attrValToSend.equals(dfltAttrVal));
         assertNull(OperationContext.get(attr));
 
-        // Send from the coordinator.
+        // From the coordinator to a server.
         try (Scope ignored = OperationContext.set(attr, attrValToSend)) {
             grid(0).context().io().sendIoTest(grid(1).localNode(), null, false);
             grid(0).context().io().sendIoTest(grid(1).localNode(), null, true);
         }
 
         assertTrue(waitForCondition(() -> coordLatch.getCount() == 2, getTestTimeout()));
-        assertTrue(waitForCondition(() -> srvrLatch.getCount() == 2, getTestTimeout()));
-        assertTrue(waitForCondition(() -> clientLatch.getCount() == 2, getTestTimeout()));
+        assertNull(OperationContext.get(attr));
+
+        // From a server to the coordinator.
+        try (Scope ignored = OperationContext.set(attr, attrValToSend)) {
+            grid(1).context().io().sendIoTest(grid(0).localNode(), null, false);
+            grid(1).context().io().sendIoTest(grid(0).localNode(), null, true);
+        }
+
+        assertTrue(coordLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+        assertNull(OperationContext.get(attr));
+
+        // From a client to a server.
+        try (Scope ignored = OperationContext.set(attr, attrValToSend)) {
+            grid(2).context().io().sendIoTest(grid(1).localNode(), null, false);
+            grid(2).context().io().sendIoTest(grid(1).localNode(), null, true);
+        }
+
+        assertTrue(srvrLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+        assertNull(OperationContext.get(attr));
+
+        // From a server to a client.
+        try (Scope ignored = OperationContext.set(attr, attrValToSend)) {
+            grid(1).context().io().sendIoTest(grid(2).localNode(), null, false);
+            grid(1).context().io().sendIoTest(grid(2).localNode(), null, true);
+        }
+
+        assertTrue(clientLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
         assertNull(OperationContext.get(attr));
     }
 
