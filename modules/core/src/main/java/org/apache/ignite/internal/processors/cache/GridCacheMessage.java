@@ -383,7 +383,7 @@ public abstract class GridCacheMessage implements Message {
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable protected final void prepareInvokeArgumentsDeployment(@Nullable Object[] args, GridCacheContext ctx)
+    protected final void prepareInvokeArgumentsDeployment(@Nullable Object[] args, GridCacheContext ctx)
         throws IgniteCheckedException {
         assert ctx != null;
 
