@@ -314,6 +314,7 @@ The NODES view contains information about the cluster nodes.
 |IS_CLIENT |BOOLEAN |Indicates whether the node is a client.
 |NODE_ID |UUID |Node ID.
 |NODE_ORDER |INT |Node order within the topology.
+|DATA_CENTER_ID |VARCHAR |Node data center ID.
 |VERSION |VARCHAR |Node version.
 |===
 
