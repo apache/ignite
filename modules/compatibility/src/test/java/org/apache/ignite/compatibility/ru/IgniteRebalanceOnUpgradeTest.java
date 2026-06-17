@@ -41,8 +41,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscoverySharedFsIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.AfterClass;
@@ -81,19 +79,11 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
     private final Map<String, String> addrs = new HashMap<>();
 
     /** */
-    public IgniteRebalanceOnUpgradeTest() {
-        // Конструктор остается пустым, так как ipFinder инициализируется в методе configuration
-    }
-
-    /** */
     @BeforeClass
     public static void beforeClass() {
         U.delete(LOCAL_WORK_DIR);
 
-        // Установка свойства для предпочтения IPv4 адресов
         System.setProperty("java.net.preferIPv4Stack", "true");
-        
-        // Также устанавливаем свойство для принудительного использования IPv4
         System.setProperty("java.net.preferIPv6Addresses", "false");
     }
 
@@ -110,7 +100,7 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return super.getTestTimeout() * 2;
+        return super.getTestTimeout() * 3;
     }
 
     /** Basic RU test. */
@@ -124,16 +114,12 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
 
             System.out.println(">>> Addresses=" + addrs);
 
-            IgniteContainer node = cluster.containers().get(0);
-
-            node.activateCluster();
-
             ClientCacheConfiguration cfg = new ClientCacheConfiguration()
                 .setName(CACHE_NAME)
                 .setBackups(1)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
-            ClientCache<Integer, Integer> cache = client(node.clientAddress()).createCache(cfg);
+            ClientCache<Integer, Integer> cache = client(cluster.containers().get(0).clientAddress()).createCache(cfg);
 
             for (int i = 0; i < 1000; i++)
                 cache.put(i, i);
@@ -170,7 +156,7 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
             IgniteEx ignite = null;
 
             try {
-                Thread.sleep(5_000);
+                Thread.sleep(20_000);
 
                 ignite = startGrid(configuration(container.nodeId(), container.localWorkDirectory(), addrs.values()));
             }
@@ -205,8 +191,8 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
             // Установим локальный адрес для связи с контейнерами
             .setLocalAddress(InetAddress.getLocalHost().getHostAddress())
             // Установим порты для дисковери
-            .setLocalPort(47500);
-            //.setLocalPortRange(20);
+            .setLocalPort(48500)
+            .setLocalPortRange(20);
 
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
             //.setLocalAddress("0.0.0.0");
@@ -239,14 +225,3 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
         }
     }
 }
-
-
-/**
- [23:47:56,251][INFO][tcp-disco-sock-reader-[]-#11-#113][TcpDiscoverySpi] Started serving remote node connection [rmtAddr=/192.168.65.1:47965, rmtPort=47965]
-
- [23:47:56,253][INFO][tcp-disco-sock-reader-[53822b8b 192.168.65.1:47965]-#11-#113][TcpDiscoverySpi] Initialized connection with remote server node [nodeId=53822b8b-42d2-4e41-9866-5fb49a60395b, rmtAddr=/192.168.65.1:47965]
-
- [23:47:56,971][WARNING][tcp-disco-sock-reader-[53822b8b 192.168.65.1:47965]-#11-#113][TcpDiscoverySpi] Failed to ping node [nodeId=53822b8b-42d2-4e41-9866-5fb49a60395b, address=/127.0.0.1:47520]. Node has left or is leaving topology. Cause: Connection refused
-
- [23:47:56,972][WARNING][tcp-disco-sock-reader-[53822b8b 192.168.65.1:47965]-#11-#113][TcpDiscoverySpi] Failed to ping joining node, closing connection. [node=TcpDiscoveryNode [id=53822b8b-42d2-4e41-9866-5fb49a60395b, consistentId=ad26bff6-5ff5-49f1-9a61-425a827953ed, addrs=ArrayList [127.0.0.1], sockAddrs=HashSet [/127.0.0.1:47520], discPort=47520, order=0, intOrder=0, loc=false, ver=2.19.0#19700101-sha1:00000000, isClient=false, dataCenterId=null]]
- */

@@ -18,7 +18,6 @@
 package org.apache.ignite.compatibility.testframework.testcontainers;
 
 import java.io.IOException;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import org.testcontainers.containers.Network;
@@ -49,6 +48,8 @@ public class IgniteClusterContainer implements Startable {
     /** {@inheritDoc} */
     @Override public void start() {
         Startables.deepStart(containers).join();
+
+        containers.get(0).activateCluster(containers.size());
     }
 
     /** {@inheritDoc} */
