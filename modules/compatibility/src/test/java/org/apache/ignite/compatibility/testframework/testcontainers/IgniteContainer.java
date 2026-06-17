@@ -19,9 +19,6 @@ package org.apache.ignite.compatibility.testframework.testcontainers;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.util.Arrays;
@@ -43,7 +40,6 @@ import org.testcontainers.utility.DockerImageName;
 
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.testcontainers.utility.MountableFile.forClasspathResource;
-import static org.testcontainers.utility.MountableFile.forHostPath;
 
 /** Ignite container. */
 public class IgniteContainer extends GenericContainer<IgniteContainer> {
@@ -96,21 +92,13 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
         //withEnv("IGNITE_LOCAL_HOST", "0.0.0.0");
         withEnv("TZ", ZoneId.systemDefault().toString());
 
-        //getPortBindings().add("47500:47500");
-        //getPortBindings().add("47100:47100");
-
         withFileSystemBind(LOCAL_WORK_DIR_PATH, WORK_DIR_PATH, BindMode.READ_WRITE);
-
-        String configTemplate = Files.readString(Paths.get("src/test/resources/docker/test-config.xml"));
-        String configXml = configTemplate.replace("${LOCAL_IP}", InetAddress.getLocalHost().getHostAddress());
-
-        Path tempConfigFile = Files.createTempFile("ignite-config-", ".xml");
-        Files.write(tempConfigFile, configXml.getBytes());
-
-        withCopyFileToContainer(forHostPath(tempConfigFile), CFG_PATH);
+        withCopyFileToContainer(forClasspathResource("docker/test-config.xml"), CFG_PATH);
 
         withNetwork(net);
         withNetworkAliases(hostname);
+
+        withExtraHost("localnode", InetAddress.getLocalHost().getHostAddress());
         withExposedPorts(ClientConnectorConfiguration.DFLT_PORT, TcpCommunicationSpi.DFLT_PORT, TcpDiscoverySpi.DFLT_PORT);
 
         waitingFor(Wait.forLogMessage(".*Node started.*", 1)
@@ -128,11 +116,11 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
     }
 
     /** Activate cluster. */
-    public void activateCluster() {
+    public void activateCluster(int nodeCnt) {
         execControl("--set-state", "ACTIVE", "--yes");
 
         try {
-            waitForCondition(() -> {
+            boolean success = waitForCondition(() -> {
                 String out = execControl("--state");
 
                 Matcher matcher = CLUSTER_STATE_PATTERN.matcher(out);
@@ -142,6 +130,20 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
 
                 return false;
             }, 30_000);
+
+            if (!success)
+                throw new IllegalStateException("Failed to set state ACTIVE");
+
+            success = waitForCondition(() -> {
+                String out = execControl("--baseline");
+
+                System.out.println(">>> Out=" + out);
+
+                return out.contains("Number of baseline nodes: " + nodeCnt);
+            }, 30_000, 5_000);
+
+            if (!success)
+                throw new IllegalStateException("Check cluster count failed");
         }
         catch (IgniteInterruptedCheckedException e) {
             throw new IgniteException(e);
@@ -155,7 +157,7 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
 
     /** */
     public String discoveryAddress() {
-        return address(TcpDiscoverySpi.DFLT_PORT);
+        return address(TcpDiscoverySpi.DFLT_PORT).replace("localhost", "0.0.0.0");
 
 //        return "0.0.0.0:" + getMappedPort(TcpDiscoverySpi.DFLT_PORT);
 

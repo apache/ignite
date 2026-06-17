@@ -38,17 +38,14 @@
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="localPort" value="47500"/>
-                <property name="localPortRange" value="20"/>
                 <property name="ipFinder">
                     <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
                         <property name="addresses">
                             <list>
-                                <value>node1:47500..47520</value>
-                                <value>node2:47500..47520</value>
-                                <value>node3:47500..47520</value>
-                                <value>${LOCAL_IP}:47500</value>
-                                <value>${LOCAL_IP}:47501</value>
-                                <value>${LOCAL_IP}:47502</value>
+                                <value>node1:47500</value>
+                                <value>node2:47500</value>
+                                <value>node3:47500</value>
+                                <value>localnode:48500..48520</value>
                             </list>
                         </property>
                     </bean>
@@ -58,7 +55,6 @@
         <property name="communicationSpi">
             <bean class="org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi">
                 <property name="localPort" value="47100"/>
-                <property name="localPortRange" value="20"/>
             </bean>
         </property>
         <property name="pluginProviders">
