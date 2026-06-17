@@ -403,7 +403,8 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
         /** {@inheritDoc} */
         @Override protected void finishProcess(UUID reqId, @Nullable Throwable err) {
-            // We rely on the guarantee that this method is called only from the Discovery thread. So no synchronization is required.
+            // We rely on the guarantee that {@code activeProcId} is only accessed from the Discovery thread, just like
+            // the current method. Therefore, synchronization is not required.
             if (reqId.equals(activeProcId))
                 activeProcId = null;
 

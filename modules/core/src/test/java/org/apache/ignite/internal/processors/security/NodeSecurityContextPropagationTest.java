@@ -174,7 +174,7 @@ public class NodeSecurityContextPropagationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private BlockingDequeWrapper<TcpDiscoveryAbstractMessage> discoveryRingMessageWorkerQueue(IgniteEx ignite) {
+    public static BlockingDequeWrapper<TcpDiscoveryAbstractMessage> discoveryRingMessageWorkerQueue(IgniteEx ignite) {
         return U.field(discoveryRingMessageWorker(ignite), "queue");
     }
 
@@ -199,7 +199,7 @@ public class NodeSecurityContextPropagationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void wrapRingMessageWorkerQueue(IgniteEx ignite) throws Exception {
+    public static void wrapRingMessageWorkerQueue(IgniteEx ignite) throws Exception {
         Object discoMsgWorker = discoveryRingMessageWorker(ignite);
 
         BlockingDeque<TcpDiscoveryAbstractMessage> queue = U.field(discoMsgWorker, "queue");
