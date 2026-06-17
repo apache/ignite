@@ -37,7 +37,7 @@ import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatur
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureManager;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureSet;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteProductFeatures;
-import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteReleaseFeatures;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.SupportedFeaturesRegistry;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -87,7 +87,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
     public RollingUpgradeProcessor(GridKernalContext ctx) {
         this(ctx, () -> new IgniteProductFeatures(
             IgniteVersionUtils.VER,
-            IgniteFeatureSet.buildFrom(IgniteReleaseFeatures.class))
+            IgniteFeatureSet.buildFrom(SupportedFeaturesRegistry.class))
         );
     }
 

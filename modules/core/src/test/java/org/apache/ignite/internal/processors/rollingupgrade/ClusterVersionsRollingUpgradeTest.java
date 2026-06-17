@@ -635,7 +635,7 @@ public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTes
     private UUID extractActiveFinalizeProcessId(int nodeIdx) {
         Object enable = U.field(grid(nodeIdx).context().rollingUpgrade(), "finalizeProc");
 
-        return U.field(enable, "initiatorOpId");
+        return U.field(enable, "locInitOpId");
     }
 
     /** */

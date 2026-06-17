@@ -26,6 +26,9 @@ package org.apache.ignite.internal.processors.rollingupgrade.feature;
  *     <li>providing the ability to deactivate Ignite functionality introduced in newer versions for the duration of a Rolling Upgrade</li>
  * </ol>
  *
+ * This interface allows you to define Ignite features for both custom plugins/SPIs and core Ignite modules, and ensures
+ * they are handled consistently throughout the Rolling Upgrade process.
+ *
  * @see IgniteFeatureSet
  */
 public interface IgniteFeature {
