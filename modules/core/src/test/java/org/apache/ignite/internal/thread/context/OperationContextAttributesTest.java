@@ -903,6 +903,90 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
+    public void testSendAttributesByCommunication() throws Exception {
+        byte attrId = (byte)(OperationContextAttribute.MAX_ATTR_CNT - 1);
+
+        InetSocketAddressMessage dfltAttrVal = new InetSocketAddressMessage(InetAddress.getLoopbackAddress(), 80);
+
+        OperationContextAttribute<InetSocketAddressMessage> attr = OperationContextAttribute.newInstance();
+
+        DistributedOperationContextAttributeRegistry.instance().register(attrId, attr);
+
+        startGrids(2);
+        startClientGrid(2);
+
+        CountDownLatch coordLatch = new CountDownLatch(3);
+        CountDownLatch srvrLatch = new CountDownLatch(3);
+        CountDownLatch clientLatch = new CountDownLatch(3);
+
+        InetSocketAddressMessage valToSend = new InetSocketAddressMessage(dfltAttrVal.address(), 443);
+
+        for (int i = 0; i < G.allGrids().size(); ++i) {
+            int i0 = i;
+
+            grid(i).context().io().addMessageListener().setCustomEventListener(
+                DynamicCacheChangeBatch.class, new CustomEventListener<>() {
+                    @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd,
+                        DynamicCacheChangeBatch msg) {
+
+                        InetSocketAddressMessage receivedVal = OperationContext.get(attr);
+
+                        if (receivedVal != null) {
+                            assertFalse(dfltAttrVal.port() == receivedVal.port());
+
+                            assertEquals(receivedVal.port(), valToSend.port());
+                            assertEquals(receivedVal.address(), valToSend.address());
+
+                            if (grid(i0).localNode().isClient())
+                                clientLatch.countDown();
+                            else if (grid(i0).localNode().order() == 1)
+                                coordLatch.countDown();
+                            else
+                                srvrLatch.countDown();
+                        }
+                    }
+                });
+        }
+
+        assertFalse(valToSend.equals(dfltAttrVal));
+        assertNull(OperationContext.get(attr));
+
+        // Send from a coordinator.
+        try (Scope ignored = OperationContext.set(attr, valToSend)) {
+            grid(0).createCache(defaultCacheConfiguration());
+        }
+
+        assertTrue(waitForCondition(() -> coordLatch.getCount() == 2, getTestTimeout()));
+        assertTrue(waitForCondition(() -> srvrLatch.getCount() == 2, getTestTimeout()));
+        assertTrue(waitForCondition(() -> clientLatch.getCount() == 2, getTestTimeout()));
+
+        assertNull(OperationContext.get(attr));
+
+        // Send from a server.
+        try (Scope ignored = OperationContext.set(attr, valToSend)) {
+            grid(1).destroyCache(DEFAULT_CACHE_NAME);
+        }
+
+        assertTrue(waitForCondition(() -> coordLatch.getCount() == 1, getTestTimeout()));
+        assertTrue(waitForCondition(() -> srvrLatch.getCount() == 1, getTestTimeout()));
+        assertTrue(waitForCondition(() -> clientLatch.getCount() == 1, getTestTimeout()));
+
+        assertNull(OperationContext.get(attr));
+
+        // Send from a client.
+        try (Scope ignored = OperationContext.set(attr, valToSend)) {
+            grid(2).createCache(defaultCacheConfiguration());
+        }
+
+        assertNull(OperationContext.get(attr));
+
+        assertTrue(coordLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+        assertTrue(srvrLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+        assertTrue(clientLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+    }
+
+    /** */
     private void doContextAwareExecutorServiceTest(ExecutorService pool) throws Exception {
         CountDownLatch poolUnblockedLatch = blockPool(pool);
 
