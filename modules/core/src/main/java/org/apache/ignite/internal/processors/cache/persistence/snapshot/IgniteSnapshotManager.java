@@ -1389,8 +1389,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             incSnpId = null;
 
-            assert clusterSnpFut != null;
-
             if (endFail.isEmpty() && snpOp.error() == null)
                 warnAtomicCachesInIncrementalSnapshot(snpReq.snapshotName(), snpReq.incrementIndex(), snpReq.groups());
         }
