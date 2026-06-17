@@ -89,7 +89,7 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
         withEnv("IGNITE_QUIET", "false");
         withEnv("IGNITE_NODE_NAME", nodeId);
         withEnv("IGNITE_WORK_DIR", workDirPath);
-        //withEnv("IGNITE_LOCAL_HOST", "0.0.0.0");
+        withEnv("IGNITE_LOCAL_HOST", "0.0.0.0");
         withEnv("TZ", ZoneId.systemDefault().toString());
 
         withFileSystemBind(LOCAL_WORK_DIR_PATH, WORK_DIR_PATH, BindMode.READ_WRITE);
@@ -98,7 +98,7 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
         withNetwork(net);
         withNetworkAliases(hostname);
 
-        withExtraHost("localnode", InetAddress.getLocalHost().getHostAddress());
+        withExtraHost("host-gateway", "host-gateway"); // InetAddress.getLocalHost().getHostAddress());
         withExposedPorts(ClientConnectorConfiguration.DFLT_PORT, TcpCommunicationSpi.DFLT_PORT, TcpDiscoverySpi.DFLT_PORT);
 
         waitingFor(Wait.forLogMessage(".*Node started.*", 1)

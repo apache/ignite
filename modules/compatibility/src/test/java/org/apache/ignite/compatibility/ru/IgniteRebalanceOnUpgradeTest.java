@@ -189,7 +189,9 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
             .setAckTimeout(5000)
             .setJoinTimeout(10000)
             // Установим локальный адрес для связи с контейнерами
-            .setLocalAddress(InetAddress.getLocalHost().getHostAddress())
+            //.setLocalAddress(InetAddress.getLocalHost().getHostAddress())
+//            .setAddressFilter(addrs -> !(addrs.getHostString().contains("0.0.0.0")
+//             || addrs.getHostString().contains("127.0.0.1")))
             // Установим порты для дисковери
             .setLocalPort(48500)
             .setLocalPortRange(20);
@@ -200,7 +202,7 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
             //.setLocalPortRange(100);
 
         return new IgniteConfiguration()
-            //.setLocalHost(InetAddress.getLocalHost().getHostAddress())
+            .setLocalHost("0.0.0.0")
             .setConsistentId(nodeId)
             .setWorkDirectory(workDir)
             .setDataStorageConfiguration(new DataStorageConfiguration().setDefaultDataRegionConfiguration(dataRegionCfg))
