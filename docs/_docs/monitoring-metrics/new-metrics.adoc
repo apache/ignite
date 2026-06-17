@@ -406,6 +406,7 @@ Register name: `io.dataregion.{data_region_name}`
 |PagesWritten|    long|    Number of pages written from last restart.
 |PhysicalMemoryPages| long|    Number of pages residing in physical RAM.
 |PhysicalMemorySize | long|    Gets total size of pages loaded to the RAM, in bytes
+|SizeUsedByData| long|    Estimated number of bytes occupied by data in the region, including empty space inside non-empty pages.
 |TotalAllocatedPages |long|    Total number of allocated pages.
 |TotalAllocatedSize|  long  |  Gets a total size of memory allocated in the data region, in bytes
 |TotalThrottlingTime| long|    Total throttling threads time in milliseconds. The Ignite throttles threads that generate dirty pages during the ongoing checkpoint.

@@ -276,6 +276,8 @@ The metric is called `TotalAllocatedSize`.
 
 You can also get an estimate of the actual size of data by multiplying the number of link:memory-architecture#data-pages[data pages] in use by the fill factor. The fill factor is the ratio of the size of data in a page to the page size, averaged over all pages. The number of pages in use and the fill factor are available at the level of data <<Data Region Size,region metrics>>.
 
+For link:memory-configuration/data-regions[data region] metrics, Ignite also exposes the `SizeUsedByData` metric. It estimates how many bytes are currently occupied by data in the region, including the empty space inside non-empty pages. Use this metric when you need a more direct estimate of how much data is stored in the region, and use `TotalAllocatedSize` when you need to monitor how much space has already been allocated for that region.
+
 Add up the estimated size of all data regions to get the estimated total amount of data on the node.
 
 
@@ -323,6 +325,7 @@ The size of the data region on a node comprises the size of all partitions (incl
 | Attribute | Type | Description | Scope
 
 | TotalAllocatedSize | long  | The size of the space allocated for this data region (in bytes). {allocsize_note} | Node
+| SizeUsedByData | long | The estimated number of bytes occupied by data in this data region, including empty space inside non-empty pages. | Node
 | PagesFillFactor| float | The average amount of data in pages as a ratio of the page size. | Node
 | TotalUsedPages | long | The number of data pages that are currently in use. | Node
 | PhysicalMemoryPages |long |The number of data pages in this data region held in RAM. | Node
