@@ -17,6 +17,8 @@
 
 package org.apache.ignite.compatibility.testframework.testcontainers;
 
+import java.io.IOException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import org.testcontainers.containers.Network;
@@ -32,7 +34,7 @@ public class IgniteClusterContainer implements Startable {
     private final Network net = Network.newNetwork();
 
     /** @param commitHash Commit hash. */
-    public IgniteClusterContainer(String commitHash, List<String> nodeIds) {
+    public IgniteClusterContainer(String commitHash, List<String> nodeIds) throws IOException {
         containers = new ArrayList<>(nodeIds.size());
 
         for (int i = 0; i < nodeIds.size(); i++) {

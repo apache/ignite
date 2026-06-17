@@ -18,6 +18,10 @@
 package org.apache.ignite.compatibility.testframework.testcontainers;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.util.Arrays;
@@ -27,6 +31,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +43,7 @@ import org.testcontainers.utility.DockerImageName;
 
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.testcontainers.utility.MountableFile.forClasspathResource;
+import static org.testcontainers.utility.MountableFile.forHostPath;
 
 /** Ignite container. */
 public class IgniteContainer extends GenericContainer<IgniteContainer> {
@@ -76,7 +82,7 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
     private final String workDirPath;
 
     /** Constructor. */
-    public IgniteContainer(String commitHash, Network net, String hostname, String nodeId) {
+    public IgniteContainer(String commitHash, Network net, String hostname, String nodeId) throws IOException {
         super(DockerImageName.parse("apacheignite/ignite:" + commitHash));
 
         this.hostname = hostname;
@@ -87,16 +93,25 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
         withEnv("IGNITE_QUIET", "false");
         withEnv("IGNITE_NODE_NAME", nodeId);
         withEnv("IGNITE_WORK_DIR", workDirPath);
-        withEnv("IGNITE_LOCAL_HOST", "0.0.0.0");
+        //withEnv("IGNITE_LOCAL_HOST", "0.0.0.0");
         withEnv("TZ", ZoneId.systemDefault().toString());
+
+        //getPortBindings().add("47500:47500");
+        //getPortBindings().add("47100:47100");
 
         withFileSystemBind(LOCAL_WORK_DIR_PATH, WORK_DIR_PATH, BindMode.READ_WRITE);
 
-        withCopyFileToContainer(forClasspathResource("docker/test-config.xml"), CFG_PATH);
+        String configTemplate = Files.readString(Paths.get("src/test/resources/docker/test-config.xml"));
+        String configXml = configTemplate.replace("${LOCAL_IP}", InetAddress.getLocalHost().getHostAddress());
+
+        Path tempConfigFile = Files.createTempFile("ignite-config-", ".xml");
+        Files.write(tempConfigFile, configXml.getBytes());
+
+        withCopyFileToContainer(forHostPath(tempConfigFile), CFG_PATH);
 
         withNetwork(net);
         withNetworkAliases(hostname);
-        withExposedPorts(ClientConnectorConfiguration.DFLT_PORT, 47100, TcpDiscoverySpi.DFLT_PORT);
+        withExposedPorts(ClientConnectorConfiguration.DFLT_PORT, TcpCommunicationSpi.DFLT_PORT, TcpDiscoverySpi.DFLT_PORT);
 
         waitingFor(Wait.forLogMessage(".*Node started.*", 1)
             .withStartupTimeout(Duration.ofSeconds(600)));
@@ -135,12 +150,22 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
 
     /** @return Client address. */
     public String clientAddress() {
-        return getHost() + ":" + getMappedPort(ClientConnectorConfiguration.DFLT_PORT);
+        return address(ClientConnectorConfiguration.DFLT_PORT);
     }
 
     /** */
     public String discoveryAddress() {
-        return getHost() + ":" + getMappedPort(TcpDiscoverySpi.DFLT_PORT);
+        return address(TcpDiscoverySpi.DFLT_PORT);
+
+//        return "0.0.0.0:" + getMappedPort(TcpDiscoverySpi.DFLT_PORT);
+
+//        return getContainerInfo().getNetworkSettings().getNetworks().values()
+//            .iterator().next().getIpAddress() + ":" + getMappedPort(TcpDiscoverySpi.DFLT_PORT);
+    }
+
+    /** */
+    private String address(int port) {
+        return getHost() + ":" + getMappedPort(port);
     }
 
     /** */
