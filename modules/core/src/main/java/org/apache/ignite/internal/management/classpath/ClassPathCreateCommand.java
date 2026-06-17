@@ -22,7 +22,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
@@ -120,6 +122,7 @@ public class ClassPathCreateCommand implements NativeCommand<ClassPathCreateComm
     /** */
     private static List<Path> prepareFiles(ClassPathCreateCommandArg arg) throws IOException {
         List<Path> files = new ArrayList<>(arg.files.length);
+        Set<String> names = new HashSet<>();
 
         arg.lengths = new long[arg.files.length];
 
@@ -130,6 +133,9 @@ public class ClassPathCreateCommand implements NativeCommand<ClassPathCreateComm
 
             if (!Files.exists(f) || Files.isDirectory(f))
                 throw new IllegalArgumentException("File not exists or directory: " + f);
+
+            if (!names.add(f.getFileName().toString()))
+                throw new IllegalArgumentException("Duplicate file name: " + f.getFileName());
 
             files.add(f);
 
