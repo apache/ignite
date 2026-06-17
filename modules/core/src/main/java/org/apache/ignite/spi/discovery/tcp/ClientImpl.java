@@ -1312,7 +1312,7 @@ class ClientImpl extends TcpDiscoveryImpl {
          * @param msg Message.
          */
         private void sendMessage(TcpDiscoveryAbstractMessage msg) {
-            msg.opCtxAttrs = DistributedOperationContextAttributeRegistry.instance().collectContext();
+            fillOperationContextAttributes(msg);
 
             synchronized (mux) {
                 queue.add(msg);
@@ -2007,10 +2007,11 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                         TcpDiscoveryAbstractMessage msg0 = (TcpDiscoveryAbstractMessage)msg;
 
-                        if (F.isEmpty(msg0.opCtxAttrs))
+                        if (msg0.opCtxMsg == null)
                             processDiscoveryMessage(msg0);
                         else {
-                            try (Scope ignored = DistributedOperationContextAttributeRegistry.instance().restoreContext(msg0.opCtxAttrs)) {
+                            try (Scope ignored = DistributedOperationContextAttributeRegistry.instance()
+                                .restoreContext(msg0.opCtxMsg.idBitmask, msg0.opCtxMsg.vals)) {
                                 processDiscoveryMessage(msg0);
                             }
                         }

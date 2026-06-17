@@ -821,7 +821,7 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testSendAttributesByDiscovery() throws Exception {
-        byte attrId = (byte)(OperationContextAttribute.MAX_ATTR_CNT + 1);
+        byte attrId = (byte)(OperationContextAttribute.MAX_ATTR_CNT - 1);
 
         InetSocketAddressMessage dfltAttrVal = new InetSocketAddressMessage(InetAddress.getLoopbackAddress(), 80);
 
