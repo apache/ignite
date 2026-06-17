@@ -821,7 +821,7 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testSendAttributesByDiscovery() throws Exception {
-        byte attrId = (byte)(OperationContextAttribute.MAX_ATTR_CNT - 1);
+        byte attrId = DistributedOperationContextAttributeRegistry.MAX_DISTRIBUTED_ATTR_ID;
 
         InetSocketAddressMessage dfltAttrVal = new InetSocketAddressMessage(InetAddress.getLoopbackAddress(), 80);
 
@@ -866,10 +866,9 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
         }
 
         assertFalse(valToSend.equals(dfltAttrVal));
-
         assertNull(OperationContext.get(attr));
 
-        // Send from a coordinator.
+        // Send from the coordinator.
         try (Scope ignored = OperationContext.set(attr, valToSend)) {
             grid(0).createCache(defaultCacheConfiguration());
         }
@@ -877,7 +876,6 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
         assertTrue(waitForCondition(() -> coordLatch.getCount() == 2, getTestTimeout()));
         assertTrue(waitForCondition(() -> srvrLatch.getCount() == 2, getTestTimeout()));
         assertTrue(waitForCondition(() -> clientLatch.getCount() == 2, getTestTimeout()));
-
         assertNull(OperationContext.get(attr));
 
         // Send from a server.
@@ -888,7 +886,6 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
         assertTrue(waitForCondition(() -> coordLatch.getCount() == 1, getTestTimeout()));
         assertTrue(waitForCondition(() -> srvrLatch.getCount() == 1, getTestTimeout()));
         assertTrue(waitForCondition(() -> clientLatch.getCount() == 1, getTestTimeout()));
-
         assertNull(OperationContext.get(attr));
 
         // Send from a client.
@@ -897,7 +894,6 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
         }
 
         assertNull(OperationContext.get(attr));
-
         assertTrue(coordLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
         assertTrue(srvrLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
         assertTrue(clientLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));

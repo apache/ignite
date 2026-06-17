@@ -45,7 +45,6 @@ import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.processors.tracing.NoopTracing;
 import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.thread.context.DistributedOperationContextAttributeRegistry;
-import org.apache.ignite.internal.thread.context.OperationContextAttribute;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -456,22 +455,31 @@ abstract class TcpDiscoveryImpl {
 
     /** */
     protected static void fillOperationContextAttributes(TcpDiscoveryAbstractMessage msg) {
-        DistributedOperationContextAttributeRegistry.instance().collectContext(Message.class).forEach((attrId, msgVal) -> {
-            assert attrId >= 0 && attrId < OperationContextAttribute.MAX_ATTR_CNT;
+        Map<Byte, Message> attrs = DistributedOperationContextAttributeRegistry.instance().collectContext(Message.class);
+
+        if(F.isEmpty(attrs))
+            return;
+
+        int idx = 0;
+
+        for (Map.Entry<Byte, Message> e : attrs.entrySet()) {
+            byte attrId = e.getKey();
+            Message msgVal = e.getValue();
+
+            assert attrId >= 0 && attrId <= DistributedOperationContextAttributeRegistry.MAX_DISTRIBUTED_ATTR_ID;
 
             if (msg.opCtxMsg == null) {
                 msg.opCtxMsg = new OperationContexMessage();
-
-                msg.opCtxMsg.vals = new Message[OperationContextAttribute.MAX_ATTR_CNT];
+                msg.opCtxMsg.vals = new Message[attrs.size()];
             }
 
-            int mask = 1 << attrId;
+            byte mask = (byte)(1 << attrId);
 
             assert (msg.opCtxMsg.idBitmask & mask) == 0;
 
             msg.opCtxMsg.idBitmask |= mask;
-            msg.opCtxMsg.vals[attrId] = msgVal;
-        });
+            msg.opCtxMsg.vals[idx++] = msgVal;
+        }
     }
 
     /**

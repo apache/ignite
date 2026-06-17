@@ -28,6 +28,9 @@ import org.jetbrains.annotations.Nullable;
 /** */
 public class DistributedOperationContextAttributeRegistry {
     /** */
+    public static final byte MAX_DISTRIBUTED_ATTR_ID = 7;
+
+    /** */
     private static final DistributedOperationContextAttributeRegistry INSTANCE = new DistributedOperationContextAttributeRegistry();
 
     /** Attributes by their id. */
@@ -79,21 +82,21 @@ public class DistributedOperationContextAttributeRegistry {
     }
 
     /** */
-    public Scope restoreContext(int idBitmask, Object[] values) {
+    public Scope restoreContext(byte idBitmask, Object[] values) {
         if (F.isEmpty(values) || idBitmask == 0)
             return Scope.NOOP_SCOPE;
 
+        assert values.length <= MAX_DISTRIBUTED_ATTR_ID;
+
         OperationContext.ContextUpdater updater = OperationContext.ContextUpdater.create();
 
-        for (byte attrId = 0; attrId < OperationContextAttribute.MAX_ATTR_CNT; attrId++) {
-            assert attrId < Integer.SIZE;
-
-            int mask = 1 << attrId;
+        for (byte attrId = 0, idx = 0; attrId < Byte.SIZE; ++attrId) {
+            byte mask = (byte)(1 << attrId);
 
             if ((mask & idBitmask) == 0)
                 continue;
 
-            updater.set((OperationContextAttribute<Object>)attributes.get(attrId), values[attrId]);
+            updater.set((OperationContextAttribute<Object>)attributes.get(attrId), values[idx++]);
         }
 
         return updater.apply();
