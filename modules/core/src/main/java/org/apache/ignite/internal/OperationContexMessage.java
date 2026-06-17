@@ -28,7 +28,7 @@ public class OperationContexMessage implements Message {
 
     /** Bitmask of effective attributes ids. */
     @Order(1)
-    public int idBitmask;
+    public byte idBitmask;
 
     /** Empty constructor for serialization purposes. */
     public OperationContexMessage() {
