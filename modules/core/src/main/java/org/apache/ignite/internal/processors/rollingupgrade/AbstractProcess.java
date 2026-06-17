@@ -26,38 +26,33 @@ import org.jetbrains.annotations.Nullable;
 /** */
 abstract class AbstractProcess {
     /** */
-    @Nullable private UUID activeOpId;
+    @Nullable private UUID initiatorOpId;
 
     /** */
-    @Nullable private GridFutureAdapter<Void> activeOpFut;
+    @Nullable private GridFutureAdapter<Void> initiatorOpFut;
 
     /** */
     protected abstract UUID startInternal() throws IgniteCheckedException;
 
     /** */
-    public synchronized IgniteInternalFuture<Void> start() throws IgniteCheckedException {
-        if (activeOpFut != null)
-            return activeOpFut;
+    protected synchronized IgniteInternalFuture<Void> start() throws IgniteCheckedException {
+        if (initiatorOpFut != null)
+            return initiatorOpFut;
 
-        activeOpFut = new GridFutureAdapter<>();
-        activeOpId = startInternal();
+        initiatorOpFut = new GridFutureAdapter<>();
+        initiatorOpId = startInternal();
 
-        return activeOpFut;
+        return initiatorOpFut;
     }
 
     /** */
     protected synchronized void finishProcess(UUID reqId, @Nullable Throwable err) {
-        if (!isInitiator(reqId))
+        if (!reqId.equals(initiatorOpId))
             return;
 
-        activeOpFut.onDone(err);
+        initiatorOpFut.onDone(err);
 
-        activeOpId = null;
-        activeOpFut = null;
-    }
-
-    /** */
-    private boolean isInitiator(UUID reqId) {
-        return activeOpFut != null && reqId.equals(activeOpId);
+        initiatorOpId = null;
+        initiatorOpFut = null;
     }
 }

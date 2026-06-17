@@ -323,6 +323,11 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
     }
 
     /** */
+    private static Throwable firstError(Map<UUID, Throwable> errors) {
+        return F.isEmpty(errors) ? null : F.firstValue(errors);
+    }
+
+    /** */
     private class ClusterVersionUpgradeEnableProcess extends AbstractProcess {
         /** */
         private final DistributedProcess<Message, Message> distributedProc;
@@ -347,7 +352,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
         }
 
         /** */
-        private IgniteInternalFuture<Message> execute(Message req) {
+        private IgniteInternalFuture<Message> execute(UUID ignored, Message req) {
             isVerUpgradeEnabled = true;
 
             return new GridFinishedFuture<>();
@@ -355,7 +360,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
         /** */
         private void finish(UUID reqId, Map<UUID, Message> responses, Map<UUID, Throwable> errors) {
-            finishProcess(reqId, F.isEmpty(errors) ? null : F.firstValue(errors));
+            finishProcess(reqId, firstError(errors));
         }
     }
 
@@ -368,7 +373,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
         private final DistributedProcess<Message, Message> completePhase;
 
         /** */
-        private volatile boolean isInProgress;
+        @Nullable private volatile UUID activeProcId;
 
         /** */
         public ClusterVersionFinalizationProcess() {
@@ -397,22 +402,24 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
         }
 
         /** {@inheritDoc} */
-        @Override protected synchronized void finishProcess(UUID reqId, @Nullable Throwable err) {
-            isInProgress = false;
+        @Override protected void finishProcess(UUID reqId, @Nullable Throwable err) {
+            // We rely on the guarantee that this method is called only from the Discovery thread. So no synchronization is required.
+            if (reqId.equals(activeProcId))
+                activeProcId = null;
 
             super.finishProcess(reqId, err);
         }
 
         /** */
-        private IgniteInternalFuture<Message> executePreparePhase(Message req) {
+        private IgniteInternalFuture<Message> executePreparePhase(UUID reqId, Message req) {
+            if (activeProcId != null) {
+                return new GridFinishedFuture<>(new IgniteCheckedException(
+                    "Cluster version finalization procedure is already in progress"));
+            }
+
+            activeProcId = reqId;
+
             synchronized (topGuard) {
-                if (isInProgress) {
-                    return new GridFinishedFuture<>(new IgniteCheckedException(
-                        "Cluster version finalization procedure is already in progress"));
-                }
-
-                isInProgress = true;
-
                 Set<IgniteProductVersion> distinctNodeVersions = distinctClusterProductVersions();
 
                 if (distinctNodeVersions.size() > 1) {
@@ -431,16 +438,17 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
         /** */
         private void finishPreparePhase(UUID reqId, Map<UUID, Message> responses, Map<UUID, Throwable> errors) {
             if (!F.isEmpty(errors)) {
-                isNodeFenceActive = false;
+                if (reqId.equals(activeProcId))
+                    isNodeFenceActive = false;
 
-                finishProcess(reqId, F.firstValue(errors));
+                finishProcess(reqId, firstError(errors));
             }
             else if (U.isLocalNodeCoordinator(ctx.discovery()))
                 completePhase.start(reqId, null);
         }
 
         /** */
-        private IgniteInternalFuture<Message> executeCompletePhase(Message req) {
+        private IgniteInternalFuture<Message> executeCompletePhase(UUID ignored, Message req) {
             featureMgr.activateLocalVersionFeatures();
 
             isVerUpgradeEnabled = false;
@@ -452,7 +460,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
         /** */
         private void finishCompletePhase(UUID reqId, Map<UUID, Message> responses, Map<UUID, Throwable> errors) {
-            finishProcess(reqId, F.isEmpty(errors) ? null : F.firstValue(errors));
+            finishProcess(reqId, firstError(errors));
         }
     }
 
