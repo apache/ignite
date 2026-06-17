@@ -217,7 +217,7 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
             //.setLocalHost(InetAddress.getLocalHost().getHostAddress())
             .setConsistentId(nodeId)
             .setWorkDirectory(workDir)
-            .setDataStorageConfiguration(new DataStorageConfiguration().setDataRegionConfigurations(dataRegionCfg))
+            .setDataStorageConfiguration(new DataStorageConfiguration().setDefaultDataRegionConfiguration(dataRegionCfg))
             .setDiscoverySpi(discoverySpi);
             //.setCommunicationSpi(commSpi);
     }
