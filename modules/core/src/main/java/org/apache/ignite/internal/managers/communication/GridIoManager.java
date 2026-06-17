@@ -463,9 +463,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                     GridIoMessage msg0 = (GridIoMessage)msg;
 
                     if (!locNodeId.equals(nodeId) && msg0.opCtxMsg != null) {
-                        OperationContexMessage cm = msg0.opCtxMsg;
-
-                        try (Scope ignored = DistributedOperationContextAttributeRegistry.instance().restoreContext(cm.idBitmask, cm.vals)) {
+                        try (Scope ignored = DistributedOperationContextAttributeRegistry.instance()
+                            .restoreContext(msg0.opCtxMsg.idBitmask, msg0.opCtxMsg.vals)) {
                             onMessage0(nodeId, msg0, msgC);
                         }
                     }
@@ -2058,7 +2057,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                 secSubjId = ctx.security().securityContext().subject().id();
 
             res = new GridIoSecurityAwareMessage(secSubjId, plc, topic, msg, ordered, timeout, skipOnTimeout);
-        } else
+        }
+        else
             res = new GridIoMessage(plc, topic, msg, ordered, timeout, skipOnTimeout);
 
         res.opCtxMsg = OperationContexMessage.instance(DistributedOperationContextAttributeRegistry.instance()

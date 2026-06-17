@@ -927,7 +927,7 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
 
             grid(i).context().io().addMessageListener(GridTopic.TOPIC_IO_TEST, new GridMessageListener() {
                 @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
-                    if(msg instanceof IgniteIoTestMessage) {
+                    if (msg instanceof IgniteIoTestMessage) {
                         InetSocketAddressMessage receivedVal = OperationContext.get(attr);
 
                         assertNotNull(receivedVal);
