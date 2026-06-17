@@ -2061,7 +2061,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         else
             res = new GridIoMessage(plc, topic, msg, ordered, timeout, skipOnTimeout);
 
-        res.opCtxMsg = OperationContexMessage.instance(DistributedOperationContextAttributeRegistry.instance()
+        res.opCtxMsg = OperationContexMessage.create(DistributedOperationContextAttributeRegistry.instance()
             .collectContext(Message.class));
 
         return res;

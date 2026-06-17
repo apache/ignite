@@ -39,7 +39,7 @@ public class OperationContexMessage implements Message {
     }
 
     /** */
-    public static @Nullable OperationContexMessage instance(Map<Byte, Message> attrs) {
+    public static @Nullable OperationContexMessage create(Map<Byte, Message> attrs) {
         if (F.isEmpty(attrs))
             return null;
 

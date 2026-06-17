@@ -3051,7 +3051,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (!fromSocket) {
-                msg.opCtxMsg = OperationContexMessage.instance(DistributedOperationContextAttributeRegistry.instance()
+                msg.opCtxMsg = OperationContexMessage.create(DistributedOperationContextAttributeRegistry.instance()
                     .collectContext(Message.class));
             }
 

@@ -1314,7 +1314,7 @@ class ClientImpl extends TcpDiscoveryImpl {
          * @param msg Message.
          */
         private void sendMessage(TcpDiscoveryAbstractMessage msg) {
-            msg.opCtxMsg = OperationContexMessage.instance(DistributedOperationContextAttributeRegistry.instance()
+            msg.opCtxMsg = OperationContexMessage.create(DistributedOperationContextAttributeRegistry.instance()
                 .collectContext(Message.class));
 
             synchronized (mux) {
