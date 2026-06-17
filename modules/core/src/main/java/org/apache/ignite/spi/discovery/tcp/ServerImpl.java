@@ -81,6 +81,7 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.OperationContexMessage;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.communication.UnknownMessageException;
 import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
@@ -3049,7 +3050,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (!fromSocket)
-                msg.opCtxAttrs = DistributedOperationContextAttributeRegistry.instance().collectContext();
+                fillOperationContextAttributes(msg);
 
             if (msg instanceof TraceableMessage) {
                 TraceableMessage tMsg = (TraceableMessage)msg;
@@ -3322,10 +3323,12 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (msg == WAKEUP)
                 return;
 
-            if (F.isEmpty(msg.opCtxAttrs))
+            if (msg.opCtxMsg == null)
                 processMessage0(msg);
             else {
-                try (Scope ignored = DistributedOperationContextAttributeRegistry.instance().restoreContext(msg.opCtxAttrs)) {
+                OperationContexMessage cm = msg.opCtxMsg;
+
+                try (Scope ignored = DistributedOperationContextAttributeRegistry.instance().restoreContext(cm.idBitmask, cm.vals)) {
                     processMessage0(msg);
                 }
             }

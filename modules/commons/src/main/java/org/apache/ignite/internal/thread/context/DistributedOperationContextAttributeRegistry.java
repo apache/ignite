@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.thread.context;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -48,17 +49,25 @@ public class DistributedOperationContextAttributeRegistry {
             throw new IgniteException("Duplicated attribute id: " + id);
     }
 
-    /** @return Values for all registered operation context attributes. */
-    public @Nullable <T> Map<Byte, T> collectContext() {
-        Map<Byte, T> res = null;
+    /**
+     * TODO : Declare distributed attributes as 'extends Message' after https://issues.apache.org/jira/browse/IGNITE-28766
+     * @return Values for all registered operation context attributes.
+     * */
+    public <T> Map<Byte, T> collectContext(@Nullable Class<T> checkValuesType) {
+        Map<Byte, T> res = Collections.emptyMap();
 
         for (Map.Entry<Byte, OperationContextAttribute<?>> e : attributes.entrySet()) {
             OperationContextAttribute<?> attr = e.getValue();
 
             Object curVal = OperationContext.get(attr);
 
+            if (curVal != null && checkValuesType != null && !checkValuesType.isAssignableFrom(curVal.getClass())) {
+                throw new IgniteException("To distribute operation context attributes they have to be a "
+                    + checkValuesType.getSimpleName());
+            }
+
             if (!Objects.equals(attr.initialValue(), curVal)) {
-                if (res == null)
+                if (res == Collections.EMPTY_MAP)
                     res = new HashMap<>(attributes.size(), 1.0f);
 
                 res.put(e.getKey(), (T)curVal);
@@ -69,13 +78,22 @@ public class DistributedOperationContextAttributeRegistry {
     }
 
     /** */
-    public <T> Scope restoreContext(Map<Byte, T> res) {
-        if (F.isEmpty(res))
+    public Scope restoreContext(int idBitmask, Object[] values) {
+        if (F.isEmpty(values) || idBitmask == 0)
             return Scope.NOOP_SCOPE;
 
         OperationContext.ContextUpdater updater = OperationContext.ContextUpdater.create();
 
-        res.forEach((id, attr) -> updater.set((OperationContextAttribute<T>)attributes.get(id), attr));
+        for (byte attrId = 0; attrId < OperationContextAttribute.MAX_ATTR_CNT; attrId++) {
+            assert attrId < Integer.SIZE;
+
+            int mask = 1 << attrId;
+
+            if ((mask & idBitmask) == 0)
+                continue;
+
+            updater.set((OperationContextAttribute<Object>)attributes.get(attrId), values[attrId]);
+        }
 
         return updater.apply();
     }
