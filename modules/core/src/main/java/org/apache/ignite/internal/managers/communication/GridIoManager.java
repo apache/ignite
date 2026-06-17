@@ -1994,10 +1994,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
             GridIoMessage ioMsg = createGridIoMessage(topic, msg, plc, ordered, timeout, skipOnTimeout);
 
-            MessageSerializer ser = ctx.messageFactory().serializer(ioMsg.directType());
-
-            ser.prepareMarshal(ioMsg, ctx, null);
-
             if (locNodeId.equals(node.id())) {
                 assert plc != P2P_POOL;
 
@@ -2017,6 +2013,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                     ackC.apply(null);
             }
             else {
+                MessageSerializer ser = ctx.messageFactory().serializer(ioMsg.directType());
+
+                ser.prepareMarshal(ioMsg, ctx, null);
+                
                 try {
                     if ((CommunicationSpi<?>)getSpi() instanceof TcpCommunicationSpi)
                         getTcpCommunicationSpi().sendMessage(node, ioMsg, ackC);
