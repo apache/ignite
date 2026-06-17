@@ -462,7 +462,9 @@ public class MdcCacheMetricsTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void checkMdcReadyMetric() {
+    private void checkMdcReadyMetric() throws InterruptedException {
+        awaitPartitionMapExchange();
+
         for (int i = 0; i < NODES_NUMBER; i++) {
             IgniteEx ig = grid(i);
 
