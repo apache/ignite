@@ -29,14 +29,14 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.CacheMarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Record containing partition checksum, primary flag and consistent ID of owner.
  */
-public class PartitionHashRecord implements CacheMarshallableMessage, Serializable {
+public class PartitionHashRecord implements MarshallableMessage, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
