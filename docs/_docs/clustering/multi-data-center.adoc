@@ -247,7 +247,8 @@ If the required partition data cannot be obtained from the same data center, Ign
 remote data center.
 This behavior applies to both full and historical rebalance.
 
-== System Views
+== Monitoring
 
 The data center ID is exposed in the `NODES` system view as part of node information.
-Cache configuration views expose the `readFromBackup` setting.
+For client nodes, the `io.discovery.ClientRouterNodeId` metric exposes the ID of the server node used as
+the discovery router.
