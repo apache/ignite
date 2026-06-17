@@ -41,6 +41,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.communication.IgniteIoTestMessage;
@@ -950,8 +951,8 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
 
         // From the coordinator to a server.
         try (Scope ignored = OperationContext.set(attr, attrValToSend)) {
-            grid(0).context().io().sendIoTest(grid(1).localNode(), null, false);
-            grid(0).context().io().sendIoTest(grid(1).localNode(), null, true);
+            io(0).sendIoTest(node(1), null, false);
+            io(0).sendIoTest(node(1), null, true);
         }
 
         assertTrue(waitForCondition(() -> coordLatch.getCount() == 2, getTestTimeout()));
@@ -959,8 +960,8 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
 
         // From a server to the coordinator.
         try (Scope ignored = OperationContext.set(attr, attrValToSend)) {
-            grid(1).context().io().sendIoTest(grid(0).localNode(), null, false);
-            grid(1).context().io().sendIoTest(grid(0).localNode(), null, true);
+            io(1).sendIoTest(node(0), null, false);
+            io(1).sendIoTest(node(0), null, true);
         }
 
         assertTrue(coordLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
@@ -968,8 +969,8 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
 
         // From a client to a server.
         try (Scope ignored = OperationContext.set(attr, attrValToSend)) {
-            grid(2).context().io().sendIoTest(grid(1).localNode(), null, false);
-            grid(2).context().io().sendIoTest(grid(1).localNode(), null, true);
+            io(2).sendIoTest(node(1), null, false);
+            io(2).sendIoTest(node(1), null, true);
         }
 
         assertTrue(srvrLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
@@ -977,12 +978,22 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
 
         // From a server to a client.
         try (Scope ignored = OperationContext.set(attr, attrValToSend)) {
-            grid(1).context().io().sendIoTest(grid(2).localNode(), null, false);
-            grid(1).context().io().sendIoTest(grid(2).localNode(), null, true);
+            io(1).sendIoTest(node(2), null, false);
+            io(1).sendIoTest(node(2), null, true);
         }
 
         assertTrue(clientLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
         assertNull(OperationContext.get(attr));
+    }
+
+    /** @return a {@link ClusterNode} with {@link ClusterNode#isLocal()} == {@code false} to avoid some asserts/checks. */
+    private ClusterNode node(int nodeIdx) {
+        return grid(0).cluster().node(grid(nodeIdx).localNode().id());
+    }
+
+    /** */
+    private GridIoManager io(int nodeIdx) {
+        return grid(nodeIdx).context().io();
     }
 
     /** */
