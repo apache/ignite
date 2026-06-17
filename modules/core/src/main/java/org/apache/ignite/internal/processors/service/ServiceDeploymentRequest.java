@@ -23,14 +23,14 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.CacheMarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Service deployment request.
  */
-public class ServiceDeploymentRequest extends ServiceChangeAbstractRequest implements CacheMarshallableMessage {
+public class ServiceDeploymentRequest extends ServiceChangeAbstractRequest implements MarshallableMessage {
     /** Service configuration. */
     private LazyServiceConfiguration cfg;
 
