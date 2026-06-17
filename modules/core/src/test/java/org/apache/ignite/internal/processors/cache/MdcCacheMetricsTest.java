@@ -111,8 +111,6 @@ public class MdcCacheMetricsTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        System.clearProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID);
-
         allCaches.clear();
         mdcSafeCaches.clear();
     }
@@ -124,6 +122,9 @@ public class MdcCacheMetricsTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        allCaches.clear();
+        mdcSafeCaches.clear();
     }
 
     /** {@inheritDoc} */
