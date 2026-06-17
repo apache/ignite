@@ -45,9 +45,11 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
  * Tests for transaction savepoint API.
@@ -173,6 +175,43 @@ public class TxSavepointParameterizedTest extends GridCommonAbstractTest {
             {true, false, 0, true, true, REPEATABLE_READ},
             {false, true, 0, true, true, REPEATABLE_READ},
             {false, false, 0, true, true, REPEATABLE_READ},
+
+            // SERIALIZABLE
+            // backups = 0
+            {true, true, 0, true, false, SERIALIZABLE},
+            {true, true, 0, false, false, SERIALIZABLE},
+            {true, false, 0, true, false, SERIALIZABLE},
+            {true, false, 0, false, false, SERIALIZABLE},
+            {false, true, 0, true, false, SERIALIZABLE},
+            {false, true, 0, false, false, SERIALIZABLE},
+            {false, false, 0, true, false, SERIALIZABLE},
+            {false, false, 0, false, false, SERIALIZABLE},
+
+            // backups = 1
+            {true, true, 1, true, false, SERIALIZABLE},
+            {true, true, 1, false, false, SERIALIZABLE},
+            {true, false, 1, true, false, SERIALIZABLE},
+            {true, false, 1, false, false, SERIALIZABLE},
+            {false, true, 1, true, false, SERIALIZABLE},
+            {false, true, 1, false, false, SERIALIZABLE},
+            {false, false, 1, true, false, SERIALIZABLE},
+            {false, false, 1, false, false, SERIALIZABLE},
+
+            // backups = 2
+            {true, true, 2, true, false, SERIALIZABLE},
+            {true, true, 2, false, false, SERIALIZABLE},
+            {true, false, 2, true, false, SERIALIZABLE},
+            {true, false, 2, false, false, SERIALIZABLE},
+            {false, true, 2, true, false, SERIALIZABLE},
+            {false, true, 2, false, false, SERIALIZABLE},
+            {false, false, 2, true, false, SERIALIZABLE},
+            {false, false, 2, false, false, SERIALIZABLE},
+
+            // replicated cache.
+            {true, true, 0, true, true, SERIALIZABLE},
+            {true, false, 0, true, true, SERIALIZABLE},
+            {false, true, 0, true, true, SERIALIZABLE},
+            {false, false, 0, true, true, SERIALIZABLE},
         });
     }
 
@@ -383,6 +422,48 @@ public class TxSavepointParameterizedTest extends GridCommonAbstractTest {
 
             tx.savepoint("sp");
 
+            cache0.put(key2, 2);
+
+            tx.rollbackToSavepoint("sp");
+
+            cache0.put(key3, 3);
+
+            tx.commit();
+        }
+
+        assertEquals(Integer.valueOf(1), cache0.get(key1));
+
+        if (initKeies)
+            assertEquals(Integer.valueOf(-1), cache0.get(key2));
+        else
+            assertNull(cache0.get(key2));
+
+        assertEquals(Integer.valueOf(3), cache0.get(key3));
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testRollbackToSavepointForOptimisticTransaction() {
+        IgniteCache<Integer, Integer> cache0 = transactionalCache(ignite0);
+
+        int key1 = keyForPrimaryAndBackup(ignite0, ignite1);
+        int key2 = keyForPrimaryAndBackup(ignite0, ignite2);
+        int key3 = keyForPrimaryAndBackup(ignite0, ignite3);
+
+        if (initKeies) {
+            cache0.put(key1, -1);
+            cache0.put(key2, -1);
+            cache0.put(key3, -1);
+        }
+
+        try (Transaction tx = ignite0.transactions().txStart(OPTIMISTIC, transactionIsolation, 30_000, 3)) {
+            cache0.put(key1, 1);
+
+            tx.savepoint("sp");
+
+            cache0.put(key1, 10);
             cache0.put(key2, 2);
 
             tx.rollbackToSavepoint("sp");

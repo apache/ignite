@@ -198,14 +198,12 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
             }
         };
 
-        initClientDescriptor("odbc");
+        initClientContext("odbc");
 
         handler = new OdbcRequestHandler(ctx, busyLock, snd, maxCursors, distributedJoins, enforceJoinOrder,
             replicatedOnly, collocated, skipReducerOnUpdate, qryEngine, ver, this);
 
         parser = new OdbcMessageParser(ctx, ver);
-
-        handler.start();
     }
 
     /** {@inheritDoc} */

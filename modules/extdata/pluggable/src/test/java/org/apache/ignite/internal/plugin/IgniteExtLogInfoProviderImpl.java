@@ -23,8 +23,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.IgniteKernal.NL;
-import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
+import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 
 /**
  * Change the message output for metrics log.
@@ -32,7 +32,7 @@ import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 public class IgniteExtLogInfoProviderImpl extends IgniteLogInfoProviderImpl {
     /** {@inheritDoc} */
     @Override void ackAsciiLogo(IgniteLogger log, IgniteConfiguration cfg, RuntimeMXBean rtBean) {
-        String ver = "ver. " + ACK_VER_STR;
+        String ver = "ver. " + VER;
 
         U.quietAndInfo(log,
             NL + NL +

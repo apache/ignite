@@ -251,7 +251,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
     /** {@inheritDoc} */
     @Override public void dumpRingStructure(IgniteLogger log) {
-        ClusterNode[] serverNodes = getRemoteNodes().stream()
+        ClusterNode[] serverNodes = remoteVisibleNodes().stream()
                 .filter(node -> !node.isClient())
                 .sorted(Comparator.comparingLong(ClusterNode::order))
                 .toArray(ClusterNode[]::new);
@@ -371,7 +371,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
     /** {@inheritDoc} */
     @Override public Collection<ClusterNode> getRemoteNodes() {
-        return U.arrayList(rmtNodes.values(), TcpDiscoveryNodesRing.VISIBLE_NODES);
+        return U.arrayList(rmtNodes.values());
     }
 
     /** {@inheritDoc} */
@@ -465,7 +465,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
         spi.getSpiContext().deregisterPorts();
 
-        Collection<ClusterNode> rmts = getRemoteNodes();
+        Collection<ClusterNode> rmts = remoteVisibleNodes();
 
         // This is restart/disconnection and remote nodes are not empty.
         // We need to fire FAIL event for each.
@@ -1075,6 +1075,11 @@ class ClientImpl extends TcpDiscoveryImpl {
         Ignite ignite = spi.ignite();
 
         return ignite instanceof IgniteEx ? ((IgniteEx)ignite).context().workersRegistry() : null;
+    }
+
+    /** */
+    private Collection<ClusterNode> remoteVisibleNodes() {
+        return U.arrayList(rmtNodes.values(), TcpDiscoveryNodesRing.VISIBLE_NODES);
     }
 
     /**
@@ -2220,6 +2225,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                             rmtNodes.clear();
 
                         for (TcpDiscoveryNode n : top) {
+                            spi.restoreRemoteNodeVersion(n);
+
                             if (n.order() > 0)
                                 n.visible(true);
 
@@ -2275,7 +2282,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                 return;
 
             if (log.isInfoEnabled()) {
-                for (ClusterNode node : getRemoteNodes()) {
+                for (ClusterNode node : remoteVisibleNodes()) {
                     if (node.id().equals(locNode.clientRouterNodeId())) {
                         if (log.isInfoEnabled())
                             log.info("Router node: " + node);
@@ -2363,8 +2370,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         node.order(topVer);
                         node.visible(true);
 
-                        if (spi.locNodeVer.equals(node.version()))
-                            node.version(spi.locNodeVer);
+                        spi.restoreRemoteNodeVersion(node);
 
                         evt = true;
                     }

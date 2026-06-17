@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageArrayType;
@@ -311,6 +312,11 @@ public abstract class AbstractMessageSerializationTest {
         }
 
         /** {@inheritDoc} */
+        @Override public boolean writeIgniteProductVersion(IgniteProductVersion ver) {
+            return writeField(IgniteProductVersion.class);
+        }
+
+        /** {@inheritDoc} */
         @Override public boolean isHeaderWritten() {
             return true;
         }
@@ -567,6 +573,13 @@ public abstract class AbstractMessageSerializationTest {
         /** {@inheritDoc} */
         @Override public <M extends Map<?, ?>> M readMap(MessageMapType type, boolean compress) {
             readField(type.linked() ? LinkedHashMap.class : HashMap.class);
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteProductVersion readIgniteProductVersion() {
+            readField(IgniteProductVersion.class);
 
             return null;
         }

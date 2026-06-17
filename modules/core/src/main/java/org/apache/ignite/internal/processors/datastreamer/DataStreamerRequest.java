@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.configuration.DeploymentMode;
+import org.apache.ignite.internal.GridTopicMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -39,9 +40,8 @@ public class DataStreamerRequest implements Message {
     long reqId;
 
     /** */
-    // TODO: Refactor bytes serialization - IGNITE-27977
     @Order(1)
-    byte[] resTopicBytes;
+    GridTopicMessage resTopicMsg;
 
     /** Cache name. */
     @Order(2)
@@ -110,7 +110,7 @@ public class DataStreamerRequest implements Message {
 
     /**
      * @param reqId Request ID.
-     * @param resTopicBytes Response topic.
+     * @param resTopic Response topic.
      * @param cacheName Cache name.
      * @param updaterBytes Cache receiver.
      * @param entries Entries to put.
@@ -128,7 +128,7 @@ public class DataStreamerRequest implements Message {
      */
     public DataStreamerRequest(
         long reqId,
-        byte[] resTopicBytes,
+        Object resTopic,
         @Nullable String cacheName,
         byte[] updaterBytes,
         Collection<DataStreamerEntry> entries,
@@ -147,7 +147,7 @@ public class DataStreamerRequest implements Message {
         assert topVer != null;
 
         this.reqId = reqId;
-        this.resTopicBytes = resTopicBytes;
+        resTopicMsg = new GridTopicMessage(resTopic);
         this.cacheName = cacheName;
         this.updaterBytes = updaterBytes;
         this.entries = entries;
@@ -167,105 +167,105 @@ public class DataStreamerRequest implements Message {
     /**
      * @return Request ID.
      */
-    public long requestId() {
+    long requestId() {
         return reqId;
     }
 
     /**
      * @return Response topic.
      */
-    public byte[] responseTopicBytes() {
-        return resTopicBytes;
+    Object responseTopic() {
+        return GridTopicMessage.topic(resTopicMsg);
     }
 
     /**
      * @return Cache name.
      */
-    public String cacheName() {
+    String cacheName() {
         return cacheName;
     }
 
     /**
      * @return Updater.
      */
-    public byte[] updaterBytes() {
+    byte[] updaterBytes() {
         return updaterBytes;
     }
 
     /**
      * @return Entries to update.
      */
-    public Collection<DataStreamerEntry> entries() {
+    Collection<DataStreamerEntry> entries() {
         return entries;
     }
 
     /**
      * @return {@code True} to ignore ownership.
      */
-    public boolean ignoreDeploymentOwnership() {
+    boolean ignoreDeploymentOwnership() {
         return ignoreDepOwnership;
     }
 
     /**
      * @return Skip store flag.
      */
-    public boolean skipStore() {
+    boolean skipStore() {
         return skipStore;
     }
 
     /**
      * @return Keep binary flag.
      */
-    public boolean keepBinary() {
+    boolean keepBinary() {
         return keepBinary;
     }
 
     /**
      * @return Deployment mode.
      */
-    public DeploymentMode deploymentMode() {
+    DeploymentMode deploymentMode() {
         return depMode;
     }
 
     /**
      * @return Sample class name.
      */
-    public String sampleClassName() {
+    String sampleClassName() {
         return sampleClsName;
     }
 
     /**
      * @return User version.
      */
-    public String userVersion() {
+    String userVersion() {
         return userVer;
     }
 
     /**
      * @return Participants.
      */
-    public Map<UUID, IgniteUuid> participants() {
+    Map<UUID, IgniteUuid> participants() {
         return ldrParticipants;
     }
 
     /**
      * @return Class loader ID.
      */
-    public IgniteUuid classLoaderId() {
+    IgniteUuid classLoaderId() {
         return clsLdrId;
     }
 
     /**
      * @return {@code True} to force local deployment.
      */
-    public boolean forceLocalDeployment() {
+    boolean forceLocalDeployment() {
         return forceLocDep;
     }
 
     /**
      * @return Topology version.
      */
-    public AffinityTopologyVersion topologyVersion() {
+    AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
@@ -280,5 +280,4 @@ public class DataStreamerRequest implements Message {
     @Override public String toString() {
         return S.toString(DataStreamerRequest.class, this);
     }
-
 }

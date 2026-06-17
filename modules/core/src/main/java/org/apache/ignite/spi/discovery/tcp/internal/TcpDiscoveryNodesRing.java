@@ -31,7 +31,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.lang.ClusterNodeFunc;
-import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -40,7 +39,6 @@ import org.apache.ignite.internal.util.typedef.PN;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -48,7 +46,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class TcpDiscoveryNodesRing {
     /** */
-    private static final boolean mdcAwareRing = IgniteSystemProperties.getBoolean("MDC_AWARE_RING", true);
+    private static final boolean MDC_AWARE_RING = IgniteSystemProperties.getBoolean("MDC_AWARE_RING", true);
 
     /** Visible nodes filter. */
     public static final IgnitePredicate<TcpDiscoveryNode> VISIBLE_NODES = new P1<TcpDiscoveryNode>() {
@@ -95,24 +93,6 @@ public class TcpDiscoveryNodesRing {
     /** Lock. */
     @GridToStringExclude
     private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
-
-    /** Minimum node version in the cluster. */
-    private IgniteProductVersion minNodeVer;
-
-    /** Maximum node version in the cluster. */
-    private IgniteProductVersion maxNodeVer;
-
-    /** Returns min and max node versions. */
-    public IgnitePair<IgniteProductVersion> minMaxNodeVersions() {
-        rwLock.readLock().lock();
-
-        try {
-            return F.pair(minNodeVer, maxNodeVer);
-        }
-        finally {
-            rwLock.readLock().unlock();
-        }
-    }
 
     /**
      * Sets local node.
@@ -262,8 +242,6 @@ public class TcpDiscoveryNodesRing {
             nodeOrder = node.internalOrder();
 
             maxInternalOrder = node.internalOrder();
-
-            initializeMinMaxVersions();
         }
         finally {
             rwLock.writeLock().unlock();
@@ -334,8 +312,6 @@ public class TcpDiscoveryNodesRing {
             }
 
             nodeOrder = topVer;
-
-            initializeMinMaxVersions();
         }
         finally {
             rwLock.writeLock().unlock();
@@ -382,8 +358,6 @@ public class TcpDiscoveryNodesRing {
                 nodes.remove(rmv);
             }
 
-            initializeMinMaxVersions();
-
             return rmv;
         }
         finally {
@@ -415,11 +389,6 @@ public class TcpDiscoveryNodesRing {
             maxInternalOrder = 0;
 
             topVer = 0;
-
-            if (locNode != null) {
-                minNodeVer = locNode.version();
-                maxNodeVer = locNode.version();
-            }
         }
         finally {
             rwLock.writeLock().unlock();
@@ -512,7 +481,7 @@ public class TcpDiscoveryNodesRing {
 
             Collection<TcpDiscoveryNode> sorted;
 
-            if (mdcAwareRing) {
+            if (MDC_AWARE_RING) {
                 sorted = new TreeSet<>(new MdcAwareNodesComparator());
                 sorted.addAll(filtered);
             }
@@ -556,7 +525,7 @@ public class TcpDiscoveryNodesRing {
 
             Collection<TcpDiscoveryNode> sorted;
 
-            if (mdcAwareRing) {
+            if (MDC_AWARE_RING) {
                 sorted = new TreeSet<>(new MdcAwareNodesComparator());
                 sorted.addAll(filtered);
             }
@@ -593,7 +562,7 @@ public class TcpDiscoveryNodesRing {
 
             Collection<TcpDiscoveryNode> sorted;
 
-            if (mdcAwareRing) {
+            if (MDC_AWARE_RING) {
                 sorted = new TreeSet<>(new MdcAwareNodesComparator());
                 sorted.addAll(nodes);
             }
@@ -725,22 +694,6 @@ public class TcpDiscoveryNodesRing {
                 return node.clientRouterNodeId() == null && (excludedEmpty || !excluded.contains(node));
             }
         });
-    }
-
-    /**
-     *
-     */
-    private void initializeMinMaxVersions() {
-        minNodeVer = null;
-        maxNodeVer = null;
-
-        for (TcpDiscoveryNode node : nodes) {
-            if (minNodeVer == null || node.version().compareTo(minNodeVer) < 0)
-                minNodeVer = node.version();
-
-            if (maxNodeVer == null || node.version().compareTo(maxNodeVer) > 0)
-                maxNodeVer = node.version();
-        }
     }
 
     /** {@inheritDoc} */

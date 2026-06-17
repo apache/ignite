@@ -31,9 +31,9 @@ Ignite was tested on:
 
 include::includes/prereqs.adoc[]
 
-== Running Ignite with Java 11 or later
+== Running Ignite with Java 17 or later
 
-include::includes/java9.adoc[]
+include::includes/java.adoc[]
 
 
 == Using Binary Distribution

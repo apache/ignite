@@ -20,13 +20,12 @@ package org.apache.ignite.internal.processors.query.calcite.metadata;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.jetbrains.annotations.Nullable;
 
 /** */
-public class FragmentDescription implements MarshallableMessage {
+public class FragmentDescription implements Message {
     /** */
     @Order(0)
     long fragmentId;
@@ -41,7 +40,7 @@ public class FragmentDescription implements MarshallableMessage {
 
     /** */
     @Order(3)
-    ColocationGroup target;
+    @Nullable ColocationGroup target;
 
     /** */
     public FragmentDescription() {
@@ -49,12 +48,14 @@ public class FragmentDescription implements MarshallableMessage {
     }
 
     /** */
-    public FragmentDescription(long fragmentId, FragmentMapping mapping, ColocationGroup target,
+    public FragmentDescription(long fragmentId, FragmentMapping mapping, @Nullable ColocationGroup target,
         Map<Long, List<UUID>> remoteSources) {
         this.fragmentId = fragmentId;
         this.mapping = mapping;
-        this.target = target;
         this.remoteSources = remoteSources;
+
+        if (target != null)
+            this.target = target.explicitMapping();
     }
 
     /** */
@@ -73,7 +74,7 @@ public class FragmentDescription implements MarshallableMessage {
     }
 
     /** */
-    public ColocationGroup target() {
+    public @Nullable ColocationGroup target() {
         return target;
     }
 
@@ -95,16 +96,5 @@ public class FragmentDescription implements MarshallableMessage {
     /** */
     public void mapping(FragmentMapping mapping) {
         this.mapping = mapping;
-    }
-
-    /** */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (target != null)
-            target = target.explicitMapping();
-    }
-
-    /** */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        // No-op.
     }
 }

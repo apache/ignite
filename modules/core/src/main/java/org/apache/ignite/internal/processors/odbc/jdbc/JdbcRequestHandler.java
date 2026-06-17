@@ -138,9 +138,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
     /** Busy lock. */
     private final GridSpinBusyLock busyLock;
 
-    /** Worker. */
-    private final JdbcRequestHandlerWorker worker;
-
     /** Maximum allowed cursors. */
     private final int maxCursors;
 
@@ -249,10 +246,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
         this.protocolVer = protocolVer;
 
         log = connCtx.kernalContext().log(getClass());
-
-        // TODO IGNITE-9484 Do not create worker if there is a possibility to unbind TX from threads.
-        worker = new JdbcRequestHandlerWorker(connCtx.kernalContext().igniteInstanceName(), log, this,
-            connCtx.kernalContext());
     }
 
     /** {@inheritDoc} */
@@ -287,14 +280,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
             if (isCancellationSupported())
                 reqRegister.remove(reqId);
         }
-    }
-
-    /**
-     * Start worker, if it's present.
-     */
-    void start() {
-        if (worker != null)
-            worker.start();
     }
 
     /**
@@ -557,17 +542,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
      * or due to {@code IOException} during network operations.
      */
     public void onDisconnect() {
-        if (worker != null) {
-            worker.cancel();
-
-            try {
-                worker.join();
-            }
-            catch (InterruptedException e) {
-                // No-op.
-            }
-        }
-
         for (JdbcCursor cursor : jdbcCursors.values())
             U.close(cursor, log);
 
