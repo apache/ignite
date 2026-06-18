@@ -50,8 +50,10 @@ Use the `DataRegionConfiguration.setEvictionThreshold(...)` parameter if you nee
 
 === Monitoring Page Eviction
 
-When page eviction starts because a data region is under memory pressure, Ignite sets the `EvictionsStarted` metric to `true` for that data region.
-The metric is available in the `io.dataregion.{data_region_name}` registry.
+When page eviction starts due to a data region being under memory pressure, Ignite sets the `EvictionsStarted` metric to `true` for that data region.
+This metric is relevant for in-memory data regions, where page eviction can remove data from memory and the data must be reloaded later.
+It is available in the `io.dataregion.{data_region_name}` registry.
+After `EvictionsStarted` becomes `true`, it remains `true` until the node is restarted.
 Use it together with `EvictionRate` to monitor whether eviction has started and how actively pages are being evicted.
 
 Ignite also logs a warning when page-based eviction starts:
