@@ -81,7 +81,6 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.OperationContexMessage;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.communication.UnknownMessageException;
 import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
@@ -96,7 +95,7 @@ import org.apache.ignite.internal.processors.tracing.SpanTags;
 import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessage;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesTable;
-import org.apache.ignite.internal.thread.context.DistributedOperationContextAttributeRegistry;
+import org.apache.ignite.internal.thread.context.DistributedOperationAttributeManager;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.GridBoundedLinkedHashSet;
@@ -3050,10 +3049,9 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (!fromSocket)
-                fillOperationContextAttributes(msg);
+                msg.opCtxMsg = DistributedOperationAttributeManager.instance().collectDistributedAttributes();
 
-            if (msg instanceof TraceableMessage) {
-                TraceableMessage tMsg = (TraceableMessage)msg;
+            if (msg instanceof TraceableMessage tMsg) {
 
                 // If we read this message from socket.
                 if (fromSocket)
@@ -3323,14 +3321,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (msg == WAKEUP)
                 return;
 
-            if (msg.opCtxMsg == null)
+            try (Scope ignored = DistributedOperationAttributeManager.instance().restoreDistributedAttributes(msg.opCtxMsg)) {
                 processMessage0(msg);
-            else {
-                OperationContexMessage cm = msg.opCtxMsg;
-
-                try (Scope ignored = DistributedOperationContextAttributeRegistry.instance().restoreContext(cm.idBitmask, cm.vals)) {
-                    processMessage0(msg);
-                }
             }
         }
 

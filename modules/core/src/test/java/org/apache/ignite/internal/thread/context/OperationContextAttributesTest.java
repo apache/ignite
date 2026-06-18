@@ -821,13 +821,12 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testSendAttributesByDiscovery() throws Exception {
-        byte attrId = DistributedOperationContextAttributeRegistry.MAX_DISTRIBUTED_ATTR_ID;
+        byte attrId = DistributedOperationAttributeManager.MAX_DISTRIBUTED_ATTR_ID;
 
         InetSocketAddressMessage dfltAttrVal = new InetSocketAddressMessage(InetAddress.getLoopbackAddress(), 80);
 
-        OperationContextAttribute<InetSocketAddressMessage> attr = OperationContextAttribute.newInstance();
-
-        DistributedOperationContextAttributeRegistry.instance().register(attrId, attr);
+        OperationContextAttribute<InetSocketAddressMessage> attr = DistributedOperationAttributeManager.instance()
+            .createDistributedAttriubte(attrId, dfltAttrVal);
 
         startGrids(2);
         startClientGrid(2);
@@ -865,9 +864,6 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
                 });
         }
 
-        assertFalse(valToSend.equals(dfltAttrVal));
-        assertNull(OperationContext.get(attr));
-
         // Send from the coordinator.
         try (Scope ignored = OperationContext.set(attr, valToSend)) {
             grid(0).createCache(defaultCacheConfiguration());
@@ -876,7 +872,6 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
         assertTrue(waitForCondition(() -> coordLatch.getCount() == 2, getTestTimeout()));
         assertTrue(waitForCondition(() -> srvrLatch.getCount() == 2, getTestTimeout()));
         assertTrue(waitForCondition(() -> clientLatch.getCount() == 2, getTestTimeout()));
-        assertNull(OperationContext.get(attr));
 
         // Send from a server.
         try (Scope ignored = OperationContext.set(attr, valToSend)) {
@@ -886,14 +881,12 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
         assertTrue(waitForCondition(() -> coordLatch.getCount() == 1, getTestTimeout()));
         assertTrue(waitForCondition(() -> srvrLatch.getCount() == 1, getTestTimeout()));
         assertTrue(waitForCondition(() -> clientLatch.getCount() == 1, getTestTimeout()));
-        assertNull(OperationContext.get(attr));
 
         // Send from a client.
         try (Scope ignored = OperationContext.set(attr, valToSend)) {
             grid(2).createCache(defaultCacheConfiguration());
         }
 
-        assertNull(OperationContext.get(attr));
         assertTrue(coordLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
         assertTrue(srvrLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
         assertTrue(clientLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));

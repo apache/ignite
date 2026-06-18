@@ -17,21 +17,22 @@
 
 package org.apache.ignite.internal;
 
+import java.util.List;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-/** ransport for {@link OperationContext} attributes. */
-public class OperationContexMessage implements Message {
+/** Transport for {@link OperationContext} distibuted attributes. */
+public class DistributedOperationContextAttributesMessage implements Message {
     /** Values of operation context attributes. */
     @Order(0)
-    public Message[] vals;
+    public List<Message> vals;
 
     /** Bitmask of effective attributes ids. */
     @Order(1)
     public byte idBitmask;
 
     /** Empty constructor for serialization purposes. */
-    public OperationContexMessage() {
+    public DistributedOperationContextAttributesMessage() {
         // No-op.
     }
 }
