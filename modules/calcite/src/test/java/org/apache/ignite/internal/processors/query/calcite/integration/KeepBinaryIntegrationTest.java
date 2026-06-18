@@ -165,11 +165,11 @@ public class KeepBinaryIntegrationTest extends AbstractBasicIntegrationTransacti
             startTransaction(client);
 
         SupplierX<?> checker = () -> {
-            runQuery(0, nodeCount() * 10, cache);
+            checkDml(0, nodeCount() * 10, cache);
 
             IgniteCache<Object, Object> cacheBin = cache.withKeepBinary();
 
-            runQuery(nodeCount() * 10, 2 * nodeCount() * 10, cacheBin);
+            checkDml(nodeCount() * 10, 2 * nodeCount() * 10, cacheBin);
 
             List<List<?>> res = cacheBin.query(new SqlFieldsQuery("SELECT * FROM emp")).getAll();
 
@@ -185,7 +185,7 @@ public class KeepBinaryIntegrationTest extends AbstractBasicIntegrationTransacti
     }
 
     /** */
-    private void runQuery(int begin, int end, IgniteCache<?, ?> cache) {
+    private void checkDml(int begin, int end, IgniteCache<?, ?> cache) {
         cache.query(new SqlFieldsQuery("CREATE TABLE IF NOT EXISTS emp(empid INTEGER, deptid INTEGER, name VARCHAR, salary INTEGER, " +
                 "PRIMARY KEY(empid, deptid)) WITH \"AFFINITY_KEY=deptid," + atomicity() + "\""))
             .getAll();

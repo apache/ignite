@@ -1355,7 +1355,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         Collection<GridCacheVersion> drVers = null;
 
-        if (opCtx != null && keys != null && opCtx.dataCenterId() != null) {
+        if (opCtx != null && keys != null && opCtx.hasDataCenterId()) {
             assert conflictMap == null : conflictMap;
 
             drVers = F.transform(keys, new C1<K, GridCacheVersion>() {

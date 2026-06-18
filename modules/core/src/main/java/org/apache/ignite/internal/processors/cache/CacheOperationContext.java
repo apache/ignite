@@ -152,7 +152,7 @@ public class CacheOperationContext implements Serializable {
             recovery,
             readRepairStrategy,
             appAttrs,
-            handleBinaryInInterceptor);
+            true);
     }
 
     /**
