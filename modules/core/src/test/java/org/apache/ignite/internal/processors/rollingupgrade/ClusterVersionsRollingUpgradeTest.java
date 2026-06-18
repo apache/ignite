@@ -351,7 +351,6 @@ public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTes
         spi(grid(1)).blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
 
         try {
-
             IgniteInternalFuture<Object> firstFut = GridTestUtils.runAsync(() -> finalizeClusterVersion(1, TEST_DEFAULT_VER));
 
             spi(grid(1)).waitForBlocked();

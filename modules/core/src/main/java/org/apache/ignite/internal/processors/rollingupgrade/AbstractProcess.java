@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.rollingupgrade;
 
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.jetbrains.annotations.Nullable;
@@ -32,15 +31,15 @@ abstract class AbstractProcess {
     @Nullable private GridFutureAdapter<Void> locInitOpFut;
 
     /** */
-    protected abstract UUID startInternal() throws IgniteCheckedException;
+    protected abstract UUID startInternal();
 
     /** */
-    protected synchronized IgniteInternalFuture<Void> start() throws IgniteCheckedException {
+    protected synchronized IgniteInternalFuture<Void> start() {
         if (locInitOpFut != null)
             return locInitOpFut;
 
-        locInitOpFut = new GridFutureAdapter<>();
         locInitOpId = startInternal();
+        locInitOpFut = new GridFutureAdapter<>();
 
         return locInitOpFut;
     }

@@ -52,10 +52,7 @@ public class IgniteFeatureManager {
     public IgniteProductFeatures activeFeatures() {
         final IgniteProductFeatures finalActiveFeatures = activeFeatures;
 
-        if (finalActiveFeatures == null) {
-            throw new IllegalStateException("Local node features are not yet initialized [locNodeId=" +
-                ctx.discovery().localNode().id() + ']');
-        }
+        checkActiveFeaturesInitialized(finalActiveFeatures);
 
         return finalActiveFeatures;
     }
@@ -64,10 +61,7 @@ public class IgniteFeatureManager {
     public boolean isActive(IgniteFeature feature) {
         final IgniteProductFeatures finalActiveFeatures = activeFeatures;
 
-        if (finalActiveFeatures == null) {
-            throw new IllegalStateException("Local node features are not yet initialized [locNodeId=" +
-                ctx.discovery().localNode().id() + ']');
-        }
+        checkActiveFeaturesInitialized(finalActiveFeatures);
 
         return finalActiveFeatures.contains(feature);
     }
@@ -76,7 +70,11 @@ public class IgniteFeatureManager {
     public void listenActivation(IgniteFeature feature, IgniteRunnable lsnr) {
         assert locVerFeatures.contains(feature);
 
-        if (activeFeatures.contains(feature))
+        final IgniteProductFeatures finalActiveFeatures = activeFeatures;
+
+        checkActiveFeaturesInitialized(finalActiveFeatures);
+
+        if (finalActiveFeatures.contains(feature))
             lsnr.run();
         else
             locVerFeaturesActivationFut.listen(lsnr);
@@ -104,5 +102,13 @@ public class IgniteFeatureManager {
         activeFeatures = locVerFeatures;
 
         locVerFeaturesActivationFut.onDone();
+    }
+
+    /** */
+    private void checkActiveFeaturesInitialized(IgniteProductFeatures activeFeatures) {
+        if (activeFeatures == null) {
+            throw new IllegalStateException("Local node features are not yet initialized [locNodeId=" +
+                ctx.discovery().localNode().id() + ']');
+        }
     }
 }
