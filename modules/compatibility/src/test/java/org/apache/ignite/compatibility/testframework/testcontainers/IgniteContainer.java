@@ -19,9 +19,12 @@ package org.apache.ignite.compatibility.testframework.testcontainers;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.InterfaceAddress;
+import java.net.NetworkInterface;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteException;
@@ -68,6 +71,14 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
     /** */
     private static final Pattern CLUSTER_STATE_PATTERN = Pattern.compile("Cluster state: (ACTIVE|INACTIVE)");
 
+    /**
+     * Returns the host machine gateway address reachable from Docker containers.
+     * Uses the Docker special DNS name that resolves to the host machine.
+     */
+    public static String hostMachineIpAddress() {
+        return "host.docker.internal";
+    }
+
     /** Hostname. */
     private final String hostname;
 
@@ -89,7 +100,7 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
         withEnv("IGNITE_QUIET", "false");
         withEnv("IGNITE_NODE_NAME", nodeId);
         withEnv("IGNITE_WORK_DIR", workDirPath);
-        withEnv("IGNITE_LOCAL_HOST", "0.0.0.0");
+        //withEnv("IGNITE_LOCAL_HOST", "0.0.0.0");
         withEnv("TZ", ZoneId.systemDefault().toString());
 
         withFileSystemBind(LOCAL_WORK_DIR_PATH, WORK_DIR_PATH, BindMode.READ_WRITE);
@@ -98,7 +109,6 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
         withNetwork(net);
         withNetworkAliases(hostname);
 
-        withExtraHost("host-gateway", "host-gateway"); // InetAddress.getLocalHost().getHostAddress());
         withExposedPorts(ClientConnectorConfiguration.DFLT_PORT, TcpCommunicationSpi.DFLT_PORT, TcpDiscoverySpi.DFLT_PORT);
 
         waitingFor(Wait.forLogMessage(".*Node started.*", 1)
@@ -157,7 +167,7 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
 
     /** */
     public String discoveryAddress() {
-        return address(TcpDiscoverySpi.DFLT_PORT).replace("localhost", "0.0.0.0");
+        return address(TcpDiscoverySpi.DFLT_PORT);
 
 //        return "0.0.0.0:" + getMappedPort(TcpDiscoverySpi.DFLT_PORT);
 
