@@ -89,7 +89,7 @@ class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture {
             updateReq.taskNameHash(),
             null,
             updateReq.keepBinary(),
-            updateReq.withKeepBinaryInInterceptor(),
+            updateReq.keepBinaryInInterceptor(),
             updateReq.skipStore(),
             false,
             readRepairRecovery);

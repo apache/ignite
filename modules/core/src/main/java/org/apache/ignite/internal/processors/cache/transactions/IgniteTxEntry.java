@@ -283,7 +283,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @param conflictVer Data center replication version.
      * @param skipStore Skip store flag.
      * @param skipReadThrough Skip read-through cache store flag.
-     * @param withKeepBinaryInInterceptor Handle binary in interceptor operation flag.
+     * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      * @param addReader Add reader flag.
      */
     public IgniteTxEntry(GridCacheContext<?, ?> ctx,
@@ -298,7 +298,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         GridCacheVersion conflictVer,
         boolean skipStore,
         boolean skipReadThrough,
-        boolean withKeepBinaryInInterceptor,
+        boolean keepBinaryInInterceptor,
         boolean keepBinary,
         boolean addReader
     ) {
@@ -317,7 +317,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
         skipStore(skipStore);
         skipReadThrough(skipReadThrough);
-        withKeepBinaryInInterceptor(withKeepBinaryInInterceptor);
+        keepBinaryInInterceptor(keepBinaryInInterceptor);
         keepBinary(keepBinary);
         addReader(addReader);
 
@@ -633,14 +633,14 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /**
      * @param handleBinary Handle binary in interceptor flag.
      */
-    public void withKeepBinaryInInterceptor(boolean handleBinary) {
+    public void keepBinaryInInterceptor(boolean handleBinary) {
         setFlag(handleBinary, HANDLE_BINARY_INTERCEPTOR_FLAG_MASK);
     }
 
     /**
      * @return Handle binary in interceptor operation flag.
      */
-    public boolean withKeepBinaryInInterceptor() {
+    public boolean keepBinaryInInterceptor() {
         return isFlag(HANDLE_BINARY_INTERCEPTOR_FLAG_MASK);
     }
 

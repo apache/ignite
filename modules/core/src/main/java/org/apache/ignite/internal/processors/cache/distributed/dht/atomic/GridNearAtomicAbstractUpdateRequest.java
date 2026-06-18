@@ -365,7 +365,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     }
 
     /** */
-    public final boolean withKeepBinaryInInterceptor() {
+    public final boolean keepBinaryInInterceptor() {
         return isFlag(KEEP_BINARY_IN_INTERCEPTOR_FLAG_MASK);
     }
 

@@ -206,7 +206,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                     ttl,
                     expireTime,
                     req.keepBinary(),
-                    req.withKeepBinaryInInterceptor(),
+                    req.keepBinaryInInterceptor(),
                     req.nodeId(),
                     taskName,
                     req.operation() == TRANSFORM);
