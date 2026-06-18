@@ -50,7 +50,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     private static final int SKIP_READ_THROUGH_FLAG_MASK = 0x08;
 
     /** Handle binary in interceptor operation flag bit mask. */
-    private static final int HANDLE_BINARY_INTERCEPTOR_FLAG_MASK = 0x10;
+    private static final int KEEP_BINARY_INTERCEPTOR_FLAG_MASK = 0x10;
 
     /** Sender node ID. */
     @Order(0)
@@ -269,14 +269,14 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
     /** Sets flag indicating whether to handle binary in interceptor. */
     public void keepBinaryInInterceptor(boolean handleBinary) {
-        setFlag(handleBinary, HANDLE_BINARY_INTERCEPTOR_FLAG_MASK);
+        setFlag(handleBinary, KEEP_BINARY_INTERCEPTOR_FLAG_MASK);
     }
 
     /**
      * @return Flag indicating whether to handle binary in interceptor.
      */
     public boolean keepBinaryInInterceptor() {
-        return isFlag(HANDLE_BINARY_INTERCEPTOR_FLAG_MASK);
+        return isFlag(KEEP_BINARY_INTERCEPTOR_FLAG_MASK);
     }
 
     /**

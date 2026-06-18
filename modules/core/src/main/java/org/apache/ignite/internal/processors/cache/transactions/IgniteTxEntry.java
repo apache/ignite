@@ -94,7 +94,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     private static final int TX_ENTRY_SKIP_READ_THROUGH_FLAG_MASK = 1 << 5;
 
     /** Handle binary in interceptor operation bit mask. */
-    private static final int HANDLE_BINARY_INTERCEPTOR_FLAG_MASK = 1 << 6;
+    private static final int KEEP_BINARY_INTERCEPTOR_FLAG_MASK = 1 << 6;
 
     /** Prepared flag updater. */
     private static final AtomicIntegerFieldUpdater<IgniteTxEntry> PREPARED_UPD =
@@ -634,14 +634,14 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @param handleBinary Handle binary in interceptor flag.
      */
     public void keepBinaryInInterceptor(boolean handleBinary) {
-        setFlag(handleBinary, HANDLE_BINARY_INTERCEPTOR_FLAG_MASK);
+        setFlag(handleBinary, KEEP_BINARY_INTERCEPTOR_FLAG_MASK);
     }
 
     /**
      * @return Handle binary in interceptor operation flag.
      */
     public boolean keepBinaryInInterceptor() {
-        return isFlag(HANDLE_BINARY_INTERCEPTOR_FLAG_MASK);
+        return isFlag(KEEP_BINARY_INTERCEPTOR_FLAG_MASK);
     }
 
     /**
