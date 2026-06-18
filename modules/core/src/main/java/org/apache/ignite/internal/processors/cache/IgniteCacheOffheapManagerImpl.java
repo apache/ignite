@@ -1005,7 +1005,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     grp.storeCacheIdInDataPage()));
             }
             catch (IllegalStateException th) {
-                assert ctx.cacheContext(grp.groupId()) == null; // Ignoring removed cache entries.
+                assert ctx.cacheContext(info.cacheId()) == null; // Ignoring removed cache entries.
             }
 
             if (batch.size() == PRELOAD_SIZE_UNDER_CHECKPOINT_LOCK || !infos.hasNext()) {
