@@ -29,9 +29,9 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessorTest;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.util.typedef.F;
-import org.junit.Ignore;
-import org.junit.Test;
-
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsAnyProject;
@@ -213,6 +213,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends AbstractBasicInte
     }
 
     /** {@inheritDoc} */
+    @AfterAll
     @Override protected void afterTestsStopped() {
         stopAllGrids();
     }
@@ -920,7 +921,7 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends AbstractBasicInte
     // ===== various complex conditions =====
 
     /** */
-    @Ignore("TODO")
+    @Disabled("TODO")
     @Test
     public void testOrderByKey() {
         assertQuery("SELECT id, name, depId, age FROM Developer ORDER BY _key")

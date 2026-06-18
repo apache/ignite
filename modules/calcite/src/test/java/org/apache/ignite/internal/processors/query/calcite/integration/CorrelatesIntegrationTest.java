@@ -21,7 +21,7 @@ import java.sql.Date;
 import java.time.Instant;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests correlated queries.

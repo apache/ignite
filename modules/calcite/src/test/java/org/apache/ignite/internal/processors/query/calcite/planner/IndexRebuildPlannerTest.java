@@ -30,8 +30,8 @@ import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteColocat
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Test;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import static org.apache.calcite.sql.SqlKind.COUNT;
 import static org.apache.calcite.sql.SqlKind.MAX;
 import static org.apache.calcite.sql.SqlKind.MIN;
@@ -48,6 +48,7 @@ public class IndexRebuildPlannerTest extends AbstractPlannerTest {
     private TestTable tbl;
 
     /** {@inheritDoc} */
+    @BeforeEach
     @Override public void setup() {
         super.setup();
 

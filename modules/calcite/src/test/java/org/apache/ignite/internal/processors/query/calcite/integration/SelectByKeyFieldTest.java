@@ -28,8 +28,8 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.hamcrest.CoreMatchers;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
@@ -128,7 +128,7 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-28374")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-28374")
     public void testCompositePkWithKeyTypeAndPersonCompositeKey() {
         checkCompositePk(true, false, null);
     }
@@ -165,7 +165,7 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-28374")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-28374")
     public void testCompositePkWithPersonCompositeKeyAndDifferentCmpOperations() {
         checkCompositePkWithDifferentCmpOperations(false);
     }

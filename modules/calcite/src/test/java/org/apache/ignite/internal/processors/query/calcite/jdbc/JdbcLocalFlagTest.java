@@ -25,7 +25,8 @@ import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 /** */
 public class JdbcLocalFlagTest extends AbstractJdbcTest {
@@ -40,6 +41,7 @@ public class JdbcLocalFlagTest extends AbstractJdbcTest {
     }
 
     /** {@inheritDoc} */
+    @AfterEach
     @Override protected void afterTest() {
         stopAllGrids();
     }

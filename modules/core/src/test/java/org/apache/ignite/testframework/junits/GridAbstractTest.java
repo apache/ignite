@@ -686,6 +686,11 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /** */
+    protected static void beforeFirstTest0() {
+        sharedStaticIpFinder = new TcpDiscoveryVmIpFinder(true);
+    }
+
+    /** */
     protected void beforeFirstTest() throws Exception {
         sharedStaticIpFinder = new TcpDiscoveryVmIpFinder(true);
 
@@ -779,7 +784,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @param afterTestFinished Boolean flag used to tell whether {@code afterTest()} finished execution.
      * @return Scheduled executor used when scheduling.
      */
-    private ScheduledExecutorService scheduleThreadDumpOnAfterTestTimeOut(AtomicBoolean afterTestFinished) {
+    public ScheduledExecutorService scheduleThreadDumpOnAfterTestTimeOut(AtomicBoolean afterTestFinished) {
         // Compute class name as string to avoid holding reference to the test class instance in task.
         String testClsName = getClass().getName();
 
