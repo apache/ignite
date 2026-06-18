@@ -144,7 +144,7 @@ public class DiscoveryMessageParser {
             msgSer.finishUnmarshal(msg, ((IgniteEx)spi.ignite()).context());
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteSpiException("Failed to unmarshal joining node data", e);
+            throw new IgniteSpiException("Failed to unmarshal discovery message", e);
         }
 
         return (T)msg;
