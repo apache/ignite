@@ -637,7 +637,12 @@ public class ValidationOnNodeJoinUtils {
         return null;
     }
 
-    /** */
+    /**
+     * Analyzes affinity settings of a provided {@link CacheConfiguration} to inspect if it provides guarantees
+     * that partitions of the cache will be spread across all datacenters presented in cluster.
+     *
+     * @return {@code true} if affinity settings guarantee spreading partitions across all datacenters and {@code false} otherwise.
+     */
     static boolean isAffinityConfigurationMdcSafe(CacheConfiguration cc) {
         if (cc.getCacheMode() == REPLICATED)
             return true;

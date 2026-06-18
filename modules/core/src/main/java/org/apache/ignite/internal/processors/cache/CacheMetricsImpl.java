@@ -1685,12 +1685,17 @@ public class CacheMetricsImpl implements CacheMetrics {
         return fut != null && !fut.isDone();
     }
 
-    /** */
+    /**
+     * Returns {@code true} if affinity configuration is aware of multiple data centers and
+     * it able to spread partitions' copies across data centers.
+     */
     private boolean isAffinityCfgMdcSafe() {
         return affCfgMdcSafe != null && affCfgMdcSafe;
     }
 
-    /** */
+    /**
+     * Returns {@code true} if current cache partition distribution maintains guarantee 'at least one partition copy in each datacenter'.
+     */
     private boolean isMdcSafePartitionDistribution() {
         return mdcSafePartDistrib == null || mdcSafePartDistrib;
     }
@@ -1761,13 +1766,13 @@ public class CacheMetricsImpl implements CacheMetrics {
             "Conflict resolver merged entries count");
     }
 
-    /** */
+    /** Registers metric for partition distribution.  */
     public void registerPartitionDistributionSafeMetric() {
         mreg.register("IsCachePartitionDistributionSafe", this::isMdcSafePartitionDistribution,
             "True if current cache partition distribution maintains guarantee 'one partition copy in each datacenter'.");
     }
 
-    /** */
+    /** Registers metric for cache configuration related to distributing partitions across DCs. */
     public void registerAffinityConfigurationSafeMetric(boolean affCfgMdcSafe) {
         mreg.register("IsCacheAffinityConfigurationMdcSafe", this::isAffinityCfgMdcSafe,
             "True if cache affinity guarantees having a copy of each partition in each data center.");
@@ -1775,9 +1780,7 @@ public class CacheMetricsImpl implements CacheMetrics {
         this.affCfgMdcSafe = affCfgMdcSafe;
     }
 
-    /**
-     *
-     */
+    /** Updates current partition distribution safety metric. */
     public void setMdcSafePartitionDistribution(boolean safeDistribution) {
         mdcSafePartDistrib = safeDistribution;
     }

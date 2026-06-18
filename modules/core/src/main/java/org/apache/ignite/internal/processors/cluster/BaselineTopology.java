@@ -282,8 +282,10 @@ public class BaselineTopology implements Serializable {
      * @return Number of datacenters presented in the baseline or {@code -1} if unknown.
      */
     public int numberOfDatacenters() {
-        if (nodeMap.values().iterator().next().get(ATTR_DATA_CENTER_ID) != null)
-            return (int)nodeMap.values().stream().map(m -> m.get(ATTR_DATA_CENTER_ID)).distinct().count();
+        Collection<Map<String, Object>> allNodesAttrs = nodeMap.values();
+
+        if (!allNodesAttrs.isEmpty() && allNodesAttrs.iterator().next().get(ATTR_DATA_CENTER_ID) != null)
+            return (int)allNodesAttrs.stream().map(m -> m.get(ATTR_DATA_CENTER_ID)).distinct().count();
 
         return -1;
     }
