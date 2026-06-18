@@ -27,6 +27,7 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
@@ -85,7 +86,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexBound;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoinInfo;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJoin;
@@ -282,8 +282,6 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         RelDataType rightType = rel.getRight().getRowType();
         JoinRelType joinType = rel.getJoinType();
 
-        IgniteJoinInfo joinInfo = IgniteJoinInfo.of(rel);
-
         RexNode nonEquiConditionExpression = RexUtil.composeConjunction(Commons.emptyCluster().getRexBuilder(),
             rel.analyzeCondition().nonEquiConditions, true);
 
@@ -295,7 +293,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
             nonEquiCondition = expressionFactory.biPredicate(rel.getCondition(), rowType);
         }
 
-        Node<Row> node = HashJoinNode.create(ctx, outType, leftType, rightType, joinType, joinInfo,
+        Node<Row> node = HashJoinNode.create(ctx, outType, leftType, rightType, joinType, rel.analyzeCondition(),
             nonEquiCondition);
 
         node.register(Arrays.asList(visit(rel.getLeft()), visit(rel.getRight())));
@@ -339,7 +337,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         List<RelFieldCollation> leftCollations = rel.leftCollation().getFieldCollations();
         List<RelFieldCollation> rightCollations = rel.rightCollation().getFieldCollations();
 
-        ImmutableBitSet allowNulls = rel.allowNulls();
+        ImmutableList<Boolean> nullExclusions = rel.analyzeCondition().nullExclusionFlags;
         ImmutableBitSet.Builder collsAllowNullsBuilder = ImmutableBitSet.builder();
         int lastCollField = -1;
 
@@ -354,7 +352,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
                 if (pair.source == leftColl.getFieldIndex() && pair.target == rightColl.getFieldIndex()) {
                     lastCollField = c;
 
-                    if (!allowNulls.get(p)) {
+                    if (nullExclusions.get(p)) {
                         collsAllowNullsBuilder.clear(c);
 
                         break;

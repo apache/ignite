@@ -243,6 +243,6 @@ public class HashIndexSpoolPlannerTest extends AbstractPlannerTest {
             hasChildThat(isInstanceOf(IgniteHashIndexSpool.class)
                 .and(s -> "=($0, $cor0.ID)".equals(s.condition().toString()))
                 .and(hasChildThat(isInstanceOf(IgniteTableScan.class)
-                    .and(t -> "<($t0, 50)".equals(t.condition().toString()))))));
+                    .and(t -> "<(CAST($t0):INTEGER, 50)".equals(t.condition().toString()))))));
     }
 }

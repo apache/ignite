@@ -75,6 +75,14 @@ public class IgniteStdSqlOperatorTable extends ReflectiveSqlOperatorTable {
         register(SqlStdOperatorTable.UNARY_MINUS);
         register(SqlStdOperatorTable.UNARY_PLUS);
 
+        // Checked arithmetic
+        register(SqlStdOperatorTable.CHECKED_PLUS);
+        register(SqlStdOperatorTable.CHECKED_MINUS);
+        register(SqlStdOperatorTable.CHECKED_MULTIPLY);
+        register(SqlStdOperatorTable.CHECKED_DIVIDE);
+        register(SqlStdOperatorTable.CHECKED_DIVIDE_INTEGER);
+        register(SqlStdOperatorTable.CHECKED_UNARY_MINUS);
+
         // Aggregates.
         register(SqlStdOperatorTable.COUNT);
         register(SqlStdOperatorTable.SUM);
