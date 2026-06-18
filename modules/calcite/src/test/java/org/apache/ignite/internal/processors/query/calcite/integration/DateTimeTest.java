@@ -27,8 +27,8 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.junit.Test;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import static java.util.Collections.singletonList;
 
 /** */
@@ -72,6 +72,7 @@ public class DateTimeTest extends AbstractBasicIntegrationTransactionalTest {
     }
 
     /** {@inheritDoc} */
+    @AfterEach
     @Override protected void afterTest() throws Exception {
         // Don't clean up caches after test.
     }

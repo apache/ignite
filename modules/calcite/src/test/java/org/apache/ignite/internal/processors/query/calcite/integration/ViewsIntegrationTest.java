@@ -27,7 +27,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.G;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /** */
 public class ViewsIntegrationTest extends AbstractMultiEngineIntegrationTest {
@@ -51,9 +52,19 @@ public class ViewsIntegrationTest extends AbstractMultiEngineIntegrationTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
+    @BeforeEach
+    @Override protected void beforeTest() throws Exception {
+        persistenceEnabled = false;
+        // ???? !!!
+        assert G.allGrids().isEmpty() : "Not all Ignite instances stopped before tests execution:" + G.allGrids();
 
+        super.beforeTest();
+
+        cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
         cleanPersistenceDir();
@@ -244,7 +255,7 @@ public class ViewsIntegrationTest extends AbstractMultiEngineIntegrationTest {
      * Tests view after persistent grid restart.
      */
     @Test
-    public void testPersistance() throws Exception {
+    public void testPersistence() throws Exception {
         persistenceEnabled = true;
 
         initGrids(3);

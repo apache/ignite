@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
-import java.util.Collection;
 import java.util.List;
+import java.util.stream.Stream;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
@@ -32,33 +32,36 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.query.calcite.GridCommonAbstractWrapperTest;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 
 /** Cache interceptor related tests. */
-@RunWith(Parameterized.class)
-public class CacheWithInterceptorIntegrationTest extends GridCommonAbstractTest {
+@ParameterizedClass(name = "keepBinary={0}")
+@MethodSource("parameters")
+public class CacheWithInterceptorIntegrationTest extends GridCommonAbstractWrapperTest {
     /** Keep binary mode. */
-    @Parameterized.Parameter(0)
+    @Parameter(0)
     public boolean keepBinary;
 
     /** */
-    @Parameterized.Parameters(name = "keepBinary={0}")
-    public static Collection<?> parameters() {
-        return List.of(true, false);
+    public static Stream<Arguments> parameters() {
+        return Stream.of(Arguments.of(true), Arguments.of(false));
     }
 
     /** {@inheritDoc} */
+    @AfterEach
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 

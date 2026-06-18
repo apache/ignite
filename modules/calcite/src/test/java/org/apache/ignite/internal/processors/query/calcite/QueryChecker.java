@@ -54,9 +54,9 @@ import org.hamcrest.Matcher;
 import org.hamcrest.core.SubstringMatcher;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  *  Query checker.
@@ -217,36 +217,56 @@ public abstract class QueryChecker {
 
     /** */
     public static Matcher<String> matches(final String substring) {
-        return new SubstringMatcher(substring) {
+        return new SubstringMatcher("contains", false, substring) {
             /** {@inheritDoc} */
             @Override protected boolean evalSubstringOf(String sIn) {
                 sIn = sIn.replaceAll("\n", "");
 
                 return sIn.matches(substring);
             }
+        };
+    }
 
+    /** Matches only one occurrence. */
+    static Matcher<String> matchesOnce(String pattern) {
+        return occursTimes(pattern, 1, true);
+    }
+
+    /** Has specified number of occurrence. */
+    static Matcher<String> occursTimes(String pattern, int times, boolean noMore) {
+        return new SubstringMatcher(resolveRelation(times, noMore), false, pattern) {
             /** {@inheritDoc} */
-            @Override protected String relationship() {
-                return null;
+            @Override protected boolean evalSubstringOf(String strIn) {
+                strIn = strIn.replaceAll(System.lineSeparator(), "");
+
+                return contains(strIn, substring, times, noMore);
             }
         };
     }
 
-    /** Matches only one occurance. */
-    public static Matcher<String> matchesOnce(final String substring) {
-        return new SubstringMatcher(substring) {
-            /** {@inheritDoc} */
-            @Override protected boolean evalSubstringOf(String sIn) {
-                sIn = sIn.replaceAll("\n", "");
+    /** */
+    private static String resolveRelation(int times, boolean noMore) {
+        assert times >= 0;
 
-                return containsOnce(sIn, substring);
-            }
-
-            /** {@inheritDoc} */
-            @Override protected String relationship() {
-                return null;
-            }
+        return switch (times) {
+            case 0 -> noMore ? "does not contain" : "can contain";
+            case 1 -> noMore ? "contains once" : "contains only once";
+            default -> (noMore ? "contains " : "contains only ") + times + " times";
         };
+    }
+
+    /** Check that {@code s} contains {@code substring} {@code times} times. */
+    static boolean contains(String s, CharSequence substring, int times, boolean noMore) {
+        Pattern pattern = Pattern.compile(substring.toString());
+        java.util.regex.Matcher matcher = pattern.matcher(s);
+
+        for (int i = 0; i < times; i++) {
+            if (!matcher.find()) {
+                return false; // Not enough occurrences
+            }
+        }
+
+        return !noMore || !matcher.find();
     }
 
     /** Check only single matching. */
@@ -466,7 +486,7 @@ public abstract class QueryChecker {
             res = cur.getAll();
 
         if (expectedResultSize >= 0)
-            assertEquals("Unexpected result size", expectedResultSize, res.size());
+            assertEquals(expectedResultSize, res.size(), "Unexpected result size");
 
         if (resultChecker != null)
             resultChecker.accept(res);
@@ -491,7 +511,7 @@ public abstract class QueryChecker {
      * @param act Actual collection.
      */
     private void assertEqualsCollections(Collection<?> exp, Collection<?> act) {
-        assertEquals("Collections sizes are not equal:\nExpected: " + exp + "\nActual:   " + act, exp.size(), act.size());
+        assertEquals(exp.size(), act.size(), "Collections sizes are not equal:\nExpected: " + exp + "\nActual:   " + act);
 
         Iterator<?> it1 = exp.iterator();
         Iterator<?> it2 = act.iterator();
@@ -581,6 +601,6 @@ public abstract class QueryChecker {
         }, PART_RELEASE_TIMEOUT);
 
         for (GridDhtLocalPartition p : parts)
-            assertEquals("Partition is reserved: [node=" + node.name() + ", part=" + p, 0, p.reservations());
+            assertEquals(0, p.reservations(), "Partition is reserved: [node=" + node.name() + ", part=" + p);
     }
 }

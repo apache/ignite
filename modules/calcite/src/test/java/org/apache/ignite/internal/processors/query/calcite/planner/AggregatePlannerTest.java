@@ -48,24 +48,27 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.hamcrest.core.IsInstanceOf;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
  *
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "Algorithm = {0}")
+@MethodSource("parameters")
 public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
     /** Algorithm. */
-    @Parameterized.Parameter
+    @Parameter
     public AggregateAlgorithm algo;
 
     /** */
-    @Parameterized.Parameters(name = "Algorithm = {0}")
-    public static List<Object[]> parameters() {
-        return Stream.of(AggregateAlgorithm.values()).map(a -> new Object[]{a}).collect(Collectors.toList());
+    private static List<Arguments> parameters() {
+        return Stream.of(AggregateAlgorithm.values()).map(Arguments::of).collect(Collectors.toList());
     }
 
     /**
@@ -93,7 +96,7 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
 
         assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), agg);
 
-        Assert.assertThat(
+        assertThat(
             "Invalid plan\n" + RelOptUtil.toString(phys),
             F.first(agg.getAggCallList()).getAggregation(),
             IsInstanceOf.instanceOf(SqlAvgAggFunction.class));
@@ -127,7 +130,7 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
 
         assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), agg);
 
-        Assert.assertThat(
+        assertThat(
             "Invalid plan\n" + RelOptUtil.toString(phys),
             F.first(agg.getAggCallList()).getAggregation(),
             IsInstanceOf.instanceOf(SqlAvgAggFunction.class));
@@ -163,12 +166,12 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
         assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys, SqlExplainLevel.ALL_ATTRIBUTES), rdcAgg);
         assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), mapAgg);
 
-        Assert.assertThat(
+        assertThat(
             "Invalid plan\n" + RelOptUtil.toString(phys),
             F.first(rdcAgg.getAggregateCalls()).getAggregation(),
             IsInstanceOf.instanceOf(SqlAvgAggFunction.class));
 
-        Assert.assertThat(
+        assertThat(
             "Invalid plan\n" + RelOptUtil.toString(phys),
             F.first(mapAgg.getAggCallList()).getAggregation(),
             IsInstanceOf.instanceOf(SqlAvgAggFunction.class));

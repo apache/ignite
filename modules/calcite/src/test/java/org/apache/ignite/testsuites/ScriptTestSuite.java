@@ -17,9 +17,33 @@
 
 package org.apache.ignite.testsuites;
 
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Pattern;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.logical.ScriptRunnerTestsEnvironment;
-import org.apache.ignite.internal.processors.query.calcite.logical.ScriptTestRunner;
-import org.junit.runner.RunWith;
+import org.apache.ignite.internal.processors.query.calcite.logical.SqlScriptRunner;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
+import org.apache.ignite.thread.IgniteThread;
+import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.TestFactory;
 
 /**
  * Test suite to run SQL test scripts.
@@ -71,7 +95,234 @@ import org.junit.runner.RunWith;
  * @see <a href="https://www.sqlite.org/sqllogictest/doc/trunk/about.wiki">Extended format documentation.</a></a>
  *
  */
-@RunWith(ScriptTestRunner.class)
 @ScriptRunnerTestsEnvironment(scriptsRoot = "modules/calcite/src/test/sql", timeout = 180000)
 public class ScriptTestSuite {
+    /** Filesystem. */
+    private static final FileSystem FS = FileSystems.getDefault();
+
+    /** Shared finder. */
+    private static final TcpDiscoveryVmIpFinder sharedFinder = new TcpDiscoveryVmIpFinder().setShared(true);
+
+    /** */
+    private static IgniteLogger log;
+
+    static {
+        try {
+            log = new GridTestLog4jLogger(U.resolveIgnitePath("modules/core/src/test/config/log4j2-test.xml"));
+        }
+        catch (Exception e) {
+            e.printStackTrace(System.err);
+
+            log = null;
+
+            assert false : "Cannot init logger";
+        }
+    }
+
+    /** Scripts root directory. */
+    private final Path scriptsRoot;
+
+    /** Regex to filter test path to run only specified tests. */
+    private final Pattern testRegex;
+
+    /** Nodes count. */
+    private final int nodes;
+
+    /** Restart cluster for each test group. */
+    private final boolean restartCluster;
+
+    /** Test script timeout. */
+    private final long timeout;
+
+    /** */
+    public ScriptTestSuite() {
+        ScriptRunnerTestsEnvironment env = ScriptTestSuite.class.getAnnotation(ScriptRunnerTestsEnvironment.class);
+
+        assert !F.isEmpty(env.scriptsRoot());
+
+        nodes = env.nodes();
+        scriptsRoot = FS.getPath(U.resolveIgnitePath(env.scriptsRoot()).getPath());
+        testRegex = F.isEmpty(env.regex()) ? null : Pattern.compile(env.regex());
+        restartCluster = env.restart();
+        timeout = env.timeout();
+    }
+
+    /**
+     * Generates dynamic tests for each script file in the configured directory.
+     *
+     * @return Stream of dynamic tests.
+     * @throws Exception If failed to walk the script directory.
+     */
+    @TestFactory
+    public List<DynamicTest> generateTests() throws Exception {
+        // Start cluster if not already started
+        if (F.isEmpty(Ignition.allGrids())) {
+            startCluster();
+        }
+
+        return Files.walk(scriptsRoot)
+            .sorted()
+            .filter(p -> !p.equals(scriptsRoot))
+            .filter(p -> !Files.isDirectory(p))
+            .filter(p -> {
+                String fileName = p.getFileName().toString();
+                return testRegex == null || testRegex.matcher(p.toString()).find();
+            })
+            .filter(p -> {
+                String fileName = p.getFileName().toString();
+                if (testRegex == null) {
+                    return fileName.endsWith(".test") || fileName.endsWith(".test_slow");
+                }
+                return true;
+            })
+            .map(p -> {
+                String dirName;
+                if (p.getNameCount() - 1 > scriptsRoot.getNameCount())
+                    dirName = p.subpath(scriptsRoot.getNameCount(), p.getNameCount() - 1).toString();
+                else
+                    dirName = scriptsRoot.subpath(scriptsRoot.getNameCount() - 1, scriptsRoot.getNameCount()).toString();
+
+                String fileName = p.getFileName().toString();
+
+                // Restart cluster for each test group (directory) if configured
+                Path testDir = p.getParent();
+                if (restartCluster && !scriptsRoot.equals(testDir)) {
+                    // This is a group (directory) boundary, we'll handle restart in the test execution
+                }
+
+                return DynamicTest.dynamicTest(dirName + "/" + fileName, () -> {
+                    runSingleTest(p, dirName, fileName);
+                });
+            })
+            .toList();
+    }
+
+    /**
+     * Runs a single test.
+     *
+     * @param test Test file path.
+     * @param dirName Directory name.
+     * @param fileName File name.
+     * @throws Exception If test fails.
+     */
+    private void runSingleTest(Path test, String dirName, String fileName) {
+        beforeTest();
+
+        log.info(">>> Start: " + dirName + "/" + fileName);
+
+        try {
+            Ignite ign = F.first(Ignition.allGrids());
+
+            QueryEngine engine = Commons.lookupComponent(
+                ((IgniteEx)ign).context(),
+                QueryEngine.class
+            );
+
+            SqlScriptRunner scriptTestRunner = new SqlScriptRunner(test, engine, log);
+
+            try {
+                runScript(scriptTestRunner);
+            }
+            catch (Error | RuntimeException e) {
+                throw e;
+            }
+            catch (Throwable e) {
+                throw new RuntimeException(e);
+            }
+        }
+        finally {
+            log.info(">>> Finish: " + dirName + "/" + fileName);
+        }
+    }
+
+    /**
+     * Cleanup before test.
+     */
+    void beforeTest() {
+        if (F.isEmpty(Ignition.allGrids()))
+            startCluster();
+        else {
+            Ignite ign = F.first(Ignition.allGrids());
+
+            for (String cacheName : ign.cacheNames())
+                ign.destroyCache(cacheName);
+        }
+    }
+
+    /**
+     * Starts the cluster.
+     */
+    private void startCluster() {
+        for (int i = 0; i < nodes; ++i) {
+            Ignition.start(
+                new IgniteConfiguration()
+                    .setIgniteInstanceName("srv" + i)
+                    .setDiscoverySpi(
+                        new TcpDiscoverySpi()
+                            .setIpFinder(sharedFinder)
+                    )
+                    .setGridLogger(log)
+            );
+        }
+    }
+
+    /**
+     * Runs the script with timeout support.
+     *
+     * @param scriptRunner Script runner.
+     */
+    private void runScript(SqlScriptRunner scriptRunner) throws Throwable {
+        final AtomicReference<Throwable> ex = new AtomicReference<>();
+
+        Thread runner = new IgniteThread("srv0", "test-runner", new Runnable() {
+            @Override public void run() {
+                try {
+                    scriptRunner.run();
+                }
+                catch (Throwable e) {
+                    ex.set(e);
+                }
+            }
+        });
+
+        runner.start();
+
+        runner.join(timeout);
+
+        if (runner.isAlive()) {
+            U.error(log,
+                "Test has been timed out and will be interrupted");
+
+            List<Ignite> nodes = IgnitionEx.allGridsx();
+
+            for (Ignite node : nodes)
+                ((IgniteKernal)node).dumpDebugInfo();
+
+            // We dump threads to stdout, because we can loose logs in case
+            // the build is cancelled on TeamCity.
+            U.dumpThreads(null);
+
+            U.dumpThreads(log);
+
+            // Try to interrupt runner several times for case when InterruptedException is handled invalid.
+            for (int i = 0; i < 100 && runner.isAlive(); ++i) {
+                U.interrupt(runner);
+
+                U.sleep(10);
+            }
+
+            U.join(runner, log);
+
+            // Restart cluster
+            Ignition.stopAll(true);
+            startCluster();
+
+            throw new TimeoutException("Test has been timed out");
+        }
+
+        Throwable t = ex.get();
+
+        if (t != null)
+            throw t;
+    }
 }

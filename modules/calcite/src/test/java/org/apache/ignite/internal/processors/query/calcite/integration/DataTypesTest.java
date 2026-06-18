@@ -37,11 +37,11 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteSqlFun
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.SupplierX;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Test SQL data types.
@@ -679,7 +679,7 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
     }
 
     /** */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-25749")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-25749")
     @Test
     public void testCharLiteralsInUnion() {
         assumeTrue(sqlTxMode == SqlTransactionMode.NONE);
@@ -1107,6 +1107,6 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
 
     /** */
     private void assumeNoTransactions() {
-        assumeTrue("Test use queries that doesn't touch any data. Skip for tx modes", sqlTxMode == SqlTransactionMode.NONE);
+        assumeTrue(sqlTxMode == SqlTransactionMode.NONE, "Test use queries that doesn't touch any data. Skip for tx modes");
     }
 }

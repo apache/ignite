@@ -50,9 +50,8 @@ import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.calcite.rex.RexWindowBounds.CURRENT_ROW;
 import static org.apache.calcite.rex.RexWindowBounds.UNBOUNDED_FOLLOWING;
@@ -530,7 +529,7 @@ public class WindowExecutionTest extends AbstractExecutionTest {
         Node<Object[]> input,
         Object[][] expRes
     ) {
-        Assert.assertEquals(streaming, WindowFunctions.streamable(grp));
+        assertEquals(streaming, WindowFunctions.streamable(grp));
 
         WindowNode<Object[]> window = createWindowNode(ctx, grp, input);
 
@@ -623,7 +622,7 @@ public class WindowExecutionTest extends AbstractExecutionTest {
     /**
      * @throws Exception If failed.
      */
-    @Before
+    @BeforeEach
     @Override public void setup() throws Exception {
         nodesCnt = 1;
         super.setup();

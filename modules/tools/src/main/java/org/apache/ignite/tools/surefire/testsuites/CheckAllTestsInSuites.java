@@ -113,6 +113,13 @@ public class CheckAllTestsInSuites {
         }
     }
 
+    /** Calcite module tests inherited from legacy junit4 related classes. */
+    private static final Set<String> CALCITE_TESTS = Set.of(
+        "org.apache.ignite.internal.processors.query.calcite.IndexWithSameNameCalciteTest",
+        "org.apache.ignite.internal.processors.cache.DdlTransactionCalciteSelfTest",
+        "org.apache.ignite.internal.processors.query.calcite.message.CalciteCommunicationMessageSerializationTest"
+    );
+
     /**
      * Check whether class is a test class or a suite.
      *
@@ -121,11 +128,13 @@ public class CheckAllTestsInSuites {
      * Exclusion of the rule is Parameterized.class, so classes are marked with it are test classes.
      */
     private boolean isTestClass(Description desc) {
+        if (CALCITE_TESTS.contains(desc.getDisplayName()))
+            return false;
+
         RunWith runWith = desc.getAnnotation(RunWith.class);
 
         return runWith == null
             || runWith.value().equals(Parameterized.class)
-            || !(Suite.class.isAssignableFrom(runWith.value())
-            || "org.scalatest.Suites".equals(desc.getTestClass().getSuperclass().getName()));
+            || !(Suite.class.isAssignableFrom(runWith.value()));
     }
 }

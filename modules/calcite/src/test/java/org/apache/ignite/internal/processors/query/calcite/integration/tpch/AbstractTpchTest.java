@@ -20,30 +20,34 @@ package org.apache.ignite.internal.processors.query.calcite.integration.tpch;
 import java.util.Collection;
 import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest;
 import org.apache.ignite.internal.util.typedef.F;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "queryId={0}")
+@MethodSource("parameters")
 public abstract class AbstractTpchTest extends AbstractBasicIntegrationTest {
     /** */
     protected static final Collection<Integer> USED_TESTS = F.asList(15, 16, 17, 19, 20);
 
     /** Query ID. */
-    @Parameterized.Parameter
+    @Parameter(0)
     public int qryId;
 
     /** */
     protected abstract double scale();
 
     /** */
-    @Parameterized.Parameters(name = "queryId={0}")
-    public static Collection<Integer> params() {
+    @MethodSource("parameters")
+    public static Collection<Integer> parameters() {
         return USED_TESTS;
     }
 
     /** {@inheritDoc} */
+    @BeforeAll
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 

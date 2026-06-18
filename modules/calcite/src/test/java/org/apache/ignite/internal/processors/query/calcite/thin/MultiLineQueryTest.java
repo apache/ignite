@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.thin;
 
+import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
@@ -26,19 +27,22 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
+import org.apache.ignite.internal.processors.query.calcite.GridCommonAbstractWrapperTest;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
  * Tests proper exception is thrown when multiline expressions are executed on thin client on both engines.
  */
-@RunWith(Parameterized.class)
-public class MultiLineQueryTest extends GridCommonAbstractTest {
+@ParameterizedClass(name = "engine={0}")
+@MethodSource("parameters")
+public class MultiLineQueryTest extends GridCommonAbstractWrapperTest {
     /** */
     private static final String H2_ENGINE = IndexingQueryEngineConfiguration.ENGINE_NAME;
 
@@ -49,13 +53,15 @@ public class MultiLineQueryTest extends GridCommonAbstractTest {
     private IgniteClient cli;
 
     /** */
-    @Parameterized.Parameter
+    @Parameter
     public String queryEngine;
 
     /** */
-    @Parameterized.Parameters(name = "engine={0}")
-    public static List<Object> parameters() {
-        return F.asList(H2_ENGINE, CALCITE_ENGINE);
+    private static Collection<Arguments> parameters() {
+        return List.of(
+            Arguments.of(H2_ENGINE),
+            Arguments.of(CALCITE_ENGINE)
+        );
     }
 
     /** {@inheritDoc} */
@@ -69,6 +75,7 @@ public class MultiLineQueryTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @BeforeEach
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
@@ -80,6 +87,7 @@ public class MultiLineQueryTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @AfterEach
     @Override protected void afterTest() throws Exception {
         if (cli != null) {
             cli.close();

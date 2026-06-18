@@ -17,14 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner.hints;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * SQL hints tests.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     CommonHintsPlannerTest.class,
     NoIndexHintPlannerTest.class,
     ForceIndexHintPlannerTest.class,

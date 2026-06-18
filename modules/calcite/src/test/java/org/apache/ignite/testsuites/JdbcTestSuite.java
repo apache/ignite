@@ -25,14 +25,14 @@ import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcSetClientInf
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcSetClientInfoTest;
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcThinConnectionSavepointTest;
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcThinTransactionalSelfTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Calcite JDBC tests.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     JdbcQueryTest.class,
     JdbcCrossEngineTest.class,
     JdbcThinConnectionSavepointTest.class,
