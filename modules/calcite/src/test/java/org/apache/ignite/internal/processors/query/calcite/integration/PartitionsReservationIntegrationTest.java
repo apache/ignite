@@ -34,7 +34,9 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests partition reservation/releasing for queries over unstable topology.
@@ -47,12 +49,14 @@ public class PartitionsReservationIntegrationTest extends AbstractBasicIntegrati
     private static final int KEYS = PARTS * 100_000;
 
     /** {@inheritDoc} */
+    @BeforeAll
     @Override protected void beforeTestsStarted() throws Exception {
         // No-op. Don't start any grids.
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
+    /** */
+    @BeforeEach
+    void setup() throws Exception {
         startGrids(2);
 
         client = startClientGrid();

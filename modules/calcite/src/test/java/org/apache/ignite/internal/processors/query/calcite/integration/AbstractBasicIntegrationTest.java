@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rex.RexNode;
@@ -37,6 +39,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
+import org.apache.ignite.internal.processors.query.calcite.GridCommonAbstractWrapperTest;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionServiceImpl;
@@ -51,9 +54,10 @@ import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 
 import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.authenticate;
 import static org.apache.ignite.internal.processors.authentication.User.DFAULT_USER_NAME;
@@ -64,7 +68,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /**
  *
  */
-public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
+public class AbstractBasicIntegrationTest extends GridCommonAbstractWrapperTest {
     /** */
     protected static final Object[] NULL_RESULT = new Object[] { null };
 
@@ -75,6 +79,7 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
     protected static IgniteEx client;
 
     /** {@inheritDoc} */
+    @BeforeAll
     @Override protected void beforeTestsStarted() throws Exception {
         cleanPersistenceDir();
 
@@ -86,6 +91,23 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
     /** */
     protected boolean destroyCachesAfterTest() {
         return true;
+    }
+
+    /** */
+    @AfterEach
+    public void runAfterTest() throws Exception {
+        AtomicBoolean afterTestFinished = new AtomicBoolean(false);
+
+        ScheduledExecutorService scheduler = scheduleThreadDumpOnAfterTestTimeOut(afterTestFinished);
+
+        try {
+            afterTest();
+        }
+        finally {
+            afterTestFinished.set(true);
+
+            scheduler.shutdownNow();
+        }
     }
 
     /** {@inheritDoc} */

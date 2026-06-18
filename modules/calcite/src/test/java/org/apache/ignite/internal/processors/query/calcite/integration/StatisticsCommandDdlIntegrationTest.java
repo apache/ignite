@@ -31,8 +31,8 @@ import org.apache.ignite.internal.processors.query.stat.ObjectStatisticsImpl;
 import org.apache.ignite.internal.processors.query.stat.StatisticsKey;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Test;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -60,6 +60,7 @@ public class StatisticsCommandDdlIntegrationTest extends AbstractDdlIntegrationT
     private static final String NAME_FIELD = "NAME";
 
     /** {@inheritDoc} */
+    @BeforeEach
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 

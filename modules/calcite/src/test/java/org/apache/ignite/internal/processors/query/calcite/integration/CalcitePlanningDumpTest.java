@@ -19,16 +19,15 @@
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.stream.Stream;
-
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
-import org.junit.Test;
-
-import static org.apache.ignite.IgniteCommonsSystemProperties.getLong;
+import org.apache.ignite.testframework.junit.SystemPropertiesExtension;
+import org.apache.ignite.testframework.junit.WithSystemProperty;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.IGNITE_CALCITE_PLANNER_TIMEOUT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
@@ -36,10 +35,11 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
  * This test assumes no Calcite classes are loaded in the current JVM before CalciteQueryProcessor.
  * Violating this invariant may cause the test to fail due to premature Calcite initialization.
  */
+@ExtendWith(SystemPropertiesExtension.class)
 @WithSystemProperty(key = IGNITE_CALCITE_PLANNER_TIMEOUT, value = "1000")
 public class CalcitePlanningDumpTest extends AbstractBasicIntegrationTest {
     /** */
-    private static final long PLANNER_TIMEOUT = getLong(IGNITE_CALCITE_PLANNER_TIMEOUT, 0);
+    private static final long PLANNER_TIMEOUT = 1000L;
 
     /** */
     @Test

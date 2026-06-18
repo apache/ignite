@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Hash spool test.

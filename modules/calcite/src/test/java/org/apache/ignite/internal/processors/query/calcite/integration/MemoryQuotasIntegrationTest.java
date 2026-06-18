@@ -29,7 +29,8 @@ import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
@@ -57,9 +58,10 @@ public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
             .setTransactionConfiguration(new TransactionConfiguration().setTxAwareQueriesEnabled(true));
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
+    /** */
+    @BeforeEach
+    void setup() throws Exception {
+        beforeTest();
 
         sql("CREATE TABLE tbl (id INT, b VARBINARY) WITH TEMPLATE=REPLICATED, ATOMICITY=TRANSACTIONAL");
 

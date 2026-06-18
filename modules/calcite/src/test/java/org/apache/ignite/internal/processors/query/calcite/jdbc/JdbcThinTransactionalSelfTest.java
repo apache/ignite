@@ -24,19 +24,22 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.query.calcite.GridCommonAbstractWrapperTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest.TestRunnable;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.TransactionConcurrency;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import static java.sql.Connection.TRANSACTION_NONE;
 import static java.sql.Connection.TRANSACTION_READ_COMMITTED;
 import static java.sql.Connection.TRANSACTION_READ_UNCOMMITTED;
@@ -49,16 +52,16 @@ import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /** */
-@RunWith(Parameterized.class)
-public class JdbcThinTransactionalSelfTest extends GridCommonAbstractTest {
+@ParameterizedClass(name = "partitionAwareness={0}")
+@MethodSource("parameters")
+public class JdbcThinTransactionalSelfTest extends GridCommonAbstractWrapperTest {
     /** */
-    @Parameterized.Parameter
+    @Parameter
     public boolean partitionAwareness;
 
     /** */
-    @Parameterized.Parameters(name = "partitionAwareness={0}")
-    public static Object[] parameters() {
-        return new Object[] {false, true};
+    private static Collection<Arguments> parameters() {
+        return List.of(Arguments.of(false), Arguments.of(true));
     }
 
     /** URL. */
@@ -75,10 +78,19 @@ public class JdbcThinTransactionalSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @BeforeAll
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         startGrid();
+    }
+
+    /** {@inheritDoc} */
+    @AfterAll
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+
+        super.afterTestsStopped();
     }
 
     /** */
@@ -103,7 +115,7 @@ public class JdbcThinTransactionalSelfTest extends GridCommonAbstractTest {
     @Test
     public void testInvalidHoldability() throws Exception {
         try (Connection conn = DriverManager.getConnection(url())) {
-            List<TestRunnable> checks = Arrays.asList(
+            List<TestRunnable> checks = List.of(
                 () -> conn.setHoldability(HOLD_CURSORS_OVER_COMMIT),
                 () -> conn.createStatement(TYPE_FORWARD_ONLY, CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT),
                 () -> conn.prepareStatement("SELECT * FROM T", TYPE_FORWARD_ONLY, CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT)

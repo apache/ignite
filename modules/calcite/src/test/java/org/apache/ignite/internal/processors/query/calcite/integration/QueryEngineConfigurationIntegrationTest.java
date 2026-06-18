@@ -36,12 +36,12 @@ import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
 import org.apache.ignite.internal.processors.query.NoOpQueryEngine;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.QueryEngineConfigurationEx;
+import org.apache.ignite.internal.processors.query.calcite.GridCommonAbstractWrapperTest;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /** */
-public class QueryEngineConfigurationIntegrationTest extends GridCommonAbstractTest {
+public class QueryEngineConfigurationIntegrationTest extends GridCommonAbstractWrapperTest {
     /** */
     private static final String jdbcUrl = "jdbc:ignite:thin://127.0.0.1";
 

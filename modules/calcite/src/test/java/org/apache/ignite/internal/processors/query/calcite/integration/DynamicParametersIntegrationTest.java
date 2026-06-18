@@ -33,7 +33,8 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortNode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  *  Dynamic parameters types inference test.
@@ -58,6 +59,7 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
     }
 
     /** {@inheritDoc} */
+    @BeforeEach
     @Override public void beforeTest() throws Exception {
         super.beforeTest();
 

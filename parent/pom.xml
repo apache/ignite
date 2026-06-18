@@ -968,12 +968,15 @@
                                         <inputExclude>**/*.cmd</inputExclude>
                                         <inputExclude>**/*.ps1</inputExclude>
                                         <inputExclude>**/*.json</inputExclude>
+                                        <inputExclude>**/apache-2.0.txt</inputExclude>
                                         <inputExclude>**/.dockerignore</inputExclude>
                                         <inputExclude>modules/platforms/dotnet/Apache.Ignite.Core.Tests/Examples/ExpectedOutput/*.txt</inputExclude>
                                         <!--Packaging -->
                                         <inputExclude>packaging/**</inputExclude>
                                         <!-- Calcite test scripts -->
                                         <inputExclude>src/test/sql/**</inputExclude>
+                                        <!-- Calcite stuff -->
+                                        <inputExclude>src/test/resources/junit-platform.properties</inputExclude>
                                         <!-- Ignite Documentation-->
                                         <inputExclude>docs/_site/**</inputExclude>
                                         <inputExclude>docs/assets/images/**</inputExclude>
