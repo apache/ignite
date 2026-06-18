@@ -74,7 +74,7 @@
         <curator.version>5.9.0</curator.version>
         <guava.version>33.5.0-jre</guava.version>
         <failureaccess.version>1.0.1</failureaccess.version>
-        <grpc-context.version>1.62.2</grpc-context.version>
+        <grpc-context.version>1.81.0</grpc-context.version>
         <h2.version>1.4.197</h2.version>
         <hamcrest.version>2.2</hamcrest.version>
         <jackson.version>2.21.3</jackson.version>
