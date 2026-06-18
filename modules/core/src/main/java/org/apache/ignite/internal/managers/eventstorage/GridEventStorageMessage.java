@@ -33,13 +33,13 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.CacheMarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Event storage message.
  */
-public class GridEventStorageMessage implements CacheMarshallableMessage {
+public class GridEventStorageMessage implements MarshallableMessage {
     /** */
     @Order(0)
     GridTopicMessage resTopicMsg;
