@@ -23,7 +23,6 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -33,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public class QueryStartRequest implements CacheMarshallableMessage, CalciteContextMarshallableMessage, ExecutionContextAware {
+public class QueryStartRequest implements CacheMarshallableMessage, ExecutionContextAware {
     /** */
     @Order(0)
     String schema;
@@ -221,26 +220,10 @@ public class QueryStartRequest implements CacheMarshallableMessage, CalciteConte
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        if (qryTxEntries != null) {
-            for (QueryTxEntry e : qryTxEntries)
-                e.prepareMarshal(ctx);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         if (params == null && paramsBytes != null)
             params = U.unmarshal(marsh, paramsBytes, clsLdr);
 
         paramsBytes = null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (qryTxEntries != null) {
-            for (QueryTxEntry e : qryTxEntries)
-                e.finishUnmarshal(ctx, clsLdr);
-        }
     }
 }

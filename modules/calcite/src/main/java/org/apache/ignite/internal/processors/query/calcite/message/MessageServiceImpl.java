@@ -155,11 +155,8 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     @Override public void send(UUID nodeId, Message msg) throws IgniteCheckedException {
         if (localNodeId().equals(nodeId))
             onMessage(nodeId, msg);
-        else {
-            prepareMarshal(msg);
-
+        else
             ioManager().sendToGridTopic(nodeId, GridTopic.TOPIC_QUERY, msg, GridIoPolicy.CALLER_THREAD);
-        }
     }
 
     /** {@inheritDoc} */
@@ -183,27 +180,11 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     }
 
     /** */
-    protected void prepareMarshal(Message msg) throws IgniteCheckedException {
-        try {
-            if (msg instanceof CalciteContextMarshallableMessage)
-                ((CalciteContextMarshallableMessage)msg).prepareMarshal(ctx);
-        }
-        catch (Exception e) {
-            failureProcessor().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
-
-            throw e;
-        }
-    }
-
-    /** */
     protected void prepareUnmarshal(Message msg) throws IgniteCheckedException {
         try {
             MessageSerializer ser = ctx.kernalContext().messageFactory().serializer(msg.directType());
 
             ser.finishUnmarshal(msg, ctx.kernalContext(), null, clsLdr);
-            
-            if (msg instanceof CalciteContextMarshallableMessage)
-                ((CalciteContextMarshallableMessage)msg).finishUnmarshal(ctx, clsLdr);
         }
         catch (Exception e) {
             failureProcessor().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
