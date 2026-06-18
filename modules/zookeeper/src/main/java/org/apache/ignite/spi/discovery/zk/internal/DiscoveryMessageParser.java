@@ -96,7 +96,7 @@ public class DiscoveryMessageParser {
             msgSer.prepareMarshal(m, ((IgniteEx)spi.ignite()).context(), null);
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteSpiException("Failed to marshal joining node data", e);
+            throw new IgniteSpiException("Failed to marshal discovery message", e);
         }     
 
         boolean finished;
