@@ -161,7 +161,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
     private final boolean skipReadThrough;
 
     /** Handle binary in interceptor operation flag. */
-    private final boolean handleBinaryInInterceptor;
+    private final boolean keepBinaryInInterceptor;
 
     /** Mappings to proceed. */
     @GridToStringExclude
@@ -187,7 +187,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
      * @param accessTtl TTL for read operation.
      * @param skipStore skipStore
      * @param skipReadThrough Skip read-through cache store flag.
-     * @param handleBinaryInInterceptor Handle binary in interceptor operation flag.
+     * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      * @param keepBinary Keep binary flag.
      * @param recovery Recovery flag.
      */
@@ -202,7 +202,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         long accessTtl,
         boolean skipStore,
         boolean skipReadThrough,
-        boolean handleBinaryInInterceptor,
+        boolean keepBinaryInInterceptor,
         boolean keepBinary,
         boolean recovery
     ) {
@@ -221,7 +221,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         this.accessTtl = accessTtl;
         this.skipStore = skipStore;
         this.skipReadThrough = skipReadThrough;
-        this.handleBinaryInInterceptor = handleBinaryInInterceptor;
+        this.keepBinaryInInterceptor = keepBinaryInInterceptor;
         this.keepBinary = keepBinary;
         this.recovery = recovery;
 
@@ -1077,7 +1077,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                                                 read ? accessTtl : -1L,
                                                 skipStore,
                                                 skipReadThrough,
-                                                handleBinaryInInterceptor,
+                                                keepBinaryInInterceptor,
                                                 keepBinary,
                                                 clientFirst,
                                                 true,

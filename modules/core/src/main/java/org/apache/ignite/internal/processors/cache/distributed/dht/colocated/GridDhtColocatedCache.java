@@ -205,7 +205,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                         false,
                         opCtx != null && opCtx.skipStore(),
                         opCtx != null && opCtx.skipReadThrough(),
-                        opCtx != null && opCtx.handleBinaryInInterceptor(),
+                        opCtx != null && opCtx.isKeepBinaryInInterceptor(),
                         recovery,
                         readRepairStrategy,
                         needVer);
@@ -309,7 +309,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                         false,
                         opCtx != null && opCtx.skipStore(),
                         opCtx != null && opCtx.skipReadThrough(),
-                        opCtx != null && opCtx.handleBinaryInInterceptor(),
+                        opCtx != null && opCtx.isKeepBinaryInInterceptor(),
                         recovery,
                         readRepairStrategy,
                         needVer);
@@ -663,7 +663,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             accessTtl,
             opCtx != null && opCtx.skipStore(),
             opCtx != null && opCtx.skipReadThrough(),
-            opCtx != null && opCtx.handleBinaryInInterceptor(),
+            opCtx != null && opCtx.isKeepBinaryInInterceptor(),
             opCtx != null && opCtx.isKeepBinary(),
             opCtx != null && opCtx.recovery());
 
@@ -906,7 +906,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param accessTtl TTL for read operation.
      * @param skipStore Skip store flag.
      * @param skipReadThrough Skip read-through cache store flag.
-     * @param handleBinaryInInterceptor Handle binary in interceptor operation flag.
+     * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      * @return Lock future.
      */
     IgniteInternalFuture<Exception> lockAllAsync(
@@ -923,7 +923,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final long accessTtl,
         final boolean skipStore,
         final boolean skipReadThrough,
-        boolean handleBinaryInInterceptor,
+        boolean keepBinaryInInterceptor,
         final boolean keepBinary
     ) {
         assert keys != null;
@@ -949,7 +949,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 accessTtl,
                 skipStore,
                 skipReadThrough,
-                handleBinaryInInterceptor,
+                keepBinaryInInterceptor,
                 keepBinary);
         }
         else {
@@ -972,7 +972,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                             accessTtl,
                             skipStore,
                             skipReadThrough,
-                            handleBinaryInInterceptor,
+                            keepBinaryInInterceptor,
                             keepBinary);
                     }
                 }
@@ -994,7 +994,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param accessTtl TTL for read operation.
      * @param skipStore Skip store flag.
      * @param skipReadThrough Skip read-through cache store flag.
-     * @param handleBinaryInInterceptor Handle binary in interceptor operation flag.
+     * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      * @return Lock future.
      */
     private IgniteInternalFuture<Exception> lockAllAsync0(
@@ -1011,7 +1011,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final long accessTtl,
         boolean skipStore,
         boolean skipReadThrough,
-        boolean handleBinaryInInterceptor,
+        boolean keepBinaryInInterceptor,
         boolean keepBinary) {
         int cnt = keys.size();
 
@@ -1030,7 +1030,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 accessTtl,
                 skipStore,
                 skipReadThrough,
-                handleBinaryInInterceptor,
+                keepBinaryInInterceptor,
                 keepBinary);
 
             // Add before mapping.
@@ -1100,7 +1100,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 accessTtl,
                 skipStore,
                 skipReadThrough,
-                handleBinaryInInterceptor,
+                keepBinaryInInterceptor,
                 keepBinary);
 
             return new GridDhtEmbeddedFuture<>(

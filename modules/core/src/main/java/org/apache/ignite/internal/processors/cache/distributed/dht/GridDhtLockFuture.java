@@ -188,7 +188,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
     private final boolean skipReadThrough;
 
     /** Handle binary in interceptor operation flag. */
-    private final boolean handleBinaryInInterceptor;
+    private final boolean keepBinaryInInterceptor;
 
     /** Keep binary. */
     private final boolean keepBinary;
@@ -207,7 +207,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
      * @param accessTtl TTL for read operation.
      * @param skipStore Skip store flag.
      * @param skipReadThrough Skip read-through cache store flag.
-     * @param handleBinaryInInterceptor Handle binary in interceptor operation flag.
+     * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      * @param keepBinary Keep binary flag.
      */
     public GridDhtLockFuture(
@@ -225,7 +225,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         long accessTtl,
         boolean skipStore,
         boolean skipReadThrough,
-        boolean handleBinaryInInterceptor,
+        boolean keepBinaryInInterceptor,
         boolean keepBinary) {
         super(CU.boolReducer());
 
@@ -246,7 +246,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         this.accessTtl = accessTtl;
         this.skipStore = skipStore;
         this.skipReadThrough = skipReadThrough;
-        this.handleBinaryInInterceptor = handleBinaryInInterceptor;
+        this.keepBinaryInInterceptor = keepBinaryInInterceptor;
         this.keepBinary = keepBinary;
 
         if (tx != null)
@@ -947,7 +947,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                             read ? accessTtl : -1L,
                             skipStore,
                             skipReadThrough,
-                            handleBinaryInInterceptor,
+                            keepBinaryInInterceptor,
                             cctx.store().configured(),
                             keepBinary,
                             inTx() ? tx.label() : null);

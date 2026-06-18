@@ -76,7 +76,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
      * @param topVer Topology version.
      * @param taskNameHash Task name hash code.
      * @param keepBinary Keep binary flag.
-     * @param handleBinaryInInterceptor Handle binary in interceptor operation flag.
+     * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      * @param skipStore Skip store flag.
      * @param readRepairRecovery Recovery on Read Repair flag.
      */
@@ -88,7 +88,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         @NotNull AffinityTopologyVersion topVer,
         int taskNameHash,
         boolean keepBinary,
-        boolean handleBinaryInInterceptor,
+        boolean keepBinaryInInterceptor,
         boolean skipStore,
         boolean readRepairRecovery
     ) {
@@ -99,7 +99,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
             topVer,
             taskNameHash,
             keepBinary,
-            handleBinaryInInterceptor,
+            keepBinaryInInterceptor,
             skipStore,
             readRepairRecovery);
     }

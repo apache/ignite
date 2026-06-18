@@ -562,7 +562,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @param needRetVal Return value flag.
      * @param skipStore Skip store flag.
      * @param skipReadThrough Skip read-through cache store flag.
-     * @param handleBinaryInInterceptor Handle binary in interceptor operation flag.
+     * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      * @param keepBinary Keep binary flag.
      * @param nearCache {@code True} if near cache enabled on originating node.
      * @return Lock future.
@@ -578,7 +578,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         long accessTtl,
         boolean skipStore,
         boolean skipReadThrough,
-        boolean handleBinaryInInterceptor,
+        boolean keepBinaryInInterceptor,
         boolean keepBinary,
         boolean nearCache
     ) {
@@ -652,7 +652,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                             null,
                             skipStore,
                             skipReadThrough,
-                            handleBinaryInInterceptor,
+                            keepBinaryInInterceptor,
                             keepBinary,
                             nearCache);
 
@@ -697,7 +697,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                 accessTtl,
                 skipStore,
                 skipReadThrough,
-                handleBinaryInInterceptor,
+                keepBinaryInInterceptor,
                 keepBinary);
         }
         catch (IgniteCheckedException e) {
@@ -717,7 +717,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @param accessTtl TTL for read operation.
      * @param skipStore Skip store flag.
      * @param skipReadThrough Skip read-through cache store flag.
-     * @param handleBinaryInInterceptor Handle binary in interceptor operation flag.
+     * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      * @return Future for lock acquisition.
      */
     private IgniteInternalFuture<GridCacheReturn> obtainLockAsync(
@@ -730,7 +730,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         final long accessTtl,
         boolean skipStore,
         boolean skipReadThrough,
-        boolean handleBinaryInInterceptor,
+        boolean keepBinaryInInterceptor,
         boolean keepBinary) {
         if (log.isDebugEnabled())
             log.debug("Before acquiring transaction lock on keys [keys=" + passedKeys + ']');
@@ -762,7 +762,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             accessTtl,
             skipStore,
             skipReadThrough,
-            handleBinaryInInterceptor,
+            keepBinaryInInterceptor,
             keepBinary);
 
         return new GridEmbeddedFuture<>(

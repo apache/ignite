@@ -111,7 +111,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
      * @param keepBinary Keep binary flag.
      * @param remapCnt Maximum number of retries.
      * @param appAttrs Application attributes.
-     * @param handleBinaryInInterceptor Handle binary in interceptor operation flag.
+     * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      */
     public GridNearAtomicUpdateFuture(
         GridCacheContext cctx,
@@ -133,7 +133,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         boolean recovery,
         int remapCnt,
         @Nullable Map<String, String> appAttrs,
-        boolean handleBinaryInInterceptor
+        boolean keepBinaryInInterceptor
     ) {
         super(
             cctx,
@@ -151,7 +151,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             recovery,
             remapCnt,
             appAttrs,
-            handleBinaryInInterceptor);
+            keepBinaryInInterceptor);
 
         assert vals == null || vals.size() == keys.size();
         assert conflictPutVals == null || conflictPutVals.size() == keys.size();
@@ -1005,7 +1005,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                     keepBinary,
                     recovery,
                     skipReadThrough,
-                    handleBinaryInInterceptor);
+                    keepBinaryInInterceptor);
 
                 GridNearAtomicFullUpdateRequest req = new GridNearAtomicFullUpdateRequest(
                     cctx.cacheId(),
@@ -1119,7 +1119,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             keepBinary,
             recovery,
             skipReadThrough,
-            handleBinaryInInterceptor);
+            keepBinaryInInterceptor);
 
         GridNearAtomicFullUpdateRequest req = new GridNearAtomicFullUpdateRequest(
             cctx.cacheId(),

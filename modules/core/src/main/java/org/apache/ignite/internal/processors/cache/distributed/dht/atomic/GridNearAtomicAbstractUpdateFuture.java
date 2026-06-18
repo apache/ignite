@@ -151,7 +151,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
     protected GridCacheReturn opRes;
 
     /** Handle binary in interceptor operation flag. */
-    protected boolean handleBinaryInInterceptor;
+    protected boolean keepBinaryInInterceptor;
 
     /**
      * Constructor.
@@ -170,7 +170,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
      * @param recovery {@code True} if cache operation is called in recovery mode.
      * @param remapCnt Remap count.
      * @param appAttrs Application attributes.
-     * @param handleBinaryInInterceptor Handle binary in interceptor operation flag.
+     * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      */
     protected GridNearAtomicAbstractUpdateFuture(
         GridCacheContext cctx,
@@ -188,7 +188,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
         boolean recovery,
         int remapCnt,
         @Nullable Map<String, String> appAttrs,
-        boolean handleBinaryInInterceptor
+        boolean keepBinaryInInterceptor
     ) {
         if (log == null) {
             msgLog = cctx.shared().atomicMessageLogger();
@@ -214,7 +214,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
 
         this.remapCnt = remapCnt;
         this.appAttrs = appAttrs;
-        this.handleBinaryInInterceptor = handleBinaryInInterceptor;
+        this.keepBinaryInInterceptor = keepBinaryInInterceptor;
     }
 
     /**

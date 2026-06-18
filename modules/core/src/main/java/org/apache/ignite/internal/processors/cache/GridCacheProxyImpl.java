@@ -1608,12 +1608,12 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     /**
      * @return Cache with handle binary values during {@link CacheInterceptor} execution flag.
      */
-    @Override public IgniteInternalCache<K, V> withHandleBinaryInInterceptor() {
+    @Override public IgniteInternalCache<K, V> withKeepBinaryInInterceptor() {
         CacheOperationContext prev = gate.enter(opCtx);
 
         try {
             return new GridCacheProxyImpl<>(ctx, delegate,
-                opCtx != null ? opCtx.withHandleBinaryInInterceptor() :
+                opCtx != null ? opCtx.withKeepBinaryInInterceptor() :
                     new CacheOperationContext(
                         false,
                         false,

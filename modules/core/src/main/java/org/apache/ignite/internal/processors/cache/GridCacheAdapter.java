@@ -546,7 +546,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheProxyImpl<K, V> withHandleBinaryInInterceptor() {
+    @Override public GridCacheProxyImpl<K, V> withKeepBinaryInInterceptor() {
         CacheOperationContext opCtx = this.ctx.operationContextPerCall();
 
         if (opCtx == null) {
@@ -563,7 +563,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 true);
         }
         else
-            opCtx = opCtx.withHandleBinaryInInterceptor();
+            opCtx = opCtx.withKeepBinaryInInterceptor();
 
         return new GridCacheProxyImpl<>(this.ctx, this, opCtx);
     }

@@ -131,7 +131,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
      * @param txSize Expected transaction size.
      * @param skipStore Skip store flag.
      * @param skipReadThrough Skip read-through cache store flag.
-     * @param handleBinaryInInterceptor Handle binary in interceptor operation flag.
+     * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      */
     public GridDistributedLockRequest(
         int cacheId,
@@ -149,7 +149,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         int txSize,
         boolean skipStore,
         boolean skipReadThrough,
-        boolean handleBinaryInInterceptor,
+        boolean keepBinaryInInterceptor,
         boolean keepBinary
     ) {
         super(lockVer, keyCnt, false);
@@ -175,7 +175,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         skipStore(skipStore);
         skipReadThrough(skipReadThrough);
         keepBinary(keepBinary);
-        handleBinaryInInterceptor(handleBinaryInInterceptor);
+        keepBinaryInInterceptor(keepBinaryInInterceptor);
     }
 
     /**
@@ -268,14 +268,14 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     }
 
     /** Sets flag indicating whether to handle binary in interceptor. */
-    public void handleBinaryInInterceptor(boolean handleBinary) {
+    public void keepBinaryInInterceptor(boolean handleBinary) {
         setFlag(handleBinary, HANDLE_BINARY_INTERCEPTOR_FLAG_MASK);
     }
 
     /**
      * @return Flag indicating whether to handle binary in interceptor.
      */
-    public boolean handleBinaryInInterceptor() {
+    public boolean keepBinaryInInterceptor() {
         return isFlag(HANDLE_BINARY_INTERCEPTOR_FLAG_MASK);
     }
 

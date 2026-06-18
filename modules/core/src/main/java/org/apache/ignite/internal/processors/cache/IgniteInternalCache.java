@@ -1646,7 +1646,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     /**
      * @return Cache with handle binary values during {@link CacheInterceptor} execution flag.
      */
-    public IgniteInternalCache<K, V> withHandleBinaryInInterceptor();
+    public IgniteInternalCache<K, V> withKeepBinaryInInterceptor();
 
     /**
      * @return Cache with no-retries behavior enabled.

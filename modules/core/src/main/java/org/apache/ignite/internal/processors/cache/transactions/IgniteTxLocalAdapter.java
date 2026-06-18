@@ -693,7 +693,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         evt,
                                         metrics,
                                         txEntry.keepBinary(),
-                                        txEntry.handleBinaryInInterceptor(),
+                                        txEntry.withKeepBinaryInInterceptor(),
                                         txEntry.hasOldValue(),
                                         txEntry.oldValue(),
                                         topVer,
@@ -726,7 +726,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                                 false,
                                                 metrics0,
                                                 txEntry.keepBinary(),
-                                                txEntry.handleBinaryInInterceptor(),
+                                                txEntry.withKeepBinaryInInterceptor(),
                                                 txEntry.hasOldValue(),
                                                 txEntry.oldValue(),
                                                 topVer,
@@ -748,7 +748,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         evt,
                                         metrics,
                                         txEntry.keepBinary(),
-                                        txEntry.handleBinaryInInterceptor(),
+                                        txEntry.withKeepBinaryInInterceptor(),
                                         txEntry.hasOldValue(),
                                         txEntry.oldValue(),
                                         topVer,
@@ -776,7 +776,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                                 false,
                                                 metrics0,
                                                 txEntry.keepBinary(),
-                                                txEntry.handleBinaryInInterceptor(),
+                                                txEntry.withKeepBinaryInInterceptor(),
                                                 txEntry.hasOldValue(),
                                                 txEntry.oldValue(),
                                                 topVer,
@@ -1343,7 +1343,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * @param drVer DR version.
      * @param skipStore Skip store flag.
      * @param skipReadThrough Skip read-through cache store flag.
-     * @param handleBinaryInInterceptor Handle binary in interceptor operation flag.
+     * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      * @return Transaction entry.
      */
     public final IgniteTxEntry addEntry(GridCacheOperation op,
@@ -1359,7 +1359,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         @Nullable GridCacheVersion drVer,
         boolean skipStore,
         boolean skipReadThrough,
-        boolean handleBinaryInInterceptor,
+        boolean keepBinaryInInterceptor,
         boolean keepBinary,
         boolean addReader
     ) {
@@ -1402,7 +1402,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             // Keep old flags.
             old.skipStore(skipStore);
             old.skipReadThrough(skipReadThrough);
-            old.handleBinaryInInterceptor(handleBinaryInInterceptor);
+            old.withKeepBinaryInInterceptor(keepBinaryInInterceptor);
             old.keepBinary(keepBinary);
 
             // Update ttl if specified.
@@ -1434,7 +1434,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 drVer,
                 skipStore,
                 skipReadThrough,
-                handleBinaryInInterceptor,
+                keepBinaryInInterceptor,
                 keepBinary,
                 addReader);
 

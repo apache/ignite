@@ -104,7 +104,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
      * @param syncCommit Synchronous commit flag.
      * @param taskNameHash Task name hash code.
      * @param createTtl TTL for create operation.
-     * @param handleBinaryInInterceptor Handle binary in interceptor operation flag.
+     * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      * @param accessTtl TTL for read operation.
      * @param skipStore Skip store flag.
      * @param firstClientReq {@code True} if first lock request for lock operation sent from client node.
@@ -131,7 +131,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         long accessTtl,
         boolean skipStore,
         boolean skipReadThrough,
-        boolean handleBinaryInInterceptor,
+        boolean keepBinaryInInterceptor,
         boolean keepBinary,
         boolean firstClientReq,
         boolean nearCache,
@@ -153,7 +153,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
             txSize,
             skipStore,
             skipReadThrough,
-            handleBinaryInInterceptor,
+            keepBinaryInInterceptor,
             keepBinary);
 
         assert topVer.compareTo(AffinityTopologyVersion.ZERO) > 0;

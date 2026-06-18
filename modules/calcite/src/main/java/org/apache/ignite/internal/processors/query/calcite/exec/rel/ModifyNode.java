@@ -239,7 +239,7 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
         boolean keepBinaryMode = props == null || props.keepBinary();
 
         if (keepBinaryMode)
-            cache = cache.withHandleBinaryInInterceptor();
+            cache = cache.withKeepBinaryInInterceptor();
 
         if (tx == null)
             invokeOutsideTransaction(tuples, cache);
