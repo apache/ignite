@@ -83,7 +83,6 @@ import org.apache.ignite.internal.IgniteDeploymentCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.OperationContexMessage;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
@@ -103,7 +102,7 @@ import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.processors.tracing.SpanTags;
-import org.apache.ignite.internal.thread.context.DistributedOperationContextAttributeRegistry;
+import org.apache.ignite.internal.thread.context.DistributedOperationAttributeManager;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -462,14 +461,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                 try {
                     GridIoMessage msg0 = (GridIoMessage)msg;
 
-                    if (!locNodeId.equals(nodeId) && msg0.opCtxMsg != null) {
-                        try (Scope ignored = DistributedOperationContextAttributeRegistry.instance()
-                            .restoreContext(msg0.opCtxMsg.idBitmask, msg0.opCtxMsg.vals)) {
-                            onMessage0(nodeId, msg0, msgC);
-                        }
-                    }
-                    else
+                    try (Scope ignored = DistributedOperationAttributeManager.instance().restoreDistributedAttributes(msg0.opCtxMsg)) {
                         onMessage0(nodeId, msg0, msgC);
+                    }
                 }
                 catch (ClassCastException ignored) {
                     U.error(log, "Communication manager received message of unknown type (will ignore): " +
@@ -2061,8 +2055,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         else
             res = new GridIoMessage(plc, topic, msg, ordered, timeout, skipOnTimeout);
 
-        res.opCtxMsg = OperationContexMessage.create(DistributedOperationContextAttributeRegistry.instance()
-            .collectContext(Message.class));
+        res.opCtxMsg = DistributedOperationAttributeManager.instance().collectDistributedAttributes();
 
         return res;
     }

@@ -668,7 +668,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
 
         // [13400 - 13500]: Operation context messages.
         msgIdx = 13400;
-        withNoSchema(OperationContexMessage.class);
+        withNoSchema(DistributedOperationAttributesMessage.class);
 
         assert msgIdx <= MAX_MESSAGE_ID;
     }

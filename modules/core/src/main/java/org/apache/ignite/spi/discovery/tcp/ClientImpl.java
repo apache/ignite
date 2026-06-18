@@ -64,14 +64,13 @@ import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
-import org.apache.ignite.internal.OperationContexMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.processors.tracing.SpanTags;
 import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessage;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesTable;
-import org.apache.ignite.internal.thread.context.DistributedOperationContextAttributeRegistry;
+import org.apache.ignite.internal.thread.context.DistributedOperationAttributeManager;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -84,7 +83,6 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -1314,8 +1312,7 @@ class ClientImpl extends TcpDiscoveryImpl {
          * @param msg Message.
          */
         private void sendMessage(TcpDiscoveryAbstractMessage msg) {
-            msg.opCtxMsg = OperationContexMessage.create(DistributedOperationContextAttributeRegistry.instance()
-                .collectContext(Message.class));
+            msg.opCtxMsg = DistributedOperationAttributeManager.instance().collectDistributedAttributes();
 
             synchronized (mux) {
                 queue.add(msg);
@@ -2010,13 +2007,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                         TcpDiscoveryAbstractMessage msg0 = (TcpDiscoveryAbstractMessage)msg;
 
-                        if (msg0.opCtxMsg == null)
+                        try (Scope ignored = DistributedOperationAttributeManager.instance().restoreDistributedAttributes(msg0.opCtxMsg)) {
                             processDiscoveryMessage(msg0);
-                        else {
-                            try (Scope ignored = DistributedOperationContextAttributeRegistry.instance()
-                                .restoreContext(msg0.opCtxMsg.idBitmask, msg0.opCtxMsg.vals)) {
-                                processDiscoveryMessage(msg0);
-                            }
                         }
                     }
                 }
