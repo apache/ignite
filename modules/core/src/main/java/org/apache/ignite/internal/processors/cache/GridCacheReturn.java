@@ -126,7 +126,7 @@ public class GridCacheReturn implements CacheMarshallableMessage, CacheIdAware {
     @Nullable public <V> V value(GridCacheContext ctx) {
         if (v == null) {
             if (cacheObj != null)
-                v = ctx.cacheObjectContext().unwrapBinaryIfNeeded(cacheObj, true, false, U.gridClassLoader());
+                v = ctx.cacheObjectContext().unwrapBinaryIfNeeded(cacheObj, true, false, ctx.deploy().globalLoader());
 
             if (invokeRes && invokeResCol != null) {
                 Map<Object, CacheInvokeResult> map0 = U.newHashMap(invokeResCol.size());
