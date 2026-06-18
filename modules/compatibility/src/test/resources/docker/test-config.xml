@@ -46,6 +46,8 @@
                                 <value>node2:47500</value>
                                 <value>node3:47500</value>
                                 <value>host-gateway:48500..48520</value>
+                                <value>0.0.0.0:48500..48520</value>
+                                <value>127.0.0.1:48500..48520</value>
                             </list>
                         </property>
                     </bean>

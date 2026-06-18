@@ -18,7 +18,7 @@
 package org.apache.ignite.compatibility.ru;
 
 import java.io.File;
-import java.net.InetAddress;
+//import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -61,7 +61,7 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
     );
 
     /** Source commit hash. */
-    private static final String SOURCE_COMMIT_HASH = "6b172a8b";
+    private static final String SOURCE_COMMIT_HASH = "f239499b"; //"6b172a8b";
 
     /** Cache name. */
     private static final String CACHE_NAME = "ru-test-cache";
@@ -188,11 +188,9 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
             .setNetworkTimeout(10000)
             .setAckTimeout(5000)
             .setJoinTimeout(10000)
-            // Установим локальный адрес для связи с контейнерами
             //.setLocalAddress(InetAddress.getLocalHost().getHostAddress())
 //            .setAddressFilter(addrs -> !(addrs.getHostString().contains("0.0.0.0")
 //             || addrs.getHostString().contains("127.0.0.1")))
-            // Установим порты для дисковери
             .setLocalPort(48500)
             .setLocalPortRange(20);
 
