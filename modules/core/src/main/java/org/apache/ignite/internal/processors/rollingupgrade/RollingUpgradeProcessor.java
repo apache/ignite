@@ -43,6 +43,7 @@ import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
@@ -261,6 +262,12 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
+        enableProc.onDisconnected();
+        finalizeProc.onDisconnected();
+    }
+
     /** */
     private IgniteProductVersion localProductVersion() {
         return featureMgr.localVersionFeatures().version();
@@ -348,6 +355,9 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
             distributedProc.start(reqId, null);
 
+            if (log.isInfoEnabled())
+                log.info("Cluster version upgrade enable process has been started [procId=" + reqId + "]");
+
             return reqId;
         }
 
@@ -398,11 +408,17 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
             preparePhase.start(reqId, null);
 
+            if (log.isInfoEnabled())
+                log.info("Cluster version finalization process has been started [procId=" + reqId + ']');
+
             return reqId;
         }
 
         /** {@inheritDoc} */
         @Override protected void finishProcess(UUID reqId, @Nullable Throwable err) {
+            if (err != null)
+                U.error(log, "Cluster version finalization process failed [procId=" + reqId + ']', err);
+
             // We rely on the guarantee that {@code activeProcId} is only accessed from the Discovery thread, just like
             // the current method. Therefore, synchronization is not required.
             if (reqId.equals(activeProcId))
@@ -411,11 +427,21 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
             super.finishProcess(reqId, err);
         }
 
+        /** {@inheritDoc} */
+        @Override protected void onDisconnected() {
+            activeProcId = null;
+
+            super.onDisconnected();
+        }
+
         /** */
         private IgniteInternalFuture<Message> executePreparePhase(UUID reqId, Message req) {
             if (activeProcId != null) {
+                U.error(log, "Failed to handle cluster version finalization request. Another process is " +
+                    "already in progress [curProcId=" + reqId + ", activeProcId=" + activeProcId + ']');
+
                 return new GridFinishedFuture<>(new IgniteCheckedException(
-                    "Cluster version finalization procedure is already in progress"));
+                    "Cluster version finalization process is already in progress"));
             }
 
             activeProcId = reqId;

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.rollingupgrade;
 
 import java.util.UUID;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.jetbrains.annotations.Nullable;
@@ -53,5 +54,16 @@ abstract class AbstractProcess {
 
         locInitOpId = null;
         locInitOpFut = null;
+    }
+
+    /** */
+    protected synchronized void onDisconnected() {
+        locInitOpId = null;
+
+        if (locInitOpFut != null) {
+            locInitOpFut.onDone(new IgniteException("Client node is disconnected. Operation result is undefined"));
+
+            locInitOpFut = null;
+        }
     }
 }
