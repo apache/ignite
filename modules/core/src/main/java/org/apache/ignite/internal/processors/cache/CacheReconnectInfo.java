@@ -17,38 +17,67 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Map;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-/**
- * Discovery data sent from client reconnecting to cluster.
- */
-public class CacheClientReconnectDiscoveryData implements Message {
+/** */
+public class CacheReconnectInfo implements Message {
     /** */
     @Order(0)
-    Map<String, CacheReconnectInfo> clientCaches;
+    String cacheName;
 
     /** */
-    public CacheClientReconnectDiscoveryData() { }
+    @Order(1)
+    IgniteUuid deploymentId;
+
+    /** */
+    @Order(2)
+    boolean nearCache;
+
+    /** */
+    public CacheReconnectInfo() { }
 
     /**
-     * @param clientCaches Information about caches started on re-joining client node.
+     * @param cacheName    Cache name.
+     * @param deploymentId Cache deployment ID.
+     * @param nearCache    Near cache flag.
      */
-    CacheClientReconnectDiscoveryData(Map<String, CacheReconnectInfo> clientCaches) {
-        this.clientCaches = clientCaches;
+    public CacheReconnectInfo(String cacheName, IgniteUuid deploymentId, boolean nearCache) {
+        assert cacheName != null;
+        assert deploymentId != null;
+
+        this.cacheName = cacheName;
+        this.deploymentId = deploymentId;
+        this.nearCache = nearCache;
     }
 
     /**
-     * @return Information about caches started on re-joining client node.
+     * @return Cache configuration.
      */
-    public Map<String, CacheReconnectInfo> clientCaches() {
-        return clientCaches;
+    String cacheName() {
+        return cacheName;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @return Cache deployment ID.
+     */
+    IgniteUuid deploymentId() {
+        return deploymentId;
+    }
+
+    /**
+     * @return Near cache flag.
+     */
+    boolean nearCache() {
+        return nearCache;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @Override public String toString() {
-        return S.toString(CacheClientReconnectDiscoveryData.class, this);
+        return S.toString(CacheReconnectInfo.class, this);
     }
 }
