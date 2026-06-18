@@ -278,14 +278,7 @@ public class MessageSerializerGenerator {
 
         indent++;
 
-        if (isCacheIdAwareMessage(type))
-            marshall.add(
-                indentedLine("GridCacheContext<?, ?> ctx = nested == null ? kctx.cache().context().cacheContext(msg.cacheId()) : nested;"));
-        else if (isCacheGroupIdMessage(type))
-            marshall.add(
-                indentedLine("GridCacheContext<?, ?> ctx = nested == null ? kctx.cache().context().cacheContext(msg.groupId()) : nested;"));
-        else 
-            marshall.add(indentedLine("GridCacheContext<?, ?> ctx = nested;"));
+        addCtxResolution();
 
         if (marshallableMessage()) {
             marshall.add(EMPTY);
@@ -323,14 +316,7 @@ public class MessageSerializerGenerator {
 
         indent++;
 
-        if (isCacheIdAwareMessage(type))
-            marshall.add(
-                indentedLine("GridCacheContext<?, ?> ctx = nested == null ? kctx.cache().context().cacheContext(msg.cacheId()) : nested;"));
-        else if (isCacheGroupIdMessage(type))
-            marshall.add(
-                indentedLine("GridCacheContext<?, ?> ctx = nested == null ? kctx.cache().context().cacheContext(msg.groupId()) : nested;"));
-        else
-            marshall.add(indentedLine("GridCacheContext<?, ?> ctx = nested;"));
+        addCtxResolution();
 
         for (VariableElement field : orderedFields) {
             List<String> unmarshalled = marshall(field.asType(), fieldAccessor(field), true, false);
@@ -390,6 +376,18 @@ public class MessageSerializerGenerator {
         indent--;
 
         marshall.add(indentedLine("}"));
+    }
+
+    /** Adds a {@code GridCacheContext ctx} resolution line for the current message type. */
+    private void addCtxResolution() {
+        if (isCacheIdAwareMessage(type))
+            marshall.add(
+                indentedLine("GridCacheContext<?, ?> ctx = nested == null ? kctx.cache().context().cacheContext(msg.cacheId()) : nested;"));
+        else if (isCacheGroupIdMessage(type))
+            marshall.add(
+                indentedLine("GridCacheContext<?, ?> ctx = nested == null ? kctx.cache().context().cacheContext(msg.groupId()) : nested;"));
+        else
+            marshall.add(indentedLine("GridCacheContext<?, ?> ctx = nested;"));
     }
 
     /** */
