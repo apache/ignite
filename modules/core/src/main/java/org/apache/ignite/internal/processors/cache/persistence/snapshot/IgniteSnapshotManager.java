@@ -773,8 +773,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 "Another snapshot operation in progress [req=" + req + ", curr=" + curSnpOp + ']'));
         }
 
-        // Let's keep the metrics on any node.
-        if (clusterSnpFut == null) {
+        // Let's keep the metrics on each server node.
+        if (clusterSnpFut == null && !cctx.localNode().isClient()) {
             clusterSnpFut = new ClusterSnapshotFuture(req.reqId, req.snpName, req.incremental() ? req.incrementIndex() : null);
 
             if (req.incremental())
@@ -1126,9 +1126,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         if (snpReq == null || !snpReq.requestId().equals(id)) {
             synchronized (snpOpMux) {
-                assert clusterSnpFut != null;
-
-                if (clusterSnpFut.rqId.equals(id)) {
+                if (clusterSnpFut != null && clusterSnpFut.rqId.equals(id)) {
                     if (cancelled) {
                         clusterSnpFut.onDone(new IgniteFutureCancelledCheckedException("Execution of snapshot tasks " +
                             "has been cancelled by external process [err=" + err + ", snpReq=" + snpReq + ']'));
@@ -1389,45 +1387,45 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             incSnpId = null;
 
-            if (endFail.isEmpty() && snpOp.error() == null)
+            if (clusterSnpFut != null && endFail.isEmpty() && snpOp.error() == null)
                 warnAtomicCachesInIncrementalSnapshot(snpReq.snapshotName(), snpReq.incrementIndex(), snpReq.groups());
         }
 
         curSnpOp = null;
 
         synchronized (snpOpMux) {
-            assert clusterSnpFut != null;
+            if (clusterSnpFut != null) {
+                if (endFail.isEmpty() && snpOp.error() == null) {
+                    if (!F.isEmpty(snpOp.warnings())) {
+                        String wrnsLst = U.nl() + "\t- " + String.join(U.nl() + "\t- ", snpOp.warnings());
 
-            if (endFail.isEmpty() && snpOp.error() == null) {
-                if (!F.isEmpty(snpOp.warnings())) {
-                    String wrnsLst = U.nl() + "\t- " + String.join(U.nl() + "\t- ", snpOp.warnings());
+                        SnapshotWarningException wrn = new SnapshotWarningException(
+                            "Snapshot create operation completed with warnings [name=" + snpReq.snapshotName() +
+                                (snpReq.requestId() != null ? ", id=" + snpReq.requestId() : "") + "]:" + wrnsLst);
 
-                    SnapshotWarningException wrn = new SnapshotWarningException(
-                        "Snapshot create operation completed with warnings [name=" + snpReq.snapshotName() +
-                            (snpReq.requestId() != null ? ", id=" + snpReq.requestId() : "") + "]:" + wrnsLst);
+                        clusterSnpFut.onDone(wrn);
 
-                    clusterSnpFut.onDone(wrn);
+                        log.warning(SNAPSHOT_FINISHED_WRN_MSG + snpReq + ". Warnings:" + wrnsLst);
+                    }
+                    else {
+                        clusterSnpFut.onDone();
 
-                    log.warning(SNAPSHOT_FINISHED_WRN_MSG + snpReq + ". Warnings:" + wrnsLst);
+                        if (log.isInfoEnabled())
+                            log.info(SNAPSHOT_FINISHED_MSG + snpReq);
+                    }
                 }
-                else {
-                    clusterSnpFut.onDone();
+                else if (snpOp.error() == null) {
+                    log.warning("Snapshot error: ", snpOp.error());
 
-                    if (log.isInfoEnabled())
-                        log.info(SNAPSHOT_FINISHED_MSG + snpReq);
+                    clusterSnpFut.onDone(new IgniteCheckedException("Snapshot creation has been finished with an error. " +
+                        "Local snapshot tasks may not finished completely or finalizing results fails " +
+                        "[fail=" + endFail + ", err=" + err + ']'));
                 }
-            }
-            else if (snpOp.error() == null) {
-                log.warning("Snapshot error: ", snpOp.error());
+                else
+                    clusterSnpFut.onDone(snpOp.error());
 
-                clusterSnpFut.onDone(new IgniteCheckedException("Snapshot creation has been finished with an error. " +
-                    "Local snapshot tasks may not finished completely or finalizing results fails " +
-                    "[fail=" + endFail + ", err=" + err + ']'));
+                clusterSnpFut = null;
             }
-            else
-                clusterSnpFut.onDone(snpOp.error());
-
-            clusterSnpFut = null;
         }
     }
 
