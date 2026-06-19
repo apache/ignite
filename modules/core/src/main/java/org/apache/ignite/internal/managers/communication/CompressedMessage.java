@@ -27,14 +27,14 @@ import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage;
 
 /**
  * Internal message used when transmitting fields annotated with @Compress over the network.
  * <p>
  * WARNING: CompressedMessage is not intended for explicit use in messages.
  */
-public class CompressedMessage implements Message {
+public class CompressedMessage implements NonMarshallableMessage {
     /** Chunk size. */
     static final int CHUNK_SIZE = 10 * 1024;
 
