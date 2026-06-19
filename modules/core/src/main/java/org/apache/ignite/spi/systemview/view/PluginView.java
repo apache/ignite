@@ -21,7 +21,6 @@ import org.apache.ignite.internal.systemview.Filtrable;
 import org.apache.ignite.internal.systemview.Order;
 import org.apache.ignite.internal.systemview.SystemViewDescriptor;
 import org.apache.ignite.plugin.PluginProvider;
-import org.jetbrains.annotations.Nullable;
 
 /** Ignite plugin representation for a {@link SystemView}. */
 @SystemViewDescriptor
@@ -62,7 +61,7 @@ public class PluginView {
     /** @return Plugin info. */
     @Order(3)
     @Filtrable
-    public @Nullable String info() {
+    public String info() {
         return pluginProvider.info();
     }
 }

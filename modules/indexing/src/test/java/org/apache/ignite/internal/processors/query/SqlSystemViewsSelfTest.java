@@ -1875,7 +1875,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         }
     }
 
-    /**  */
+    /** */
     @Test
     public void testPluginView() throws Exception {
         try (IgniteEx n = startGrid(getConfiguration().setPluginProviders(new TestPluginProvider()))) {

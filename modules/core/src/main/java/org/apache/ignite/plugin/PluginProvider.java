@@ -56,7 +56,7 @@ public interface PluginProvider<C extends PluginConfiguration> {
     public String copyright();
 
     /** @return Plugin info, {@code ""} if missing. */
-    default String info() {
+    public default String info() {
         return "";
     }
 
