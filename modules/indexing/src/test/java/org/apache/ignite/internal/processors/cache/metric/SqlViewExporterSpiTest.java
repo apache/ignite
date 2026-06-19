@@ -464,7 +464,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             "DS_SEMAPHORES",
             "DS_QUEUES",
             "PAGES_TIMESTAMP_HISTOGRAM",
-            "SQL_PLANS_HISTORY"
+            "SQL_PLANS_HISTORY",
+            "IGNITE_PLUGINS"
         ));
 
         Set<String> actViews = new TreeSet<>();

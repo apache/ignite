@@ -555,7 +555,7 @@ public class DmlUtils {
 
         if (opCtx == null)
             // Mimics behavior of GridCacheAdapter#keepBinary and GridCacheProxyImpl#keepBinary
-            newOpCtx = new CacheOperationContext(false, false, true, null, false, null, false, null, null);
+            newOpCtx = new CacheOperationContext(false, false, true, null, false, null, false, null, null, false);
         else if (!opCtx.isKeepBinary())
             newOpCtx = opCtx.keepBinary();
 

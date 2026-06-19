@@ -31,6 +31,7 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheEntry;
+import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -269,7 +270,8 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
                         null,
                         false,
                         null,
-                        null));
+                        null,
+                        false));
         }
         finally {
             gate.leave(prev);
@@ -295,7 +297,8 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
                         null,
                         false,
                         null,
-                        null));
+                        null,
+                        false));
         }
         finally {
             gate.leave(prev);
@@ -318,7 +321,8 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
                         null,
                         false,
                         null,
-                        attrs));
+                        attrs,
+                        false));
         }
         finally {
             gate.leave(prev);
@@ -341,7 +345,8 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
                     null,
                     false,
                     null,
-                    null));
+                    null,
+                    false));
     }
 
     /** {@inheritDoc} */
@@ -1592,7 +1597,34 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
                         null,
                         false,
                         null,
-                        null));
+                        null,
+                        false));
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /**
+     * @return Cache with handle binary values during {@link CacheInterceptor} execution flag.
+     */
+    @Override public IgniteInternalCache<K, V> withKeepBinaryInInterceptor() {
+        CacheOperationContext prev = gate.enter(opCtx);
+
+        try {
+            return new GridCacheProxyImpl<>(ctx, delegate,
+                opCtx != null ? opCtx.withKeepBinaryInInterceptor() :
+                    new CacheOperationContext(
+                        false,
+                        false,
+                        false,
+                        null,
+                        false,
+                        null,
+                        false,
+                        null,
+                        null,
+                        true));
         }
         finally {
             gate.leave(prev);
@@ -1614,7 +1646,8 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
                     null,
                     false,
                     null,
-                    null));
+                    null,
+                    false));
         }
         finally {
             gate.leave(prev);

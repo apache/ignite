@@ -693,6 +693,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         evt,
                                         metrics,
                                         txEntry.keepBinary(),
+                                        txEntry.keepBinaryInInterceptor(),
                                         txEntry.hasOldValue(),
                                         txEntry.oldValue(),
                                         topVer,
@@ -725,6 +726,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                                 false,
                                                 metrics0,
                                                 txEntry.keepBinary(),
+                                                txEntry.keepBinaryInInterceptor(),
                                                 txEntry.hasOldValue(),
                                                 txEntry.oldValue(),
                                                 topVer,
@@ -746,6 +748,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         evt,
                                         metrics,
                                         txEntry.keepBinary(),
+                                        txEntry.keepBinaryInInterceptor(),
                                         txEntry.hasOldValue(),
                                         txEntry.oldValue(),
                                         topVer,
@@ -773,6 +776,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                                 false,
                                                 metrics0,
                                                 txEntry.keepBinary(),
+                                                txEntry.keepBinaryInInterceptor(),
                                                 txEntry.hasOldValue(),
                                                 txEntry.oldValue(),
                                                 topVer,
@@ -1338,6 +1342,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * @param drExpireTime DR expire time (if any).
      * @param drVer DR version.
      * @param skipStore Skip store flag.
+     * @param skipReadThrough Skip read-through cache store flag.
+     * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      * @return Transaction entry.
      */
     public final IgniteTxEntry addEntry(GridCacheOperation op,
@@ -1353,6 +1359,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         @Nullable GridCacheVersion drVer,
         boolean skipStore,
         boolean skipReadThrough,
+        boolean keepBinaryInInterceptor,
         boolean keepBinary,
         boolean addReader
     ) {
@@ -1392,9 +1399,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             old.cached(entry);
             old.filters(filter);
 
-            // Keep old skipStore and keepBinary flags.
+            // Keep old flags.
             old.skipStore(skipStore);
             old.skipReadThrough(skipReadThrough);
+            old.keepBinaryInInterceptor(keepBinaryInInterceptor);
             old.keepBinary(keepBinary);
 
             // Update ttl if specified.
@@ -1426,6 +1434,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 drVer,
                 skipStore,
                 skipReadThrough,
+                keepBinaryInInterceptor,
                 keepBinary,
                 addReader);
 
