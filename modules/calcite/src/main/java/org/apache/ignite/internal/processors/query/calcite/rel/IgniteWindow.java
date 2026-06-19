@@ -227,7 +227,8 @@ public class IgniteWindow extends Window implements IgniteRel {
 
         int grpKeysSize = grp.keys.cardinality();
 
-        assert leftFldCnt >= grpKeysSize || rightFldCnt >= grpKeysSize;
+        assert (leftFldCnt >= grpKeysSize && grp.keys.equals(ImmutableBitSet.of(Util.first(left.getKeys(), grpKeysSize))))
+            || (rightFldCnt >= grpKeysSize && grp.keys.equals(ImmutableBitSet.of(Util.first(right.getKeys(), grpKeysSize))));
 
         // Check group keys (collation field order and direction meaningless).
         // Since window collation starts with group keys with 'default' sorting direction,
