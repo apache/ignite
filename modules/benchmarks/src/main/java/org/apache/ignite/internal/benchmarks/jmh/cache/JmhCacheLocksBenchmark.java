@@ -28,9 +28,6 @@ import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.Warmup;
-import org.openjdk.jmh.runner.Runner;
-import org.openjdk.jmh.runner.options.Options;
-import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 /**
  * IgniteCache.lock() vs Ignite.reentrantLock().
@@ -101,19 +98,18 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
             "-" + atomicityMode +
             "-" + writeSyncMode;
 
-        final Options opt = new OptionsBuilder()
+        JmhIdeBenchmarkRunner.create()
             .threads(threads)
-            .include(simpleClsName)
+            .benchmarks(simpleClsName)
             .output(output + ".jmh.log")
-            .jvmArgs(
+            .jvmArguments(
                 "-Xms1g",
                 "-Xmx1g",
                 "-XX:+UnlockCommercialFeatures",
                 JmhIdeBenchmarkRunner.createProperty(PROP_ATOMICITY_MODE, atomicityMode),
                 JmhIdeBenchmarkRunner.createProperty(PROP_WRITE_SYNC_MODE, writeSyncMode),
                 JmhIdeBenchmarkRunner.createProperty(PROP_DATA_NODES, 4),
-                JmhIdeBenchmarkRunner.createProperty(PROP_CLIENT_MODE, client)).build();
-
-        new Runner(opt).run();
+                JmhIdeBenchmarkRunner.createProperty(PROP_CLIENT_MODE, client))
+            .run();
     }
 }

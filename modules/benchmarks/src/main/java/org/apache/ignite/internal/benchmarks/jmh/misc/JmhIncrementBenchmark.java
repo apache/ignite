@@ -24,6 +24,9 @@ import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.openjdk.jmh.annotations.Mode.Throughput;
+
 /**
  * Test various increment strategies.
  */
@@ -89,6 +92,8 @@ public class JmhIncrementBenchmark extends JmhAbstractBenchmark {
             .measurementIterations(30)
             .benchmarks(JmhIncrementBenchmark.class.getSimpleName())
             .jvmArguments("-Xms4g", "-Xmx4g")
+            .benchmarkModes(Throughput)
+            .outputTimeUnit(SECONDS)
             .run();
     }
 }

@@ -59,8 +59,10 @@ public class SmallHashSetsVsReadOnlyViewBenchmark extends JmhAbstractBenchmark {
      */
     public static void main(String[] args) throws Exception {
         JmhIdeBenchmarkRunner.create()
+            .threads(1)
             .measurementIterations(20)
             .benchmarks(SmallHashSetsVsReadOnlyViewBenchmark.class.getSimpleName())
+            .warmupIterations(10)
             .run();
     }
 

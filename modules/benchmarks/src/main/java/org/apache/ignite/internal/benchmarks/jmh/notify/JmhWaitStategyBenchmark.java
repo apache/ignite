@@ -32,6 +32,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.benchmarks.jmh.cache.JmhCacheAbstractBenchmark;
+import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.apache.ignite.internal.benchmarks.model.IntValue;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -47,10 +48,6 @@ import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.BenchmarkParams;
 import org.openjdk.jmh.results.RunResult;
-import org.openjdk.jmh.runner.Runner;
-import org.openjdk.jmh.runner.RunnerException;
-import org.openjdk.jmh.runner.options.ChainedOptionsBuilder;
-import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.TimeValue;
 
 /**
@@ -218,7 +215,7 @@ public class JmhWaitStategyBenchmark extends JmhCacheAbstractBenchmark {
     /**
      * Benchmark runner
      */
-    public static void main(String[] args) throws RunnerException {
+    public static void main(String[] args) throws Exception {
         List<String> policies = Arrays.asList("inc", "dec", "r25", "r50", "r75");
         int[] threads = {2, 4, 8, 16, 32};
 
@@ -226,20 +223,19 @@ public class JmhWaitStategyBenchmark extends JmhCacheAbstractBenchmark {
 
         for (String plc : policies) {
             for (int thread : threads) {
-                ChainedOptionsBuilder builder = new OptionsBuilder()
-                    .jvmArgs()
-                    .timeUnit(TimeUnit.MILLISECONDS)
+                JmhIdeBenchmarkRunner runner = JmhIdeBenchmarkRunner.create()
+                    .outputTimeUnit(TimeUnit.MILLISECONDS)
                     .measurementIterations(10)
                     .measurementTime(TimeValue.seconds(20))
                     .warmupIterations(5)
                     .warmupTime(TimeValue.seconds(10))
-                    .jvmArgs("-Dbench.exp.policy=" + plc)
+                    .jvmArguments("-Dbench.exp.policy=" + plc)
                     .forks(1)
                     .threads(thread)
-                    .mode(Mode.Throughput)
-                    .include(JmhWaitStategyBenchmark.class.getSimpleName());
+                    .benchmarkModes(Mode.Throughput)
+                    .benchmarks(JmhWaitStategyBenchmark.class.getSimpleName());
 
-                results.addAll(new Runner(builder.build()).run());
+                results.addAll(runner.run());
             }
         }
 
