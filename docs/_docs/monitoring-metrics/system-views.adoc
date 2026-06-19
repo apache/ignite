@@ -346,6 +346,22 @@ The CONFIGURATION view contains the configuration properties of node.
 
 |===
 
+== IGNITE_PLUGINS
+
+
+The IGNITE_PLUGINS view contains information about plugins configured on the node.
+
+[{table_opts}]
+|===
+| Column |Data Type |Description
+
+|NAME |VARCHAR |Plugin name.
+|VERSION |VARCHAR |Plugin version.
+|CLASS_NAME |VARCHAR |Plugin implementation class name.
+|INFO |VARCHAR |Plugin information returned by the provider.
+
+|===
+
 == BASELINE_NODES
 
 
