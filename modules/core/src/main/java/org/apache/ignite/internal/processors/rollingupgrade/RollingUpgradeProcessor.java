@@ -209,7 +209,8 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
             if (isNodeFenceActive) {
                 return new IgniteNodeValidationResult(
                     joiningNode.id(),
-                    "Node joins are not allowed during cluster version finalization [joiningNode=" + joiningNode + ']');
+                    "Node joins are not allowed during cluster version finalization. Retry the node join procedure after" +
+                        " cluster version finalization process is complete [joiningNode=" + joiningNode + ']');
             }
 
             if (isVerUpgradeEnabled) {
@@ -218,7 +219,8 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
                 if (!state.isCompatible(joiningNode)) {
                     return new IgniteNodeValidationResult(
                         joiningNode.id(),
-                        "The joining node is incompatible with the current state of the cluster version rolling upgrade being in progress" +
+                        "The joining node version is incompatible with the current state of the cluster version Rolling" +
+                            " Upgrade being in progress. Upgrade the joining node version and retry the node join procedure" +
                             " [rollingUpgradeState=" + state +
                             ", joiningNodeVer=" + joiningNode.version() +
                             ", joiningNode=" + joiningNode + ']');
@@ -242,7 +244,9 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
                     return new IgniteNodeValidationResult(
                         joiningNode.id(),
                         "Rolling Upgrade is not available between the current cluster logical version and the joining node" +
-                            " product version [clusterLogicalVer=" + locActiveFeatures.version() +
+                            " product version. Refer to the documentation to determine between which versions of Ignite" +
+                            " a Rolling Upgrade is possible and retry the node join procedure" +
+                            " [clusterLogicalVer=" + locActiveFeatures.version() +
                             ", joiningNodeVer=" + joiningNode.version() +
                             ", joiningNode=" + joiningNode + ']');
                 }
@@ -452,7 +456,8 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
                 if (distinctNodeVersions.size() > 1) {
                     return new GridFinishedFuture<>(new IgniteCheckedException(
                         "Cluster version finalization failed. The topology contains nodes running multiple different" +
-                            " versions [distinctNodeVersions=" + distinctNodeVersions + "]"
+                            " versions. Retry the operation after all cluster nodes are upgraded to the same version " +
+                            "[distinctNodeVersions=" + distinctNodeVersions + "]"
                     ));
                 }
 
