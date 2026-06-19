@@ -19,23 +19,20 @@ package org.apache.ignite.util;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.classpath.ClassPathProcessor;
+import org.apache.ignite.internal.classpath.ClassPathTestUtils;
 import org.apache.ignite.internal.classpath.IgniteClassPath;
-import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.classpath.ClassPathProcessor.metastorageKey;
+import static org.apache.ignite.internal.classpath.ClassPathTestUtils.fileNames;
 import static org.apache.ignite.internal.classpath.IgniteClassPathState.READY;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
@@ -71,9 +68,9 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        cpFiles = cpFiles();
+        cpFiles = ClassPathTestUtils.files();
 
-        filesArg = cpFiles.stream().map(Path::toFile).map(File::getAbsolutePath).collect(Collectors.joining(","));
+        filesArg = String.join(",", ClassPathTestUtils.fileArg(cpFiles));
 
         cleanPersistenceDir();
 
@@ -92,12 +89,9 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
     // TODO: add test that classpath can be created only with ADMIN_OPS privelege.
     // TODO: add CRC or other check of file integrity.
     // TODO add in production code checks of files integriy. Perform file integrity check on startup.
+
     // Support pretty print for command.
-    // Test for different failure types: node fail, file write fail, etc.
-    // Node fail: upload node vs not upload node.
-    // Check cleanup.
-    // Concurrent creation of CP with the same name.
-    // Check when files contains duplicate names.
+    // TODO: reboot of in-memory cluster erase distributed metastorage state. ???
 
     /** Tests --create command. */
     @Test
@@ -277,55 +271,12 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
     }
 
     /** */
-    private Set<Path> cpFiles() throws IOException {
-        File emptyFile = File.createTempFile("empty", ".txt");
-
-        emptyFile.deleteOnExit();
-
-        return files(
-            Path.of(getClass().getClassLoader().getResource(".").getPath() + "../"),
-            Path.of(getClass().getClassLoader().getResource(".").getPath() + "../../../core/target"),
-            emptyFile.toPath()
-        );
-    }
-
-    /** */
-    private Set<String> fileNames(Set<Path> dirs) {
-        return dirs.stream().map(Path::getFileName).map(Path::toString).collect(Collectors.toSet());
-    }
-
-    /** */
-    private Set<Path> files(Path... paths) {
-        Set<Path> uniqueNames = new HashSet<>();
-
-        return Stream.of(paths).flatMap(path -> {
-            try {
-                return Files.isDirectory(path)
-                    ? Files.list(path)
-                        .filter(p -> uniqueNames.add(p.getFileName()))
-                        .filter(p -> p.getFileName().toString().endsWith("jar")
-                            || p.getFileName().toString().endsWith("txt"))
-                    : Stream.of(path);
-            }
-            catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }).map(Path::toAbsolutePath).collect(Collectors.toSet());
-    }
-
-    /** */
-    private void checkFilesExists(String cpName, int skip) {
+    private void checkFilesExists(String cpName, int skip) throws IOException {
         for (int i = 0; i < GRID_CNT; i++) {
             if (skip == i)
                 continue;
 
-            NodeFileTree ft = grid(i).context().pdsFolderResolver().fileTree();
-
-            assertEquals(
-                "Files must be deployed on each node",
-                fileNames(cpFiles),
-                fileNames(files(ft.classPathRoot(cpName).toPath()))
-            );
+            ClassPathTestUtils.checkFilesExists(grid(i), cpName, cpFiles);
         }
     }
 

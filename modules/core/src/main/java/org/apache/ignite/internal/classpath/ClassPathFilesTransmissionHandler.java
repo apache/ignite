@@ -27,6 +27,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -150,7 +151,7 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
      */
     void onNodeLeft(UUID nodeId) {
         cancelAll(
-            new ClusterTopologyCheckedException("The node from which a snapshot has been requested left the grid"),
+            new ClusterTopologyCheckedException("The node from which ClassPath files has been requested left the grid"),
             r -> r.rmtNodeId.equals(nodeId)
         );
     }
@@ -196,10 +197,10 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
 
                     File root = ft.classPathRoot(icp.name());
 
+                    // TODO: make async.
                     if (!root.exists())
                         throw new IgniteException("Classpath root not exists: " + root);
 
-                    // TODO: make async execution.
                     try (TransmissionSender sndr = ctx.io().openTransmissionSender(nodeId, FILES_TOPIC)) {
                         for (String name : icp.files()) {
                             File f = new File(root, name);
@@ -207,28 +208,36 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
                             if (!f.exists())
                                 throw new IgniteException("Classpath file not exists: " + f);
 
+                            if (stopping)
+                                throw new IgniteException("Node stopping");
+
                             sndr.send(f, Map.of(ICP_ID_PARAM, icp.id(), NAME_PARAM, name), TransmissionPolicy.FILE);
+
+                            log.info("ClassPath file sent to the node " +
+                                "[icp=" + icp.name() + ", file=" + name + ", rmtNode=" + nodeId + ']');
                         }
                     }
                 }
                 catch (Throwable t) {
-                    U.error(
-                        log,
-                        "Error processing classpath file request [request=" + msg + ", nodeId=" + nodeId + ']',
-                        t
-                    );
+                    U.error(log, "Error processing ClassPath file request [request=" + msg + ", nodeId=" + nodeId + ']', t);
 
                     if (icp != null) {
-                        ctx.io().sendToCustomTopic(nodeId,
-                            FILES_TOPIC,
-                            new DownloadClassPathFailureMessage(icp, t.getMessage()),
-                            SYSTEM_POOL
-                        );
+                        try {
+                            ctx.io().sendToCustomTopic(
+                                nodeId,
+                                FILES_TOPIC,
+                                new DownloadClassPathFailureMessage(icp, t.getMessage()),
+                                SYSTEM_POOL
+                            );
+                        }
+                        catch (IgniteCheckedException e) {
+                            log.warning("Error notifying node of send error", e);
+                        }
                     }
                 }
             }
             else if (msg0 instanceof DownloadClassPathFailureMessage msg) {
-                String errMsg = "File download cancelled. ClassPath operation stopped on the remote node. " +
+                String errMsg = "File download cancelled. ClassPath operation stopped on the remote node. locNode=" + ctx.localNodeId() + ". " +
                     "Error: " + msg.err;
 
                 if (log.isDebugEnabled())
@@ -259,16 +268,9 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
         int filesLeft = task.filesLeft.get();
 
         if (filesLeft != 0) {
-            String msg = "onEnd invoked, but more files left: " + filesLeft +
-                ", completing download process with an error";
-
-            log.warning(msg);
-
-            task.res.onDone(new IllegalStateException(msg));
+            task.res.onDone(new IllegalStateException("onEnd invoked, but more files left: " + filesLeft +
+                ", completing download process with an error"));
         }
-
-        if (log.isInfoEnabled())
-            log.info("Classpath files from remote node has been fully received [icp=" + task.icp.name() + ']');
 
         task.res.onDone((Void)null);
     }
@@ -375,23 +377,19 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
                     ctx.cache().context().gridIO().sendOrderedMessage(
                         rmtNode,
                         FILES_TOPIC,
-                        new DownloadClassPathMessage(next.icp),
+                        new DownloadClassPathMessage(next.icp, ctx.localNodeId()),
                         SYSTEM_POOL,
                         Long.MAX_VALUE,
                         true
                     );
                 }
                 catch (Throwable e) {
-                    log.warning("Can't start download ClassPath files", e);
-
                     next.res.onDone(new IgniteException("Can't download classpath files. " +
                         "Remote node left the grid [rmtNodeId=" + next.rmtNodeId + ']'));
                 }
             });
         }
         catch (RejectedExecutionException e) {
-            log.warning("Submit to system pool rejected", e);
-
             next.res.onDone(e);
         }
     }

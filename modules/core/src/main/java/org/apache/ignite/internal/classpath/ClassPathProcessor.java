@@ -18,17 +18,18 @@
 package org.apache.ignite.internal.classpath;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
+import java.util.concurrent.RejectedExecutionException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -92,21 +93,7 @@ public class ClassPathProcessor extends GridProcessorAdapter {
         for (String file : files)
             ensureFilename(file);
 
-        IgniteClassPath icp;
-
-        try {
-            icp = new IgniteClassPath(
-                UUID.randomUUID(),
-                ctx.pdsFolderResolver().resolveFolders().consistentId(),
-                name,
-                files,
-                lengths,
-                NEW
-            );
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+        IgniteClassPath icp = new IgniteClassPath(UUID.randomUUID(), name, files, lengths, NEW);
 
         File root = ctx.pdsFolderResolver().fileTree().classPathRoot(name);
 
@@ -119,12 +106,12 @@ public class ClassPathProcessor extends GridProcessorAdapter {
                 throw new IgniteException("Fail to register ClassPath. Same ClassPath exists, already?");
         }
         catch (Exception e) {
-            cleanup(icp);
+            cleanup(icp, false);
 
             throw new IgniteException(e);
         }
 
-        log.info("New classpath created [root = " + root + ", icp=" + icp + ']');
+        log.info("New IgniteCclasspath created [root = " + root + ", icp=" + icp + ']');
 
         return icp.id();
     }
@@ -175,7 +162,7 @@ public class ClassPathProcessor extends GridProcessorAdapter {
             log.error("Failed to upload ClassPath file, the ClassPath will be removed " +
                 "[name=" + icp.name() + ", id=" + icpId + ", file=" + name + ']', e);
 
-            cleanup(icp);
+            cleanup(icp, false);
 
             throw new IgniteException(e);
         }
@@ -187,7 +174,7 @@ public class ClassPathProcessor extends GridProcessorAdapter {
      * @param icpId ClassPath id.
      * @param file File to copy.
      */
-    public void copyClassPathFileLocally(UUID icpId, Path file) throws IOException {
+    public void copyClassPathFileLocally(UUID icpId, Path file) {
         IgniteClassPath icp = fromMetastorage(icpId, NEW, ctx);
 
         try {
@@ -218,7 +205,7 @@ public class ClassPathProcessor extends GridProcessorAdapter {
             log.error("Failed to copy ClassPath file locally, the ClassPath will be removed " +
                 "[name=" + icp.name() + ", id=" + icpId + ']', e);
 
-            cleanup(icp);
+            cleanup(icp, false);
 
             throw new IgniteException(e);
         }
@@ -271,7 +258,7 @@ public class ClassPathProcessor extends GridProcessorAdapter {
      * @param ctx Kernal context.
      * @return Class path.
      */
-    static IgniteClassPath fromMetastorage(UUID icpId, IgniteClassPathState expState, GridKernalContext ctx) {
+    static IgniteClassPath fromMetastorage(UUID icpId, @Nullable IgniteClassPathState expState, GridKernalContext ctx) {
         try {
             IgniteClassPath[] icp = new IgniteClassPath[1];
 
@@ -283,7 +270,7 @@ public class ClassPathProcessor extends GridProcessorAdapter {
             if (icp[0] == null)
                 throw new IgniteException("ClassPath not found: " + icpId);
 
-            if (icp[0].state() != expState)
+            if (expState != null && icp[0].state() != expState)
                 throw new IgniteException("ClassPath in wrong state [expected=" + expState + ", status=" + icp[0].state() + ']');
 
             return icp[0];
@@ -322,16 +309,54 @@ public class ClassPathProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Asynchronously removes the classpath metastorage record and deletes its local files.
+     *
+     * @param icp ClassPath to clean up.
+     * @param loc If {@code true} then delete local files, only. Don't remove distributed key.
+     */
+    IgniteInternalFuture<Void> cleanupAsync(IgniteClassPath icp, boolean loc) {
+        try {
+            GridFutureAdapter<Void> res = new GridFutureAdapter<>();
+
+            ctx.pools().getSystemExecutorService().submit(() -> {
+                try {
+                    cleanup(icp, loc);
+
+                    res.onDone((Void)null);
+                }
+                catch (Throwable e) {
+                    res.onDone(e);
+                }
+            });
+
+            if (log.isDebugEnabled()) {
+                res.listen(f -> {
+                    if (log.isDebugEnabled())
+                        log.debug("Async cleanup done. " + (res.error() == null ? "OK" : "FAIL"));
+                });
+            }
+
+            return res;
+        }
+        catch (RejectedExecutionException e) {
+            return new GridFinishedFuture<>(e);
+        }
+    }
+
+    /**
      * Removes the classpath metastorage record and deletes its local files.
      *
      * @param icp ClassPath to clean up.
+     * @param loc If {@code true} then delete local files, only. Don't remove distributed key.
      */
-    private void cleanup(IgniteClassPath icp) {
-        try {
-            ctx.distributedMetastorage().remove(metastorageKey(icp.name()));
-        }
-        catch (IgniteCheckedException e) {
-            log.error("Failed to remove ClassPath metastorage record [name=" + icp.name() + ']', e);
+    void cleanup(IgniteClassPath icp, boolean loc) {
+        if (!loc) {
+            try {
+                ctx.distributedMetastorage().remove(metastorageKey(icp.name()));
+            }
+            catch (IgniteCheckedException e) {
+                log.error("Failed to remove ClassPath metastorage record [name=" + icp.name() + ']', e);
+            }
         }
 
         U.delete(ctx.pdsFolderResolver().fileTree().classPathRoot(icp.name()));

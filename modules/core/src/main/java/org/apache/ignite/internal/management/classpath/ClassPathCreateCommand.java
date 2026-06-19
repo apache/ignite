@@ -79,7 +79,7 @@ public class ClassPathCreateCommand implements NativeCommand<ClassPathCreateComm
             Collections.singletonList(uploadNode)
         );
 
-        printer.accept("New classpath created [" +
+        printer.accept("New ClassPath created [" +
             "uploadNode=" + uploadNode.id() + ", name=" + arg.name + ", id=" + icpID.toString() + ']');
 
         uploadFiles(client, ignite, printer, files, uploadNode, icpID);

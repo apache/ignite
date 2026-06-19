@@ -25,7 +25,7 @@ import org.junit.Test;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /** */
-public class ClassPathSelfTest extends GridCommonAbstractTest {
+public class ClassPathMailicuosRequestsTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid(0);

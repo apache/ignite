@@ -38,13 +38,17 @@ public class DownloadClassPathMessage implements Message {
     @Order(0)
     UUID icpId;
 
+    @Order(1)
+    UUID node;
+
     /** */
     public DownloadClassPathMessage() {
         // No-op.
     }
 
     /** */
-    public DownloadClassPathMessage(IgniteClassPath icp) {
+    public DownloadClassPathMessage(IgniteClassPath icp, UUID node) {
         this.icpId = icp.id();
+        this.node = node;
     }
 }

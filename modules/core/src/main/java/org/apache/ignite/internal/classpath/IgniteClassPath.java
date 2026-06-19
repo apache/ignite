@@ -34,9 +34,6 @@ public class IgniteClassPath implements Serializable {
     private UUID id;
 
     /** */
-    private Object uploadNodeConsistentId;
-
-    /** */
     private String name;
 
     /** */
@@ -55,7 +52,6 @@ public class IgniteClassPath implements Serializable {
      */
     public IgniteClassPath(
         UUID id,
-        Object uploadNodeConsistentId,
         String name,
         String[] files,
         long[] lengths,
@@ -72,12 +68,7 @@ public class IgniteClassPath implements Serializable {
      * @param state New state.
      */
     IgniteClassPath newState(IgniteClassPathState state) {
-        return new IgniteClassPath(id, uploadNodeConsistentId, name, files, lengths, state);
-    }
-
-    /** @return Consistent id of the node that starts ICP creation. */
-    public Object uploadNodeConsistentId() {
-        return uploadNodeConsistentId;
+        return new IgniteClassPath(id, name, files, lengths, state);
     }
 
     /** */
@@ -113,14 +104,13 @@ public class IgniteClassPath implements Serializable {
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
-        IgniteClassPath that = (IgniteClassPath) o;
-        return Objects.equals(id, that.id) && Objects.equals(uploadNodeConsistentId, that.uploadNodeConsistentId)
-            && Objects.equals(name, that.name) && Objects.deepEquals(files, that.files)
+        IgniteClassPath that = (IgniteClassPath)o;
+        return Objects.equals(id, that.id) && Objects.equals(name, that.name) && Objects.deepEquals(files, that.files)
             && Objects.deepEquals(lengths, that.lengths) && state == that.state;
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return Objects.hash(id, uploadNodeConsistentId, name, Arrays.hashCode(files), Arrays.hashCode(lengths), state);
+        return Objects.hash(id, name, Arrays.hashCode(files), Arrays.hashCode(lengths), state);
     }
 }

@@ -35,6 +35,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import static org.apache.ignite.internal.classpath.ClassPathProcessor.createRootAndCheckIsEmpty;
 import static org.apache.ignite.internal.classpath.ClassPathProcessor.fromMetastorage;
 import static org.apache.ignite.internal.classpath.IgniteClassPathState.NEW;
+import static org.apache.ignite.internal.classpath.IgniteClassPathState.READY;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CLASSPATH_DEPLOY_TO_ALL;
 
 /** Distributed process to spread {@link IgniteClassPath} files across cluster. */
@@ -85,8 +86,11 @@ class DeployToAllProcess {
 
                 added = futs.putIfAbsent(icpId, deployRes) == null;
 
-                if (!added)
-                    return new GridFinishedFuture<>(new IllegalStateException("Deploy to all process started, already: " + icp.name()));
+                if (!added) {
+                    return new GridFinishedFuture<>(
+                        new IllegalStateException("Deploy to all process started, already: " + icp.name())
+                    );
+                }
 
                 deployToAllProc.start(icpId, req);
             }
@@ -118,7 +122,26 @@ class DeployToAllProcess {
 
             createRootAndCheckIsEmpty(ctx.pdsFolderResolver().fileTree().classPathRoot(icp.name()));
 
-            return icpFilesHnd.downloadLocally(req.uploadNodeId, icp).chain(f -> {
+            IgniteInternalFuture<Void> res = icpFilesHnd.downloadLocally(req.uploadNodeId, icp);
+
+            res.listen(f -> {
+                if (f.error() == null) {
+                    if (log.isInfoEnabled())
+                        log.info("Classpath files from remote node has been fully received [icp=" + icp.name() + ']');
+
+                    return;
+                }
+
+                // Cleanup local files.
+                ctx.classPath().cleanupAsync(icp, true);
+
+                log.warning(
+                    "Failed to download ClassPath files from remote node [icp=" + icp.name() + "]",
+                    f.error()
+                );
+            });
+
+            return res.chain(f -> {
                 if (f.error() == null)
                     return new ClassPathDeployToAllResponse(icp.id());
 
@@ -144,53 +167,93 @@ class DeployToAllProcess {
         Map<UUID, ClassPathDeployToAllResponse> res,
         Map<UUID, Throwable> err
     ) {
-        GridFutureAdapter<String> fut = futs.remove(id);
-
-        // Only upload node manage the process.
-        if (fut == null) {
-            if (log.isDebugEnabled())
-                log.debug("Unknown distribute process [id=" + id + ']');
-
-            return;
-        }
+        // Not null only on node that will answer to the user.
+        GridFutureAdapter<String> depProcResFut = futs.remove(id);
 
         try {
-            IgniteClassPath icp = fromMetastorage(id, NEW, ctx);
+            IgniteClassPath icp;
 
-            if (log.isDebugEnabled())
-                log.debug("Starting CAS to metastorage: " + icp);
+            try {
+                icp = fromMetastorage(id, null, ctx);
+
+                if (icp.state() == READY) {
+                    if (depProcResFut != null)
+                        depProcResFut.onDone("OK", null);
+
+                    return;
+                }
+            }
+            catch (IgniteException e) {
+                if (depProcResFut != null)
+                    depProcResFut.onDone(e);
+
+                return;
+            }
+
+            if (depProcResFut == null && !U.isLocalNodeCoordinator(ctx.discovery())) {
+                if (log.isDebugEnabled())
+                    log.debug("Skip IgnitClassPath metastorage update. Not coordinator and not start node [icp=" + icp + ']');
+
+                return;
+            }
+
+            if (res.isEmpty()) {
+                String msg = "All nodes fail to deploy ClassPath. Will be removed. Retry creation [icp=" + icp.name() + ']';
+
+                log.warning(msg);
+
+                try {
+                    ctx.classPath().cleanupAsync(icp, false);
+                }
+                finally {
+                    if (depProcResFut != null)
+                        depProcResFut.onDone(new IgniteException(msg));
+                }
+
+                return;
+            }
 
             // Perform CAS async to release discovery thread and let CAS proceed.
+            // Start node or coordinator will succeed.
             ctx.classPath().casToMetastorageAsync(icp, icp.newState(IgniteClassPathState.READY)).listen(casFut -> {
-                log.info("ClassPath is READY. " + res.size() + " of " + (res.size() + err.size()) +
-                    " nodes has its files");
-
-                if (!F.isEmpty(res)) {
-                    log.info("Node that successfully download ClassPath files:");
-                    res.forEach((nodeId, resp) -> log.info("  ^-- " + nodeId));
-                }
-
-                if (!F.isEmpty(err)) {
-                    log.info("Node that fail to download ClassPath file (will retry on first usage):");
-                    err.forEach((nodeId, t) -> log.info("  ^-- " + nodeId + ": " + t.getMessage()));
-                }
-
                 boolean metastorageWritten = casFut.error() == null && casFut.result() != null && casFut.result();
 
-                Throwable t = metastorageWritten
-                    ?  null
-                    : casFut.error() != null
-                        ? casFut.error()
-                        : new IgniteException("Fail to change ClassPath state. Concurrent removal?");
+                if (!metastorageWritten && casFut.error() == null)
+                    metastorageWritten = fromMetastorage(icp.id(), READY, ctx) != null;
 
-                if (!fut.onDone(metastorageWritten ? "OK" : null, t)) {
-                    log.warning("Distribute process in wrong state " +
-                        "[canceled=" + fut.isCancelled() + ", failed=" + fut.isFailed() + ", done=" + fut.isDone() + ']');
+                if (metastorageWritten) {
+                    if (!F.isEmpty(res)) {
+                        log.info("Nodes that successfully download ClassPath files:");
+
+                        res.forEach((nodeId, resp) -> log.info("  ^-- " + nodeId));
+                    }
+
+                    if (!F.isEmpty(err)) {
+                        log.info("Nodes that fail to download ClassPath file (will retry on first usage):");
+
+                        err.forEach((nodeId, t) -> log.info("  ^-- " + nodeId + ": " + t.getMessage()));
+                    }
+
+                    log.info("ClassPath is READY. " + res.size() + " of " + (res.size() + err.size()) + " nodes has its files");
+                }
+
+                Throwable t = metastorageWritten
+                        ? null
+                        : casFut.error() != null
+                            ? casFut.error()
+                            : new IgniteException("Fail to change ClassPath state. Concurrent removal?");
+
+                if (depProcResFut != null && !depProcResFut.onDone(metastorageWritten ? "OK" : null, t)) {
+                    log.warning("Distribute process in wrong state [" +
+                            "canceled=" + depProcResFut.isCancelled() +
+                            ", failed=" + depProcResFut.isFailed() +
+                            ", done=" + depProcResFut.isDone() + ']');
                 }
             });
         }
         catch (Exception e) {
-            fut.onDone(e);
+            if (depProcResFut != null)
+                depProcResFut.onDone(e);
         }
     }
 }
