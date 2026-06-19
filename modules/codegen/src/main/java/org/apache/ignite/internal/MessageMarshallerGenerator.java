@@ -161,7 +161,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         }
 
         for (VariableElement field : orderedFields) {
-            List<String> marshalled = marshall(field.asType(), fieldAccessor(field), false, false);
+            List<String> marshalled = marshall(field.asType(), fieldAccessor(field), MarshalMode.PREPARE);
 
             if (!marshalled.isEmpty()) {
                 if (!marshall.get(marshall.size() - 1).equals(EMPTY))
@@ -196,7 +196,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
             marshall.add(ctxResolutionLine());
 
         for (VariableElement field : orderedFields) {
-            List<String> unmarshalled = marshall(field.asType(), fieldAccessor(field), true, false);
+            List<String> unmarshalled = marshall(field.asType(), fieldAccessor(field), MarshalMode.FINISH_CACHE);
 
             if (!unmarshalled.isEmpty()) {
                 if (!marshall.get(marshall.size() - 1).equals(EMPTY))
@@ -231,7 +231,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         boolean first = true;
 
         for (VariableElement field : orderedFields) {
-            List<String> unmarshalled = marshall(field.asType(), fieldAccessor(field), true, true);
+            List<String> unmarshalled = marshall(field.asType(), fieldAccessor(field), MarshalMode.FINISH_BASE);
 
             if (!unmarshalled.isEmpty()) {
                 if (!first)
@@ -295,8 +295,24 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         return false;
     }
 
+    /**
+     * Describes which marshalling operation to generate code for.
+     *
+     * <ul>
+     *   <li>{@link #PREPARE} — {@code prepareMarshal}: marshal CacheObjects and recurse into nested Messages.</li>
+     *   <li>{@link #FINISH_BASE} — {@code finishUnmarshal(3-arg)}: lightweight unmarshal; recurses into nested
+     *   Messages only, CacheObject fields are skipped (no cache context available).</li>
+     *   <li>{@link #FINISH_CACHE} — {@code finishUnmarshal(5-arg)}: unmarshal with full cache context and class loader.</li>
+     * </ul>
+     */
+    private enum MarshalMode {
+        PREPARE,
+        FINISH_BASE,
+        FINISH_CACHE
+    }
+
     /** */
-    private List<String> marshall(TypeMirror t, String accessor, boolean unmarshall, boolean cache) {
+    private List<String> marshall(TypeMirror t, String accessor, MarshalMode mode) {
         if (t.getKind() == TypeKind.ARRAY) {
             TypeMirror comp = ((ArrayType)t).getComponentType();
 
@@ -315,7 +331,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
                 indent++;
 
-                List<String> res = marshall(comp, el, unmarshall, cache);
+                List<String> res = marshall(comp, el, mode);
 
                 code.addAll(res);
 
@@ -341,19 +357,19 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
                 indent++;
 
-                if (!unmarshall)
-                    code.add(indentedLine(
-                        "MessageMarshaller.prepareMarshal(kctx.messageFactory(), %s, kctx, ctx);",
-                        accessor));
-                else {
-                    if (cache)
+                switch (mode) {
+                    case PREPARE:
                         code.add(indentedLine(
-                            "MessageMarshaller.finishUnmarshal(kctx.messageFactory(), %s, kctx);",
-                            accessor));
-                    else
+                            "MessageMarshaller.prepareMarshal(kctx.messageFactory(), %s, kctx, ctx);", accessor));
+                        break;
+                    case FINISH_BASE:
                         code.add(indentedLine(
-                            "MessageMarshaller.finishUnmarshal(kctx.messageFactory(), %s, kctx, ctx, clsLdr);",
-                            accessor));
+                            "MessageMarshaller.finishUnmarshal(kctx.messageFactory(), %s, kctx);", accessor));
+                        break;
+                    case FINISH_CACHE:
+                        code.add(indentedLine(
+                            "MessageMarshaller.finishUnmarshal(kctx.messageFactory(), %s, kctx, ctx, clsLdr);", accessor));
+                        break;
                 }
 
                 indent--;
@@ -361,7 +377,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
                 return code;
             }
             else if (isCacheObject(t)) {
-                if (cache && unmarshall)
+                if (mode == MarshalMode.FINISH_BASE)
                     return java.util.Collections.emptyList();
 
                 List<String> code = new ArrayList<>();
@@ -370,7 +386,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
                 indent++;
 
-                if (!unmarshall)
+                if (mode == MarshalMode.PREPARE)
                     code.add(indentedLine("%s.prepareMarshal(ctx.cacheObjectContext());", accessor));
                 else
                     code.add(indentedLine("%s.finishUnmarshal(ctx.cacheObjectContext(), clsLdr);", accessor));
@@ -394,8 +410,8 @@ public class MessageMarshallerGenerator extends MessageGenerator {
                 String el = "e" + indent;
 
                 indent++;
-                List<String> keyRes = marshall(keyType, el, unmarshall, cache);
-                List<String> valRes = marshall(valType, el, unmarshall, cache);
+                List<String> keyRes = marshall(keyType, el, mode);
+                List<String> valRes = marshall(valType, el, mode);
                 indent--;
 
                 if (!keyRes.isEmpty() && (keyType.getKind() == TypeKind.DECLARED || keyType.getKind() == TypeKind.TYPEVAR)) {
@@ -466,7 +482,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
                     indent++;
 
-                    List<String> res = marshall(arg, el, unmarshall, cache);
+                    List<String> res = marshall(arg, el, mode);
 
                     code.addAll(res);
 
