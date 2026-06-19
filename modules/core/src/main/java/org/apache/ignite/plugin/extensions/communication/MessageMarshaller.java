@@ -53,7 +53,13 @@ public interface MessageMarshaller<M extends Message> {
      */
     public void finishUnmarshal(M msg, GridKernalContext kctx) throws IgniteCheckedException;
 
-    /** Null-safe {@code prepareMarshal} — skips when no marshaller is registered (e.g. NonMarshallableMessage). */
+    /** Null-safe {@code prepareMarshal} — skips when no marshaller is registered (e.g. NonMarshallableMessage). 
+     * 
+     * @param factory Message factory.
+     * @param msg Message.
+     * @param kctx Kernal context.
+     * @param nested Nested context.
+     * */
     static <M extends Message> void prepareMarshal(
         MessageFactory factory, M msg, GridKernalContext kctx, @Nullable GridCacheContext<?, ?> nested)
         throws IgniteCheckedException {
@@ -63,7 +69,14 @@ public interface MessageMarshaller<M extends Message> {
             m.prepareMarshal(msg, kctx, nested);
     }
 
-    /** Null-safe {@code finishUnmarshal} (with nested context) — skips when no marshaller is registered. */
+    /** Null-safe {@code finishUnmarshal} (with nested context) — skips when no marshaller is registered. 
+     * 
+     * @param factory Message Factory.
+     * @param msg Message.
+     * @param kctx Kernal context.
+     * @param nested Nested context.
+     * @param clsLdr Class loader.
+     * */
     static <M extends Message> void finishUnmarshal(
         MessageFactory factory, M msg, GridKernalContext kctx, @Nullable GridCacheContext<?, ?> nested, ClassLoader clsLdr)
         throws IgniteCheckedException {
@@ -73,7 +86,11 @@ public interface MessageMarshaller<M extends Message> {
             m.finishUnmarshal(msg, kctx, nested, clsLdr);
     }
 
-    /** Null-safe {@code finishUnmarshal} (cache-free) — skips when no marshaller is registered. */
+    /** Null-safe {@code finishUnmarshal} (cache-free) — skips when no marshaller is registered. 
+     * 
+     * @param factory Message factory.
+     * @param kctx Kernal context.
+     * */
     static <M extends Message> void finishUnmarshal(
         MessageFactory factory, M msg, GridKernalContext kctx)
         throws IgniteCheckedException {
