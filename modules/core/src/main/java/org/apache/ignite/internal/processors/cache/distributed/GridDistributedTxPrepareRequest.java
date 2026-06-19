@@ -217,7 +217,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
      * @return Flag indicating whether transaction use cache store.
      */
     public boolean storeWriteThrough() {
-        return (flags & STORE_WRITE_THROUGH_FLAG_MASK) != 0;
+        return isFlag(STORE_WRITE_THROUGH_FLAG_MASK);
     }
 
     /**

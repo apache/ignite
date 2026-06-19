@@ -142,6 +142,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
      * @param topVer Topology version.
      * @param keepBinary Keep binary flag.
      * @param skipStore Skip store flag.
+     * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      * @param forceTransformBackups Force transform backups flag.
      * @param taskNameHash Task name hash code.
      * @param readRepairRecovery Recovery on Read Repair flag.
@@ -155,6 +156,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
         int taskNameHash,
         Object[] invokeArgs,
         boolean keepBinary,
+        boolean keepBinaryInInterceptor,
         boolean skipStore,
         boolean forceTransformBackups,
         boolean readRepairRecovery
@@ -166,6 +168,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
             topVer,
             taskNameHash,
             keepBinary,
+            keepBinaryInInterceptor,
             skipStore,
             readRepairRecovery);
 

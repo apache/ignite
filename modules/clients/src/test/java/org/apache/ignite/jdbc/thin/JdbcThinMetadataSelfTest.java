@@ -465,7 +465,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.STATISTICS_PARTITION_DATA",
                 "SYS.STATISTICS_CONFIGURATION",
                 "SYS.PAGES_TIMESTAMP_HISTOGRAM",
-                "SYS.SQL_PLANS_HISTORY"
+                "SYS.SQL_PLANS_HISTORY",
+                "SYS.IGNITE_PLUGINS"
             ))
         );
     }
@@ -1173,7 +1174,11 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.SQL_PLANS_HISTORY.LOCAL.null",
                 "SYS.SQL_PLANS_HISTORY.PLAN.null",
                 "SYS.SQL_PLANS_HISTORY.SCHEMA_NAME.null",
-                "SYS.SQL_PLANS_HISTORY.SQL.null"
+                "SYS.SQL_PLANS_HISTORY.SQL.null",
+                "SYS.IGNITE_PLUGINS.NAME.null",
+                "SYS.IGNITE_PLUGINS.INFO.null",
+                "SYS.IGNITE_PLUGINS.VERSION.null",
+                "SYS.IGNITE_PLUGINS.CLASS_NAME.null"
                 ));
 
             Assert.assertEquals(expectedCols, actualSysCols);
