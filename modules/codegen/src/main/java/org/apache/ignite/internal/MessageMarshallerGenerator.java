@@ -149,10 +149,14 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
         indent++;
 
-        addCtxResolution();
+        int prepareBodyStart = marshall.size();
+
+        if (needsCtx(orderedFields))
+            marshall.add(ctxResolutionLine());
 
         if (marshallableMessage()) {
-            marshall.add(EMPTY);
+            if (marshall.size() > prepareBodyStart)
+                marshall.add(EMPTY);
             marshall.add(indentedLine("msg.prepareMarshal(marshaller);"));
         }
 
@@ -186,7 +190,10 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
         indent++;
 
-        addCtxResolution();
+        int finish5BodyStart = marshall.size();
+
+        if (needsCtx(orderedFields))
+            marshall.add(ctxResolutionLine());
 
         for (VariableElement field : orderedFields) {
             List<String> unmarshalled = marshall(field.asType(), fieldAccessor(field), true, false);
@@ -200,7 +207,8 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         }
 
         if (isCacheMarshallableMessage(type)) {
-            marshall.add(EMPTY);
+            if (marshall.size() > finish5BodyStart)
+                marshall.add(EMPTY);
             marshall.add(indentedLine("msg.finishUnmarshal(marshaller, clsLdr);"));
         }
 
@@ -247,18 +255,44 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         marshall.add(indentedLine("}"));
     }
 
-    /** Adds a {@code GridCacheContext ctx} resolution line for the current message type. */
-    private void addCtxResolution() {
+    /** Returns the {@code GridCacheContext ctx} resolution line for the current message type. */
+    private String ctxResolutionLine() {
         if (isCacheIdAwareMessage(type))
-            marshall.add(
-                indentedLine("GridCacheContext<?, ?> ctx = nested == null ? " +
-                        "kctx.cache().context().cacheContext(msg.cacheId()) : nested;"));
+            return indentedLine("GridCacheContext<?, ?> ctx = nested == null ? " +
+                    "kctx.cache().context().cacheContext(msg.cacheId()) : nested;");
         else if (isCacheGroupIdMessage(type))
-            marshall.add(
-                indentedLine("GridCacheContext<?, ?> ctx = nested == null ? " +
-                        "kctx.cache().context().cacheContext(msg.groupId()) : nested;"));
+            return indentedLine("GridCacheContext<?, ?> ctx = nested == null ? " +
+                    "kctx.cache().context().cacheContext(msg.groupId()) : nested;");
         else
-            marshall.add(indentedLine("GridCacheContext<?, ?> ctx = nested;"));
+            return indentedLine("GridCacheContext<?, ?> ctx = nested;");
+    }
+
+    /** Returns {@code true} if any field requires {@code ctx} in generated marshal/unmarshal code. */
+    private boolean needsCtx(List<VariableElement> fields) {
+        return fields.stream().anyMatch(f -> needsCtxType(f.asType()));
+    }
+
+    /** */
+    private boolean needsCtxType(TypeMirror t) {
+        if (t.getKind() == TypeKind.ARRAY)
+            return needsCtxType(((ArrayType)t).getComponentType());
+
+        if (t.getKind() == TypeKind.DECLARED || t.getKind() == TypeKind.TYPEVAR) {
+            if (isMessage(t) || isCacheObject(t))
+                return true;
+
+            if (assignableFrom(erasedType(t), type(java.util.Map.class.getName()))) {
+                List<? extends TypeMirror> args = ((DeclaredType)t).getTypeArguments();
+                return needsCtxType(args.get(0)) || needsCtxType(args.get(1));
+            }
+
+            if (assignableFrom(erasedType(t), type(java.util.Collection.class.getName()))) {
+                List<? extends TypeMirror> args = ((DeclaredType)t).getTypeArguments();
+                return needsCtxType(args.get(0));
+            }
+        }
+
+        return false;
     }
 
     /** */

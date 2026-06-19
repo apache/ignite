@@ -37,12 +37,10 @@ public class DefaultMapperEnumFieldsMessageMarshaller implements MessageMarshall
 
     /** */
     @Override public void prepareMarshal(DefaultMapperEnumFieldsMessage msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {
-        GridCacheContext<?, ?> ctx = nested;
     }
 
     /** */
     @Override public void finishUnmarshal(DefaultMapperEnumFieldsMessage msg, GridKernalContext kctx, GridCacheContext<?, ?> nested, ClassLoader clsLdr) throws IgniteCheckedException {
-        GridCacheContext<?, ?> ctx = nested;
     }
 
     /** */

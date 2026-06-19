@@ -37,12 +37,10 @@ public class ChildMessageMarshaller implements MessageMarshaller<ChildMessage> {
 
     /** */
     @Override public void prepareMarshal(ChildMessage msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {
-        GridCacheContext<?, ?> ctx = nested;
     }
 
     /** */
     @Override public void finishUnmarshal(ChildMessage msg, GridKernalContext kctx, GridCacheContext<?, ?> nested, ClassLoader clsLdr) throws IgniteCheckedException {
-        GridCacheContext<?, ?> ctx = nested;
     }
 
     /** */

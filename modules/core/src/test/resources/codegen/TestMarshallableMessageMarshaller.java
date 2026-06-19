@@ -42,14 +42,11 @@ public class TestMarshallableMessageMarshaller implements MessageMarshaller<Test
 
     /** */
     @Override public void prepareMarshal(TestMarshallableMessage msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {
-        GridCacheContext<?, ?> ctx = nested;
-
         msg.prepareMarshal(marshaller);
     }
 
     /** */
     @Override public void finishUnmarshal(TestMarshallableMessage msg, GridKernalContext kctx, GridCacheContext<?, ?> nested, ClassLoader clsLdr) throws IgniteCheckedException {
-        GridCacheContext<?, ?> ctx = nested;
     }
 
     /** */
