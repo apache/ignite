@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.DistributedOperationContextAttributesMessage;
+import org.apache.ignite.internal.DistributedOperationContextMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
@@ -59,8 +59,8 @@ public class DistributedOperationContextManager {
     }
 
     /** */
-    public @Nullable DistributedOperationContextAttributesMessage collectDistributedAttributes() {
-        DistributedOperationContextAttributesMessage res = null;
+    public @Nullable DistributedOperationContextMessage collectDistributedAttributes() {
+        DistributedOperationContextMessage res = null;
 
         for (Map.Entry<Byte, OperationContextAttribute<? extends Message>> e : attrs.entrySet()) {
             OperationContextAttribute<? extends Message> attr = e.getValue();
@@ -71,7 +71,7 @@ public class DistributedOperationContextManager {
 
             if (curVal != attr.initialValue()) {
                 if (res == null) {
-                    res = new DistributedOperationContextAttributesMessage();
+                    res = new DistributedOperationContextMessage();
 
                     res.vals = new ArrayList<>(MAX_DISTRIBUTED_ATTR_CNT / 2);
                 }
@@ -89,7 +89,7 @@ public class DistributedOperationContextManager {
     }
 
     /** */
-    public Scope restoreDistributedAttributes(@Nullable DistributedOperationContextAttributesMessage msg) {
+    public Scope restoreDistributedAttributes(@Nullable DistributedOperationContextMessage msg) {
         if (msg == null)
             return Scope.NOOP_SCOPE;
 
