@@ -69,7 +69,21 @@ public class ClassPathCreationFailoverTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setGridLogger(lsnrLog)
-            .setCommunicationSpi(new BlockingTcpCommunicationSpi());
+            .setCommunicationSpi(new TcpCommunicationSpi() {
+                @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) {
+                    if (msg instanceof GridIoMessage
+                        && ((GridIoMessage)msg).message() instanceof DownloadClassPathMessage
+                        && !failedNode.localNode().id().equals(ignite.cluster().localNode().id())
+                    ) {
+                        GridTestUtils.runAsync(() -> failedNode.close());
+
+                        if (!sendMessage)
+                            return;
+                    }
+
+                    super.sendMessage(node, msg, ackC);
+                }
+            });
     }
 
     // TODO: add stopped check during async operations.
@@ -116,10 +130,7 @@ public class ClassPathCreationFailoverTest extends GridCommonAbstractTest {
             assertEquals(1, Ignition.allGrids().size());
 
             assertTrue(waitForCondition(() -> {
-                ClassPathFilesTransmissionHandler icpFilesHnd
-                    = getFieldValue(grid1.context().classPath(), "icpFilesHnd");
-
-                Object t = getFieldValue(icpFilesHnd, "active");
+                Object t = getFieldValue(ClassPathTestUtils.transmissionHandler(grid1), "active");
 
                 if (t == null)
                     return true;
@@ -185,24 +196,6 @@ public class ClassPathCreationFailoverTest extends GridCommonAbstractTest {
         finally {
             failedNode = null;
             sendMessage = false;
-        }
-    }
-
-    /** */
-    protected static class BlockingTcpCommunicationSpi extends TcpCommunicationSpi {
-        /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) {
-            if (msg instanceof GridIoMessage
-                && ((GridIoMessage)msg).message() instanceof DownloadClassPathMessage
-                && !failedNode.localNode().id().equals(ignite.cluster().localNode().id())
-            ) {
-                GridTestUtils.runAsync(() -> failedNode.close());
-
-                if (!sendMessage)
-                    return;
-            }
-
-            super.sendMessage(node, msg, ackC);
         }
     }
 

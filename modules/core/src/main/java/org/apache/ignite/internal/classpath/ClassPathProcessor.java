@@ -75,6 +75,7 @@ public class ClassPathProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
         icpFilesHnd.stop();
+        deployToAllProc.stop();
     }
 
     /**
@@ -86,7 +87,7 @@ public class ClassPathProcessor extends GridProcessorAdapter {
      * @param lengths Files lengths.
      * @return Class path id.
      */
-    public UUID startCreation(String name, String[] files, long[] lengths) {
+    public UUID startCreation(String name, String[] files, long[] lengths) throws IgniteCheckedException {
         A.ensure(files.length == lengths.length, "wrong arrays lengths");
         A.ensure(U.alphanumericUnderscore(name), "Classpath name must satisfy the following name pattern: a-zA-Z0-9_");
 
@@ -97,18 +98,9 @@ public class ClassPathProcessor extends GridProcessorAdapter {
 
         File root = ctx.pdsFolderResolver().fileTree().classPathRoot(name);
 
-        Boolean metastorageWritten;
+        createRootAndCheckIsEmpty(root);
 
-        try {
-            createRootAndCheckIsEmpty(root);
-
-            metastorageWritten = casToMetastorageAsync(null, icp).get();
-        }
-        catch (Exception e) {
-            cleanup(icp, false);
-
-            throw new IgniteException(e);
-        }
+        Boolean metastorageWritten = casToMetastorageAsync(null, icp).get();
 
         if (metastorageWritten != null && !metastorageWritten)
             throw new IgniteException("Fail to register ClassPath. Same ClassPath exists, already?");
@@ -189,7 +181,7 @@ public class ClassPathProcessor extends GridProcessorAdapter {
             Path f = new File(root, name).toPath();
 
             if (Files.exists(f)) {
-                if(Files.isSameFile(file, f)) {
+                if (Files.isSameFile(file, f)) {
                     log.info("Skip copying new classpath file, already there: " + f);
 
                     return;

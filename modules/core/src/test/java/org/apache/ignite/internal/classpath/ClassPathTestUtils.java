@@ -31,6 +31,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.junit.Assert.assertEquals;
 
 /** */
@@ -105,5 +106,10 @@ public class ClassPathTestUtils {
 
             assertEquals(Files.size(cpFile), Files.size(nodeFile));
         }
+    }
+
+    /** */
+    static ClassPathFilesTransmissionHandler transmissionHandler(IgniteEx grid1) {
+        return getFieldValue(grid1.context().classPath(), "icpFilesHnd");
     }
 }

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management.classpath;
 
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
@@ -45,7 +46,12 @@ public class ClassPathStartCreationTask extends VisorOneNodeTask<ClassPathCreate
 
         /** {@inheritDoc} */
         @Override protected UUID run(@Nullable ClassPathCreateCommandArg arg) throws IgniteException {
-            return ignite.context().classPath().startCreation(arg.name, arg.files, arg.lengths);
+            try {
+                return ignite.context().classPath().startCreation(arg.name, arg.files, arg.lengths);
+            }
+            catch (IgniteCheckedException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 }

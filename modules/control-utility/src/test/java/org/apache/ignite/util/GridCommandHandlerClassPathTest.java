@@ -27,6 +27,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.classpath.ClassPathProcessor;
 import org.apache.ignite.internal.classpath.ClassPathTestUtils;
 import org.apache.ignite.internal.classpath.IgniteClassPath;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
@@ -160,10 +161,8 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
 
         ctx.distributedMetastorage().listen(
             k -> k.equals(metastorageKey(cpName())),
-            (key, oldVal, newVal) -> {
-                for (String fileName : fileNames(cpFiles))
-                    new File(ctx.pdsFolderResolver().fileTree().classPathRoot(cpName()), fileName).mkdirs();
-            }
+            (key, oldVal, newVal) ->
+                fileNames(cpFiles).forEach(f -> new File(ctx.pdsFolderResolver().fileTree().classPathRoot(cpName()), f).mkdirs())
         );
 
         LogListener cpReadyLsnr = null;
@@ -218,10 +217,14 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
         String out = testOut.toString();
 
         assertTrue(out.contains("Fail to register ClassPath. Same ClassPath exists, already?"));
-        assertNull("Metastorage record must be removed", classPath());
-        assertFalse(
-            "Classpath directory must be removed",
+        assertNotNull(grid(0).context().distributedMetastorage().read(ClassPathProcessor.metastorageKey(cpName())));
+        assertTrue(
+            "Classpath directory must be created",
             grid(0).context().pdsFolderResolver().fileTree().classPathRoot(cpName()).exists()
+        );
+        assertTrue(
+            "Files must not be copied",
+            F.isEmpty(grid(0).context().pdsFolderResolver().fileTree().classPathRoot(cpName()).listFiles())
         );
     }
 

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.classpath;
 
 import java.nio.file.Path;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -77,7 +78,7 @@ public class ClassPathMailicuosRequestsTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testUnknownFilename() {
+    public void testUnknownFilename() throws IgniteCheckedException {
         UUID icpId = cpProc().startCreation("mycp", new String[]{"file.txt"}, new long[]{42});
 
         assertThrows(
