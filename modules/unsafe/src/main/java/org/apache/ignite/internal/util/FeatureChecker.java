@@ -21,19 +21,8 @@ package org.apache.ignite.internal.util;
  * initialization effects.
  */
 class FeatureChecker {
-    /** Required Options to Run on Java 11. */
-    public static final String JAVA_11_OPTIONS = "--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED\n" +
-        "--add-exports=java.base/sun.nio.ch=ALL-UNNAMED\n" +
-        "--add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED\n" +
-        "--add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED\n" +
-        "--add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED\n" +
-        "--add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED\n" +
-        "--add-opens=java.base/jdk.internal.access=ALL-UNNAMED\n" +
-        "--add-opens=java.base/jdk.internal.loader=ALL-UNNAMED\n" +
-        "--illegal-access=permit";
-
-    /** Required Options to Run on Java 15 and higher. */
-    public static final String JAVA_15_OPTIONS =
+    /** Required Options to Run on Java 17 and higher. */
+    public static final String JAVA_17_OPTIONS =
         "--add-opens=java.base/jdk.internal.access=ALL-UNNAMED\n" +
         "--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED\n" +
         "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED\n" +
@@ -45,7 +34,7 @@ class FeatureChecker {
         "--add-opens=java.base/java.io=ALL-UNNAMED\n" +
         "--add-opens=java.base/java.nio=ALL-UNNAMED\n" +
         "--add-opens=java.base/java.util=ALL-UNNAMED\n" +
-        "--add-opens=java.base/java.net=ALL-UNNAMED\"" +
+        "--add-opens=java.base/java.net=ALL-UNNAMED\n" +
         "--add-opens=java.base/java.util.concurrent=ALL-UNNAMED\n" +
         "--add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED\n" +
         "--add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED\n" +
@@ -57,7 +46,7 @@ class FeatureChecker {
     /** Java version specific warning to be added in case access failed */
     public static final String JAVA_VER_SPECIFIC_WARN =
         "\nPlease add the following parameters to JVM startup settings and restart the application: {parameters: " +
-            JAVA_11_OPTIONS +
+            JAVA_17_OPTIONS +
             "\n}" +
-            "\nSee https://ignite.apache.org/docs/latest/quick-start/java#running-ignite-with-java-11-or-later for more information.";
+            "\nSee https://ignite.apache.org/docs/latest/quick-start/java#running-ignite-with-java-17-or-later for more information.";
 }

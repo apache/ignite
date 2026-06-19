@@ -248,15 +248,23 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
      * @param part Partition number.
      * @param cntr Update counter.
      * @param topVer Topology version.
+     * @param primary Primary partition flag.
      * @return Context.
      */
-    @Nullable public CounterSkipContext skipUpdateCounter(@Nullable CounterSkipContext skipCtx,
+    @Nullable public CounterSkipContext skipUpdateCounter(
+        @Nullable CounterSkipContext skipCtx,
         int part,
         long cntr,
         AffinityTopologyVersion topVer,
-        boolean primary) {
-        for (CacheContinuousQueryListener lsnr : lsnrs.values())
+        boolean primary
+    ) {
+        for (CacheContinuousQueryListener<?, ?> lsnr : lsnrs.values()) {
+            // Local CQs notify listeners directly and do not use skipped-counter mechanism
+            if (lsnr.isLocalOnly())
+                continue;
+
             skipCtx = lsnr.skipUpdateCounter(cctx, skipCtx, part, cntr, topVer, primary);
+        }
 
         return skipCtx;
     }

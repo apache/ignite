@@ -1111,7 +1111,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             opCtx != null && opCtx.isKeepBinary(),
             opCtx != null && opCtx.recovery(),
             opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
-            opCtx != null ? opCtx.applicationAttributes() : null);
+            opCtx != null ? opCtx.applicationAttributes() : null,
+            opCtx != null && opCtx.isKeepBinaryInInterceptor());
 
         if (async) {
             return asyncOp(new CO<IgniteInternalFuture<Object>>() {
@@ -1299,7 +1300,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 opCtx != null && opCtx.isKeepBinary(),
                 opCtx != null && opCtx.recovery(),
                 opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
-                opCtx != null ? opCtx.applicationAttributes() : null
+                opCtx != null ? opCtx.applicationAttributes() : null,
+                opCtx != null && opCtx.isKeepBinaryInInterceptor()
             );
         }
         else {
@@ -1322,7 +1324,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 opCtx != null && opCtx.isKeepBinary(),
                 opCtx != null && opCtx.recovery(),
                 opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
-                opCtx != null ? opCtx.applicationAttributes() : null);
+                opCtx != null ? opCtx.applicationAttributes() : null,
+                opCtx != null && opCtx.isKeepBinaryInInterceptor());
         }
     }
 
@@ -1381,7 +1384,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             opCtx != null && opCtx.isKeepBinary(),
             opCtx != null && opCtx.recovery(),
             opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
-            opCtx != null ? opCtx.applicationAttributes() : null);
+            opCtx != null ? opCtx.applicationAttributes() : null,
+            opCtx != null && opCtx.isKeepBinaryInInterceptor());
 
         if (async) {
             return asyncOp(new CO<IgniteInternalFuture<Object>>() {
@@ -2252,7 +2256,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     if (updated == null) {
                         if (intercept) {
-                            CacheLazyEntry e = new CacheLazyEntry(ctx, entry.key(), invokeEntry.key(), old, oldVal, req.keepBinary());
+                            CacheLazyEntry e = new CacheLazyEntry(ctx, entry.key(), invokeEntry.key(), old, oldVal,
+                                req.keepBinaryInInterceptor());
 
                             IgniteBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor().onBeforeRemove(e);
 
@@ -2297,7 +2302,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     }
                     else {
                         if (intercept) {
-                            CacheLazyEntry e = new CacheLazyEntry(ctx, entry.key(), invokeEntry.key(), old, oldVal, req.keepBinary());
+                            CacheLazyEntry e = new CacheLazyEntry(ctx, entry.key(), invokeEntry.key(), old, oldVal,
+                                req.keepBinaryInInterceptor());
 
                             Object val = ctx.config().getInterceptor().onBeforePut(e, updatedVal);
 
@@ -2364,15 +2370,17 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             null,
                             req.keepBinary());
 
+                        boolean unwrapVal = req.keepBinaryInInterceptor();
+
                         Object val = ctx.config().getInterceptor().onBeforePut(
                             new CacheLazyEntry(
                                 ctx,
                                 entry.key(),
                                 old,
-                                req.keepBinary()),
+                                unwrapVal),
                             ctx.unwrapBinaryIfNeeded(
                                 updated,
-                                req.keepBinary(),
+                                unwrapVal,
                                 false,
                                 null));
 
@@ -2580,6 +2588,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     !req.skipStore() && !req.skipReadThrough(),
                     sndPrevVal || req.returnValue(),
                     req.keepBinary(),
+                    req.keepBinaryInInterceptor(),
                     expiry,
                     /*event*/true,
                     /*metrics*/true,
@@ -2865,6 +2874,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         /*read-through*/false,
                         /*retval*/sndPrevVal,
                         req.keepBinary(),
+                        req.keepBinaryInInterceptor(),
                         expiry,
                         /*event*/true,
                         /*metrics*/true,
@@ -3174,7 +3184,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             req.keepBinary(),
             req.recovery(),
             MAX_RETRIES,
-            opCtx == null ? null : opCtx.applicationAttributes());
+            opCtx == null ? null : opCtx.applicationAttributes(),
+            req.keepBinaryInInterceptor());
 
         updateFut.map();
     }
@@ -3336,6 +3347,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 /*read-through*/false,
                                 /*retval*/false,
                                 req.keepBinary(),
+                                req.keepBinaryInInterceptor(),
                                 /*expiry policy*/null,
                                 /*event*/true,
                                 /*metrics*/true,

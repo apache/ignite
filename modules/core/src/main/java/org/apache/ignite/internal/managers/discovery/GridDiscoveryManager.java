@@ -1896,6 +1896,16 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
+     * Returns a collection of all remote nodes known to the underlying {@link DiscoverySpi} implementation.
+     *
+     * <p>Unlike {@link #remoteNodes()}, this method may include nodes that have successfully completed
+     * validation but have not yet completed their join routine.</p>
+     */
+    public Collection<ClusterNode> discoverySpiRemoteNodes() {
+        return getSpi().getRemoteNodes();
+    }
+
+    /**
      * Gets discovery collection cache from SPI safely guarding against "floating" collections.
      *
      * @return Discovery collection cache.

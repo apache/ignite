@@ -170,6 +170,9 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     /** Skip read-through cache store flag. */
     private final boolean skipReadThrough;
 
+    /** Handle binary in interceptor operation flag. */
+    private final boolean keepBinaryInInterceptor;
+
     /** */
     private Deque<GridNearLockMapping> mappings;
 
@@ -198,6 +201,8 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      * @param createTtl TTL for create operation.
      * @param accessTtl TTL for read operation.
      * @param skipStore Skip store flag.
+     * @param skipReadThrough Skip read-through cache store flag.
+     * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      */
     public GridDhtColocatedLockFuture(
         GridCacheContext<?, ?> cctx,
@@ -210,6 +215,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         long accessTtl,
         boolean skipStore,
         boolean skipReadThrough,
+        boolean keepBinaryInInterceptor,
         boolean keepBinary,
         boolean recovery
     ) {
@@ -229,6 +235,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         this.skipReadThrough = skipReadThrough;
         this.keepBinary = keepBinary;
         this.recovery = recovery;
+        this.keepBinaryInInterceptor = keepBinaryInInterceptor;
 
         ignoreInterrupts();
 
@@ -990,8 +997,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             if (log.isDebugEnabled())
                 log.debug("Starting (re)map for mappings [mappings=" + mappings + ", fut=" + this + ']');
 
-            boolean hasRmtNodes = false;
-
             boolean first = true;
 
             // Create mini futures.
@@ -1086,6 +1091,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                                         read ? accessTtl : -1L,
                                         skipStore,
                                         skipReadThrough,
+                                        keepBinaryInInterceptor,
                                         keepBinary,
                                         clientFirst,
                                         false,
@@ -1128,11 +1134,8 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                     }
                 }
 
-                if (!distributedKeys.isEmpty()) {
+                if (!distributedKeys.isEmpty())
                     mapping.distributedKeys(distributedKeys);
-
-                    hasRmtNodes |= !mapping.node().isLocal();
-                }
                 else {
                     assert mapping.request() == null;
 
@@ -1259,6 +1262,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             accessTtl,
             skipStore,
             skipReadThrough,
+            keepBinaryInInterceptor,
             keepBinary);
 
         // Add new future.
@@ -1283,16 +1287,18 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                     log.debug("Acquired lock for local DHT mapping [locId=" + cctx.nodeId() +
                         ", mappedKeys=" + keys + ", fut=" + this + ']');
 
-                if (inTx()) {
-                    for (KeyCacheObject key : keys)
-                        tx.entry(cctx.txKey(key)).markLocked();
-                }
-                else {
-                    for (KeyCacheObject key : keys)
-                        cctx.mvcc().markExplicitOwner(cctx.txKey(key), threadId);
-                }
-
                 try {
+                    if (timeoutObj == null)
+                        markLocalDhtLocksAcquired(keys);
+                    else {
+                        synchronized (timeoutObj) {
+                            if (isDone())
+                                return false;
+
+                            markLocalDhtLocksAcquired(keys);
+                        }
+                    }
+
                     // Proceed and add new future (if any) before completing embedded future.
                     if (mappings != null)
                         proceedMapping();
@@ -1306,6 +1312,18 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                 return true;
             },
             fut));
+    }
+
+    /** @param keys Locally locked keys. */
+    private void markLocalDhtLocksAcquired(Collection<KeyCacheObject> keys) {
+        if (inTx()) {
+            for (KeyCacheObject key : keys)
+                tx.entry(cctx.txKey(key)).markLocked();
+        }
+        else {
+            for (KeyCacheObject key : keys)
+                cctx.mvcc().markExplicitOwner(cctx.txKey(key), threadId);
+        }
     }
 
     /**

@@ -64,6 +64,9 @@ public class CacheOperationContext implements Serializable {
     /** Application attributes. */
     private final Map<String, String> appAttrs;
 
+    /** Handle binary in interceptor operation flag. */
+    private final boolean keepBinaryInInterceptor;
+
     /**
      * Constructor with default values.
      */
@@ -77,6 +80,7 @@ public class CacheOperationContext implements Serializable {
         readRepairStrategy = null;
         dataCenterId = null;
         appAttrs = null;
+        keepBinaryInInterceptor = false;
     }
 
     /**
@@ -87,6 +91,7 @@ public class CacheOperationContext implements Serializable {
      * @param dataCenterId Data center id.
      * @param readRepairStrategy Read-repair strategy.
      * @param appAttrs Application attributes.
+     * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      */
     public CacheOperationContext(
         boolean skipStore,
@@ -97,7 +102,8 @@ public class CacheOperationContext implements Serializable {
         @Nullable Byte dataCenterId,
         boolean recovery,
         @Nullable ReadRepairStrategy readRepairStrategy,
-        @Nullable Map<String, String> appAttrs
+        @Nullable Map<String, String> appAttrs,
+        boolean keepBinaryInInterceptor
     ) {
         this.skipStore = skipStore;
         this.skipReadThrough = skipReadThrough;
@@ -108,6 +114,7 @@ public class CacheOperationContext implements Serializable {
         this.recovery = recovery;
         this.readRepairStrategy = readRepairStrategy;
         this.appAttrs = appAttrs;
+        this.keepBinaryInInterceptor = keepBinaryInInterceptor;
     }
 
     /**
@@ -115,6 +122,11 @@ public class CacheOperationContext implements Serializable {
      */
     public boolean isKeepBinary() {
         return keepBinary;
+    }
+
+    /** Return handle binary in interceptor operation flag. */
+    public boolean isKeepBinaryInInterceptor() {
+        return keepBinaryInInterceptor;
     }
 
     /**
@@ -139,7 +151,27 @@ public class CacheOperationContext implements Serializable {
             dataCenterId,
             recovery,
             readRepairStrategy,
-            appAttrs);
+            appAttrs,
+            true);
+    }
+
+    /**
+     * See {@link IgniteInternalCache#withKeepBinaryInInterceptor()}.
+     *
+     * @return New instance of CacheOperationContext with handle binary in interceptor flag.
+     */
+    public CacheOperationContext withKeepBinaryInInterceptor() {
+        return new CacheOperationContext(
+            skipStore,
+            skipReadThrough,
+            keepBinary,
+            expiryPlc,
+            noRetries,
+            dataCenterId,
+            recovery,
+            readRepairStrategy,
+            appAttrs,
+            true);
     }
 
     /**
@@ -174,7 +206,8 @@ public class CacheOperationContext implements Serializable {
             dataCenterId,
             recovery,
             readRepairStrategy,
-            appAttrs);
+            appAttrs,
+            keepBinaryInInterceptor);
     }
 
     /** @return Skip read-through cache store. */
@@ -197,7 +230,8 @@ public class CacheOperationContext implements Serializable {
             dataCenterId,
             recovery,
             readRepairStrategy,
-            Collections.unmodifiableMap(attrs));
+            Collections.unmodifiableMap(attrs),
+            keepBinaryInInterceptor);
     }
 
     /**
@@ -215,7 +249,8 @@ public class CacheOperationContext implements Serializable {
             dataCenterId,
             recovery,
             readRepairStrategy,
-            appAttrs);
+            appAttrs,
+            keepBinaryInInterceptor);
     }
 
     /**
@@ -241,7 +276,8 @@ public class CacheOperationContext implements Serializable {
             dataCenterId,
             recovery,
             readRepairStrategy,
-            appAttrs);
+            appAttrs,
+            keepBinaryInInterceptor);
     }
 
     /**
@@ -258,7 +294,8 @@ public class CacheOperationContext implements Serializable {
             dataCenterId,
             recovery,
             readRepairStrategy,
-            appAttrs);
+            appAttrs,
+            keepBinaryInInterceptor);
     }
 
     /**
@@ -275,7 +312,8 @@ public class CacheOperationContext implements Serializable {
             dataCenterId,
             recovery,
             readRepairStrategy,
-            appAttrs);
+            appAttrs,
+            keepBinaryInInterceptor);
     }
 
     /**
@@ -292,7 +330,8 @@ public class CacheOperationContext implements Serializable {
             dataCenterId,
             recovery,
             readRepairStrategy,
-            appAttrs);
+            appAttrs,
+            keepBinaryInInterceptor);
     }
 
     /**
@@ -309,7 +348,8 @@ public class CacheOperationContext implements Serializable {
             dataCenterId,
             recovery,
             readRepairStrategy,
-            appAttrs);
+            appAttrs,
+            keepBinaryInInterceptor);
     }
 
     /**
@@ -326,7 +366,8 @@ public class CacheOperationContext implements Serializable {
             dataCenterId,
             recovery,
             readRepairStrategy,
-            new HashMap<>(appAttrs));
+            new HashMap<>(appAttrs),
+            keepBinaryInInterceptor);
     }
 
     /**
