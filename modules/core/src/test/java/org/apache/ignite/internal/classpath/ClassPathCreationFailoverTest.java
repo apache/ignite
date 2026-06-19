@@ -70,12 +70,12 @@ public class ClassPathCreationFailoverTest extends GridCommonAbstractTest {
 
             Set<Path> cpFiles = ClassPathTestUtils.files();
 
-            LogListener uploadNodeMsg = newClassPathListener();
-            LogListener failMsg = logListener("Failed to download ClassPath files from remote node [icp=testcp]");
+            LogListener createdMsg = newClassPathListener();
+            LogListener uploadNodeFailedMsg = logListener("Failed to download ClassPath files from remote node [icp=testcp]");
             LogListener rmvMsg =
                 logListener("All nodes fail to deploy ClassPath. Will be removed. Retry creation [icp=testcp]");
 
-            lsnrLog.registerAllListeners(uploadNodeMsg, failMsg, rmvMsg);
+            lsnrLog.registerAllListeners(createdMsg, uploadNodeFailedMsg, rmvMsg);
 
             ClassPathCreateCommandArg arg = new ClassPathCreateCommandArg();
 
@@ -90,7 +90,7 @@ public class ClassPathCreationFailoverTest extends GridCommonAbstractTest {
                 "Task cancelled due to stopping of the grid"
             );
 
-            assertTrue(waitForCondition(uploadNodeMsg::check, 10_000));
+            assertTrue(waitForCondition(createdMsg::check, 10_000));
             assertTrue(failedNode.context().isStopping());
 
             stopGrid(0);
@@ -111,7 +111,7 @@ public class ClassPathCreationFailoverTest extends GridCommonAbstractTest {
                 return res.isDone();
             }, 10_000));
 
-            assertTrue(waitForCondition(failMsg::check, 10_000));
+            assertTrue(waitForCondition(uploadNodeFailedMsg::check, 10_000));
             assertTrue(waitForCondition(rmvMsg::check, 10_000));
             assertTrue(waitForCondition(
                 () -> !grid1.context().pdsFolderResolver().fileTree().classPathRoot("testcp").exists(),
@@ -188,6 +188,7 @@ public class ClassPathCreationFailoverTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
     private LogListener newClassPathListener() {
         return logListener("New ClassPath created [uploadNode=" + grid(0).localNode().id());
     }

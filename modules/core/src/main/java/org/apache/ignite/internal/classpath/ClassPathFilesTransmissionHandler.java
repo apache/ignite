@@ -237,8 +237,7 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
                 }
             }
             else if (msg0 instanceof DownloadClassPathFailureMessage msg) {
-                String errMsg = "File download cancelled. ClassPath operation stopped on the remote node. locNode=" + ctx.localNodeId() + ". " +
-                    "Error: " + msg.err;
+                String errMsg = "File download cancelled. ClassPath operation stopped on the remote node. Error: " + msg.err;
 
                 if (log.isDebugEnabled())
                     log.debug(errMsg);
@@ -377,7 +376,7 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
                     ctx.cache().context().gridIO().sendOrderedMessage(
                         rmtNode,
                         FILES_TOPIC,
-                        new DownloadClassPathMessage(next.icp, ctx.localNodeId()),
+                        new DownloadClassPathMessage(next.icp),
                         SYSTEM_POOL,
                         Long.MAX_VALUE,
                         true
