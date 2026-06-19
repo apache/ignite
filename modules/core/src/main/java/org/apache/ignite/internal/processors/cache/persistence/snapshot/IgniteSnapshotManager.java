@@ -777,10 +777,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (clusterSnpFut == null && !cctx.localNode().isClient()) {
             clusterSnpFut = new ClusterSnapshotFuture(req.reqId, req.snpName, req.incremental() ? req.incrementIndex() : null);
 
-            if (req.incremental())
-                lastSeenIncSnpFut = clusterSnpFut;
-            else
-                lastSeenSnpFut = clusterSnpFut;
+            lastFuture(req.incremental(), clusterSnpFut);
         }
 
         SnapshotOperation snpOp = new SnapshotOperation(req,
@@ -1971,6 +1968,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         A.ensure(!inclDs || dump, "Data structures can't be written into snapshot");
         A.ensure(!configOnly || dump, "Config only supported only for dump");
 
+        ClusterSnapshotFuture curClusterSnpFut = null;
+
         try {
             cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
 
@@ -2021,6 +2020,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             int incIdx = -1;
 
             synchronized (snpOpMux) {
+                curClusterSnpFut = clusterSnpFut;
+
                 if (clusterSnpFut != null && !clusterSnpFut.isDone()) {
                     throw new IgniteException(
                         "Create snapshot request has been rejected. The previous snapshot operation was not completed."
@@ -2061,10 +2062,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 clusterSnpFut = snpFut0;
 
-                if (incremental)
-                    lastSeenIncSnpFut = snpFut0;
-                else
-                    lastSeenSnpFut = snpFut0;
+                lastFuture(incremental, snpFut0);
             }
 
             Set<String> cacheGrpNames0 = cacheGrpNames == null ? null : new HashSet<>(cacheGrpNames);
@@ -2141,15 +2139,20 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             U.error(log, SNAPSHOT_FAILED_MSG, e);
 
-            ClusterSnapshotFuture errSnpFut = new ClusterSnapshotFuture(name, e);
-
-            if (incremental)
-                lastSeenIncSnpFut = errSnpFut;
-            else
-                lastSeenSnpFut = errSnpFut;
+            // Avoid metrics resetting on current node in case of an active snapshot creation process.
+            if (curClusterSnpFut == null)
+                lastFuture(incremental, new ClusterSnapshotFuture(name, e));
 
             return new IgniteFinishedFutureImpl<>(e);
         }
+    }
+
+    /** Sets last seen snapshot future. */
+    private void lastFuture(boolean incremental, ClusterSnapshotFuture futToSet) {
+        if (incremental)
+            lastSeenIncSnpFut = futToSet;
+        else
+            lastSeenSnpFut = futToSet;
     }
 
     /** Writes a warning message if an incremental snapshot contains atomic caches. */

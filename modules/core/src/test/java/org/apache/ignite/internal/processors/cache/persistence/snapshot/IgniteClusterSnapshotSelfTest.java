@@ -879,20 +879,6 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         IgniteFuture<Void> fut = snp(ignite).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
-        doSleep(20);
-        grid(1).snapshot().createSnapshot("bad_snp");
-
-        U.await(deltaApply);
-
-        for (Ignite g : G.allGrids()) {
-            MetricRegistry mreg = ((IgniteEx)g).context().metric().registry(SNAPSHOT_METRICS);
-
-            System.out.println("--- Node=" + g.name());
-            mreg.forEach(metric -> {
-                System.out.println("  ->" + metric.name() + "=" + metric.getAsString());
-            });
-        }
-
         for (Ignite g : G.allGrids()) {
             MetricRegistry mreg = ((IgniteEx)g).context().metric().registry(SNAPSHOT_METRICS);
 
@@ -903,11 +889,14 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
             assertTrue("Snapshot start time must be set prior to snapshot operation started " +
                     "[startTime=" + startTime.value() + ", cutoffTime=" + cutoffStartTime + ']',
-                startTime.value() >= cutoffStartTime);
-            assertEquals("Snapshot end time must be zero prior to snapshot operation started.",
-                0, endTime.value());
+                waitForCondition(() -> startTime.value() >= cutoffStartTime, getTestTimeout(), 30));
+
+            assertTrue("Snapshot end time must be zero prior to snapshot operation started.",
+                waitForCondition(() -> 0 == endTime.value(), 30));
+
             assertEquals("Snapshot name must be set prior to snapshot operation started.",
                 SNAPSHOT_NAME, snpName.value());
+
             assertTrue("Snapshot error message must null prior to snapshot operation started.",
                 errMsg.value().isEmpty());
         }
