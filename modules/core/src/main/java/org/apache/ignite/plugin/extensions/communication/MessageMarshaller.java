@@ -59,6 +59,7 @@ public interface MessageMarshaller<M extends Message> {
      * @param msg Message.
      * @param kctx Kernal context.
      * @param nested Nested context.
+     * @param <M> Message type.
      * */
     static <M extends Message> void prepareMarshal(
         MessageFactory factory, M msg, GridKernalContext kctx, @Nullable GridCacheContext<?, ?> nested)
@@ -76,6 +77,7 @@ public interface MessageMarshaller<M extends Message> {
      * @param kctx Kernal context.
      * @param nested Nested context.
      * @param clsLdr Class loader.
+     * @param <M> Message type.
      * */
     static <M extends Message> void finishUnmarshal(
         MessageFactory factory, M msg, GridKernalContext kctx, @Nullable GridCacheContext<?, ?> nested, ClassLoader clsLdr)
@@ -90,6 +92,7 @@ public interface MessageMarshaller<M extends Message> {
      * 
      * @param factory Message factory.
      * @param kctx Kernal context.
+     * @param <M> Message type.
      * */
     static <M extends Message> void finishUnmarshal(
         MessageFactory factory, M msg, GridKernalContext kctx)
