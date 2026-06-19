@@ -242,8 +242,8 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
                     log.debug(errMsg);
 
                 if (!cancel(active, new IgniteException(errMsg), t -> t.icp.id().equals(msg.icpId))) {
-                    if (log.isInfoEnabled()) {
-                        log.warning("A stale ClassPath failure message has been received. Will be ignored " +
+                    if (log.isDebugEnabled()) {
+                        log.debug("A stale ClassPath failure message has been received. Will be ignored " +
                             "[fromNodeId=" + nodeId + ", icpId=" + msg.icpId + "]: " + msg.err);
                     }
                 }

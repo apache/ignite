@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.classpath;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.util.Set;
 import org.apache.ignite.IgniteException;
@@ -52,6 +53,9 @@ public class ClassPathCreationFailoverTest extends GridCommonAbstractTest {
     private static boolean sendMessage;
 
     /** */
+    private static Runnable callback;
+
+    /** */
     private ListeningTestLogger lsnrLog;
 
     /** {@inheritDoc} */
@@ -66,6 +70,17 @@ public class ClassPathCreationFailoverTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        failedNode = null;
+
+        sendMessage = false;
+
+        callback = null;
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setGridLogger(lsnrLog)
@@ -75,7 +90,8 @@ public class ClassPathCreationFailoverTest extends GridCommonAbstractTest {
                         && ((GridIoMessage)msg).message() instanceof DownloadClassPathMessage
                         && !failedNode.localNode().id().equals(ignite.cluster().localNode().id())
                     ) {
-                        GridTestUtils.runAsync(() -> failedNode.close());
+                        if (callback != null)
+                            callback.run();
 
                         if (!sendMessage)
                             return;
@@ -87,70 +103,66 @@ public class ClassPathCreationFailoverTest extends GridCommonAbstractTest {
     }
 
     // TODO: add stopped check during async operations.
-    // TODO create classpath files on DownloadClassPathRequest - to check error while receiving file.
-    // TODO: don't create on client node.
+    // TODO: don't create on client node. ???
 
     /** */
     @Test
     public void testUploadNodeFailDuringDeployment() throws Exception {
         failedNode = startGrid(0);
 
-        try {
-            IgniteEx grid1 = startGrid(1);
+        callback = () -> GridTestUtils.runAsync(() -> failedNode.close());
 
-            awaitPartitionMapExchange();
+        IgniteEx grid1 = startGrid(1);
 
-            Set<Path> cpFiles = ClassPathTestUtils.files();
+        awaitPartitionMapExchange();
 
-            LogListener createdMsg = newClassPathListener();
-            LogListener uploadNodeFailedMsg = logListener("Failed to download ClassPath files from remote node [icp=testcp]");
-            LogListener rmvMsg =
-                logListener("All nodes fail to deploy ClassPath. Will be removed. Retry creation [icp=testcp]");
+        Set<Path> cpFiles = ClassPathTestUtils.files();
 
-            lsnrLog.registerAllListeners(createdMsg, uploadNodeFailedMsg, rmvMsg);
+        LogListener createdMsg = newClassPathListener();
+        LogListener uploadNodeFailedMsg = logListener("Failed to download ClassPath files from remote node [icp=testcp]");
+        LogListener rmvMsg =
+            logListener("All nodes fail to deploy ClassPath. Will be removed. Retry creation [icp=testcp]");
 
-            ClassPathCreateCommandArg arg = new ClassPathCreateCommandArg();
+        lsnrLog.registerAllListeners(createdMsg, uploadNodeFailedMsg, rmvMsg);
 
-            arg.name("testcp");
-            arg.files(ClassPathTestUtils.fileArg(cpFiles));
+        ClassPathCreateCommandArg arg = new ClassPathCreateCommandArg();
 
-            // ClassPath must be created on `failedNode`. Because, it first in cluster.
-            assertThrows(
-                null,
-                () -> new ClassPathCreateCommand().execute(null, grid(0), arg, l -> failedNode.log().info(l)),
-                ComputeTaskCancelledException.class,
-                "Task cancelled due to stopping of the grid"
-            );
+        arg.name("testcp");
+        arg.files(ClassPathTestUtils.fileArg(cpFiles));
 
-            assertTrue(waitForCondition(createdMsg::check, 10_000));
-            assertTrue(failedNode.context().isStopping());
+        // ClassPath must be created on `failedNode`. Because, it first in cluster.
+        assertThrows(
+            null,
+            () -> new ClassPathCreateCommand().execute(null, grid(0), arg, l -> failedNode.log().info(l)),
+            ComputeTaskCancelledException.class,
+            "Task cancelled due to stopping of the grid"
+        );
 
-            stopGrid(0);
+        assertTrue(waitForCondition(createdMsg::check, 10_000));
+        assertTrue(failedNode.context().isStopping());
 
-            assertEquals(1, Ignition.allGrids().size());
+        stopGrid(0);
 
-            assertTrue(waitForCondition(() -> {
-                Object t = getFieldValue(ClassPathTestUtils.transmissionHandler(grid1), "active");
+        assertEquals(1, Ignition.allGrids().size());
 
-                if (t == null)
-                    return true;
+        assertTrue(waitForCondition(() -> {
+            Object t = getFieldValue(ClassPathTestUtils.transmissionHandler(grid1), "active");
 
-                GridFutureAdapter<?> res = getFieldValue(t, "res");
+            if (t == null)
+                return true;
 
-                return res.isDone();
-            }, 10_000));
+            GridFutureAdapter<?> res = getFieldValue(t, "res");
 
-            assertTrue(waitForCondition(uploadNodeFailedMsg::check, 10_000));
-            assertTrue(waitForCondition(rmvMsg::check, 10_000));
-            assertTrue(waitForCondition(
-                () -> !grid1.context().pdsFolderResolver().fileTree().classPathRoot("testcp").exists(),
-                10_000
-            ));
-            assertNull(grid1.context().distributedMetastorage().read(metastorageKey("testcp")));
-        }
-        finally {
-            failedNode = null;
-        }
+            return res.isDone();
+        }, 10_000));
+
+        assertTrue(waitForCondition(uploadNodeFailedMsg::check, 10_000));
+        assertTrue(waitForCondition(rmvMsg::check, 10_000));
+        assertTrue(waitForCondition(
+            () -> !grid1.context().pdsFolderResolver().fileTree().classPathRoot("testcp").exists(),
+            10_000
+        ));
+        assertNull(grid1.context().distributedMetastorage().read(metastorageKey("testcp")));
     }
 
     /** */
@@ -158,45 +170,83 @@ public class ClassPathCreationFailoverTest extends GridCommonAbstractTest {
     public void testDownloadNodeFailDuringDeployment() throws Exception {
         startGrids(3);
 
-        try {
-            failedNode = grid(1);
-            sendMessage = true;
+        callback = () -> GridTestUtils.runAsync(() -> failedNode.close());
 
-            awaitPartitionMapExchange();
+        failedNode = grid(1);
+        sendMessage = true;
 
-            Set<Path> cpFiles = ClassPathTestUtils.files();
+        awaitPartitionMapExchange();
 
-            LogListener createdMsg = newClassPathListener();
-            LogListener oneNodeFailMsg = logListener("Failed to download ClassPath files from remote node [icp=testcp]");
-            LogListener readyMsg = logListener("ClassPath is READY. 2 of 3 nodes has its files");
+        Set<Path> cpFiles = ClassPathTestUtils.files();
 
-            lsnrLog.registerAllListeners(createdMsg, oneNodeFailMsg, readyMsg);
+        LogListener createdMsg = newClassPathListener();
+        LogListener oneNodeFailMsg = logListener("Failed to download ClassPath files from remote node [icp=testcp]");
+        LogListener readyMsg = logListener("ClassPath is READY. 2 of 3 nodes has its files");
 
-            ClassPathCreateCommandArg arg = new ClassPathCreateCommandArg();
+        lsnrLog.registerAllListeners(createdMsg, oneNodeFailMsg, readyMsg);
 
-            arg.name("testcp");
-            arg.files(ClassPathTestUtils.fileArg(cpFiles));
+        ClassPathCreateCommandArg arg = new ClassPathCreateCommandArg();
 
-            // ClassPath must be created on `failedNode`. Because, it first in cluster.
-            new ClassPathCreateCommand().execute(null, grid(0), arg, l -> failedNode.log().info(l));
+        arg.name("testcp");
+        arg.files(ClassPathTestUtils.fileArg(cpFiles));
 
-            assertTrue(waitForCondition(createdMsg::check, 10_000));
-            assertTrue(failedNode.context().isStopping());
+        // ClassPath must be created on `failedNode`. Because, it first in cluster.
+        new ClassPathCreateCommand().execute(null, grid(0), arg, l -> failedNode.log().info(l));
 
-            stopGrid(1);
+        assertTrue(waitForCondition(createdMsg::check, 10_000));
+        assertTrue(failedNode.context().isStopping());
 
-            assertEquals(2, Ignition.allGrids().size());
+        stopGrid(1);
 
-            assertTrue(waitForCondition(oneNodeFailMsg::check, 10_000));
-            assertTrue(waitForCondition(readyMsg::check, 10_000));
+        assertEquals(2, Ignition.allGrids().size());
 
-            ClassPathTestUtils.checkFilesExists(grid(0), "testcp", cpFiles);
-            ClassPathTestUtils.checkFilesExists(grid(2), "testcp", cpFiles);
-        }
-        finally {
-            failedNode = null;
-            sendMessage = false;
-        }
+        assertTrue(waitForCondition(oneNodeFailMsg::check, 10_000));
+        assertTrue(waitForCondition(readyMsg::check, 10_000));
+
+        ClassPathTestUtils.checkFilesExists(grid(0), "testcp", cpFiles);
+        ClassPathTestUtils.checkFilesExists(grid(2), "testcp", cpFiles);
+    }
+
+    /** */
+    @Test
+    public void testConcurrentFileCreationDuringDeployment() throws Exception {
+        startGrids(2);
+
+        sendMessage = true;
+        failedNode = grid(0);
+
+        awaitPartitionMapExchange();
+
+        Set<Path> cpFiles = ClassPathTestUtils.files();
+
+        callback = () -> {
+            File cpRoot = grid(1).context().pdsFolderResolver().fileTree().classPathRoot("testcp");
+
+            ClassPathTestUtils.fileNames(cpFiles).forEach(f -> new File(cpRoot, f).mkdirs());
+        };
+
+        LogListener createdMsg = newClassPathListener();
+        LogListener oneNodeFailMsg = logListener("Failed to download ClassPath files from remote node [icp=testcp]");
+        LogListener readyMsg = logListener("ClassPath is READY. 1 of 2 nodes has its files");
+
+        lsnrLog.registerAllListeners(createdMsg, oneNodeFailMsg, readyMsg);
+
+        ClassPathCreateCommandArg arg = new ClassPathCreateCommandArg();
+
+        arg.name("testcp");
+        arg.files(ClassPathTestUtils.fileArg(cpFiles));
+
+        // ClassPath must be created on `failedNode`. Because, it first in cluster.
+        new ClassPathCreateCommand().execute(null, grid(0), arg, l -> grid(0).log().info(l));
+
+        assertTrue(waitForCondition(createdMsg::check, 10_000));
+
+        assertEquals(2, Ignition.allGrids().size());
+
+        assertTrue(waitForCondition(oneNodeFailMsg::check, 10_000));
+        assertTrue(waitForCondition(readyMsg::check, 10_000));
+
+        ClassPathTestUtils.checkFilesExists(grid(0), "testcp", cpFiles);
     }
 
     /** */
