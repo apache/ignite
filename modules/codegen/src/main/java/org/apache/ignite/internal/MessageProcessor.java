@@ -153,26 +153,21 @@ public class MessageProcessor extends AbstractProcessor {
 
     /** */
     private boolean checkConstructors(TypeElement clazz) {
-        boolean isMarshallableMsg = isAssignable(
-            clazz.asType(),
-            processingEnv.getElementUtils().getTypeElement("org.apache.ignite.internal.MarshallableMessage")
-        );
-
         for (Element el : clazz.getEnclosedElements()) {
-            if (el.getKind() != ElementKind.CONSTRUCTOR)
+            if (el.getKind() != ElementKind.CONSTRUCTOR || !el.getModifiers().contains(Modifier.PUBLIC))
                 continue;
 
             ExecutableElement c = (ExecutableElement)el;
 
             boolean isDfltConstructor = F.isEmpty(c.getParameters());
 
-            if (isDfltConstructor && !isMarshallableMsg)
+            if (isDfltConstructor)
                 return true;
         }
 
         processingEnv.getMessager().printMessage(
             Diagnostic.Kind.ERROR,
-            "Class must have default constructor: " + clazz.getQualifiedName(),
+            "Class must have public default constructor: " + clazz.getQualifiedName(),
             clazz
         );
 
