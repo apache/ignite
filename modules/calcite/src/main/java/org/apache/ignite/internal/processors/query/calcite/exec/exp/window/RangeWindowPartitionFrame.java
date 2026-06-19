@@ -39,8 +39,8 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteRexBui
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
-/** {@link WindowFunctionFrame} for RANGE clause. */
-final class RangeWindowPartitionFrame<Row> extends WindowFunctionFrame<Row> {
+/** {@link WindowPartitionFrame} for RANGE clause. */
+final class RangeWindowPartitionFrame<Row> extends WindowPartitionFrame<Row> {
     /** Comparator for determining a peer's index within a partition. */
     private final Comparator<Row> peerCmp;
 

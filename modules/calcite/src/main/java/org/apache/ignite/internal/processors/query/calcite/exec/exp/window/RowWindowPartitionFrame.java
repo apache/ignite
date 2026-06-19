@@ -33,8 +33,8 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 import static org.apache.calcite.sql.type.SqlTypeName.INTEGER;
 
-/** {@link WindowFunctionFrame} for ROWS clause. */
-final class RowWindowPartitionFrame<Row> extends WindowFunctionFrame<Row> {
+/** {@link WindowPartitionFrame} for ROWS clause. */
+final class RowWindowPartitionFrame<Row> extends WindowPartitionFrame<Row> {
     /** Returns the offset that marks the start of the frame. */
     private final Function<Row, Integer> lowerBoundOffset;
 

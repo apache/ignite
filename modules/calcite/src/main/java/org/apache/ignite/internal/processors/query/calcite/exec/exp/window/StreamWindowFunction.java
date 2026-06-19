@@ -25,7 +25,7 @@ interface StreamWindowFunction<Row> extends WindowFunction<Row> {
     @Nullable Object call(Row row, int rowIdx, int peerIdx);
 
     /** {@inheritDoc} */
-    @Override default Object call(Row row, int rowIdx, int peerIdx, WindowFunctionFrame<Row> frame) {
+    @Override default Object call(Row row, int rowIdx, int peerIdx, WindowPartitionFrame<Row> frame) {
         return call(row, rowIdx, peerIdx);
     }
 }

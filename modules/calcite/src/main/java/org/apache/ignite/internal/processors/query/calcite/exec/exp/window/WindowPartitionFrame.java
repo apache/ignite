@@ -20,13 +20,13 @@ package org.apache.ignite.internal.processors.query.calcite.exec.exp.window;
 import java.util.Collections;
 import java.util.List;
 
-/** Rows frame for window function. */
-abstract class WindowFunctionFrame<Row> {
+/** Rows frame within window partition. */
+abstract class WindowPartitionFrame<Row> {
     /** Holds immutable refrence to buffered window partition rows. */
     protected final List<Row> buf;
 
     /** */
-    WindowFunctionFrame(List<Row> buf) {
+    WindowPartitionFrame(List<Row> buf) {
         this.buf = Collections.unmodifiableList(buf);
     }
 

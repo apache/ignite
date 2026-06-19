@@ -523,8 +523,13 @@ public class WindowExecutionTest extends AbstractExecutionTest {
     }
 
     /** */
-    private void checkWindow(ExecutionContext<Object[]> ctx, Window.Group grp, boolean streaming,
-        Node<Object[]> input, Object[][] expRes) {
+    private void checkWindow(
+        ExecutionContext<Object[]> ctx,
+        Window.Group grp,
+        boolean streaming,
+        Node<Object[]> input,
+        Object[][] expRes
+    ) {
         Assert.assertEquals(streaming, WindowFunctions.streamable(grp));
 
         WindowNode<Object[]> window = createWindowNode(ctx, grp, input);

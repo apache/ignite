@@ -33,7 +33,7 @@ final class BufferingWindowPartition<Row> extends WindowPartitionBase<Row> {
     private final List<Row> buf;
 
     /** Frame within partition. */
-    private final WindowFunctionFrame<Row> frame;
+    private final WindowPartitionFrame<Row> frame;
 
     /** */
     private RowTracker<Row> memoryTracker;
@@ -105,7 +105,7 @@ final class BufferingWindowPartition<Row> extends WindowPartitionBase<Row> {
     }
 
     /** Creates frame for partition. */
-    private static <Row> WindowFunctionFrame<Row> createFrame(
+    private static <Row> WindowPartitionFrame<Row> createFrame(
         ExecutionContext<Row> ctx,
         Window.Group grp,
         Comparator<Row> peerCmp,

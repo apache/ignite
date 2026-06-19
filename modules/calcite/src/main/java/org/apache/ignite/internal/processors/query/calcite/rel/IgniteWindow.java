@@ -238,7 +238,7 @@ public class IgniteWindow extends Window implements IgniteRel {
         if (!leftGrpFlds.contains(rightGrpFlds))
             return false;
         else if (grpKeysSize >= rightFldCnt)
-            // Right collation fiels in group keys only
+            // Right collation fields in group keys only.
             return true;
 
         // Check remaining collation (collation field order and direction meaningfull).
@@ -286,9 +286,8 @@ public class IgniteWindow extends Window implements IgniteRel {
         // Therefore, only additional keys in suffix can be removed here.
         List<RelFieldCollation> requiredCollationFields = requiredCollation.getFieldCollations();
         for (int i = 0; i < requiredCollationFields.size(); i++) {
-            if (requiredCollationFields.get(i).getFieldIndex() >= input.getRowType().getFieldCount()) {
+            if (requiredCollationFields.get(i).getFieldIndex() >= input.getRowType().getFieldCount())
                 return RelCollations.of(requiredCollationFields.subList(0, i));
-            }
         }
         return requiredCollation;
     }

@@ -156,7 +156,7 @@ final class WindowFunctionFactory<Row> extends AccumulatorsFactoryBase<Row> {
         }
 
         /** {@inheritDoc} */
-        @Override public Object callBuffering(Row row, int rowIdx, int peerIdx, WindowFunctionFrame<Row> frame) {
+        @Override public Object callBuffering(Row row, int rowIdx, int peerIdx, WindowPartitionFrame<Row> frame) {
             Row accRow = inAdapter.apply(row);
             assert accRow != null;
 
@@ -211,7 +211,7 @@ final class WindowFunctionFactory<Row> extends AccumulatorsFactoryBase<Row> {
         }
 
         /** {@inheritDoc} */
-        @Override public Object callBuffering(Row row, int rowIdx, int peerIdx, WindowFunctionFrame<Row> frame) {
+        @Override public Object callBuffering(Row row, int rowIdx, int peerIdx, WindowPartitionFrame<Row> frame) {
             int start = frame.getFrameStart(rowIdx, peerIdx);
             int end = frame.getFrameEnd(rowIdx, peerIdx);
             AccumulatorWrapper<Row> acc = accumulator();

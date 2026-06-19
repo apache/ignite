@@ -178,7 +178,7 @@ public final class WindowFunctions {
         }
 
         /** {@inheritDoc} */
-        @Override public Object call(Row row, int rowIdx, int peerIdx, WindowFunctionFrame<Row> frame) {
+        @Override public Object call(Row row, int rowIdx, int peerIdx, WindowPartitionFrame<Row> frame) {
             int offset = getOffset(row);
             int idx = applyOffset(rowIdx, offset);
             if (idx < 0 || idx >= frame.size())
@@ -308,7 +308,7 @@ public final class WindowFunctions {
         }
 
         /** {@inheritDoc} */
-        @Override public Object call(Row row, int rowIdx, int peerIdx, WindowFunctionFrame<Row> frame) {
+        @Override public Object call(Row row, int rowIdx, int peerIdx, WindowPartitionFrame<Row> frame) {
             int size = frame.size() - 1;
             if (size == 0)
                 return 0.0;
@@ -337,7 +337,7 @@ public final class WindowFunctions {
         }
 
         /** {@inheritDoc} */
-        @Override public Object call(Row row, int rowIdx, int peerIdx, WindowFunctionFrame<Row> frame) {
+        @Override public Object call(Row row, int rowIdx, int peerIdx, WindowPartitionFrame<Row> frame) {
             int cnt = frame.size(rowIdx, peerIdx);
             return ((double)cnt) / frame.size();
         }
@@ -387,7 +387,7 @@ public final class WindowFunctions {
         }
 
         /** {@inheritDoc} */
-        @Override public Object call(Row row, int rowIdx, int peerIdx, WindowFunctionFrame<Row> frame) {
+        @Override public Object call(Row row, int rowIdx, int peerIdx, WindowPartitionFrame<Row> frame) {
             int startIdx = frame.getFrameStart(rowIdx, peerIdx);
             int endIdx = frame.getFrameEnd(rowIdx, peerIdx);
 
@@ -418,7 +418,7 @@ public final class WindowFunctions {
         }
 
         /** {@inheritDoc} */
-        @Override public Object call(Row row, int rowIdx, int peerIdx, WindowFunctionFrame<Row> frame) {
+        @Override public Object call(Row row, int rowIdx, int peerIdx, WindowPartitionFrame<Row> frame) {
             int endIdx = frame.getFrameEnd(rowIdx, peerIdx);
             if (endIdx < 0)
                 return null;
@@ -447,7 +447,7 @@ public final class WindowFunctions {
         }
 
         /** {@inheritDoc} */
-        @Override public Object call(Row row, int rowIdx, int peerIdx, WindowFunctionFrame<Row> frame) {
+        @Override public Object call(Row row, int rowIdx, int peerIdx, WindowPartitionFrame<Row> frame) {
             int buckets = get(0, row);
             int rowCnt = frame.size();
             if (buckets >= rowCnt)
@@ -484,7 +484,7 @@ public final class WindowFunctions {
         }
 
         /** {@inheritDoc} */
-        @Override public Object call(Row row, int rowIdx, int peerIdx, WindowFunctionFrame<Row> frame) {
+        @Override public Object call(Row row, int rowIdx, int peerIdx, WindowPartitionFrame<Row> frame) {
             int offset = get(1, row);
             if (offset < 1)
                 throw new IllegalArgumentException("Offset must be at least 1.");

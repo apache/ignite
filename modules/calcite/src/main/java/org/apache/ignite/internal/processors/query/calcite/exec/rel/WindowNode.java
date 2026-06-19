@@ -113,7 +113,7 @@ public class WindowNode<Row> extends MemoryTrackingNode<Row> implements SingleNo
         prevRow = row;
 
         if (waiting == 0 && outBuf.isEmpty())
-            source().request(waiting = IN_BUFFER_SIZE);
+            context().execute(() -> source().request(IN_BUFFER_SIZE), this::onError);
         else if (!inLoop)
             flush();
     }
