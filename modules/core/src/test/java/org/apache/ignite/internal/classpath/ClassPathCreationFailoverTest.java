@@ -74,6 +74,7 @@ public class ClassPathCreationFailoverTest extends GridCommonAbstractTest {
 
     // TODO: add stopped check during async operations.
     // TODO create classpath files on DownloadClassPathRequest - to check error while receiving file.
+    // TODO: don't create on client node.
 
     /** */
     @Test

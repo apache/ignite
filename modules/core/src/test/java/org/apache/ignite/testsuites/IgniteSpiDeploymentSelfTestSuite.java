@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.internal.classpath.ClassPathCreationFailoverTest;
 import org.apache.ignite.internal.classpath.ClassPathMailicuosRequestsTest;
 import org.apache.ignite.spi.deployment.local.GridLocalDeploymentSpiSelfTest;
 import org.apache.ignite.spi.deployment.local.GridLocalDeploymentSpiStartStopSelfTest;
@@ -30,7 +31,8 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     GridLocalDeploymentSpiSelfTest.class,
     GridLocalDeploymentSpiStartStopSelfTest.class,
-    ClassPathMailicuosRequestsTest.class
+    ClassPathMailicuosRequestsTest.class,
+    ClassPathCreationFailoverTest.class
 })
 public class IgniteSpiDeploymentSelfTestSuite {
 }

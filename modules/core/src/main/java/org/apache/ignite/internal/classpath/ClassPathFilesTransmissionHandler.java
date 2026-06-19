@@ -27,7 +27,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -218,7 +217,7 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
                         }
                     }
                 }
-                catch (Throwable t) {
+                catch (Exception t) {
                     U.error(log, "Error processing ClassPath file request [request=" + msg + ", nodeId=" + nodeId + ']', t);
 
                     if (icp != null) {
@@ -230,7 +229,7 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
                                 SYSTEM_POOL
                             );
                         }
-                        catch (IgniteCheckedException e) {
+                        catch (Exception e) {
                             log.warning("Error notifying node of send error", e);
                         }
                     }
@@ -269,6 +268,8 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
         if (filesLeft != 0) {
             task.res.onDone(new IllegalStateException("onEnd invoked, but more files left: " + filesLeft +
                 ", completing download process with an error"));
+
+            return;
         }
 
         task.res.onDone((Void)null);

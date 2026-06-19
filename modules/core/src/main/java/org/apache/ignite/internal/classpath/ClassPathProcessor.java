@@ -45,6 +45,7 @@ import static org.apache.ignite.internal.classpath.IgniteClassPathState.NEW;
  * 2. Check and remove obsolete icp from dist on start.
  * Do we want to have some flag to skip remove in this case? (if we preparing for ICP registration).
  * 3. Should we include CP into snapshots and dumps?
+ * 4. Should we control file size to ensure disk free space enough to upload CP files?
  */
 public class ClassPathProcessor extends GridProcessorAdapter {
     /** Prefix for metastorage keys. */
@@ -86,8 +87,7 @@ public class ClassPathProcessor extends GridProcessorAdapter {
      * @return Class path id.
      */
     public UUID startCreation(String name, String[] files, long[] lengths) {
-        assert files.length == lengths.length : "wrong arrays lengths";
-
+        A.ensure(files.length == lengths.length, "wrong arrays lengths");
         A.ensure(U.alphanumericUnderscore(name), "Classpath name must satisfy the following name pattern: a-zA-Z0-9_");
 
         for (String file : files)
@@ -97,13 +97,12 @@ public class ClassPathProcessor extends GridProcessorAdapter {
 
         File root = ctx.pdsFolderResolver().fileTree().classPathRoot(name);
 
+        Boolean metastorageWritten;
+
         try {
             createRootAndCheckIsEmpty(root);
 
-            Boolean metastorageWritten = casToMetastorageAsync(null, icp).get();
-
-            if (metastorageWritten != null && !metastorageWritten)
-                throw new IgniteException("Fail to register ClassPath. Same ClassPath exists, already?");
+            metastorageWritten = casToMetastorageAsync(null, icp).get();
         }
         catch (Exception e) {
             cleanup(icp, false);
@@ -111,7 +110,10 @@ public class ClassPathProcessor extends GridProcessorAdapter {
             throw new IgniteException(e);
         }
 
-        log.info("New IgniteCclasspath created [root = " + root + ", icp=" + icp + ']');
+        if (metastorageWritten != null && !metastorageWritten)
+            throw new IgniteException("Fail to register ClassPath. Same ClassPath exists, already?");
+
+        log.info("New IgniteClasspath created [root = " + root + ", icp=" + icp + ']');
 
         return icp.id();
     }
@@ -186,18 +188,19 @@ public class ClassPathProcessor extends GridProcessorAdapter {
 
             Path f = new File(root, name).toPath();
 
-            if (Files.exists(f))
+            if (Files.exists(f)) {
+                if(Files.isSameFile(file, f)) {
+                    log.info("Skip copying new classpath file, already there: " + f);
+
+                    return;
+                }
+
                 throw new IgniteException("File exists: " + f);
+            }
 
             A.ensure(root.equals(f.toFile().getParentFile()), "filename");
 
             log.info("Copying new classpath file: " + f);
-
-            if (Files.exists(f) && Files.isSameFile(file, f)) {
-                log.info("Skip copying new classpath file, already there: " + f);
-
-                return;
-            }
 
             Files.copy(file, f);
         }

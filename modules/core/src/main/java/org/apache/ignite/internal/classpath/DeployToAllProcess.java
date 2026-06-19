@@ -105,6 +105,17 @@ class DeployToAllProcess {
         }
     }
 
+    /** */
+    public void stop() {
+        synchronized (this) {
+            Exception err = new IgniteException("Node stopped");
+
+            futs.forEach((icpId, res) -> res.onDone(err));
+
+            futs.clear();
+        }
+    }
+
     /**
      * @param req Request on snapshot creation.
      * @return Future which will be completed when a snapshot has been started.
@@ -218,8 +229,17 @@ class DeployToAllProcess {
             ctx.classPath().casToMetastorageAsync(icp, icp.newState(IgniteClassPathState.READY)).listen(casFut -> {
                 boolean metastorageWritten = casFut.error() == null && casFut.result() != null && casFut.result();
 
-                if (!metastorageWritten && casFut.error() == null)
-                    metastorageWritten = fromMetastorage(icp.id(), READY, ctx) != null;
+                if (!metastorageWritten && casFut.error() == null) {
+                    try {
+                        metastorageWritten = fromMetastorage(icp.id(), READY, ctx) != null;
+                    }
+                    catch (Exception e) {
+                        if (depProcResFut != null)
+                            depProcResFut.onDone(e);
+
+                        return;
+                    }
+                }
 
                 if (metastorageWritten) {
                     if (!F.isEmpty(res)) {
