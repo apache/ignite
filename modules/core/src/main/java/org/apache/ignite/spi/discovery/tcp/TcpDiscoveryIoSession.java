@@ -40,6 +40,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.jetbrains.annotations.NotNull;
@@ -198,7 +199,7 @@ public class TcpDiscoveryIoSession {
             }
             while (!finished);
 
-            msgSer.finishUnmarshal(msg, ((IgniteEx)spi.ignite()).context());
+            MessageMarshaller.finishUnmarshal(spi.messageFactory(), msg, ((IgniteEx)spi.ignite()).context());
 
             return (T)msg;
         }
@@ -244,7 +245,7 @@ public class TcpDiscoveryIoSession {
     void serializeMessage(Message m, OutputStream out) throws IOException, IgniteCheckedException {
         MessageSerializer msgSer = spi.messageFactory().serializer(m.directType());
 
-        msgSer.prepareMarshal(m, ((IgniteEx)spi.ignite()).context(), null);
+        MessageMarshaller.prepareMarshal(spi.messageFactory(), m, ((IgniteEx)spi.ignite()).context(), null);
 
         msgWriter.reset();
         msgWriter.setBuffer(msgBuf);

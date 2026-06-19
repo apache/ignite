@@ -114,7 +114,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgniteReducer;
-import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
+import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.spi.systemview.view.TransactionView;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -3447,10 +3447,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 return;
 
             try {
-                MessageSerializer ser = cctx.kernalContext().messageFactory().serializer(cacheMsg.directType());
-
-                ser.finishUnmarshal(cacheMsg, cctx.kernalContext());
-                ser.finishUnmarshal(cacheMsg, cctx.kernalContext(), null, cctx.deploy().globalLoader());
+                MessageMarshaller.finishUnmarshal(cctx.kernalContext().messageFactory(), cacheMsg, cctx.kernalContext());
+                MessageMarshaller.finishUnmarshal(
+                    cctx.kernalContext().messageFactory(), cacheMsg, cctx.kernalContext(), null, cctx.deploy().globalLoader());
             }
             catch (IgniteCheckedException e) {
                 cacheMsg.onClassError(e);

@@ -31,6 +31,7 @@ import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
@@ -93,11 +94,11 @@ public class DiscoveryMessageParser {
         MessageSerializer msgSer = msgFactory.serializer(m.directType());
 
         try {
-            msgSer.prepareMarshal(m, ((IgniteEx)spi.ignite()).context(), null);
+            MessageMarshaller.prepareMarshal(msgFactory, m, ((IgniteEx)spi.ignite()).context(), null);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to marshal discovery message", e);
-        }     
+        }
 
         boolean finished;
 
@@ -141,7 +142,7 @@ public class DiscoveryMessageParser {
         while (!finished);
 
         try {
-            msgSer.finishUnmarshal(msg, ((IgniteEx)spi.ignite()).context());
+            MessageMarshaller.finishUnmarshal(msgFactory, msg, ((IgniteEx)spi.ignite()).context());
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to unmarshal discovery message", e);

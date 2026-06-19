@@ -87,6 +87,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
+import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -829,6 +830,10 @@ public class GridNioServerWrapper {
                             return new HandshakeWaitMessageSerializer();
 
                         return get().serializer(type);
+                    }
+
+                    @Nullable @Override public MessageMarshaller marshaller(short type) {
+                        return get().marshaller(type);
                     }
 
                     private MessageFactory get() {

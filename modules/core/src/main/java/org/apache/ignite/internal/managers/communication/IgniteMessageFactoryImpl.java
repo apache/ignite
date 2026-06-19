@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
+import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.jetbrains.annotations.Nullable;
 
@@ -41,6 +42,9 @@ public class IgniteMessageFactoryImpl implements MessageFactory {
 
     /** Message serializers. */
     private final MessageSerializer[] msgSerializers = (MessageSerializer[])Array.newInstance(MessageSerializer.class, ARR_SIZE);
+
+    /** Message marshallers (null entry = no marshaller registered for that type). */
+    private final MessageMarshaller[] msgMarshallers = (MessageMarshaller[])Array.newInstance(MessageMarshaller.class, ARR_SIZE);
 
     /** Initialized flag. If {@code true} then new message type couldn't be registered. */
     private boolean initialized;
@@ -71,6 +75,23 @@ public class IgniteMessageFactoryImpl implements MessageFactory {
 
     /** {@inheritDoc} */
     @Override public void register(short directType, Supplier<Message> supplier, MessageSerializer serializer) throws IgniteException {
+        register(directType, supplier, serializer, null);
+    }
+
+    /**
+     * Registers a message type with both a serializer and an optional marshaller.
+     *
+     * @param directType  Direct type.
+     * @param supplier    Message factory.
+     * @param serializer  Message serializer.
+     * @param marshaller  Message marshaller, or {@code null} for NonMarshallableMessage types.
+     */
+    @Override public void register(
+        short directType,
+        Supplier<Message> supplier,
+        MessageSerializer serializer,
+        @Nullable MessageMarshaller marshaller
+    ) throws IgniteException {
         if (initialized) {
             throw new IllegalStateException("Message factory is already initialized. " +
                     "Registration of new message types is forbidden.");
@@ -91,6 +112,7 @@ public class IgniteMessageFactoryImpl implements MessageFactory {
         if (curr == null) {
             msgSuppliers[idx] = supplier;
             msgSerializers[idx] = serializer;
+            msgMarshallers[idx] = marshaller;
 
             minIdx = Math.min(idx, minIdx);
 
@@ -120,7 +142,7 @@ public class IgniteMessageFactoryImpl implements MessageFactory {
 
     /**
      * @param directType Message direct type.
-     * @return Message instance.
+     * @return Message serializer.
      * @throws IgniteException If there are no any message factory for given {@code directType}.
      */
     @Override public MessageSerializer serializer(short directType) {
@@ -130,6 +152,11 @@ public class IgniteMessageFactoryImpl implements MessageFactory {
             throw new IgniteException("Message serializer not found for a message type: " + directType);
 
         return serializer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable MessageMarshaller marshaller(short directType) {
+        return msgMarshallers[directTypeToIndex(directType)];
     }
 
     /**

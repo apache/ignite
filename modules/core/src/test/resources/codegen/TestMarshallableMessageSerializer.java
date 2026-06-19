@@ -17,32 +17,24 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.internal.DefaultMapperEnumFieldsMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheOperation;
+import org.apache.ignite.internal.TestMarshallableMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.apache.ignite.plugin.extensions.communication.mappers.DefaultEnumMapper;
-import org.apache.ignite.transactions.TransactionIsolation;
 
 /**
  * This class is generated automatically.
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public class DefaultMapperEnumFieldsMessageSerializer implements MessageSerializer<DefaultMapperEnumFieldsMessage> {
+public class TestMarshallableMessageSerializer implements MessageSerializer<TestMarshallableMessage> {
     /** */
-    private final GridCacheOperation[] gridCacheOperationVals = GridCacheOperation.values();
-    /** */
-    private final TransactionIsolation[] transactionIsolationVals = TransactionIsolation.values();
-
-    /** */
-    public DefaultMapperEnumFieldsMessageSerializer() {
+    public TestMarshallableMessageSerializer() {
 
     }
-    
+
     /** */
-    @Override public boolean writeTo(DefaultMapperEnumFieldsMessage msg, MessageWriter writer) {
+    @Override public boolean writeTo(TestMarshallableMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
                 return false;
@@ -52,13 +44,19 @@ public class DefaultMapperEnumFieldsMessageSerializer implements MessageSerializ
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByte(DefaultEnumMapper.INSTANCE.encode(msg.publicEnum)))
+                if (!writer.writeInt(msg.iv))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeByte(DefaultEnumMapper.INSTANCE.encode(msg.internalEnum)))
+                if (!writer.writeString(msg.sv))
+                    return false;
+
+                writer.incrementState();
+
+            case 2:
+                if (!writer.writeByteArray(msg.cstDataBytes))
                     return false;
 
                 writer.incrementState();
@@ -68,10 +66,10 @@ public class DefaultMapperEnumFieldsMessageSerializer implements MessageSerializ
     }
 
     /** */
-    @Override public boolean readFrom(DefaultMapperEnumFieldsMessage msg, MessageReader reader) {
+    @Override public boolean readFrom(TestMarshallableMessage msg, MessageReader reader) {
         switch (reader.state()) {
             case 0:
-                msg.publicEnum = DefaultEnumMapper.INSTANCE.decode(transactionIsolationVals, reader.readByte());
+                msg.iv = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -79,7 +77,15 @@ public class DefaultMapperEnumFieldsMessageSerializer implements MessageSerializ
                 reader.incrementState();
 
             case 1:
-                msg.internalEnum = DefaultEnumMapper.INSTANCE.decode(gridCacheOperationVals, reader.readByte());
+                msg.sv = reader.readString();
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 2:
+                msg.cstDataBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;

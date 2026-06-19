@@ -53,7 +53,7 @@ public class MessagesPluginProvider extends AbstractTestPluginProvider {
                     }
                 };
 
-                f.register(directType, msgSupp, loadSerializer(msg, null));
+                f.register(directType, msgSupp, loadSerializer(msg));
 
                 directType++;
             }

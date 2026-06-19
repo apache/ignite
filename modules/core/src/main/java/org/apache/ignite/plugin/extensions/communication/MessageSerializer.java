@@ -17,10 +17,6 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-
 /** Message serialization logic. */
 public interface MessageSerializer<M extends Message> {
     /**
@@ -40,41 +36,4 @@ public interface MessageSerializer<M extends Message> {
      * @return Whether message was fully read.
      */
     public boolean readFrom(M msg, MessageReader reader);
-
-    /**
-     * Marshalls cache-object fields on the user thread.
-     *
-     * @param msg Message instance.
-     * @param kctx Kernal context.
-     * @param nested Nested context.
-     * @throws IgniteCheckedException If marshalling fails.
-     */
-    public default void prepareMarshal(M msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {
-        // No-op by default.
-    }
-
-    /**
-     * Unmarshalls cache-object fields on the user thread.
-     *
-     * @param msg Message instance.
-     * @param kctx Kernal context.
-     * @param nested Nested context.
-     * @param clsLdr Classloader.
-     * @throws IgniteCheckedException If unmarshalling fails.
-     */
-    public default void finishUnmarshal(M msg, GridKernalContext kctx, GridCacheContext<?, ?> nested, ClassLoader clsLdr) 
-        throws IgniteCheckedException {
-        // No-op by default.
-    }
-
-    /**
-     * Unmarshalls message fields.
-     * 
-     * @param msg Message instance.
-     * @param kctx Kernal context.
-     * @throws IgniteCheckedException If unmarshalling fails.
-     */
-    public default void finishUnmarshal(M msg, GridKernalContext kctx) throws IgniteCheckedException {
-        // No-op by default.
-    }
 }

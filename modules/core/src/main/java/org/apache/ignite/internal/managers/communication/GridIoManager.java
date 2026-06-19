@@ -127,8 +127,8 @@ import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
+import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.CommunicationListener;
@@ -1176,9 +1176,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
             byte plc = initMsg.policy();
 
-            MessageSerializer ser = ctx.messageFactory().serializer(initMsg.directType());
-
-            ser.finishUnmarshal(initMsg, ctx);
+            MessageMarshaller.finishUnmarshal(ctx.messageFactory(), initMsg, ctx);
 
             pools.poolForPolicy(plc).execute(new Runnable() {
                 @Override public void run() {
@@ -1205,9 +1203,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         assert nodeId != null;
         assert msg != null;
 
-        MessageSerializer ser = ctx.messageFactory().serializer(msg.directType());
-
-        ser.finishUnmarshal(msg, ctx);
+        MessageMarshaller.finishUnmarshal(ctx.messageFactory(), msg, ctx);
 
         Lock busyLock0 = busyLock.readLock();
 
@@ -1941,9 +1937,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             false
         );
 
-        MessageSerializer ser = ctx.messageFactory().serializer(ioMsg.directType());
-
-        ser.prepareMarshal(ioMsg, ctx, null);
+        MessageMarshaller.prepareMarshal(ctx.messageFactory(), ioMsg, ctx, null);
 
         try {
             return ((TcpCommunicationSpi)(CommunicationSpi)getSpi()).openChannel(node, ioMsg);
@@ -2013,9 +2007,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                     ackC.apply(null);
             }
             else {
-                MessageSerializer ser = ctx.messageFactory().serializer(ioMsg.directType());
-
-                ser.prepareMarshal(ioMsg, ctx, null);
+                MessageMarshaller.prepareMarshal(ctx.messageFactory(), ioMsg, ctx, null);
                 
                 try {
                     if ((CommunicationSpi<?>)getSpi() instanceof TcpCommunicationSpi)

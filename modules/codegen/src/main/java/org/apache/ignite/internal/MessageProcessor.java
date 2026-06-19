@@ -142,6 +142,16 @@ public class MessageProcessor extends AbstractProcessor {
                     "Failed to generate a message serializer:" + e.getMessage(),
                     type.getKey());
             }
+
+            try {
+                new MessageMarshallerGenerator(processingEnv).generate(type.getKey(), type.getValue());
+            }
+            catch (Exception e) {
+                processingEnv.getMessager().printMessage(
+                    Diagnostic.Kind.ERROR,
+                    "Failed to generate a message marshaller:" + e.getMessage(),
+                    type.getKey());
+            }
         }
 
         return true;

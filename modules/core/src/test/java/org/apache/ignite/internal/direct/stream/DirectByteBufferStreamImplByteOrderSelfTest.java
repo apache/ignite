@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Before;
@@ -101,6 +102,10 @@ public class DirectByteBufferStreamImplByteOrderSelfTest {
             }
 
             @Override public MessageSerializer serializer(short type) {
+                return null;
+            }
+
+            @Nullable @Override public MessageMarshaller marshaller(short type) {
                 return null;
             }
         });

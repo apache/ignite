@@ -27,7 +27,9 @@ import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
+import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
+import org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage;
 
 /**
  * An extension of {@link MessageFactoryProvider} allowing to use provided schema-aware marshaller
@@ -50,25 +52,32 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
         this.schemaAwareMarsh = schemaAwareMarsh;
     }
 
-    /** Registers message automatically generating message supplier and serializer. */
+    /** Registers message automatically generating message supplier, serializer, and marshaller (if applicable). */
     protected static <T extends Message> void register(MessageFactory factory, Class<T> cls, short id, Marshaller marsh) {
         Constructor<T> ctor;
         MessageSerializer<T> serializer;
+        MessageMarshaller<T> marshaller = null;
 
         try {
             ctor = cls.getConstructor();
 
-            boolean marshallable = MarshallableMessage.class.isAssignableFrom(cls);
+            Class<?> serCls = Class.forName(cls.getName() + "Serializer");
+            serializer = (MessageSerializer<T>)serCls.getConstructor().newInstance();
 
-            Class<?> serCls = Class.forName(cls.getName() + (marshallable ? "MarshallableSerializer" : "Serializer"));
+            if (!NonMarshallableMessage.class.isAssignableFrom(cls)) {
+                Class<?> marshallerCls = Class.forName(cls.getName() + "Marshaller");
+                boolean marshallable = MarshallableMessage.class.isAssignableFrom(cls);
 
-            serializer = marshallable
-                ? (MessageSerializer<T>)serCls.getConstructor(Marshaller.class).newInstance(marsh)
-                : (MessageSerializer<T>)serCls.getConstructor().newInstance();
+                marshaller = marshallable
+                    ? (MessageMarshaller<T>)marshallerCls.getConstructor(Marshaller.class).newInstance(marsh)
+                    : (MessageMarshaller<T>)marshallerCls.getConstructor().newInstance();
+            }
         }
         catch (Exception e) {
             throw new IgniteException("Failed to register message of type " + cls.getSimpleName(), e);
         }
+
+        MessageMarshaller<T> marshallerFinal = marshaller;
 
         factory.register(
             id,
@@ -80,7 +89,8 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
                     throw new IgniteException("Failed to create message of type " + cls.getSimpleName(), e);
                 }
             },
-            serializer
+            serializer,
+            marshallerFinal
         );
     }
 }

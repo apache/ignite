@@ -56,11 +56,15 @@ public class MessageProcessorTest {
 
         assertThat(compilation).succeeded();
 
-        assertEquals(1, compilation.generatedSourceFiles().size());
+        assertEquals(2, compilation.generatedSourceFiles().size());
 
         assertThat(compilation)
             .generatedSourceFile("org.apache.ignite.internal.TestMessageSerializer")
             .hasSourceEquivalentTo(javaFile("TestMessageSerializer.java"));
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("TestMessageMarshaller.java"));
     }
 
     /** */
@@ -70,11 +74,15 @@ public class MessageProcessorTest {
 
         assertThat(compilation).succeeded();
 
-        assertEquals(1, compilation.generatedSourceFiles().size());
+        assertEquals(2, compilation.generatedSourceFiles().size());
 
         assertThat(compilation)
             .generatedSourceFile("org.apache.ignite.internal.TestCollectionsMessageSerializer")
             .hasSourceEquivalentTo(javaFile("TestCollectionsMessageSerializer.java"));
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestCollectionsMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("TestCollectionsMessageMarshaller.java"));
     }
 
     /** */
@@ -84,11 +92,15 @@ public class MessageProcessorTest {
 
         assertThat(compilation).succeeded();
 
-        assertEquals(1, compilation.generatedSourceFiles().size());
+        assertEquals(2, compilation.generatedSourceFiles().size());
 
         assertThat(compilation)
             .generatedSourceFile("org.apache.ignite.internal.TestMapMessageSerializer")
             .hasSourceEquivalentTo(javaFile("TestMapMessageSerializer.java"));
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestMapMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("TestMapMessageMarshaller.java"));
     }
 
     /** */
@@ -131,11 +143,15 @@ public class MessageProcessorTest {
 
         assertThat(compilation).succeeded();
 
-        assertEquals(1, compilation.generatedSourceFiles().size());
+        assertEquals(2, compilation.generatedSourceFiles().size());
 
         assertThat(compilation)
             .generatedSourceFile("org.apache.ignite.internal.ChildMessageSerializer")
             .hasSourceEquivalentTo(javaFile("ChildMessageSerializer.java"));
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.ChildMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("ChildMessageMarshaller.java"));
     }
 
     /** */
@@ -145,15 +161,23 @@ public class MessageProcessorTest {
 
         assertThat(compilation).succeeded();
 
-        assertEquals(2, compilation.generatedSourceFiles().size());
+        assertEquals(4, compilation.generatedSourceFiles().size());
 
         assertThat(compilation)
             .generatedSourceFile("org.apache.ignite.internal.ChildMessageSerializer")
             .hasSourceEquivalentTo(javaFile("ChildMessageSerializer.java"));
 
         assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.ChildMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("ChildMessageMarshaller.java"));
+
+        assertThat(compilation)
             .generatedSourceFile("org.apache.ignite.internal.TestMessageSerializer")
             .hasSourceEquivalentTo(javaFile("TestMessageSerializer.java"));
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("TestMessageMarshaller.java"));
     }
 
     /** */
@@ -218,9 +242,15 @@ public class MessageProcessorTest {
 
         assertThat(compilation).succeeded();
 
+        assertEquals(2, compilation.generatedSourceFiles().size());
+
         assertThat(compilation)
             .generatedSourceFile("org.apache.ignite.internal.DefaultMapperEnumFieldsMessageSerializer")
             .hasSourceEquivalentTo(javaFile("DefaultMapperEnumFieldsMessageSerializer.java"));
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.DefaultMapperEnumFieldsMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("DefaultMapperEnumFieldsMessageMarshaller.java"));
     }
 
     /**
@@ -258,9 +288,15 @@ public class MessageProcessorTest {
 
         assertThat(compilation).succeeded();
 
+        assertEquals(2, compilation.generatedSourceFiles().size());
+
         assertThat(compilation)
             .generatedSourceFile("org.apache.ignite.internal.CustomMapperEnumFieldsMessageSerializer")
             .hasSourceEquivalentTo(javaFile("CustomMapperEnumFieldsMessageSerializer.java"));
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.CustomMapperEnumFieldsMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("CustomMapperEnumFieldsMessageMarshaller.java"));
     }
 
     /** */
@@ -270,9 +306,15 @@ public class MessageProcessorTest {
 
         assertThat(compilation).succeeded();
 
+        assertEquals(2, compilation.generatedSourceFiles().size());
+
         assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.TestMarshallableMessageMarshallableSerializer")
-            .hasSourceEquivalentTo(javaFile("TestMarshallableMessageMarshallableSerializer.java"));
+            .generatedSourceFile("org.apache.ignite.internal.TestMarshallableMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("TestMarshallableMessageSerializer.java"));
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestMarshallableMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("TestMarshallableMessageMarshaller.java"));
     }
 
     /**

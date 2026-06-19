@@ -52,7 +52,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
+import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.stream.StreamReceiver;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -715,10 +715,11 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
                             ioMsg.skipOnTimeout()
                         );
 
-                        MessageSerializer msgSer = ((IgniteEx)ignite).context().messageFactory().serializer(msg.directType());
+                        MessageMarshaller msgMarshaller = ((IgniteEx)ignite).context().messageFactory().marshaller(msg.directType());
 
                         try {
-                            msgSer.prepareMarshal(msg, ((IgniteEx)ignite).context(), null);
+                            if (msgMarshaller != null)
+                                msgMarshaller.prepareMarshal(msg, ((IgniteEx)ignite).context(), null);
                         }
                         catch (IgniteCheckedException e) {
                             throw new RuntimeException(e);

@@ -19,6 +19,7 @@ package org.apache.ignite.plugin.extensions.communication;
 
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Message factory for all communication messages registered using {@link #register(short, Supplier, MessageSerializer)} method call.
@@ -101,10 +102,34 @@ public interface MessageFactory {
     public Message create(short type);
 
     /**
+     * Register message factory with given direct type, serializer, and marshaller. All messages must be registered
+     * during construction of class which implements this interface.
+     *
+     * @param directType Direct type.
+     * @param supplier Message factory.
+     * @param serializer Message serializer.
+     * @param marshaller Message marshaller, or {@code null} for non-marshallable messages.
+     * @throws IgniteException In case of attempt to register message with direct type which is already registered.
+     */
+    default void register(short directType, Supplier<Message> supplier, MessageSerializer serializer,
+        @Nullable MessageMarshaller marshaller) throws IgniteException {
+        register(directType, supplier, serializer);
+    }
+
+    /**
      * Returns {@code MessageSerializer} for provided type.
      *
      * @param type Message type.
-     * @return Message instance.
+     * @return Message serializer.
      */
     public MessageSerializer serializer(short type);
+
+    /**
+     * Returns {@code MessageMarshaller} for provided type, or {@code null} if none is registered
+     * (e.g. for {@code NonMarshallableMessage} types).
+     *
+     * @param type Message type.
+     * @return Message marshaller, or {@code null}.
+     */
+    public @Nullable MessageMarshaller marshaller(short type);
 }
