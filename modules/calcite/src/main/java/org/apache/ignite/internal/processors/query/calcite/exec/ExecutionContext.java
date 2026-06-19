@@ -206,6 +206,11 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         );
     }
 
+    /** Binary marshaller. */
+    public Function<Object, Object> binaryMarshaller() {
+        return binaryMarshaller;
+    }
+
     /**
      * @return Query ID.
      */
