@@ -354,6 +354,7 @@ public class GridCacheReturn implements CacheMarshallableMessage, CacheIdAware {
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        // Mark the message as local — it has arrived at the target node.
         loc = true;
     }
 
