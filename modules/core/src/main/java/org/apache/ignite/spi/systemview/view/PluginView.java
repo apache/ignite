@@ -29,33 +29,37 @@ public class PluginView {
     /** */
     private final PluginProvider<?> pluginProvider;
 
-    /** */
+    /**
+     * Constructor.
+     *
+     * @param pluginProvider Plugin provider.
+     */
     public PluginView(PluginProvider<?> pluginProvider) {
         this.pluginProvider = pluginProvider;
     }
 
-    /** @see PluginProvider#name(). */
+    /** @return Plugin name. */
     @Order
     @Filtrable
     public String name() {
         return pluginProvider.name();
     }
 
-    /** @see PluginProvider#version(). */
+    /** @return Plugin version. */
     @Order(1)
     @Filtrable
     public String version() {
         return pluginProvider.version();
     }
 
-    /** {@link PluginProvider#plugin() Plugin} class name. */
+    /** @return Plugin class name. */
     @Order(2)
     @Filtrable
     public String className() {
         return pluginProvider.plugin().getClass().getName();
     }
 
-    /** @see PluginProvider#info(). */
+    /** @return Plugin info. */
     @Order(3)
     @Filtrable
     public @Nullable String info() {

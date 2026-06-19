@@ -2744,7 +2744,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public <T extends IgnitePlugin> T plugin() {
-            return (T) new TestPlugin();
+            return (T)new TestPlugin();
         }
 
         /** */
