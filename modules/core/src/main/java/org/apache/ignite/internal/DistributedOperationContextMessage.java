@@ -22,7 +22,7 @@ import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** Transport for {@link OperationContext} distibuted attributes. */
-public class DistributedOperationAttributesMessage implements Message {
+public class DistributedOperationContextMessage implements Message {
     /** Values of operation context attributes. */
     @Order(0)
     public List<Message> vals;
@@ -32,7 +32,7 @@ public class DistributedOperationAttributesMessage implements Message {
     public byte idBitmask;
 
     /** Empty constructor for serialization purposes. */
-    public DistributedOperationAttributesMessage() {
+    public DistributedOperationContextMessage() {
         // No-op.
     }
 }

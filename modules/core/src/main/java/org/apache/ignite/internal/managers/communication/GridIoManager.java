@@ -102,7 +102,7 @@ import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.processors.tracing.SpanTags;
-import org.apache.ignite.internal.thread.context.DistributedOperationAttributeManager;
+import org.apache.ignite.internal.thread.context.DistributedOperationContextManager;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -461,7 +461,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                 try {
                     GridIoMessage msg0 = (GridIoMessage)msg;
 
-                    try (Scope ignored = DistributedOperationAttributeManager.instance().restoreDistributedAttributes(msg0.opCtxMsg)) {
+                    try (Scope ignored = DistributedOperationContextManager.instance().restoreDistributedAttributes(msg0.opCtxMsg)) {
                         onMessage0(nodeId, msg0, msgC);
                     }
                 }
@@ -2055,7 +2055,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         else
             res = new GridIoMessage(plc, topic, msg, ordered, timeout, skipOnTimeout);
 
-        res.opCtxMsg = DistributedOperationAttributeManager.instance().collectDistributedAttributes();
+        res.opCtxMsg = DistributedOperationContextManager.instance().collectDistributedAttributes();
 
         return res;
     }

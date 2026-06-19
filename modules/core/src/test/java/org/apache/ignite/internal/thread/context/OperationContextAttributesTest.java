@@ -826,11 +826,11 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testSendAttributesByDiscovery() throws Exception {
-        byte attrId = DistributedOperationAttributeManager.MAX_DISTRIBUTED_ATTR_ID;
+        byte attrId = DistributedOperationContextManager.MAX_DISTRIBUTED_ATTR_ID;
 
         InetSocketAddressMessage dfltAttrVal = new InetSocketAddressMessage(InetAddress.getLoopbackAddress(), 80);
 
-        OperationContextAttribute<InetSocketAddressMessage> attr = DistributedOperationAttributeManager.instance()
+        OperationContextAttribute<InetSocketAddressMessage> attr = DistributedOperationContextManager.instance()
             .createDistributedAttriubte(attrId, dfltAttrVal);
 
         startGrids(2);
@@ -900,11 +900,11 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testSendAttributesByCommunication() throws Exception {
-        byte attrId = DistributedOperationAttributeManager.MAX_DISTRIBUTED_ATTR_ID;
+        byte attrId = DistributedOperationContextManager.MAX_DISTRIBUTED_ATTR_ID;
 
         InetSocketAddressMessage dfltAttrVal = new InetSocketAddressMessage(InetAddress.getLoopbackAddress(), 80);
 
-        OperationContextAttribute<InetSocketAddressMessage> attr = DistributedOperationAttributeManager.instance()
+        OperationContextAttribute<InetSocketAddressMessage> attr = DistributedOperationContextManager.instance()
             .createDistributedAttriubte(attrId, dfltAttrVal);
 
         startGrids(2);
