@@ -32,7 +32,7 @@ public class OperationContextAttribute<T> {
     static final AtomicInteger ID_GEN = new AtomicInteger();
 
     /** */
-    public static final int MAX_ATTR_CNT = Integer.SIZE;
+    static final int MAX_ATTR_CNT = Integer.SIZE;
 
     /** */
     private final int bitmask;
