@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.benchmarks.jmh.runner;
 
 import java.util.concurrent.TimeUnit;
+import org.apache.ignite.internal.util.FeatureChecker;
+import org.apache.ignite.internal.util.typedef.F;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
@@ -26,6 +28,10 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
  * JMH IDE benchmark runner configuration.
  */
 public class JmhIdeBenchmarkRunner {
+    /** Default JVM arguments. */
+    private static final String[] DFLT_JVM_ARGS = F.concat(FeatureChecker.JAVA_17_OPTIONS.split("\n"),
+        "--add-opens=java.base/java.time=ALL-UNNAMED");
+
     /** Benchmark modes. */
     private Mode[] benchmarkModes = new Mode[] { Mode.Throughput };
 
@@ -41,6 +47,9 @@ public class JmhIdeBenchmarkRunner {
     /** Output time unit. */
     private TimeUnit outputTimeUnit = TimeUnit.SECONDS;
 
+    /** Amount of threads. */
+    private int threads = 1;
+
     /** Benchmarks to run. */
     private Object[] benchmarks;
 
@@ -49,9 +58,6 @@ public class JmhIdeBenchmarkRunner {
 
     /** Output. */
     private String output;
-
-    /** Amount of threads. */
-    private int threads;
 
     /** Profilers. */
     private Class[] profilers;
@@ -200,8 +206,7 @@ public class JmhIdeBenchmarkRunner {
             }
         }
 
-        if (jvmArgs != null)
-            builder.jvmArgs(jvmArgs);
+        builder.jvmArgs(jvmArgs != null ? F.concat(DFLT_JVM_ARGS, jvmArgs) : DFLT_JVM_ARGS);
 
         if (output != null)
             builder.output(output);

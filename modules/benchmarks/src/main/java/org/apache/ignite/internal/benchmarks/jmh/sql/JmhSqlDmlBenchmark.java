@@ -20,10 +20,8 @@ package org.apache.ignite.internal.benchmarks.jmh.sql;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.runner.Runner;
-import org.openjdk.jmh.runner.options.Options;
-import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 /**
  * Benchmark DML queries.
@@ -119,10 +117,10 @@ public class JmhSqlDmlBenchmark extends JmhSqlAbstractBenchmark {
      * @throws Exception Exception.
      */
     public static void main(String[] args) throws Exception {
-        final Options options = new OptionsBuilder()
-            .include(JmhSqlDmlBenchmark.class.getSimpleName())
-            .build();
-
-        new Runner(options).run();
+        JmhIdeBenchmarkRunner.create()
+            .benchmarks(JmhSqlDmlBenchmark.class.getSimpleName())
+            .measurementIterations(3)
+            .warmupIterations(3)
+            .run();
     }
 }
