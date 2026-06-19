@@ -295,19 +295,15 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         return false;
     }
 
-    /**
-     * Describes which marshalling operation to generate code for.
-     *
-     * <ul>
-     *   <li>{@link #PREPARE} — {@code prepareMarshal}: marshal CacheObjects and recurse into nested Messages.</li>
-     *   <li>{@link #FINISH_BASE} — {@code finishUnmarshal(3-arg)}: lightweight unmarshal; recurses into nested
-     *   Messages only, CacheObject fields are skipped (no cache context available).</li>
-     *   <li>{@link #FINISH_CACHE} — {@code finishUnmarshal(5-arg)}: unmarshal with full cache context and class loader.</li>
-     * </ul>
-     */
+    /** */
     private enum MarshalMode {
+        /** Marshal. */
         PREPARE,
+        
+        /** Lightweight unmarshal. Messages only, CacheObject fields are skipped (no cache context available). */
         FINISH_BASE,
+        
+        /** Unmarshal with full cache context and class loader. */
         FINISH_CACHE
     }
 
