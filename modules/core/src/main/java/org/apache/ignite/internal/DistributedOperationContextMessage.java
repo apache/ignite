@@ -21,7 +21,7 @@ import java.util.List;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-/** Transport for {@link OperationContext} distibuted attributes. */
+/** Transport for {@link OperationContext} distributed attributes. */
 public class DistributedOperationContextMessage implements Message {
     /** Values of operation context attributes. */
     @Order(0)
@@ -29,7 +29,7 @@ public class DistributedOperationContextMessage implements Message {
 
     /** Bitmask of effective attributes ids. */
     @Order(1)
-    public byte idBitmask;
+    public byte idBitmap;
 
     /** Empty constructor for serialization purposes. */
     public DistributedOperationContextMessage() {
