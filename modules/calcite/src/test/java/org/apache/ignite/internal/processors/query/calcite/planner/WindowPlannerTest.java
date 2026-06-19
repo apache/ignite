@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.planner;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
@@ -165,13 +166,26 @@ public class WindowPlannerTest extends AbstractPlannerTest {
             TraitUtils.createFieldCollation(1, true)
         );
 
-        String sql = "SELECT MAX(c) OVER (PARTITION BY a ORDER BY b) FROM tbl ORDER BY a DESC, b";
-        assertPlan(sql, schema,
+        Function<RelCollation, Predicate<RelNode>> chk = collation ->
             nodeOrAnyChild(isInstanceOf(IgniteSort.class).negate())
                 .and(hasChildThat(isInstanceOf(IgniteWindow.class)
-                    .and(window -> window.collation().equals(derivedCollation))
+                    .and(window -> window.collation().equals(collation))
                     .and(input(isInstanceOf(IgniteExchange.class)
-                        .and(exchange -> exchange.collation().equals(derivedCollation)))))));
+                        .and(exchange -> exchange.collation().equals(collation))))));
+
+        String sql = "SELECT MAX(c) OVER (PARTITION BY a ORDER BY b) FROM tbl ORDER BY a DESC, b";
+        assertPlan(sql, schema, chk.apply(derivedCollation));
+
+        sql = "SELECT MAX(c) OVER (PARTITION BY a ORDER BY b) FROM tbl ORDER BY a DESC";
+        assertPlan(sql, schema, chk.apply(derivedCollation));
+
+        sql = "SELECT MAX(c) OVER (PARTITION BY a ORDER BY b) FROM tbl ORDER BY a DESC, b, c";
+        derivedCollation = RelCollations.of(
+            TraitUtils.createFieldCollation(0, false),
+            TraitUtils.createFieldCollation(1, true),
+            TraitUtils.createFieldCollation(2, true)
+        );
+        assertPlan(sql, schema, chk.apply(derivedCollation));
     }
 
     /**

@@ -244,7 +244,7 @@ public class IgniteWindow extends Window implements IgniteRel {
         // Check remaining collation (collation field order and direction meaningfull).
         List<RelFieldCollation> leftFldCollations = Util.skip(left.getFieldCollations(), grpKeysSize);
         List<RelFieldCollation> rightFldCollations = Util.skip(right.getFieldCollations(), grpKeysSize);
-        return Util.startsWith(rightFldCollations, leftFldCollations);
+        return Util.startsWith(leftFldCollations, rightFldCollations);
     }
 
     /** */
