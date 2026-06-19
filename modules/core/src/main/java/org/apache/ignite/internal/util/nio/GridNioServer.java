@@ -1648,11 +1648,9 @@ public class GridNioServer<T> {
                     finished = ((ClientMessage)msg).writeTo(buf);
                 }
                 else {
-                    MessageSerializer msgSer = messageFactory().serializer(msg.directType());
-
                     writer.setBuffer(buf);
 
-                    finished = msgSer.writeTo(msg, writer);
+                    finished = MessageSerializer.writeTo(messageFactory(), msg, writer);
                 }
 
                 span.addTag(SOCKET_WRITE_BYTES, () -> Integer.toString(buf.position() - startPos));
@@ -1849,11 +1847,9 @@ public class GridNioServer<T> {
                     finished = ((ClientMessage)msg).writeTo(buf);
                 }
                 else {
-                    MessageSerializer msgSer = msgFactory.serializer(msg.directType());
-
                     writer.setBuffer(buf);
 
-                    finished = msgSer.writeTo(msg, writer);
+                    finished = MessageSerializer.writeTo(msgFactory, msg, writer);
                 }
 
                 span.addTag(SOCKET_WRITE_BYTES, () -> Integer.toString(buf.position() - startPos));

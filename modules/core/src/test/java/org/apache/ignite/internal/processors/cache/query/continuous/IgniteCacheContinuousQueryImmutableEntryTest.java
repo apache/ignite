@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -155,14 +156,13 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
         ByteBuffer buf = ByteBuffer.allocate(4096);
         DirectMessageWriter writer = new DirectMessageWriter(msgFactory);
 
-        var serializer = msgFactory.serializer(e0.directType());
-        assertNotNull("Serializer not found for message type " + e0.directType(), serializer);
+        assertNotNull("Serializer not found for message type " + e0.directType(), msgFactory.serializer(e0.directType()));
 
         writer.setBuffer(buf);
 
         // Skip write class header.
         writer.onHeaderWritten();
-        serializer.writeTo(e0, writer);
+        MessageSerializer.writeTo(msgFactory, e0, writer);
 
         CacheContinuousQueryEntry e1 = new CacheContinuousQueryEntry();
 
@@ -170,7 +170,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
 
         reader.setBuffer(ByteBuffer.wrap(buf.array()));
 
-        serializer.readFrom(e1, reader);
+        MessageSerializer.readFrom(msgFactory, e1, reader);
 
         assertEquals(e0.cacheId(), e1.cacheId());
         assertEquals(e0.eventType(), e1.eventType());

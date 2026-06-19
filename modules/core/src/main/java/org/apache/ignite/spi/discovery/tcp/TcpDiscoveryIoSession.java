@@ -169,8 +169,6 @@ public class TcpDiscoveryIoSession {
             msgReader.reset();
             msgReader.setBuffer(msgBuf);
 
-            MessageSerializer msgSer = spi.messageFactory().serializer(msg.directType());
-
             boolean finished;
 
             do {
@@ -183,7 +181,7 @@ public class TcpDiscoveryIoSession {
 
                 msgBuf.limit(read);
 
-                finished = msgSer.readFrom(msg, msgReader);
+                finished = MessageSerializer.readFrom(spi.messageFactory(), msg, msgReader);
 
                 // Server Discovery only sends next message to next Server upon receiving a receipt for the previous one.
                 // This behaviour guarantees that we never read a next message from the buffer right after the end of
@@ -243,8 +241,6 @@ public class TcpDiscoveryIoSession {
      * @throws IOException If serialization fails.
      */
     void serializeMessage(Message m, OutputStream out) throws IOException, IgniteCheckedException {
-        MessageSerializer msgSer = spi.messageFactory().serializer(m.directType());
-
         MessageMarshaller.prepareMarshal(spi.messageFactory(), m, ((IgniteEx)spi.ignite()).context(), null);
 
         msgWriter.reset();
@@ -256,7 +252,7 @@ public class TcpDiscoveryIoSession {
             // Should be cleared before first operation.
             msgBuf.clear();
 
-            finished = msgSer.writeTo(m, msgWriter);
+            finished = MessageSerializer.writeTo(spi.messageFactory(), m, msgWriter);
 
             out.write(msgBuf.array(), 0, msgBuf.position());
         }

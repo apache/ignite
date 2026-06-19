@@ -38,6 +38,7 @@ import org.apache.ignite.internal.IgniteSlowClientDetectionSelfTest;
 import org.apache.ignite.internal.TransactionsMXBeanImplTest;
 import org.apache.ignite.internal.codegen.IgniteDataTransferObjectProcessorTest;
 import org.apache.ignite.internal.codegen.MessageProcessorTest;
+import org.apache.ignite.internal.codegen.MessageSerializationArchitectureTest;
 import org.apache.ignite.internal.managers.communication.CompressedMessageTest;
 import org.apache.ignite.internal.managers.communication.DefaultEnumMapperTest;
 import org.apache.ignite.internal.managers.communication.ErrorMessageSelfTest;
@@ -150,6 +151,7 @@ import org.junit.runners.Suite;
     ClientSessionOutboundQueueLimitTest.class,
 
     MessageProcessorTest.class,
+    MessageSerializationArchitectureTest.class,
     ErrorMessageSelfTest.class,
     DefaultEnumMapperTest.class,
     IgniteDataTransferObjectProcessorTest.class,

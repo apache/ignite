@@ -36,4 +36,30 @@ public interface MessageSerializer<M extends Message> {
      * @return Whether message was fully read.
      */
     public boolean readFrom(M msg, MessageReader reader);
+
+    /**
+     * Writes the message using the serializer resolved from the factory.
+     *
+     * @param factory Message factory.
+     * @param msg Message instance.
+     * @param writer Writer.
+     * @param <M> Message type.
+     * @return Whether message was fully written.
+     */
+    static <M extends Message> boolean writeTo(MessageFactory factory, M msg, MessageWriter writer) {
+        return ((MessageSerializer<M>)factory.serializer(msg.directType())).writeTo(msg, writer);
+    }
+
+    /**
+     * Reads the message using the serializer resolved from the factory.
+     *
+     * @param factory Message factory.
+     * @param msg Message instance.
+     * @param reader Reader.
+     * @param <M> Message type.
+     * @return Whether message was fully read.
+     */
+    static <M extends Message> boolean readFrom(MessageFactory factory, M msg, MessageReader reader) {
+        return ((MessageSerializer<M>)factory.serializer(msg.directType())).readFrom(msg, reader);
+    }
 }

@@ -85,11 +85,9 @@ public class GridDirectParser implements GridNioParser {
             boolean finished = false;
 
             if (msg != null && buf.hasRemaining()) {
-                MessageSerializer msgSer = msgFactory.serializer(msg.directType());
-
                 reader.setBuffer(buf);
 
-                finished = msgSer.readFrom(msg, reader);
+                finished = MessageSerializer.readFrom(msgFactory, msg, reader);
             }
 
             if (finished) {

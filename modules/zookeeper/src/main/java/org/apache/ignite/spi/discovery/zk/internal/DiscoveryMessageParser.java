@@ -91,8 +91,6 @@ public class DiscoveryMessageParser {
 
         msgWriter.setBuffer(msgBuf);
 
-        MessageSerializer msgSer = msgFactory.serializer(m.directType());
-
         try {
             MessageMarshaller.prepareMarshal(msgFactory, m, ((IgniteEx)spi.ignite()).context(), null);
         }
@@ -105,7 +103,7 @@ public class DiscoveryMessageParser {
         do {
             msgBuf.clear();
 
-            finished = msgSer.writeTo(m, msgWriter);
+            finished = MessageSerializer.writeTo(msgFactory, m, msgWriter);
 
             out.write(msgBuf.array(), 0, msgBuf.position());
         }
@@ -120,7 +118,6 @@ public class DiscoveryMessageParser {
         msgReader.setBuffer(msgBuf);
 
         Message msg = msgFactory.create(makeMessageType((byte)in.read(), (byte)in.read()));
-        MessageSerializer msgSer = msgFactory.serializer(msg.directType());
 
         boolean finished;
 
@@ -132,7 +129,7 @@ public class DiscoveryMessageParser {
                 msgBuf.rewind();
             }
 
-            finished = msgSer.readFrom(msg, msgReader);
+            finished = MessageSerializer.readFrom(msgFactory, msg, msgReader);
 
             assert read != -1 || finished : "Stream closed before message was fully read.";
 

@@ -180,13 +180,9 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     }
 
     /** */
-    @SuppressWarnings("unchecked")
     protected void prepareUnmarshal(Message msg) throws IgniteCheckedException {
         try {
-            MessageMarshaller marshaller = ctx.kernalContext().messageFactory().marshaller(msg.directType());
-
-            if (marshaller != null)
-                marshaller.finishUnmarshal(msg, ctx.kernalContext(), null, clsLdr);
+            MessageMarshaller.finishUnmarshal(ctx.kernalContext().messageFactory(), msg, ctx.kernalContext(), null, clsLdr);
         }
         catch (Exception e) {
             failureProcessor().process(new FailureContext(FailureType.CRITICAL_ERROR, e));

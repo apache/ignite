@@ -49,6 +49,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageArrayType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionType;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageMapType;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageType;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -925,7 +926,7 @@ public class DirectByteBufferStream {
     public void writeMessage(Message msg, MessageWriter writer) {
         if (msg != null) {
             if (buf.hasRemaining())
-                nestedWrite(writer, () -> msgFactory.serializer(msg.directType()).writeTo(msg, writer));
+                nestedWrite(writer, () -> MessageSerializer.writeTo(msgFactory, msg, writer));
             else
                 lastFinished = false;
         }
@@ -1571,7 +1572,7 @@ public class DirectByteBufferStream {
             try {
                 reader.beforeNestedRead();
 
-                lastFinished = msgFactory.serializer(msg.directType()).readFrom(msg, reader);
+                lastFinished = MessageSerializer.readFrom(msgFactory, msg, reader);
             }
             finally {
                 reader.afterNestedRead(lastFinished);

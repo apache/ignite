@@ -715,11 +715,9 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
                             ioMsg.skipOnTimeout()
                         );
 
-                        MessageMarshaller msgMarshaller = ((IgniteEx)ignite).context().messageFactory().marshaller(msg.directType());
-
                         try {
-                            if (msgMarshaller != null)
-                                msgMarshaller.prepareMarshal(msg, ((IgniteEx)ignite).context(), null);
+                            MessageMarshaller.prepareMarshal(
+                                ((IgniteEx)ignite).context().messageFactory(), msg, ((IgniteEx)ignite).context(), null);
                         }
                         catch (IgniteCheckedException e) {
                             throw new RuntimeException(e);

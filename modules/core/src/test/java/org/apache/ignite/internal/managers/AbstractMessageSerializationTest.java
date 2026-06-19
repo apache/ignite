@@ -36,6 +36,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageArrayType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionType;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageMapType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -103,13 +104,13 @@ public abstract class AbstractMessageSerializationTest {
 
         initializeMessage(msg);
 
-        while (!msgFactory.serializer(msgType).writeTo(msg, writer)) {
+        while (!MessageSerializer.writeTo(msgFactory, msg, writer)) {
             // No-op.
         }
 
         msg = msgFactory.create(msgType);
 
-        while (!msgFactory.serializer(msgType).readFrom(msg, reader)) {
+        while (!MessageSerializer.readFrom(msgFactory, msg, reader)) {
             // No-op.
         }
 
