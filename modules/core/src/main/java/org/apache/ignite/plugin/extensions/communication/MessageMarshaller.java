@@ -92,6 +92,7 @@ public interface MessageMarshaller<M extends Message> {
      * 
      * @param factory Message factory.
      * @param kctx Kernal context.
+     * @param msg Message.
      * @param <M> Message type.
      * */
     static <M extends Message> void finishUnmarshal(
