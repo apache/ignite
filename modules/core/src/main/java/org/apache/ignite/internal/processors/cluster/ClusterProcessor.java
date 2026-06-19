@@ -384,7 +384,6 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
                     IgniteDiagnosticRequest infoReq = (IgniteDiagnosticRequest)msg;
 
                     try {
-                        MessageMarshaller.finishUnmarshal(ctx.messageFactory(), infoReq, ctx);
                         MessageMarshaller.finishUnmarshal(ctx.messageFactory(), infoReq, ctx, null, U.gridClassLoader());
                     }
                     catch (IgniteCheckedException e) {
