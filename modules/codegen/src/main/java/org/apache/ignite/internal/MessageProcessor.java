@@ -77,11 +77,20 @@ public class MessageProcessor extends AbstractProcessor {
     /** Externalizable message. */
     static final String MARSHALLABLE_MESSAGE_INTERFACE = "org.apache.ignite.internal.MarshallableMessage";
 
+    /** */
+    public static final String GRID_H2_NULL = "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Null";
+
+    /** */
+    public static final String ZK_NO_SERVERS_MESSAGE = "org.apache.ignite.spi.discovery.zk.internal.ZkNoServersMessage";
+
+    /** */
+    public static final Set<String> NO_PUBLIC_CTOR_MSGS = Set.of(GRID_H2_NULL, ZK_NO_SERVERS_MESSAGE);
+
     /** Messages with no fields. A serializer must be generated due to restrictions in our communication process. */
     static final String[] EMPTY_MESSAGES = {
         "org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage",
-        "org.apache.ignite.spi.discovery.zk.internal.ZkNoServersMessage",
-        "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Null",
+        ZK_NO_SERVERS_MESSAGE,
+        GRID_H2_NULL,
     };
 
     /** Messages with no fields. A serializer generation intentionally skipped. */
@@ -117,9 +126,6 @@ public class MessageProcessor extends AbstractProcessor {
             if (clazz.getModifiers().contains(Modifier.ABSTRACT))
                 continue;
 
-            if (!checkConstructors(clazz))
-                continue;
-
             List<VariableElement> fields = orderedFields(clazz);
 
             if (fields.isEmpty() && emptyMsgs.stream().noneMatch(t -> isAssignable(t, clazz))) {
@@ -132,6 +138,9 @@ public class MessageProcessor extends AbstractProcessor {
                         "Annotate fields with @Order or add to known empty classes MessageProcessor#EMPTY_MESSAGES",
                     clazz);
             }
+
+            if (!checkConstructors(clazz))
+                continue;
 
             msgFields.put(clazz, fields);
         }
@@ -153,6 +162,9 @@ public class MessageProcessor extends AbstractProcessor {
 
     /** */
     private boolean checkConstructors(TypeElement clazz) {
+        if (NO_PUBLIC_CTOR_MSGS.contains(clazz.getQualifiedName().toString()))
+            return true;
+
         for (Element el : clazz.getEnclosedElements()) {
             if (el.getKind() != ElementKind.CONSTRUCTOR || !el.getModifiers().contains(Modifier.PUBLIC))
                 continue;
