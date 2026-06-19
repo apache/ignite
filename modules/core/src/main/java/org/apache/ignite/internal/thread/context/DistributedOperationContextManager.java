@@ -26,18 +26,18 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class DistributedOperationContextAttributeManager {
+public class DistributedOperationContextManager {
     /** */
     static final byte MAX_DISTRIBUTED_ATTR_CNT = 7;
 
     /** */
-    private static final DistributedOperationContextAttributeManager INSTANCE = new DistributedOperationContextAttributeManager();
+    private static final DistributedOperationContextManager INSTANCE = new DistributedOperationContextManager();
 
     /** Attributes by their id. */
     private final Map<Byte, OperationContextAttribute<? extends Message>> attrs = new ConcurrentSkipListMap<>();
 
     /** */
-    public static DistributedOperationContextAttributeManager instance() {
+    public static DistributedOperationContextManager instance() {
         return INSTANCE;
     }
 
@@ -50,18 +50,12 @@ public class DistributedOperationContextAttributeManager {
                 + OperationContextAttribute.MAX_ATTR_CNT + "].");
         }
 
-        OperationContextAttribute<T> res;
-
-        synchronized (attrs) {
-            if (attrs.containsKey(id))
+        return (OperationContextAttribute<T>)attrs.compute(id, (id0, attr0) -> {
+            if (attr0 != null)
                 throw new IgniteException("Duplicated distributed attribute id [id=" + id + "].");
 
-            res = OperationContextAttribute.newInstance(initVal);
-
-            attrs.put(id, res);
-        }
-
-        return res;
+            return OperationContextAttribute.newInstance(initVal);
+        });
     }
 
     /** */

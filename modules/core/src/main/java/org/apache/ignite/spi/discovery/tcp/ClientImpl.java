@@ -70,7 +70,7 @@ import org.apache.ignite.internal.processors.tracing.SpanTags;
 import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessage;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesTable;
-import org.apache.ignite.internal.thread.context.DistributedOperationContextAttributeManager;
+import org.apache.ignite.internal.thread.context.DistributedOperationContextManager;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -1312,7 +1312,7 @@ class ClientImpl extends TcpDiscoveryImpl {
          * @param msg Message.
          */
         private void sendMessage(TcpDiscoveryAbstractMessage msg) {
-            msg.opCtxMsg = DistributedOperationContextAttributeManager.instance().collectDistributedAttributes();
+            msg.opCtxMsg = DistributedOperationContextManager.instance().collectDistributedAttributes();
 
             synchronized (mux) {
                 queue.add(msg);
@@ -2007,8 +2007,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                         TcpDiscoveryAbstractMessage msg0 = (TcpDiscoveryAbstractMessage)msg;
 
-                        try (Scope ignored = DistributedOperationContextAttributeManager.instance()
-                            .restoreDistributedAttributes(msg0.opCtxMsg)) {
+                        try (Scope ignored = DistributedOperationContextManager.instance().restoreDistributedAttributes(msg0.opCtxMsg)) {
                             processDiscoveryMessage(msg0);
                         }
                     }
