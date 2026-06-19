@@ -469,12 +469,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Override public IgniteInternalCache<K, V> withSkipStore() {
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        if (opCtx == null)
-            opCtx = CacheOperationContext.builder().skipStore(true).build();
-        else {
-            if (!opCtx.skipStore())
-                opCtx = opCtx.withSkipStore();
-        }
+        opCtx = CacheOperationContext.of(opCtx).withSkipStore();
 
         return new GridCacheProxyImpl<>(ctx, this, opCtx);
     }
@@ -483,12 +478,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Override public IgniteInternalCache<K, V> withSkipReadThrough() {
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        if (opCtx == null)
-            opCtx = CacheOperationContext.builder().skipReadThrough(true).build();
-        else {
-            if (!opCtx.skipReadThrough())
-                opCtx = opCtx.withSkipReadThrough();
-        }
+        opCtx = CacheOperationContext.of(opCtx).withSkipReadThrough();
 
         return new GridCacheProxyImpl<>(ctx, this, opCtx);
     }
@@ -497,12 +487,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Override public IgniteInternalCache<K, V> withKeepBinaryInInterceptor() {
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        if (opCtx == null)
-            opCtx = CacheOperationContext.builder().keepBinaryInInterceptor(true).build();
-        else {
-            if (!opCtx.keepBinaryInInterceptor())
-                opCtx = opCtx.withKeepBinaryInInterceptor();
-        }
+        opCtx = CacheOperationContext.of(opCtx).withKeepBinaryInInterceptor();
 
         return new GridCacheProxyImpl<>(ctx, this, opCtx);
     }
@@ -511,10 +496,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Override public GridCacheProxyImpl<K, V> withApplicationAttributes(Map<String, String> attrs) {
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        if (opCtx == null)
-            opCtx = CacheOperationContext.builder().applicationAttributes(attrs).build();
-        else
-            opCtx = opCtx.withApplicationAttributes(attrs);
+        opCtx = CacheOperationContext.of(opCtx).withApplicationAttributes(attrs);
 
         return new GridCacheProxyImpl<>(ctx, this, opCtx);
     }
@@ -544,12 +526,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Override public final IgniteInternalCache<K, V> withNoRetries() {
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        if (opCtx == null)
-            opCtx = CacheOperationContext.builder().noRetries(true).build();
-        else {
-            if (!opCtx.noRetries())
-                opCtx = opCtx.withNoRetries();
-        }
+        opCtx = CacheOperationContext.of(opCtx).withNoRetries();
 
         return new GridCacheProxyImpl<>(ctx, this, opCtx);
     }

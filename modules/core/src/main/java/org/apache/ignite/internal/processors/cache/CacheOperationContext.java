@@ -20,9 +20,9 @@ package org.apache.ignite.internal.processors.cache;
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.Map;
+import java.util.Objects;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.cache.ReadRepairStrategy;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -37,15 +37,12 @@ public class CacheOperationContext implements Serializable {
     private static final CacheOperationContext INSTANCE = new Builder().build();
 
     /** Skip store flag. */
-    @GridToStringInclude
     private final boolean skipStore;
 
     /** Skip read through flag. */
-    @GridToStringInclude
     private final boolean skipReadThrough;
 
     /** No retries flag. */
-    @GridToStringInclude
     private final boolean noRetries;
 
     /** Recovery flag. */
@@ -110,6 +107,11 @@ public class CacheOperationContext implements Serializable {
         return INSTANCE;
     }
 
+    /** Helper. */
+    public static CacheOperationContext of(CacheOperationContext opCtx) {
+        return opCtx == null ? INSTANCE : opCtx;
+    }
+
     /**
      * @return keepBinary flag.
      */
@@ -119,14 +121,10 @@ public class CacheOperationContext implements Serializable {
 
     /** Context with keepBinary flag. */
     public CacheOperationContext withKeepBinary() {
-        return builder(this).keepBinary(true).build();
-    }
+        if (isKeepBinary())
+            return this;
 
-    /**
-     * @return {@code True} if data center id is set otherwise {@code false}.
-     */
-    public boolean hasDataCenterId() {
-        return dataCenterId != null;
+        return builder(this).keepBinary(true).build();
     }
 
     /**
@@ -140,6 +138,9 @@ public class CacheOperationContext implements Serializable {
 
     /** Context with dataCenterId. */
     public CacheOperationContext withDataCenterId(Byte dataCenterId) {
+        if (Objects.equals(this.dataCenterId, dataCenterId))
+            return this;
+
         return builder(this).dataCenterId(dataCenterId).build();
     }
 
@@ -152,6 +153,9 @@ public class CacheOperationContext implements Serializable {
 
     /** Context with recovery flag. */
     public CacheOperationContext withRecovery() {
+        if (recovery())
+            return this;
+
         return builder(this).recovery(true).build();
     }
 
@@ -164,6 +168,9 @@ public class CacheOperationContext implements Serializable {
 
     /** Context with read repair strategy. */
     public CacheOperationContext withReadRepairStrategy(ReadRepairStrategy strategy) {
+        if (readRepairStrategy() != null && readRepairStrategy() == strategy)
+            return this;
+
         return builder(this).readRepairStrategy(strategy).build();
     }
 
@@ -176,6 +183,9 @@ public class CacheOperationContext implements Serializable {
 
     /** Context with noRetries flag. */
     public CacheOperationContext withNoRetries() {
+        if (noRetries())
+            return this;
+
         return builder(this).noRetries(true).build();
     }
 
@@ -200,6 +210,9 @@ public class CacheOperationContext implements Serializable {
 
     /** Context with skipStore flag. */
     public CacheOperationContext withSkipStore() {
+        if (skipStore())
+            return this;
+
         return builder(this).skipStore(true).build();
     }
 
@@ -212,6 +225,9 @@ public class CacheOperationContext implements Serializable {
 
     /** Context with {@link CacheOperationContext#skipReadThrough} flag. */
     public CacheOperationContext withSkipReadThrough() {
+        if (skipReadThrough())
+            return this;
+
         return builder(this).skipReadThrough(true).build();
     }
 
@@ -222,6 +238,9 @@ public class CacheOperationContext implements Serializable {
 
     /** Context with {@link CacheOperationContext#keepBinaryInInterceptor} flag. */
     public CacheOperationContext withKeepBinaryInInterceptor() {
+        if (keepBinaryInInterceptor())
+            return this;
+
         return builder(this).keepBinaryInInterceptor(true).build();
     }
 
@@ -263,15 +282,12 @@ public class CacheOperationContext implements Serializable {
     /** Cache operations context builder. */
     public static class Builder {
         /** Skip store. */
-        @GridToStringInclude
         private boolean skipStore;
 
         /** Skip read through. */
-        @GridToStringInclude
         private boolean skipReadThrough;
 
         /** No retries flag. */
-        @GridToStringInclude
         private boolean noRetries;
 
         /** Recovery flag. */
@@ -359,7 +375,7 @@ public class CacheOperationContext implements Serializable {
         /**
          * CacheOperationContext with handle binary in interceptor execution flag.
          *
-         * @see IgniteInternalCache#withHandleBinaryInInterceptor()
+         * @see IgniteInternalCache#withKeepBinaryInInterceptor()
          */
         public Builder keepBinaryInInterceptor(boolean keepBinaryInInterceptor) {
             this.keepBinaryInInterceptor = keepBinaryInInterceptor;
