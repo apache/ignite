@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import javax.cache.Cache;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
@@ -107,6 +108,8 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.AbstractTestPluginProvider;
+import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.systemview.view.BaselineNodeAttributeView;
 import org.apache.ignite.spi.systemview.view.BaselineNodeView;
@@ -128,6 +131,7 @@ import org.apache.ignite.spi.systemview.view.NodeAttributeView;
 import org.apache.ignite.spi.systemview.view.NodeMetricsView;
 import org.apache.ignite.spi.systemview.view.PagesListView;
 import org.apache.ignite.spi.systemview.view.PagesTimestampHistogramView;
+import org.apache.ignite.spi.systemview.view.PluginView;
 import org.apache.ignite.spi.systemview.view.ScanQueryView;
 import org.apache.ignite.spi.systemview.view.ServiceView;
 import org.apache.ignite.spi.systemview.view.SnapshotView;
@@ -192,6 +196,7 @@ import static org.apache.ignite.internal.processors.metastorage.persistence.Dist
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_ATTR_VIEW;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_VIEW;
+import static org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor.PLUGINS_SYS_VIEW;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.STREAM_POOL_QUEUE_VIEW;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.SYS_POOL_QUEUE_VIEW;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
@@ -2615,6 +2620,24 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
+    @Test
+    public void testPluginView() throws Exception {
+        try (IgniteEx n = startGrid(getConfiguration().setPluginProviders(new TestPluginProvider()))) {
+            SystemView<PluginView> view = n.context().systemView().view(PLUGINS_SYS_VIEW);
+
+            PluginView testPluginView = StreamSupport.stream(view.spliterator(), false)
+                .filter(v -> "FOR_SYS_VIEW_PLUGIN_NAME".equals(v.name()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Plugin not found"));
+
+            assertEquals("FOR_SYS_VIEW_PLUGIN_NAME", testPluginView.name());
+            assertEquals("FOR_SYS_VIEW_PLUGIN_INFO", testPluginView.info());
+            assertEquals("42", testPluginView.version());
+            assertEquals(TestPluginProvider.TestPlugin.class.getName(), testPluginView.className());
+        }
+    }
+
     /** Test node filter. */
     public static class TestNodeFilter implements IgnitePredicate<ClusterNode> {
         /** {@inheritDoc} */
@@ -2700,5 +2723,32 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
     @GridInternal
     public static class InternalTask extends UserTask {
         // No-op.
+    }
+
+    /** */
+    private static class TestPluginProvider extends AbstractTestPluginProvider {
+        /** {@inheritDoc} */
+        @Override public String name() {
+            return "FOR_SYS_VIEW_PLUGIN_NAME";
+        }
+
+        /** {@inheritDoc} */
+        @Override public String version() {
+            return "42";
+        }
+
+        /** {@inheritDoc} */
+        @Override public String info() {
+            return "FOR_SYS_VIEW_PLUGIN_INFO";
+        }
+
+        /** {@inheritDoc} */
+        @Override public <T extends IgnitePlugin> T plugin() {
+            return (T) new TestPlugin();
+        }
+
+        /** */
+        private static class TestPlugin implements IgnitePlugin {
+        }
     }
 }

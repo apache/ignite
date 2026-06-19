@@ -55,6 +55,11 @@ public interface PluginProvider<C extends PluginConfiguration> {
      */
     public String copyright();
 
+    /** @return Plugin info, {@code ""} if missing. */
+    default String info() {
+        return "";
+    }
+
     /**
      * @param <T> Type of the plugin.
      * @return Plugin API.

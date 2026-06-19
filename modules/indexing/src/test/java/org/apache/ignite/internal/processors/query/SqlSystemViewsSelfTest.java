@@ -85,6 +85,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.plugin.AbstractTestPluginProvider;
+import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.systemview.view.SqlQueryView;
 import org.apache.ignite.spi.systemview.view.SystemView;
@@ -1873,6 +1875,27 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         }
     }
 
+    /**  */
+    @Test
+    public void testPluginView() throws Exception {
+        try (IgniteEx n = startGrid(getConfiguration().setPluginProviders(new TestPluginProvider()))) {
+            String sql = String.format(
+                "SELECT name, info, version, class_name  FROM %s.IGNITE_PLUGINS WHERE NAME = ?",
+                systemSchemaName()
+            );
+
+            assertEquals(
+                List.of(
+                    "FOR_SYS_VIEW_PLUGIN_NAME",
+                    "FOR_SYS_VIEW_PLUGIN_INFO",
+                    "42",
+                    TestPluginProvider.TestPlugin.class.getName()
+                ),
+                execSql(n, sql, "FOR_SYS_VIEW_PLUGIN_NAME").get(0)
+            );
+        }
+    }
+
     /**
      * Mock for {@link ClusterMetricsImpl} that always returns big (more than 24h) duration for all duration metrics.
      */
@@ -2087,6 +2110,33 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
                 throw new NullPointerException("Oops... incorrect customer realization.");
 
             return "CUSTOM_NODE_FILTER";
+        }
+    }
+
+    /** */
+    private static class TestPluginProvider extends AbstractTestPluginProvider {
+        /** {@inheritDoc} */
+        @Override public String name() {
+            return "FOR_SYS_VIEW_PLUGIN_NAME";
+        }
+
+        /** {@inheritDoc} */
+        @Override public String version() {
+            return "42";
+        }
+
+        /** {@inheritDoc} */
+        @Override public String info() {
+            return "FOR_SYS_VIEW_PLUGIN_INFO";
+        }
+
+        /** {@inheritDoc} */
+        @Override public <T extends IgnitePlugin> T plugin() {
+            return (T) new TestPlugin();
+        }
+
+        /** */
+        private static class TestPlugin implements IgnitePlugin {
         }
     }
 }
