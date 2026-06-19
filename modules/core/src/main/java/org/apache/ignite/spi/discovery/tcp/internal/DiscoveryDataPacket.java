@@ -93,10 +93,8 @@ public class DiscoveryDataPacket implements Message {
 
         Map<Integer, Message> locNodeSpecificData = bag.localNodeSpecificData();
 
-        if (locNodeSpecificData != null) {
-            if (!locNodeSpecificData.isEmpty())
-                nodeSpecificData.put(nodeId, locNodeSpecificData);
-        }
+        if (!F.isEmpty(locNodeSpecificData))
+            nodeSpecificData.put(nodeId, locNodeSpecificData);
     }
 
     /**
