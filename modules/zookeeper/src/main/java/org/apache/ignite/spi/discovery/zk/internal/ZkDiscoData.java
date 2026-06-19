@@ -28,23 +28,17 @@ public class ZkDiscoData implements Message {
     @Order(0)
     Map<Integer, Message> data;
 
-    /**
-     * Default constructor for {@link MessageFactory}.
-     */
+    /** Default constructor for {@link MessageFactory}. */
     public ZkDiscoData() {
         // No-op.
     }
 
-    /**
-     * @param data Discovery data.
-     */
+    /** @param data Discovery data. */
     public ZkDiscoData(Map<Integer, Message> data) {
         this.data = data;
     }
 
-    /**
-     * @return Data.
-     */
+    /** @return Data. */
     public Map<Integer, Message> data() {
         return data;
     }

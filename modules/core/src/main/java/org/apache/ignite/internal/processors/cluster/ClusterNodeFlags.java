@@ -21,18 +21,16 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
-public class ClusterFlags implements Message {
+public class ClusterNodeFlags implements Message {
     /** Update notifier enabled flag. */
     @Order(0)
     boolean updateNotifierEnabled;
 
     /** */
-    public ClusterFlags() { }
+    public ClusterNodeFlags() { }
 
-    /**
-     * @param updateNotifierEnabled Update notifier enabled flag.
-     */
-    public ClusterFlags(boolean updateNotifierEnabled) {
+    /** @param updateNotifierEnabled Update notifier enabled flag. */
+    public ClusterNodeFlags(boolean updateNotifierEnabled) {
         this.updateNotifierEnabled = updateNotifierEnabled;
     }
 }

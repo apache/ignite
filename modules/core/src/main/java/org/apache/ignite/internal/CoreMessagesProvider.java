@@ -184,9 +184,9 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.processors.cluster.CacheMetricsMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
-import org.apache.ignite.internal.processors.cluster.ClusterFlags;
 import org.apache.ignite.internal.processors.cluster.ClusterIdAndTag;
 import org.apache.ignite.internal.processors.cluster.ClusterMetricsUpdateMessage;
+import org.apache.ignite.internal.processors.cluster.ClusterNodeFlags;
 import org.apache.ignite.internal.processors.cluster.NodeFullMetricsMessage;
 import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.processors.continuous.ContinuousRoutineStartResultMessage;
@@ -453,7 +453,6 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(CacheStatisticsClearMessage.class);
         withNoSchema(ClientCacheChangeDummyDiscoveryMessage.class);
         withNoSchema(DynamicCacheChangeBatch.class);
-        withSchema(InitialUsersData.class);
 
         // [10000 - 10200]: Transaction and lock related messages. Most of them originally comes from Communication.
         msgIdx = 10000;
@@ -637,6 +636,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(UserAuthenticateRequestMessage.class);
         withNoSchema(UserAuthenticateResponseMessage.class);
         withNoSchema(TcpDiscoveryAuthFailedMessage.class);
+        withSchema(InitialUsersData.class);
 
         // [12200 - 12300]: Binary, classloading and marshalling messages.
         msgIdx = 12200;
@@ -676,7 +676,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(PartitionHashRecord.class);
         withNoSchema(TransactionsHashRecord.class);
         withNoSchema(ClusterIdAndTag.class);
-        withNoSchema(ClusterFlags.class);
+        withNoSchema(ClusterNodeFlags.class);
         withNoSchemaResolvedClassLoader(PluginsData.class);
         withSchema(EnabledEvents.class);
 

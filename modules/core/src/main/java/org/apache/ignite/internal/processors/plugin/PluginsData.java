@@ -39,9 +39,7 @@ public class PluginsData implements MarshallableMessage {
     /** */
     public PluginsData() { }
 
-    /**
-     * @param data Plugins data.
-     */
+    /** @param data Plugins data. */
     public PluginsData(@Nullable Map<String, Serializable> data) {
         this.data = data;
     }
@@ -58,9 +56,7 @@ public class PluginsData implements MarshallableMessage {
             data = U.unmarshal(marsh, dataBytes, clsLdr);
     }
 
-    /**
-     * @return Original plugins data.
-     */
+    /** @return Original plugins data. */
     public @Nullable Map<String, Serializable> data() {
         return data;
     }

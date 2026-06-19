@@ -30,16 +30,12 @@ public class InlineSizesData implements Message {
     /** */
     public InlineSizesData() {}
 
-    /**
-     * @param sizes Inline sizes.
-     */
+    /** @param sizes Inline sizes. */
     public InlineSizesData(Map<String, Integer> sizes) {
         this.sizes = sizes;
     }
 
-    /**
-     * @return Inline sizes.
-     */
+    /** @return Inline sizes. */
     public Map<String, Integer> sizes() {
         return sizes;
     }

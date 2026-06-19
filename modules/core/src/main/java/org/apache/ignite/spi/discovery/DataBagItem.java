@@ -86,6 +86,8 @@ public class DataBagItem implements MarshallableMessage {
         if (dataBytes != null) {
             try {
                 data = U.unmarshal(marsh, dataBytes, clsLdr);
+
+                dataBytes = null;
             }
             catch (IgniteCheckedException e) {
                 unmarshallError = e;
@@ -93,9 +95,7 @@ public class DataBagItem implements MarshallableMessage {
         }
     }
 
-    /**
-     * @return Unmarshalling error.
-     */
+    /** @return Unmarshalling error. */
     public IgniteCheckedException unmarshallError() {
         return unmarshallError;
     }

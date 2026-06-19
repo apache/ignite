@@ -22,9 +22,7 @@ import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-/**
- * Holder for active schema change propose discovery messages.
- */
+/** Holder for active schema change propose discovery messages. */
 public class ActiveProposals implements Message {
     /** Active proposals. */
     @Order(0)
@@ -35,16 +33,12 @@ public class ActiveProposals implements Message {
         // No-op.
     }
 
-    /**
-     * @param activeProposals Active proposals.
-     */
+    /** @param activeProposals Active proposals. */
     public ActiveProposals(LinkedHashMap<UUID, SchemaProposeDiscoveryMessage> activeProposals) {
         this.activeProposals = activeProposals;
     }
 
-    /**
-     * @return Active proposals.
-     */
+    /** @return Active proposals. */
     public LinkedHashMap<UUID, SchemaProposeDiscoveryMessage> activeProposals() {
         return activeProposals;
     }

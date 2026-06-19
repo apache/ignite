@@ -101,9 +101,6 @@ import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeConsisten
  */
 public class ClusterProcessor extends GridProcessorAdapter implements DistributedMetastorageLifecycleListener {
     /** */
-    private static final String ATTR_UPDATE_NOTIFIER_STATUS = "UPDATE_NOTIFIER_STATUS";
-
-    /** */
     private static final String CLUSTER_ID_TAG_KEY =
         DistributedMetaStorage.IGNITE_INTERNAL_KEY_PREFIX + "cluster.id.tag";
 
@@ -465,19 +462,19 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
 
     /** {@inheritDoc} */
     @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
-        dataBag.addJoiningNodeData(CLUSTER_PROC.ordinal(), new ClusterFlags(notifyEnabled.get()));
+        dataBag.addJoiningNodeData(CLUSTER_PROC.ordinal(), new ClusterNodeFlags(notifyEnabled.get()));
     }
 
     /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
-        dataBag.addNodeSpecificData(CLUSTER_PROC.ordinal(), new ClusterFlags(notifyEnabled.get()));
+        dataBag.addNodeSpecificData(CLUSTER_PROC.ordinal(), new ClusterNodeFlags(notifyEnabled.get()));
 
         dataBag.addGridCommonData(CLUSTER_PROC.ordinal(), (Message)new ClusterIdAndTag(cluster.id(), cluster.tag()));
     }
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(GridDiscoveryData data) {
-        Map<UUID, ClusterFlags> nodeSpecData = data.nodeSpecificData();
+        Map<UUID, ClusterNodeFlags> nodeSpecData = data.nodeSpecificData();
 
         if (nodeSpecData != null) {
             Boolean lstFlag = findLastUpdateNotifierFlag(nodeSpecData.values());
@@ -512,10 +509,10 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
     /**
      * @param flags Flags collection to seek through.
      */
-    private Boolean findLastUpdateNotifierFlag(Collection<ClusterFlags> flags) {
+    private Boolean findLastUpdateNotifierFlag(Collection<ClusterNodeFlags> flags) {
         Boolean notifierFlag = null;
 
-        for (ClusterFlags flag : flags) {
+        for (ClusterNodeFlags flag : flags) {
             if (flag != null)
                 notifierFlag = flag.updateNotifierEnabled;
         }
