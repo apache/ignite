@@ -457,14 +457,14 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
     /** */
     private boolean isCacheObject(TypeMirror type) {
-        TypeMirror cacheObject = type("org.apache.ignite.internal.processors.cache.CacheObject");
-        return cacheObject != null && assignableFrom(type, cacheObject);
+        TypeMirror obj = type("org.apache.ignite.internal.processors.cache.CacheObject");
+        return obj != null && assignableFrom(type, obj);
     }
 
     /** */
     private boolean isMessage(TypeMirror type) {
-        TypeMirror message = type(MESSAGE_INTERFACE);
-        return message != null && assignableFrom(type, message);
+        TypeMirror msg = type(MESSAGE_INTERFACE);
+        return msg != null && assignableFrom(type, msg);
     }
 
     /** */
