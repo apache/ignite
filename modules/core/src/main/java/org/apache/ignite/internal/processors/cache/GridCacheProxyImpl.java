@@ -254,19 +254,10 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     @Override public GridCacheProxyImpl<K, V> withSkipStore() {
         CacheOperationContext prev = gate.enter(opCtx);
 
-        CacheOperationContext newOpCtx;
-
         try {
-            if (opCtx != null) {
-                if (opCtx.skipStore())
-                    return this;
-                else
-                    newOpCtx = opCtx.withSkipStore();
-            }
-            else
-                newOpCtx = CacheOperationContext.builder().skipStore(true).build();
+            CacheOperationContext newOpCtx = CacheOperationContext.of(opCtx).withSkipStore();
 
-            return new GridCacheProxyImpl<>(ctx, delegate, newOpCtx);
+            return newOpCtx == opCtx ? this : new GridCacheProxyImpl<>(ctx, delegate, newOpCtx);
         }
         finally {
             gate.leave(prev);
@@ -277,19 +268,10 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     @Override public IgniteInternalCache<K, V> withSkipReadThrough() {
         CacheOperationContext prev = gate.enter(opCtx);
 
-        CacheOperationContext newOpCtx;
-
         try {
-            if (opCtx != null) {
-                if (opCtx.skipReadThrough())
-                    return this;
-                else
-                    newOpCtx = opCtx.withSkipReadThrough();
-            }
-            else
-                newOpCtx = CacheOperationContext.builder().skipReadThrough(true).build();
+            CacheOperationContext newOpCtx = CacheOperationContext.of(opCtx).withSkipReadThrough();
 
-            return new GridCacheProxyImpl<>(ctx, delegate, newOpCtx);
+            return newOpCtx == opCtx ? this : new GridCacheProxyImpl<>(ctx, delegate, newOpCtx);
         }
         finally {
             gate.leave(prev);
@@ -317,19 +299,17 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
 
     /** {@inheritDoc} */
     @Override public <K1, V1> GridCacheProxyImpl<K1, V1> keepBinary() {
-        CacheOperationContext newOpCtx;
+        CacheOperationContext prev = gate.enter(opCtx);
 
-        if (opCtx != null) {
-            if (opCtx.isKeepBinary())
-                return (GridCacheProxyImpl<K1, V1>)this;
-            else
-                newOpCtx = opCtx.withKeepBinary();
+        try {
+            CacheOperationContext newOpCtx = CacheOperationContext.of(opCtx).withKeepBinary();
+
+            return newOpCtx == opCtx ? (GridCacheProxyImpl<K1, V1>)this : new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx,
+                (GridCacheAdapter<K1, V1>)delegate, newOpCtx);
         }
-        else
-            newOpCtx = CacheOperationContext.builder().keepBinary(true).build();
-
-        return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx,
-            (GridCacheAdapter<K1, V1>)delegate, newOpCtx);
+        finally {
+            gate.leave(prev);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1587,19 +1567,10 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     @Override public IgniteInternalCache<K, V> withNoRetries() {
         CacheOperationContext prev = gate.enter(opCtx);
 
-        CacheOperationContext newOpCtx;
-
         try {
-            if (opCtx != null) {
-                if (opCtx.noRetries())
-                    return this;
-                else
-                    newOpCtx = opCtx.withNoRetries();
-            }
-            else
-                newOpCtx = CacheOperationContext.builder().noRetries(true).build();
+            CacheOperationContext newOpCtx = CacheOperationContext.of(opCtx).withNoRetries();
 
-            return new GridCacheProxyImpl<>(ctx, delegate, newOpCtx);
+            return newOpCtx == opCtx ? this : new GridCacheProxyImpl<>(ctx, delegate, newOpCtx);
         }
         finally {
             gate.leave(prev);
@@ -1610,19 +1581,10 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     @Override public IgniteInternalCache<K, V> withKeepBinaryInInterceptor() {
         CacheOperationContext prev = gate.enter(opCtx);
 
-        CacheOperationContext newOpCtx;
-
         try {
-            if (opCtx != null) {
-                if (opCtx.keepBinaryInInterceptor())
-                    return this;
-                else
-                    newOpCtx = opCtx.withKeepBinaryInInterceptor();
-            }
-            else
-                newOpCtx = CacheOperationContext.builder().keepBinaryInInterceptor(true).build();
+            CacheOperationContext newOpCtx = CacheOperationContext.of(opCtx).withKeepBinaryInInterceptor();
 
-            return new GridCacheProxyImpl<>(ctx, delegate, newOpCtx);
+            return newOpCtx == opCtx ? this : new GridCacheProxyImpl<>(ctx, delegate, newOpCtx);
         }
         finally {
             gate.leave(prev);

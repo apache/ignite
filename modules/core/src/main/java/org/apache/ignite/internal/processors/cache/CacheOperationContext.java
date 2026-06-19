@@ -48,7 +48,7 @@ public class CacheOperationContext implements Serializable {
     /** Recovery flag. */
     private final boolean recovery;
 
-    /** Read-repair strategy.*/
+    /** Read-repair strategy. */
     private final @Nullable ReadRepairStrategy readRepairStrategy;
 
     /** Keep binary flag. */
@@ -168,7 +168,7 @@ public class CacheOperationContext implements Serializable {
 
     /** Context with read repair strategy. */
     public CacheOperationContext withReadRepairStrategy(ReadRepairStrategy strategy) {
-        if (readRepairStrategy() != null && readRepairStrategy() == strategy)
+        if (readRepairStrategy() == strategy)
             return this;
 
         return builder(this).readRepairStrategy(strategy).build();
