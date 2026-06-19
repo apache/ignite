@@ -19,7 +19,6 @@ package org.apache.ignite.internal.benchmarks.jmh.runner;
 
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
-import org.apache.ignite.internal.util.FeatureChecker;
 import org.apache.ignite.internal.util.typedef.F;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.results.RunResult;
@@ -27,13 +26,14 @@ import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.TimeValue;
 
+import static org.apache.ignite.internal.util.FeatureChecker.JAVA_17_OPTIONS;
+
 /**
  * JMH IDE benchmark runner configuration.
  */
 public class JmhIdeBenchmarkRunner {
     /** Default JVM arguments. */
-    private static final String[] DFLT_JVM_ARGS = F.concat(FeatureChecker.JAVA_17_OPTIONS.split("\n"),
-        "--add-opens=java.base/java.time=ALL-UNNAMED");
+    private static final String[] DFLT_JVM_ARGS = JAVA_17_OPTIONS.split("\n");
 
     /** Benchmark modes. */
     private Mode[] benchmarkModes;
