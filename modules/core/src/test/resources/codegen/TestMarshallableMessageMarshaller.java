@@ -18,6 +18,7 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.TestMarshallableMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -36,6 +37,7 @@ public class TestMarshallableMessageMarshaller implements MessageMarshaller<Test
     /** */
     public TestMarshallableMessageMarshaller(Marshaller marshaller) {
         this.marshaller = marshaller;
+
     }
 
     /** */

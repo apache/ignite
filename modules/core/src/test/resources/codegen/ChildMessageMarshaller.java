@@ -19,7 +19,9 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.ChildMessage;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 
 /**

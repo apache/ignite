@@ -17,12 +17,28 @@
 
 package org.apache.ignite.internal;
 
+import java.lang.Boolean;
+import java.lang.Byte;
+import java.lang.Character;
+import java.lang.Double;
+import java.lang.Float;
+import java.lang.Integer;
+import java.lang.Long;
+import java.lang.Short;
+import java.lang.String;
+import java.util.BitSet;
 import java.util.Collection;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.TestCollectionsMessage;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 
 /**
