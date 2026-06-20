@@ -513,6 +513,11 @@ public class DistributedProcess<I extends Message, R extends Message> {
         /**
          * Cluster version finalization complete phase.
          */
-        RU_COMPLETE_VERSION_FINALIZATION
+        RU_COMPLETE_VERSION_FINALIZATION,
+
+        /**
+         * Cluster version finalization abort process.
+         */
+        RU_ABORT_VERSION_FINALIZATION,
     }
 }

@@ -22,8 +22,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -36,15 +36,17 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProcessor.RollingUpgradeState;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.AbstractRollingUpgradeTest;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeature;
+import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.lang.ConsumerX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -52,13 +54,20 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
 import static org.apache.ignite.internal.processors.rollingupgrade.feature.TestIgniteReleaseFeatures_2_19_2.VER_2_19_2_ID_1_FEATURE;
-import static org.apache.ignite.internal.processors.security.NodeSecurityContextPropagationTest.discoveryRingMessageWorker;
 import static org.apache.ignite.internal.processors.security.NodeSecurityContextPropagationTest.discoveryRingMessageWorkerQueue;
 import static org.apache.ignite.internal.processors.security.NodeSecurityContextPropagationTest.wrapRingMessageWorkerQueue;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
 public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTest {
+    /** */
+    private static final String NODE_IS_INCOMPATIBLE_WIH_RU_ERR =
+        "The joining node version is incompatible with the current state of the cluster version Rolling Upgrade being in progress";
+
+    /** */
+    private static final String MULTIPLE_VER_IN_TOP_ERR =
+        "Cluster version finalization failed. The topology contains nodes running multiple different versions";
+
     /** */
     @Test
     public void testVersionUpgradeDisabledSingleServer() throws Exception {
@@ -140,16 +149,14 @@ public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTes
 
         checkVersionUpgradeInProgress(TEST_DEFAULT_VER, null);
 
-        checkJoinFailed(5, "2.18.0",
-            "The joining node is incompatible with the current state of the cluster version rolling upgrade being in progress");
+        checkJoinFailed(5, "2.18.0", NODE_IS_INCOMPATIBLE_WIH_RU_ERR);
 
         upgradeNodeVersion(0, "2.19.1");
         upgradeNodeVersion(2, "2.19.1");
 
         checkVersionUpgradeInProgress(TEST_DEFAULT_VER, "2.19.1");
 
-        checkJoinFailed(5, "2.19.2",
-            "The joining node is incompatible with the current state of the cluster version rolling upgrade being in progress");
+        checkJoinFailed(5, "2.19.2", NODE_IS_INCOMPATIBLE_WIH_RU_ERR);
 
         restartNode(3);
         restartNode(4);
@@ -173,17 +180,11 @@ public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTes
 
         upgradeNodeVersion(1, "2.19.2");
 
-        checkVersionFinalizationFailed(
-            1,
-            "Cluster version finalization failed. The topology contains nodes running multiple different versions"
-        );
+        checkVersionFinalizationFailed(1, MULTIPLE_VER_IN_TOP_ERR);
 
         upgradeNodeVersion(0, "2.19.2");
 
-        checkVersionFinalizationFailed(
-            1,
-            "Cluster version finalization failed. The topology contains nodes running multiple different versions"
-        );
+        checkVersionFinalizationFailed(1, MULTIPLE_VER_IN_TOP_ERR);
 
         upgradeNodeVersion(2, "2.19.2");
 
@@ -244,19 +245,15 @@ public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTes
         checkJoinSuccess(3, TEST_DEFAULT_VER, false);
         checkJoinSuccess(4, TEST_DEFAULT_VER, true);
 
-        checkUpgradeFailed(2, "2.19.3",
-            "The joining node is incompatible with the current state of the cluster version rolling upgrade being in progress");
-        checkUpgradeFailed(1, "2.19.3",
-            "The joining node is incompatible with the current state of the cluster version rolling upgrade being in progress");
+        checkUpgradeFailed(2, "2.19.3", NODE_IS_INCOMPATIBLE_WIH_RU_ERR);
+        checkUpgradeFailed(1, "2.19.3", NODE_IS_INCOMPATIBLE_WIH_RU_ERR);
 
         upgradeNodeVersion(3, "2.19.2");
         upgradeNodeVersion(4, "2.19.2");
         checkJoinSuccess(0, "2.19.3", false);
 
-        checkUpgradeFailed(2, TEST_DEFAULT_VER,
-            "The joining node is incompatible with the current state of the cluster version rolling upgrade being in progress");
-        checkUpgradeFailed(1, TEST_DEFAULT_VER,
-            "The joining node is incompatible with the current state of the cluster version rolling upgrade being in progress");
+        checkUpgradeFailed(2, TEST_DEFAULT_VER, NODE_IS_INCOMPATIBLE_WIH_RU_ERR);
+        checkUpgradeFailed(1, TEST_DEFAULT_VER, NODE_IS_INCOMPATIBLE_WIH_RU_ERR);
 
         restartNode(1);
         restartNode(2);
@@ -306,10 +303,8 @@ public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTes
 
         upgradeNodeVersion(0, "2.19.3");
 
-        checkUpgradeFailed(1, "2.19.2",
-            "The joining node is incompatible with the current state of the cluster version rolling upgrade being in progress");
-        checkUpgradeFailed(2, "2.19.2",
-            "The joining node is incompatible with the current state of the cluster version rolling upgrade being in progress");
+        checkUpgradeFailed(1, "2.19.2", NODE_IS_INCOMPATIBLE_WIH_RU_ERR);
+        checkUpgradeFailed(2, "2.19.2", NODE_IS_INCOMPATIBLE_WIH_RU_ERR);
 
         upgradeNodeVersion(1, "2.19.3");
         upgradeNodeVersion(2, "2.19.3");
@@ -413,7 +408,7 @@ public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTes
 
     /** */
     @Test
-    public void testConcurrentNodeJoinAndFinalization() throws Exception {
+    public void testNodeJoinDuringFinalization() throws Exception {
         startCluster();
 
         ru(1).enableVersionUpgrade();
@@ -441,7 +436,9 @@ public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTes
     /** */
     @Test
     public void testValidatedJoiningNodesAccountedDuringFinalization() throws Exception {
-        startCluster();
+        wrapRingMessageWorkerQueue(startGrid(0, TEST_DEFAULT_VER));
+        startGrid(1, TEST_DEFAULT_VER);
+        startClientGrid(2, TEST_DEFAULT_VER);
 
         ru(1).enableVersionUpgrade();
 
@@ -453,22 +450,21 @@ public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTes
 
             assertTrue(TestRollingUpgradeProcessor.nodeJoinValidationCompletedLatch.await(getTestTimeout(), MILLISECONDS));
 
+            discoveryRingMessageWorkerQueue(grid(0)).block();
+
             IgniteInternalFuture<Object> finalizeFut = GridTestUtils.runAsync(() -> finalizeClusterVersion(1, TEST_DEFAULT_VER));
 
-            LinkedBlockingDeque<TcpDiscoveryAbstractMessage> discoMsgQueue = U.field(discoveryRingMessageWorker(grid(0)), "queue");
-
-            assertTrue(waitForCondition(
-                () -> discoMsgQueue.stream().anyMatch(m ->
-                    m instanceof TcpDiscoveryCustomEventMessage && ((TcpDiscoveryCustomEventMessage)m).message() instanceof InitMessage),
-                getTestTimeout()));
+            waitForBlockedDiscoveryMessages(grid(0), 1, InitMessage.class);
 
             TestRollingUpgradeProcessor.nodeJoinUnblockedLatch.countDown();
+
+            discoveryRingMessageWorkerQueue(grid(0)).unblock();
 
             GridTestUtils.assertThrowsAnyCause(
                 log,
                 () -> finalizeFut.get(getTestTimeout(), MILLISECONDS),
                 IgniteCheckedException.class,
-                "Cluster version finalization failed. The topology contains nodes running multiple different versions"
+                MULTIPLE_VER_IN_TOP_ERR
             );
 
             startFut.get(getTestTimeout(), MILLISECONDS);
@@ -505,7 +501,7 @@ public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTes
                 log,
                 () -> finalizeFut.get(getTestTimeout(), MILLISECONDS),
                 IgniteCheckedException.class,
-                "Cluster version finalization failed. The topology contains nodes running multiple different versions"
+                MULTIPLE_VER_IN_TOP_ERR
             );
 
             TestNodeValidationFailedEventListener.nodeValidationFailedEventUnblockedLatch.countDown();
@@ -544,11 +540,11 @@ public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTes
         try {
             IgniteInternalFuture<Object> firstFut = GridTestUtils.runAsync(() -> finalizeClusterVersion(1, TEST_DEFAULT_VER));
 
-            assertTrue(waitForCondition(() -> distributedProcessQueuedMessageCountMatches(grid(0), 1), getTestTimeout()));
+            waitForBlockedDiscoveryMessages(grid(0), 1, InitMessage.class);
 
             IgniteInternalFuture<Object> secondFut = GridTestUtils.runAsync(() -> finalizeClusterVersion(3, TEST_DEFAULT_VER));
 
-            assertTrue(waitForCondition(() -> distributedProcessQueuedMessageCountMatches(grid(0), 2), getTestTimeout()));
+            waitForBlockedDiscoveryMessages(grid(0), 2, InitMessage.class);
 
             UUID activeFinalizeProcId = extractActiveFinalizeProcessId(1);
 
@@ -602,7 +598,7 @@ public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTes
                 log,
                 () -> finalizeFut.get(getTestTimeout(), MILLISECONDS),
                 IgniteException.class,
-                "Client node is disconnected. Operation result is undefined");
+                "Client node has disconnected");
 
             assertTrue(waitForCondition(() -> !ru(1).isVersionUpgradeEnabled(), getTestTimeout()));
         }
@@ -672,16 +668,299 @@ public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTes
     }
 
     /** */
-    private boolean distributedProcessQueuedMessageCountMatches(IgniteEx ignite, int expCnt) {
+    @Test
+    public void testAbortNoFinalizationInProgress() throws Exception {
+        startCluster();
+
+        ru(1).abortClusterVersionFinalization();
+
+        ru(2).enableVersionUpgrade();
+
+        ru(0).abortClusterVersionFinalization();
+
+        startGrid(3);
+
+        finalizeClusterVersion(2, TEST_DEFAULT_VER);
+    }
+
+    /** */
+    @Test
+    public void testConcurrentAbortAndPrepareFinalization() throws Exception {
+        wrapRingMessageWorkerQueue(startGrid(0, TEST_DEFAULT_VER));
+        startGrid(1, TEST_DEFAULT_VER);
+        startClientGrid(2, TEST_DEFAULT_VER);
+
+        ru(2).enableVersionUpgrade();
+
+        discoveryRingMessageWorkerQueue(grid(0)).block();
+
+        IgniteInternalFuture<Object> abortFut = GridTestUtils.runAsync(() -> ru(0).abortClusterVersionFinalization());
+
+        waitForBlockedDiscoveryMessages(grid(0), 1, InitMessage.class);
+
+        IgniteInternalFuture<Object> finalizeFut = GridTestUtils.runAsync(() -> ru(1).finalizeClusterVersion());
+
+        waitForBlockedDiscoveryMessages(grid(0), 2, InitMessage.class);
+
+        discoveryRingMessageWorkerQueue(grid(0)).unblock();
+
+        abortFut.get(getTestTimeout(), MILLISECONDS);
+        finalizeFut.get(getTestTimeout(), MILLISECONDS);
+    }
+
+    /** */
+    @Test
+    public void testAbortAfterFinalizationPrepare() throws Exception {
+        wrapRingMessageWorkerQueue(startGrid(0, TEST_DEFAULT_VER));
+        startGrid(1, TEST_DEFAULT_VER);
+        startClientGrid(2, TEST_DEFAULT_VER);
+
+        ru(2).enableVersionUpgrade();
+
+        spi(grid(1)).blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
+
+        IgniteInternalFuture<Object> finalizeFut = GridTestUtils.runAsync(() -> ru(1).finalizeClusterVersion());
+
+        spi(grid(1)).waitForBlocked();
+
+        discoveryRingMessageWorkerQueue(grid(0)).block();
+
+        IgniteInternalFuture<Object> abortFut = GridTestUtils.runAsync(() -> ru(2).abortClusterVersionFinalization());
+
+        waitForBlockedDiscoveryMessages(grid(0), 1, InitMessage.class);
+
+        discoveryRingMessageWorkerQueue(grid(0)).unblock();
+        spi(grid(1)).stopBlock();
+
+        abortFut.get(getTestTimeout(), MILLISECONDS);
+
+        GridTestUtils.assertThrowsAnyCause(
+            log,
+            () -> finalizeFut.get(getTestTimeout(), MILLISECONDS),
+            IgniteException.class,
+            "Operation has been aborted by administrator");
+
+        checkVersionUpgradeInProgress(TEST_DEFAULT_VER, null);
+
+        startGrid(3, TEST_DEFAULT_VER);
+
+        finalizeClusterVersion(2, TEST_DEFAULT_VER);
+    }
+
+    /** */
+    @Test
+    public void testAbortBeforeFinalizationComplete() throws Exception {
+        wrapRingMessageWorkerQueue(startGrid(0, TEST_DEFAULT_VER));
+        startGrid(1, TEST_DEFAULT_VER);
+        startClientGrid(2, TEST_DEFAULT_VER);
+
+        ru(2).enableVersionUpgrade();
+
+        spi(grid(1)).blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
+
+        IgniteInternalFuture<Object> finalizeFut = GridTestUtils.runAsync(() -> ru(1).finalizeClusterVersion());
+
+        spi(grid(1)).waitForBlocked();
+
+        UUID activeFinalizeProcId = extractActiveFinalizeProcessId(1);
+
+        CountDownLatch finalizeCompleteStartedLatch = new CountDownLatch(1);
+        AtomicReference<TcpDiscoveryAbstractMessage> finalizeCompleteStartMsg = new AtomicReference<>();
+
+        discoveryRingMessageWorkerQueue(grid(0)).startMessageIntercepting(m -> {
+            if ((m instanceof TcpDiscoveryCustomEventMessage customMsg)
+                && (customMsg.message() instanceof InitMessage<?> initMsg)
+                && initMsg.processId().equals(activeFinalizeProcId)
+            ) {
+                finalizeCompleteStartMsg.set(m);
+                finalizeCompleteStartedLatch.countDown();
+
+                return false;
+            }
+
+            return true;
+        });
+
+        spi(grid(1)).stopBlock();
+
+        assertTrue(finalizeCompleteStartedLatch.await(getTestTimeout(), MILLISECONDS));
+
+        discoveryRingMessageWorkerQueue(grid(0)).block();
+
+        IgniteInternalFuture<Object> abortFut = GridTestUtils.runAsync(() -> ru(2).abortClusterVersionFinalization());
+
+        waitForBlockedDiscoveryMessages(grid(0), 1, InitMessage.class);
+
+        discoveryRingMessageWorkerQueue(grid(0)).addLast(finalizeCompleteStartMsg.get());
+
+        discoveryRingMessageWorkerQueue(grid(0)).unblock();
+
+        abortFut.get(getTestTimeout(), MILLISECONDS);
+
+        GridTestUtils.assertThrowsAnyCause(
+            log,
+            () -> finalizeFut.get(getTestTimeout(), MILLISECONDS),
+            IgniteException.class,
+            "Operation has been aborted by administrator");
+
+        checkVersionUpgradeInProgress(TEST_DEFAULT_VER, null);
+
+        startGrid(3, TEST_DEFAULT_VER);
+
+        finalizeClusterVersion(2, TEST_DEFAULT_VER);
+    }
+
+    /** */
+    @Test
+    public void testAbortedAfterFinalizationComplete() throws Exception {
+        wrapRingMessageWorkerQueue(startGrid(0, TEST_DEFAULT_VER));
+        startGrid(1, TEST_DEFAULT_VER);
+        startGrid(2, TEST_DEFAULT_VER);
+        startClientGrid(3, TEST_DEFAULT_VER);
+
+        ru(2).enableVersionUpgrade();
+
+        spi(grid(1)).blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
+
+        IgniteInternalFuture<Object> finalizeFut = GridTestUtils.runAsync(() -> ru(1).finalizeClusterVersion());
+
+        spi(grid(1)).waitForBlocked();
+
+        discoveryRingMessageWorkerQueue(grid(0)).block();
+
+        spi(grid(1)).stopBlock();
+
+        waitForBlockedDiscoveryMessages(grid(0), 1, FullMessage.class);
+
+        spi(grid(1)).blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
+
+        discoveryRingMessageWorkerQueue(grid(0)).unblock();
+
+        spi(grid(1)).waitForBlocked();
+
+        IgniteInternalFuture<Object> abortFut = GridTestUtils.runAsync(() -> ru(2).abortClusterVersionFinalization());
+
+        spi(grid(1)).stopBlock();
+
+        abortFut.get(getTestTimeout(), MILLISECONDS);
+
+        finalizeFut.get(getTestTimeout(), MILLISECONDS);
+
+        checkVersionUpgradeInactive(TEST_DEFAULT_VER);
+
+        ru(2).enableVersionUpgrade();
+
+        startGrid(4, TEST_DEFAULT_VER);
+
+        finalizeClusterVersion(2, TEST_DEFAULT_VER);
+    }
+
+    /** */
+    @Test
+    public void testAbortedAfterFinalizationFinished() throws Exception {
+        startCluster();
+
+        ru(2).enableVersionUpgrade();
+
+        finalizeClusterVersion(2, TEST_DEFAULT_VER);
+
+        ru(1).abortClusterVersionFinalization();
+
+        ru(2).enableVersionUpgrade();
+
+        startGrid(3, TEST_DEFAULT_VER);
+
+        finalizeClusterVersion(2, TEST_DEFAULT_VER);
+    }
+
+    /** */
+    @Test
+    public void testConcurrentNodeJoinAndFinalization() throws Exception {
+        wrapRingMessageWorkerQueue(startGrid(0, TEST_DEFAULT_VER));
+        startGrid(1, TEST_DEFAULT_VER);
+        startClientGrid(2, TEST_DEFAULT_VER);
+
+        ru(1).enableVersionUpgrade();
+
+        TestRollingUpgradeProcessor.nodeJoinValidationCompletedLatch = new CountDownLatch(1);
+        TestRollingUpgradeProcessor.nodeJoinUnblockedLatch = new CountDownLatch(1);
+
+        try {
+            IgniteInternalFuture<IgniteEx> startFut = GridTestUtils.runAsync(() -> startGrid(3, TEST_DEFAULT_VER));
+
+            assertTrue(TestRollingUpgradeProcessor.nodeJoinValidationCompletedLatch.await(getTestTimeout(), MILLISECONDS));
+
+            discoveryRingMessageWorkerQueue(grid(0)).block();
+
+            IgniteInternalFuture<Object> finalizeFut = GridTestUtils.runAsync(() -> finalizeClusterVersion(1, TEST_DEFAULT_VER));
+
+            waitForBlockedDiscoveryMessages(grid(0), 1, InitMessage.class);
+
+            TestRollingUpgradeProcessor.nodeJoinUnblockedLatch.countDown();
+
+            waitForBlockedDiscoveryMessages(grid(0), 1, TcpDiscoveryNodeAddedMessage.class);
+
+            discoveryRingMessageWorkerQueue(grid(0)).unblock();
+
+            finalizeFut.get(getTestTimeout(), MILLISECONDS);
+
+            startFut.get(getTestTimeout(), MILLISECONDS);
+        }
+        finally {
+            TestRollingUpgradeProcessor.nodeJoinUnblockedLatch.countDown();
+        }
+    }
+
+    /** */
+    @Test
+    public void testConcurrentFinalizationAndNodeJoin() throws Exception {
+        wrapRingMessageWorkerQueue(startGrid(0, TEST_DEFAULT_VER));
+        startGrid(1, TEST_DEFAULT_VER);
+        startClientGrid(2, TEST_DEFAULT_VER);
+
+        ru(1).enableVersionUpgrade();
+
+        discoveryRingMessageWorkerQueue(grid(0)).block();
+
+        IgniteInternalFuture<Object> finalizeFut = GridTestUtils.runAsync(() -> ru(1).finalizeClusterVersion());
+
+        waitForBlockedDiscoveryMessages(grid(0), 1, InitMessage.class);
+
+        IgniteInternalFuture<IgniteEx> startFut = GridTestUtils.runAsync(() -> startGrid(3, TEST_DEFAULT_VER));
+
+        waitForBlockedDiscoveryMessages(grid(0), 1, TcpDiscoveryJoinRequestMessage.class);
+
+        discoveryRingMessageWorkerQueue(grid(0)).unblock();
+
+        finalizeFut.get(getTestTimeout(), MILLISECONDS);
+
+        GridTestUtils.assertThrowsAnyCause(
+            log,
+            () -> startFut.get(getTestTimeout(), MILLISECONDS),
+            IgniteSpiException.class,
+            "Node joins are not allowed during cluster version finalization"
+        );
+    }
+
+    /** */
+    private void waitForBlockedDiscoveryMessages(
+        IgniteEx ignite,
+        int expCnt,
+        Class<?> msgCls
+    ) throws Exception {
+        assertTrue(waitForCondition(() -> queuedDiscoveryMessageCountMatches(ignite, expCnt, msgCls), getTestTimeout()));
+    }
+
+    /** */
+    private boolean queuedDiscoveryMessageCountMatches(IgniteEx ignite, int expCnt, Class<?> msgCls) {
         int cnt = 0;
 
         for (TcpDiscoveryAbstractMessage msg : discoveryRingMessageWorkerQueue(ignite)) {
-            if (!(msg instanceof TcpDiscoveryCustomEventMessage))
-                continue;
+            Class<?> queuedMsgCls = (msg instanceof TcpDiscoveryCustomEventMessage customMsg)
+                ? customMsg.message().getClass()
+                : msg.getClass();
 
-            DiscoverySpiCustomMessage customMsg = ((TcpDiscoveryCustomEventMessage)msg).message();
-
-            if (customMsg instanceof InitMessage)
+            if (msgCls.isAssignableFrom(queuedMsgCls))
                 cnt++;
         }
 

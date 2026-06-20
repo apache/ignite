@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.rollingupgrade;
 
-import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -26,6 +25,7 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
@@ -56,6 +56,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_VALIDATION_FAILED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.ROLLING_UPGRADE_PROC;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_FEATURES;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RU_ABORT_VERSION_FINALIZATION;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RU_COMPLETE_VERSION_FINALIZATION;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RU_ENABLE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RU_PREPARE_VERSION_FINALIZATION;
@@ -71,6 +72,9 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
     /** */
     private final ClusterVersionFinalizationProcess finalizeProc;
+
+    /** */
+    private final ClusterVersionFinalizationAbortProcess finalizeAbortProc;
 
     /** */
     private final Object topGuard = new Object();
@@ -98,6 +102,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
         enableProc = new ClusterVersionUpgradeEnableProcess();
         finalizeProc = new ClusterVersionFinalizationProcess();
+        finalizeAbortProc = new ClusterVersionFinalizationAbortProcess();
         featureMgr = new IgniteFeatureManager(ctx, locVerFeaturesProv);
     }
 
@@ -144,6 +149,19 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
         if (log.isInfoEnabled())
             log.info("Cluster version was successfully finalized [activeLogicalVer=" + clusterLogicalVersion() + ']');
+    }
+
+    /** */
+    public void abortClusterVersionFinalization() throws IgniteCheckedException {
+        ctx.security().authorize(ADMIN_ROLLING_UPGRADE);
+
+        if (!isVerUpgradeEnabled)
+            return;
+
+        finalizeAbortProc.start().get();
+
+        if (log.isInfoEnabled())
+            log.info("Cluster version finalization has been aborted");
     }
 
     /** */
@@ -268,8 +286,11 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
-        enableProc.onDisconnected();
-        finalizeProc.onDisconnected();
+        String errMsg = "Client node has disconnected";
+
+        enableProc.abort(errMsg);
+        finalizeProc.abort(errMsg);
+        finalizeAbortProc.abort(errMsg);
     }
 
     /** */
@@ -386,7 +407,10 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
         /** */
         private final DistributedProcess<Message, Message> completePhase;
 
-        /** */
+        /**
+         * We rely on the guarantee that {@code activeProcId} is only accessed from the Discovery thread.
+         * Therefore, synchronization is not required.
+         */
         @Nullable private volatile UUID activeProcId;
 
         /** */
@@ -423,8 +447,6 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
             if (err != null)
                 U.error(log, "Cluster version finalization process failed [procId=" + reqId + ']', err);
 
-            // We rely on the guarantee that {@code activeProcId} is only accessed from the Discovery thread, just like
-            // the current method. Therefore, synchronization is not required.
             if (reqId.equals(activeProcId))
                 activeProcId = null;
 
@@ -432,10 +454,18 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
         }
 
         /** {@inheritDoc} */
-        @Override protected void onDisconnected() {
-            activeProcId = null;
+        @Override protected void abort(String reasonMsg) {
+            U.warn(log, "Cluster version finalization process has been aborted [procId=" + activeProcId + ", reason=" + reasonMsg + ']');
 
-            super.onDisconnected();
+            activeProcId = null;
+            isNodeFenceActive = false;
+
+            super.abort(reasonMsg);
+        }
+
+        /** */
+        boolean isInProgress() {
+            return isVerUpgradeEnabled && activeProcId != null;
         }
 
         /** */
@@ -444,8 +474,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
                 U.error(log, "Failed to handle cluster version finalization request. Another process is " +
                     "already in progress [curProcId=" + reqId + ", activeProcId=" + activeProcId + ']');
 
-                return new GridFinishedFuture<>(new IgniteCheckedException(
-                    "Cluster version finalization process is already in progress"));
+                return new GridFinishedFuture<>(new IgniteException("Cluster version finalization process is already in progress"));
             }
 
             activeProcId = reqId;
@@ -454,7 +483,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
                 Set<IgniteProductVersion> distinctNodeVersions = distinctClusterProductVersions();
 
                 if (distinctNodeVersions.size() > 1) {
-                    return new GridFinishedFuture<>(new IgniteCheckedException(
+                    return new GridFinishedFuture<>(new IgniteException(
                         "Cluster version finalization failed. The topology contains nodes running multiple different" +
                             " versions. Retry the operation after all cluster nodes are upgraded to the same version " +
                             "[distinctNodeVersions=" + distinctNodeVersions + "]"
@@ -475,12 +504,23 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
                 finishProcess(reqId, firstError(errors));
             }
-            else if (U.isLocalNodeCoordinator(ctx.discovery()))
+            else if (reqId.equals(activeProcId) && U.isLocalNodeCoordinator(ctx.discovery()))
                 completePhase.start(reqId, null);
         }
 
         /** */
-        private IgniteInternalFuture<Message> executeCompletePhase(UUID ignored, Message req) {
+        private IgniteInternalFuture<Message> executeCompletePhase(UUID reqId, Message req) {
+            if (!reqId.equals(activeProcId)) {
+                // This condition is guaranteed to occur only when cluster version finalization is aborted
+                // after the prepare phase has completed successfully but before the completion phase begins.
+                // Aborting cluster version finalization is mutually exclusive with the finalization completion
+                // phase and is applied consistently across all cluster nodes.
+                return new GridFinishedFuture<>(new IgniteException(
+                    "Failed to complete the cluster version finalization operation." +
+                        " The operation may have been aborted by an administrator. Retry the operation if possible"
+                ));
+            }
+
             featureMgr.activateLocalVersionFeatures();
 
             isVerUpgradeEnabled = false;
@@ -497,39 +537,40 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
     }
 
     /** */
-    private static class RollingUpgradeNodeData implements Serializable {
+    private class ClusterVersionFinalizationAbortProcess extends AbstractProcess {
         /** */
-        private static final long serialVersionUID = 0L;
+        private final DistributedProcess<Message, Message> distributedProc;
 
         /** */
-        private final boolean isVersionUpgradeEnabled;
+        public ClusterVersionFinalizationAbortProcess() {
+            distributedProc = new DistributedProcess<>(
+                ctx,
+                RU_ABORT_VERSION_FINALIZATION,
+                this::execute,
+                this::finish,
+                (reqId, req) -> new InitMessage<>(reqId, RU_ABORT_VERSION_FINALIZATION, req, true));
+        }
 
-        /** */
-        private final IgniteProductFeatures activeFeatures;
+        /** {@inheritDoc} */
+        @Override protected UUID startInternal() {
+            UUID reqId = UUID.randomUUID();
 
-        /** */
-        private final boolean isNodeFenceActive;
+            distributedProc.start(reqId, null);
 
-        /** */
-        private RollingUpgradeNodeData(boolean isVersionUpgradeEnabled, boolean isNodeFenceActive, IgniteProductFeatures activeFeatures) {
-            this.isVersionUpgradeEnabled = isVersionUpgradeEnabled;
-            this.isNodeFenceActive = isNodeFenceActive;
-            this.activeFeatures = activeFeatures;
+            return reqId;
         }
 
         /** */
-        private boolean isVersionUpgradeEnabled() {
-            return isVersionUpgradeEnabled;
+        private IgniteInternalFuture<Message> execute(UUID ignored, Message req) {
+            if (finalizeProc.isInProgress())
+                finalizeProc.abort("Operation has been aborted by administrator");
+
+            return new GridFinishedFuture<>();
         }
 
         /** */
-        private boolean isNodeFenceActive() {
-            return isNodeFenceActive;
-        }
-
-        /** */
-        private IgniteProductFeatures activeFeatures() {
-            return activeFeatures;
+        private void finish(UUID reqId, Map<UUID, Message> responses, Map<UUID, Throwable> errors) {
+            finishProcess(reqId, firstError(errors));
         }
     }
 

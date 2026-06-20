@@ -57,11 +57,11 @@ abstract class AbstractProcess {
     }
 
     /** */
-    protected synchronized void onDisconnected() {
+    protected synchronized void abort(String reasonMsg) {
         locInitOpId = null;
 
         if (locInitOpFut != null) {
-            locInitOpFut.onDone(new IgniteException("Client node is disconnected. Operation result is undefined"));
+            locInitOpFut.onDone(new IgniteException("Operation was aborted [reason=" + reasonMsg + ']'));
 
             locInitOpFut = null;
         }
