@@ -1968,8 +1968,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         A.ensure(!inclDs || dump, "Data structures can't be written into snapshot");
         A.ensure(!configOnly || dump, "Config only supported only for dump");
 
-        ClusterSnapshotFuture curClusterSnpFut = null;
-
         try {
             cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
 
