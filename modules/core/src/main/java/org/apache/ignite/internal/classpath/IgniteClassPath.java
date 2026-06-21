@@ -19,7 +19,9 @@ package org.apache.ignite.internal.classpath;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -32,6 +34,10 @@ public class IgniteClassPath implements Serializable {
 
     /** */
     private UUID id;
+
+    /** */
+    // TODO: remove on OnNodeLeft event.
+    private Set<UUID> deployedOnNodes;
 
     /** */
     private String name;
@@ -52,12 +58,14 @@ public class IgniteClassPath implements Serializable {
      */
     public IgniteClassPath(
         UUID id,
+        Set<UUID> deployedOnNodes,
         String name,
         String[] files,
         long[] lengths,
         IgniteClassPathState state
     ) {
         this.id = id;
+        this.deployedOnNodes = deployedOnNodes;
         this.name = name;
         this.files = files;
         this.lengths = lengths;
@@ -68,7 +76,16 @@ public class IgniteClassPath implements Serializable {
      * @param state New state.
      */
     IgniteClassPath newState(IgniteClassPathState state) {
-        return new IgniteClassPath(id, name, files, lengths, state);
+        return new IgniteClassPath(id, deployedOnNodes, name, files, lengths, state);
+    }
+
+    IgniteClassPath addDeployeOnNode(UUID locNode) {
+        Set<UUID> deployedOnNodes0 = new HashSet<>(deployedOnNodes);
+
+        deployedOnNodes0.add(locNode);
+
+        return new IgniteClassPath(id, deployedOnNodes0, name, files, lengths, state);
+
     }
 
     /** */
@@ -79,6 +96,11 @@ public class IgniteClassPath implements Serializable {
     /** */
     public UUID id() {
         return id;
+    }
+
+    /** */
+    public Set<UUID> deployedOnNodes() {
+        return deployedOnNodes;
     }
 
     /** */

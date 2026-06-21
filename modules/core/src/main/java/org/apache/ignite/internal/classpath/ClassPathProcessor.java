@@ -21,10 +21,18 @@ import java.io.File;
 import java.io.RandomAccessFile;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Objects;
+import java.util.Queue;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -37,6 +45,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.classpath.IgniteClassPathState.NEW;
+import static org.apache.ignite.internal.classpath.IgniteClassPathState.READY;
 
 /**
  * TODO:
@@ -49,13 +58,13 @@ import static org.apache.ignite.internal.classpath.IgniteClassPathState.NEW;
  */
 public class ClassPathProcessor extends GridProcessorAdapter {
     /** Prefix for metastorage keys. */
-    private static final String METASTORE_PREFIX = "icp.";
+    static final String METASTORE_PREFIX = "icp.";
 
     /** Handles download requests for {@link IgniteClassPath} files. */
-    private final ClassPathFilesTransmissionHandler icpFilesHnd;
+    final ClassPathFilesTransmissionHandler icpFilesHnd;
 
-    /** Distributed process that deploys classpath files to all nodes. */
-    private final DeployToAllProcess deployToAllProc;
+    /** */
+    private final ConcurrentMap<UUID, Queue<ClassPathTask<?>>> icpTasks = new ConcurrentHashMap<>();
 
     /**
      * @param ctx Kernal context.
@@ -64,18 +73,18 @@ public class ClassPathProcessor extends GridProcessorAdapter {
         super(ctx);
 
         icpFilesHnd = new ClassPathFilesTransmissionHandler(ctx);
-        deployToAllProc = new DeployToAllProcess(ctx, icpFilesHnd);
     }
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         icpFilesHnd.start();
+
+        ctx.distributedMetastorage().listen(key -> key.startsWith(METASTORE_PREFIX), new ClassPathChangeListener(ctx));
     }
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
         icpFilesHnd.stop();
-        deployToAllProc.stop();
     }
 
     /**
@@ -94,7 +103,7 @@ public class ClassPathProcessor extends GridProcessorAdapter {
         for (String file : files)
             ensureFilename(file);
 
-        IgniteClassPath icp = new IgniteClassPath(UUID.randomUUID(), name, files, lengths, NEW);
+        IgniteClassPath icp = new IgniteClassPath(UUID.randomUUID(), Set.of(ctx.localNodeId()), name, files, lengths, NEW);
 
         File root = ctx.pdsFolderResolver().fileTree().classPathRoot(name);
 
@@ -108,6 +117,13 @@ public class ClassPathProcessor extends GridProcessorAdapter {
         log.info("New IgniteClasspath created [root = " + root + ", icp=" + icp + ']');
 
         return icp.id();
+    }
+
+    /** */
+    public void makeReady(UUID icpId) throws IgniteCheckedException {
+        IgniteClassPath icp = fromMetastorage(icpId, NEW, ctx);
+
+        casToMetastorageAsync(icp, icp.newState(READY)).get();
     }
 
     /**
@@ -206,18 +222,70 @@ public class ClassPathProcessor extends GridProcessorAdapter {
         }
     }
 
-    /**
-     * Deploy {@link IgniteClassPath} to all nodes.
-     * @param icpId ClassPath id.
-     * @return Future for process result.
-     */
-    public IgniteInternalFuture<?> deployToAll(@Nullable UUID icpId) {
-        return deployToAllProc.start(icpId);
+    /** */
+    <R> void addClassPathTask(IgniteClassPath icp, ClassPathTask<R> task) {
+        UUID icpId = icp.id();
+
+        task.result().listen(doneFut -> {
+            if (task.result().error() == null)
+                log.info("IgniteClassPath task done [task=" + task.name() + ", icp=" + icp + ", res=" + task.result().result() + ']');
+            else
+                log.warning("IgniteClassPath task failure [task=" + task.name() + ", icp=" + icp + ']', task.result().error());
+
+            icpTasks.compute(icpId, (ignored, tasks) -> {
+                if (tasks == null)
+                    tasks = new ConcurrentLinkedQueue<>();
+
+                if (tasks.peek().result() == doneFut) {
+                    tasks.poll();
+
+                    startAsync(tasks.peek());
+                }
+                else
+                    tasks.removeIf(t -> t == task);
+
+                return tasks;
+            });
+        });
+
+        icpTasks.compute(icpId, (ignored, tasks) -> {
+            if (tasks == null)
+                tasks = new ConcurrentLinkedQueue<>();
+
+            while (!F.isEmpty(tasks) && tasks.peek().result().isDone())
+                tasks.poll();
+
+            boolean isFirst = F.isEmpty(tasks);
+
+            tasks.add(task);
+
+            if (isFirst)
+                startAsync(task);
+
+            return tasks;
+        });
     }
 
-    /**
-     *
-     */
+    /** */
+    private <R> void startAsync(ClassPathTask<R> t) {
+        // TODO: check is stopped.
+        // TODO: async task to invoke start required?
+        try {
+            ctx.pools().getSystemExecutorService().submit(() -> {
+                try {
+                    t.start();
+                }
+                catch (Throwable e) {
+                    t.result().onDone(e);
+                }
+            });
+        }
+        catch (RejectedExecutionException e) {
+            t.result().onDone(e);
+        }
+    }
+
+    /** */
     GridFutureAdapter<Boolean> casToMetastorageAsync(@Nullable IgniteClassPath prev, IgniteClassPath icp) {
         try {
             String key = metastorageKey(icp.name());
@@ -249,6 +317,68 @@ public class ClassPathProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Modifies {@link IgniteClassPath} in metastorage with thre provided {@code change}.
+     * Retries modification if {@link #casToMetastorageAsync(IgniteClassPath, IgniteClassPath)} failed.
+     * If {@code change} returns same {@link IgniteClassPath} no updates will be done.
+     * If {@code change} or read from metastorge throws then operation will finish with the corresponding exception.
+     */
+    public GridFutureAdapter<Void> modifyInMetastorageAsync(
+        UUID icpId,
+        IgniteClassPathState state,
+        Function<IgniteClassPath, IgniteClassPath> change
+    ) {
+        GridFutureAdapter<Void> res = new GridFutureAdapter<>();
+
+        modifyWithRetriesAsync(icpId, state, change, res, 100);
+
+        return res;
+    }
+
+    /** */
+    private void modifyWithRetriesAsync(
+        UUID icpId,
+        IgniteClassPathState state,
+        Function<IgniteClassPath, IgniteClassPath> change,
+        GridFutureAdapter<Void> res,
+        int hardLimit
+    ) {
+        if (hardLimit == 0) {
+            log.error("Reached hard limit on CAS attempts. Fail operation [icpId=" + icpId + ", state=" + state + ']');
+
+            res.onDone(new IgniteException("Hard limit of CAS reached"));
+        }
+
+        try {
+            IgniteClassPath prev = fromMetastorage(icpId, state, ctx);
+            IgniteClassPath icp = change.apply(prev);
+
+            if (Objects.equals(prev, icp)) {
+                res.onDone();
+
+                return;
+            }
+
+            if (log.isDebugEnabled())
+                log.debug("Trying to CAS [prev=" + prev + ", new=" + icp + ", hardLmit=" + hardLimit + ']');
+
+            casToMetastorageAsync(prev, icp).listen(casRes -> {
+                if (casRes.error() != null) {
+                    res.onDone(casRes.error());
+
+                    return;
+                }
+
+                // Concurrent node modifies first? It's OK, trying to repeat.
+                if (casRes.result() == null || !casRes.result())
+                    modifyWithRetriesAsync(icpId, state, change, res, hardLimit - 1);
+            });
+        }
+        catch (Exception e) {
+            res.onDone(e);
+        }
+    }
+
+    /**
      * @param icpId ClassPath id.
      * @param ctx Kernal context.
      * @return Class path.
@@ -265,7 +395,7 @@ public class ClassPathProcessor extends GridProcessorAdapter {
             if (icp[0] == null)
                 throw new IgniteException("ClassPath not found: " + icpId);
 
-            if (expState != null && icp[0].state() != expState)
+            if (icp[0].state() != expState)
                 throw new IgniteException("ClassPath in wrong state [expected=" + expState + ", status=" + icp[0].state() + ']');
 
             return icp[0];
@@ -355,5 +485,46 @@ public class ClassPathProcessor extends GridProcessorAdapter {
         }
 
         U.delete(ctx.pdsFolderResolver().fileTree().classPathRoot(icp.name()));
+    }
+
+    /** */
+    abstract static class ClassPathTask<R> {
+        /** */
+        private final GridFutureAdapter<R> taskRes = new GridFutureAdapter<R>();
+
+        /** */
+        protected final GridKernalContext ctx;
+
+        /** */
+        protected final UUID icpId;
+
+        /** */
+        protected final IgniteLogger log;
+
+        /** */
+        protected ClassPathTask(GridKernalContext ctx, UUID icpId) {
+            this.ctx = ctx;
+            this.icpId = icpId;
+            this.log = ctx.log(getClass());
+        }
+
+        /**
+         * Starts task execution.
+         * Must be nonblocking and fast.
+         * In case any exception throwed, {@link #result()} will be finished and task treated as done.
+         */
+        abstract void start() throws Exception;
+
+        /**
+         * @return Task name.
+         */
+        abstract String name();
+
+        /**
+         * @return Task results.
+         */
+        GridFutureAdapter<R> result() {
+            return taskRes;
+        }
     }
 }

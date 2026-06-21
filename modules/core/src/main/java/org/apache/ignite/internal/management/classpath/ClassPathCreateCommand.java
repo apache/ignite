@@ -71,25 +71,13 @@ public class ClassPathCreateCommand implements NativeCommand<ClassPathCreateComm
 
         printer.accept("Upload node: " + uploadNode.id());
 
-        UUID icpID = CommandUtils.execute(
-            client,
-            ignite,
-            ClassPathStartCreationTask.class,
-            arg,
-            Collections.singletonList(uploadNode)
-        );
+        UUID icpID = CommandUtils.execute(client, ignite, ClassPathStartCreationTask.class, arg, Collections.singletonList(uploadNode));
 
-        printer.accept("New ClassPath created [" +
-            "uploadNode=" + uploadNode.id() + ", name=" + arg.name + ", id=" + icpID.toString() + ']');
+        printer.accept("New ClassPath created [uploadNode=" + uploadNode.id() + ", name=" + arg.name + ", id=" + icpID.toString() + ']');
 
         uploadFiles(client, ignite, printer, files, uploadNode, icpID);
 
-        CommandUtils.execute(
-            client,
-            ignite,
-            ClassPathDistributeTask.class,
-            icpID, Collections.singletonList(uploadNode)
-        );
+        CommandUtils.execute(client, ignite, SetClassPathStateReadyTask.class, icpID, Collections.singletonList(uploadNode));
 
         return null;
     }

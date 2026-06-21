@@ -20,43 +20,41 @@ package org.apache.ignite.internal.management.classpath;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.classpath.IgniteClassPath;
+import org.apache.ignite.internal.classpath.IgniteClassPathState;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.jetbrains.annotations.Nullable;
 
-/** Task to start deploy process of newly created {@link IgniteClassPath}. */
-public class ClassPathDistributeTask extends VisorOneNodeTask<UUID, Void> {
+/** Task to move newly created {@link IgniteClassPath} to {@link IgniteClassPathState#READY} state. */
+public class SetClassPathStateReadyTask extends VisorOneNodeTask<UUID, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
     @Override protected VisorJob<UUID, Void> job(UUID arg) {
-        return new ClassPathDistributeJob(arg, debug);
+        return new SetClassPathStateReadyJob(arg, debug);
     }
 
     /** */
-    private static class ClassPathDistributeJob extends VisorJob<UUID, Void> {
+    private static class SetClassPathStateReadyJob extends VisorJob<UUID, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** */
-        protected ClassPathDistributeJob(@Nullable UUID arg, boolean debug) {
+        protected SetClassPathStateReadyJob(@Nullable UUID arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
         @Override protected Void run(@Nullable UUID arg) throws IgniteException {
-            IgniteInternalFuture<?> fut = ignite.context().classPath().deployToAll(arg);
-
             try {
-                fut.get();
+                ignite.context().classPath().makeReady(arg);
 
                 return null;
             }
             catch (IgniteCheckedException e) {
-                throw new RuntimeException(e);
+                throw new IgniteException(e);
             }
         }
     }

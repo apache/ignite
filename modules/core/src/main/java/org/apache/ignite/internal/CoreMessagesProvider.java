@@ -23,8 +23,6 @@ import org.apache.ignite.internal.cache.query.QueryIndexMessage;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
-import org.apache.ignite.internal.classpath.ClassPathDeployToAllRequest;
-import org.apache.ignite.internal.classpath.ClassPathDeployToAllResponse;
 import org.apache.ignite.internal.classpath.DownloadClassPathFailureMessage;
 import org.apache.ignite.internal.classpath.DownloadClassPathMessage;
 import org.apache.ignite.internal.management.cache.PartitionKey;
@@ -670,8 +668,6 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(PartitionHashRecord.class);
         withNoSchema(TransactionsHashRecord.class);
 
-        withNoSchema(ClassPathDeployToAllRequest.class);
-        withNoSchema(ClassPathDeployToAllResponse.class);
         withNoSchema(DownloadClassPathMessage.class);
         withNoSchema(DownloadClassPathFailureMessage.class);
 

@@ -50,7 +50,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.classpath.ClassPathProcessor.fromMetastorage;
-import static org.apache.ignite.internal.classpath.IgniteClassPathState.NEW;
+import static org.apache.ignite.internal.classpath.IgniteClassPathState.READY;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_NODE_STOPPING_ERR_MSG;
 
@@ -190,7 +190,7 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
                 IgniteClassPath icp = null;
 
                 try {
-                    icp = fromMetastorage(msg.icpId, NEW, ctx);
+                    icp = fromMetastorage(msg.icpId, READY, ctx);
 
                     NodeFileTree ft = ctx.pdsFolderResolver().fileTree();
 
@@ -290,7 +290,7 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
         UUID icpId = (UUID)fileMeta.params().get(ICP_ID_PARAM);
         String name = (String)fileMeta.params().get(NAME_PARAM);
 
-        IgniteClassPath icp = fromMetastorage(icpId, NEW, ctx);
+        IgniteClassPath icp = fromMetastorage(icpId, READY, ctx);
 
         DownloadClassPathTask task = active;
 
@@ -313,7 +313,7 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
         UUID icpId = (UUID)initMeta.params().get(ICP_ID_PARAM);
         String name = (String)initMeta.params().get(NAME_PARAM);
 
-        IgniteClassPath icp = fromMetastorage(icpId, NEW, ctx);
+        IgniteClassPath icp = fromMetastorage(icpId, READY, ctx);
 
         return file -> {
             DownloadClassPathTask task = active;
