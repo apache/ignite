@@ -48,7 +48,6 @@ public class FeatureChecker {
     /** Java version specific warning to be added in case access failed */
     public static final String JAVA_VER_SPECIFIC_WARN =
         "\nPlease add the following parameters to JVM startup settings and restart the application: {parameters: " +
-            JAVA_17_OPTIONS +
-            "\n}" +
+            JAVA_17_OPTIONS + "}" +
             "\nSee https://ignite.apache.org/docs/latest/quick-start/java#running-ignite-with-java-17-or-later for more information.";
 }
