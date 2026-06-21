@@ -501,7 +501,8 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
             "DS_SEMAPHORES",
             "DS_QUEUES",
             "PAGES_TIMESTAMP_HISTOGRAM",
-            "SQL_PLANS_HISTORY"
+            "SQL_PLANS_HISTORY",
+            "IGNITE_PLUGINS"
         ));
 
         Set<String> viewNames = new TreeSet<>();
