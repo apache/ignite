@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.classpath;
 
 import java.util.UUID;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.F;
@@ -49,6 +50,14 @@ public class DownloadClassPathTask extends ClassPathProcessor.ClassPathTask<Void
                 log.debug("Skip download ClassPath files. Node has files, already [icp=" + icp.name() + ']');
 
             result().onDone();
+
+            return;
+        }
+
+        if (icp.deployedOnNodes().isEmpty()) {
+            result().onDone(new IgniteException("Deployed on nodes empty. Can't download files: " + icpId));
+
+            return;
         }
 
         createRootAndCheckIsEmpty(ctx.pdsFolderResolver().fileTree().classPathRoot(icp.name()));
@@ -56,29 +65,48 @@ public class DownloadClassPathTask extends ClassPathProcessor.ClassPathTask<Void
         UUID rmtNode = F.rand(icp.deployedOnNodes());
 
         if (log.isInfoEnabled())
-            log.info("Start download Classpath files [icp=" + icp.name() + ", node=" + rmtNode + ']');
+            log.info("Start download ClassPath files [icp=" + icp.name() + ", node=" + rmtNode + ']');
 
         IgniteInternalFuture<Void> downloadRes = ctx.classPath().icpFilesHnd.downloadLocally(rmtNode, icp);
 
         downloadRes.listen(f -> {
-            if (f.error() == null) {
-                if (log.isInfoEnabled())
-                    log.info("Classpath files from remote node has been fully received [icp=" + icp.name() + ']');
-
-                ctx.classPath().modifyInMetastorageAsync(icpId, READY, state -> state.addDeployeOnNode(ctx.localNodeId()))
-                    .listen(modifyRes -> result().onDone(modifyRes.result(), modifyRes.error()));
+            if (f.error() != null) {
+                result().onDone(f.error());
 
                 return;
             }
 
+            if (log.isDebugEnabled())
+                log.debug("ClassPath files from remote node has been fully received [icp=" + icp.name() + ']');
+
+            ctx.classPath().modifyInMetastorageAsync(icpId, READY, state -> state.addDeployeOnNode(ctx.localNodeId()))
+                .listen(modifyRes -> result().onDone(modifyRes.result(), modifyRes.error()));
+        });
+    }
+
+    /** {@inheritDoc} */
+    @Override public void ok() {
+        try {
+            log.info("ClassPath files downloaded [icp=" + fromMetastorage(icpId, READY, ctx).name() + ']');
+        }
+        catch (Exception e) {
+            log.warning("onDowloadSucceed", e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void fail(Throwable t) {
+        try {
+            IgniteClassPath icp = fromMetastorage(icpId, READY, ctx);
+
+            log.warning("Failed to download ClassPath files [icp=" + icp.name() + "]", t);
+
             // Cleanup local files.
             ctx.classPath().cleanupAsync(icp, true);
-
-            log.warning(
-                "Failed to download ClassPath files from remote node [icp=" + icp.name() + "]",
-                f.error()
-            );
-        });
+        }
+        catch (Exception e) {
+            log.warning("onDowloadFailed", e);
+        }
     }
 
     /** {@inheritDoc} */

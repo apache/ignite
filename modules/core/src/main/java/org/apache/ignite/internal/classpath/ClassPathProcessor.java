@@ -55,6 +55,8 @@ import static org.apache.ignite.internal.classpath.IgniteClassPathState.READY;
  * Do we want to have some flag to skip remove in this case? (if we preparing for ICP registration).
  * 3. Should we include CP into snapshots and dumps?
  * 4. Should we control file size to ensure disk free space enough to upload CP files?
+ *
+ // TODO: remove from deployedNodes on OnNodeLeft event.
  */
 public class ClassPathProcessor extends GridProcessorAdapter {
     /** Prefix for metastorage keys. */
@@ -506,6 +508,14 @@ public class ClassPathProcessor extends GridProcessorAdapter {
             this.ctx = ctx;
             this.icpId = icpId;
             this.log = ctx.log(getClass());
+
+            result().listen(resFut -> {
+                if (resFut.error() == null)
+                    ok();
+                else
+                    fail(resFut.error());
+            });
+
         }
 
         /**
@@ -526,5 +536,11 @@ public class ClassPathProcessor extends GridProcessorAdapter {
         GridFutureAdapter<R> result() {
             return taskRes;
         }
+
+        /** */
+        abstract void ok();
+
+        /** */
+        abstract void fail(Throwable t);
     }
 }

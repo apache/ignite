@@ -33,14 +33,12 @@ import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
-import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 import static org.apache.ignite.internal.MessageSerializerGenerator.DLFT_ENUM_MAPPER_CLS;
@@ -117,9 +115,6 @@ public class MessageProcessor extends AbstractProcessor {
             if (clazz.getModifiers().contains(Modifier.ABSTRACT))
                 continue;
 
-            if (!checkConstructors(clazz))
-                continue;
-
             List<VariableElement> fields = orderedFields(clazz);
 
             if (fields.isEmpty() && emptyMsgs.stream().noneMatch(t -> isAssignable(t, clazz))) {
@@ -149,34 +144,6 @@ public class MessageProcessor extends AbstractProcessor {
         }
 
         return true;
-    }
-
-    /** */
-    private boolean checkConstructors(TypeElement clazz) {
-        boolean isMarshallableMsg = isAssignable(
-            clazz.asType(),
-            processingEnv.getElementUtils().getTypeElement("org.apache.ignite.internal.MarshallableMessage")
-        );
-
-        for (Element el : clazz.getEnclosedElements()) {
-            if (el.getKind() != ElementKind.CONSTRUCTOR)
-                continue;
-
-            ExecutableElement c = (ExecutableElement)el;
-
-            boolean isDfltConstructor = F.isEmpty(c.getParameters());
-
-            if (isDfltConstructor && !isMarshallableMsg)
-                return true;
-        }
-
-        processingEnv.getMessager().printMessage(
-            Diagnostic.Kind.ERROR,
-            "Class must have default constructor: " + clazz.getQualifiedName(),
-            clazz
-        );
-
-        return false;
     }
 
     /**

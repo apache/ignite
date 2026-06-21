@@ -36,7 +36,6 @@ public class IgniteClassPath implements Serializable {
     private UUID id;
 
     /** */
-    // TODO: remove on OnNodeLeft event.
     private Set<UUID> deployedOnNodes;
 
     /** */
@@ -79,6 +78,11 @@ public class IgniteClassPath implements Serializable {
         return new IgniteClassPath(id, deployedOnNodes, name, files, lengths, state);
     }
 
+    /**
+     * Adds {@code locNode} to {@link #deployedOnNodes()} set and returns new instance.
+     * @param locNode Node to add.
+     * @return Instance with modified set.
+     */
     IgniteClassPath addDeployeOnNode(UUID locNode) {
         Set<UUID> deployedOnNodes0 = new HashSet<>(deployedOnNodes);
 
@@ -127,12 +131,16 @@ public class IgniteClassPath implements Serializable {
     @Override public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         IgniteClassPath that = (IgniteClassPath)o;
-        return Objects.equals(id, that.id) && Objects.equals(name, that.name) && Objects.deepEquals(files, that.files)
-            && Objects.deepEquals(lengths, that.lengths) && state == that.state;
+        return Objects.equals(id, that.id)
+            && Objects.equals(deployedOnNodes, that.deployedOnNodes)
+            && Objects.equals(name, that.name)
+            && Objects.deepEquals(files, that.files)
+            && Objects.deepEquals(lengths, that.lengths)
+            && state == that.state;
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return Objects.hash(id, name, Arrays.hashCode(files), Arrays.hashCode(lengths), state);
+        return Objects.hash(id, deployedOnNodes, name, Arrays.hashCode(files), Arrays.hashCode(lengths), state);
     }
 }
