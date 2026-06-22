@@ -51,8 +51,8 @@ public class DistributedOperationContextManager {
     /**
      * Creates and registers a distributable {@link OperationContextAttribute} identified by {@code id}.
      *
-     * @param id Cluster-wide id of an operation context attribute.
-     * @param initVal The attrbute's unitial value.
+     * @param id Cluster-wide id of a distributed operation context attribute.
+     * @param initVal The attribute's unitial value.
      */
     public <T extends Message> OperationContextAttribute<T> createDistributedAttribute(byte id, @Nullable T initVal) {
         assert id >= 0 && id < MAX_DISTRIBUTED_ATTR_CNT : "Invalid distributed attributed id [id=" + id + ']';
