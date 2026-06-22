@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.cache.jta;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
-import javax.transaction.Status;
-import javax.transaction.UserTransaction;
+import jakarta.transaction.Status;
+import jakarta.transaction.UserTransaction;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;

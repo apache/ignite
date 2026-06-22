@@ -26,7 +26,7 @@ import org.apache.ignite.resources.SpringResource;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.NoUniqueBeanDefinitionException;
 import org.springframework.context.ApplicationContext;
-import org.springframework.util.StringUtils;
+import org.springframework.util.ObjectUtils;
 
 /**
  * Spring bean injector implementation works with resources provided
@@ -111,7 +111,7 @@ public class GridResourceSpringBeanInjector implements GridResourceInjector {
         String beanName = annotation.resourceName();
         Class<?> beanCls = annotation.resourceClass();
 
-        boolean oneParamSet = !StringUtils.isEmpty(beanName) ^ beanCls != SpringResource.DEFAULT.class;
+        boolean oneParamSet = !ObjectUtils.isEmpty(beanName) ^ beanCls != SpringResource.DEFAULT.class;
 
         if (!oneParamSet) {
             throw new IgniteCheckedException("Either bean name or its class must be specified in @SpringResource, " +
@@ -119,7 +119,7 @@ public class GridResourceSpringBeanInjector implements GridResourceInjector {
         }
 
         try {
-            return !StringUtils.isEmpty(beanName) ? springCtx.getBean(beanName) : springCtx.getBean(beanCls);
+            return !ObjectUtils.isEmpty(beanName) ? springCtx.getBean(beanName) : springCtx.getBean(beanCls);
         }
         catch (NoUniqueBeanDefinitionException e) {
             throw e;

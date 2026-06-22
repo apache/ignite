@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.jta;
 
 import java.util.concurrent.Callable;
-import javax.transaction.TransactionManager;
+import jakarta.transaction.TransactionManager;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.jta.CacheTmLookup;
