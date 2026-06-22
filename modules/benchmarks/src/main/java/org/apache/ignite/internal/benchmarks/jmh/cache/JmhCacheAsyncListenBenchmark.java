@@ -28,9 +28,6 @@ import org.apache.ignite.internal.benchmarks.model.IntValue;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.Mode;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Cache async listen benchmark.
@@ -158,10 +155,8 @@ public class JmhCacheAsyncListenBenchmark extends JmhCacheAbstractBenchmark {
                 JmhIdeBenchmarkRunner.createProperty(PROP_WRITE_SYNC_MODE, writeSyncMode),
                 JmhIdeBenchmarkRunner.createProperty(PROP_DATA_NODES, 2),
                 JmhIdeBenchmarkRunner.createProperty(PROP_CLIENT_MODE, client))
-            .benchmarkModes(Mode.Throughput)
             .warmupIterations(10)
             .measurementIterations(10)
-            .outputTimeUnit(SECONDS)
             .run();
     }
 }

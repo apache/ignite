@@ -71,10 +71,7 @@ public class JmhThinClientCacheBenchmark extends JmhThinClientAbstractBenchmark 
             .measurementIterations(10)
             .warmupIterations(10);
 
-        runner
-            .benchmarkModes(Mode.Throughput)
-            .outputTimeUnit(TimeUnit.SECONDS)
-            .run();
+        runner.run();
 
         runner
             .benchmarkModes(Mode.AverageTime)

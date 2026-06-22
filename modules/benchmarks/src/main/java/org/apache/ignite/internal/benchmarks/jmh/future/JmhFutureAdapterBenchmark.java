@@ -31,9 +31,6 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Threads;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.openjdk.jmh.annotations.Mode.Throughput;
-
 /**
  *
  */
@@ -143,8 +140,6 @@ public class JmhFutureAdapterBenchmark extends JmhAbstractBenchmark {
             .measurementIterations(30)
             .benchmarks(JmhFutureAdapterBenchmark.class.getSimpleName())
             .jvmArguments("-Xms4g", "-Xmx4g")
-            .benchmarkModes(Throughput)
-            .outputTimeUnit(SECONDS)
             .run();
     }
 }

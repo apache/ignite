@@ -40,10 +40,8 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.openjdk.jmh.annotations.Mode.Throughput;
 import static org.openjdk.jmh.annotations.Scope.Thread;
 
 /** */
@@ -187,8 +185,6 @@ public class GridDhtPartitionsStateValidatorBenchmark extends JmhAbstractBenchma
             .measurementIterations(10)
             .benchmarks(GridDhtPartitionsStateValidatorBenchmark.class.getSimpleName())
             .jvmArguments("-XX:+UseG1GC", "-Xms4g", "-Xmx4g")
-            .benchmarkModes(Throughput)
-            .outputTimeUnit(SECONDS)
             .run();
     }
 }

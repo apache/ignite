@@ -232,7 +232,6 @@ public class JmhWaitStategyBenchmark extends JmhCacheAbstractBenchmark {
                     .jvmArguments("-Dbench.exp.policy=" + plc)
                     .forks(1)
                     .threads(thread)
-                    .benchmarkModes(Mode.Throughput)
                     .benchmarks(JmhWaitStategyBenchmark.class.getSimpleName());
 
                 results.addAll(runner.run());

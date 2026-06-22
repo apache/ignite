@@ -23,9 +23,6 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.openjdk.jmh.annotations.Benchmark;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.openjdk.jmh.annotations.Mode.Throughput;
-
 /**
  * Benchmark DML queries.
  */
@@ -122,10 +119,6 @@ public class JmhSqlDmlBenchmark extends JmhSqlAbstractBenchmark {
     public static void main(String[] args) throws Exception {
         JmhIdeBenchmarkRunner.create()
             .benchmarks(JmhSqlDmlBenchmark.class.getSimpleName())
-            .measurementIterations(3)
-            .warmupIterations(3)
-            .benchmarkModes(Throughput)
-            .outputTimeUnit(SECONDS)
             .run();
     }
 }

@@ -49,12 +49,10 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.openjdk.jmh.annotations.Mode.Throughput;
 
 /**
  *
@@ -287,8 +285,6 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
             .measurementIterations(10)
             .benchmarks(BPlusTreeBenchmark.class.getSimpleName())
             .jvmArguments("-Xms4g", "-Xmx4g")
-            .benchmarkModes(Throughput)
-            .outputTimeUnit(SECONDS)
             .run();
     }
 

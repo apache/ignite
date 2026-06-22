@@ -33,14 +33,13 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner.createProperty;
-import static org.openjdk.jmh.annotations.Mode.Throughput;
 
 /**
  * JMH benchmark for {@link IgniteAtomicSequence}.
  */
 public class JmhSequenceBenchmark extends JmhAbstractBenchmark {
+
     /** Property: nodes count. */
     private static final String PROP_DATA_NODES = "ignite.jmh.sequence.dataNodes";
 
@@ -168,8 +167,6 @@ public class JmhSequenceBenchmark extends JmhAbstractBenchmark {
                 createProperty(PROP_DATA_NODES, dataNodes),
                 createProperty(PROP_CLIENT_MODE, client)
             )
-            .benchmarkModes(Throughput)
-            .outputTimeUnit(SECONDS)
             .run();
     }
 

@@ -26,9 +26,6 @@ import org.apache.ignite.internal.benchmarks.model.IntValue;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.profile.GCProfiler;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.openjdk.jmh.annotations.Mode.Throughput;
-
 /**
  * Put benchmark.
  */
@@ -136,8 +133,6 @@ public class JmhCacheBenchmark extends JmhCacheAbstractBenchmark {
                 JmhIdeBenchmarkRunner.createProperty(PROP_WRITE_SYNC_MODE, writeSyncMode),
                 JmhIdeBenchmarkRunner.createProperty(PROP_DATA_NODES, 2),
                 JmhIdeBenchmarkRunner.createProperty(PROP_CLIENT_MODE, client))
-            .benchmarkModes(Throughput)
-            .outputTimeUnit(SECONDS)
             .run();
     }
 }
