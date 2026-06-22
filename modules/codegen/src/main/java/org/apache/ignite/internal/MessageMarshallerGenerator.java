@@ -299,10 +299,10 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     private enum MarshalMode {
         /** Marshal. */
         PREPARE,
-        
+
         /** Lightweight unmarshal. Messages only, CacheObject fields are skipped (no cache context available). */
         FINISH_BASE,
-        
+
         /** Unmarshal with full cache context and class loader. */
         FINISH_CACHE
     }
@@ -311,194 +311,186 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     private List<String> marshall(TypeMirror t, String accessor, MarshalMode mode) {
         if (t.getKind() == TypeKind.ARRAY) {
             TypeMirror comp = ((ArrayType)t).getComponentType();
-
-            if (comp.getKind() == TypeKind.DECLARED) {
-                List<String> code = new ArrayList<>();
-
-                imports.add(((QualifiedNameable)((DeclaredType)comp).asElement()).getQualifiedName().toString());
-
-                code.add(indentedLine("if (%s != null) {", accessor));
-
-                indent++;
-
-                String el = "e" + indent;
-
-                code.add(indentedLine("for (%s %s : %s) {", ((DeclaredType)comp).asElement().getSimpleName().toString(), el, accessor));
-
-                indent++;
-
-                List<String> res = marshall(comp, el, mode);
-
-                code.addAll(res);
-
-                indent--;
-
-                code.add(indentedLine("}"));
-
-                indent--;
-
-                code.add(indentedLine("}"));
-
-                if (res.isEmpty())
-                    return java.util.Collections.emptyList();
-                else
-                    return code;
-            }
+            
+            return comp.getKind() == TypeKind.DECLARED ? marshallArray(comp, accessor, mode) : java.util.Collections.emptyList();
         }
-        else if (t.getKind() == TypeKind.DECLARED || t.getKind() == TypeKind.TYPEVAR) {
-            if (isMessage(t)) {
-                List<String> code = new ArrayList<>();
 
-                code.add(indentedLine("if (%s != null)", accessor));
-
-                indent++;
-
-                switch (mode) {
-                    case PREPARE:
-                        code.add(indentedLine(
-                            "MessageMarshaller.prepareMarshal(kctx.messageFactory(), %s, kctx, ctx);", accessor));
-                        break;
-                    case FINISH_BASE:
-                        code.add(indentedLine(
-                            "MessageMarshaller.finishUnmarshal(kctx.messageFactory(), %s, kctx);", accessor));
-                        break;
-                    case FINISH_CACHE:
-                        code.add(indentedLine(
-                            "MessageMarshaller.finishUnmarshal(kctx.messageFactory(), %s, kctx, ctx, clsLdr);", accessor));
-                        break;
-                }
-
-                indent--;
-
-                return code;
-            }
-            else if (isCacheObject(t)) {
-                if (mode == MarshalMode.FINISH_BASE)
-                    return java.util.Collections.emptyList();
-
-                List<String> code = new ArrayList<>();
-
-                code.add(indentedLine("if (%s != null && ctx != null)", accessor));
-
-                indent++;
-
-                if (mode == MarshalMode.PREPARE)
-                    code.add(indentedLine("%s.prepareMarshal(ctx.cacheObjectContext());", accessor));
-                else
-                    code.add(indentedLine("%s.finishUnmarshal(ctx.cacheObjectContext(), clsLdr);", accessor));
-
-                indent--;
-
-                return code;
-            }
-            else if (assignableFrom(erasedType(t), type(java.util.Map.class.getName()))) {
-                List<? extends TypeMirror> args = ((DeclaredType)t).getTypeArguments();
-
-                TypeMirror keyType = args.get(0);
-                TypeMirror valType = args.get(1);
-
-                List<String> code = new ArrayList<>();
-
-                code.add(indentedLine("if (%s != null) {", accessor));
-
-                indent++;
-
-                String el = "e" + indent;
-
-                indent++;
-                List<String> keyRes = marshall(keyType, el, mode);
-                List<String> valRes = marshall(valType, el, mode);
-                indent--;
-
-                if (!keyRes.isEmpty() && (keyType.getKind() == TypeKind.DECLARED || keyType.getKind() == TypeKind.TYPEVAR)) {
-                    Element elem = element(keyType);
-
-                    imports.add(((QualifiedNameable)(elem)).getQualifiedName().toString());
-                    imports.add("java.util.Collection");
-
-                    String typeName = elem.getSimpleName().toString();
-
-                    code.add(indentedLine("for (%s %s : ((Collection<? extends %s>)%s.keySet())) {", typeName, el, typeName, accessor));
-
-                    indent++;
-                    code.addAll(keyRes);
-                    indent--;
-
-                    code.add(indentedLine("}"));
-                }
-
-                if (!valRes.isEmpty() && (valType.getKind() == TypeKind.DECLARED || valType.getKind() == TypeKind.TYPEVAR)) {
-                    Element elem = element(valType);
-
-                    imports.add(((QualifiedNameable)(elem)).getQualifiedName().toString());
-                    imports.add("java.util.Collection");
-
-                    String typeName = elem.getSimpleName().toString();
-
-                    code.add(indentedLine("for (%s %s : ((Collection<? extends %s>)%s.values())) {", typeName, el, typeName, accessor));
-
-                    indent++;
-                    code.addAll(valRes);
-                    indent--;
-
-                    code.add(indentedLine("}"));
-                }
-
-                indent--;
-
-                code.add(indentedLine("}"));
-
-                if (keyRes.isEmpty() && valRes.isEmpty())
-                    return java.util.Collections.emptyList();
-                else
-                    return code;
-            }
-            else if (assignableFrom(erasedType(t), type(java.util.Collection.class.getName()))) {
-                List<? extends TypeMirror> args = ((DeclaredType)t).getTypeArguments();
-
-                TypeMirror arg = args.get(0);
-
-                if ((arg.getKind() == TypeKind.DECLARED || arg.getKind() == TypeKind.TYPEVAR)) {
-                    List<String> code = new ArrayList<>();
-
-                    Element elem = element(arg);
-
-                    imports.add(((QualifiedNameable)(elem)).getQualifiedName().toString());
-                    imports.add("java.util.Collection");
-
-                    String el = "e" + indent;
-
-                    code.add(indentedLine("if (%s != null) {", accessor));
-
-                    indent++;
-
-                    String typeName = elem.getSimpleName().toString();
-
-                    code.add(indentedLine("for (%s %s : (Collection<? extends %s>)%s) {", typeName, el, typeName, accessor));
-
-                    indent++;
-
-                    List<String> res = marshall(arg, el, mode);
-
-                    code.addAll(res);
-
-                    indent--;
-
-                    code.add(indentedLine("}"));
-
-                    indent--;
-
-                    code.add(indentedLine("}"));
-
-                    if (res.isEmpty())
-                        return java.util.Collections.emptyList();
-                    else
-                        return code;
-                }
-            }
+        if (t.getKind() == TypeKind.DECLARED || t.getKind() == TypeKind.TYPEVAR) {
+            if (isMessage(t))
+                return marshallMessage(accessor, mode);
+            if (isCacheObject(t))
+                return marshallCacheObject(accessor, mode);
+            if (assignableFrom(erasedType(t), type(java.util.Map.class.getName())))
+                return marshallMap((DeclaredType)t, accessor, mode);
+            if (assignableFrom(erasedType(t), type(java.util.Collection.class.getName())))
+                return marshallCollection((DeclaredType)t, accessor, mode);
         }
 
         return java.util.Collections.emptyList();
+    }
+
+    /** */
+    private List<String> marshallMessage(String accessor, MarshalMode mode) {
+        List<String> code = new ArrayList<>();
+
+        code.add(indentedLine("if (%s != null)", accessor));
+
+        indent++;
+
+        switch (mode) {
+            case PREPARE:
+                code.add(indentedLine(
+                    "MessageMarshaller.prepareMarshal(kctx.messageFactory(), %s, kctx, ctx);", accessor));
+                break;
+            case FINISH_BASE:
+                code.add(indentedLine(
+                    "MessageMarshaller.finishUnmarshal(kctx.messageFactory(), %s, kctx);", accessor));
+                break;
+            case FINISH_CACHE:
+                code.add(indentedLine(
+                    "MessageMarshaller.finishUnmarshal(kctx.messageFactory(), %s, kctx, ctx, clsLdr);", accessor));
+                break;
+        }
+
+        indent--;
+
+        return code;
+    }
+
+    /** */
+    private List<String> marshallCacheObject(String accessor, MarshalMode mode) {
+        if (mode == MarshalMode.FINISH_BASE)
+            return java.util.Collections.emptyList();
+
+        List<String> code = new ArrayList<>();
+
+        code.add(indentedLine("if (%s != null && ctx != null)", accessor));
+
+        indent++;
+        
+        code.add(mode == MarshalMode.PREPARE
+            ? indentedLine("%s.prepareMarshal(ctx.cacheObjectContext());", accessor)
+            : indentedLine("%s.finishUnmarshal(ctx.cacheObjectContext(), clsLdr);", accessor));
+        
+        indent--;
+
+        return code;
+    }
+
+    /** */
+    private List<String> marshallArray(TypeMirror comp, String accessor, MarshalMode mode) {
+        Element elem = ((DeclaredType)comp).asElement();
+        
+        imports.add(((QualifiedNameable)elem).getQualifiedName().toString());
+
+        indent++;
+        
+        List<String> loopCode = forLoop(elem.getSimpleName().toString(), comp, accessor, mode);
+        
+        indent--;
+
+        return wrapNullGuarded(accessor, loopCode);
+    }
+
+    /** */
+    private List<String> marshallCollection(DeclaredType t, String accessor, MarshalMode mode) {
+        TypeMirror arg = t.getTypeArguments().get(0);
+
+        if (arg.getKind() != TypeKind.DECLARED && arg.getKind() != TypeKind.TYPEVAR)
+            return java.util.Collections.emptyList();
+
+        Element elem = element(arg);
+        
+        imports.add(((QualifiedNameable)elem).getQualifiedName().toString());
+        imports.add("java.util.Collection");
+
+        String typeName = elem.getSimpleName().toString();
+
+        indent++;
+        
+        List<String> loopCode = forLoop(typeName, arg, "(Collection<? extends " + typeName + ">)" + accessor, mode);
+        
+        indent--;
+
+        return wrapNullGuarded(accessor, loopCode);
+    }
+
+    /** Iterates {@code keySet()} then {@code values()}, wrapping both loops in a null-guard. */
+    private List<String> marshallMap(DeclaredType t, String accessor, MarshalMode mode) {
+        List<? extends TypeMirror> args = t.getTypeArguments();
+
+        indent++;
+        
+        List<String> combined = new ArrayList<>();
+        for (int i = 0; i < 2; i++) {
+            TypeMirror elemType = args.get(i);
+
+            if (elemType.getKind() != TypeKind.DECLARED && elemType.getKind() != TypeKind.TYPEVAR)
+                continue;
+
+            Element elem = element(elemType);
+            
+            imports.add(((QualifiedNameable)elem).getQualifiedName().toString());
+            imports.add("java.util.Collection");
+
+            String typeName = elem.getSimpleName().toString();
+            String collection = i == 0 ? "keySet" : "values";
+            String iterable = "((Collection<? extends " + typeName + ">)" + accessor + "." + collection + "())";
+
+            combined.addAll(forLoop(typeName, elemType, iterable, mode));
+        }
+        
+        indent--;
+
+        return wrapNullGuarded(accessor, combined);
+    }
+
+    /** Returns empty if {@code inner} is empty. */
+    private List<String> wrapNullGuarded(String nullGuard, List<String> inner) {
+        if (inner.isEmpty())
+            return java.util.Collections.emptyList();
+
+        List<String> code = new ArrayList<>();
+        
+        code.add(indentedLine("if (%s != null) {", nullGuard));
+        
+        indent++;
+        
+        code.addAll(inner);
+        
+        indent--;
+        
+        code.add(indentedLine("}"));
+
+        return code;
+    }
+
+    /** Returns empty if {@code elemType} requires no marshalling. Leaves {@code this.indent} unchanged. */
+    private List<String> forLoop(String typeName, TypeMirror elemType, String iterable, MarshalMode mode) {
+        String el = "e" + (indent + 1);
+        
+        indent++;
+        
+        List<String> inner = marshall(elemType, el, mode);
+        
+        indent--;
+
+        if (inner.isEmpty())
+            return java.util.Collections.emptyList();
+
+        List<String> code = new ArrayList<>();
+        
+        code.add(indentedLine("for (%s %s : %s) {", typeName, el, iterable));
+        
+        indent++;
+        
+        code.addAll(inner);
+        
+        indent--;
+        
+        code.add(indentedLine("}"));
+
+        return code;
     }
 
     /** */
