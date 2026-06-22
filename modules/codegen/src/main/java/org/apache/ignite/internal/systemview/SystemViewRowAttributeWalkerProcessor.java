@@ -45,7 +45,7 @@ import javax.tools.Diagnostic;
     "org.apache.ignite.internal.systemview.Order",
     "org.apache.ignite.internal.systemview.Filtrable"
 })
-@SupportedSourceVersion(SourceVersion.RELEASE_11)
+@SupportedSourceVersion(SourceVersion.RELEASE_17)
 public class SystemViewRowAttributeWalkerProcessor extends AbstractProcessor {
     /**
      * Processes all classes implementing the {@code SystemViewDescriptor} interface and generates corresponding walker code.

@@ -368,7 +368,8 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             "STATISTICS_PARTITION_DATA",
             "STATISTICS_LOCAL_DATA",
             "STATISTICS_GLOBAL_DATA",
-            "SQL_PLANS_HISTORY"
+            "SQL_PLANS_HISTORY",
+            "IGNITE_PLUGINS"
         ));
 
         Set<String> actViews = new TreeSet<>();

@@ -205,6 +205,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                         false,
                         opCtx != null && opCtx.skipStore(),
                         opCtx != null && opCtx.skipReadThrough(),
+                        opCtx != null && opCtx.isKeepBinaryInInterceptor(),
                         recovery,
                         readRepairStrategy,
                         needVer);
@@ -308,6 +309,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                         false,
                         opCtx != null && opCtx.skipStore(),
                         opCtx != null && opCtx.skipReadThrough(),
+                        opCtx != null && opCtx.isKeepBinaryInInterceptor(),
                         recovery,
                         readRepairStrategy,
                         needVer);
@@ -661,6 +663,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             accessTtl,
             opCtx != null && opCtx.skipStore(),
             opCtx != null && opCtx.skipReadThrough(),
+            opCtx != null && opCtx.isKeepBinaryInInterceptor(),
             opCtx != null && opCtx.isKeepBinary(),
             opCtx != null && opCtx.recovery());
 
@@ -903,6 +906,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param accessTtl TTL for read operation.
      * @param skipStore Skip store flag.
      * @param skipReadThrough Skip read-through cache store flag.
+     * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      * @return Lock future.
      */
     IgniteInternalFuture<Exception> lockAllAsync(
@@ -919,6 +923,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final long accessTtl,
         final boolean skipStore,
         final boolean skipReadThrough,
+        boolean keepBinaryInInterceptor,
         final boolean keepBinary
     ) {
         assert keys != null;
@@ -944,6 +949,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 accessTtl,
                 skipStore,
                 skipReadThrough,
+                keepBinaryInInterceptor,
                 keepBinary);
         }
         else {
@@ -966,6 +972,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                             accessTtl,
                             skipStore,
                             skipReadThrough,
+                            keepBinaryInInterceptor,
                             keepBinary);
                     }
                 }
@@ -986,6 +993,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param createTtl TTL for create operation.
      * @param accessTtl TTL for read operation.
      * @param skipStore Skip store flag.
+     * @param skipReadThrough Skip read-through cache store flag.
+     * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      * @return Lock future.
      */
     private IgniteInternalFuture<Exception> lockAllAsync0(
@@ -1002,6 +1011,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final long accessTtl,
         boolean skipStore,
         boolean skipReadThrough,
+        boolean keepBinaryInInterceptor,
         boolean keepBinary) {
         int cnt = keys.size();
 
@@ -1020,6 +1030,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 accessTtl,
                 skipStore,
                 skipReadThrough,
+                keepBinaryInInterceptor,
                 keepBinary);
 
             // Add before mapping.
@@ -1089,6 +1100,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 accessTtl,
                 skipStore,
                 skipReadThrough,
+                keepBinaryInInterceptor,
                 keepBinary);
 
             return new GridDhtEmbeddedFuture<>(
