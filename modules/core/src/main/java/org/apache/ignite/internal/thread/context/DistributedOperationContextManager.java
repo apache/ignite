@@ -26,15 +26,21 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
-/** */
+/**
+ * A manager of {@link OperationContextAttribute} which are required to be propagated through a cluster.
+ * Has own attributes ids compared to a local node's {@link OperationContext}.
+ *
+ * @see OperationContext
+ * @see DistributedOperationContextMessage
+ */
 public class DistributedOperationContextManager {
-    /** */
-    static final byte MAX_DISTRIBUTED_ATTR_CNT = Byte.SIZE;
-
     /** */
     private static final DistributedOperationContextManager INSTANCE = new DistributedOperationContextManager();
 
-    /** Attributes by their id. */
+    /** Maximal number of supported distributed attributes. */
+    static final byte MAX_DISTRIBUTED_ATTR_CNT = Byte.SIZE;
+
+    /** Registered distributed attributes by their cluster-wide id. */
     private final Map<Byte, OperationContextAttribute<? extends Message>> attrs = new ConcurrentSkipListMap<>();
 
     /** */
@@ -42,22 +48,30 @@ public class DistributedOperationContextManager {
         return INSTANCE;
     }
 
-    /** */
+    /**
+     * Creates and registers a distributable {@link OperationContextAttribute} identified by {@code id}.
+     *
+     * @param id Cluster-wide id of an operation context attribute.
+     * @param initVal The attrbute's unitial value.
+     */
     public <T extends Message> OperationContextAttribute<T> createDistributedAttribute(byte id, @Nullable T initVal) {
-        assert id >= 0 && id < MAX_DISTRIBUTED_ATTR_CNT : "Invalid distributed attributed id [id=" + id + "].";
-
-        if (attrs.size() == MAX_DISTRIBUTED_ATTR_CNT)
-            throw new IgniteException("Maximum number of distributed attributes is exceeded [max=" + MAX_DISTRIBUTED_ATTR_CNT + "].");
+        assert id >= 0 && id < MAX_DISTRIBUTED_ATTR_CNT : "Invalid distributed attributed id [id=" + id + ']';
 
         return (OperationContextAttribute<T>)attrs.compute(id, (id0, attr0) -> {
             if (attr0 != null)
-                throw new IgniteException("Duplicated distributed attribute id [id=" + id + "].");
+                throw new IgniteException("Duplicated distributed attribute id [id=" + id + ']');
 
             return OperationContextAttribute.newInstance(initVal);
         });
     }
 
-    /** */
+    /**
+     * Requests current {@link OperationContext} for its effective attributes and collects ones which are also registered
+     * as the distbibued attributes.
+     *
+     * @return The dedicated message to send current effective distributed attributes. {@code null}, if there are no
+     * effective attributes in {@link OperationContext} or none of them is registered as the distribute attribute.
+     */
     public @Nullable DistributedOperationContextMessage collectDistributedAttributes() {
         DistributedOperationContextMessage res = null;
         List<Message> vals = null;
@@ -89,7 +103,7 @@ public class DistributedOperationContextManager {
         return res;
     }
 
-    /** */
+    /** Sets the received distributed operation context attributes (if any) into current {@link OperationContext}. */
     public Scope restoreDistributedAttributes(@Nullable DistributedOperationContextMessage msg) {
         if (msg == null)
             return Scope.NOOP_SCOPE;
