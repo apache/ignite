@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.thread.context;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
 import org.apache.ignite.IgniteException;
@@ -28,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
 /** */
 public class DistributedOperationContextManager {
     /** */
-    static final byte MAX_DISTRIBUTED_ATTR_CNT = 7;
+    static final byte MAX_DISTRIBUTED_ATTR_CNT = Byte.SIZE;
 
     /** */
     private static final DistributedOperationContextManager INSTANCE = new DistributedOperationContextManager();
@@ -42,13 +43,11 @@ public class DistributedOperationContextManager {
     }
 
     /** */
-    public <T extends Message> OperationContextAttribute<T> createDistributedAttriubte(byte id, @Nullable T initVal) {
+    public <T extends Message> OperationContextAttribute<T> createDistributedAttribute(byte id, @Nullable T initVal) {
         assert id >= 0;
 
-        if (attrs.size() == OperationContextAttribute.MAX_ATTR_CNT) {
-            throw new IgniteException("Maximum number of distributed attributes is exceeded [max="
-                + OperationContextAttribute.MAX_ATTR_CNT + "].");
-        }
+        if (attrs.size() == MAX_DISTRIBUTED_ATTR_CNT)
+            throw new IgniteException("Maximum number of distributed attributes is exceeded [max=" + MAX_DISTRIBUTED_ATTR_CNT + "].");
 
         return (OperationContextAttribute<T>)attrs.compute(id, (id0, attr0) -> {
             if (attr0 != null)
@@ -61,29 +60,31 @@ public class DistributedOperationContextManager {
     /** */
     public @Nullable DistributedOperationContextMessage collectDistributedAttributes() {
         DistributedOperationContextMessage res = null;
+        List<Message> vals = null;
 
         for (Map.Entry<Byte, OperationContextAttribute<? extends Message>> e : attrs.entrySet()) {
             OperationContextAttribute<? extends Message> attr = e.getValue();
 
             Message curVal = OperationContext.get(attr);
 
-            assert attr.initialValue() == null || curVal == null || curVal.getClass().isAssignableFrom(attr.initialValue().getClass());
-
             if (curVal != attr.initialValue()) {
                 if (res == null) {
                     res = new DistributedOperationContextMessage();
 
-                    res.vals = new ArrayList<>(MAX_DISTRIBUTED_ATTR_CNT / 2);
+                    vals = new ArrayList<>(MAX_DISTRIBUTED_ATTR_CNT / 2);
                 }
 
                 byte mask = (byte)(1 << e.getKey());
 
                 assert (res.idBitmap & mask) == 0;
 
-                res.vals.add(curVal);
+                vals.add(curVal);
                 res.idBitmap |= mask;
             }
         }
+
+        if (res != null)
+            res.vals = vals.toArray(vals.toArray(new Message[vals.size()]));
 
         return res;
     }
@@ -95,18 +96,15 @@ public class DistributedOperationContextManager {
 
         assert msg.idBitmap != 0;
         assert !F.isEmpty(msg.vals);
-        assert msg.vals.size() <= MAX_DISTRIBUTED_ATTR_CNT;
+        assert msg.vals.length <= MAX_DISTRIBUTED_ATTR_CNT;
 
         OperationContext.ContextUpdater updater = OperationContext.ContextUpdater.create();
 
-        for (byte valIdx = 0, maskIdx = 0; valIdx < msg.vals.size(); ++valIdx) {
-            Message curVal = msg.vals.get(valIdx);
+        for (byte valIdx = 0, maskIdx = 0; valIdx < msg.vals.length; ++valIdx) {
+            Message curVal = msg.vals[valIdx];
 
-            while ((msg.idBitmap & (1 << maskIdx)) == 0) {
-                assert maskIdx <= MAX_DISTRIBUTED_ATTR_CNT;
-
+            while ((msg.idBitmap & (1 << maskIdx)) == 0)
                 ++maskIdx;
-            }
 
             updater.set((OperationContextAttribute<Message>)attrs.get(maskIdx++), curVal);
         }

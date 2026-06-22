@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import java.util.List;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
@@ -25,9 +24,9 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 public class DistributedOperationContextMessage implements Message {
     /** Values of operation context attributes. */
     @Order(0)
-    public List<Message> vals;
+    public Message[] vals;
 
-    /** Bitmask of effective attributes ids. */
+    /** Bitmap of effective attributes ids. */
     @Order(1)
     public byte idBitmap;
 

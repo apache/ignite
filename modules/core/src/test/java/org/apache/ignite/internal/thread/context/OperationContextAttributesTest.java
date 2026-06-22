@@ -833,14 +833,14 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
 
         // Distributed attribute 1.
         OperationContextAttribute<InetSocketAddressMessage> dAttr1 = DistributedOperationContextManager.instance()
-            .createDistributedAttriubte(attrId1, dfltDistAttr1Val);
+            .createDistributedAttribute(attrId1, dfltDistAttr1Val);
 
         // Local attribute 2.
         OperationContextAttribute.newInstance("locaAttr2");
 
         // Distributed attribute 2.
         OperationContextAttribute<GridCacheVersion> dAttr2 = DistributedOperationContextManager.instance()
-            .createDistributedAttriubte(attrId2, dfltDistrAttr2Val);
+            .createDistributedAttribute(attrId2, dfltDistrAttr2Val);
 
         startGrids(2);
         startClientGrid(2);
