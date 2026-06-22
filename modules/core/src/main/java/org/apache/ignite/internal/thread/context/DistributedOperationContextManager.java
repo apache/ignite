@@ -37,7 +37,7 @@ public class DistributedOperationContextManager {
     /** */
     private static final DistributedOperationContextManager INSTANCE = new DistributedOperationContextManager();
 
-    /** Maximal number of supported distributed attributes. */
+    /** Maximal number of currently supported distributed attributes. */
     static final byte MAX_DISTRIBUTED_ATTR_CNT = Byte.SIZE;
 
     /** Registered distributed attributes by their cluster-wide id. */
