@@ -158,14 +158,6 @@ public class CircularStringBuilder {
     }
 
     /**
-     * Skip additional count of chars
-     * @param cnt Count of chars skipped.
-     */
-    public void skip(int cnt) {
-        skipped += cnt;
-    }
-
-    /**
      * Inserts a string into the buffer at the specified logical offset.
      * This method is optimized to minimize the number of elements moved by choosing
      * to shift elements from the closest end (left or right) to the insertion point.

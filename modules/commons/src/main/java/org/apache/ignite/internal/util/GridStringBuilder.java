@@ -256,6 +256,7 @@ public class GridStringBuilder implements Serializable {
      * @param start Start position to delete from.
      * @param end End position.
      * @return This buffer for chaining method calls.
+     * @throws UnsupportedOperationException if not supported by this imlementation
      */
     public GridStringBuilder d(int start, int end) {
         impl.delete(start, end);
@@ -267,6 +268,7 @@ public class GridStringBuilder implements Serializable {
      *
      * @param index Index to delete character at.
      * @return This buffer for chaining method calls.
+     * @throws UnsupportedOperationException if not supported by this imlementation
      */
     public GridStringBuilder d(int index) {
         impl.deleteCharAt(index);
@@ -291,6 +293,7 @@ public class GridStringBuilder implements Serializable {
      * @param end End position.
      * @param str String to replace with.
      * @return This buffer for chaining method calls.
+     * @throws UnsupportedOperationException if not supported by this imlementation
      */
     public GridStringBuilder r(int start, int end, String str) {
         impl.replace(start, end, str);
