@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
@@ -37,10 +38,14 @@ import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
  * Connection test.
  */
 public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
-    /** Custom cache name. */
+    /**
+     * Custom cache name.
+     */
     private static final String CUSTOM_CACHE_NAME = "custom-cache";
 
-    /** Grid count. */
+    /**
+     * Grid count.
+     */
     private static final int GRID_CNT = 2;
 
     /**
@@ -50,8 +55,11 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
         return "modules/clients/src/test/config/jdbc-config.xml";
     }
 
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME), cacheConfiguration(CUSTOM_CACHE_NAME));
@@ -72,8 +80,11 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(GRID_CNT);
     }
 
@@ -86,12 +97,12 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
 
         try (Connection conn = DriverManager.getConnection(url)) {
             assertNotNull(conn);
-            assertTrue(((JdbcConnection)conn).ignite().configuration().isClientMode());
+            assertTrue(((JdbcConnection) conn).ignite().configuration().isClientMode());
         }
 
         try (Connection conn = DriverManager.getConnection(url + '/')) {
             assertNotNull(conn);
-            assertTrue(((JdbcConnection)conn).ignite().configuration().isClientMode());
+            assertTrue(((JdbcConnection) conn).ignite().configuration().isClientMode());
         }
     }
 
@@ -125,7 +136,8 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
         GridTestUtils.assertThrows(
                 log,
                 new Callable<Object>() {
-                    @Override public Object call() throws Exception {
+                    @Override
+                    public Object call() throws Exception {
                         try (Connection conn = DriverManager.getConnection(url)) {
                             return conn;
                         }
@@ -150,7 +162,8 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
         GridTestUtils.assertThrows(
                 log,
                 new Callable<Object>() {
-                    @Override public Object call() throws Exception {
+                    @Override
+                    public Object call() throws Exception {
                         try (Connection conn = DriverManager.getConnection(url)) {
                             return conn;
                         }
@@ -181,16 +194,17 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
         final String url = CFG_URL_PREFIX + "cache=wrongCacheName@" + configURL();
 
         GridTestUtils.assertThrows(
-            log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    try (Connection conn = DriverManager.getConnection(url)) {
-                        return conn;
+                log,
+                new Callable<Object>() {
+                    @Override
+                    public Object call() throws Exception {
+                        try (Connection conn = DriverManager.getConnection(url)) {
+                            return conn;
+                        }
                     }
-                }
-            },
-            SQLException.class,
-            "Client is invalid. Probably cache name is wrong."
+                },
+                SQLException.class,
+                "Client is invalid. Probably cache name is wrong."
         );
     }
 
@@ -210,16 +224,17 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
             assertTrue(conn.isClosed());
 
             GridTestUtils.assertThrows(
-                log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        conn.isValid(2);
+                    log,
+                    new Callable<Object>() {
+                        @Override
+                        public Object call() throws Exception {
+                            conn.isValid(2);
 
-                        return null;
-                    }
-                },
-                SQLException.class,
-                "Connection is closed."
+                            return null;
+                        }
+                    },
+                    SQLException.class,
+                    "Connection is closed."
             );
         }
     }
@@ -266,35 +281,35 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     @Test
     public void testSqlHints() throws Exception {
         try (final Connection conn = DriverManager.getConnection(CFG_URL_PREFIX + "enforceJoinOrder=true@"
-            + configURL())) {
-            assertTrue(((JdbcConnection)conn).isEnforceJoinOrder());
-            assertFalse(((JdbcConnection)conn).isDistributedJoins());
-            assertFalse(((JdbcConnection)conn).isCollocatedQuery());
-            assertFalse(((JdbcConnection)conn).skipReducerOnUpdate());
+                + configURL())) {
+            assertTrue(((JdbcConnection) conn).isEnforceJoinOrder());
+            assertFalse(((JdbcConnection) conn).isDistributedJoins());
+            assertFalse(((JdbcConnection) conn).isCollocatedQuery());
+            assertFalse(((JdbcConnection) conn).skipReducerOnUpdate());
         }
 
         try (final Connection conn = DriverManager.getConnection(CFG_URL_PREFIX + "distributedJoins=true@"
-            + configURL())) {
-            assertFalse(((JdbcConnection)conn).isEnforceJoinOrder());
-            assertTrue(((JdbcConnection)conn).isDistributedJoins());
-            assertFalse(((JdbcConnection)conn).isCollocatedQuery());
-            assertFalse(((JdbcConnection)conn).skipReducerOnUpdate());
+                + configURL())) {
+            assertFalse(((JdbcConnection) conn).isEnforceJoinOrder());
+            assertTrue(((JdbcConnection) conn).isDistributedJoins());
+            assertFalse(((JdbcConnection) conn).isCollocatedQuery());
+            assertFalse(((JdbcConnection) conn).skipReducerOnUpdate());
         }
 
         try (final Connection conn = DriverManager.getConnection(CFG_URL_PREFIX + "collocated=true@"
-            + configURL())) {
-            assertFalse(((JdbcConnection)conn).isEnforceJoinOrder());
-            assertFalse(((JdbcConnection)conn).isDistributedJoins());
-            assertTrue(((JdbcConnection)conn).isCollocatedQuery());
-            assertFalse(((JdbcConnection)conn).skipReducerOnUpdate());
+                + configURL())) {
+            assertFalse(((JdbcConnection) conn).isEnforceJoinOrder());
+            assertFalse(((JdbcConnection) conn).isDistributedJoins());
+            assertTrue(((JdbcConnection) conn).isCollocatedQuery());
+            assertFalse(((JdbcConnection) conn).skipReducerOnUpdate());
         }
 
         try (final Connection conn = DriverManager.getConnection(CFG_URL_PREFIX + "skipReducerOnUpdate=true@"
-            + configURL())) {
-            assertFalse(((JdbcConnection)conn).isEnforceJoinOrder());
-            assertFalse(((JdbcConnection)conn).isDistributedJoins());
-            assertFalse(((JdbcConnection)conn).isCollocatedQuery());
-            assertTrue(((JdbcConnection)conn).skipReducerOnUpdate());
+                + configURL())) {
+            assertFalse(((JdbcConnection) conn).isEnforceJoinOrder());
+            assertFalse(((JdbcConnection) conn).isDistributedJoins());
+            assertFalse(((JdbcConnection) conn).isCollocatedQuery());
+            assertTrue(((JdbcConnection) conn).skipReducerOnUpdate());
         }
     }
 
@@ -307,17 +322,41 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
             final String url = CFG_URL_PREFIX + scheme + "://attacker.example.com/evil.xml";
 
             GridTestUtils.assertThrows(
-                log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        try (Connection conn = DriverManager.getConnection(url)) {
-                            return conn;
+                    log,
+                    new Callable<Object>() {
+                        @Override
+                        public Object call() throws Exception {
+                            try (Connection conn = DriverManager.getConnection(url)) {
+                                return conn;
+                            }
                         }
-                    }
-                },
-                SQLException.class,
-                null
+                    },
+                    SQLException.class,
+                    null
             );
         }
+    }
+
+    /**
+     * Test that JDBC cfg:// URL with remote HTTP location is allowed when system property is set.
+     */
+    @Test
+    @WithSystemProperty(key = "ignite.spring.cfg.allowRemoteUrl", value = "true")
+    public void testRemoteHttpCfgUrlAllowedWhenFlagSet() {
+        final String url = CFG_URL_PREFIX + "http://127.0.0.1:1/nonexistent.xml";
+
+        GridTestUtils.assertThrows(
+            log,
+            new Callable<Object>() {
+                @Override
+                public Object call() throws Exception {
+                    try (Connection conn = DriverManager.getConnection(url)) {
+                        return conn;
+                    }
+                }
+            },
+            SQLException.class,
+            null
+        );
     }
 }
