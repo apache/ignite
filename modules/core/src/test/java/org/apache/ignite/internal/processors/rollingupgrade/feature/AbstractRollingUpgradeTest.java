@@ -195,7 +195,7 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
 
         /** */
         public TestRollingUpgradeProcessor(GridKernalContext ctx, IgniteProductFeatures testNodeVerFeatures) {
-            super(ctx, () -> testNodeVerFeatures);
+            super(ctx, testNodeVerFeatures);
 
             ctx.event().addLocalEventListener(new TestNodeValidationFailedEventListener(), EVT_NODE_VALIDATION_FAILED);
         }

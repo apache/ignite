@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.rollingupgrade.feature;
 
-import java.util.function.Supplier;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -37,9 +36,9 @@ public class IgniteFeatureManager {
     private volatile IgniteProductFeatures activeFeatures;
 
     /** */
-    public IgniteFeatureManager(GridKernalContext ctx, Supplier<IgniteProductFeatures> locVerFeaturesProv) {
+    public IgniteFeatureManager(GridKernalContext ctx, IgniteProductFeatures locVerFeatures) {
         this.ctx = ctx;
-        locVerFeatures = locVerFeaturesProv.get();
+        this.locVerFeatures = locVerFeatures;
         locVerFeaturesActivationFut = new GridFutureAdapter<>();
     }
 

@@ -23,7 +23,6 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.UUID;
-import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -90,20 +89,20 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
     /** */
     public RollingUpgradeProcessor(GridKernalContext ctx) {
-        this(ctx, () -> new IgniteProductFeatures(
-            IgniteVersionUtils.VER,
-            IgniteFeatureSet.buildFrom(SupportedFeaturesRegistry.class))
+        this(
+            ctx,
+            new IgniteProductFeatures(IgniteVersionUtils.VER, IgniteFeatureSet.buildFrom(SupportedFeaturesRegistry.class))
         );
     }
 
     /** */
-    protected RollingUpgradeProcessor(GridKernalContext ctx, Supplier<IgniteProductFeatures> locVerFeaturesProv) {
+    protected RollingUpgradeProcessor(GridKernalContext ctx, IgniteProductFeatures locVerFeatures) {
         super(ctx);
 
         enableProc = new ClusterVersionUpgradeEnableProcess();
         finalizeProc = new ClusterVersionFinalizationProcess();
         finalizeAbortProc = new ClusterVersionFinalizationAbortProcess();
-        featureMgr = new IgniteFeatureManager(ctx, locVerFeaturesProv);
+        featureMgr = new IgniteFeatureManager(ctx, locVerFeatures);
     }
 
     /** @return Whether nodes running a higher Ignite version are allowed to join the cluster. */
