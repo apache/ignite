@@ -1955,16 +1955,27 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         forAllRegisteredCacheGroups(new IgniteInClosureX<CacheGroupDescriptor>() {
             @Override public void applyx(CacheGroupDescriptor desc) throws IgniteCheckedException {
+                int grpId = desc.groupId();
+
+                CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+
+                if (skipNotStartedDynamicGroupOnFirstLocalJoin(fut, desc, grp, newAff)) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("Skip coordinator affinity initialization for not-started dynamic cache group" +
+                            " on first local join exchange [grp=" + desc.cacheOrGroupName() +
+                            ", grpId=" + desc.groupId() + ", curTopVer=" + topVer +
+                            ", grpStartTopVer=" + desc.startTopologyVersion() + ']');
+                    }
+
+                    return;
+                }
+
                 CacheGroupHolder grpHolder = getOrCreateGroupHolder(topVer, desc);
 
                 if (grpHolder.affinity().idealAssignmentRaw() != null)
                     return;
 
                 // Need initialize holders and affinity if this node became coordinator during this exchange.
-                int grpId = desc.groupId();
-
-                CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
-
                 if (grp == null) {
                     grpHolder = CacheGroupNoAffOrFilteredHolder.create(cctx, desc, topVer, null);
 
@@ -2077,6 +2088,40 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
 
         return null;
+    }
+
+    /** */
+    private boolean skipNotStartedDynamicGroupOnFirstLocalJoin(
+        GridDhtPartitionsExchangeFuture fut,
+        CacheGroupDescriptor desc,
+        @Nullable CacheGroupContext grp,
+        boolean newAff
+    ) {
+        if (grp != null)
+            return false;
+
+        if (newAff)
+            return false;
+
+        if (!firstLocalJoinExchange(fut))
+            return false;
+
+        AffinityTopologyVersion grpStartTopVer = desc.startTopologyVersion();
+
+        if (grpStartTopVer == null)
+            return false;
+
+        return grpStartTopVer.after(fut.initialVersion());
+    }
+
+    /** */
+    private boolean firstLocalJoinExchange(GridDhtPartitionsExchangeFuture fut) {
+        AffinityTopologyVersion topVer = fut.initialVersion();
+
+        return fut.firstEvent().eventNode().isLocal()
+            && topVer.topologyVersion() == 1
+            && topVer.minorTopologyVersion() == 0
+            && cctx.localNode().order() == 1;
     }
 
     /**
