@@ -204,6 +204,97 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         fut4.get(3_000);
     }
 
+    /** */
+    @Test
+    public void testSetLength() {
+        SBLimitedLength sbLimitedLength = new SBLimitedLength(256);
+        SBLengthLimit sbLengthLimit = new SBLengthLimit();
+        sbLimitedLength.initLimit(sbLengthLimit);
+
+    }
+
+    /** */
+    @Test
+    public void testObjectRecursionPrevention() {
+        RecursivePayload recursivePayload1 = new RecursivePayload(8_000, null);
+        RecursivePayload recursivePayload2 = new RecursivePayload(4_000, recursivePayload1);
+        recursivePayload1.setChild(recursivePayload2);
+        String result;
+        result = recursivePayload1.toString();
+        info(result);
+        String identity = identity(recursivePayload1);
+        assertTrue(result.matches("^.*" + identity + ".*" + identity + ".*$"));
+        // it's in the middle
+        RecursivePayload recursivePayload0;
+        recursivePayload0 = new RecursivePayload(8, recursivePayload1);
+        result = recursivePayload0.toString();
+        info(result);
+        assertTrue(result.matches("^.*" + identity + ".*" + identity + ".*$"));
+        // it's in the head
+        recursivePayload0 = new RecursivePayload(8_000 - 60, recursivePayload1);
+        result = recursivePayload0.toString();
+        info(result);
+        assertTrue(result.matches("^.*" + identity + ".*" + identity + ".*$"));
+        // it's in the tail
+        recursivePayload1 = new RecursivePayload('1', 1, null);
+        identity = identity(recursivePayload1);
+        recursivePayload2 = new RecursivePayload('2', 1, recursivePayload1);
+        recursivePayload1.setChild(recursivePayload2);
+        recursivePayload0 = new RecursivePayload(8_001, recursivePayload1);
+        result = recursivePayload0.toString();
+        info(result);
+        assertTrue(result.matches("^.*" + identity + ".*" + identity + ".*$"));
+    }
+
+    /** */
+    private static class RecursivePayload {
+        /** */
+        private final String payload;
+
+        /** */
+        private RecursivePayload child;
+
+        /**
+         * Constructor
+         * @param payloadLength Payload length.
+         * @param child         Child (nullable)
+         */
+        private RecursivePayload(int payloadLength, RecursivePayload child) {
+            this('a', payloadLength, child);
+        }
+
+        /**
+         * Constructor
+         * @param payloadChar   PayloadChar
+         * @param payloadLength Payload length.
+         * @param child         Child (nullable)
+         */
+        private RecursivePayload(char payloadChar, int payloadLength, RecursivePayload child) {
+            payload = String.valueOf(payloadChar).repeat(payloadLength);
+            this.child = child;
+        }
+
+        /** */
+        public String getPayload() {
+            return payload;
+        }
+
+        /** */
+        public RecursivePayload getChild() {
+            return child;
+        }
+
+        /** */
+        public void setChild(RecursivePayload child) {
+            this.child = child;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(RecursivePayload.class, this);
+        }
+    }
+
     /**
      * Test class.
      */
@@ -552,14 +643,13 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         checkHierarchy("Wrapper [p=Child [b=0, pb=Parent[] [null], super=Parent [a=0, pa=Parent[] [null]]]]", w);
 
         p.pa[0] = p;
-
-        checkHierarchy("Wrapper [p=Child" + hash +
-            " [b=0, pb=Parent[] [null], super=Parent [a=0, pa=Parent[] [Child" + hash + "]]]]", w);
+        checkHierarchy("Wrapper [p=Child [b=0, pb=Parent[] [null], super=Parent" + hash +
+                " [a=0, pa=Parent[] [Child" + hash + "]]]]", w);
 
         ((Child)p).pb[0] = p;
 
         checkHierarchy("Wrapper [p=Child" + hash + " [b=0, pb=Parent[] [Child" + hash
-            + "], super=Parent [a=0, pa=Parent[] [Child" + hash + "]]]]", w);
+            + "], super=Parent" + hash + " [a=0, pa=Parent[] [Child" + hash + "]]]]", w);
     }
 
     /**
