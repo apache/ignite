@@ -44,7 +44,7 @@ public class DistributedOperationContextManager {
 
     /** */
     public <T extends Message> OperationContextAttribute<T> createDistributedAttribute(byte id, @Nullable T initVal) {
-        assert id >= 0;
+        assert id >= 0 && id < MAX_DISTRIBUTED_ATTR_CNT : "Invalid distributed attributed id [id=" + id + "].";
 
         if (attrs.size() == MAX_DISTRIBUTED_ATTR_CNT)
             throw new IgniteException("Maximum number of distributed attributes is exceeded [max=" + MAX_DISTRIBUTED_ATTR_CNT + "].");

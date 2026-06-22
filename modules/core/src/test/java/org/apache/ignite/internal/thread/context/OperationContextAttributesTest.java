@@ -823,7 +823,7 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
     @Test
     public void testSendAttributesByDiscovery() throws Exception {
         byte attrId1 = 0;
-        byte attrId2 = DistributedOperationContextManager.MAX_DISTRIBUTED_ATTR_CNT;
+        byte attrId2 = DistributedOperationContextManager.MAX_DISTRIBUTED_ATTR_CNT - 1;
 
         InetSocketAddressMessage dfltDistAttr1Val = new InetSocketAddressMessage(InetAddress.getLoopbackAddress(), 80);
         GridCacheVersion dfltDistrAttr2Val = new GridCacheVersion(1, 1, 1);
