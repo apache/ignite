@@ -488,6 +488,13 @@
         </profile>
 
         <profile>
+            <id>docs</id>
+            <modules>
+                <module>docs/_docs/code-snippets/java</module>
+            </modules>
+        </profile>
+
+        <profile>
             <id>update-versions</id>
             <!-- updates versions -->
             <build>

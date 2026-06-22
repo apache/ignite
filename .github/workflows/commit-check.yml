@@ -99,6 +99,10 @@ jobs:
         run: |
           ./mvnw test-compile -Pall-java,licenses,lgpl,checkstyle,examples,check-licenses -B -V -T 1C
 
+      - name: Documentation code snippets compilation check
+        run: |
+          ./mvnw -Pdocs -pl :code-snippets -am compile -B -V
+
       - name: Run abandoned tests checks.
         # Reuse classes from the previous step; the differing profiles otherwise trigger a full reactor recompile.
         run : |
