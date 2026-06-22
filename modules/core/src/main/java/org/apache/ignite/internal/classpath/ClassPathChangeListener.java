@@ -25,6 +25,9 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageL
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.classpath.ClassPathProcessor.className;
+import static org.apache.ignite.internal.classpath.ClassPathProcessor.isClassPath;
+
 /**
  * Listener of {@link DistributedMetaStorage} updates related to {@link IgniteClassPath} instances.
  * Starts {@link ClassPathTask} to handle {@link IgniteClassPath} changes on local node.
@@ -48,17 +51,33 @@ public class ClassPathChangeListener implements DistributedMetaStorageListener<S
 
     /** {@inheritDoc} */
     @Override public void onUpdate(@NotNull String key, @Nullable Serializable oldVal, @Nullable Serializable newVal) {
-        if (!(oldVal instanceof IgniteClassPath oldIcp) || !(newVal instanceof IgniteClassPath newIcp)) {
-            String ot = oldVal == null ? null : oldVal.getClass().getName();
-            String nt = newVal == null ? null : newVal.getClass().getName();
-
-            log.warning("Wrong data in IgniteClassPath metastorage data [key=" + key + ", oldVal=" + ot + ", newVal=" + nt + ']');
+        if (!isClassPath(oldVal) || !isClassPath(newVal)) {
+            log.warning("Wrong data in IgniteClassPath metastorage data " +
+                "[key=" + key + ", oldVal=" + className(oldVal) + ", newVal=" + className(newVal) + ']');
 
             return;
         }
 
+        IgniteClassPath oldIcp = (IgniteClassPath)oldVal;
+        IgniteClassPath newIcp = (IgniteClassPath)newVal;
+
         if (newIcp == null) {
             log.warning("IgniteClassPath removed. Remove operation not supported at a time");
+
+            return;
+        }
+
+        if (newIcp.deployedOnNodes().isEmpty()) {
+            log.warning("All nodes that haves IgniteClassPath files left the grid [icp=" + newIcp.name() + ']');
+
+            ctx.classPath().addClassPathTask(newIcp, new ChangeClassPathStateTask(ctx, newIcp.id(), IgniteClassPathState.LOST));
+
+            return;
+        }
+
+        if (newIcp.equalsWithoutNodes(oldIcp)) {
+            if (log.isDebugEnabled())
+                log.debug("Event ignored. Old and new state equals [old=" + oldIcp + ", new = " + newIcp + ']');
 
             return;
         }
@@ -69,7 +88,14 @@ public class ClassPathChangeListener implements DistributedMetaStorageListener<S
 
                 break;
             case READY:
-                if (oldIcp.state() == IgniteClassPathState.NEW && !newIcp.deployedOnNodes().contains(ctx.localNodeId())) {
+                if (oldIcp.state() == IgniteClassPathState.NEW) {
+                    if (newIcp.deployedOnNodes().contains(ctx.localNodeId())) {
+                        if (log.isDebugEnabled())
+                            log.debug("Event ignored. IgniteClassPath deployed on node, already: " + newIcp);
+
+                        return;
+                    }
+
                     log.info("IgniteClassPath READY. Starting download to local node.");
 
                     ctx.classPath().addClassPathTask(newIcp, new DownloadClassPathTask(ctx, newIcp.id()));

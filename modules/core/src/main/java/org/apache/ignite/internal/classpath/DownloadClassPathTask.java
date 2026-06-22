@@ -64,9 +64,6 @@ public class DownloadClassPathTask extends ClassPathProcessor.ClassPathTask<Void
 
         UUID rmtNode = F.rand(icp.deployedOnNodes());
 
-        if (log.isInfoEnabled())
-            log.info("Start download ClassPath files [icp=" + icp.name() + ", node=" + rmtNode + ']');
-
         IgniteInternalFuture<Void> downloadRes = ctx.classPath().icpFilesHnd.downloadLocally(rmtNode, icp);
 
         downloadRes.listen(f -> {
@@ -79,19 +76,16 @@ public class DownloadClassPathTask extends ClassPathProcessor.ClassPathTask<Void
             if (log.isDebugEnabled())
                 log.debug("ClassPath files from remote node has been fully received [icp=" + icp.name() + ']');
 
-            ctx.classPath().modifyInMetastorageAsync(icpId, READY, state -> state.addDeployeOnNode(ctx.localNodeId()))
-                .listen(modifyRes -> result().onDone(modifyRes.result(), modifyRes.error()));
+            ctx.classPath()
+                .modifyInMetastorageAsync(icpId, READY, state -> state.addDeployeOnNode(ctx.localNodeId()))
+                .listen(this::finishTaskWithFutureResult);
         });
     }
 
     /** {@inheritDoc} */
     @Override public void ok() {
-        try {
-            log.info("ClassPath files downloaded [icp=" + fromMetastorage(icpId, READY, ctx).name() + ']');
-        }
-        catch (Exception e) {
-            log.warning("onDowloadSucceed", e);
-        }
+        if (log.isDebugEnabled())
+            log.debug("ClassPath files downloaded [icpId=" + icpId + ']');
     }
 
     /** {@inheritDoc} */

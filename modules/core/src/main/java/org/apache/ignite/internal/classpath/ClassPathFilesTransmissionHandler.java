@@ -103,7 +103,8 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
     IgniteInternalFuture<Void> downloadLocally(UUID rmtNodeId, IgniteClassPath icp) {
         assert !rmtNodeId.equals(ctx.localNodeId());
 
-        log.info("Start download ClassPath files [name=" + icp.name() + ", id=" + icp.id() + ']');
+        if (log.isInfoEnabled())
+            log.info("Start download ClassPath files [icp=" + icp.name() + ", rmtNode=" + rmtNodeId + ']');
 
         DownloadClassPathTask task = new DownloadClassPathTask(rmtNodeId, icp);
 
@@ -250,7 +251,7 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
             }
         }
         catch (Throwable e) {
-            U.error(log, "Processing snapshot request from remote node fails with an error", e);
+            U.error(log, "Processing ClassPath request from remote node fails with an error", e);
 
             ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
         }
@@ -295,7 +296,7 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
         DownloadClassPathTask task = active;
 
         if (!ensureTask(nodeId, task)) {
-            throw new TransmissionCancelledException("Stale snapshot transmission will be ignored " +
+            throw new TransmissionCancelledException("Stale ClassPath transmission will be ignored " +
                 "[icpId=" + icp.id() + ", file=" + name + ']');
         }
 
@@ -319,14 +320,14 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
             DownloadClassPathTask task = active;
 
             if (!ensureTask(nodeId, task)) {
-                throw new TransmissionCancelledException("Stale snapshot transmission will be ignored " +
+                throw new TransmissionCancelledException("Stale ClassPath transmission will be ignored " +
                     "[icpId=" + icp.id() + ", file=" + name + ']');
             }
 
             int filesLeft = task.filesLeft.decrementAndGet();
 
             if (log.isInfoEnabled()) {
-                log.info("Classpath file from remote node has been received " +
+                log.info("ClassPath file from remote node has been received " +
                     "[icp=" + task.icp.name() + ", file=" + name + ", filesLeft=" + filesLeft + ']');
             }
         };

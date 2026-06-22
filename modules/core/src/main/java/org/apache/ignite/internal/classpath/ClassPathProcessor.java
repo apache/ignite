@@ -19,6 +19,7 @@ package org.apache.ignite.internal.classpath;
 
 import java.io.File;
 import java.io.RandomAccessFile;
+import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -35,8 +36,10 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -44,6 +47,8 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.classpath.IgniteClassPathState.NEW;
 import static org.apache.ignite.internal.classpath.IgniteClassPathState.READY;
 
@@ -58,12 +63,15 @@ import static org.apache.ignite.internal.classpath.IgniteClassPathState.READY;
  *
  // TODO: remove from deployedNodes on OnNodeLeft event.
  */
-public class ClassPathProcessor extends GridProcessorAdapter {
+public class ClassPathProcessor extends GridProcessorAdapter implements DistributedMetastorageLifecycleListener {
     /** Prefix for metastorage keys. */
     static final String METASTORE_PREFIX = "icp.";
 
     /** Handles download requests for {@link IgniteClassPath} files. */
     final ClassPathFilesTransmissionHandler icpFilesHnd;
+
+    /** System discovery message listener. */
+    private DiscoveryEventListener discoLsnr;
 
     /** */
     private final ConcurrentMap<UUID, Queue<ClassPathTask<?>>> icpTasks = new ConcurrentHashMap<>();
@@ -81,12 +89,46 @@ public class ClassPathProcessor extends GridProcessorAdapter {
     @Override public void start() throws IgniteCheckedException {
         icpFilesHnd.start();
 
+        synchronized (this) {
+            ctx.event().addDiscoveryEventListener(discoLsnr = (evt, discoCache) -> {
+                UUID leftNodeId = evt.eventNode().id();
+
+                try {
+                    ctx.distributedMetastorage().iterate(METASTORE_PREFIX, (key, val) -> {
+                        if (!isClassPath(val)) {
+                            log.warning("Wrong data in IgniteClassPath metastorage data [key=" + key + ", val=" + (val) + ']');
+
+                            return;
+                        }
+
+                        IgniteClassPath icp = (IgniteClassPath)val;
+
+                        addClassPathTask(icp, new RemoveNodeFromClassPathTask(ctx, icp.id(), leftNodeId));
+                    });
+                }
+                catch (IgniteCheckedException e) {
+                    log.warning("Distributed metastore iteration error", e);
+                }
+
+            }, EVT_NODE_LEFT, EVT_NODE_FAILED);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
+        super.onKernalStart(active);
+
         ctx.distributedMetastorage().listen(key -> key.startsWith(METASTORE_PREFIX), new ClassPathChangeListener(ctx));
     }
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
         icpFilesHnd.stop();
+
+        synchronized (this) {
+            if (discoLsnr != null)
+                ctx.event().removeDiscoveryEventListener(discoLsnr);
+        }
     }
 
     /**
@@ -119,13 +161,6 @@ public class ClassPathProcessor extends GridProcessorAdapter {
         log.info("New IgniteClasspath created [root = " + root + ", icp=" + icp + ']');
 
         return icp.id();
-    }
-
-    /** */
-    public void makeReady(UUID icpId) throws IgniteCheckedException {
-        IgniteClassPath icp = fromMetastorage(icpId, NEW, ctx);
-
-        casToMetastorageAsync(icp, icp.newState(READY)).get();
     }
 
     /**
@@ -222,6 +257,17 @@ public class ClassPathProcessor extends GridProcessorAdapter {
 
             throw new IgniteException(e);
         }
+    }
+
+    /** */
+    public void makeReady(UUID icpId) throws IgniteCheckedException {
+        IgniteClassPath icp = fromMetastorage(icpId, NEW, ctx);
+
+        ChangeClassPathStateTask task = new ChangeClassPathStateTask(ctx, icpId, READY);
+
+        addClassPathTask(icp, task);
+
+        task.result().get();
     }
 
     /** */
@@ -326,7 +372,7 @@ public class ClassPathProcessor extends GridProcessorAdapter {
      */
     public GridFutureAdapter<Void> modifyInMetastorageAsync(
         UUID icpId,
-        IgniteClassPathState state,
+        @Nullable IgniteClassPathState state,
         Function<IgniteClassPath, IgniteClassPath> change
     ) {
         GridFutureAdapter<Void> res = new GridFutureAdapter<>();
@@ -339,7 +385,7 @@ public class ClassPathProcessor extends GridProcessorAdapter {
     /** */
     private void modifyWithRetriesAsync(
         UUID icpId,
-        IgniteClassPathState state,
+        @Nullable IgniteClassPathState state,
         Function<IgniteClassPath, IgniteClassPath> change,
         GridFutureAdapter<Void> res,
         int hardLimit
@@ -370,9 +416,17 @@ public class ClassPathProcessor extends GridProcessorAdapter {
                     return;
                 }
 
+                boolean metastorageWritten = casRes.result() != null && casRes.result();
+
+                if (metastorageWritten) {
+                    res.onDone((Void)null);
+
+                    return;
+                }
+
                 // Concurrent node modifies first? It's OK, trying to repeat.
-                if (casRes.result() == null || !casRes.result())
-                    modifyWithRetriesAsync(icpId, state, change, res, hardLimit - 1);
+                modifyWithRetriesAsync(icpId, state, change, res, hardLimit - 1);
+
             });
         }
         catch (Exception e) {
@@ -397,7 +451,7 @@ public class ClassPathProcessor extends GridProcessorAdapter {
             if (icp[0] == null)
                 throw new IgniteException("ClassPath not found: " + icpId);
 
-            if (icp[0].state() != expState)
+            if (expState != null && icp[0].state() != expState)
                 throw new IgniteException("ClassPath in wrong state [expected=" + expState + ", status=" + icp[0].state() + ']');
 
             return icp[0];
@@ -490,6 +544,16 @@ public class ClassPathProcessor extends GridProcessorAdapter {
     }
 
     /** */
+    public static boolean isClassPath(Serializable icp) {
+        return icp == null || icp instanceof IgniteClassPath;
+    }
+
+    /** */
+    public static String className(@Nullable Serializable oldVal) {
+        return oldVal == null ? null : oldVal.getClass().getName();
+    }
+
+    /** */
     abstract static class ClassPathTask<R> {
         /** */
         private final GridFutureAdapter<R> taskRes = new GridFutureAdapter<R>();
@@ -516,6 +580,14 @@ public class ClassPathProcessor extends GridProcessorAdapter {
                     fail(resFut.error());
             });
 
+        }
+
+        /** */
+        void finishTaskWithFutureResult(IgniteInternalFuture<?> action) {
+            if (action.error() == null)
+                result().onDone();
+            else
+                result().onDone(action.error());
         }
 
         /**

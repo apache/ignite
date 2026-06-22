@@ -105,19 +105,23 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
         if (commandHandler.equals(JMX_CMD_HND))
             assertTrue(grid(0).context().pdsFolderResolver().fileTree().classPathRoot(cpName()).mkdirs());
 
-        LogListener cpReadyLsnr = readyLogListener(GRID_CNT);
+        LogListener cpReadyLsnr = readyLogListener(GRID_CNT - 1);
 
         lsnrLog.registerListener(cpReadyLsnr);
 
         assertEquals(EXIT_CODE_OK, execute(hnd, "--class-path", "create", "--name", cpName(), "--files", filesArg));
 
+        assertTrue(waitForCondition(cpReadyLsnr::check, 30_000));
+
         IgniteClassPath icp = classPath();
 
         assertEquals(READY, icp.state());
+        assertEquals(GRID_CNT, icp.deployedOnNodes().size());
+        assertTrue(icp.deployedOnNodes().contains(grid(0).localNode().id()));
+        assertTrue(icp.deployedOnNodes().contains(grid(1).localNode().id()));
+        assertTrue(icp.deployedOnNodes().contains(grid(2).localNode().id()));
 
         checkFilesExists(cpName(), -1);
-
-        assertTrue(waitForCondition(cpReadyLsnr::check, 30_000));
     }
 
     /** Tests --create command. */
@@ -135,19 +139,22 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
 
         assertTrue(f.createNewFile());
 
-        LogListener cpReadyLsnr = readyLogListener(GRID_CNT - 1);
+        LogListener downloadSucceedMsg = readyLogListener(1);
 
-        lsnrLog.registerListener(cpReadyLsnr);
+        lsnrLog.registerListener(downloadSucceedMsg);
 
         assertEquals(EXIT_CODE_OK, execute(hnd, "--class-path", "create", "--name", cpName(), "--files", filesArg));
+
+        assertTrue(waitForCondition(downloadSucceedMsg::check, 30_000));
 
         IgniteClassPath icp = classPath();
 
         assertEquals(READY, icp.state());
+        assertEquals(2, icp.deployedOnNodes().size());
+        assertTrue(icp.deployedOnNodes().contains(grid(0).localNode().id()));
+        assertTrue(icp.deployedOnNodes().contains(grid(1).localNode().id()));
 
         checkFilesExists(cpName(), FAIL_NODE_IDX);
-
-        assertTrue(waitForCondition(cpReadyLsnr::check, 30_000));
     }
 
     /** */
@@ -291,8 +298,8 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
     /** */
     private static LogListener readyLogListener(int succeed) {
         return LogListener
-            .matches("ClassPath is READY. " + succeed + " of " + GRID_CNT + " nodes has its files")
-            .times(1)
+            .matches("IgniteClassPath task done [task=Download files")
+            .times(succeed)
             .build();
     }
 

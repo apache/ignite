@@ -20,6 +20,7 @@ package org.apache.ignite.internal.classpath;
 import java.nio.file.Path;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -79,25 +80,27 @@ public class ClassPathMailicuosRequestsTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testUnknownFilename() throws IgniteCheckedException {
-        UUID icpId = cpProc().startCreation("mycp", new String[]{"file.txt"}, new long[]{42});
+        UUID icpId0 = cpProc().startCreation("mycp", new String[]{"file.txt"}, new long[]{42});
 
         assertThrows(
             null,
             () -> {
-                cpProc().copyClassPathFileLocally(icpId, Path.of("other.txt"));
+                cpProc().copyClassPathFileLocally(icpId0, Path.of("other.txt"));
                 return null;
             },
-            IllegalArgumentException.class,
+            IgniteException.class,
             "Unknown lib"
         );
 
+        UUID icpId1 = cpProc().startCreation("mycp", new String[]{"file.txt"}, new long[]{42});
+
         assertThrows(
             null,
             () -> {
-                cpProc().writeFilePartFromClient(icpId, "other.txt", 0, new byte[1]);
+                cpProc().writeFilePartFromClient(icpId1, "other.txt", 0, new byte[1]);
                 return null;
             },
-            IllegalArgumentException.class,
+            IgniteException.class,
             "Unknown lib"
         );
     }

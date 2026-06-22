@@ -25,6 +25,9 @@ public enum IgniteClassPathState {
     /** Ready for usage. */
     READY,
 
+    /** There are no nodes with ClassPath files. */
+    LOST,
+
     /** Marked for removal. Newly started code can't use corresponding classpath. */
     REMOVING
 }
