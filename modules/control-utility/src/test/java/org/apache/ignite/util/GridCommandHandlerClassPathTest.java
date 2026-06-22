@@ -96,7 +96,6 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
         stopAllGrids();
     }
 
-    // TODO: add test that classpath can be created only with ADMIN_OPS privelege.
     // TODO: add CRC or other check of file integrity.
     // TODO add in production code checks of files integriy. Perform file integrity check on startup.
 
