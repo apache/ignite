@@ -95,6 +95,7 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
     // TODO: reboot of in-memory cluster erase distributed metastorage state. ???
     // TODO: support deployment on newly joined node.
     // TODO: add MAX file size check, free disk amount check.
+    // TODO: concurrent command with the same name: MUST succeed only one
 
     /** Tests --create command. */
     @Test
