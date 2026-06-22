@@ -16,11 +16,12 @@
  */
 package org.apache.ignite.internal.classpath;
 
-
 import java.util.UUID;
 import org.apache.ignite.internal.GridKernalContext;
 
-/** */
+/**
+ * Changes {@link IgniteClassPath} state to {@link #state}.
+ */
 public class ChangeClassPathStateTask extends ClassPathProcessor.ClassPathTask<Void> {
     /** New {@link IgniteClassPath} state. */
     private final IgniteClassPathState state;
@@ -34,7 +35,7 @@ public class ChangeClassPathStateTask extends ClassPathProcessor.ClassPathTask<V
 
     /** {@inheritDoc} */
     @Override void start() {
-        ctx.classPath().modifyInMetastorageAsync(icpId, null,icp -> icp.newState(state)).listen(this::finishTaskWithFutureResult);
+        ctx.classPath().modifyInMetastorageAsync(icpId, null, icp -> icp.newState(state)).listen(this::finishTaskWithFutureResult);
     }
 
     /** {@inheritDoc} */

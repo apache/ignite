@@ -77,7 +77,7 @@ public class DownloadClassPathTask extends ClassPathProcessor.ClassPathTask<Void
                 log.debug("ClassPath files from remote node has been fully received [icp=" + icp.name() + ']');
 
             ctx.classPath()
-                .modifyInMetastorageAsync(icpId, READY, state -> state.addDeployeOnNode(ctx.localNodeId()))
+                .modifyInMetastorageAsync(icpId, READY, state -> state.addDeployedOnNode(ctx.localNodeId()))
                 .listen(this::finishTaskWithFutureResult);
         });
     }

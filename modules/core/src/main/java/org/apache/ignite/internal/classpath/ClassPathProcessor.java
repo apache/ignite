@@ -60,8 +60,6 @@ import static org.apache.ignite.internal.classpath.IgniteClassPathState.READY;
  * Do we want to have some flag to skip remove in this case? (if we preparing for ICP registration).
  * 3. Should we include CP into snapshots and dumps?
  * 4. Should we control file size to ensure disk free space enough to upload CP files?
- *
- // TODO: remove from deployedNodes on OnNodeLeft event.
  */
 public class ClassPathProcessor extends GridProcessorAdapter implements DistributedMetastorageLifecycleListener {
     /** Prefix for metastorage keys. */
@@ -94,22 +92,28 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
                 UUID leftNodeId = evt.eventNode().id();
 
                 try {
-                    ctx.distributedMetastorage().iterate(METASTORE_PREFIX, (key, val) -> {
-                        if (!isClassPath(val)) {
-                            log.warning("Wrong data in IgniteClassPath metastorage data [key=" + key + ", val=" + (val) + ']');
+                    ctx.pools().getSystemExecutorService().submit(() -> {
+                        try {
+                            ctx.distributedMetastorage().iterate(METASTORE_PREFIX, (key, val) -> {
+                                if (!isClassPath(val)) {
+                                    log.warning("Wrong data in IgniteClassPath metastorage data [key=" + key + ", val=" + (val) + ']');
 
-                            return;
+                                    return;
+                                }
+
+                                IgniteClassPath icp = (IgniteClassPath)val;
+
+                                addClassPathTask(icp, new RemoveNodeFromClassPathTask(ctx, icp.id(), leftNodeId));
+                            });
                         }
-
-                        IgniteClassPath icp = (IgniteClassPath)val;
-
-                        addClassPathTask(icp, new RemoveNodeFromClassPathTask(ctx, icp.id(), leftNodeId));
+                        catch (IgniteCheckedException e) {
+                            log.warning("Distributed metastore iteration error", e);
+                        }
                     });
                 }
-                catch (IgniteCheckedException e) {
-                    log.warning("Distributed metastore iteration error", e);
+                catch (RejectedExecutionException e) {
+                    log.warning("System pool rejected task", e);
                 }
-
             }, EVT_NODE_LEFT, EVT_NODE_FAILED);
         }
     }
@@ -284,15 +288,16 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
                 if (tasks == null)
                     tasks = new ConcurrentLinkedQueue<>();
 
-                if (tasks.peek().result() == doneFut) {
+                if (tasks.peek() != null && tasks.peek().result() == doneFut) {
                     tasks.poll();
 
-                    startAsync(tasks.peek());
+                    if (!F.isEmpty(tasks))
+                        startAsync(tasks.peek());
                 }
                 else
                     tasks.removeIf(t -> t == task);
 
-                return tasks;
+                return F.isEmpty(tasks) ? null : tasks;
             });
         });
 
@@ -394,6 +399,8 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
             log.error("Reached hard limit on CAS attempts. Fail operation [icpId=" + icpId + ", state=" + state + ']');
 
             res.onDone(new IgniteException("Hard limit of CAS reached"));
+
+            return;
         }
 
         try {
@@ -574,10 +581,24 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
             this.log = ctx.log(getClass());
 
             result().listen(resFut -> {
-                if (resFut.error() == null)
-                    ok();
-                else
-                    fail(resFut.error());
+                try {
+                    if (resFut.error() == null)
+                        ok();
+                    else
+                        fail(resFut.error());
+                }
+                finally {
+                    ClassPathTask<R> t = this;
+
+                    ctx.classPath().icpTasks.compute(icpId, (ignored, tasks) -> {
+                        if (tasks == null)
+                            return null;
+
+                        tasks.remove(t);
+
+                        return F.isEmpty(tasks) ? null : tasks;
+                    });
+                }
             });
 
         }

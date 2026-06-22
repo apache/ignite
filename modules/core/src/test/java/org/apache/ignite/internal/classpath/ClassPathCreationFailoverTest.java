@@ -123,8 +123,7 @@ public class ClassPathCreationFailoverTest extends GridCommonAbstractTest {
 
         LogListener createdMsg = newClassPathListener();
         LogListener uploadNodeFailedMsg = logListener("Failed to download ClassPath files [icp=testcp]");
-        LogListener lostStateMsg =
-            LogListener.matches("IgniteClassPath task done [task=ChangeClassPathState[newState=LOST]").times(2).build();
+        LogListener lostStateMsg = logListener("IgniteClassPath task done [task=ChangeClassPathState[newState=LOST]");
 
         lsnrLog.registerAllListeners(createdMsg, uploadNodeFailedMsg, lostStateMsg);
 

@@ -27,6 +27,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.classpath.ClassPathProcessor.className;
 import static org.apache.ignite.internal.classpath.ClassPathProcessor.isClassPath;
+import static org.apache.ignite.internal.classpath.IgniteClassPathState.NEW;
+import static org.apache.ignite.internal.classpath.IgniteClassPathState.READY;
 
 /**
  * Listener of {@link DistributedMetaStorage} updates related to {@link IgniteClassPath} instances.
@@ -67,7 +69,7 @@ public class ClassPathChangeListener implements DistributedMetaStorageListener<S
             return;
         }
 
-        if (newIcp.deployedOnNodes().isEmpty()) {
+        if (newIcp.deployedOnNodes().isEmpty() && (newIcp.state() == NEW || newIcp.state() == READY)) {
             log.warning("All nodes that haves IgniteClassPath files left the grid [icp=" + newIcp.name() + ']');
 
             ctx.classPath().addClassPathTask(newIcp, new ChangeClassPathStateTask(ctx, newIcp.id(), IgniteClassPathState.LOST));
@@ -88,7 +90,7 @@ public class ClassPathChangeListener implements DistributedMetaStorageListener<S
 
                 break;
             case READY:
-                if (oldIcp.state() == IgniteClassPathState.NEW) {
+                if (oldIcp == null || oldIcp.state() == NEW) {
                     if (newIcp.deployedOnNodes().contains(ctx.localNodeId())) {
                         if (log.isDebugEnabled())
                             log.debug("Event ignored. IgniteClassPath deployed on node, already: " + newIcp);
@@ -102,6 +104,11 @@ public class ClassPathChangeListener implements DistributedMetaStorageListener<S
                 }
                 else
                     log.warning("Wrong state change. Ignore [prev=" + oldIcp.state() + ", new=" + newIcp.state() + ']');
+
+                break;
+
+            case LOST:
+                log.info("IgniteClassPath lost. Handle of LOST state not supported at a time");
 
                 break;
 

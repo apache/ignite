@@ -106,7 +106,7 @@ public class IgniteClassPath implements Serializable {
      * @param node Node to add.
      * @return Instance with modified set.
      */
-    IgniteClassPath addDeployeOnNode(UUID node) {
+    IgniteClassPath addDeployedOnNode(UUID node) {
         if (deployedOnNodes.contains(node))
             return this;
 
@@ -122,7 +122,7 @@ public class IgniteClassPath implements Serializable {
      * @param node Node to add.
      * @return Instance with modified set.
      */
-    public IgniteClassPath removeDeployeOnNode(UUID node) {
+    public IgniteClassPath removeDeployedOnNode(UUID node) {
         if (!deployedOnNodes.contains(node))
             return this;
 

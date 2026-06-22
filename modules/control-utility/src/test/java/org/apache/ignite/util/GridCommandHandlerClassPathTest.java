@@ -93,6 +93,7 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
 
     // Support pretty print for command.
     // TODO: reboot of in-memory cluster erase distributed metastorage state. ???
+    // TODO: support deployment on newly joined node.
 
     /** Tests --create command. */
     @Test

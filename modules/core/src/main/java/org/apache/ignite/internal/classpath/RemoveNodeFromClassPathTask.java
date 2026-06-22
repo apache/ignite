@@ -19,6 +19,9 @@ package org.apache.ignite.internal.classpath;
 import java.util.UUID;
 import org.apache.ignite.internal.GridKernalContext;
 
+/**
+ * Removes {@link #node2rmv} from {@link IgniteClassPath#deployedOnNodes()} set.
+ */
 public class RemoveNodeFromClassPathTask extends ClassPathProcessor.ClassPathTask<Void> {
     /** Node to remove from {@link IgniteClassPath#deployedOnNodes()} set. */
     private final UUID node2rmv;
@@ -32,7 +35,7 @@ public class RemoveNodeFromClassPathTask extends ClassPathProcessor.ClassPathTas
     /** {@inheritDoc} */
     @Override void start() {
         ctx.classPath()
-            .modifyInMetastorageAsync(icpId, null, icp -> icp.removeDeployeOnNode(node2rmv))
+            .modifyInMetastorageAsync(icpId, null, icp -> icp.removeDeployedOnNode(node2rmv))
             .listen(this::finishTaskWithFutureResult);
     }
 
