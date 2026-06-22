@@ -476,7 +476,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             null,
             false,
             null,
-            null);
+            null,
+            false);
 
         return new GridCacheProxyImpl<>(ctx, this, opCtx);
     }
@@ -495,7 +496,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 null,
                 false,
                 null,
-                null);
+                null,
+                false);
         }
         else
             opCtx = opCtx.withSkipReadThrough();
@@ -517,7 +519,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 null,
                 false,
                 null,
-                new HashMap<>(attrs));
+                new HashMap<>(attrs),
+                false);
         }
         else
             opCtx = opCtx.withApplicationAttributes(attrs);
@@ -536,9 +539,33 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             null,
             false,
             null,
-            null);
+            null,
+            false);
 
         return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx, (GridCacheAdapter<K1, V1>)this, opCtx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheProxyImpl<K, V> withKeepBinaryInInterceptor() {
+        CacheOperationContext opCtx = this.ctx.operationContextPerCall();
+
+        if (opCtx == null) {
+            opCtx = new CacheOperationContext(
+                false,
+                false,
+                false,
+                null,
+                false,
+                null,
+                false,
+                null,
+                null,
+                true);
+        }
+        else
+            opCtx = opCtx.withKeepBinaryInInterceptor();
+
+        return new GridCacheProxyImpl<>(this.ctx, this, opCtx);
     }
 
     /** {@inheritDoc} */
@@ -559,7 +586,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             null,
             false,
             null,
-            null);
+            null,
+            false);
 
         return new GridCacheProxyImpl<>(ctx, this, opCtx);
     }
@@ -575,7 +603,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             null,
             false,
             null,
-            null);
+            null,
+            false);
 
         return new GridCacheProxyImpl<>(ctx, this, opCtx);
     }
