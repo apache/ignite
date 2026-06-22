@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.query.calcite.sql.fun;
 
 import org.apache.calcite.sql.SqlFunction;
+import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlFunctionCategory;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.type.InferTypes;
@@ -38,6 +39,9 @@ public class IgniteOwnSqlOperatorTable extends ReflectiveSqlOperatorTable {
      * The table of contains Ignite-specific operators.
      */
     private static IgniteOwnSqlOperatorTable instance;
+
+    /** Sum of values having the first or last ordering key. */
+    public static final SqlAggFunction SUM_WITH_KEEP = new SqlSumWithKeepAggFunction();
 
     /**
      *

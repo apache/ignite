@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import com.google.common.collect.ImmutableList;
+import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
@@ -40,6 +41,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumulators;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType;
+import org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
@@ -240,6 +242,52 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
         Assert.assertArrayEquals(row(1, 1400), root.next());
 
         assertFalse(root.hasNext());
+    }
+
+    /** */
+    @Test
+    public void sumWithKeep() {
+        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+        IgniteTypeFactory tf = ctx.getTypeFactory();
+        RelDataType rowType = TypeUtils.createRowType(tf, int.class, int.class, String.class, int.class);
+        RelDataType aggRowType = TypeUtils.createRowType(tf, long.class);
+
+        for (String mode : Arrays.asList("FIRST", "LAST")) {
+            ScanNode<Object[]> scan = new ScanNode<>(ctx, rowType, Arrays.asList(
+                row(0, 10, mode, 2),
+                row(0, 20, mode, 1),
+                row(0, 30, mode, 1),
+                row(0, 40, mode, 3)
+            ));
+
+            AggregateCall call = AggregateCall.create(
+                IgniteOwnSqlOperatorTable.SUM_WITH_KEEP,
+                false,
+                false,
+                false,
+                ImmutableIntList.of(1, 2),
+                -1,
+                RelCollations.of(new RelFieldCollation(3)),
+                tf.createJavaType(long.class),
+                null);
+
+            SingleNode<Object[]> aggChain = createAggregateNodesChain(
+                ctx,
+                ImmutableList.of(ImmutableBitSet.of(0)),
+                call,
+                rowType,
+                aggRowType,
+                rowFactory(),
+                scan
+            );
+
+            RootNode<Object[]> root = new RootNode<>(ctx, aggRowType);
+            root.register(aggChain);
+
+            assertTrue(root.hasNext());
+            Assert.assertArrayEquals(row(0, "FIRST".equals(mode) ? 50L : 40L), root.next());
+            assertFalse(root.hasNext());
+        }
     }
 
     /** */
