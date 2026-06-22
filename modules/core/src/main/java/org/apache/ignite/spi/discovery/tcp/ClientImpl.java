@@ -1761,7 +1761,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         blockingSectionEnd();
                     }
 
-                    if (msg instanceof TcpDiscoveryClientReconnectMessage msg0 && msg0.opCtxMsg != null) {
+                    if (msg instanceof TcpDiscoveryAbstractMessage msg0 && msg0.opCtxMsg != null) {
                         try (Scope ignored = DistributedOperationContextManager.instance().restoreDistributedAttributes(msg0.opCtxMsg)) {
                             if (processRawMessage(msg))
                                 break;
