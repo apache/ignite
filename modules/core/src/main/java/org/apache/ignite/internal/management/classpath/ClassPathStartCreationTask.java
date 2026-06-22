@@ -50,7 +50,7 @@ public class ClassPathStartCreationTask extends VisorOneNodeTask<ClassPathCreate
                 return ignite.context().classPath().startCreation(arg.name, arg.files, arg.lengths);
             }
             catch (IgniteCheckedException e) {
-                throw new RuntimeException(e);
+                throw new IgniteException(e);
             }
         }
     }

@@ -48,8 +48,8 @@ public class DownloadClassPathFailureMessage implements Message {
     }
 
     /** */
-    public DownloadClassPathFailureMessage(IgniteClassPath icp, String err) {
-        this.icpId = icp.id();
+    public DownloadClassPathFailureMessage(UUID icpId, String err) {
+        this.icpId = icpId;
         this.err = err;
     }
 }

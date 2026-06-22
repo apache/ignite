@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -104,6 +105,24 @@ public class ClassPathMailicuosRequestsTest extends GridCommonAbstractTest {
             "Unknown lib"
         );
     }
+
+
+    /** */
+    @Test
+    public void testWrongOffset() throws IgniteCheckedException {
+        UUID icpId = cpProc().startCreation("mycp", new String[]{"file.txt"}, new long[]{42});
+
+        assertThrows(
+            null,
+            () -> {
+                cpProc().writeFilePartFromClient(icpId, "file.txt", U.GB, new byte[] {0});
+                return null;
+            },
+            IgniteException.class,
+            "Unexpected file offset [icp=mycp, file=file.txt]"
+        );
+    }
+
 
     /** */
     private ClassPathProcessor cpProc() {

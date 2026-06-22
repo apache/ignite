@@ -221,18 +221,16 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
                 catch (Exception t) {
                     U.error(log, "Error processing ClassPath file request [request=" + msg + ", nodeId=" + nodeId + ']', t);
 
-                    if (icp != null) {
-                        try {
-                            ctx.io().sendToCustomTopic(
-                                nodeId,
-                                FILES_TOPIC,
-                                new DownloadClassPathFailureMessage(icp, t.getMessage()),
-                                SYSTEM_POOL
-                            );
-                        }
-                        catch (Exception e) {
-                            log.warning("Error notifying node of send error", e);
-                        }
+                    try {
+                        ctx.io().sendToCustomTopic(
+                            nodeId,
+                            FILES_TOPIC,
+                            new DownloadClassPathFailureMessage(msg.icpId, t.getMessage()),
+                            SYSTEM_POOL
+                        );
+                    }
+                    catch (Exception e) {
+                        log.warning("Error notifying node of send error", e);
                     }
                 }
             }

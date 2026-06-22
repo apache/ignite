@@ -145,7 +145,12 @@ public class ClassPathCreateCommand implements NativeCommand<ClassPathCreateComm
             if (F.isEmpty(nodes))
                 throw new IllegalStateException("Not connected to node");
 
-            return client.cluster().node(F.first(nodes));
+            ClusterNode node = client.cluster().node(F.first(nodes));
+
+            if (node == null)
+                throw new IllegalStateException("Selected node leave the cluster: ");
+
+            return node;
         }
 
         return ignite.cluster().localNode();

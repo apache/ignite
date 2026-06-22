@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.classpath;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.Serializable;
 import java.nio.file.Files;
@@ -31,6 +32,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.function.Function;
+import java.util.function.LongSupplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -184,7 +186,7 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
         IgniteClassPath icp = fromMetastorage(icpId, NEW, ctx);
 
         try {
-            ensureKnownFilename(name, icp);
+            ensureKnownFilename(name, icp, () -> offset + batch.length);
 
             File root = ctx.pdsFolderResolver().fileTree().classPathRoot(icp.name());
 
@@ -213,7 +215,7 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
             log.error("Failed to upload ClassPath file, the ClassPath will be removed " +
                 "[name=" + icp.name() + ", id=" + icpId + ", file=" + name + ']', e);
 
-            cleanup(icp, false);
+            cleanup(icpId, false);
 
             throw new IgniteException(e);
         }
@@ -231,7 +233,14 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
         try {
             String name = file.getFileName().toString();
 
-            ensureKnownFilename(name, icp);
+            ensureKnownFilename(name, icp, () -> {
+                try {
+                    return Files.size(file);
+                }
+                catch (IOException e) {
+                    throw new IgniteException(e);
+                }
+            });
 
             File root = ctx.pdsFolderResolver().fileTree().classPathRoot(icp.name());
 
@@ -257,7 +266,7 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
             log.error("Failed to copy ClassPath file locally, the ClassPath will be removed " +
                 "[name=" + icp.name() + ", id=" + icpId + ']', e);
 
-            cleanup(icp, false);
+            cleanup(icpId, false);
 
             throw new IgniteException(e);
         }
@@ -481,11 +490,18 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
     }
 
     /** */
-    private static void ensureKnownFilename(String name, IgniteClassPath icp) {
+    private static void ensureKnownFilename(String name, IgniteClassPath icp, LongSupplier lastByteOffset) {
         ensureFilename(name);
 
-        if (F.indexOf(icp.files(), name) == -1)
+        int idx = F.indexOf(icp.files(), name);
+
+        if (idx == -1)
             throw new IllegalArgumentException("Unknown lib [icp=" + icp.name() + ", unknown_lib=" + name + ']');
+
+        long length = icp.lengths()[idx];
+
+        if (lastByteOffset.getAsLong() > length)
+            throw new IllegalArgumentException("Unexpected file offset [icp=" + icp.name() + ", file=" + name + ']');
     }
 
     /** */
@@ -499,16 +515,16 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
     /**
      * Asynchronously removes the classpath metastorage record and deletes its local files.
      *
-     * @param icp ClassPath to clean up.
+     * @param icpId ClassPath id.
      * @param loc If {@code true} then delete local files, only. Don't remove distributed key.
      */
-    IgniteInternalFuture<Void> cleanupAsync(IgniteClassPath icp, boolean loc) {
+    IgniteInternalFuture<Void> cleanupAsync(UUID icpId, boolean loc) {
         try {
             GridFutureAdapter<Void> res = new GridFutureAdapter<>();
 
             ctx.pools().getSystemExecutorService().submit(() -> {
                 try {
-                    cleanup(icp, loc);
+                    cleanup(icpId, loc);
 
                     res.onDone((Void)null);
                 }
@@ -534,10 +550,12 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
     /**
      * Removes the classpath metastorage record and deletes its local files.
      *
-     * @param icp ClassPath to clean up.
+     * @param icpId ClassPath id to clean up.
      * @param loc If {@code true} then delete local files, only. Don't remove distributed key.
      */
-    void cleanup(IgniteClassPath icp, boolean loc) {
+    void cleanup(UUID icpId, boolean loc) {
+        IgniteClassPath icp = fromMetastorage(icpId, null, ctx);
+
         if (!loc) {
             try {
                 ctx.distributedMetastorage().remove(metastorageKey(icp.name()));
