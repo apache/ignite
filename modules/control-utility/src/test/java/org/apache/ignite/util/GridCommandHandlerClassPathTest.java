@@ -20,7 +20,14 @@ package org.apache.ignite.util;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -28,11 +35,13 @@ import org.apache.ignite.internal.classpath.ClassPathProcessor;
 import org.apache.ignite.internal.classpath.ClassPathTestUtils;
 import org.apache.ignite.internal.classpath.IgniteClassPath;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.classpath.ClassPathProcessor.metastorageKey;
+import static org.apache.ignite.internal.classpath.ClassPathTestUtils.file;
 import static org.apache.ignite.internal.classpath.ClassPathTestUtils.fileNames;
 import static org.apache.ignite.internal.classpath.IgniteClassPathState.READY;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
@@ -95,7 +104,75 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
     // TODO: reboot of in-memory cluster erase distributed metastorage state. ???
     // TODO: support deployment on newly joined node.
     // TODO: add MAX file size check, free disk amount check.
-    // TODO: concurrent command with the same name: MUST succeed only one
+
+    /** Concurrent {@code --create} commands with the same name must result in exactly one success. */
+    @Test
+    public void testConcurrentCreateSameName() throws Exception {
+        injectTestSystemOut();
+
+        int cmdCnt = 4;
+
+        LogListener cpReadyLsnr = readyLogListener(GRID_CNT - 1);
+
+        lsnrLog.registerListener(cpReadyLsnr);
+
+        List<Set<Path>> fileSets = new ArrayList<>();
+
+        for (int i = 0; i < cmdCnt; i++)
+            fileSets.add(Set.of(file(1000L * (i + 1) + i)));
+
+        TestCommandHandler[] hnds = new TestCommandHandler[cmdCnt];
+
+        for (int i = 0; i < cmdCnt; i++)
+            hnds[i] = newCommandHandler(createTestLogger());
+
+        AtomicInteger okCnt = new AtomicInteger();
+        AtomicInteger failCnt = new AtomicInteger();
+        AtomicInteger idx = new AtomicInteger();
+
+        Set<Path> okFiles = new HashSet<>();
+
+        CountDownLatch latch = new CountDownLatch(cmdCnt);
+
+        GridTestUtils.runMultiThreadedAsync(() -> {
+            int i = idx.getAndIncrement();
+
+            latch.countDown();
+
+            assertTrue(latch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+
+            int res = execute(
+                hnds[i],
+                "--class-path", "create",
+                "--name", cpName(),
+                "--files", String.join(",", ClassPathTestUtils.fileArg(fileSets.get(i)))
+            );
+
+            if (res == EXIT_CODE_OK) {
+                okCnt.incrementAndGet();
+
+                okFiles.addAll(fileSets.get(i));
+            }
+            else
+                failCnt.incrementAndGet();
+
+            return null;
+        }, cmdCnt, "concurrent-cp-create").get(getTestTimeout());
+
+        assertEquals(1, okCnt.get());
+        assertEquals(cmdCnt - 1, failCnt.get());
+        assertTrue(waitForCondition(cpReadyLsnr::check, 30_000));
+
+        IgniteClassPath icp = classPath();
+
+        assertNotNull(icp);
+        assertEquals(READY, icp.state());
+        assertEquals(GRID_CNT, icp.deployedOnNodes().size());
+
+        assertEquals(fileNames(okFiles), new HashSet<>(Arrays.asList(icp.files())));
+
+        checkFilesExists(cpName(), -1, okFiles);
+    }
 
     /** Tests --create command. */
     @Test
@@ -124,7 +201,7 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
         assertTrue(icp.deployedOnNodes().contains(grid(1).localNode().id()));
         assertTrue(icp.deployedOnNodes().contains(grid(2).localNode().id()));
 
-        checkFilesExists(cpName(), -1);
+        checkFilesExists(cpName(), -1, cpFiles);
     }
 
     /** Tests --create command. */
@@ -157,7 +234,7 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
         assertTrue(icp.deployedOnNodes().contains(grid(0).localNode().id()));
         assertTrue(icp.deployedOnNodes().contains(grid(1).localNode().id()));
 
-        checkFilesExists(cpName(), FAIL_NODE_IDX);
+        checkFilesExists(cpName(), FAIL_NODE_IDX, cpFiles);
     }
 
     /** */
@@ -284,12 +361,12 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
     }
 
     /** */
-    private void checkFilesExists(String cpName, int skip) throws IOException {
+    private void checkFilesExists(String cpName, int skip, Set<Path> files) throws IOException {
         for (int i = 0; i < GRID_CNT; i++) {
             if (skip == i)
                 continue;
 
-            ClassPathTestUtils.checkFilesExists(grid(i), cpName, cpFiles);
+            ClassPathTestUtils.checkFilesExists(grid(i), cpName, files);
         }
     }
 

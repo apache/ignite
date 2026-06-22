@@ -61,7 +61,7 @@ public class ClassPathTestUtils {
     }
 
     /** */
-    private static Path file(long size) throws IOException {
+    public static Path file(long size) throws IOException {
         File f = File.createTempFile(size + "_bytes", ".temp");
 
         f.deleteOnExit();
