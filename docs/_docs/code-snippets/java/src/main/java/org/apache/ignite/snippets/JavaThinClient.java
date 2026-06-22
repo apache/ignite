@@ -25,6 +25,8 @@ import javax.cache.Cache;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.Ignition;
@@ -32,6 +34,8 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.Query;
@@ -47,6 +51,8 @@ import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientDisconnectListener;
 import org.apache.ignite.client.ClientException;
+import org.apache.ignite.client.ClientPartitionAwarenessMapper;
+import org.apache.ignite.client.ClientPartitionAwarenessMapperFactory;
 import org.apache.ignite.client.ClientTransaction;
 import org.apache.ignite.client.ClientTransactions;
 import org.apache.ignite.client.IgniteClient;
@@ -361,7 +367,7 @@ public class JavaThinClient {
             // Put, get or remove data from the cache...
             cache.put(0, "Hello, world!");
             // The partition number can be specified with IndexQuery#setPartition(Integer) as well.
-            ScanQuery scanQuery = new ScanQuery().setPartition(part);
+            ScanQuery scanQuery = new ScanQuery().setPartition(0);
         } catch (ClientException e) {
             System.err.println(e.getMessage());
         }
@@ -380,10 +386,10 @@ public class JavaThinClient {
 
                     return aff::partition;
                 }
-            })
+            });
 
         try (IgniteClient client = Ignition.startClient(cfg)) {
-            ClientCache<Integer, String> cache = client.cache(PART_CUSTOM_AFFINITY_CACHE_NAME);
+            ClientCache<Integer, String> cache = client.cache("partitioned_custom_affinity_cache");
             // Put, get or remove data from the cache, partition awarenes will be enabled.
         }
         catch (ClientException e) {
