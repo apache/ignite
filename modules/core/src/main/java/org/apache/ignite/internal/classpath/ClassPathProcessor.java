@@ -556,12 +556,21 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
     void cleanup(UUID icpId, boolean loc) {
         IgniteClassPath icp = fromMetastorage(icpId, null, ctx);
 
+        String key = metastorageKey(icp.name());
+
         if (!loc) {
-            try {
-                ctx.distributedMetastorage().remove(metastorageKey(icp.name()));
-            }
-            catch (IgniteCheckedException e) {
-                log.error("Failed to remove ClassPath metastorage record [name=" + icp.name() + ']', e);
+            boolean rmvd = false;
+
+            while (!rmvd) {
+                try {
+                    rmvd = ctx.distributedMetastorage().compareAndRemove(key, icp) || ctx.distributedMetastorage().read(key) == null;
+
+                    if (!rmvd)
+                        icp = fromMetastorage(icpId, null, ctx);
+                }
+                catch (IgniteCheckedException e) {
+                    log.error("Failed to remove ClassPath metastorage record [name=" + icp.name() + ']', e);
+                }
             }
         }
 

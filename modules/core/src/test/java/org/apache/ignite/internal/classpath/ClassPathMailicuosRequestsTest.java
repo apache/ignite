@@ -106,7 +106,6 @@ public class ClassPathMailicuosRequestsTest extends GridCommonAbstractTest {
         );
     }
 
-
     /** */
     @Test
     public void testWrongOffset() throws IgniteCheckedException {

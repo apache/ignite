@@ -96,7 +96,7 @@ public class DownloadClassPathTask extends ClassPathProcessor.ClassPathTask<Void
             log.warning("Failed to download ClassPath files [icp=" + icp.name() + "]", t);
 
             // Cleanup local files.
-            ctx.classPath().cleanupAsync(icp, true);
+            ctx.classPath().cleanupAsync(icp.id(), true);
         }
         catch (Exception e) {
             log.warning("onDowloadFailed", e);
