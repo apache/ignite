@@ -122,7 +122,6 @@ public class ClassPathMailicuosRequestsTest extends GridCommonAbstractTest {
         );
     }
 
-
     /** */
     private ClassPathProcessor cpProc() {
         return grid(0).context().classPath();
