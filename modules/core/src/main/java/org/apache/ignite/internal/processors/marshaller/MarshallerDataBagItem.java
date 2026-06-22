@@ -23,24 +23,20 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
-public class MarshallerMappingsData implements Message {
+public class MarshallerDataBagItem implements Message {
     /** */
     @Order(0)
     List<Map<Integer, MappedName>> mappings;
 
     /** */
-    public MarshallerMappingsData() {}
+    public MarshallerDataBagItem() {}
 
-    /**
-     * @param mappings Mappings.
-     */
-    public MarshallerMappingsData(List<Map<Integer, MappedName>> mappings) {
+    /** @param mappings Mappings. */
+    public MarshallerDataBagItem(List<Map<Integer, MappedName>> mappings) {
         this.mappings = mappings;
     }
 
-    /**
-     * @return Mappings.
-     */
+    /** @return Mappings. */
     public List<Map<Integer, MappedName>> mappings() {
         return mappings;
     }

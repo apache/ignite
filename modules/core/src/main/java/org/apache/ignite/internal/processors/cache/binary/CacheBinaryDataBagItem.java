@@ -15,23 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers.encryption;
+package org.apache.ignite.internal.processors.cache.binary;
 
 import java.util.Map;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
-public class KnownEncryptionKeys implements Message {
+public class CacheBinaryDataBagItem implements Message {
     /** */
     @Order(0)
-    Map<Integer, GroupKeyEncrypted> keys;
+    Map<Integer, BinaryMetadataVersionInfo> meta;
 
     /** */
-    public KnownEncryptionKeys() {}
+    public CacheBinaryDataBagItem() {}
 
-    /** */
-    KnownEncryptionKeys(Map<Integer, GroupKeyEncrypted> keys) {
-        this.keys = keys;
+    /**
+     * @param meta Per-type binary metadata info.
+     */
+    public CacheBinaryDataBagItem(Map<Integer, BinaryMetadataVersionInfo> meta) {
+        this.meta = Map.copyOf(meta);
     }
 }

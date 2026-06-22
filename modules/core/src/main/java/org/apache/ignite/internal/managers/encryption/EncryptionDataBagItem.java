@@ -15,22 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers.eventstorage;
+package org.apache.ignite.internal.managers.encryption;
 
+import java.util.Map;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
-public class EnabledEvents implements Message {
+public class EncryptionDataBagItem implements Message {
     /** */
     @Order(0)
-    int[] evts;
+    Map<Integer, GroupKeyEncrypted> knownKeys;
 
     /** */
-    public EnabledEvents() { }
+    public EncryptionDataBagItem() {}
 
-    /** @param events Enabled events. */
-    public EnabledEvents(int[] events) {
-        this.evts = events;
+    /** */
+    EncryptionDataBagItem(Map<Integer, GroupKeyEncrypted> knownKeys) {
+        this.knownKeys = knownKeys;
     }
 }

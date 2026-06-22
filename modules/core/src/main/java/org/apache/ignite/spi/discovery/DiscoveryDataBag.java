@@ -94,7 +94,7 @@ public class DiscoveryDataBag {
         @Override @Nullable public <T> T joiningNodeData() {
             Message dataMsg = joiningNodeData.get(cmpId);
 
-            return DataBagItem.unwrapIfNecessary(dataMsg);
+            return SerializableDataBagItemWrapper.unwrapIfNecessary(dataMsg);
         }
 
         /**
@@ -124,14 +124,14 @@ public class DiscoveryDataBag {
         /** {@inheritDoc} */
         @Override @Nullable public <T> T commonData() {
             if (commonData != null)
-                return DataBagItem.unwrapIfNecessary(commonData.get(cmpId));
+                return SerializableDataBagItemWrapper.unwrapIfNecessary(commonData.get(cmpId));
 
             return null;
         }
 
         /** {@inheritDoc} */
         @Override public <T> Map<UUID, T> nodeSpecificData() {
-            return F.viewReadOnly(nodeSpecificData, DataBagItem::unwrapIfNecessary);
+            return F.viewReadOnly(nodeSpecificData, SerializableDataBagItemWrapper::unwrapIfNecessary);
         }
 
         /**
@@ -253,7 +253,7 @@ public class DiscoveryDataBag {
      * @param data Serializable data.
      */
     public void addJoiningNodeData(Integer cmpId, Serializable data) {
-        joiningNodeData.put(cmpId, new DataBagItem(data));
+        joiningNodeData.put(cmpId, new SerializableDataBagItemWrapper(data));
     }
 
     /**
@@ -269,7 +269,7 @@ public class DiscoveryDataBag {
      * @param data Serializable data.
      */
     public void addGridCommonData(Integer cmpId, Serializable data) {
-        commonData.put(cmpId, new DataBagItem(data));
+        commonData.put(cmpId, new SerializableDataBagItemWrapper(data));
     }
 
     /**
@@ -285,7 +285,7 @@ public class DiscoveryDataBag {
      * @param data Serializable data.
      */
     public void addNodeSpecificData(Integer cmpId, Serializable data) {
-        addNodeSpecificData(cmpId, new DataBagItem(data));
+        addNodeSpecificData(cmpId, new SerializableDataBagItemWrapper(data));
     }
 
     /**

@@ -15,28 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.schema.message;
+package org.apache.ignite.internal.processors.cluster;
 
-import java.util.Map;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
-public class InlineSizesData implements Message {
-    /** */
+public class ClusterUpdateNotifierDataBagItem implements Message {
+    /** Update notifier enabled status. */
     @Order(0)
-    Map<String, Integer> sizes;
+    boolean notifierEnabled;
 
     /** */
-    public InlineSizesData() {}
+    public ClusterUpdateNotifierDataBagItem() { }
 
-    /** @param sizes Inline sizes. */
-    public InlineSizesData(Map<String, Integer> sizes) {
-        this.sizes = sizes;
-    }
-
-    /** @return Inline sizes. */
-    public Map<String, Integer> sizes() {
-        return sizes;
+    /** @param notifierEnabled Update notifier enabled status. */
+    public ClusterUpdateNotifierDataBagItem(boolean notifierEnabled) {
+        this.notifierEnabled = notifierEnabled;
     }
 }

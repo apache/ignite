@@ -1782,7 +1782,7 @@ public class ZookeeperDiscoveryImpl {
 
         long evtId = rtState.evtsData.evtIdGen;
 
-        List<T2<ZkJoinedNodeEvtData, ZkDiscoData>> nodes = joinCtx.nodes;
+        List<T2<ZkJoinedNodeEvtData, ZkDiscoDataBagWrapper>> nodes = joinCtx.nodes;
 
         assert nodes != null && !nodes.isEmpty();
 
@@ -1794,7 +1794,7 @@ public class ZookeeperDiscoveryImpl {
         Map<Long, Long> dupDiscoData = null;
 
         for (int i = 0; i < nodeCnt; i++) {
-            T2<ZkJoinedNodeEvtData, ZkDiscoData> nodeEvtData = nodes.get(i);
+            T2<ZkJoinedNodeEvtData, ZkDiscoDataBagWrapper> nodeEvtData = nodes.get(i);
 
             byte[] discoDataBytes = msgParser.marshalZip(nodeEvtData.get2());
 
@@ -3020,11 +3020,11 @@ public class ZookeeperDiscoveryImpl {
 
             byte[] discoDataBytes = dataForJoined.discoveryDataForNode(locNode.order());
 
-            ZkDiscoData commonDiscoData = msgParser.unmarshalZip(discoDataBytes);
+            ZkDiscoDataBagWrapper zkDataBagWrapper = msgParser.unmarshalZip(discoDataBytes);
 
             DiscoveryDataBag dataBag = new DiscoveryDataBag(locNode.id(), locNode.isClient());
 
-            dataBag.commonData(commonDiscoData.data());
+            dataBag.commonData(zkDataBagWrapper.data);
 
             exchange.onExchange(dataBag);
 

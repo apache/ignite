@@ -1417,11 +1417,11 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** */
-    private IgniteNodeValidationResult validateBinaryMetadata(UUID rmtNodeId, BinaryMetadataVersionsData newNodeMeta) {
-        if (newNodeMeta == null)
+    private IgniteNodeValidationResult validateBinaryMetadata(UUID rmtNodeId, CacheBinaryDataBagItem cacheBinaryItem) {
+        if (cacheBinaryItem == null)
             return null;
 
-        for (Map.Entry<Integer, BinaryMetadataVersionInfo> metaEntry : newNodeMeta.data.entrySet()) {
+        for (Map.Entry<Integer, BinaryMetadataVersionInfo> metaEntry : cacheBinaryItem.meta.entrySet()) {
             if (!metadataLocCache.containsKey(metaEntry.getKey()))
                 continue;
 
@@ -1463,25 +1463,25 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                     res.put(e.getKey(), e.getValue());
             }
 
-            dataBag.addGridCommonData(BINARY_PROC.ordinal(), new BinaryMetadataVersionsData(res));
+            dataBag.addGridCommonData(BINARY_PROC.ordinal(), new CacheBinaryDataBagItem(res));
         }
     }
 
     /** {@inheritDoc} */
     @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
-        dataBag.addJoiningNodeData(BINARY_PROC.ordinal(), new BinaryMetadataVersionsData(metadataLocCache));
+        dataBag.addJoiningNodeData(BINARY_PROC.ordinal(), new CacheBinaryDataBagItem(metadataLocCache));
     }
 
     /** {@inheritDoc} */
     @Override public void onJoiningNodeDataReceived(DiscoveryDataBag.JoiningNodeDiscoveryData data) {
-        BinaryMetadataVersionsData newNodeMeta = data.joiningNodeData();
+        CacheBinaryDataBagItem cacheBinaryItem = data.joiningNodeData();
 
-        if (newNodeMeta == null)
+        if (cacheBinaryItem == null)
             return;
 
         UUID joiningNode = data.joiningNodeId();
 
-        for (Map.Entry<Integer, BinaryMetadataVersionInfo> metaEntry : newNodeMeta.data.entrySet()) {
+        for (Map.Entry<Integer, BinaryMetadataVersionInfo> metaEntry : cacheBinaryItem.meta.entrySet()) {
             if (metadataLocCache.containsKey(metaEntry.getKey())) {
                 BinaryMetadataVersionInfo locMetaVerInfo = metadataLocCache.get(metaEntry.getKey());
 
@@ -1529,10 +1529,10 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(GridDiscoveryData data) {
-        BinaryMetadataVersionsData receivedData = data.commonData();
+        CacheBinaryDataBagItem cacheBinaryItem = data.commonData();
 
-        if (receivedData != null && !F.isEmpty(receivedData.data)) {
-            for (Map.Entry<Integer, BinaryMetadataVersionInfo> e : receivedData.data.entrySet()) {
+        if (cacheBinaryItem != null && !F.isEmpty(cacheBinaryItem.meta)) {
+            for (Map.Entry<Integer, BinaryMetadataVersionInfo> e : cacheBinaryItem.meta.entrySet()) {
                 BinaryMetadataVersionInfo metaVerInfo = e.getValue();
 
                 BinaryMetadataVersionInfo locMetaVerInfo = new BinaryMetadataVersionInfo(metaVerInfo.metadata(),

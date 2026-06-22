@@ -30,7 +30,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /** Wrapper message for serializable data in a {@link DiscoveryDataBag}. */
-public class DataBagItem implements MarshallableMessage {
+public class SerializableDataBagItemWrapper implements MarshallableMessage {
     /** */
     @GridToStringInclude
     private Serializable data;
@@ -44,12 +44,12 @@ public class DataBagItem implements MarshallableMessage {
     IgniteCheckedException unmarshallError;
 
     /** */
-    public DataBagItem() {}
+    public SerializableDataBagItemWrapper() {}
 
     /**
      * @param data Original data.
      */
-    public DataBagItem(Serializable data) {
+    public SerializableDataBagItemWrapper(Serializable data) {
         this.data = data;
     }
 
@@ -57,13 +57,13 @@ public class DataBagItem implements MarshallableMessage {
      * @param msg Message.
      * @param <T> Type of data.
      *
-     * @return Original message or data unwrapped from an DataBagItem wrapper.
+     * @return Original message or data unwrapped from an SerializableDataBagItemWrapper wrapper.
      */
     static @Nullable <T> T unwrapIfNecessary(@Nullable Message msg) {
         if (msg == null)
             return null;
 
-        return msg instanceof DataBagItem ? ((DataBagItem)msg).unwrap() : (T)msg;
+        return msg instanceof SerializableDataBagItemWrapper ? ((SerializableDataBagItemWrapper)msg).unwrap() : (T)msg;
     }
 
     /**
@@ -102,6 +102,6 @@ public class DataBagItem implements MarshallableMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(DataBagItem.class, this);
+        return S.toString(SerializableDataBagItemWrapper.class, this);
     }
 }

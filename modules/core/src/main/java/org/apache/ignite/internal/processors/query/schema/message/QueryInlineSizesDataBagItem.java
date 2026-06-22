@@ -15,25 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.binary;
+package org.apache.ignite.internal.processors.query.schema.message;
 
 import java.util.Map;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
-public class BinaryMetadataVersionsData implements Message {
+public class QueryInlineSizesDataBagItem implements Message {
     /** */
     @Order(0)
-    Map<Integer, BinaryMetadataVersionInfo> data;
+    Map<String, Integer> sizes;
 
     /** */
-    public BinaryMetadataVersionsData() {}
+    public QueryInlineSizesDataBagItem() {}
 
-    /**
-     * @param data Data.
-     */
-    public BinaryMetadataVersionsData(Map<Integer, BinaryMetadataVersionInfo> data) {
-        this.data = Map.copyOf(data);
+    /** @param sizes Inline sizes. */
+    public QueryInlineSizesDataBagItem(Map<String, Integer> sizes) {
+        this.sizes = sizes;
+    }
+
+    /** @return Inline sizes. */
+    public Map<String, Integer> sizes() {
+        return sizes;
     }
 }

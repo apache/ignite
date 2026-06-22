@@ -326,14 +326,14 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
-        dataBag.addJoiningNodeData(MARSHALLER_PROC.ordinal(), new MarshallerMappingsData(marshallerCtx.getCachedMappings()));
+        dataBag.addJoiningNodeData(MARSHALLER_PROC.ordinal(), new MarshallerDataBagItem(marshallerCtx.getCachedMappings()));
     }
 
     /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
         if (!dataBag.commonDataCollectedFor(MARSHALLER_PROC.ordinal()))
             dataBag.addGridCommonData(MARSHALLER_PROC.ordinal(),
-                new MarshallerMappingsData(marshallerCtx.getCachedMappings()));
+                new MarshallerDataBagItem(marshallerCtx.getCachedMappings()));
     }
 
     /** {@inheritDoc} */
@@ -347,11 +347,11 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param mappings Incoming marshaller mappings.
+     * @param marshallerItem Incoming marshaller mappings wrapper.
      */
-    private void processIncomingMappings(@Nullable MarshallerMappingsData mappings) {
-        if (mappings != null)
-            marshallerCtx.onMappingDataReceived(log, mappings.mappings());
+    private void processIncomingMappings(@Nullable MarshallerDataBagItem marshallerItem) {
+        if (marshallerItem != null)
+            marshallerCtx.onMappingDataReceived(log, marshallerItem.mappings());
     }
 
     /** {@inheritDoc} */

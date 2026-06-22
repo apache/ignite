@@ -32,8 +32,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.discovery.DataBagItem;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.apache.ignite.spi.discovery.SerializableDataBagItemWrapper;
 
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CONTINUOUS_PROC;
 
@@ -155,16 +155,16 @@ public class DiscoveryDataPacket implements Message {
                 nodeSpecificData.values()
                     .stream()
                     .flatMap(m -> m.entrySet().stream()))
-            .filter(e -> e.getValue() instanceof DataBagItem)
+            .filter(e -> e.getValue() instanceof SerializableDataBagItemWrapper)
             .collect(Collectors.toList());
 
         List<IgniteCheckedException> errs = new ArrayList<>(items.size());
 
         for (Map.Entry<Integer, Message> item : items) {
             int cmpId = item.getKey();
-            DataBagItem dataBagItem = (DataBagItem)item.getValue();
+            SerializableDataBagItemWrapper serializableDataBagItemWrapper = (SerializableDataBagItemWrapper)item.getValue();
 
-            IgniteCheckedException e = dataBagItem.unmarshallError();
+            IgniteCheckedException e = serializableDataBagItemWrapper.unmarshallError();
 
             if (e != null) {
                 if (CONTINUOUS_PROC.ordinal() == cmpId && X.hasCause(e, ClassNotFoundException.class) &&

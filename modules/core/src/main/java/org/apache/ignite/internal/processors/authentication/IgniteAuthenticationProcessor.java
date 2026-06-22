@@ -140,7 +140,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     private UserManagementOperationFinishedMessage curOpFinishMsg;
 
     /** Initial users map and operations received from coordinator on the node joined to the cluster. */
-    private InitialUsersData initUsrs;
+    private AuthentificationDataBagItem initUsrs;
 
     /** I/O message listener. */
     private GridMessageListener ioLsnr;
@@ -402,7 +402,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
         synchronized (mux) {
             if (!dataBag.commonDataCollectedFor(AUTH_PROC.ordinal())) {
-                InitialUsersData d = new InitialUsersData(users.values(), activeOps.values());
+                AuthentificationDataBagItem d = new AuthentificationDataBagItem(users.values(), activeOps.values());
 
                 if (log.isDebugEnabled())
                     log.debug("Collected initial users data: " + d);

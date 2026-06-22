@@ -23,23 +23,18 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** Data bag data holder. */
-public class ZkDiscoData implements Message {
+public class ZkDiscoDataBagWrapper implements Message {
     /** */
     @Order(0)
     Map<Integer, Message> data;
 
     /** Default constructor for {@link MessageFactory}. */
-    public ZkDiscoData() {
+    public ZkDiscoDataBagWrapper() {
         // No-op.
     }
 
     /** @param data Discovery data. */
-    public ZkDiscoData(Map<Integer, Message> data) {
+    public ZkDiscoDataBagWrapper(Map<Integer, Message> data) {
         this.data = data;
-    }
-
-    /** @return Data. */
-    public Map<Integer, Message> data() {
-        return data;
     }
 }

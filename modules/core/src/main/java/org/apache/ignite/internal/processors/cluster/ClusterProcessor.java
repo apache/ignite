@@ -462,31 +462,31 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
 
     /** {@inheritDoc} */
     @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
-        dataBag.addJoiningNodeData(CLUSTER_PROC.ordinal(), new ClusterNodeFlags(notifyEnabled.get()));
+        dataBag.addJoiningNodeData(CLUSTER_PROC.ordinal(), new ClusterUpdateNotifierDataBagItem(notifyEnabled.get()));
     }
 
     /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
-        dataBag.addNodeSpecificData(CLUSTER_PROC.ordinal(), new ClusterNodeFlags(notifyEnabled.get()));
+        dataBag.addNodeSpecificData(CLUSTER_PROC.ordinal(), new ClusterUpdateNotifierDataBagItem(notifyEnabled.get()));
 
         dataBag.addGridCommonData(CLUSTER_PROC.ordinal(), (Message)new ClusterIdAndTag(cluster.id(), cluster.tag()));
     }
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(GridDiscoveryData data) {
-        Map<UUID, ClusterNodeFlags> nodeSpecData = data.nodeSpecificData();
+        Map<UUID, ClusterUpdateNotifierDataBagItem> updateNotifierData = data.nodeSpecificData();
 
-        if (nodeSpecData != null) {
-            Boolean lstFlag = findLastUpdateNotifierFlag(nodeSpecData.values());
+        if (updateNotifierData != null) {
+            Boolean updateNotifierEnabled = findLastUpdateNotifierStatus(updateNotifierData.values());
 
-            if (lstFlag != null)
-                notifyEnabled.set(lstFlag);
+            if (updateNotifierEnabled != null)
+                notifyEnabled.set(updateNotifierEnabled);
         }
 
-        ClusterIdAndTag commonData = data.commonData();
+        ClusterIdAndTag idAndTag = data.commonData();
 
-        if (commonData != null) {
-            UUID remoteClusterId = commonData.id();
+        if (idAndTag != null) {
+            UUID remoteClusterId = idAndTag.id();
 
             if (remoteClusterId != null) {
                 if (locClusterId != null && !locClusterId.equals(remoteClusterId)) {
@@ -499,7 +499,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
                 locClusterId = remoteClusterId;
             }
 
-            String remoteClusterTag = commonData.tag();
+            String remoteClusterTag = idAndTag.tag();
 
             if (remoteClusterTag != null)
                 locClusterTag = remoteClusterTag;
@@ -507,17 +507,17 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
     }
 
     /**
-     * @param flags Flags collection to seek through.
+     * @param notifierItems Collection of update notifiers statuses to seek through.
      */
-    private Boolean findLastUpdateNotifierFlag(Collection<ClusterNodeFlags> flags) {
-        Boolean notifierFlag = null;
+    private Boolean findLastUpdateNotifierStatus(Collection<ClusterUpdateNotifierDataBagItem> notifierItems) {
+        Boolean updateNotifierEnabled = null;
 
-        for (ClusterNodeFlags flag : flags) {
-            if (flag != null)
-                notifierFlag = flag.updateNotifierEnabled;
+        for (ClusterUpdateNotifierDataBagItem notifierItem : notifierItems) {
+            if (notifierItem != null)
+                updateNotifierEnabled = notifierItem.notifierEnabled;
         }
 
-        return notifierFlag;
+        return updateNotifierEnabled;
     }
 
     /** {@inheritDoc} */

@@ -28,7 +28,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  */
 class ZkBulkJoinContext {
     /** */
-    List<T2<ZkJoinedNodeEvtData, ZkDiscoData>> nodes;
+    List<T2<ZkJoinedNodeEvtData, ZkDiscoDataBagWrapper>> nodes;
 
     /**
      * @param nodeEvtData Node event data.
@@ -38,7 +38,7 @@ class ZkBulkJoinContext {
         if (nodes == null)
             nodes = new ArrayList<>();
 
-        nodes.add(new T2<>(nodeEvtData, new ZkDiscoData(discoData)));
+        nodes.add(new T2<>(nodeEvtData, new ZkDiscoDataBagWrapper(discoData)));
     }
 
     /**

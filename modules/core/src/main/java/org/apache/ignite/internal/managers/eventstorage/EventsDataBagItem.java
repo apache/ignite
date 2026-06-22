@@ -15,22 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cluster;
+package org.apache.ignite.internal.managers.eventstorage;
 
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
-public class ClusterNodeFlags implements Message {
-    /** Update notifier enabled flag. */
+public class EventsDataBagItem implements Message {
+    /** */
     @Order(0)
-    boolean updateNotifierEnabled;
+    int[] enabledEvts;
 
     /** */
-    public ClusterNodeFlags() { }
+    public EventsDataBagItem() { }
 
-    /** @param updateNotifierEnabled Update notifier enabled flag. */
-    public ClusterNodeFlags(boolean updateNotifierEnabled) {
-        this.updateNotifierEnabled = updateNotifierEnabled;
+    /** @param enabledEvts Enabled events. */
+    public EventsDataBagItem(int[] enabledEvts) {
+        this.enabledEvts = enabledEvts;
     }
 }

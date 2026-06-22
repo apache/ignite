@@ -19,7 +19,7 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.plugin.PluginsData;
+import org.apache.ignite.internal.processors.plugin.PluginsDataBagItem;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.plugin.PluginProvider;
@@ -115,10 +115,10 @@ public class GridPluginComponent implements GridComponent {
     @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node,
         JoiningNodeDiscoveryData discoData) {
         try {
-            PluginsData pluginsData = discoData.joiningNodeData();
+            PluginsDataBagItem pluginsItem = discoData.joiningNodeData();
 
-            if (pluginsData != null && !F.isEmpty(pluginsData.data()))
-                plugin.validateNewNode(node, pluginsData.data().get(plugin.name()));
+            if (pluginsItem != null && !F.isEmpty(pluginsItem.data()))
+                plugin.validateNewNode(node, pluginsItem.data().get(plugin.name()));
             else
                 plugin.validateNewNode(node, null);
 

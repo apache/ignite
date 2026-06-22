@@ -28,7 +28,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class PluginsData implements MarshallableMessage {
+public class PluginsDataBagItem implements MarshallableMessage {
     /** Original plugins data. */
     @Nullable Map<String, Serializable> data;
 
@@ -37,10 +37,10 @@ public class PluginsData implements MarshallableMessage {
     @Nullable byte[] dataBytes;
 
     /** */
-    public PluginsData() { }
+    public PluginsDataBagItem() { }
 
     /** @param data Plugins data. */
-    public PluginsData(@Nullable Map<String, Serializable> data) {
+    public PluginsDataBagItem(@Nullable Map<String, Serializable> data) {
         this.data = data;
     }
 

@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** Initial data is collected on coordinator to send to join node. */
-public class InitialUsersData implements Message {
+public class AuthentificationDataBagItem implements Message {
     /** Users. */
     @GridToStringInclude
     @Order(0)
@@ -37,19 +37,19 @@ public class InitialUsersData implements Message {
     ArrayList<UserManagementOperation> activeOps;
 
     /** */
-    public InitialUsersData() { }
+    public AuthentificationDataBagItem() { }
 
     /**
      * @param usrs Users.
      * @param ops  Active operations on cluster.
      */
-    InitialUsersData(Collection<User> usrs, Collection<UserManagementOperation> ops) {
+    AuthentificationDataBagItem(Collection<User> usrs, Collection<UserManagementOperation> ops) {
         this.usrs = new ArrayList<>(usrs);
         activeOps = new ArrayList<>(ops);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(InitialUsersData.class, this);
+        return S.toString(AuthentificationDataBagItem.class, this);
     }
 }
