@@ -18,7 +18,6 @@
 package org.apache.ignite.compatibility.testframework.testcontainers;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.util.Arrays;
