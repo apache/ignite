@@ -49,7 +49,7 @@ public class DistributedOperationContextManager {
     }
 
     /**
-     * Creates and registers a distributable {@link OperationContextAttribute} identified by {@code id}.
+     * Creates and registers a distributable {@link OperationContextAttribute}.
      *
      * @param id Cluster-wide id of a distributed operation context attribute.
      * @param initVal The attribute's unitial value.
@@ -67,10 +67,10 @@ public class DistributedOperationContextManager {
 
     /**
      * Requests current {@link OperationContext} for its effective attributes and collects ones which are also registered
-     * as the distbibued attributes.
+     * as distbibued attributes.
      *
-     * @return The dedicated message to send current effective distributed attributes. {@code null}, if there are no
-     * effective attributes in {@link OperationContext} or none of them is registered as the distribute attribute.
+     * @return A message to send current effective distributed attributes. {@code null}, if there are no
+     * effective attributes in {@link OperationContext} or none of them is a distributed attribute.
      */
     public @Nullable DistributedOperationContextMessage collectDistributedAttributes() {
         DistributedOperationContextMessage res = null;
