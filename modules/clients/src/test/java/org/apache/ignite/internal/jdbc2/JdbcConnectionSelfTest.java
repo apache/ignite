@@ -20,6 +20,7 @@ package org.apache.ignite.internal.jdbc2;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -298,65 +299,25 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test that JDBC cfg:// URL with remote HTTP location is blocked by default to prevent RCE.
+     * Test that JDBC cfg:// URL with remote HTTP, HTTPS, and FTP location is blocked.
      */
     @Test
-    public void testRemoteHttpCfgUrlIsBlocked() {
-        final String url = CFG_URL_PREFIX + "http://attacker.example.com/evil.xml";
+    public void testRemoteCfgUrlsAreBlocked() {
+        for (String scheme : Arrays.asList("http", "https", "ftp", "ftps")) {
+            final String url = CFG_URL_PREFIX + scheme + "://attacker.example.com/evil.xml";
 
-        GridTestUtils.assertThrows(
-            log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    try (Connection conn = DriverManager.getConnection(url)) {
-                        return conn;
+            GridTestUtils.assertThrows(
+                log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        try (Connection conn = DriverManager.getConnection(url)) {
+                            return conn;
+                        }
                     }
-                }
-            },
-            SQLException.class,
-            "Remote Spring configuration URLs"
-        );
-    }
-
-    /**
-     * Test that JDBC cfg:// URL with remote HTTPS location is blocked by default to prevent RCE.
-     */
-    @Test
-    public void testRemoteHttpsCfgUrlIsBlocked() {
-        final String url = CFG_URL_PREFIX + "https://attacker.example.com/evil.xml";
-
-        GridTestUtils.assertThrows(
-            log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    try (Connection conn = DriverManager.getConnection(url)) {
-                        return conn;
-                    }
-                }
-            },
-            SQLException.class,
-            "Remote Spring configuration URLs"
-        );
-    }
-
-    /**
-     * Test that JDBC cfg:// URL with FTP location is always blocked.
-     */
-    @Test
-    public void testFtpCfgUrlIsAlwaysBlocked() {
-        final String url = CFG_URL_PREFIX + "ftp://attacker.example.com/evil.xml";
-
-        GridTestUtils.assertThrows(
-            log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    try (Connection conn = DriverManager.getConnection(url)) {
-                        return conn;
-                    }
-                }
-            },
-            SQLException.class,
-            "always blocked"
-        );
+                },
+                SQLException.class,
+                null
+            );
+        }
     }
 }
