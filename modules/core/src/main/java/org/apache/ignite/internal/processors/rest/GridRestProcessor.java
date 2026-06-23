@@ -1017,6 +1017,11 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
                 log.debug("Failed to initialize HTTP REST protocol (consider adding ignite-rest-http " +
                     "module to classpath).");
         }
+        catch (LinkageError e) {
+            U.warn(log, "Failed to initialize HTTP REST protocol because a required dependency is missing " +
+                "from classpath (make sure the ignite-rest-http module libraries, e.g. jakarta.servlet-api, " +
+                "are present). HTTP REST protocol will be disabled: " + e);
+        }
         catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
             throw new IgniteCheckedException("Failed to initialize HTTP REST protocol.", e);
         }
