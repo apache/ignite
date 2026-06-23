@@ -73,7 +73,10 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
     /** System discovery message listener. */
     private DiscoveryEventListener discoLsnr;
 
-    /** */
+    /**
+     * {@link IgniteClassPath} tasks.
+     * Any actions with the specific {@link IgniteClassPath} instance must be done one by one to ensure local atomicity of changes.
+     */
     private final ConcurrentMap<UUID, Queue<ClassPathTask<?>>> icpTasks = new ConcurrentHashMap<>();
 
     /**
@@ -330,10 +333,14 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
 
     /** */
     private <R> void startAsync(ClassPathTask<R> t) {
-        // TODO: check is stopped.
-        // TODO: async task to invoke start required?
         try {
             ctx.pools().getSystemExecutorService().submit(() -> {
+                if (ctx.isStopping()) {
+                    t.result().onDone(new IgniteException("Not stopping"));
+
+                    return;
+                }
+
                 try {
                     t.start();
                 }
@@ -627,7 +634,6 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
                     });
                 }
             });
-
         }
 
         /** */
