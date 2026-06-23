@@ -124,6 +124,7 @@ import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.IgniteSpiThread;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryNotification;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
@@ -4739,16 +4740,15 @@ class ServerImpl extends TcpDiscoveryImpl {
         private IgniteNodeValidationResult validateByIgniteComponentsWithJoiningNodeData(TcpDiscoveryJoinRequestMessage req) {
             DiscoveryDataPacket packet = req.gridDiscoveryData();
 
-            List<IgniteCheckedException> errs = packet.checkUnmarshallingErrors(spi.ignite());
+            try {
+                DiscoveryDataBag dataBag = packet.bagWithJoiningNodeData(spi.ignite().log(),
+                    spi.ignite().configuration().isClientMode());
 
-            IgniteNodeValidationResult err = F.isEmpty(errs) ?
-                spi.getSpiContext().validateNode(req.node(), packet.bagWithJoiningNodeData()) :
-                new IgniteNodeValidationResult(
-                    req.node().id(),
-                    errs.get(0).getMessage() // We need only first error.
-                );
-
-            return err;
+                return spi.getSpiContext().validateNode(req.node(), dataBag);
+            }
+            catch (IgniteCheckedException e) {
+                return new IgniteNodeValidationResult(req.node().id(), e.getMessage());
+            }
         }
 
         /** */

@@ -16,15 +16,12 @@
  */
 package org.apache.ignite.spi.discovery.tcp.internal;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.Compress;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.Order;
@@ -34,7 +31,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.SerializableDataBagItemWrapper;
+import org.jetbrains.annotations.Nullable;
 
+import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CONTINUOUS_PROC;
 
 /**
@@ -62,7 +61,10 @@ public class DiscoveryDataPacket implements Message {
     Map<UUID, Map<Integer, Message>> nodeSpecificData = new HashMap<>();
 
     /** */
-    private transient boolean joiningNodeClient;
+    private boolean joiningNodeClient;
+
+    /** Unmarshalling error, if any. */
+    private IgniteCheckedException unmarshErr;
 
     /** Constructor. */
     public DiscoveryDataPacket() {
@@ -105,23 +107,39 @@ public class DiscoveryDataPacket implements Message {
             joiningNodeData.putAll(bag.joiningNodeData());
     }
 
-    /** */
-    public DiscoveryDataBag bagWithNodeData() {
+    /**
+     * @param log Ignite logger.
+     * @param client Client mode flag.
+     *
+     * @return Data bag with node data.
+     */
+    public DiscoveryDataBag bagWithNodeData(IgniteLogger log, Boolean client) throws IgniteCheckedException {
+        checkUnmarshallingErrors(log, client);
+
         DiscoveryDataBag dataBag = new DiscoveryDataBag(joiningNodeId, joiningNodeClient);
 
         if (!F.isEmpty(commonData))
             dataBag.commonData(commonData);
 
-        if (!F.isEmpty(nodeSpecificData))
-            dataBag.nodeSpecificData(F.view(nodeSpecificData, uuid -> !F.isEmpty(nodeSpecificData.get(uuid))));
+        if (!F.isEmpty(nodeSpecificData)) {
+            nodeSpecificData.values()
+                .removeIf(F::isEmpty);
+
+            dataBag.nodeSpecificData(nodeSpecificData);
+        }
 
         return dataBag;
     }
 
     /**
+     * @param log Ignite logger.
+     * @param client Client mode flag.
+     *
      * @return Data bag with joining node data.
      */
-    public DiscoveryDataBag bagWithJoiningNodeData() {
+    public DiscoveryDataBag bagWithJoiningNodeData(IgniteLogger log, @Nullable Boolean client) throws IgniteCheckedException {
+        checkUnmarshallingErrors(log, client);
+
         DiscoveryDataBag dataBag = new DiscoveryDataBag(joiningNodeId, joiningNodeClient);
 
         if (!F.isEmpty(joiningNodeData))
@@ -145,49 +163,68 @@ public class DiscoveryDataPacket implements Message {
     }
 
     /**
-     * Collects and dumps catched unmarshalling errors.
+     * Dumps and throws catched unmarshalling errors.
      *
-     * @param ignite Ignite.
+     * @param log Ignite logger.
+     * @param client Client mode flag.
+     * @throws IgniteCheckedException If unmarshalling errors occurs.
      */
-    public List<IgniteCheckedException> checkUnmarshallingErrors(Ignite ignite) {
-        List<Map.Entry<Integer, Message>> items = Stream.concat(
-                Stream.concat(joiningNodeData.entrySet().stream(), commonData.entrySet().stream()),
-                nodeSpecificData.values()
-                    .stream()
-                    .flatMap(m -> m.entrySet().stream()))
-            .filter(e -> e.getValue() instanceof SerializableDataBagItemWrapper)
-            .collect(Collectors.toList());
+    public void checkUnmarshallingErrors(IgniteLogger log, @Nullable Boolean client)
+        throws IgniteCheckedException {
+        if (unmarshErr != null)
+            throw unmarshErr;
 
-        List<IgniteCheckedException> errs = new ArrayList<>(items.size());
+        Iterator<Map.Entry<Integer, Message>> allDataIter = allMessages();
 
-        for (Map.Entry<Integer, Message> item : items) {
-            int cmpId = item.getKey();
-            SerializableDataBagItemWrapper serializableDataBagItemWrapper = (SerializableDataBagItemWrapper)item.getValue();
+        IgniteCheckedException err = null;
 
-            IgniteCheckedException e = serializableDataBagItemWrapper.unmarshallError();
+        while (allDataIter.hasNext()) {
+            Map.Entry<Integer, Message> item = allDataIter.next();
 
-            if (e != null) {
-                if (CONTINUOUS_PROC.ordinal() == cmpId && X.hasCause(e, ClassNotFoundException.class) &&
-                    ignite.configuration().isClientMode()) {
-                    U.warn(ignite.log(), "Failed to unmarshal continuous query remote filter on client node. " +
-                        "Can be ignored.");
+            if (item.getValue() instanceof SerializableDataBagItemWrapper wrapper) {
+                int cmpId = item.getKey();
 
-                    continue;
+                IgniteCheckedException e = wrapper.unmarshallError();
+
+                if (e != null) {
+                    if (CONTINUOUS_PROC.ordinal() == cmpId && X.hasCause(e, ClassNotFoundException.class) && TRUE.equals(client)) {
+                        U.warn(log, "Failed to unmarshal continuous query remote filter on client node. " +
+                            "Can be ignored.");
+
+                        continue;
+                    }
+                    else if (cmpId < GridComponent.DiscoveryDataExchangeType.VALUES.length) {
+                        U.error(log, "Failed to unmarshal discovery data for component: " +
+                            GridComponent.DiscoveryDataExchangeType.VALUES[cmpId], e);
+                    }
+                    else {
+                        U.warn(log, "Failed to unmarshal discovery data." +
+                            " Component " + cmpId + " is not found.", e);
+                    }
+
+                    if (err == null)
+                        err = e;
+                    else
+                        err.addSuppressed(e);
                 }
-                else if (cmpId < GridComponent.DiscoveryDataExchangeType.VALUES.length) {
-                    U.error(ignite.log(), "Failed to unmarshal discovery data for component: " +
-                        GridComponent.DiscoveryDataExchangeType.VALUES[cmpId], e);
-                }
-                else {
-                    U.warn(ignite.log(), "Failed to unmarshal discovery data." +
-                        " Component " + cmpId + " is not found.", e);
-                }
-
-                errs.add(e);
             }
         }
 
-        return errs;
+        if (err != null) {
+            unmarshErr = err;
+
+            throw err;
+        }
+    }
+
+    /** @return Iterator through all messages, stored in DataPacket. */
+    private Iterator<Map.Entry<Integer, Message>> allMessages() {
+        return F.concat(joiningNodeData.entrySet().iterator(),
+            commonData.entrySet().iterator(),
+            nodeSpecificData.values()
+                .stream()
+                .flatMap(m -> m.entrySet().stream())
+                .iterator());
     }
 
     /**

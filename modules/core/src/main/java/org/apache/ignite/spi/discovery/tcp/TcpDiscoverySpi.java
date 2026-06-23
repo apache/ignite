@@ -2090,23 +2090,21 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         DiscoveryDataBag dataBag;
 
-        List<IgniteCheckedException> errs = dataPacket.checkUnmarshallingErrors(ignite());
+        try {
+            if (dataPacket.joiningNodeId().equals(locNode.id()))
+                dataBag = dataPacket.bagWithNodeData(ignite.log(), ignite.configuration().isClientMode());
+            else
+                dataBag = dataPacket.bagWithJoiningNodeData(ignite.log(), ignite.configuration().isClientMode());
+        }
+        catch (IgniteCheckedException e) {
+            if (ignite() instanceof IgniteEx) {
+                FailureProcessor failure = ((IgniteEx)ignite()).context().failure();
 
-        if (dataPacket.joiningNodeId().equals(locNode.id())) {
-            if (!F.isEmpty(errs)) {
-                if (ignite() instanceof IgniteEx) {
-                    FailureProcessor failure = ((IgniteEx)ignite()).context().failure();
-
-                    failure.process(new FailureContext(CRITICAL_ERROR, errs.get(0)));
-                }
-
-                throw new IgniteException(errs.get(0));
+                failure.process(new FailureContext(CRITICAL_ERROR, e));
             }
 
-            dataBag = dataPacket.bagWithNodeData();
+            throw new IgniteException(e);
         }
-        else
-            dataBag = dataPacket.bagWithJoiningNodeData();
 
         exchange.onExchange(dataBag);
     }
