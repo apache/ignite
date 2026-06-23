@@ -88,13 +88,6 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         collectionMirror = mirror(env, "java.util.Collection");
     }
 
-    /** */
-    private static TypeMirror mirror(ProcessingEnvironment env, String qualifiedName) {
-        TypeElement elem = env.getElementUtils().getTypeElement(qualifiedName);
-        
-        return elem != null ? elem.asType() : null;
-    }
-
     /** {@inheritDoc} */
     @Override String typeSuffix() {
         return "Marshaller";
@@ -284,29 +277,6 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         marshall.add(indentedLine("}"));
     }
 
-    /** */
-    private static boolean isNioField(VariableElement field) {
-        return field.getAnnotation(NioField.class) != null;
-    }
-
-    /** Marshals each field and appends non-empty results to {@code body}. */
-    private void appendFields(List<String> body, List<VariableElement> fields, MarshalMode mode) {
-        for (VariableElement field : fields) {
-            List<String> result = marshall(field.asType(), fieldAccessor(field), mode);
-
-            if (!result.isEmpty())
-                appendBlock(body, result);
-        }
-    }
-
-    /** Appends {@code block} to {@code body}, inserting a blank-line separator when {@code body} is non-empty. */
-    private static void appendBlock(List<String> body, List<String> block) {
-        if (!body.isEmpty())
-            body.add(EMPTY);
-
-        body.addAll(block);
-    }
-
     /** Returns the {@code GridCacheContext ctx} resolution line for the current message type. */
     private String ctxResolutionLine() {
         if (isCacheIdAwareMessage(type))
@@ -345,18 +315,6 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         }
 
         return false;
-    }
-
-    /** */
-    private enum MarshalMode {
-        /** Marshal. */
-        PREPARE,
-
-        /** Lightweight unmarshal. Messages only, CacheObject fields are skipped (no cache context available). */
-        FINISH,
-
-        /** Unmarshal with full cache context and class loader. */
-        FINISH_CACHE
     }
 
     /** */
@@ -585,5 +543,46 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         return t.getKind() == TypeKind.DECLARED ?
             ((DeclaredType)t).asElement() :
             ((DeclaredType)((TypeVariable)t).getUpperBound()).asElement();
+    }
+
+    /** */
+    private static boolean isNioField(VariableElement field) {
+        return field.getAnnotation(NioField.class) != null;
+    }
+
+    /** Marshals each field and appends non-empty results to {@code body}. */
+    private void appendFields(List<String> body, List<VariableElement> fields, MarshalMode mode) {
+        for (VariableElement field : fields) {
+            List<String> result = marshall(field.asType(), fieldAccessor(field), mode);
+
+            if (!result.isEmpty())
+                appendBlock(body, result);
+        }
+    }
+
+    /** Appends {@code block} to {@code body}, inserting a blank-line separator when {@code body} is non-empty. */
+    private static void appendBlock(List<String> body, List<String> block) {
+        if (!body.isEmpty())
+            body.add(EMPTY);
+
+        body.addAll(block);
+    }
+
+    /** */
+    private static TypeMirror mirror(ProcessingEnvironment env, String qualifiedName) {
+        TypeElement elem = env.getElementUtils().getTypeElement(qualifiedName);
+        return elem != null ? elem.asType() : null;
+    }
+
+    /** */
+    private enum MarshalMode {
+        /** Marshal. */
+        PREPARE,
+
+        /** Lightweight unmarshal. Messages only, CacheObject fields are skipped (no cache context available). */
+        FINISH,
+
+        /** Unmarshal with full cache context and class loader. */
+        FINISH_CACHE
     }
 }
