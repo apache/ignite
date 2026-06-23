@@ -44,7 +44,7 @@ import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
  * No marshaller is generated for {@code NonMarshallableMessage} types.
  */
 public class MessageMarshallerGenerator extends MessageGenerator {
-    /** Collection of lines for {@code prepareMarshal} / {@code finishUnmarshal} methods. */
+    /** Accumulated source lines for all generated marshal/unmarshal methods. */
     private final List<String> marshall = new ArrayList<>();
 
     /** MarshallableMessage type mirror. */
@@ -145,8 +145,10 @@ public class MessageMarshallerGenerator extends MessageGenerator {
             writer.write(NL);
 
             indent++;
+            
             writer.write(indentedLine("this.marshaller = marshaller;"));
             writer.write(NL);
+            
             indent--;
         }
         else {
@@ -538,7 +540,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         return cacheGroupIdMsgMirror != null && assignableFrom(te.asType(), cacheGroupIdMsgMirror);
     }
 
-    /** */
+    /** Returns the element for {@code t}; for a type variable, uses its upper bound. */
     private Element element(TypeMirror t) {
         return t.getKind() == TypeKind.DECLARED ?
             ((DeclaredType)t).asElement() :
@@ -568,7 +570,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         body.addAll(block);
     }
 
-    /** */
+    /** Returns the type mirror for {@code qualifiedName}, or {@code null} if the type is not on the compilation classpath. */
     private static TypeMirror mirror(ProcessingEnvironment env, String qualifiedName) {
         TypeElement elem = env.getElementUtils().getTypeElement(qualifiedName);
         return elem != null ? elem.asType() : null;
