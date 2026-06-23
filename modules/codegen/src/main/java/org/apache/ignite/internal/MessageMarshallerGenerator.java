@@ -149,27 +149,22 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
         indent++;
 
-        int prepareBodyStart = marshall.size();
+        List<String> body = new ArrayList<>();
 
         if (needsCtx(orderedFields))
-            marshall.add(ctxResolutionLine());
+            appendBlock(body, List.of(ctxResolutionLine()));
 
-        if (marshallableMessage()) {
-            if (marshall.size() > prepareBodyStart)
-                marshall.add(EMPTY);
-            marshall.add(indentedLine("msg.prepareMarshal(marshaller);"));
-        }
+        if (marshallableMessage())
+            appendBlock(body, List.of(indentedLine("msg.prepareMarshal(marshaller);")));
 
         for (VariableElement field : orderedFields) {
             List<String> marshalled = marshall(field.asType(), fieldAccessor(field), MarshalMode.PREPARE);
 
-            if (!marshalled.isEmpty()) {
-                if (!marshall.get(marshall.size() - 1).equals(EMPTY))
-                    marshall.add(EMPTY);
-
-                marshall.addAll(marshalled);
-            }
+            if (!marshalled.isEmpty())
+                appendBlock(body, marshalled);
         }
+
+        marshall.addAll(body);
 
         indent--;
 
@@ -190,27 +185,22 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
         indent++;
 
-        int finish5BodyStart = marshall.size();
+        List<String> body = new ArrayList<>();
 
         if (needsCtx(orderedFields))
-            marshall.add(ctxResolutionLine());
+            appendBlock(body, List.of(ctxResolutionLine()));
 
         for (VariableElement field : orderedFields) {
             List<String> unmarshalled = marshall(field.asType(), fieldAccessor(field), MarshalMode.FINISH_CACHE);
 
-            if (!unmarshalled.isEmpty()) {
-                if (!marshall.get(marshall.size() - 1).equals(EMPTY))
-                    marshall.add(EMPTY);
-
-                marshall.addAll(unmarshalled);
-            }
+            if (!unmarshalled.isEmpty())
+                appendBlock(body, unmarshalled);
         }
 
-        if (isCacheMarshallableMessage(type)) {
-            if (marshall.size() > finish5BodyStart)
-                marshall.add(EMPTY);
-            marshall.add(indentedLine("msg.finishUnmarshal(marshaller, clsLdr);"));
-        }
+        if (isCacheMarshallableMessage(type))
+            appendBlock(body, List.of(indentedLine("msg.finishUnmarshal(marshaller, clsLdr);")));
+
+        marshall.addAll(body);
 
         indent--;
 
@@ -228,31 +218,31 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
         indent++;
 
-        boolean first = true;
+        List<String> baseBody = new ArrayList<>();
 
         for (VariableElement field : orderedFields) {
             List<String> unmarshalled = marshall(field.asType(), fieldAccessor(field), MarshalMode.FINISH_BASE);
 
-            if (!unmarshalled.isEmpty()) {
-                if (!first)
-                    marshall.add(EMPTY);
-
-                first = false;
-
-                marshall.addAll(unmarshalled);
-            }
+            if (!unmarshalled.isEmpty())
+                appendBlock(baseBody, unmarshalled);
         }
 
-        if (marshallableMessage() && !isCacheMarshallableMessage(type)) {
-            if (!first)
-                marshall.add(EMPTY);
+        if (marshallableMessage() && !isCacheMarshallableMessage(type))
+            appendBlock(baseBody, List.of(indentedLine("msg.finishUnmarshal(marshaller, U.resolveClassLoader(kctx.config()));")));
 
-            marshall.add(indentedLine("msg.finishUnmarshal(marshaller, U.resolveClassLoader(kctx.config()));"));
-        }
+        marshall.addAll(baseBody);
 
         indent--;
 
         marshall.add(indentedLine("}"));
+    }
+
+    /** Appends {@code block} to {@code body}, inserting a blank-line separator when {@code body} is non-empty. */
+    private static void appendBlock(List<String> body, List<String> block) {
+        if (!body.isEmpty())
+            body.add(EMPTY);
+
+        body.addAll(block);
     }
 
     /** Returns the {@code GridCacheContext ctx} resolution line for the current message type. */
@@ -533,7 +523,6 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         return marshallableMsgType != null && env.getTypeUtils().isAssignable(type.asType(), marshallableMsgType);
     }
 
-    /** */
     /** */
     private Element element(TypeMirror t) {
         return t.getKind() == TypeKind.DECLARED ?
