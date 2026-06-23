@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Optional;
 import org.apache.ignite.internal.util.GridStringBuilder;
 
+import static org.apache.ignite.internal.util.tostring.NodeRecursionMonitor.OBJECT_REGISTRY;
+
 /**
  * The abstract base class for all nodes in the string representation tree.
  * Defines the common interface for appending a node's value to a string builder
@@ -123,10 +125,11 @@ public abstract class GridToStringNode {
     }
 
     /**
-     * Clears the thread-local cache of nodes.
+     * Clears the thread-local cache of nodes and recursion prevention storage.
      */
-    void clear() {
+    static void clear() {
         CATCHED_NODES.remove();
+        OBJECT_REGISTRY.remove();
     }
 
     /**

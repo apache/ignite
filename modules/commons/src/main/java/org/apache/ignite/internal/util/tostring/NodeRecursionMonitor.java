@@ -73,12 +73,6 @@ abstract class NodeRecursionMonitor extends GridToStringNode {
             sb.a(GridToStringBuilder.identity(obj));
     }
 
-    /** {@inheritDoc} */
-    @Override void clear() {
-        super.clear();
-        OBJECT_REGISTRY.remove();
-    }
-
     /**
      * Finds a recursion monitor for a given object in the registry.
      * @param obj The object to find.

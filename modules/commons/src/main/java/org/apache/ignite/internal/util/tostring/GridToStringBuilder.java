@@ -1496,6 +1496,7 @@ public class GridToStringBuilder {
         throwable.printStackTrace(printWriter);
         printWriter.flush();
         printWriter.close();
+        GridToStringNode.clear();
         return strWriter.toString();
     }
 }
