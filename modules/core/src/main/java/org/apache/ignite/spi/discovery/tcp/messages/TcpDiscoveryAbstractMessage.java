@@ -106,7 +106,6 @@ public abstract class TcpDiscoveryAbstractMessage implements Message {
         verifierNodeId = msg.verifierNodeId;
         topVer = msg.topVer;
         flags = msg.flags;
-        opCtxMsg = msg.opCtxMsg;
     }
 
     /**
