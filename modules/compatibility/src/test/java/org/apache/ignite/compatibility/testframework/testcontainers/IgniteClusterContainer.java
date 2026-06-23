@@ -19,6 +19,7 @@ package org.apache.ignite.compatibility.testframework.testcontainers;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import org.testcontainers.containers.Network;
 import org.testcontainers.lifecycle.Startable;
@@ -39,7 +40,7 @@ public class IgniteClusterContainer implements Startable {
         for (int i = 0; i < nodeIds.size(); i++) {
             String hostname = "node" + (1 + i);
 
-            IgniteContainer ignite = new IgniteContainer(commitHash, net, hostname, nodeIds.get(i));
+            IgniteContainer ignite = new IgniteContainer(commitHash, net, hostname, nodeIds.get(i), i);
 
             containers.add(ignite);
         }
@@ -62,6 +63,6 @@ public class IgniteClusterContainer implements Startable {
 
     /** */
     public List<IgniteContainer> containers() {
-        return containers;
+        return Collections.unmodifiableList(containers);
     }
 }

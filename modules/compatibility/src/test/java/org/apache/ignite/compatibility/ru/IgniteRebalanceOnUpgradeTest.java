@@ -18,10 +18,10 @@
 package org.apache.ignite.compatibility.ru;
 
 import java.io.File;
-//import java.net.InetAddress;
-import java.net.UnknownHostException;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -100,7 +100,7 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return super.getTestTimeout() * 3;
+        return super.getTestTimeout() * 2;
     }
 
     /** Basic RU test. */
@@ -111,8 +111,6 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
 
             for (IgniteContainer container : cluster.containers())
                 addrs.put(container.nodeId(), container.discoveryAddress());
-
-            System.out.println(">>> Addresses=" + addrs);
 
             ClientCacheConfiguration cfg = new ClientCacheConfiguration()
                 .setName(CACHE_NAME)
@@ -145,38 +143,28 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
     /** */
     private void upgradeCluster(IgniteClusterContainer srcCluster) throws Exception {
         for (IgniteContainer container : srcCluster.containers()) {
-            System.out.println(">>> Upgrade " + container.nodeId());
+            log.info(">>> Upgrade node=" + container.nodeId());
+
+            String hostIp = container.execInContainer("sh", "-c",
+                "getent ahostsv4 host.docker.internal | awk '{print $1}' | head -1").getStdout().trim();
 
             container.stop();
 
             addrs.remove(container.nodeId());
 
-            System.out.println(">>> CONNECT TO=" + addrs.values());
+            IgniteEx ignite = startGrid(configuration(container.nodeId(), container.localWorkDirectory(), addrs.values(), hostIp));
 
-            IgniteEx ignite = null;
+            waitForCondition(() -> NODE_IDS.size() == ignite.cluster().nodes().size(), DFLT_TEST_TIMEOUT);
 
-            try {
-                Thread.sleep(20_000);
-
-                ignite = startGrid(configuration(container.nodeId(), container.localWorkDirectory(), addrs.values()));
-            }
-            catch (Exception ex) {
-                System.out.println(">>> ERR=" + ex);
-                Thread.sleep(Long.MAX_VALUE);
-            }
-
-            IgniteEx finalIgnite = ignite;
-
-            waitForCondition(() -> NODE_IDS.size() == finalIgnite.cluster().nodes().size(), DFLT_TEST_TIMEOUT);
-
-            addrs.put(container.nodeId(), ignite.cluster().localNode().addresses().stream().findFirst().orElseThrow());
+            // Already-upgraded host nodes live in this JVM on localhost within the discovery port range.
+            addrs.put(container.nodeId(), "127.0.0.1:48500..48599");
 
             nodes.add(ignite);
         }
     }
 
     /** */
-    private IgniteConfiguration configuration(String nodeId, String workDir, Collection<String> addrs0) throws UnknownHostException {
+    private IgniteConfiguration configuration(String nodeId, String workDir, Collection<String> addrs0, String ip) {
         DataRegionConfiguration dataRegionCfg = new DataRegionConfiguration()
             .setName("testRegion")
             .setInitialSize(1024L * 1024 * 1024)
@@ -184,28 +172,50 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
             .setPersistenceEnabled(true);
 
         TcpDiscoverySpi discoverySpi = new TcpDiscoverySpi()
+            .setLocalAddress("0.0.0.0")
             .setIpFinder(new TcpDiscoveryVmIpFinder().setAddresses(addrs0))
-            .setNetworkTimeout(10000)
+            // Short socket timeout: unreachable container-internal addresses must fail fast before the
+            // host-reachable 127.0.0.1:<published-port> (advertised by the containers) is tried.
+            .setSocketTimeout(1000)
+            .setNetworkTimeout(20000)
             .setAckTimeout(5000)
-            .setJoinTimeout(10000)
-            //.setLocalAddress(InetAddress.getLocalHost().getHostAddress())
-//            .setAddressFilter(addrs -> !(addrs.getHostString().contains("0.0.0.0")
-//             || addrs.getHostString().contains("127.0.0.1")))
+            .setJoinTimeout(30000)
             .setLocalPort(48500)
-            .setLocalPortRange(20);
+            .setLocalPortRange(100);
 
-        TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
-            //.setLocalAddress("0.0.0.0");
-            //.setLocalPort(47100)
-            //.setLocalPortRange(100);
+        // Bind communication to loopback (discovery stays on 0.0.0.0 to satisfy Ignite's non-loopback join
+        // check) so the node advertises only 127.0.0.1 + the resolver-mapped Docker host address -- no
+        // unreachable host LAN IPs for the containers to stall on. A short connect timeout makes the node's
+        // own outgoing attempts to unreachable container-internal (172.x) addresses give up in ~1s (they
+        // otherwise hang in SYN_SENT) and fall through to the reachable 127.0.0.1:<published-port>.
+        TcpCommunicationSpi commSpi = new TcpCommunicationSpi()
+            .setLocalAddress("127.0.0.1")
+            .setLocalPort(49100)
+            .setConnectTimeout(1000)
+            .setMaxConnectTimeout(10000)
+            // The NIO connect to a blackholed container-internal (172.x) address is not aborted by
+            // connectTimeout on macOS (it hangs in SYN_SENT for the OS timeout, ~75s), stalling the exchange.
+            // Pre-filter unreachable addresses so only the reachable 127.0.0.1:<published-port> is used.
+            .setFilterReachableAddresses(true);
 
         return new IgniteConfiguration()
-            .setLocalHost("0.0.0.0")
+            .setIgniteInstanceName(nodeId)
             .setConsistentId(nodeId)
             .setWorkDirectory(workDir)
             .setDataStorageConfiguration(new DataStorageConfiguration().setDefaultDataRegionConfiguration(dataRegionCfg))
-            .setDiscoverySpi(discoverySpi);
-            //.setCommunicationSpi(commSpi);
+            .setDiscoverySpi(discoverySpi)
+            .setAddressResolver(addr -> {
+                int port = addr.getPort();
+
+                // Each sequentially started host node binds the next port in the discovery (48500+) and
+                // communication (47100+) ranges; map them all to the Docker host address so the containers
+                // can reach every host JVM node.
+                if ((port >= 48500 && port < 48600) || (port >= 49100 && port < 49200))
+                    return Collections.singleton(new InetSocketAddress(ip, port));
+
+                return Collections.singleton(addr);
+            })
+            .setCommunicationSpi(commSpi);
     }
 
     /** */

@@ -31,6 +31,8 @@ git-patch-prop-local.sh
 **/dotnet/libs/
 *.classname*
 *.exe
+deliveries/docker/apache-ignite/x86_64/run.sh
+deliveries/docker/apache-ignite/x86_64/apache-ignite-*
 
 #Ignore all Intellij IDEA files (except default inspections config)
 .idea/
