@@ -24,43 +24,32 @@ import org.jetbrains.annotations.Nullable;
 
 /** Marshalling logic for cache-object fields in a {@link Message}. */
 public interface MessageMarshaller<M extends Message> {
-    /**
-     * Marshals cache-object fields on the user thread.
-     *
-     * @param msg     Message instance.
-     * @param kctx    Kernal context.
-     * @param nested  Nested cache context, or {@code null}.
-     */
+    /** Marshals cache-object fields on the user thread. */
     public void prepareMarshal(M msg, GridKernalContext kctx, @Nullable GridCacheContext<?, ?> nested)
         throws IgniteCheckedException;
 
-    /**
-     * Unmarshals cache-object fields including nested-context resolution.
-     *
-     * @param msg     Message instance.
-     * @param kctx    Kernal context.
-     * @param nested  Nested cache context, or {@code null}.
-     * @param clsLdr  Class loader.
-     */
+    /** Unmarshals cache-object fields with full cache context and class loader. */
     public void finishUnmarshal(M msg, GridKernalContext kctx, @Nullable GridCacheContext<?, ?> nested, ClassLoader clsLdr)
         throws IgniteCheckedException;
 
-    /**
-     * Unmarshals message fields without a nested cache context (cache-free path).
-     *
-     * @param msg  Message instance.
-     * @param kctx Kernal context.
-     */
+    /** Unmarshals message fields without a cache context. */
     public void finishUnmarshal(M msg, GridKernalContext kctx) throws IgniteCheckedException;
 
-    /** Null-safe {@code prepareMarshal} — skips when no marshaller is registered (e.g. NonMarshallableMessage). 
-     * 
-     * @param factory Message factory.
-     * @param msg Message.
-     * @param kctx Kernal context.
-     * @param nested Nested context.
-     * @param <M> Message type.
-     * */
+    /** Unmarshals only {@code @NioField}-annotated fields in the NIO/IO thread. No-op by default. */
+    default void finishUnmarshalNio(M msg, GridKernalContext kctx) throws IgniteCheckedException {
+    }
+
+    /** Null-safe {@code finishUnmarshalNio} — skips when no marshaller is registered. */
+    static <M extends Message> void finishUnmarshalNio(
+        MessageFactory factory, M msg, GridKernalContext kctx)
+        throws IgniteCheckedException {
+        MessageMarshaller<M> m = (MessageMarshaller<M>)factory.marshaller(msg.directType());
+
+        if (m != null)
+            m.finishUnmarshalNio(msg, kctx);
+    }
+
+    /** Null-safe {@code prepareMarshal} — skips when no marshaller is registered. */
     static <M extends Message> void prepareMarshal(
         MessageFactory factory, M msg, GridKernalContext kctx, @Nullable GridCacheContext<?, ?> nested)
         throws IgniteCheckedException {
@@ -70,15 +59,7 @@ public interface MessageMarshaller<M extends Message> {
             m.prepareMarshal(msg, kctx, nested);
     }
 
-    /** Null-safe {@code finishUnmarshal} (with nested context) — skips when no marshaller is registered. 
-     * 
-     * @param factory Message Factory.
-     * @param msg Message.
-     * @param kctx Kernal context.
-     * @param nested Nested context.
-     * @param clsLdr Class loader.
-     * @param <M> Message type.
-     * */
+    /** Null-safe {@code finishUnmarshal} — skips when no marshaller is registered. */
     static <M extends Message> void finishUnmarshal(
         MessageFactory factory, M msg, GridKernalContext kctx, @Nullable GridCacheContext<?, ?> nested, ClassLoader clsLdr)
         throws IgniteCheckedException {
@@ -88,13 +69,7 @@ public interface MessageMarshaller<M extends Message> {
             m.finishUnmarshal(msg, kctx, nested, clsLdr);
     }
 
-    /** Null-safe {@code finishUnmarshal} (cache-free) — skips when no marshaller is registered. 
-     * 
-     * @param factory Message factory.
-     * @param kctx Kernal context.
-     * @param msg Message.
-     * @param <M> Message type.
-     * */
+    /** Null-safe {@code finishUnmarshal} (cache-free) — skips when no marshaller is registered. */
     static <M extends Message> void finishUnmarshal(
         MessageFactory factory, M msg, GridKernalContext kctx)
         throws IgniteCheckedException {

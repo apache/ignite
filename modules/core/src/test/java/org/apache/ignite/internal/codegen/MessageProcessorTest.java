@@ -393,6 +393,15 @@ public class MessageProcessorTest {
         assertThat(compilation).hadErrorContaining("Compress annotation is used for an unsupported type: java.util.List");
     }
 
+    /** Verifies that {@code @NioField} on a non-{@link Message}-typed field is a compilation error. */
+    @Test
+    public void testNioFieldOnNonMessageTypeFails() {
+        Compilation compilation = compile("NioFieldOnNonMessageMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("@NioField has no effect on non-Message field");
+    }
+
     /** */
     private Compilation compile(String... srcFiles) {
         return compile(new MessageProcessor(), srcFiles);

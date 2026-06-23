@@ -19,6 +19,7 @@ package org.apache.ignite.internal.managers.communication;
 
 import org.apache.ignite.internal.ExecutorAwareMessage;
 import org.apache.ignite.internal.GridTopicMessage;
+import org.apache.ignite.internal.NioField;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
@@ -40,6 +41,7 @@ public class GridIoMessage implements Message, SpanTransport {
     byte plc;
 
     /** Topic message. */
+    @NioField
     @Order(1)
     @GridToStringInclude
     GridTopicMessage topicMsg;

@@ -23,6 +23,7 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.processing.ProcessingEnvironment;
+import javax.tools.Diagnostic;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.QualifiedNameable;
 import javax.lang.model.element.TypeElement;
@@ -173,6 +174,37 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
     /** */
     private void generateUnmarshallMethods(List<VariableElement> orderedFields) {
+        List<VariableElement> nioFields = new ArrayList<>();
+        List<VariableElement> workerFields = new ArrayList<>();
+
+        for (VariableElement f : orderedFields) {
+            if (isNioField(f) && isMessage(f.asType()))
+                nioFields.add(f);
+            else {
+                if (isNioField(f))
+                    env.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                        "@NioField has no effect on non-Message field '" + f.getSimpleName() + "' of type " + f.asType(),
+                        f);
+
+                workerFields.add(f);
+            }
+        }
+
+        imports.add("org.apache.ignite.internal.util.typedef.internal.U");
+
+        String msgParam = simpleNameWithGeneric(type) + " msg, GridKernalContext kctx";
+
+        generateFinishUnmarshalMethod("finishUnmarshal", msgParam + ", GridCacheContext<?, ?> nested, ClassLoader clsLdr",
+            workerFields, MarshalMode.FINISH_CACHE);
+
+        generateFinishUnmarshalMethod("finishUnmarshal", msgParam, workerFields, MarshalMode.FINISH_BASE);
+
+        if (!nioFields.isEmpty())
+            generateFinishUnmarshalMethod("finishUnmarshalNio", msgParam, nioFields, MarshalMode.FINISH_BASE);
+    }
+
+    /** */
+    private void generateFinishUnmarshalMethod(String methodName, String params, List<VariableElement> fields, MarshalMode mode) {
         marshall.add(EMPTY);
 
         indent = 1;
@@ -180,61 +212,38 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         marshall.add(indentedLine(METHOD_JAVADOC));
 
         marshall.add(indentedLine(
-            "@Override public void finishUnmarshal(" + simpleNameWithGeneric(type) +
-                " msg, GridKernalContext kctx, GridCacheContext<?, ?> nested, ClassLoader clsLdr) throws IgniteCheckedException {"));
+            "@Override public void " + methodName + "(" + params + ") throws IgniteCheckedException {"));
 
         indent++;
 
         List<String> body = new ArrayList<>();
 
-        if (needsCtx(orderedFields))
+        if (mode == MarshalMode.FINISH_CACHE && needsCtx(fields))
             appendBlock(body, List.of(ctxResolutionLine()));
 
-        for (VariableElement field : orderedFields) {
-            List<String> unmarshalled = marshall(field.asType(), fieldAccessor(field), MarshalMode.FINISH_CACHE);
+        for (VariableElement field : fields) {
+            List<String> unmarshalled = marshall(field.asType(), fieldAccessor(field), mode);
 
             if (!unmarshalled.isEmpty())
                 appendBlock(body, unmarshalled);
         }
 
-        if (isCacheMarshallableMessage(type))
+        if (mode == MarshalMode.FINISH_CACHE && isCacheMarshallableMessage(type))
             appendBlock(body, List.of(indentedLine("msg.finishUnmarshal(marshaller, clsLdr);")));
+
+        if (mode == MarshalMode.FINISH_BASE && marshallableMessage() && !isCacheMarshallableMessage(type))
+            appendBlock(body, List.of(indentedLine("msg.finishUnmarshal(marshaller, U.resolveClassLoader(kctx.config()));")));
 
         marshall.addAll(body);
 
         indent--;
 
         marshall.add(indentedLine("}"));
+    }
 
-        imports.add("org.apache.ignite.internal.util.typedef.internal.U");
-
-        marshall.add(EMPTY);
-
-        marshall.add(indentedLine(METHOD_JAVADOC));
-
-        marshall.add(indentedLine(
-            "@Override public void finishUnmarshal(" + simpleNameWithGeneric(type) +
-                " msg, GridKernalContext kctx) throws IgniteCheckedException {"));
-
-        indent++;
-
-        List<String> baseBody = new ArrayList<>();
-
-        for (VariableElement field : orderedFields) {
-            List<String> unmarshalled = marshall(field.asType(), fieldAccessor(field), MarshalMode.FINISH_BASE);
-
-            if (!unmarshalled.isEmpty())
-                appendBlock(baseBody, unmarshalled);
-        }
-
-        if (marshallableMessage() && !isCacheMarshallableMessage(type))
-            appendBlock(baseBody, List.of(indentedLine("msg.finishUnmarshal(marshaller, U.resolveClassLoader(kctx.config()));")));
-
-        marshall.addAll(baseBody);
-
-        indent--;
-
-        marshall.add(indentedLine("}"));
+    /** */
+    private static boolean isNioField(VariableElement field) {
+        return field.getAnnotation(NioField.class) != null;
     }
 
     /** Appends {@code block} to {@code body}, inserting a blank-line separator when {@code body} is non-empty. */

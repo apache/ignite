@@ -1203,7 +1203,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         assert nodeId != null;
         assert msg != null;
 
-        MessageMarshaller.finishUnmarshal(ctx.messageFactory(), msg, ctx);
+        MessageMarshaller.finishUnmarshalNio(ctx.messageFactory(), msg, ctx);
 
         Lock busyLock0 = busyLock.readLock();
 
@@ -1312,16 +1312,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                 try {
                     threadProcessingMessage(true, msgC);
 
-                    GridMessageListener lsnr = listenerGet0(msg.topic());
-
-                    if (lsnr == null)
-                        return;
-
-                    Object obj = msg.message();
-
-                    assert obj != null;
-
-                    invokeListener(msg.policy(), lsnr, nodeId, obj, secSubjId(msg));
+                    processRegularMessage0(msg, nodeId);
                 }
                 finally {
                     threadProcessingMessage(false, null);
@@ -1455,11 +1446,19 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         if (lsnr == null)
             return;
 
-        Object obj = msg.message();
+        finishUnmarshalPayload(msg);
 
-        assert obj != null;
+        invokeListener(msg.policy(), lsnr, nodeId, msg.message(), secSubjId(msg));
+    }
 
-        invokeListener(msg.policy(), lsnr, nodeId, obj, secSubjId(msg));
+    /** */
+    private void finishUnmarshalPayload(GridIoMessage msg) {
+        try {
+            MessageMarshaller.finishUnmarshal(ctx.messageFactory(), msg.message(), ctx);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to unmarshal message payload", e);
+        }
     }
 
     /**
@@ -3813,7 +3812,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
                         MTC.span().addTag(SpanTags.MESSAGE, () -> traceName(fmc.message));
 
-                        invokeListener(plc, lsnr, nodeId, mc.message.message(), secSubjId(mc.message));
+                        finishUnmarshalPayload(mc.message);
+
+                        invokeListener(mc.message.policy(), lsnr, nodeId, mc.message.message(), secSubjId(mc.message));
                     }
                     finally {
                         if (mc.closure != null)
