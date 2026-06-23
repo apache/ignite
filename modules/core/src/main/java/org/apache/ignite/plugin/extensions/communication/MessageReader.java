@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
@@ -269,6 +270,9 @@ public interface MessageReader {
      * @return Map.
      */
     public <M extends Map<?, ?>> M readMap(MessageMapType type, boolean compress);
+
+    /** @return Ignite product version. */
+    IgniteProductVersion readIgniteProductVersion();
 
     /**
      * Tells whether last invocation of any of {@code readXXX(...)}

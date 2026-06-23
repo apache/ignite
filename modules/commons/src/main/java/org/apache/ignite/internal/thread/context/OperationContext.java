@@ -322,7 +322,7 @@ public class OperationContext {
     }
 
     /** Allows to change multiple attribute values in a single update operation and skip updates that changes nothing. */
-    private static class ContextUpdater {
+    static class ContextUpdater {
         /** */
         private static final int INIT_UPDATES_CAPACITY = 3;
 

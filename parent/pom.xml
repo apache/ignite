@@ -46,8 +46,8 @@
     <packaging>pom</packaging>
 
     <properties>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
 
         <revision>2.19.0-SNAPSHOT</revision>
         <!-- Ignite version will be substituted with the flatten-maven-plugin and used as
@@ -74,17 +74,17 @@
         <curator.version>5.9.0</curator.version>
         <guava.version>33.5.0-jre</guava.version>
         <failureaccess.version>1.0.1</failureaccess.version>
-        <grpc-context.version>1.62.2</grpc-context.version>
+        <grpc-context.version>1.81.0</grpc-context.version>
         <h2.version>1.4.197</h2.version>
         <hamcrest.version>2.2</hamcrest.version>
         <jackson.version>2.21.3</jackson.version>
         <jackson-annotations.version>2.21</jackson-annotations.version>
         <javassist.version>3.28.0-GA</javassist.version>
         <javax.cache.bundle.version>1.0.0_1</javax.cache.bundle.version>
-        <javax.cache.tck.version>1.1.0</javax.cache.tck.version>
+        <javax.cache.tck.version>1.1.1</javax.cache.tck.version>
         <javax.cache.version>1.0.0</javax.cache.version>
         <jboss.rmi.version>1.0.6.Final</jboss.rmi.version>
-        <jetbrains.annotations.version>16.0.3</jetbrains.annotations.version>
+        <jetbrains.annotations.version>26.1.0</jetbrains.annotations.version>
         <jetty.version>11.0.25</jetty.version>
         <jetty-jakarta-servlet-api.version>5.0.2</jetty-jakarta-servlet-api.version>
         <jmh.version>1.37</jmh.version>
@@ -108,7 +108,7 @@
         <slf4j.version>2.0.17</slf4j.version>
         <snappy.version>1.1.10.7</snappy.version>
         <spring.version>5.3.39</spring.version>
-        <surefire.version>3.5.4</surefire.version>
+        <surefire.version>3.5.6</surefire.version>
         <tomcat.version>10.0.27</tomcat.version>
         <yardstick.version>0.8.3</yardstick.version>
         <zookeeper.version>3.9.5</zookeeper.version>
@@ -121,7 +121,7 @@
         <!-- Maven plugins versions -->
         <maven.javadoc.plugin.version>3.12.0</maven.javadoc.plugin.version>
         <maven.enforcer.plugin.version>3.6.2</maven.enforcer.plugin.version>
-        <maven.compiler.plugin.version>3.14.1</maven.compiler.plugin.version>
+        <maven.compiler.plugin.version>3.15.0</maven.compiler.plugin.version>
         <maven.surefire.plugin.version>3.5.4</maven.surefire.plugin.version>
         <maven.failsafe.plugin.version>3.5.4</maven.failsafe.plugin.version>
         <maven.shade.plugin.version>3.6.1</maven.shade.plugin.version>
@@ -303,7 +303,7 @@
                         <use>true</use>
                         <author>false</author>
                         <version>false</version>
-                        <additionalOptions>${javadoc.opts}</additionalOptions>
+                        <additionalOptions>${javadoc.opts} --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED</additionalOptions>
                         <bottom>
                             <![CDATA[
                                     <table width="100%" border="0" cellspacing=0 cellpadding=0 style="padding: 5px">
@@ -538,6 +538,40 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${maven.compiler.plugin.version}</version>
+                <configuration>
+                    <compilerArgs>
+                        <arg>--add-exports</arg>
+                        <arg>java.base/jdk.internal.misc=ALL-UNNAMED</arg>
+                        <arg>--add-exports</arg>
+                        <arg>java.base/jdk.internal.loader=ALL-UNNAMED</arg>
+                        <arg>--add-exports</arg>
+                        <arg>java.base/sun.nio.ch=ALL-UNNAMED</arg>
+                        <arg>--add-exports</arg>
+                        <arg>java.base/sun.net.util=ALL-UNNAMED</arg>
+                        <arg>--add-exports</arg>
+                        <arg>java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED</arg>
+                        <arg>--add-exports</arg>
+                        <arg>jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED</arg>
+                        <arg>--add-exports</arg>
+                        <arg>java.base/java.io=ALL-UNNAMED</arg>
+                        <arg>--add-exports</arg>
+                        <arg>java.base/java.nio=ALL-UNNAMED</arg>
+                        <arg>--add-exports</arg>
+                        <arg>java.base/java.util=ALL-UNNAMED</arg>
+                        <arg>--add-exports</arg>
+                        <arg>java.base/java.lang=ALL-UNNAMED</arg>
+                        <arg>--add-exports</arg>
+                        <arg>java.base/java.lang.invoke=ALL-UNNAMED</arg>
+                        <arg>--add-exports</arg>
+                        <arg>java.sql/java.sql=ALL-UNNAMED</arg>
+                    </compilerArgs>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
 
                 <configuration>
@@ -553,6 +587,44 @@
                         <!-- Check all classes that may have any test. -->
                         <include>**/*.java</include>
                     </includes>
+                    <argLine>
+                        --add-opens=java.base/jdk.internal.access=ALL-UNNAMED
+                        --add-opens=java.base/jdk.internal.loader=ALL-UNNAMED
+                        --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED
+                        --add-opens=java.base/sun.net.util=ALL-UNNAMED
+                        --add-opens=java.base/sun.nio.ch=ALL-UNNAMED
+                        --add-opens=java.base/sun.nio.fs=ALL-UNNAMED
+                        --add-opens=java.base/sun.util.calendar=ALL-UNNAMED
+                        --add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
+                        --add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
+                        --add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
+                        --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED
+                        --add-opens=java.base/java.io=ALL-UNNAMED
+                        --add-opens=java.base/java.nio=ALL-UNNAMED
+                        --add-opens=java.base/java.net=ALL-UNNAMED
+                        --add-opens=java.base/java.util=ALL-UNNAMED
+                        --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+                        --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED
+                        --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED
+                        --add-opens=java.base/java.lang=ALL-UNNAMED
+                        --add-opens=java.base/java.lang.invoke=ALL-UNNAMED
+                        --add-opens=java.base/java.math=ALL-UNNAMED
+                        --add-opens=java.sql/java.sql=ALL-UNNAMED
+                        --add-opens=java.base/java.lang.reflect=ALL-UNNAMED
+                        --add-opens=java.base/java.time=ALL-UNNAMED
+                        --add-opens=java.base/java.text=ALL-UNNAMED
+                        --add-opens=java.base/java.security=ALL-UNNAMED
+                        --add-opens=java.logging/java.util.logging=ALL-UNNAMED
+                        --add-opens=java.management/sun.management=ALL-UNNAMED
+                        --add-opens=java.desktop/java.awt.font=ALL-UNNAMED
+                        --add-opens=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED
+                        --add-opens=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED
+                        --add-opens=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED
+                        --add-opens=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED
+                        --add-opens=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED
+                        --add-opens=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED
+                        --add-opens=java.base/java.util.regex=ALL-UNNAMED
+                    </argLine>
                 </configuration>
             </plugin>
 
@@ -682,7 +754,7 @@
                         <phase>validate</phase>
                         <configuration>
                             <name>ignite.buildNumber</name>
-                            <!-- See: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/text/SimpleDateFormat.html -->
+                            <!-- See: https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/text/SimpleDateFormat.html -->
                             <pattern>yywwu</pattern>
                             <locale>en_US</locale>
                         </configuration>
@@ -903,194 +975,6 @@
         </profile>
 
         <profile>
-            <id>java-11+</id>
-            <activation>
-                <jdk>[11,15)</jdk>
-            </activation>
-            <properties>
-                <maven.compiler.source>11</maven.compiler.source>
-                <maven.compiler.target>11</maven.compiler.target>
-            </properties>
-            <dependencies/>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-compiler-plugin</artifactId>
-                        <version>${maven.compiler.plugin.version}</version>
-                        <configuration>
-                            <compilerArgs>
-                                <arg>--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED</arg>
-                                <arg>--add-exports=java.base/sun.nio.ch=ALL-UNNAMED</arg>
-                                <arg>--add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED</arg>
-                                <arg>--add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED</arg>
-                                <arg>--add-exports=java.base/sun.net.util=ALL-UNNAMED</arg>
-                            </compilerArgs>
-                        </configuration>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration>
-                            <argLine>
-                                --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED
-                                --add-exports=java.base/sun.nio.ch=ALL-UNNAMED
-                                --add-exports=java.base/jdk.internal.loader=ALL-UNNAMED
-                                --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
-                                --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
-                                --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
-                                --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED
-                                --add-opens=java.base/jdk.internal.access=ALL-UNNAMED
-                                --add-opens=java.base/jdk.internal.loader=ALL-UNNAMED
-                                --illegal-access=permit
-                            </argLine>
-                        </configuration>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                        <configuration>
-                            <additionalOptions>${javadoc.opts} --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED</additionalOptions>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-
-            <dependencyManagement>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.apache.hadoop</groupId>
-                        <artifactId>hadoop-common</artifactId>
-                        <exclusions>
-                            <exclusion>
-                                <!-- This dependency is not available with java 9.-->
-                                <groupId>jdk.tools</groupId>
-                                <artifactId>jdk.tools</artifactId>
-                            </exclusion>
-                        </exclusions>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.apache.hadoop</groupId>
-                        <artifactId>hadoop-common</artifactId>
-                        <type>test-jar</type>
-                        <exclusions>
-                            <exclusion>
-                                <!-- This dependency is not available with java 9.-->
-                                <groupId>jdk.tools</groupId>
-                                <artifactId>jdk.tools</artifactId>
-                            </exclusion>
-                        </exclusions>
-                    </dependency>
-                </dependencies>
-            </dependencyManagement>
-
-        </profile>
-
-        <profile>
-            <id>java-15+</id>
-            <activation>
-                <jdk>[15,)</jdk>
-            </activation>
-            <properties>
-                <maven.compiler.source>11</maven.compiler.source>
-                <maven.compiler.target>15</maven.compiler.target>
-            </properties>
-            <dependencies/>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-compiler-plugin</artifactId>
-                        <version>${maven.compiler.plugin.version}</version>
-                        <configuration>
-                            <compilerArgs>
-                                <arg>--add-exports</arg>
-                                <arg>java.base/jdk.internal.misc=ALL-UNNAMED</arg>
-                                <arg>--add-exports</arg>
-                                <arg>java.base/jdk.internal.loader=ALL-UNNAMED</arg>
-                                <arg>--add-exports</arg>
-                                <arg>java.base/sun.nio.ch=ALL-UNNAMED</arg>
-                                <arg>--add-exports</arg>
-                                <arg>java.base/sun.net.util=ALL-UNNAMED</arg>
-                                <arg>--add-exports</arg>
-                                <arg>java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED</arg>
-                                <arg>--add-exports</arg>
-                                <arg>jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED</arg>
-                                <arg>--add-exports</arg>
-                                <arg>java.base/java.io=ALL-UNNAMED</arg>
-                                <arg>--add-exports</arg>
-                                <arg>java.base/java.nio=ALL-UNNAMED</arg>
-                                <arg>--add-exports</arg>
-                                <arg>java.base/java.util=ALL-UNNAMED</arg>
-                                <arg>--add-exports</arg>
-                                <arg>java.base/java.lang=ALL-UNNAMED</arg>
-                                <arg>--add-exports</arg>
-                                <arg>java.base/java.lang.invoke=ALL-UNNAMED</arg>
-                                <arg>--add-exports</arg>
-                                <arg>java.sql/java.sql=ALL-UNNAMED</arg>
-                            </compilerArgs>
-                        </configuration>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration>
-                            <argLine>
-                                --add-opens=java.base/jdk.internal.access=ALL-UNNAMED
-                                --add-opens=java.base/jdk.internal.loader=ALL-UNNAMED
-                                --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED
-                                --add-opens=java.base/sun.net.util=ALL-UNNAMED
-                                --add-opens=java.base/sun.nio.ch=ALL-UNNAMED
-                                --add-opens=java.base/sun.nio.fs=ALL-UNNAMED
-                                --add-opens=java.base/sun.util.calendar=ALL-UNNAMED
-                                --add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
-                                --add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
-                                --add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
-                                --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED
-                                --add-opens=java.base/java.io=ALL-UNNAMED
-                                --add-opens=java.base/java.nio=ALL-UNNAMED
-                                --add-opens=java.base/java.net=ALL-UNNAMED
-                                --add-opens=java.base/java.util=ALL-UNNAMED
-                                --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
-                                --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED
-                                --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED
-                                --add-opens=java.base/java.lang=ALL-UNNAMED
-                                --add-opens=java.base/java.lang.invoke=ALL-UNNAMED
-                                --add-opens=java.base/java.math=ALL-UNNAMED
-                                --add-opens=java.sql/java.sql=ALL-UNNAMED
-                                --add-opens=java.base/java.lang.reflect=ALL-UNNAMED
-                                --add-opens=java.base/java.time=ALL-UNNAMED
-                                --add-opens=java.base/java.text=ALL-UNNAMED
-                                --add-opens=java.base/java.security=ALL-UNNAMED
-                                --add-opens=java.logging/java.util.logging=ALL-UNNAMED
-                                --add-opens=java.management/sun.management=ALL-UNNAMED
-                                --add-opens=java.desktop/java.awt.font=ALL-UNNAMED
-                                --add-opens=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED
-                                --add-opens=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED
-                                --add-opens=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED
-                                --add-opens=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED
-                                --add-opens=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED
-                                --add-opens=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED
-                                --add-opens=java.base/java.util.regex=ALL-UNNAMED
-                            </argLine>
-                        </configuration>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                        <configuration>
-                            <additionalOptions>${javadoc.opts} --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED</additionalOptions>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
             <id>tools.jar-default</id>
             <activation>
                 <file>
@@ -1186,6 +1070,21 @@
             <properties>
                 <maven.javadoc.skip>true</maven.javadoc.skip>
             </properties>
+        </profile>
+
+        <profile>
+            <id>check-test-suites</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <forkCount>1</forkCount>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 </project>

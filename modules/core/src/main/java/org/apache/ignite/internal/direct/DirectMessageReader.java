@@ -35,6 +35,7 @@ import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteOutClosure;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageArrayType;
@@ -419,6 +420,17 @@ public class DirectMessageReader implements MessageReader {
         }
 
         return map;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteProductVersion readIgniteProductVersion() {
+        DirectByteBufferStream stream = state.item().stream;
+
+        IgniteProductVersion v = stream.readIgniteProductVersion();
+
+        lastRead = stream.lastFinished();
+
+        return v;
     }
 
     /** {@inheritDoc} */

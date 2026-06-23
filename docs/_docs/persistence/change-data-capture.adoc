@@ -176,6 +176,8 @@ When the CDC has been forcefully disabled for a while, cache changes will be ski
 In this case it is necessary to resend data from existing caches.
 For example, this is important if you need to ensure consistency of cache data before a replication restart.
 
+NOTE: The command requires an active cluster and will be canceled if the cluster is inactive.
+
 NOTE: The command will be canceled if cluster was not rebalanced or topology changed (node left/joined, baseline changed).
 
 To forcefully resend all cache data to CDC you can run the following link:tools/control-script[Control Script] command:

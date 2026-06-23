@@ -67,4 +67,9 @@ public class IgniteMarshallerClassFilter implements IgnitePredicate<String> {
     @Override public int hashCode() {
         return Objects.hash(whiteList, blackList);
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "IgniteMarshallerClassFilter";
+    }
 }

@@ -980,7 +980,10 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 U.error(log, "Error occurred during send error message: " + X.getFullStackTrace(e));
             }
             finally {
-                qryReg.query(msg.queryId()).onError(ex);
+                Query<?> qry = qryReg.query(msg.queryId());
+
+                if (qry != null)
+                    qry.onError(ex);
             }
         }
     }

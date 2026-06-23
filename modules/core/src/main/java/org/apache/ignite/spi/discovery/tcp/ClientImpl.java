@@ -70,6 +70,8 @@ import org.apache.ignite.internal.processors.tracing.SpanTags;
 import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessage;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesTable;
+import org.apache.ignite.internal.thread.context.DistributedOperationContextManager;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -251,7 +253,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
     /** {@inheritDoc} */
     @Override public void dumpRingStructure(IgniteLogger log) {
-        ClusterNode[] serverNodes = getRemoteNodes().stream()
+        ClusterNode[] serverNodes = remoteVisibleNodes().stream()
                 .filter(node -> !node.isClient())
                 .sorted(Comparator.comparingLong(ClusterNode::order))
                 .toArray(ClusterNode[]::new);
@@ -371,7 +373,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
     /** {@inheritDoc} */
     @Override public Collection<ClusterNode> getRemoteNodes() {
-        return U.arrayList(rmtNodes.values(), TcpDiscoveryNodesRing.VISIBLE_NODES);
+        return U.arrayList(rmtNodes.values());
     }
 
     /** {@inheritDoc} */
@@ -465,7 +467,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
         spi.getSpiContext().deregisterPorts();
 
-        Collection<ClusterNode> rmts = getRemoteNodes();
+        Collection<ClusterNode> rmts = remoteVisibleNodes();
 
         // This is restart/disconnection and remote nodes are not empty.
         // We need to fire FAIL event for each.
@@ -1077,6 +1079,11 @@ class ClientImpl extends TcpDiscoveryImpl {
         return ignite instanceof IgniteEx ? ((IgniteEx)ignite).context().workersRegistry() : null;
     }
 
+    /** */
+    private Collection<ClusterNode> remoteVisibleNodes() {
+        return U.arrayList(rmtNodes.values(), TcpDiscoveryNodesRing.VISIBLE_NODES);
+    }
+
     /**
      * Metrics sender.
      */
@@ -1305,6 +1312,8 @@ class ClientImpl extends TcpDiscoveryImpl {
          * @param msg Message.
          */
         private void sendMessage(TcpDiscoveryAbstractMessage msg) {
+            msg.opCtxMsg = DistributedOperationContextManager.instance().collectDistributedAttributes();
+
             synchronized (mux) {
                 queue.add(msg);
 
@@ -1752,251 +1761,256 @@ class ClientImpl extends TcpDiscoveryImpl {
                         blockingSectionEnd();
                     }
 
-                    if (msg instanceof JoinTimeout) {
-                        int joinCnt0 = ((JoinTimeout)msg).joinCnt;
+                    TcpDiscoveryAbstractMessage dm = msg instanceof TcpDiscoveryAbstractMessage
+                        ? (TcpDiscoveryAbstractMessage)msg
+                        : null;
 
-                        if (joinCnt == joinCnt0) {
-                            if (state == STARTING) {
-                                joinError(new IgniteSpiException("Join process timed out, did not receive response for " +
-                                    "join request (consider increasing 'joinTimeout' configuration property) " +
-                                    "[joinTimeout=" + spi.joinTimeout + ", sock=" + currSock + ']'));
+                    try (Scope ignored = DistributedOperationContextManager.instance()
+                        .restoreDistributedAttributes(dm == null ? null : dm.opCtxMsg)) {
+                        if (msg instanceof JoinTimeout) {
+                            int joinCnt0 = ((JoinTimeout)msg).joinCnt;
 
-                                break;
-                            }
-                            else if (state == DISCONNECTED) {
-                                if (log.isDebugEnabled())
-                                    log.debug("Failed to reconnect, local node segmented " +
-                                        "[joinTimeout=" + spi.joinTimeout + ']');
-
-                                state = SEGMENTED;
-
-                                notifyDiscovery(
-                                    EVT_NODE_SEGMENTED, topVer, locNode, allVisibleNodes(), null);
-                            }
-                        }
-                    }
-                    else if (msg == SPI_STOP) {
-                        boolean connected = state == CONNECTED;
-
-                        state = STOPPED;
-
-                        assert spi.getSpiContext().isStopping();
-
-                        if (connected && currSock != null) {
-                            TcpDiscoveryNodeLeftMessage leftMsg = new TcpDiscoveryNodeLeftMessage(getLocalNodeId());
-
-                            leftMsg.client(true);
-
-                            Span rootSpan = tracing.create(TraceableMessagesTable.traceName(leftMsg.getClass()))
-                                .addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.ID), () -> locNode.id().toString())
-                                .addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.CONSISTENT_ID),
-                                    () -> locNode.consistentId().toString())
-                                .addLog(() -> "Created");
-
-                            leftMsg.spanContainer().serializedSpanBytes(tracing.serialize(rootSpan));
-
-                            sockWriter.sendMessage(leftMsg);
-
-                            rootSpan.addLog(() -> "Sent").end();
-                        }
-                        else
-                            leaveLatch.countDown();
-                    }
-                    else if (msg == SPI_RECONNECT) {
-                        if (state == CONNECTED) {
-                            if (reconnector != null) {
-                                reconnector.cancel();
-                                reconnector.join();
-
-                                reconnector = null;
-                            }
-
-                            sockWriter.forceLeave();
-                            sockReader.forceStopRead();
-
-                            currSock = null;
-
-                            queue.clear();
-
-                            onDisconnected();
-
-                            UUID newId = UUID.randomUUID();
-
-                            U.quietAndWarn(log, "Local node will try to reconnect to cluster with new id due " +
-                                "to network problems [newId=" + newId +
-                                ", prevId=" + locNode.id() +
-                                ", locNode=" + locNode + ']');
-
-                            locNode.onClientDisconnected(newId);
-
-                            throttleClientReconnect();
-
-                            tryJoin();
-                        }
-                    }
-                    else if (msg instanceof TcpDiscoveryNodeFailedMessage &&
-                        ((TcpDiscoveryNodeFailedMessage)msg).failedNodeId().equals(locNode.id())) {
-                        TcpDiscoveryNodeFailedMessage msg0 = (TcpDiscoveryNodeFailedMessage)msg;
-
-                        assert msg0.force() : msg0;
-
-                        forceFailMsg = msg0;
-                    }
-                    else if (msg instanceof SocketClosedMessage) {
-                        if (((SocketClosedMessage)msg).sock == currSock) {
-                            Socket sock = currSock.sock;
-
-                            InetSocketAddress prevAddr = new InetSocketAddress(sock.getInetAddress(), sock.getPort());
-
-                            currSock = null;
-
-                            boolean join = joinLatch.getCount() > 0;
-
-                            if (spi.getSpiContext().isStopping() || state == SEGMENTED) {
-                                leaveLatch.countDown();
-
-                                if (join) {
-                                    joinError(new IgniteSpiException("Failed to connect to cluster: socket closed."));
+                            if (joinCnt == joinCnt0) {
+                                if (state == STARTING) {
+                                    joinError(new IgniteSpiException("Join process timed out, did not receive response for " +
+                                        "join request (consider increasing 'joinTimeout' configuration property) " +
+                                        "[joinTimeout=" + spi.joinTimeout + ", sock=" + currSock + ']'));
 
                                     break;
                                 }
-                            }
-                            else {
-                                if (forceFailMsg != null) {
-                                    if (log.isDebugEnabled()) {
-                                        log.debug("Connection closed, local node received force fail message, " +
-                                            "will not try to restore connection");
-                                    }
-
-                                    queue.addFirst(SPI_RECONNECT_FAILED);
-                                }
-                                else {
+                                else if (state == DISCONNECTED) {
                                     if (log.isDebugEnabled())
-                                        log.debug("Connection closed, will try to restore connection.");
-
-                                    assert reconnector == null;
-
-                                    reconnector = new Reconnector(join, prevAddr);
-                                    reconnector.start();
-                                }
-                            }
-                        }
-                    }
-                    else if (msg == SPI_RECONNECT_FAILED) {
-                        if (reconnector != null) {
-                            reconnector.cancel();
-                            reconnector.join();
-
-                            reconnector = null;
-                        }
-                        else
-                            assert forceFailMsg != null;
-
-                        if (spi.isClientReconnectDisabled()) {
-                            if (state != SEGMENTED && state != STOPPED) {
-                                if (forceFailMsg != null) {
-                                    U.quietAndWarn(log, "Local node was dropped from cluster due to network problems " +
-                                        "[nodeInitiatedFail=" + forceFailMsg.creatorNodeId() +
-                                        ", msg=" + forceFailMsg.warning() + ']');
-                                }
-
-                                if (log.isDebugEnabled()) {
-                                    log.debug("Failed to restore closed connection, reconnect disabled, " +
-                                        "local node segmented [networkTimeout=" + spi.netTimeout + ']');
-                                }
-
-                                state = SEGMENTED;
-
-                                notifyDiscovery(
-                                    EVT_NODE_SEGMENTED, topVer, locNode, allVisibleNodes(), null);
-                            }
-                        }
-                        else {
-                            if (state == STARTING || state == CONNECTED) {
-                                if (log.isDebugEnabled()) {
-                                    log.debug("Failed to restore closed connection, will try to reconnect " +
-                                        "[networkTimeout=" + spi.netTimeout +
-                                        ", joinTimeout=" + spi.joinTimeout +
-                                        ", failMsg=" + forceFailMsg + ']');
-                                }
-
-                                onDisconnected();
-                            }
-
-                            UUID newId = UUID.randomUUID();
-
-                            if (forceFailMsg != null) {
-                                long delay = IgniteSystemProperties.getLong(IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY,
-                                    DFLT_DISCO_FAILED_CLIENT_RECONNECT_DELAY);
-
-                                if (delay > 0) {
-                                    U.quietAndWarn(log, "Local node was dropped from cluster due to network problems, " +
-                                        "will try to reconnect with new id after " + delay + "ms (reconnect delay " +
-                                        "can be changed using IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY system " +
-                                        "property) [" +
-                                        "newId=" + newId +
-                                        ", prevId=" + locNode.id() +
-                                        ", locNode=" + locNode +
-                                        ", nodeInitiatedFail=" + forceFailMsg.creatorNodeId() +
-                                        ", msg=" + forceFailMsg.warning() + ']');
-
-                                    Thread.sleep(delay);
-                                }
-                                else {
-                                    U.quietAndWarn(log, "Local node was dropped from cluster due to network problems, " +
-                                        "will try to reconnect with new id [" +
-                                        "newId=" + newId +
-                                        ", prevId=" + locNode.id() +
-                                        ", locNode=" + locNode +
-                                        ", nodeInitiatedFail=" + forceFailMsg.creatorNodeId() +
-                                        ", msg=" + forceFailMsg.warning() + ']');
-                                }
-
-                                forceFailMsg = null;
-                            }
-                            else if (log.isInfoEnabled()) {
-                                log.info("Client node disconnected from cluster, will try to reconnect with new id " +
-                                    "[newId=" + newId + ", prevId=" + locNode.id() + ", locNode=" + locNode + ']');
-                            }
-
-                            locNode.onClientDisconnected(newId);
-
-                            tryJoin();
-                        }
-                    }
-                    else {
-                        TcpDiscoveryAbstractMessage discoMsg = (TcpDiscoveryAbstractMessage)msg;
-
-                        if (joining()) {
-                            IgniteSpiException err = null;
-
-                            if (discoMsg instanceof TcpDiscoveryDuplicateIdMessage)
-                                err = spi.duplicateIdError((TcpDiscoveryDuplicateIdMessage)msg);
-                            else if (discoMsg instanceof TcpDiscoveryAuthFailedMessage)
-                                err = spi.authenticationFailedError((TcpDiscoveryAuthFailedMessage)msg);
-                            //TODO: https://issues.apache.org/jira/browse/IGNITE-9829
-                            else if (discoMsg instanceof TcpDiscoveryCheckFailedMessage)
-                                err = spi.checkFailedError((TcpDiscoveryCheckFailedMessage)msg);
-
-                            if (err != null) {
-                                if (state == DISCONNECTED) {
-                                    U.error(log, "Failed to reconnect, segment local node.", err);
+                                        log.debug("Failed to reconnect, local node segmented " +
+                                            "[joinTimeout=" + spi.joinTimeout + ']');
 
                                     state = SEGMENTED;
 
                                     notifyDiscovery(
                                         EVT_NODE_SEGMENTED, topVer, locNode, allVisibleNodes(), null);
                                 }
-                                else
-                                    joinError(err);
-
-                                cancel();
-
-                                break;
                             }
                         }
+                        else if (msg == SPI_STOP) {
+                            boolean connected = state == CONNECTED;
 
-                        processDiscoveryMessage((TcpDiscoveryAbstractMessage)msg);
+                            state = STOPPED;
+
+                            assert spi.getSpiContext().isStopping();
+
+                            if (connected && currSock != null) {
+                                TcpDiscoveryNodeLeftMessage leftMsg = new TcpDiscoveryNodeLeftMessage(getLocalNodeId());
+
+                                leftMsg.client(true);
+
+                                Span rootSpan = tracing.create(TraceableMessagesTable.traceName(leftMsg.getClass()))
+                                    .addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.ID), () -> locNode.id().toString())
+                                    .addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.CONSISTENT_ID),
+                                        () -> locNode.consistentId().toString())
+                                    .addLog(() -> "Created");
+
+                                leftMsg.spanContainer().serializedSpanBytes(tracing.serialize(rootSpan));
+
+                                sockWriter.sendMessage(leftMsg);
+
+                                rootSpan.addLog(() -> "Sent").end();
+                            }
+                            else
+                                leaveLatch.countDown();
+                        }
+                        else if (msg == SPI_RECONNECT) {
+                            if (state == CONNECTED) {
+                                if (reconnector != null) {
+                                    reconnector.cancel();
+                                    reconnector.join();
+
+                                    reconnector = null;
+                                }
+
+                                sockWriter.forceLeave();
+                                sockReader.forceStopRead();
+
+                                currSock = null;
+
+                                queue.clear();
+
+                                onDisconnected();
+
+                                UUID newId = UUID.randomUUID();
+
+                                U.quietAndWarn(log, "Local node will try to reconnect to cluster with new id due " +
+                                    "to network problems [newId=" + newId +
+                                    ", prevId=" + locNode.id() +
+                                    ", locNode=" + locNode + ']');
+
+                                locNode.onClientDisconnected(newId);
+
+                                throttleClientReconnect();
+
+                                tryJoin();
+                            }
+                        }
+                        else if (msg instanceof TcpDiscoveryNodeFailedMessage &&
+                            ((TcpDiscoveryNodeFailedMessage)msg).failedNodeId().equals(locNode.id())) {
+                            TcpDiscoveryNodeFailedMessage msg0 = (TcpDiscoveryNodeFailedMessage)msg;
+
+                            assert msg0.force() : msg0;
+
+                            forceFailMsg = msg0;
+                        }
+                        else if (msg instanceof SocketClosedMessage) {
+                            if (((SocketClosedMessage)msg).sock == currSock) {
+                                Socket sock = currSock.sock;
+
+                                InetSocketAddress prevAddr = new InetSocketAddress(sock.getInetAddress(), sock.getPort());
+
+                                currSock = null;
+
+                                boolean join = joinLatch.getCount() > 0;
+
+                                if (spi.getSpiContext().isStopping() || state == SEGMENTED) {
+                                    leaveLatch.countDown();
+
+                                    if (join) {
+                                        joinError(new IgniteSpiException("Failed to connect to cluster: socket closed."));
+
+                                        break;
+                                    }
+                                }
+                                else {
+                                    if (forceFailMsg != null) {
+                                        if (log.isDebugEnabled()) {
+                                            log.debug("Connection closed, local node received force fail message, " +
+                                                "will not try to restore connection");
+                                        }
+
+                                        queue.addFirst(SPI_RECONNECT_FAILED);
+                                    }
+                                    else {
+                                        if (log.isDebugEnabled())
+                                            log.debug("Connection closed, will try to restore connection.");
+
+                                        assert reconnector == null;
+
+                                        reconnector = new Reconnector(join, prevAddr);
+                                        reconnector.start();
+                                    }
+                                }
+                            }
+                        }
+                        else if (msg == SPI_RECONNECT_FAILED) {
+                            if (reconnector != null) {
+                                reconnector.cancel();
+                                reconnector.join();
+
+                                reconnector = null;
+                            }
+                            else
+                                assert forceFailMsg != null;
+
+                            if (spi.isClientReconnectDisabled()) {
+                                if (state != SEGMENTED && state != STOPPED) {
+                                    if (forceFailMsg != null) {
+                                        U.quietAndWarn(log, "Local node was dropped from cluster due to network problems " +
+                                            "[nodeInitiatedFail=" + forceFailMsg.creatorNodeId() +
+                                            ", msg=" + forceFailMsg.warning() + ']');
+                                    }
+
+                                    if (log.isDebugEnabled()) {
+                                        log.debug("Failed to restore closed connection, reconnect disabled, " +
+                                            "local node segmented [networkTimeout=" + spi.netTimeout + ']');
+                                    }
+
+                                    state = SEGMENTED;
+
+                                    notifyDiscovery(
+                                        EVT_NODE_SEGMENTED, topVer, locNode, allVisibleNodes(), null);
+                                }
+                            }
+                            else {
+                                if (state == STARTING || state == CONNECTED) {
+                                    if (log.isDebugEnabled()) {
+                                        log.debug("Failed to restore closed connection, will try to reconnect " +
+                                            "[networkTimeout=" + spi.netTimeout +
+                                            ", joinTimeout=" + spi.joinTimeout +
+                                            ", failMsg=" + forceFailMsg + ']');
+                                    }
+
+                                    onDisconnected();
+                                }
+
+                                UUID newId = UUID.randomUUID();
+
+                                if (forceFailMsg != null) {
+                                    long delay = IgniteSystemProperties.getLong(IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY,
+                                        DFLT_DISCO_FAILED_CLIENT_RECONNECT_DELAY);
+
+                                    if (delay > 0) {
+                                        U.quietAndWarn(log, "Local node was dropped from cluster due to network problems, " +
+                                            "will try to reconnect with new id after " + delay + "ms (reconnect delay " +
+                                            "can be changed using IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY system " +
+                                            "property) [" +
+                                            "newId=" + newId +
+                                            ", prevId=" + locNode.id() +
+                                            ", locNode=" + locNode +
+                                            ", nodeInitiatedFail=" + forceFailMsg.creatorNodeId() +
+                                            ", msg=" + forceFailMsg.warning() + ']');
+
+                                        Thread.sleep(delay);
+                                    }
+                                    else {
+                                        U.quietAndWarn(log, "Local node was dropped from cluster due to network problems, " +
+                                            "will try to reconnect with new id [" +
+                                            "newId=" + newId +
+                                            ", prevId=" + locNode.id() +
+                                            ", locNode=" + locNode +
+                                            ", nodeInitiatedFail=" + forceFailMsg.creatorNodeId() +
+                                            ", msg=" + forceFailMsg.warning() + ']');
+                                    }
+
+                                    forceFailMsg = null;
+                                }
+                                else if (log.isInfoEnabled()) {
+                                    log.info("Client node disconnected from cluster, will try to reconnect with new id " +
+                                        "[newId=" + newId + ", prevId=" + locNode.id() + ", locNode=" + locNode + ']');
+                                }
+
+                                locNode.onClientDisconnected(newId);
+
+                                tryJoin();
+                            }
+                        }
+                        else {
+                            if (joining()) {
+                                IgniteSpiException err = null;
+
+                                if (dm instanceof TcpDiscoveryDuplicateIdMessage)
+                                    err = spi.duplicateIdError((TcpDiscoveryDuplicateIdMessage)msg);
+                                else if (dm instanceof TcpDiscoveryAuthFailedMessage)
+                                    err = spi.authenticationFailedError((TcpDiscoveryAuthFailedMessage)msg);
+                                    //TODO: https://issues.apache.org/jira/browse/IGNITE-9829
+                                else if (dm instanceof TcpDiscoveryCheckFailedMessage)
+                                    err = spi.checkFailedError((TcpDiscoveryCheckFailedMessage)msg);
+
+                                if (err != null) {
+                                    if (state == DISCONNECTED) {
+                                        U.error(log, "Failed to reconnect, segment local node.", err);
+
+                                        state = SEGMENTED;
+
+                                        notifyDiscovery(
+                                            EVT_NODE_SEGMENTED, topVer, locNode, allVisibleNodes(), null);
+                                    }
+                                    else
+                                        joinError(err);
+
+                                    cancel();
+
+                                    break;
+                                }
+                            }
+
+                            processDiscoveryMessage(dm);
+                        }
                     }
                 }
             }
@@ -2220,6 +2234,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                             rmtNodes.clear();
 
                         for (TcpDiscoveryNode n : top) {
+                            spi.restoreRemoteNodeVersion(n);
+
                             if (n.order() > 0)
                                 n.visible(true);
 
@@ -2275,7 +2291,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                 return;
 
             if (log.isInfoEnabled()) {
-                for (ClusterNode node : getRemoteNodes()) {
+                for (ClusterNode node : remoteVisibleNodes()) {
                     if (node.id().equals(locNode.clientRouterNodeId())) {
                         if (log.isInfoEnabled())
                             log.info("Router node: " + node);
@@ -2363,8 +2379,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         node.order(topVer);
                         node.visible(true);
 
-                        if (spi.locNodeVer.equals(node.version()))
-                            node.version(spi.locNodeVer);
+                        spi.restoreRemoteNodeVersion(node);
 
                         evt = true;
                     }
