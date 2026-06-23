@@ -475,7 +475,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         // Collect active proposals.
         synchronized (stateMux) {
-            proposalsItem = new QueryProposalsDataBagItem(activeProposals);
+            proposalsItem = new QueryProposalsDataBagItem(new LinkedHashMap<>(activeProposals));
         }
 
         dataBag.addGridCommonData(DiscoveryDataExchangeType.QUERY_PROC.ordinal(), proposalsItem);
