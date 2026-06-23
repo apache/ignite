@@ -42,7 +42,7 @@ public class GridPartitionedCacheJtaFactorySelfTest extends AbstractCacheJtaSelf
 
         /** {@inheritDoc} */
         @Override public TransactionManager create() {
-            return jotm.getTransactionManager();
+            return tm;
         }
     }
 }
