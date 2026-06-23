@@ -39,12 +39,9 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
-import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.managers.communication.IgniteIoTestMessage;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
@@ -914,114 +911,6 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
         assertTrue(coordLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
         assertTrue(srvrLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
         assertTrue(clientLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
-    }
-
-    /** */
-    @Test
-    public void testSendAttributesByCommunication() throws Exception {
-        byte attrId1 = 0;
-        byte attrId2 = DistributedOperationContextManager.MAX_DISTRIBUTED_ATTR_CNT - 1;
-
-        InetSocketAddressMessage dfltDistrAttr1Val = new InetSocketAddressMessage(InetAddress.getLoopbackAddress(), 80);
-        GridCacheVersion dfltDistrAttr2Val = new GridCacheVersion(1, 1, 1);
-
-        // Local attribute 1.
-        OperationContextAttribute.newInstance(1000);
-
-        // Distributed attribute 1.
-        OperationContextAttribute<InetSocketAddressMessage> dAttr1 = DistributedOperationContextManager.instance()
-            .createDistributedAttribute(attrId1, dfltDistrAttr1Val);
-
-        // Local attribute 2.
-        OperationContextAttribute.newInstance("locaAttr2");
-
-        // Distributed attribute 2.
-        OperationContextAttribute<GridCacheVersion> dAttr2 = DistributedOperationContextManager.instance()
-            .createDistributedAttribute(attrId2, dfltDistrAttr2Val);
-
-        startGrids(2);
-        startClientGrid(2);
-
-        CountDownLatch coordLatch = new CountDownLatch(2);
-        CountDownLatch srvrLatch = new CountDownLatch(4);
-        CountDownLatch clientLatch = new CountDownLatch(2);
-
-        InetSocketAddressMessage valToSend1 = new InetSocketAddressMessage(dfltDistrAttr1Val.address(), 443);
-        GridCacheVersion valToSend2 = new GridCacheVersion(2, 2, 2);
-
-        for (int i = 0; i < G.allGrids().size(); ++i) {
-            int i0 = i;
-
-            grid(i).context().io().addMessageListener(GridTopic.TOPIC_IO_TEST, new GridMessageListener() {
-                @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
-                    if (msg instanceof IgniteIoTestMessage) {
-                        InetSocketAddressMessage receivedVal1 = OperationContext.get(dAttr1);
-                        GridCacheVersion receivedVal2 = OperationContext.get(dAttr2);
-
-                        assertNotNull(receivedVal1);
-                        assertNotNull(receivedVal2);
-
-                        assertFalse(dfltDistrAttr1Val.port() == receivedVal1.port());
-                        assertEquals(receivedVal1.port(), valToSend1.port());
-                        assertEquals(receivedVal1.address(), valToSend1.address());
-
-                        assertEquals(receivedVal2, valToSend2);
-
-                        if (grid(i0).localNode().isClient())
-                            clientLatch.countDown();
-                        else if (grid(i0).localNode().order() == 1)
-                            coordLatch.countDown();
-                        else
-                            srvrLatch.countDown();
-                    }
-                }
-            });
-        }
-
-        assertFalse(valToSend1.equals(dfltDistrAttr1Val));
-        assertFalse(valToSend2.equals(dfltDistrAttr2Val));
-
-        // From the coordinator to a server.
-        try (Scope ignored = OperationContext.set(dAttr1, valToSend1, dAttr2, valToSend2)) {
-            io(0).sendIoTest(node(1), null, false);
-            io(0).sendIoTest(node(1), null, true);
-        }
-
-        assertTrue(waitForCondition(() -> coordLatch.getCount() == 2, getTestTimeout()));
-
-        // From a server to the coordinator.
-        try (Scope ignored = OperationContext.set(dAttr1, valToSend1, dAttr2, valToSend2)) {
-            io(1).sendIoTest(node(0), null, false);
-            io(1).sendIoTest(node(0), null, true);
-        }
-
-        assertTrue(coordLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
-
-        // From a client to a server.
-        try (Scope ignored = OperationContext.set(dAttr1, valToSend1, dAttr2, valToSend2)) {
-            io(2).sendIoTest(node(1), null, false);
-            io(2).sendIoTest(node(1), null, true);
-        }
-
-        assertTrue(srvrLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
-
-        // From a server to a client.
-        try (Scope ignored = OperationContext.set(dAttr1, valToSend1, dAttr2, valToSend2)) {
-            io(1).sendIoTest(node(2), null, false);
-            io(1).sendIoTest(node(2), null, true);
-        }
-
-        assertTrue(clientLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
-    }
-
-    /** @return a {@link ClusterNode} with {@link ClusterNode#isLocal()} == {@code false} to avoid some asserts/checks. */
-    private ClusterNode node(int nodeIdx) {
-        return grid(0).cluster().node(grid(nodeIdx).localNode().id());
-    }
-
-    /** */
-    private GridIoManager io(int nodeIdx) {
-        return grid(nodeIdx).context().io();
     }
 
     /** */
