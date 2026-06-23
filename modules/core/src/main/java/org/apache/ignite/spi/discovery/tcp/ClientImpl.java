@@ -1765,7 +1765,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                         ? (TcpDiscoveryAbstractMessage)msg
                         : null;
 
-                    try (Scope ignored = DistributedOperationContextManager.instance().restoreDistributedAttributes(dm == null ? null : dm.opCtxMsg)) {
+                    try (Scope ignored = DistributedOperationContextManager.instance()
+                        .restoreDistributedAttributes(dm == null ? null : dm.opCtxMsg)) {
                         if (msg instanceof JoinTimeout) {
                             int joinCnt0 = ((JoinTimeout)msg).joinCnt;
 
