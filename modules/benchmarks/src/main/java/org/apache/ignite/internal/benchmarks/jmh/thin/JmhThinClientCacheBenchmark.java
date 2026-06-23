@@ -64,18 +64,18 @@ public class JmhThinClientCacheBenchmark extends JmhThinClientAbstractBenchmark 
      */
     public static void main(String[] args) throws Exception {
         JmhIdeBenchmarkRunner runner = JmhIdeBenchmarkRunner.create()
-                .forks(1)
-                .threads(4)
-                .benchmarks(JmhThinClientCacheBenchmark.class.getSimpleName())
-                .jvmArguments("-Xms4g", "-Xmx4g");
+            .forks(1)
+            .threads(4)
+            .benchmarks(JmhThinClientCacheBenchmark.class.getSimpleName())
+            .jvmArguments("-Xms4g", "-Xmx4g")
+            .measurementIterations(10)
+            .warmupIterations(10);
+
+        runner.run();
 
         runner
-                .benchmarkModes(Mode.Throughput)
-                .run();
-
-        runner
-                .benchmarkModes(Mode.AverageTime)
-                .outputTimeUnit(TimeUnit.MICROSECONDS)
-                .run();
+            .benchmarkModes(Mode.AverageTime)
+            .outputTimeUnit(TimeUnit.MICROSECONDS)
+            .run();
     }
 }

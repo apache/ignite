@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.benchmarks.jmh.misc;
 
 import java.util.concurrent.TimeUnit;
+import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.NoopTracing;
 import org.apache.ignite.internal.processors.tracing.Span;
@@ -36,9 +37,6 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
-import org.openjdk.jmh.runner.Runner;
-import org.openjdk.jmh.runner.options.Options;
-import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 /**
  * Benchmarks {@link MTC} class.
@@ -103,10 +101,8 @@ public class JmhTracingContextBenchmark {
      * @throws Exception Exception.
      */
     public static void main(String[] args) throws Exception {
-        final Options options = new OptionsBuilder()
-            .include(JmhTracingContextBenchmark.class.getSimpleName())
-            .build();
-
-        new Runner(options).run();
+        JmhIdeBenchmarkRunner.create()
+            .benchmarks(JmhTracingContextBenchmark.class.getSimpleName())
+            .run();
     }
 }
