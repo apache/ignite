@@ -17,9 +17,9 @@
 
 package org.apache.ignite.compatibility.testframework.testcontainers;
 
+import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
-import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -34,14 +34,17 @@ import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.lifecycle.Startable;
 import org.testcontainers.utility.DockerImageName;
 
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 import static org.testcontainers.utility.MountableFile.forClasspathResource;
 
 /** Ignite container. */
-public class IgniteContainer extends GenericContainer<IgniteContainer> {
+public class IgniteContainer extends GenericContainer<IgniteContainer> implements Startable {
     /** Property for local work directory. */
     static final String LOCAL_WORK_DIR_PROP = "local.work.dir";
 
@@ -70,48 +73,57 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
     /** Hostname. */
     private final String hostname;
 
-    /** Node ID. */
-    private final String nodeId;
-
-    /** Path to work directory. */
-    private final String workDirPath;
-
     /** Constructor. */
-    public IgniteContainer(String commitHash, Network net, String hostname, String nodeId) throws IOException {
+    public IgniteContainer(String commitHash, Network net, String hostname) {
         super(DockerImageName.parse("apacheignite/ignite:" + commitHash));
 
         this.hostname = hostname;
-        this.nodeId = nodeId;
-        workDirPath = WORK_DIR_PATH + "/" + hostname;
 
         withEnv("CONFIG_URI", "file://" + CFG_PATH);
         withEnv("IGNITE_QUIET", "false");
-        withEnv("IGNITE_NODE_NAME", nodeId);
-        withEnv("IGNITE_WORK_DIR", workDirPath);
-        withEnv("IGNITE_LOCAL_HOST", "0.0.0.0");
-        withEnv("TZ", ZoneId.systemDefault().toString());
+        withEnv("IGNITE_WORK_DIR", WORK_DIR_PATH + "/" + hostname);
+        withEnv("TZ", java.time.ZoneId.systemDefault().toString());
 
-        withFileSystemBind(LOCAL_WORK_DIR_PATH, WORK_DIR_PATH, BindMode.READ_WRITE);
+        this.withLogConsumer(new Slf4jLogConsumer(LOGGER));
+
+        File nodeDir = new File(LOCAL_WORK_DIR_PATH + '/' + hostname);
+
+        if (!nodeDir.exists())
+            nodeDir.mkdirs();
+
+        nodeDir.setWritable(true, false);
+        nodeDir.setReadable(true, false);
+        nodeDir.setExecutable(true, false); // Required for directories so users can enter them
+
+        withFileSystemBind(nodeDir.getAbsolutePath(), WORK_DIR_PATH + '/' + hostname, BindMode.READ_WRITE);
         withCopyFileToContainer(forClasspathResource("docker/test-config.xml"), CFG_PATH);
 
         withNetwork(net);
         withNetworkAliases(hostname);
 
-        withExtraHost("host-gateway", "host-gateway"); // InetAddress.getLocalHost().getHostAddress());
         withExposedPorts(ClientConnectorConfiguration.DFLT_PORT, TcpCommunicationSpi.DFLT_PORT, TcpDiscoverySpi.DFLT_PORT);
 
-        waitingFor(Wait.forLogMessage(".*Node started.*", 1)
-            .withStartupTimeout(Duration.ofSeconds(600)));
-    }
-
-    /** @return Node ID. */
-    public String nodeId() {
-        return nodeId;
+        waitingFor(Wait.forLogMessage(".*Node started.*", 1).withStartupTimeout(Duration.ofSeconds(120)));
     }
 
     /** */
     public String localWorkDirectory() {
         return LOCAL_WORK_DIR_PATH + "/" + hostname;
+    }
+
+    /** @return Client address. */
+    public String serverAddress() {
+        return address(TcpDiscoverySpi.DFLT_PORT);
+    }
+
+    /** @return Client address. */
+    public String clientAddress() {
+        return address(ClientConnectorConfiguration.DFLT_PORT);
+    }
+
+    /** */
+    private String address(int port) {
+        return getHost() + ":" + getMappedPort(port);
     }
 
     /** Activate cluster. */
@@ -149,26 +161,6 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
         }
     }
 
-    /** @return Client address. */
-    public String clientAddress() {
-        return address(ClientConnectorConfiguration.DFLT_PORT);
-    }
-
-    /** */
-    public String discoveryAddress() {
-        return address(TcpDiscoverySpi.DFLT_PORT).replace("localhost", "0.0.0.0");
-
-//        return "0.0.0.0:" + getMappedPort(TcpDiscoverySpi.DFLT_PORT);
-
-//        return getContainerInfo().getNetworkSettings().getNetworks().values()
-//            .iterator().next().getIpAddress() + ":" + getMappedPort(TcpDiscoverySpi.DFLT_PORT);
-    }
-
-    /** */
-    private String address(int port) {
-        return getHost() + ":" + getMappedPort(port);
-    }
-
     /** */
     private String execControl(String... cmd) {
         String[] fullCmd = new String[cmd.length + 2];
@@ -193,5 +185,50 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
             throw new IllegalStateException(result.toString());
 
         return result.getStdout();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop() {
+        if (isRunning()) {
+            try {
+                LOGGER.info("Sending SIGTERM to Ignite node {} for graceful shutdown...", hostname);
+
+                getDockerClient().killContainerCmd(getContainerId())
+                    .withSignal("TERM")
+                    .exec();
+
+                long stopTimeoutSeconds = 60;
+
+                await()
+                    .atMost(Duration.ofSeconds(stopTimeoutSeconds))
+                    .pollInterval(Duration.ofMillis(500))
+                    .until(() -> !isRunning());
+            } catch (Exception e) {
+                LOGGER.warn("Graceful shutdown failed for node {}. Proceeding with forceful stop.", hostname, e);
+            }
+        }
+
+        LOGGER.info("Ignite node {} shut down gracefully.", hostname);
+
+        // ==============================================================
+        // POST-STOP CLEANUP: FIX OWNERSHIP USING AN ALPINE CONTAINER
+        // ==============================================================
+        try {
+            LOGGER.info("Repairing file ownership metrics for host JVM usage on {}...", hostname);
+
+            // This runs a tiny container to chown everything inside node1 back to your user
+            // 174208964 is your exact host UID from the log inspection!
+            String hostWorkspace = LOCAL_WORK_DIR_PATH + "/" + hostname;
+
+            new GenericContainer<>(DockerImageName.parse("alpine:latest"))
+                .withFileSystemBind(hostWorkspace, "/target", BindMode.READ_WRITE)
+                .withCommand("sh", "-c", "chown -R 174208964:174200513 /target && chmod -R 777 /target")
+                .start(); // Blocks temporarily, executes the fix, and shuts down instantly
+
+        } catch (Exception e) {
+            LOGGER.error("Failed to repair volume directory permissions via background container hook.", e);
+        }
+
+        super.stop();
     }
 }

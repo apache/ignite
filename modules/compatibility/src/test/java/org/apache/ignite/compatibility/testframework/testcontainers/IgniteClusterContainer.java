@@ -17,12 +17,12 @@
 
 package org.apache.ignite.compatibility.testframework.testcontainers;
 
-import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.testcontainers.containers.Network;
 import org.testcontainers.lifecycle.Startable;
-import org.testcontainers.lifecycle.Startables;
 
 /** Ignite cluster container. */
 public class IgniteClusterContainer implements Startable {
@@ -33,13 +33,13 @@ public class IgniteClusterContainer implements Startable {
     private final Network net = Network.newNetwork();
 
     /** @param commitHash Commit hash. */
-    public IgniteClusterContainer(String commitHash, List<String> nodeIds) throws IOException {
-        containers = new ArrayList<>(nodeIds.size());
+    public IgniteClusterContainer(String commitHash, int size) {
+        containers = new ArrayList<>(size);
 
-        for (int i = 0; i < nodeIds.size(); i++) {
+        for (int i = 0; i < size; i++) {
             String hostname = "node" + (1 + i);
 
-            IgniteContainer ignite = new IgniteContainer(commitHash, net, hostname, nodeIds.get(i));
+            IgniteContainer ignite = new IgniteContainer(commitHash, net, hostname);
 
             containers.add(ignite);
         }
@@ -47,7 +47,8 @@ public class IgniteClusterContainer implements Startable {
 
     /** {@inheritDoc} */
     @Override public void start() {
-        Startables.deepStart(containers).join();
+        for (IgniteContainer container : containers)
+            container.start();
 
         containers.get(0).activateCluster(containers.size());
     }
@@ -61,7 +62,35 @@ public class IgniteClusterContainer implements Startable {
     }
 
     /** */
+    public int size() {
+        return containers.size();
+    }
+
+    /** */
+    public IgniteContainer getContainer(int idx) {
+        return containers.get(idx);
+    }
+
+    /** */
+    public void stopNode(int idx) {
+        IgniteContainer container = containers.remove(idx);
+
+        container.stop();
+    }
+
+    /** */
     public List<IgniteContainer> containers() {
         return containers;
+    }
+
+    /**
+     * Collects and returns the dynamically mapped discovery addresses
+     * for all nodes currently managed by this cluster container.
+     * @return A collection of addresses formatted as "host:port".
+     */
+    public Collection<String> serverAddresses() {
+        return containers.stream()
+            .map(IgniteContainer::serverAddress)
+            .collect(Collectors.toList());
     }
 }

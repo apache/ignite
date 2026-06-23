@@ -18,13 +18,11 @@
 package org.apache.ignite.compatibility.ru;
 
 import java.io.File;
-//import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -39,12 +37,9 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.apache.ignite.compatibility.testframework.testcontainers.IgniteContainer.LOCAL_WORK_DIR_PATH;
@@ -53,13 +48,6 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** Smoke test for rolling upgrade with persistence. */
 public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
-    /** Node IDs. */
-    private static final List<String> NODE_IDS = List.of(
-        "ad26bff6-5ff5-49f1-9a61-425a827953ed",
-        "c1099d16-e7d7-49f4-925c-53329286c444",
-        "7b880b69-8a9e-4b84-b555-250d365e2e67"
-    );
-
     /** Source commit hash. */
     private static final String SOURCE_COMMIT_HASH = "b93116048a4df65881b279142871fc16b91c54b3"; //"6b172a8b";
 
@@ -69,33 +57,15 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
     /** Local work directory. */
     private static final File LOCAL_WORK_DIR = new File(LOCAL_WORK_DIR_PATH);
 
-    /** Thin client. */
-    private IgniteClient client;
-
     /** */
     private final List<IgniteEx> nodes = new ArrayList<>();
 
     /** */
-    private final Map<String, String> addrs = new HashMap<>();
-
-    /** */
-    @BeforeClass
-    public static void beforeClass() {
-        U.delete(LOCAL_WORK_DIR);
-
-        System.setProperty("java.net.preferIPv4Stack", "true");
-        System.setProperty("java.net.preferIPv6Addresses", "false");
-    }
-
-    /** */
-    @AfterClass
-    public static void afterClass() {
-        U.delete(LOCAL_WORK_DIR);
-    }
+    private final int NODES_CNT = 3;
 
     /** {@inheritDoc} */
-    @Override protected boolean isMultiJvm() {
-        return false;
+    @Override protected void beforeTest() {
+        U.delete(LOCAL_WORK_DIR);
     }
 
     /** {@inheritDoc} */
@@ -106,25 +76,19 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
     /** Basic RU test. */
     @Test
     public void testRollingUpgrade() throws Exception {
-        try (IgniteClusterContainer cluster = new IgniteClusterContainer(SOURCE_COMMIT_HASH, NODE_IDS)) {
+        try (IgniteClusterContainer cluster = new IgniteClusterContainer(SOURCE_COMMIT_HASH, NODES_CNT)) {
             cluster.start();
 
-            for (IgniteContainer container : cluster.containers())
-                addrs.put(container.nodeId(), container.discoveryAddress());
+            ClientCacheConfiguration cliCacheCfg = getClientConfiguration();
 
-            System.out.println(">>> Addresses=" + addrs);
+            String cliAddr = cluster.containers().get(0).clientAddress();
 
-            ClientCacheConfiguration cfg = new ClientCacheConfiguration()
-                .setName(CACHE_NAME)
-                .setBackups(1)
-                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+            try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(cliAddr))) {
+                ClientCache<Integer, Integer> cache = client.getOrCreateCache(cliCacheCfg);
 
-            ClientCache<Integer, Integer> cache = client(cluster.containers().get(0).clientAddress()).createCache(cfg);
-
-            for (int i = 0; i < 1000; i++)
-                cache.put(i, i);
-
-            closeClient();
+                for (int i = 0; i < 1000; i++)
+                    cache.put(i, i);
+            }
             
             upgradeCluster(cluster);
 
@@ -137,91 +101,66 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
 
             assertEquals(1001, (int)targetCache.get(1001));
         }
-        finally {
-            closeClient();
-        }
     }
 
     /** */
     private void upgradeCluster(IgniteClusterContainer srcCluster) throws Exception {
+        Collection<String> liveClusterAddrs = srcCluster.serverAddresses();
+
         for (IgniteContainer container : srcCluster.containers()) {
-            System.out.println(">>> Upgrade " + container.nodeId());
+            System.out.println(">>> Upgrade " + container.getHost());
 
             container.stop();
-
-            addrs.remove(container.nodeId());
-
-            System.out.println(">>> CONNECT TO=" + addrs.values());
 
             IgniteEx ignite = null;
 
             try {
                 Thread.sleep(20_000);
 
-                ignite = startGrid(configuration(container.nodeId(), container.localWorkDirectory(), addrs.values()));
+                ignite = startGrid(configuration(container.localWorkDirectory(), liveClusterAddrs));
             }
             catch (Exception ex) {
                 System.out.println(">>> ERR=" + ex);
-                Thread.sleep(Long.MAX_VALUE);
+
+                throw ex;
             }
 
             IgniteEx finalIgnite = ignite;
 
-            waitForCondition(() -> NODE_IDS.size() == finalIgnite.cluster().nodes().size(), DFLT_TEST_TIMEOUT);
-
-            addrs.put(container.nodeId(), ignite.cluster().localNode().addresses().stream().findFirst().orElseThrow());
+            waitForCondition(() -> NODES_CNT == finalIgnite.cluster().nodes().size(), DFLT_TEST_TIMEOUT);
 
             nodes.add(ignite);
         }
     }
 
     /** */
-    private IgniteConfiguration configuration(String nodeId, String workDir, Collection<String> addrs0) throws UnknownHostException {
+    private IgniteConfiguration configuration(String workDir, Collection<String> seedAddrs) {
         DataRegionConfiguration dataRegionCfg = new DataRegionConfiguration()
             .setName("testRegion")
-            .setInitialSize(1024L * 1024 * 1024)
-            .setMaxSize(10L * 1024 * 1024 * 1024)
+            .setInitialSize(100L * 1024 * 1024)
+            .setMaxSize(1024 * 1024 * 1024)
             .setPersistenceEnabled(true);
 
-        TcpDiscoverySpi discoverySpi = new TcpDiscoverySpi()
-            .setIpFinder(new TcpDiscoveryVmIpFinder().setAddresses(addrs0))
-            .setNetworkTimeout(10000)
-            .setAckTimeout(5000)
-            .setJoinTimeout(10000)
-            //.setLocalAddress(InetAddress.getLocalHost().getHostAddress())
-//            .setAddressFilter(addrs -> !(addrs.getHostString().contains("0.0.0.0")
-//             || addrs.getHostString().contains("127.0.0.1")))
-            .setLocalPort(48500)
-            .setLocalPortRange(20);
+        Set<String> combinedIpFinderAddrs = new HashSet<>();
 
-        TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
-            //.setLocalAddress("0.0.0.0");
-            //.setLocalPort(47100)
-            //.setLocalPortRange(100);
+        combinedIpFinderAddrs.add("127.0.0.1:47500..47509");
+        combinedIpFinderAddrs.addAll(seedAddrs);
+
+        TcpDiscoverySpi discoverySpi = new TcpDiscoverySpi()
+            .setIpFinder(new TcpDiscoveryVmIpFinder().setAddresses(combinedIpFinderAddrs));
 
         return new IgniteConfiguration()
-            .setLocalHost("0.0.0.0")
-            .setConsistentId(nodeId)
             .setWorkDirectory(workDir)
-            .setDataStorageConfiguration(new DataStorageConfiguration().setDefaultDataRegionConfiguration(dataRegionCfg))
+            .setDataStorageConfiguration(
+                new DataStorageConfiguration().setDefaultDataRegionConfiguration(dataRegionCfg))
             .setDiscoverySpi(discoverySpi);
-            //.setCommunicationSpi(commSpi);
     }
 
     /** */
-    private IgniteClient client(String addr) {
-        if (client == null)
-            client = Ignition.startClient(new ClientConfiguration().setAddresses(addr));
-
-        return client;
-    }
-
-    /** */
-    private void closeClient() {
-        if (client != null) {
-            client.close();
-
-            client = null;
-        }
+    private ClientCacheConfiguration getClientConfiguration() {
+        return new ClientCacheConfiguration()
+            .setName(CACHE_NAME)
+            .setBackups(1)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
     }
 }
