@@ -136,6 +136,8 @@ public class DistributedOperationContextManager {
             while ((msg.idBitmap & (1 << maskIdx)) == 0)
                 ++maskIdx;
 
+            assert attrs.get(maskIdx) != null;
+
             updater.set((OperationContextAttribute<Message>)attrs.get(maskIdx++), curVal);
         }
 
