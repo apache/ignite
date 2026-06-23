@@ -1977,17 +1977,15 @@ class ClientImpl extends TcpDiscoveryImpl {
                             }
                         }
                         else {
-                            TcpDiscoveryAbstractMessage discoMsg = (TcpDiscoveryAbstractMessage)msg;
-
                             if (joining()) {
                                 IgniteSpiException err = null;
 
-                                if (discoMsg instanceof TcpDiscoveryDuplicateIdMessage)
+                                if (dm instanceof TcpDiscoveryDuplicateIdMessage)
                                     err = spi.duplicateIdError((TcpDiscoveryDuplicateIdMessage)msg);
-                                else if (discoMsg instanceof TcpDiscoveryAuthFailedMessage)
+                                else if (dm instanceof TcpDiscoveryAuthFailedMessage)
                                     err = spi.authenticationFailedError((TcpDiscoveryAuthFailedMessage)msg);
                                     //TODO: https://issues.apache.org/jira/browse/IGNITE-9829
-                                else if (discoMsg instanceof TcpDiscoveryCheckFailedMessage)
+                                else if (dm instanceof TcpDiscoveryCheckFailedMessage)
                                     err = spi.checkFailedError((TcpDiscoveryCheckFailedMessage)msg);
 
                                 if (err != null) {
@@ -2008,7 +2006,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                                 }
                             }
 
-                            processDiscoveryMessage((TcpDiscoveryAbstractMessage)msg);
+                            processDiscoveryMessage(dm);
                         }
                     }
                 }
