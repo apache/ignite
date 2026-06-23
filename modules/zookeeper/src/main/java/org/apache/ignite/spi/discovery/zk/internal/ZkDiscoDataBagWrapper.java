@@ -18,15 +18,19 @@
 package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.util.Map;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.spi.discovery.SerializableDataBagItemWrapper;
 
 /** Data bag data holder. */
 public class ZkDiscoDataBagWrapper implements Message {
     /** */
     @Order(0)
     Map<Integer, Message> data;
+
+    private IgniteCheckedException unmarshErr;
 
     /** Default constructor for {@link MessageFactory}. */
     public ZkDiscoDataBagWrapper() {
@@ -36,5 +40,37 @@ public class ZkDiscoDataBagWrapper implements Message {
     /** @param data Discovery data. */
     public ZkDiscoDataBagWrapper(Map<Integer, Message> data) {
         this.data = data;
+    }
+
+    /**
+     * Returns data or throws caught unmarshalling errors.
+     *
+     * @return Data.
+     * @throws IgniteCheckedException Unmarshalling exception, if any.
+     */
+    public Map<Integer, Message> unmarshalledData() throws IgniteCheckedException {
+        if (unmarshErr != null)
+            throw unmarshErr;
+
+        IgniteCheckedException err = null;
+
+        for (Message msg : data.values()) {
+            if (msg instanceof SerializableDataBagItemWrapper wrapper && wrapper.unmarshallError() != null) {
+                IgniteCheckedException e = wrapper.unmarshallError();
+
+                if (err == null)
+                    err = e;
+                else
+                    err.addSuppressed(e);
+            }
+        }
+
+        if (err != null) {
+            unmarshErr = err;
+
+            throw err;
+        }
+
+        return data;
     }
 }

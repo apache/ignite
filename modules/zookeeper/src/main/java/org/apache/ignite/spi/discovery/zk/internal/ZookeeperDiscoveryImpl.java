@@ -3024,7 +3024,7 @@ public class ZookeeperDiscoveryImpl {
 
             DiscoveryDataBag dataBag = new DiscoveryDataBag(locNode.id(), locNode.isClient());
 
-            dataBag.commonData(zkDataBagWrapper.data);
+            dataBag.commonData(zkDataBagWrapper.unmarshalledData());
 
             exchange.onExchange(dataBag);
 
