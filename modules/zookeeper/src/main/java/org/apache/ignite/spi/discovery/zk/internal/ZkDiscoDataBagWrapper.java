@@ -30,6 +30,7 @@ public class ZkDiscoDataBagWrapper implements Message {
     @Order(0)
     Map<Integer, Message> data;
 
+    /** */
     private IgniteCheckedException unmarshErr;
 
     /** Default constructor for {@link MessageFactory}. */
