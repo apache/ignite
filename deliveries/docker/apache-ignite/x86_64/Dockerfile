@@ -28,7 +28,7 @@ RUN apk --no-cache \
     add bash
 
 # Copy main binary archive
-COPY apache-ignite* apache-ignite
+COPY apache-ignite* apache-ignite/
 
 # Copy sh files and set permission
 COPY run.sh $IGNITE_HOME/
