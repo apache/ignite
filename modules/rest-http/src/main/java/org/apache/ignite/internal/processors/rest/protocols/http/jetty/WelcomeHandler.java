@@ -19,16 +19,15 @@ package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
 import java.io.IOException;
 import java.io.InputStream;
+import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.ignite.IgniteLogger;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 
 /**
  * Handles welcome page.
  */
-public class WelcomeHandler extends AbstractHandler {
+public class WelcomeHandler extends HttpServlet {
     /** Default page. */
     private final byte[] dfltPage;
 
@@ -51,13 +50,14 @@ public class WelcomeHandler extends AbstractHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public void handle(String target, Request req, HttpServletRequest srvReq, HttpServletResponse res) throws IOException {
+    @Override protected void service(HttpServletRequest req, HttpServletResponse res) throws IOException {
         if (dfltPage == null || favicon == null || logo == null) {
             res.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            req.setHandled(true);
 
             return;
         }
+
+        String target = req.getRequestURI();
 
         if (target.startsWith("/favicon.ico")) {
             res.setContentType("image/x-icon");
@@ -75,7 +75,6 @@ public class WelcomeHandler extends AbstractHandler {
         res.getOutputStream().flush();
 
         res.setStatus(HttpServletResponse.SC_OK);
-        req.setHandled(true);
     }
 
     /** */
