@@ -53,7 +53,7 @@ public class DistributedOperationContextManager {
     static final byte MAX_DISTRIBUTED_ATTR_CNT = Byte.SIZE;
 
     /** Registered distributed attributes by their cluster-wide id. */
-    private final Map<Byte, OperationContextAttribute<? extends Message>> attrs = new ConcurrentSkipListMap<>();
+    private final Map<Byte, OperationContextAttribute<Message>> attrs = new ConcurrentSkipListMap<>();
 
     /** */
     public static DistributedOperationContextManager instance() {
@@ -92,7 +92,7 @@ public class DistributedOperationContextManager {
         DistributedOperationContextMessage res = null;
         List<Message> vals = null;
 
-        for (Map.Entry<Byte, OperationContextAttribute<? extends Message>> e : attrs.entrySet()) {
+        for (Map.Entry<Byte, OperationContextAttribute<Message>> e : attrs.entrySet()) {
             OperationContextAttribute<? extends Message> attr = e.getValue();
 
             Message curVal = OperationContext.get(attr);
@@ -136,7 +136,7 @@ public class DistributedOperationContextManager {
             while ((msg.idBitmap & (1 << maskIdx)) == 0)
                 ++maskIdx;
 
-            OperationContextAttribute<Message> attr = (OperationContextAttribute<Message>)attrs.get(maskIdx++);
+            OperationContextAttribute<Message> attr = attrs.get(maskIdx++);
 
             assert attr != null;
 
