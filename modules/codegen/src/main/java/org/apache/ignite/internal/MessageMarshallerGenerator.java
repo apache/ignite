@@ -23,7 +23,6 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.processing.ProcessingEnvironment;
-import javax.tools.Diagnostic;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.QualifiedNameable;
 import javax.lang.model.element.TypeElement;
@@ -33,6 +32,7 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
+import javax.tools.Diagnostic;
 
 import static org.apache.ignite.internal.MessageProcessor.MARSHALLABLE_MESSAGE_INTERFACE;
 import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
@@ -47,22 +47,52 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     /** Collection of lines for {@code prepareMarshal} / {@code finishUnmarshal} methods. */
     private final List<String> marshall = new ArrayList<>();
 
-    /** The marshallable message type. */
+    /** MarshallableMessage type mirror. */
     private final TypeMirror marshallableMsgType;
 
-    /** The cache-marshallable message type. */
-    private final TypeMirror cacheMarshallableMsgType;
+    /** Message type mirror. */
+    private final TypeMirror messageMirror;
+
+    /** CacheObject type mirror. */
+    private final TypeMirror cacheObjectMirror;
+
+    /** NonMarshallableMessage type mirror. */
+    private final TypeMirror nonMarshallableMirror;
+
+    /** CacheIdAware type mirror. */
+    private final TypeMirror cacheIdAwareMirror;
+
+    /** GridCacheGroupIdMessage type mirror. */
+    private final TypeMirror cacheGroupIdMsgMirror;
+
+    /** java.util.Map type mirror. */
+    private final TypeMirror mapMirror;
+
+    /** java.util.Collection type mirror. */
+    private final TypeMirror collectionMirror;
+
+    /** Whether the current message type implements {@code MarshallableMessage}. Set at the start of {@link #generateBody}. */
+    private boolean marshallable;
 
     /** */
     MessageMarshallerGenerator(ProcessingEnvironment env) {
         super(env);
 
-        TypeElement marshallableMsgElem = env.getElementUtils().getTypeElement(MARSHALLABLE_MESSAGE_INTERFACE);
-        marshallableMsgType = marshallableMsgElem != null ? marshallableMsgElem.asType() : null;
+        marshallableMsgType = mirror(env, MARSHALLABLE_MESSAGE_INTERFACE);
+        messageMirror = mirror(env, MESSAGE_INTERFACE);
+        cacheObjectMirror = mirror(env, "org.apache.ignite.internal.processors.cache.CacheObject");
+        nonMarshallableMirror = mirror(env, "org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage");
+        cacheIdAwareMirror = mirror(env, "org.apache.ignite.plugin.extensions.communication.CacheIdAware");
+        cacheGroupIdMsgMirror = mirror(env, "org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage");
+        mapMirror = mirror(env, "java.util.Map");
+        collectionMirror = mirror(env, "java.util.Collection");
+    }
 
-        TypeElement cacheMarshallableMsgElem = env.getElementUtils()
-            .getTypeElement("org.apache.ignite.plugin.extensions.communication.CacheMarshallableMessage");
-        cacheMarshallableMsgType = cacheMarshallableMsgElem != null ? cacheMarshallableMsgElem.asType() : null;
+    /** */
+    private static TypeMirror mirror(ProcessingEnvironment env, String qualifiedName) {
+        TypeElement elem = env.getElementUtils().getTypeElement(qualifiedName);
+        
+        return elem != null ? elem.asType() : null;
     }
 
     /** {@inheritDoc} */
@@ -77,6 +107,10 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
     /** {@inheritDoc} */
     @Override void generateBody(List<VariableElement> fields) throws Exception {
+        marshallable = marshallableMsgType != null && env.getTypeUtils().isAssignable(type.asType(), marshallableMsgType);
+        
+        indent = 1;
+
         generateMarshallMethods(fields);
         generateUnmarshallMethods(fields);
     }
@@ -87,7 +121,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
             imports.add(type.toString());
             imports.add("org.apache.ignite.plugin.extensions.communication.MessageMarshaller");
 
-            if (marshallableMessage())
+            if (marshallable)
                 imports.add("org.apache.ignite.marshaller.Marshaller");
 
             writeClassHeader(writer, "MessageMarshaller", marshallerClsName);
@@ -105,12 +139,10 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
     /** */
     private void writeConstructor(Writer writer, String marshallerClsName) throws IOException {
-        indent = 1;
-
         writer.write(indentedLine(METHOD_JAVADOC));
         writer.write(NL);
 
-        if (marshallableMessage()) {
+        if (marshallable) {
             writer.write(indentedLine("private final Marshaller marshaller;"));
             writer.write(NL + NL);
 
@@ -140,8 +172,6 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         imports.add("org.apache.ignite.internal.GridKernalContext");
         imports.add("org.apache.ignite.internal.processors.cache.GridCacheContext");
 
-        indent = 1;
-
         marshall.add(indentedLine(METHOD_JAVADOC));
 
         marshall.add(indentedLine(
@@ -155,15 +185,10 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         if (needsCtx(orderedFields))
             appendBlock(body, List.of(ctxResolutionLine()));
 
-        if (marshallableMessage())
+        if (marshallable)
             appendBlock(body, List.of(indentedLine("msg.prepareMarshal(marshaller);")));
 
-        for (VariableElement field : orderedFields) {
-            List<String> marshalled = marshall(field.asType(), fieldAccessor(field), MarshalMode.PREPARE);
-
-            if (!marshalled.isEmpty())
-                appendBlock(body, marshalled);
-        }
+        appendFields(body, orderedFields, MarshalMode.PREPARE);
 
         marshall.addAll(body);
 
@@ -178,10 +203,12 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         List<VariableElement> workerFields = new ArrayList<>();
 
         for (VariableElement f : orderedFields) {
-            if (isNioField(f) && isMessage(f.asType()))
+            boolean nioField = isNioField(f);
+
+            if (nioField && isMessage(f.asType()))
                 nioFields.add(f);
             else {
-                if (isNioField(f))
+                if (nioField)
                     env.getMessager().printMessage(Diagnostic.Kind.ERROR,
                         "@NioField has no effect on non-Message field '" + f.getSimpleName() + "' of type " + f.asType(),
                         f);
@@ -197,17 +224,15 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         generateFinishUnmarshalMethod("finishUnmarshal", msgParam + ", GridCacheContext<?, ?> nested, ClassLoader clsLdr",
             workerFields, MarshalMode.FINISH_CACHE);
 
-        generateFinishUnmarshalMethod("finishUnmarshal", msgParam, workerFields, MarshalMode.FINISH_BASE);
+        generateFinishUnmarshalMethod("finishUnmarshal", msgParam, workerFields, MarshalMode.FINISH);
 
         if (!nioFields.isEmpty())
-            generateFinishUnmarshalMethod("finishUnmarshalNio", msgParam, nioFields, MarshalMode.FINISH_BASE);
+            generateFinishUnmarshalNioMethod(msgParam, nioFields);
     }
 
     /** */
     private void generateFinishUnmarshalMethod(String methodName, String params, List<VariableElement> fields, MarshalMode mode) {
         marshall.add(EMPTY);
-
-        indent = 1;
 
         marshall.add(indentedLine(METHOD_JAVADOC));
 
@@ -221,18 +246,36 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         if (mode == MarshalMode.FINISH_CACHE && needsCtx(fields))
             appendBlock(body, List.of(ctxResolutionLine()));
 
-        for (VariableElement field : fields) {
-            List<String> unmarshalled = marshall(field.asType(), fieldAccessor(field), mode);
+        appendFields(body, fields, mode);
 
-            if (!unmarshalled.isEmpty())
-                appendBlock(body, unmarshalled);
+        if (marshallable) {
+            if (mode == MarshalMode.FINISH_CACHE)
+                appendBlock(body, List.of(indentedLine("msg.finishUnmarshal(marshaller, clsLdr);")));
+            else if (mode == MarshalMode.FINISH)
+                appendBlock(body, List.of(indentedLine("msg.finishUnmarshal(marshaller, U.resolveClassLoader(kctx.config()));")));
         }
 
-        if (mode == MarshalMode.FINISH_CACHE && isCacheMarshallableMessage(type))
-            appendBlock(body, List.of(indentedLine("msg.finishUnmarshal(marshaller, clsLdr);")));
+        marshall.addAll(body);
 
-        if (mode == MarshalMode.FINISH_BASE && marshallableMessage() && !isCacheMarshallableMessage(type))
-            appendBlock(body, List.of(indentedLine("msg.finishUnmarshal(marshaller, U.resolveClassLoader(kctx.config()));")));
+        indent--;
+
+        marshall.add(indentedLine("}"));
+    }
+
+    /** */
+    private void generateFinishUnmarshalNioMethod(String params, List<VariableElement> nioFields) {
+        marshall.add(EMPTY);
+
+        marshall.add(indentedLine(METHOD_JAVADOC));
+
+        marshall.add(indentedLine(
+            "@Override public void finishUnmarshalNio(" + params + ") throws IgniteCheckedException {"));
+
+        indent++;
+
+        List<String> body = new ArrayList<>();
+
+        appendFields(body, nioFields, MarshalMode.FINISH);
 
         marshall.addAll(body);
 
@@ -244,6 +287,16 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     /** */
     private static boolean isNioField(VariableElement field) {
         return field.getAnnotation(NioField.class) != null;
+    }
+
+    /** Marshals each field and appends non-empty results to {@code body}. */
+    private void appendFields(List<String> body, List<VariableElement> fields, MarshalMode mode) {
+        for (VariableElement field : fields) {
+            List<String> result = marshall(field.asType(), fieldAccessor(field), mode);
+
+            if (!result.isEmpty())
+                appendBlock(body, result);
+        }
     }
 
     /** Appends {@code block} to {@code body}, inserting a blank-line separator when {@code body} is non-empty. */
@@ -280,12 +333,12 @@ public class MessageMarshallerGenerator extends MessageGenerator {
             if (isMessage(t) || isCacheObject(t))
                 return true;
 
-            if (assignableFrom(erasedType(t), type(java.util.Map.class.getName()))) {
+            if (isMap(t)) {
                 List<? extends TypeMirror> args = ((DeclaredType)t).getTypeArguments();
                 return needsCtxType(args.get(0)) || needsCtxType(args.get(1));
             }
 
-            if (assignableFrom(erasedType(t), type(java.util.Collection.class.getName()))) {
+            if (isCollection(t)) {
                 List<? extends TypeMirror> args = ((DeclaredType)t).getTypeArguments();
                 return needsCtxType(args.get(0));
             }
@@ -300,7 +353,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         PREPARE,
 
         /** Lightweight unmarshal. Messages only, CacheObject fields are skipped (no cache context available). */
-        FINISH_BASE,
+        FINISH,
 
         /** Unmarshal with full cache context and class loader. */
         FINISH_CACHE
@@ -310,8 +363,8 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     private List<String> marshall(TypeMirror t, String accessor, MarshalMode mode) {
         if (t.getKind() == TypeKind.ARRAY) {
             TypeMirror comp = ((ArrayType)t).getComponentType();
-            
-            return comp.getKind() == TypeKind.DECLARED ? marshallArray(comp, accessor, mode) : java.util.Collections.emptyList();
+
+            return comp.getKind() == TypeKind.DECLARED ? marshallArray(comp, accessor, mode) : List.of();
         }
 
         if (t.getKind() == TypeKind.DECLARED || t.getKind() == TypeKind.TYPEVAR) {
@@ -319,13 +372,13 @@ public class MessageMarshallerGenerator extends MessageGenerator {
                 return marshallMessage(accessor, mode);
             if (isCacheObject(t))
                 return marshallCacheObject(accessor, mode);
-            if (assignableFrom(erasedType(t), type(java.util.Map.class.getName())))
+            if (isMap(t))
                 return marshallMap((DeclaredType)t, accessor, mode);
-            if (assignableFrom(erasedType(t), type(java.util.Collection.class.getName())))
+            if (isCollection(t))
                 return marshallCollection((DeclaredType)t, accessor, mode);
         }
 
-        return java.util.Collections.emptyList();
+        return List.of();
     }
 
     /** */
@@ -341,7 +394,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
                 code.add(indentedLine(
                     "MessageMarshaller.prepareMarshal(kctx.messageFactory(), %s, kctx, ctx);", accessor));
                 break;
-            case FINISH_BASE:
+            case FINISH:
                 code.add(indentedLine(
                     "MessageMarshaller.finishUnmarshal(kctx.messageFactory(), %s, kctx);", accessor));
                 break;
@@ -358,19 +411,19 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
     /** */
     private List<String> marshallCacheObject(String accessor, MarshalMode mode) {
-        if (mode == MarshalMode.FINISH_BASE)
-            return java.util.Collections.emptyList();
+        if (mode == MarshalMode.FINISH)
+            return List.of();
 
         List<String> code = new ArrayList<>();
 
         code.add(indentedLine("if (%s != null && ctx != null)", accessor));
 
         indent++;
-        
+
         code.add(mode == MarshalMode.PREPARE
             ? indentedLine("%s.prepareMarshal(ctx.cacheObjectContext());", accessor)
             : indentedLine("%s.finishUnmarshal(ctx.cacheObjectContext(), clsLdr);", accessor));
-        
+
         indent--;
 
         return code;
@@ -379,13 +432,13 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     /** */
     private List<String> marshallArray(TypeMirror comp, String accessor, MarshalMode mode) {
         Element elem = ((DeclaredType)comp).asElement();
-        
+
         imports.add(((QualifiedNameable)elem).getQualifiedName().toString());
 
         indent++;
-        
+
         List<String> loopCode = forLoop(elem.getSimpleName().toString(), comp, accessor, mode);
-        
+
         indent--;
 
         return wrapNullGuarded(accessor, loopCode);
@@ -396,19 +449,19 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         TypeMirror arg = t.getTypeArguments().get(0);
 
         if (arg.getKind() != TypeKind.DECLARED && arg.getKind() != TypeKind.TYPEVAR)
-            return java.util.Collections.emptyList();
+            return List.of();
 
         Element elem = element(arg);
-        
+
         imports.add(((QualifiedNameable)elem).getQualifiedName().toString());
         imports.add("java.util.Collection");
 
         String typeName = elem.getSimpleName().toString();
 
         indent++;
-        
+
         List<String> loopCode = forLoop(typeName, arg, "(Collection<? extends " + typeName + ">)" + accessor, mode);
-        
+
         indent--;
 
         return wrapNullGuarded(accessor, loopCode);
@@ -419,7 +472,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         List<? extends TypeMirror> args = t.getTypeArguments();
 
         indent++;
-        
+
         List<String> combined = new ArrayList<>();
         for (int i = 0; i < 2; i++) {
             TypeMirror elemType = args.get(i);
@@ -428,7 +481,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
                 continue;
 
             Element elem = element(elemType);
-            
+
             imports.add(((QualifiedNameable)elem).getQualifiedName().toString());
             imports.add("java.util.Collection");
 
@@ -438,7 +491,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
             combined.addAll(forLoop(typeName, elemType, iterable, mode));
         }
-        
+
         indent--;
 
         return wrapNullGuarded(accessor, combined);
@@ -447,18 +500,18 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     /** Returns empty if {@code inner} is empty. */
     private List<String> wrapNullGuarded(String nullGuard, List<String> inner) {
         if (inner.isEmpty())
-            return java.util.Collections.emptyList();
+            return List.of();
 
         List<String> code = new ArrayList<>();
-        
+
         code.add(indentedLine("if (%s != null) {", nullGuard));
-        
+
         indent++;
-        
+
         code.addAll(inner);
-        
+
         indent--;
-        
+
         code.add(indentedLine("}"));
 
         return code;
@@ -467,26 +520,26 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     /** Returns empty if {@code elemType} requires no marshalling. Leaves {@code this.indent} unchanged. */
     private List<String> forLoop(String typeName, TypeMirror elemType, String iterable, MarshalMode mode) {
         String el = "e" + (indent + 1);
-        
+
         indent++;
-        
+
         List<String> inner = marshall(elemType, el, mode);
-        
+
         indent--;
 
         if (inner.isEmpty())
-            return java.util.Collections.emptyList();
+            return List.of();
 
         List<String> code = new ArrayList<>();
-        
+
         code.add(indentedLine("for (%s %s : %s) {", typeName, el, iterable));
-        
+
         indent++;
-        
+
         code.addAll(inner);
-        
+
         indent--;
-        
+
         code.add(indentedLine("}"));
 
         return code;
@@ -494,42 +547,37 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
     /** */
     private boolean isCacheObject(TypeMirror type) {
-        TypeMirror obj = type("org.apache.ignite.internal.processors.cache.CacheObject");
-        return obj != null && assignableFrom(type, obj);
+        return cacheObjectMirror != null && assignableFrom(type, cacheObjectMirror);
+    }
+
+    /** */
+    private boolean isMap(TypeMirror type) {
+        return mapMirror != null && assignableFrom(erasedType(type), mapMirror);
+    }
+
+    /** */
+    private boolean isCollection(TypeMirror type) {
+        return collectionMirror != null && assignableFrom(erasedType(type), collectionMirror);
     }
 
     /** */
     private boolean isMessage(TypeMirror type) {
-        TypeMirror msg = type(MESSAGE_INTERFACE);
-        return msg != null && assignableFrom(type, msg);
+        return messageMirror != null && assignableFrom(type, messageMirror);
     }
 
     /** */
     private boolean isNonMarshallableMessage(TypeElement te) {
-        TypeMirror nonMarshallable = type("org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage");
-        return nonMarshallable != null && assignableFrom(te.asType(), nonMarshallable);
+        return nonMarshallableMirror != null && assignableFrom(te.asType(), nonMarshallableMirror);
     }
 
     /** */
-    private boolean isCacheMarshallableMessage(TypeElement te) {
-        return cacheMarshallableMsgType != null && env.getTypeUtils().isAssignable(te.asType(), cacheMarshallableMsgType);
-    }
-
-    /** True if {@code te} extends {@code CacheIdAware}. */
     private boolean isCacheIdAwareMessage(TypeElement te) {
-        TypeMirror cacheIdAware = type("org.apache.ignite.plugin.extensions.communication.CacheIdAware");
-        return cacheIdAware != null && assignableFrom(te.asType(), cacheIdAware);
-    }
-
-    /** True if {@code te} extends {@code GridCacheGroupIdMessage}. */
-    private boolean isCacheGroupIdMessage(TypeElement te) {
-        TypeMirror grpIdMsg = type("org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage");
-        return grpIdMsg != null && assignableFrom(te.asType(), grpIdMsg);
+        return cacheIdAwareMirror != null && assignableFrom(te.asType(), cacheIdAwareMirror);
     }
 
     /** */
-    private boolean marshallableMessage() {
-        return marshallableMsgType != null && env.getTypeUtils().isAssignable(type.asType(), marshallableMsgType);
+    private boolean isCacheGroupIdMessage(TypeElement te) {
+        return cacheGroupIdMsgMirror != null && assignableFrom(te.asType(), cacheGroupIdMsgMirror);
     }
 
     /** */

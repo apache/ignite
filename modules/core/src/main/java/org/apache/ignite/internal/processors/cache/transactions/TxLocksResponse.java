@@ -31,12 +31,12 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.CacheMarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 
 /**
  * Transactions lock list response.
  */
-public class TxLocksResponse extends GridCacheMessage implements CacheMarshallableMessage {
+public class TxLocksResponse extends GridCacheMessage implements MarshallableMessage {
     /** Future ID. */
     @Order(0)
     long futId;

@@ -40,7 +40,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.CacheMarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -49,7 +49,7 @@ import org.jetbrains.annotations.Nullable;
  * GridDhtPartitionsSingleMessage}s were received. <br> May be also compacted as part of {@link
  * CacheAffinityChangeMessage} for node left or failed case.<br>
  */
-public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessage implements CacheMarshallableMessage {
+public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessage implements MarshallableMessage {
     /** */
     private static final byte REBALANCED_FLAG_MASK = 0x01;
 

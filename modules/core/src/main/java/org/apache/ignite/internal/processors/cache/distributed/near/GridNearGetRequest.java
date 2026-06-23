@@ -38,14 +38,14 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.CacheMarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Get request. Responsible for obtaining entry from primary node. 'Near' means 'Initiating node' here, not 'Near Cache'.
  */
-public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheDeployable, GridCacheVersionable, CacheMarshallableMessage {
+public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheDeployable, GridCacheVersionable, MarshallableMessage {
     /** */
     private static final int READ_THROUGH_FLAG_MASK = 0x01;
 

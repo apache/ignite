@@ -42,7 +42,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.CacheMarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -53,7 +53,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPD
 /**
  * Lite DHT cache update request sent from near node to primary node.
  */
-public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdateRequest implements CacheMarshallableMessage {
+public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdateRequest implements MarshallableMessage {
     /** Keys to update. */
     @Order(0)
     @GridToStringInclude

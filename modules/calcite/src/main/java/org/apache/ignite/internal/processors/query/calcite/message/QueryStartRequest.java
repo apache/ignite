@@ -26,13 +26,13 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.CacheMarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public class QueryStartRequest implements CacheMarshallableMessage, ExecutionContextAware {
+public class QueryStartRequest implements MarshallableMessage, ExecutionContextAware {
     /** */
     @Order(0)
     String schema;

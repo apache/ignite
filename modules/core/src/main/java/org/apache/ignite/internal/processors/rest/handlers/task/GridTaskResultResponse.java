@@ -21,13 +21,13 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.CacheMarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Task result response.
  */
-public class GridTaskResultResponse implements CacheMarshallableMessage {
+public class GridTaskResultResponse implements MarshallableMessage {
     /** Result. */
     public @Nullable Object res;
 
