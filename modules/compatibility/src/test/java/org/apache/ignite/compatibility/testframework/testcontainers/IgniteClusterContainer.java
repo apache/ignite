@@ -19,18 +19,33 @@ package org.apache.ignite.compatibility.testframework.testcontainers;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.testcontainers.containers.Network;
 import org.testcontainers.lifecycle.Startable;
+import com.github.dockerjava.api.model.Network.Ipam;
+import com.github.dockerjava.api.model.Network.Ipam.Config;
 
 /** Ignite cluster container. */
 public class IgniteClusterContainer implements Startable {
     /** Containers. */
     private final List<IgniteContainer> containers;
 
-    /** Network. */
-    private final Network net = Network.newNetwork();
+    /**
+     * Network configured with a static subnet profile.
+     */
+    private final Network net = Network.builder()
+        .createNetworkCmdModifier(cmd -> {
+            Config ipamCfg = new Config()
+                .withSubnet("172.31.0.0/16")
+                .withGateway("172.31.0.1");
+
+            Ipam ipam =new Ipam().withConfig(Collections.singletonList(ipamCfg));
+
+            cmd.withIpam(ipam);
+        })
+        .build();
 
     /** @param commitHash Commit hash. */
     public IgniteClusterContainer(String commitHash, int size) {
@@ -39,7 +54,9 @@ public class IgniteClusterContainer implements Startable {
         for (int i = 0; i < size; i++) {
             String hostname = "node" + (1 + i);
 
-            IgniteContainer ignite = new IgniteContainer(commitHash, net, hostname);
+            String staticIpAddress = "172.31.0." + (2 + i);
+
+            IgniteContainer ignite = new IgniteContainer(commitHash, net, hostname, staticIpAddress, i+1);
 
             containers.add(ignite);
         }

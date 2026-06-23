@@ -64,7 +64,7 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> implement
     private static final String WORK_DIR_PATH = ROOT_DIR_PATH + "work";
 
     /** Config path in container. */
-    private static final String CFG_PATH = ROOT_DIR_PATH + "config/test-config.xml";
+    private static final String CFG_PATH = ROOT_DIR_PATH + "config/test-config-%d.xml";
 
     /** */
     private static final String ENABLE_EXPERIMENTAL_FLAG = "--enable-experimental";
@@ -76,12 +76,14 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> implement
     private final String hostname;
 
     /** Constructor. */
-    public IgniteContainer(String commitHash, Network net, String hostname) {
+    public IgniteContainer(String commitHash, Network net, String hostname, String staticIp, int idx) {
         super(DockerImageName.parse("apacheignite/ignite:" + commitHash));
+
+        String finalPath = String.format(CFG_PATH, idx);
 
         this.hostname = hostname;
 
-        withEnv("CONFIG_URI", "file://" + CFG_PATH);
+        withEnv("CONFIG_URI", "file://" + finalPath);
         withEnv("IGNITE_QUIET", "false");
         withEnv("IGNITE_WORK_DIR", WORK_DIR_PATH + "/" + hostname);
         withEnv("TZ", java.time.ZoneId.systemDefault().toString());
@@ -98,14 +100,18 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> implement
         nodeDir.setExecutable(true, false); // Required for directories so users can enter them
 
         withFileSystemBind(nodeDir.getAbsolutePath(), WORK_DIR_PATH + '/' + hostname, BindMode.READ_WRITE);
-        withCopyFileToContainer(forClasspathResource("docker/test-config.xml"), CFG_PATH);
+        withCopyFileToContainer(forClasspathResource("docker/test-config.xml"), finalPath);
 
         withNetwork(net);
         withNetworkAliases(hostname);
-
         withExposedPorts(ClientConnectorConfiguration.DFLT_PORT, TcpCommunicationSpi.DFLT_PORT, TcpDiscoverySpi.DFLT_PORT);
 
-        waitingFor(Wait.forLogMessage(".*Node started.*", 1).withStartupTimeout(Duration.ofSeconds(120)));
+        this.withCreateContainerCmdModifier(cmd -> {
+            cmd.getHostConfig().withNetworkMode(net.getId());
+            cmd.withIpv4Address(staticIp);
+        });
+
+        waitingFor(Wait.forLogMessage(".*Node started.*", 1).withStartupTimeout(Duration.ofSeconds(90)));
     }
 
     /** */

@@ -41,6 +41,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -147,22 +148,27 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
             .setMaxSize(1024 * 1024 * 1024)
             .setPersistenceEnabled(true);
 
-        Map<String, String> addrMap = new HashMap<>();
-        addrMap.put("127.0.0.1", gatewayIp);
+//        Map<String, String> addrMap = new HashMap<>();
+//        addrMap.put("127.0.0.1", gatewayIp);
 
-        BasicAddressResolver addrResolver = new BasicAddressResolver(addrMap);
+//        BasicAddressResolver addrResolver = new BasicAddressResolver(addrMap);
 
         Set<String> combinedIpFinderAddrs = new HashSet<>(seedAddrs);
 
         TcpDiscoverySpi discoverySpi = new TcpDiscoverySpi()
-            .setLocalPort(47500)
+            .setLocalAddress(gatewayIp)
             .setIpFinder(new TcpDiscoveryVmIpFinder().setAddresses(combinedIpFinderAddrs));
 
+        TcpCommunicationSpi communicationSpi = new TcpCommunicationSpi()
+            .setLocalAddress(gatewayIp);
+
         return new IgniteConfiguration()
+            .setLocalHost(gatewayIp)
             .setWorkDirectory(workDir)
             .setDataStorageConfiguration(
                 new DataStorageConfiguration().setDefaultDataRegionConfiguration(dataRegionCfg))
-            .setAddressResolver(addrResolver)
+//            .setAddressResolver(addrResolver)
+            .setCommunicationSpi(communicationSpi)
             .setDiscoverySpi(discoverySpi);
     }
 
