@@ -1761,7 +1761,9 @@ class ClientImpl extends TcpDiscoveryImpl {
                         blockingSectionEnd();
                     }
 
-                    TcpDiscoveryAbstractMessage dm = msg instanceof TcpDiscoveryAbstractMessage ? (TcpDiscoveryAbstractMessage)msg : null;
+                    TcpDiscoveryAbstractMessage dm = msg instanceof TcpDiscoveryAbstractMessage
+                        ? (TcpDiscoveryAbstractMessage)msg
+                        : null;
 
                     try (Scope ignored = DistributedOperationContextManager.instance().restoreDistributedAttributes(dm == null ? null : dm.opCtxMsg)) {
                         if (msg instanceof JoinTimeout) {
