@@ -46,19 +46,11 @@ import org.jetbrains.annotations.Nullable;
  * @see DistributedOperationContextMessage
  */
 public class DistributedOperationContextManager {
-    /** */
-    private static final DistributedOperationContextManager INSTANCE = new DistributedOperationContextManager();
-
     /** Maximal number of currently supported distributed attributes. */
     static final byte MAX_DISTRIBUTED_ATTR_CNT = Byte.SIZE;
 
     /** Registered distributed attributes by their cluster-wide id. */
     private final Map<Byte, OperationContextAttribute<Message>> attrs = new ConcurrentSkipListMap<>();
-
-    /** */
-    public static DistributedOperationContextManager instance() {
-        return INSTANCE;
-    }
 
     /**
      * Creates a new {@link OperationContext} attribute with the specified distributed ID and initial value.
@@ -73,9 +65,6 @@ public class DistributedOperationContextManager {
      */
     public <T extends Message> OperationContextAttribute<T> createDistributedAttribute(byte id, @Nullable T initVal) {
         assert id >= 0 && id < MAX_DISTRIBUTED_ATTR_CNT : "Invalid distributed attributed id [id=" + id + ']';
-
-        if (started)
-            throw new IgniteException("Distributed operation context attributes is registered only at the starting.");
 
         return (OperationContextAttribute<T>)attrs.compute(id, (id0, attr0) -> {
             if (attr0 != null)

@@ -31,13 +31,16 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
@@ -63,13 +66,18 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.AbstractTestPluginProvider;
+import org.apache.ignite.plugin.PluginContext;
+import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.discovery.tcp.messages.InetSocketAddressMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThread;
 import org.junit.Test;
 import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -94,6 +102,9 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
     /** */
     private int beforeTestReservedAttrIds;
 
+    /** */
+    private @Nullable PluginProvider pluginProvider;
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
@@ -114,6 +125,16 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
 
         // Releases attribute IDs reserved during the test.
         OperationContextAttribute.ID_GEN.set(beforeTestReservedAttrIds);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        if (pluginProvider != null)
+            cfg.setPluginProviders(pluginProvider);
+
+        return cfg;
     }
 
     /** */
@@ -828,22 +849,40 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
         InetSocketAddressMessage dfltDistAttr1Val = new InetSocketAddressMessage(InetAddress.getLoopbackAddress(), 80);
         GridCacheVersion dfltDistrAttr2Val = new GridCacheVersion(1, 1, 1);
 
+        AtomicReference<OperationContextAttribute<InetSocketAddressMessage>> attr1 = new AtomicReference<>();
+        AtomicReference<OperationContextAttribute<GridCacheVersion>> attr2 = new AtomicReference<>();
+
+        pluginProvider = new AbstractTestPluginProvider() {
+            @Override public String name() {
+                return "DistributedOperationContextAttributesRegistrator";
+            }
+
+            @Override public void start(PluginContext ctx) {
+                // Distributed attribute 1.
+                OperationContextAttribute<InetSocketAddressMessage> dAttr1 = grid(0).context().distributedOperationContextManager()
+                    .createDistributedAttribute(attrId1, dfltDistAttr1Val);
+
+                // Distributed attribute 2.
+                OperationContextAttribute<GridCacheVersion> dAttr2 = grid(0).context().distributedOperationContextManager()
+                    .createDistributedAttribute(attrId2, dfltDistrAttr2Val);
+            }
+        };
+
         // Local attribute 1.
         OperationContextAttribute.newInstance(1000);
 
-        // Distributed attribute 1.
-        OperationContextAttribute<InetSocketAddressMessage> dAttr1 = DistributedOperationContextManager.instance()
-            .createDistributedAttribute(attrId1, dfltDistAttr1Val);
+        startGrids(2);
+        startClientGrid(2);
+
+        assertThrows(
+            null,
+            () -> grid(0).context().distributedOperationContextManager().createDistributedAttribute((byte)1, null),
+            IgniteException.class,
+            "Distributed operation context attributes is registered only at the starting"
+        );
 
         // Local attribute 2.
         OperationContextAttribute.newInstance("locaAttr2");
-
-        // Distributed attribute 2.
-        OperationContextAttribute<GridCacheVersion> dAttr2 = DistributedOperationContextManager.instance()
-            .createDistributedAttribute(attrId2, dfltDistrAttr2Val);
-
-        startGrids(2);
-        startClientGrid(2);
 
         CountDownLatch coordLatch = new CountDownLatch(3);
         CountDownLatch srvrLatch = new CountDownLatch(3);

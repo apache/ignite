@@ -174,6 +174,8 @@ import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.suggestions.JvmConfigurationSuggestions;
 import org.apache.ignite.internal.suggestions.OsConfigurationSuggestions;
 import org.apache.ignite.internal.systemview.ConfigurationViewWalker;
+import org.apache.ignite.internal.thread.context.DistributedOperationContextManager;
+import org.apache.ignite.internal.thread.context.OperationContextAttribute;
 import org.apache.ignite.internal.util.TimeBag;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -210,6 +212,7 @@ import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.IgniteSpi;
@@ -443,6 +446,9 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
     /** Core message factory. */
     private MessageFactory msgFactory;
+
+    /** */
+    private DistributedOperationContextManager distrOperationContextMgr;
 
     /**
      * No-arg constructor is required by externalization.
@@ -929,6 +935,16 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 hnd,
                 longJVMPauseDetector
             );
+
+            distrOperationContextMgr = new DistributedOperationContextManager() {
+                @Override public <T extends Message> OperationContextAttribute<T> createDistributedAttribute(byte id,
+                    @Nullable T initVal) {
+                    if (gw.getState() != STARTING)
+                        throw new IgniteException("Distributed operation context attributes is registered only at the starting.");
+
+                    return super.createDistributedAttribute(id, initVal);
+                }
+            };
 
             startProcessor(new DiagnosticProcessor(ctx));
 
@@ -3055,6 +3071,11 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     /** @return Core message factory. */
     MessageFactory messageFactory() {
         return msgFactory;
+    }
+
+    /** @return {@link DistributedOperationContextManager}. */
+    DistributedOperationContextManager distributedOperationContextManager() {
+        return distrOperationContextMgr;
     }
 
     /**
