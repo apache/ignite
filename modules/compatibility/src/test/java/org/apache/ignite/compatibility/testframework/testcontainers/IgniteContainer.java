@@ -21,8 +21,10 @@ import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import com.github.dockerjava.api.model.ContainerNetwork;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
@@ -231,4 +233,25 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> implement
 
         super.stop();
     }
+
+    /**
+     * Dynamically resolves the Docker Network Gateway IP address for this container.
+     */
+    public String getGatewayIp() {
+        if (!isRunning())
+            throw new IllegalStateException("Container must be running to extract runtime network parameters.");
+
+        Map<String, ContainerNetwork> networks = getContainerInfo().getNetworkSettings().getNetworks();
+
+        if (networks.isEmpty())
+            return "127.0.0.1";
+
+        ContainerNetwork activeNet = networks.values().iterator().next();
+        String gateway = activeNet.getGateway();
+
+        LOGGER.info("Successfully discovered dynamic Docker gateway IP: {}", gateway);
+
+        return gateway;
+    }
+
 }

@@ -45,7 +45,6 @@
                                 <value>node1:47500</value>
                                 <value>node2:47500</value>
                                 <value>node3:47500</value>
-                                <value>172.17.0.1:47500..47509</value>
                             </list>
                         </property>
                     </bean>
