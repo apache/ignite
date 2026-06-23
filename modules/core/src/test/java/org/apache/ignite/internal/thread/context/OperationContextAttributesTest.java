@@ -41,6 +41,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
@@ -849,8 +850,8 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
         InetSocketAddressMessage dfltDistAttr1Val = new InetSocketAddressMessage(InetAddress.getLoopbackAddress(), 80);
         GridCacheVersion dfltDistrAttr2Val = new GridCacheVersion(1, 1, 1);
 
-        AtomicReference<OperationContextAttribute<InetSocketAddressMessage>> attr1 = new AtomicReference<>();
-        AtomicReference<OperationContextAttribute<GridCacheVersion>> attr2 = new AtomicReference<>();
+        AtomicReference<OperationContextAttribute<InetSocketAddressMessage>> dAttr1 = new AtomicReference<>();
+        AtomicReference<OperationContextAttribute<GridCacheVersion>> dAttr2 = new AtomicReference<>();
 
         pluginProvider = new AbstractTestPluginProvider() {
             @Override public String name() {
@@ -859,12 +860,16 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
 
             @Override public void start(PluginContext ctx) {
                 // Distributed attribute 1.
-                OperationContextAttribute<InetSocketAddressMessage> dAttr1 = grid(0).context().distributedOperationContextManager()
-                    .createDistributedAttribute(attrId1, dfltDistAttr1Val);
+                OperationContextAttribute<InetSocketAddressMessage> a1 = ((IgniteEx)ctx.grid()).context()
+                    .distributedOperationContextManager().createDistributedAttribute(attrId1, dfltDistAttr1Val);
+
+                dAttr1.set(a1);
 
                 // Distributed attribute 2.
-                OperationContextAttribute<GridCacheVersion> dAttr2 = grid(0).context().distributedOperationContextManager()
-                    .createDistributedAttribute(attrId2, dfltDistrAttr2Val);
+                OperationContextAttribute<GridCacheVersion> a2 = ((IgniteEx)ctx.grid()).context()
+                    .distributedOperationContextManager().createDistributedAttribute(attrId2, dfltDistrAttr2Val);
+
+                dAttr2.set(a2);
             }
         };
 
@@ -899,8 +904,8 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
                     @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd,
                         DynamicCacheChangeBatch msg) {
 
-                        InetSocketAddressMessage receivedVal1 = OperationContext.get(dAttr1);
-                        GridCacheVersion receivedVal2 = OperationContext.get(dAttr2);
+                        InetSocketAddressMessage receivedVal1 = OperationContext.get(dAttr1.get());
+                        GridCacheVersion receivedVal2 = OperationContext.get(dAttr2.get());
 
                         assertNotNull(receivedVal1);
                         assertNotNull(receivedVal2);
@@ -923,7 +928,7 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
         }
 
         // Send from the coordinator.
-        try (Scope ignored = OperationContext.set(dAttr1, valToSend1, dAttr2, valToSend2)) {
+        try (Scope ignored = OperationContext.set(dAttr1.get(), valToSend1, dAttr2.get(), valToSend2)) {
             grid(0).createCache(defaultCacheConfiguration());
         }
 
@@ -932,7 +937,7 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
         assertTrue(waitForCondition(() -> clientLatch.getCount() == 2, getTestTimeout()));
 
         // Send from a server.
-        try (Scope ignored = OperationContext.set(dAttr1, valToSend1, dAttr2, valToSend2)) {
+        try (Scope ignored = OperationContext.set(dAttr1.get(), valToSend1, dAttr2.get(), valToSend2)) {
             grid(1).destroyCache(DEFAULT_CACHE_NAME);
         }
 
@@ -941,7 +946,7 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
         assertTrue(waitForCondition(() -> clientLatch.getCount() == 1, getTestTimeout()));
 
         // Send from a client.
-        try (Scope ignored = OperationContext.set(dAttr1, valToSend1, dAttr2, valToSend2)) {
+        try (Scope ignored = OperationContext.set(dAttr1.get(), valToSend1, dAttr2.get(), valToSend2)) {
             grid(2).createCache(defaultCacheConfiguration());
         }
 
