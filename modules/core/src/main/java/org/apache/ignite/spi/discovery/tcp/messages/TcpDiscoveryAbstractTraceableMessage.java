@@ -62,7 +62,6 @@ public abstract class TcpDiscoveryAbstractTraceableMessage extends TcpDiscoveryA
         super(msg);
 
         this.spanContainer = msg.spanContainer;
-        this.opCtxMsg = msg.opCtxMsg;
     }
 
     /**
