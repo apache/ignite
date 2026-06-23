@@ -114,7 +114,7 @@ public class DistributedOperationContextManager {
         }
 
         if (res != null)
-            res.vals = vals.toArray(vals.toArray(new Message[vals.size()]));
+            res.vals = vals.toArray(new Message[vals.size()]);
 
         return res;
     }
