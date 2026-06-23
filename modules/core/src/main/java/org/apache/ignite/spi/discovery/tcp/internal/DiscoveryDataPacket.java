@@ -121,12 +121,8 @@ public class DiscoveryDataPacket implements Message {
         if (!F.isEmpty(commonData))
             dataBag.commonData(commonData);
 
-        if (!F.isEmpty(nodeSpecificData)) {
-            nodeSpecificData.values()
-                .removeIf(F::isEmpty);
-
+        if (!F.isEmpty(nodeSpecificData))
             dataBag.nodeSpecificData(nodeSpecificData);
-        }
 
         return dataBag;
     }
@@ -163,7 +159,7 @@ public class DiscoveryDataPacket implements Message {
     }
 
     /**
-     * Dumps and throws catched unmarshalling errors.
+     * Dumps and throws caught unmarshalling errors.
      *
      * @param log Ignite logger.
      * @param client Client mode flag.
@@ -174,12 +170,12 @@ public class DiscoveryDataPacket implements Message {
         if (unmarshErr != null)
             throw unmarshErr;
 
-        Iterator<Map.Entry<Integer, Message>> allDataIter = allMessages();
+        Iterator<Map.Entry<Integer, Message>> dataIter = compoundDataIterator();
 
         IgniteCheckedException err = null;
 
-        while (allDataIter.hasNext()) {
-            Map.Entry<Integer, Message> item = allDataIter.next();
+        while (dataIter.hasNext()) {
+            Map.Entry<Integer, Message> item = dataIter.next();
 
             if (item.getValue() instanceof SerializableDataBagItemWrapper wrapper) {
                 int cmpId = item.getKey();
@@ -218,7 +214,7 @@ public class DiscoveryDataPacket implements Message {
     }
 
     /** @return Iterator through all messages, stored in DataPacket. */
-    private Iterator<Map.Entry<Integer, Message>> allMessages() {
+    private Iterator<Map.Entry<Integer, Message>> compoundDataIterator() {
         return F.concat(joiningNodeData.entrySet().iterator(),
             commonData.entrySet().iterator(),
             nodeSpecificData.values()
