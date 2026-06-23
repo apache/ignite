@@ -205,7 +205,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                         false,
                         opCtx != null && opCtx.skipStore(),
                         opCtx != null && opCtx.skipReadThrough(),
-                        opCtx != null && opCtx.isKeepBinaryInInterceptor(),
+                        opCtx != null && opCtx.keepBinaryInInterceptor(),
                         recovery,
                         readRepairStrategy,
                         needVer);
@@ -309,7 +309,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                         false,
                         opCtx != null && opCtx.skipStore(),
                         opCtx != null && opCtx.skipReadThrough(),
-                        opCtx != null && opCtx.isKeepBinaryInInterceptor(),
+                        opCtx != null && opCtx.keepBinaryInInterceptor(),
                         recovery,
                         readRepairStrategy,
                         needVer);
@@ -663,7 +663,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             accessTtl,
             opCtx != null && opCtx.skipStore(),
             opCtx != null && opCtx.skipReadThrough(),
-            opCtx != null && opCtx.isKeepBinaryInInterceptor(),
+            opCtx != null && opCtx.keepBinaryInInterceptor(),
             opCtx != null && opCtx.isKeepBinary(),
             opCtx != null && opCtx.recovery());
 

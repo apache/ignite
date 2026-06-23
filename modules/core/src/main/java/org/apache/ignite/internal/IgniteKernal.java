@@ -1269,6 +1269,8 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             for (PluginProvider<?> provider : ctx.plugins().allProviders())
                 provider.onIgniteStart();
 
+            ctx.plugins().registerSystemView();
+
             if (recon)
                 reconnectState.waitFirstReconnect();
 

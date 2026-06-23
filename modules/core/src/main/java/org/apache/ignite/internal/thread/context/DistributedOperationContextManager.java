@@ -46,11 +46,16 @@ import org.jetbrains.annotations.Nullable;
  * @see DistributedOperationContextMessage
  */
 public class DistributedOperationContextManager {
-    /** Maximal number of currently supported distributed attributes. */
+    /** Maximal number of supported distributed attributes. */
     static final byte MAX_DISTRIBUTED_ATTR_CNT = Byte.SIZE;
 
     /** Registered distributed attributes by their cluster-wide id. */
     private final Map<Byte, OperationContextAttribute<Message>> attrs = new ConcurrentSkipListMap<>();
+
+    /** */
+    public static DistributedOperationContextManager instance() {
+        return INSTANCE;
+    }
 
     /**
      * Creates a new {@link OperationContext} attribute with the specified distributed ID and initial value.
@@ -106,7 +111,7 @@ public class DistributedOperationContextManager {
         }
 
         if (res != null)
-            res.vals = vals.toArray(vals.toArray(new Message[vals.size()]));
+            res.vals = vals.toArray(new Message[vals.size()]);
 
         return res;
     }
