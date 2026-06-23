@@ -57,6 +57,9 @@ public class DistributedOperationContextManager {
     public <T extends Message> OperationContextAttribute<T> createDistributedAttribute(byte id, @Nullable T initVal) {
         assert id >= 0 && id < MAX_DISTRIBUTED_ATTR_CNT : "Invalid distributed attributed id [id=" + id + ']';
 
+        if (started)
+            throw new IgniteException("Distributed operation context attributes is registered only at the starting.");
+
         return (OperationContextAttribute<T>)attrs.compute(id, (id0, attr0) -> {
             if (attr0 != null)
                 throw new IgniteException("Duplicated distributed attribute id [id=" + id + ']');
