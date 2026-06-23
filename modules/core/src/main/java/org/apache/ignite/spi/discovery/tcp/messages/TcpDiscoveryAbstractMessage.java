@@ -21,6 +21,7 @@ import java.io.Externalizable;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.internal.DistributedOperationContextMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -76,6 +77,11 @@ public abstract class TcpDiscoveryAbstractMessage implements Message {
     @Order(4)
     Set<UUID> failedNodes;
 
+    /** Operation context attributes message. */
+    @GridToStringInclude
+    @Order(5)
+    public @Nullable DistributedOperationContextMessage opCtxMsg;
+
     /**
      * Default no-arg constructor for {@link Externalizable} interface.
      */
@@ -100,6 +106,7 @@ public abstract class TcpDiscoveryAbstractMessage implements Message {
         verifierNodeId = msg.verifierNodeId;
         topVer = msg.topVer;
         flags = msg.flags;
+        opCtxMsg = msg.opCtxMsg;
     }
 
     /**

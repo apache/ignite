@@ -95,6 +95,8 @@ import org.apache.ignite.internal.processors.tracing.SpanTags;
 import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessage;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesTable;
+import org.apache.ignite.internal.thread.context.DistributedOperationContextManager;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.GridBoundedLinkedHashSet;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -3046,8 +3048,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                 return;
             }
 
-            if (msg instanceof TraceableMessage) {
-                TraceableMessage tMsg = (TraceableMessage)msg;
+            if (!fromSocket)
+                msg.opCtxMsg = DistributedOperationContextManager.instance().collectDistributedAttributes();
+
+            if (msg instanceof TraceableMessage tMsg) {
 
                 // If we read this message from socket.
                 if (fromSocket)
@@ -3173,11 +3177,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 task.run();
         }
 
-        /** {@inheritDoc} */
-        @Override protected void processMessage(TcpDiscoveryAbstractMessage msg) {
-            if (msg == WAKEUP)
-                return;
-
+        /** */
+        private void processMessage0(TcpDiscoveryAbstractMessage msg) {
             notifiedDiscovery.set(false);
 
             if (msg instanceof TraceableMessage) {
@@ -3312,6 +3313,16 @@ class ServerImpl extends TcpDiscoveryImpl {
                 TraceableMessage tMsg = (TraceableMessage)msg;
 
                 tracing.messages().finishProcessing(tMsg);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void processMessage(TcpDiscoveryAbstractMessage msg) {
+            if (msg == WAKEUP)
+                return;
+
+            try (Scope ignored = DistributedOperationContextManager.instance().restoreDistributedAttributes(msg.opCtxMsg)) {
+                processMessage0(msg);
             }
         }
 
