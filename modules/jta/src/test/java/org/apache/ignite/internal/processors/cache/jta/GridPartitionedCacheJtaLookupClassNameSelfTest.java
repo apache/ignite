@@ -66,7 +66,7 @@ public class GridPartitionedCacheJtaLookupClassNameSelfTest extends AbstractCach
     public static class TestTmLookup implements CacheTmLookup {
         /** {@inheritDoc} */
         @Override public TransactionManager getTm() {
-            return jotm.getTransactionManager();
+            return txMgr;
         }
     }
 

@@ -22,18 +22,17 @@ import java.util.Collection;
 import jakarta.transaction.Transaction;
 import jakarta.transaction.TransactionManager;
 import javax.cache.configuration.Factory;
+
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.internal.processors.cache.jta.TransactionManagerWrapper;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.objectweb.jotm.Current;
-import org.objectweb.jotm.Jotm;
-import org.objectweb.jotm.rmi.RmiLocalConfiguration;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -45,8 +44,12 @@ import static org.apache.ignite.transactions.TransactionState.ACTIVE;
  */
 @RunWith(Parameterized.class)
 public class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
-    /** Java Open Transaction Manager facade. */
-    private static Jotm jotm;
+    /**
+     * Thread-local wrapper so each test thread (OPTIMISTIC/PESSIMISTIC) gets its own TransactionManager and
+     * doesn't interfere with the other.
+     */
+    private static final ThreadLocal<TransactionManagerWrapper> TRANSACTION_MANAGER =
+        ThreadLocal.withInitial(TransactionManagerWrapper::new);
 
     /**
      * @return Test parameters.
@@ -77,16 +80,7 @@ public class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        jotm = new Jotm(true, false, new RmiLocalConfiguration());
-
-        Current.setAppServer(false);
-
         startGrid();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        jotm.stop();
     }
 
     /**
@@ -102,7 +96,7 @@ public class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
             cfg.setDefaultTxConcurrency(txConcurrency);
             cfg.setDefaultTxIsolation(isolation);
 
-            TransactionManager jtaTm = jotm.getTransactionManager();
+            TransactionManager jtaTm = TRANSACTION_MANAGER.get();
 
             IgniteCache<Integer, String> cache = jcache();
 
@@ -177,7 +171,7 @@ public class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
             cfg.setDefaultTxConcurrency(txConcurrency);
             cfg.setDefaultTxIsolation(isolation);
 
-            TransactionManager jtaTm = jotm.getTransactionManager();
+            TransactionManager jtaTm = TRANSACTION_MANAGER.get();
 
             IgniteCache<Integer, String> cache = jcache();
 
@@ -231,7 +225,7 @@ public class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public TransactionManager create() {
-            return jotm.getTransactionManager();
+            return TRANSACTION_MANAGER.get();
         }
     }
 }

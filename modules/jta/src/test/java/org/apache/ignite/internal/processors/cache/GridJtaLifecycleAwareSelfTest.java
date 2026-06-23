@@ -142,8 +142,8 @@ public class GridJtaLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSel
 
     /** {@inheritDoc} */
     @Test
-    @Override public void testLifecycleAware() throws Exception {
-        // No-op, see anothre tests.
+    @Override public void testLifecycleAware() {
+        // No-op, see another tests.
     }
 
     /** */
