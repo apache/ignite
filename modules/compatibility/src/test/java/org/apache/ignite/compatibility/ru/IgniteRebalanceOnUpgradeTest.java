@@ -18,6 +18,7 @@
 package org.apache.ignite.compatibility.ru;
 
 import java.io.File;
+//import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -60,7 +61,7 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
     );
 
     /** Source commit hash. */
-    private static final String SOURCE_COMMIT_HASH = "4afd6dfc"; //"6b172a8b";
+    private static final String SOURCE_COMMIT_HASH = "f239499b"; //"6b172a8b";
 
     /** Cache name. */
     private static final String CACHE_NAME = "ru-test-cache";
@@ -168,20 +169,7 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
 
             waitForCondition(() -> NODE_IDS.size() == finalIgnite.cluster().nodes().size(), DFLT_TEST_TIMEOUT);
 
-            // Get discovery port via reflection on protected getSpi() of GridDiscoveryManager.
-            Object discoMgr = ignite.context().discovery();
-            java.lang.reflect.Method getSpiMethod = discoMgr.getClass().getSuperclass().getDeclaredMethod("getSpi");
-            boolean acc = getSpiMethod.canAccess(discoMgr);
-            getSpiMethod.setAccessible(true);
-            TcpDiscoverySpi localDiscoverySpi = (TcpDiscoverySpi) getSpiMethod.invoke(discoMgr);
-            if (!acc)
-                getSpiMethod.setAccessible(false);
-
-            String hostAddr = IgniteContainer.hostMachineIpAddress() + ":" + localDiscoverySpi.getLocalPort();
-
-            System.out.println(">>> Local node external address: " + hostAddr);
-
-            addrs.put(container.nodeId(), hostAddr);
+            addrs.put(container.nodeId(), ignite.cluster().localNode().addresses().stream().findFirst().orElseThrow());
 
             nodes.add(ignite);
         }
@@ -200,23 +188,24 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
             .setNetworkTimeout(10000)
             .setAckTimeout(5000)
             .setJoinTimeout(10000)
-            .setLocalAddress("0.0.0.0")
+            //.setLocalAddress(InetAddress.getLocalHost().getHostAddress())
+//            .setAddressFilter(addrs -> !(addrs.getHostString().contains("0.0.0.0")
+//             || addrs.getHostString().contains("127.0.0.1")))
             .setLocalPort(48500)
             .setLocalPortRange(20);
 
-        TcpCommunicationSpi commSpi = new TcpCommunicationSpi()
-            .setLocalAddress("0.0.0.0")
-            .setLocalPort(48400)
-            .setLocalPortRange(100);
+        TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
+            //.setLocalAddress("0.0.0.0");
+            //.setLocalPort(47100)
+            //.setLocalPortRange(100);
 
         return new IgniteConfiguration()
             .setLocalHost("0.0.0.0")
             .setConsistentId(nodeId)
             .setWorkDirectory(workDir)
             .setDataStorageConfiguration(new DataStorageConfiguration().setDefaultDataRegionConfiguration(dataRegionCfg))
-            .setDiscoverySpi(discoverySpi)
-            .setCommunicationSpi(commSpi)
-            .setAddressResolver(new HostNodeAddressResolver());
+            .setDiscoverySpi(discoverySpi);
+            //.setCommunicationSpi(commSpi);
     }
 
     /** */
