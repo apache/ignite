@@ -76,11 +76,11 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     String clause;
 
     /** */
+    @Marshalled("idxQryDescBytes")
     IndexQueryDesc idxQryDesc;
 
     /** */
     @Order(4)
-    @Marshalled("idxQryDesc")
     byte[] idxQryDescBytes;
 
     /** */
@@ -92,35 +92,35 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     String clsName;
 
     /** */
+    @Marshalled("keyValFilterBytes")
     IgniteBiPredicate<Object, Object> keyValFilter;
 
     /** */
     @Order(7)
-    @Marshalled("keyValFilter")
     byte[] keyValFilterBytes;
 
     /** */
+    @Marshalled("rdcBytes")
     IgniteReducer<Object, Object> rdc;
 
     /** */
     @Order(8)
-    @Marshalled("rdc")
     byte[] rdcBytes;
 
     /** */
+    @Marshalled("transBytes")
     IgniteClosure<?, ?> trans;
 
     /** */
     @Order(9)
-    @Marshalled("trans")
     byte[] transBytes;
 
     /** */
+    @Marshalled("argsBytes")
     Object[] args;
 
     /** */
     @Order(10)
-    @Marshalled("args")
     byte[] argsBytes;
 
     /** */

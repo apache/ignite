@@ -17,30 +17,27 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.util.Collection;
 import java.util.Set;
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.MarshalledCollection;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 
 /**
  * Transactions lock list request.
  */
-public class TxLocksRequest extends GridCacheMessage implements MarshallableMessage {
+public class TxLocksRequest extends GridCacheMessage {
     /** Future ID. */
     @Order(0)
     long futId;
 
     /** Tx keys. */
     @GridToStringInclude
-    private Set<IgniteTxKey> txKeys;
+    @MarshalledCollection("txKeysArr")
+    Set<IgniteTxKey> txKeys;
 
     /** Wire-protocol array for {@link #txKeys}. */
     @GridToStringExclude
@@ -75,21 +72,8 @@ public class TxLocksRequest extends GridCacheMessage implements MarshallableMess
     /**
      * @return Tx keys.
      */
-    public Collection<IgniteTxKey> txKeys() {
-        if (txKeys == null && txKeysArr != null) {
-            txKeys = U.newHashSet(txKeysArr.length);
-
-            for (IgniteTxKey key : txKeysArr)
-                txKeys.add(key);
-
-            txKeysArr = null;
-        }
-
+    public Set<IgniteTxKey> txKeys() {
         return txKeys;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
     }
 
     /** {@inheritDoc} */
@@ -100,15 +84,5 @@ public class TxLocksRequest extends GridCacheMessage implements MarshallableMess
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return addDepInfo;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        txKeysArr = new IgniteTxKey[txKeys.size()];
-
-        int i = 0;
-
-        for (IgniteTxKey key : txKeys)
-            txKeysArr[i++] = key;
     }
 }

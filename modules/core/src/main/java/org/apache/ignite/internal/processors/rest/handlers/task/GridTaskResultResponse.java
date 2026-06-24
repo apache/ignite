@@ -27,11 +27,11 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridTaskResultResponse implements Message {
     /** Result. */
+    @Marshalled("resBytes")
     public @Nullable Object res;
 
     /** */
     @Order(0)
-    @Marshalled("res")
     @Nullable byte[] resBytes;
 
     /** Finished flag. */

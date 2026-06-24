@@ -21,10 +21,15 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.Modifier;
 import javax.lang.model.element.QualifiedNameable;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
@@ -33,6 +38,7 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
+import javax.lang.model.util.ElementFilter;
 import javax.tools.Diagnostic;
 
 import static org.apache.ignite.internal.MessageProcessor.MARSHALLABLE_MESSAGE_INTERFACE;
@@ -84,7 +90,10 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     /** Whether the current message type has any {@code @Marshalled} fields. */
     private boolean hasMarshalled;
 
-    /** */
+    /** Enclosed fields of the currently processed type. Computed once per {@link #generateBody} call. */
+    private Map<String, VariableElement> enclosed;
+
+    /** @param env annotation processing environment. */
     MessageMarshallerGenerator(ProcessingEnvironment env) {
         super(env);
 
@@ -111,10 +120,11 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
     /** {@inheritDoc} */
     @Override void generateBody(List<VariableElement> fields) throws Exception {
+        enclosed = enclosedFields();
         marshallable = marshallableMsgType != null && assignableFrom(type.asType(), marshallableMsgType);
         cacheMarshallable = cacheMarshallableMsgType != null && assignableFrom(type.asType(), cacheMarshallableMsgType);
-        hasMarshalled = fields.stream().anyMatch(f -> f.getAnnotation(Marshalled.class) != null);
-        
+        hasMarshalled = enclosed.values().stream().anyMatch(f -> f.getAnnotation(Marshalled.class) != null);
+
         indent = 1;
 
         generatePrepareMarshalMethod(fields);
@@ -131,7 +141,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
                 imports.add("org.apache.ignite.marshaller.Marshaller");
 
             writeClassHeader(writer, "MessageMarshaller", marshallerClsName);
-            
+
             writer.write(" {" + NL);
 
             writeConstructor(writer, marshallerClsName);
@@ -145,7 +155,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         }
     }
 
-    /** */
+    /** Writes the constructor, including the {@code marshaller} field when needed. */
     private void writeConstructor(Writer writer, String marshallerClsName) throws IOException {
         writer.write(indentedLine(METHOD_JAVADOC));
         writer.write(NL);
@@ -160,10 +170,10 @@ public class MessageMarshallerGenerator extends MessageGenerator {
             writer.write(NL);
 
             indent++;
-            
+
             writer.write(indentedLine("this.marshaller = marshaller;"));
             writer.write(NL);
-            
+
             indent--;
         }
         else {
@@ -176,7 +186,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         writer.write(NL + NL);
     }
 
-    /** */
+    /** Generates the {@code prepareMarshal} method body and appends it to {@link #marshall}. */
     private void generatePrepareMarshalMethod(List<VariableElement> orderedFields) {
         imports.add("org.apache.ignite.IgniteCheckedException");
         imports.add("org.apache.ignite.internal.GridKernalContext");
@@ -195,7 +205,8 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         if (needsCtx(orderedFields))
             appendBlock(body, List.of(ctxResolutionLine()));
 
-        appendMarshalledPrepare(body, orderedFields);
+        appendMarshalledFieldsPrepare(body);
+        appendMarshalledPrepare(body);
 
         if (marshallable)
             appendBlock(body, List.of(indentedLine("msg.prepareMarshal(marshaller);")));
@@ -209,7 +220,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         marshall.add(indentedLine("}"));
     }
 
-    /** */
+    /** Generates all {@code finishUnmarshal} overloads and appends them to {@link #marshall}. */
     private void generateUnmarshallMethods(List<VariableElement> orderedFields) {
         List<VariableElement> nioFields = new ArrayList<>();
         List<VariableElement> workerFields = new ArrayList<>();
@@ -242,7 +253,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
             generateFinishUnmarshalNioMethod(msgParam, nioFields);
     }
 
-    /** */
+    /** Generates a single {@code finishUnmarshal} overload for the given {@code mode}. */
     private void generateFinishUnmarshalMethod(String methodName, String params, List<VariableElement> fields, MarshalMode mode) {
         marshall.add(EMPTY);
 
@@ -255,10 +266,12 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
         List<String> body = new ArrayList<>();
 
-        if (mode == MarshalMode.FINISH_CACHE && needsCtx(fields))
+        Set<String> wireFieldSkip = mode == MarshalMode.FINISH_CACHE ? marshalledWireFieldsToSkip() : Set.of();
+
+        if (mode == MarshalMode.FINISH_CACHE && (needsCtx(fields) || !wireFieldSkip.isEmpty()))
             appendBlock(body, List.of(ctxResolutionLine()));
 
-        appendFields(body, fields, mode);
+        appendFields(body, fields, mode, wireFieldSkip);
 
         if (marshallable) {
             if (mode == MarshalMode.FINISH_CACHE && cacheMarshallable)
@@ -268,7 +281,12 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         }
 
         if (mode == MarshalMode.FINISH)
-            appendMarshalledFinish(body, fields);
+            appendMarshalledFinish(body);
+
+        if (mode == MarshalMode.FINISH_CACHE) {
+            appendMarshalledCollectionFinish(body);
+            appendMarshalledMapFinish(body);
+        }
 
         marshall.addAll(body);
 
@@ -277,7 +295,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         marshall.add(indentedLine("}"));
     }
 
-    /** */
+    /** Generates the {@code finishUnmarshalNio} method for NIO-eligible {@code @Message} fields. */
     private void generateFinishUnmarshalNioMethod(String params, List<VariableElement> nioFields) {
         marshall.add(EMPTY);
 
@@ -299,44 +317,453 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         marshall.add(indentedLine("}"));
     }
 
-    /** Returns the {@code GridCacheContext ctx} resolution line for the current message type. */
-    private String ctxResolutionLine() {
-        if (isCacheIdAwareMessage(type))
-            return indentedLine("GridCacheContext<?, ?> ctx = nested == null ? " +
-                    "kctx.cache().context().cacheContext(msg.cacheId()) : nested;");
-        else if (isCacheGroupIdMessage(type))
-            return indentedLine("GridCacheContext<?, ?> ctx = nested == null ? " +
-                    "kctx.cache().context().cacheContext(msg.groupId()) : nested;");
-        else
-            return indentedLine("GridCacheContext<?, ?> ctx = nested;");
+    /** Generates logical→wire conversions for all {@code @MarshalledCollection} and {@code @MarshalledMap} fields. */
+    private void appendMarshalledFieldsPrepare(List<String> body) {
+        for (VariableElement field : enclosed.values()) {
+            appendCollectionPrepare(body, field);
+            appendMapPrepare(body, field);
+        }
     }
 
-    /** Returns {@code true} if any field requires {@code ctx} in generated marshal/unmarshal code. */
-    private boolean needsCtx(List<VariableElement> fields) {
-        return fields.stream().anyMatch(f -> needsCtxType(f.asType()));
+    /** Appends a {@code toArray} assignment for a {@code @MarshalledCollection} field, if present. */
+    private void appendCollectionPrepare(List<String> body, VariableElement field) {
+        MarshalledCollection ann = field.getAnnotation(MarshalledCollection.class);
+
+        if (ann == null)
+            return;
+
+        String colField = "msg." + field.getSimpleName();
+        String arrField = "msg." + ann.value();
+        String compName = arrayComponentName(requireEnclosed(enclosed, ann.value(), "@MarshalledCollection"));
+
+        List<String> code = new ArrayList<>();
+
+        code.add(indentedLine("if (%s != null && %s == null)", colField, arrField));
+
+        indent++;
+
+        code.add(indentedLine("%s = %s.toArray(new %s[0]);", arrField, colField, compName));
+
+        indent--;
+
+        appendBlock(body, code);
     }
 
-    /** */
-    private boolean needsCtxType(TypeMirror t) {
-        if (t.getKind() == TypeKind.ARRAY)
-            return needsCtxType(((ArrayType)t).getComponentType());
+    /** Appends key/value array assignments for a {@code @MarshalledMap} field, if present. */
+    private void appendMapPrepare(List<String> body, VariableElement field) {
+        MarshalledMap ann = field.getAnnotation(MarshalledMap.class);
 
-        if (t.getKind() == TypeKind.DECLARED || t.getKind() == TypeKind.TYPEVAR) {
-            if (isMessage(t) || isCacheObject(t))
-                return true;
+        if (ann == null)
+            return;
 
-            if (isMap(t)) {
-                List<? extends TypeMirror> args = ((DeclaredType)t).getTypeArguments();
-                return needsCtxType(args.get(0)) || needsCtxType(args.get(1));
-            }
+        String mapField = "msg." + field.getSimpleName();
+        String keysField = "msg." + ann.keys();
+        String valuesField = "msg." + ann.values();
+        VariableElement keysEl = requireEnclosed(enclosed, ann.keys(), "@MarshalledMap");
 
-            if (isCollection(t)) {
-                List<? extends TypeMirror> args = ((DeclaredType)t).getTypeArguments();
-                return needsCtxType(args.get(0));
+        List<String> code = new ArrayList<>();
+
+        code.add(indentedLine("if (%s != null && %s == null) {", mapField, keysField));
+
+        indent++;
+
+        code.addAll(keysEl.asType().getKind() == TypeKind.ARRAY
+            ? arrayMapBody(ann, mapField, keysField, keysEl, valuesField)
+            : viewBasedMapBody(keysField, mapField, valuesField));
+
+        indent--;
+
+        code.add(indentedLine("}"));
+
+        appendBlock(body, code);
+    }
+
+    /** Generates {@code U.marshal} calls for all {@code @Marshalled} fields in prepareMarshal. */
+    private void appendMarshalledPrepare(List<String> body) {
+        forEachMarshalled((bytesAcc, objAcc) -> {
+            List<String> code = new ArrayList<>();
+
+            code.add(indentedLine("if (%s != null)", objAcc));
+
+            indent++;
+
+            code.add(indentedLine("%s = U.marshal(marshaller, %s);", bytesAcc, objAcc));
+
+            indent--;
+
+            return code;
+        }, body);
+    }
+
+    /** Generates {@code U.unmarshal} calls for all {@code @Marshalled} fields in finishUnmarshal. */
+    private void appendMarshalledFinish(List<String> body) {
+        forEachMarshalled((bytesAcc, objAcc) -> {
+            List<String> code = new ArrayList<>();
+
+            code.add(indentedLine("if (%s != null) {", bytesAcc));
+
+            indent++;
+
+            code.add(indentedLine("%s = U.unmarshal(marshaller, %s, U.resolveClassLoader(kctx.config()));", objAcc, bytesAcc));
+            code.add(EMPTY);
+            code.add(indentedLine("%s = null;", bytesAcc));
+
+            indent--;
+
+            code.add(indentedLine("}"));
+
+            return code;
+        }, body);
+    }
+
+    /** Generates Set reconstruction for all {@code @MarshalledCollection} fields. */
+    private void appendMarshalledCollectionFinish(List<String> body) {
+        for (VariableElement field : enclosed.values()) {
+            MarshalledCollection colAnn = field.getAnnotation(MarshalledCollection.class);
+
+            if (colAnn == null)
+                continue;
+
+            String colField = "msg." + field.getSimpleName();
+            String arrField = "msg." + colAnn.value();
+            VariableElement wireField = requireEnclosed(enclosed, colAnn.value(), "@MarshalledCollection");
+
+            imports.add("org.apache.ignite.internal.processors.cache.CacheObjectNotResolvedException");
+
+            List<String> code = new ArrayList<>();
+
+            code.add(indentedLine("if (%s != null) {", arrField));
+
+            indent++;
+
+            code.add(indentedLine("%s = U.newHashSet(%s.length);", colField, arrField));
+            code.add(EMPTY);
+            code.addAll(collectionFinishForBlock(wireField, colField, arrField, field.getSimpleName().toString()));
+            code.add(EMPTY);
+            code.add(indentedLine("%s = null;", arrField));
+
+            indent--;
+
+            code.add(indentedLine("}"));
+
+            appendBlock(body, code);
+        }
+    }
+
+    /** Generates the {@code for} loop body: per-element finishUnmarshal + try/catch add into the collection. */
+    private List<String> collectionFinishForBlock(VariableElement wireField, String colField, String arrField, String fieldName) {
+        String compName = arrayComponentName(wireField);
+        TypeMirror compType = ((ArrayType) wireField.asType()).getComponentType();
+
+        List<String> code = new ArrayList<>();
+
+        code.add(indentedLine("for (%s e : %s) {", compName, arrField));
+
+        indent++;
+
+        code.addAll(codeFor(compType, "e", MarshalMode.FINISH_CACHE));
+        code.add(EMPTY);
+        code.add(indentedLine("try {"));
+
+        indent++;
+
+        code.add(indentedLine("%s.add(e);", colField));
+
+        indent--;
+
+        code.add(indentedLine("}"));
+        code.add(indentedLine("catch (CacheObjectNotResolvedException ex) {"));
+
+        indent++;
+
+        code.add(indentedLine("U.warn(kctx.log(getClass()), \"Skipping unresolved element [field=%s]: \" + ex.getMessage());", fieldName));
+
+        indent--;
+
+        code.add(indentedLine("}"));
+
+        indent--;
+
+        code.add(indentedLine("}"));
+
+        return code;
+    }
+
+    /** Returns names of wire fields skipped by {@link #appendFields} in FINISH_CACHE mode. */
+    private Set<String> marshalledWireFieldsToSkip() {
+        Set<String> names = new HashSet<>();
+
+        for (VariableElement f : enclosed.values()) {
+            MarshalledCollection colAnn = f.getAnnotation(MarshalledCollection.class);
+            if (colAnn != null)
+                names.add(colAnn.value());
+
+            MarshalledMap mapAnn = f.getAnnotation(MarshalledMap.class);
+            if (mapAnn != null) {
+                names.add(mapAnn.keys());
+                names.add(mapAnn.values());
             }
         }
 
-        return false;
+        return names;
+    }
+
+    /** Generates Map reconstruction for all {@code @MarshalledMap} fields. */
+    private void appendMarshalledMapFinish(List<String> body) {
+        for (VariableElement field : enclosed.values()) {
+            MarshalledMap ann = field.getAnnotation(MarshalledMap.class);
+
+            if (ann == null)
+                continue;
+
+            VariableElement keysEl = requireEnclosed(enclosed, ann.keys(), "@MarshalledMap");
+            VariableElement valsEl = requireEnclosed(enclosed, ann.values(), "@MarshalledMap");
+
+            String mapField = "msg." + field.getSimpleName();
+            String keysField = "msg." + ann.keys();
+            String valsField = "msg." + ann.values();
+
+            imports.add("org.apache.ignite.internal.processors.cache.CacheObjectNotResolvedException");
+
+            List<String> code = keysEl.asType().getKind() == TypeKind.ARRAY
+                ? mapFinishArrayBlock(field, keysEl, valsEl, mapField, keysField, valsField)
+                : mapFinishCollectionBlock(field, keysEl, valsEl, mapField, keysField, valsField);
+
+            appendBlock(body, code);
+        }
+    }
+
+    /** Generates indexed-loop Map reconstruction for array-backed {@code @MarshalledMap} fields. */
+    private List<String> mapFinishArrayBlock(
+        VariableElement field,
+        VariableElement keysEl,
+        VariableElement valsEl,
+        String mapField,
+        String keysField,
+        String valsField
+    ) {
+        boolean isFinal = field.getModifiers().contains(Modifier.FINAL);
+        String keyCompName = arrayComponentName(keysEl);
+        String valCompName = arrayComponentName(valsEl);
+        TypeMirror keyCompType = ((ArrayType)keysEl.asType()).getComponentType();
+        TypeMirror valCompType = ((ArrayType)valsEl.asType()).getComponentType();
+
+        List<String> code = new ArrayList<>();
+
+        code.add(indentedLine("if (%s != null) {", keysField));
+
+        indent++;
+
+        if (!isFinal) {
+            code.add(indentedLine("%s = U.newHashMap(%s.length);", mapField, keysField));
+            code.add(EMPTY);
+        }
+
+        code.add(indentedLine("for (int i = 0; i < %s.length; i++) {", keysField));
+
+        indent++;
+
+        code.add(indentedLine("%s k = %s[i];", keyCompName, keysField));
+        code.add(indentedLine("%s v = %s[i];", valCompName, valsField));
+
+        List<String> keyUnmarshal = codeFor(keyCompType, "k", MarshalMode.FINISH_CACHE);
+        List<String> valUnmarshal = codeFor(valCompType, "v", MarshalMode.FINISH_CACHE);
+
+        if (!keyUnmarshal.isEmpty()) {
+            code.add(EMPTY);
+            code.addAll(keyUnmarshal);
+        }
+
+        if (!valUnmarshal.isEmpty()) {
+            code.add(EMPTY);
+            code.addAll(valUnmarshal);
+        }
+
+        code.add(EMPTY);
+        code.add(indentedLine("try {"));
+
+        indent++;
+
+        code.add(indentedLine("%s.put(k, v);", mapField));
+
+        indent--;
+
+        code.add(indentedLine("}"));
+        code.add(indentedLine("catch (CacheObjectNotResolvedException ex) {"));
+
+        indent++;
+
+        code.add(indentedLine("U.warn(kctx.log(getClass()), \"Skipping unresolved element [field=%s]: \" + ex.getMessage());",
+            field.getSimpleName()));
+
+        indent--;
+
+        code.add(indentedLine("}"));
+
+        indent--;
+
+        code.add(indentedLine("}"));
+        code.add(EMPTY);
+        code.add(indentedLine("%s = null;", keysField));
+        code.add(indentedLine("%s = null;", valsField));
+
+        indent--;
+
+        code.add(indentedLine("}"));
+
+        return code;
+    }
+
+    /** Generates iterator-based Map reconstruction for collection-backed {@code @MarshalledMap} fields. */
+    private List<String> mapFinishCollectionBlock(
+        VariableElement field,
+        VariableElement keysEl,
+        VariableElement valsEl,
+        String mapField,
+        String keysField,
+        String valsField
+    ) {
+        List<? extends TypeMirror> keyArgs = ((DeclaredType)keysEl.asType()).getTypeArguments();
+        List<? extends TypeMirror> valArgs = ((DeclaredType)valsEl.asType()).getTypeArguments();
+
+        TypeMirror keyCompType = keyArgs.get(0);
+        TypeMirror valCompType = valArgs.get(0);
+
+        Element keyElem = element(keyCompType);
+        Element valElem = element(valCompType);
+
+        String keyCompName = keyElem.getSimpleName().toString();
+        String valCompName = valElem.getSimpleName().toString();
+
+        imports.add(((QualifiedNameable)keyElem).getQualifiedName().toString());
+        imports.add(((QualifiedNameable)valElem).getQualifiedName().toString());
+        imports.add("java.util.Iterator");
+
+        List<String> code = new ArrayList<>();
+
+        code.add(indentedLine("if (%s != null) {", keysField));
+
+        indent++;
+
+        code.add(indentedLine("%s = U.newHashMap(%s.size());", mapField, keysField));
+        code.add(EMPTY);
+        code.add(indentedLine("Iterator keyIter = %s.iterator();", keysField));
+        code.add(indentedLine("Iterator valIter = %s.iterator();", valsField));
+        code.add(EMPTY);
+        code.add(indentedLine("while (keyIter.hasNext()) {"));
+
+        indent++;
+
+        code.add(indentedLine("%s k = (%s)keyIter.next();", keyCompName, keyCompName));
+        code.add(indentedLine("%s v = (%s)valIter.next();", valCompName, valCompName));
+
+        List<String> keyUnmarshal = codeFor(keyCompType, "k", MarshalMode.FINISH_CACHE);
+        List<String> valUnmarshal = codeFor(valCompType, "v", MarshalMode.FINISH_CACHE);
+
+        if (!keyUnmarshal.isEmpty()) {
+            code.add(EMPTY);
+            code.addAll(keyUnmarshal);
+        }
+
+        if (!valUnmarshal.isEmpty()) {
+            code.add(EMPTY);
+            code.addAll(valUnmarshal);
+        }
+
+        code.add(EMPTY);
+        code.add(indentedLine("try {"));
+
+        indent++;
+
+        code.add(indentedLine("%s.put(k, v);", mapField));
+
+        indent--;
+
+        code.add(indentedLine("}"));
+        code.add(indentedLine("catch (CacheObjectNotResolvedException ex) {"));
+
+        indent++;
+
+        code.add(indentedLine("U.warn(kctx.log(getClass()), \"Skipping unresolved element [field=%s]: \" + ex.getMessage());",
+            field.getSimpleName()));
+
+        indent--;
+
+        code.add(indentedLine("}"));
+
+        indent--;
+
+        code.add(indentedLine("}"));
+        code.add(EMPTY);
+        code.add(indentedLine("%s = null;", keysField));
+        code.add(indentedLine("%s = null;", valsField));
+
+        indent--;
+
+        code.add(indentedLine("}"));
+
+        return code;
+    }
+
+    /** Generates key/value array population from the map's entry set. */
+    private List<String> arrayMapBody(
+        MarshalledMap ann,
+        String mapField,
+        String keysField,
+        VariableElement keysEl,
+        String valuesField
+    ) {
+        String compName = arrayComponentName(keysEl);
+        String valCompName = arrayComponentName(requireEnclosed(enclosed, ann.values(), "@MarshalledMap"));
+
+        List<String> inner = new ArrayList<>();
+
+        imports.add("java.util.Map");
+
+        inner.add(indentedLine("%s = new %s[%s.size()];", keysField, compName, mapField));
+        inner.add(indentedLine("%s = new %s[%s.length];", valuesField, valCompName, keysField));
+        inner.add(indentedLine("int i = 0;"));
+        inner.add(indentedLine("for (Map.Entry<?, ?> e : %s.entrySet()) {", mapField));
+
+        indent++;
+
+        inner.add(indentedLine("%s[i] = (%s)e.getKey();", keysField, compName));
+        inner.add(indentedLine("%s[i] = (%s)e.getValue();", valuesField, valCompName));
+        inner.add(indentedLine("i++;"));
+
+        indent--;
+
+        inner.add(indentedLine("}"));
+
+        return inner;
+    }
+
+    /** Generates key/value assignments backed by the map's own {@code keySet()} and {@code values()} views. */
+    private List<String> viewBasedMapBody(String keysField, String mapField, String valuesField) {
+        List<String> inner = new ArrayList<>();
+
+        inner.add(indentedLine("%s = %s.keySet();", keysField, mapField));
+        inner.add(indentedLine("%s = %s.values();", valuesField, mapField));
+
+        return inner;
+    }
+
+    /** Marshals each field and appends non-empty results to {@code body}. */
+    private void appendFields(List<String> body, List<VariableElement> fields, MarshalMode mode) {
+        appendFields(body, fields, mode, Set.of());
+    }
+
+    /** Marshals each field, skipping names in {@code skip}, and appends non-empty results to {@code body}. */
+    private void appendFields(List<String> body, List<VariableElement> fields, MarshalMode mode, Set<String> skip) {
+        for (VariableElement field : fields) {
+            if (skip.contains(field.getSimpleName().toString()))
+                continue;
+
+            List<String> result = codeFor(field.asType(), fieldAccessor(field), mode);
+
+            if (!result.isEmpty())
+                appendBlock(body, result);
+        }
     }
 
     /** Returns generated marshal/unmarshal code lines for field of type {@code t}, or empty if none needed. */
@@ -361,7 +788,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         return List.of();
     }
 
-    /** */
+    /** Generates a null-guarded {@code MessageMarshaller.prepareMarshal/finishUnmarshal} call. */
     private List<String> marshallMessage(String accessor, MarshalMode mode) {
         List<String> code = new ArrayList<>();
 
@@ -389,7 +816,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         return code;
     }
 
-    /** */
+    /** Generates a null-and-ctx-guarded {@code prepareMarshal/finishUnmarshal} call on a {@code CacheObject}. */
     private List<String> marshallCacheObject(String accessor, MarshalMode mode) {
         if (mode == MarshalMode.FINISH)
             return List.of();
@@ -409,7 +836,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         return code;
     }
 
-    /** */
+    /** Generates a null-guarded for-each loop over the array's elements. */
     private List<String> marshallArray(TypeMirror comp, String accessor, MarshalMode mode) {
         Element elem = ((DeclaredType)comp).asElement();
 
@@ -424,7 +851,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         return wrapNullGuarded(accessor, loopCode);
     }
 
-    /** */
+    /** Generates a null-guarded for-each loop over the collection's elements. */
     private List<String> marshallCollection(DeclaredType t, String accessor, MarshalMode mode) {
         TypeMirror arg = t.getTypeArguments().get(0);
 
@@ -454,6 +881,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         indent++;
 
         List<String> combined = new ArrayList<>();
+
         for (int i = 0; i < 2; i++) {
             TypeMirror elemType = args.get(i);
 
@@ -477,80 +905,14 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         return wrapNullGuarded(accessor, combined);
     }
 
-    /** Generates {@code U.marshal} calls for all {@code @Marshalled} fields in prepareMarshal. */
-    private void appendMarshalledPrepare(List<String> body, List<VariableElement> fields) {
-        forEachMarshalled(fields, (bytesAcc, objAcc) -> {
-            List<String> code = new ArrayList<>();
-            
-            code.add(indentedLine("if (%s != null)", objAcc));
-            
-            indent++;
-            
-            code.add(indentedLine("%s = U.marshal(marshaller, %s);", bytesAcc, objAcc));
-            
-            indent--;
-            
-            return code;
-        }, body);
-    }
-
-    /** */
-    private void appendMarshalledFinish(List<String> body, List<VariableElement> fields) {
-        forEachMarshalled(fields, (bytesAcc, objAcc) -> {
-            List<String> code = new ArrayList<>();
-            
-            code.add(indentedLine("if (%s != null) {", bytesAcc));
-            
-            indent++;
-            
-            code.add(indentedLine("%s = U.unmarshal(marshaller, %s, U.resolveClassLoader(kctx.config()));", objAcc, bytesAcc));
-            
-            code.add(indentedLine("%s = null;", bytesAcc));
-            
-            indent--;
-            
-            code.add(indentedLine("}"));
-           
-            return code;
-        }, body);
-    }
-
-    /** */
-    private void forEachMarshalled(List<VariableElement> fields, BiFunction<String, String, List<String>> codeGen, List<String> body) {
-        for (VariableElement field : fields) {
-            Marshalled ann = field.getAnnotation(Marshalled.class);
-            
-            if (ann == null)
-                continue;
-            
-            appendBlock(body, codeGen.apply("msg." + field.getSimpleName(), "msg." + ann.value()));
-        }
-    }
-
-    /** Returns empty if {@code inner} is empty. */
-    private List<String> wrapNullGuarded(String nullGuard, List<String> inner) {
-        if (inner.isEmpty())
-            return List.of();
-
-        List<String> code = new ArrayList<>();
-
-        code.add(indentedLine("if (%s != null) {", nullGuard));
-        
-        code.addAll(inner);
-        
-        code.add(indentedLine("}"));
-
-        return code;
-    }
-
-    /** Returns empty if {@code elemType} requires no marshalling. */
+    /** Returns empty if {@code elemType} requires no marshalling; otherwise returns a for-each loop over {@code iterable}. */
     private List<String> forLoop(String typeName, TypeMirror elemType, String iterable, MarshalMode mode) {
         String el = "e" + (indent + 1);
 
         indent++;
-        
+
         List<String> inner = codeFor(elemType, el, mode);
-        
+
         indent--;
 
         if (inner.isEmpty())
@@ -559,47 +921,140 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         List<String> code = new ArrayList<>();
 
         code.add(indentedLine("for (%s %s : %s) {", typeName, el, iterable));
-        
+
         code.addAll(inner);
-        
+
         code.add(indentedLine("}"));
 
         return code;
     }
 
-    /** */
-    private boolean isCacheObject(TypeMirror type) {
-        return cacheObjectMirror != null && assignableFrom(type, cacheObjectMirror);
+    /** Returns empty if {@code inner} is empty; otherwise wraps {@code inner} in a null-guard on {@code nullGuard}. */
+    private List<String> wrapNullGuarded(String nullGuard, List<String> inner) {
+        if (inner.isEmpty())
+            return List.of();
+
+        List<String> code = new ArrayList<>();
+
+        code.add(indentedLine("if (%s != null) {", nullGuard));
+
+        code.addAll(inner);
+
+        code.add(indentedLine("}"));
+
+        return code;
     }
 
-    /** */
-    private boolean isMap(TypeMirror type) {
-        return mapMirror != null && assignableFrom(erasedType(type), mapMirror);
+    /** Returns the {@code GridCacheContext ctx} resolution line for the current message type. */
+    private String ctxResolutionLine() {
+        if (isCacheIdAwareMessage(type))
+            return indentedLine("GridCacheContext<?, ?> ctx = nested == null ? " +
+                    "kctx.cache().context().cacheContext(msg.cacheId()) : nested;");
+        else if (isCacheGroupIdMessage(type))
+            return indentedLine("GridCacheContext<?, ?> ctx = nested == null ? " +
+                    "kctx.cache().context().cacheContext(msg.groupId()) : nested;");
+        else
+            return indentedLine("GridCacheContext<?, ?> ctx = nested;");
     }
 
-    /** */
-    private boolean isCollection(TypeMirror type) {
-        return collectionMirror != null && assignableFrom(erasedType(type), collectionMirror);
+    /** Returns {@code true} if any field requires {@code ctx} in generated marshal/unmarshal code. */
+    private boolean needsCtx(List<VariableElement> fields) {
+        return fields.stream().anyMatch(f -> needsCtxType(f.asType()));
     }
 
-    /** */
+    /** Returns {@code true} if type {@code t} (or its element/key/value types) requires {@code ctx}. */
+    private boolean needsCtxType(TypeMirror t) {
+        if (t.getKind() == TypeKind.ARRAY)
+            return needsCtxType(((ArrayType)t).getComponentType());
+
+        if (t.getKind() == TypeKind.DECLARED || t.getKind() == TypeKind.TYPEVAR) {
+            if (isMessage(t) || isCacheObject(t))
+                return true;
+
+            if (isMap(t)) {
+                List<? extends TypeMirror> args = ((DeclaredType)t).getTypeArguments();
+                return needsCtxType(args.get(0)) || needsCtxType(args.get(1));
+            }
+
+            if (isCollection(t)) {
+                List<? extends TypeMirror> args = ((DeclaredType)t).getTypeArguments();
+                return needsCtxType(args.get(0));
+            }
+        }
+
+        return false;
+    }
+
+    /** Returns {@code true} if {@code type} is assignable to {@code Message}. */
     private boolean isMessage(TypeMirror type) {
         return messageMirror != null && assignableFrom(type, messageMirror);
     }
 
-    /** */
+    /** Returns {@code true} if {@code type} is assignable to {@code CacheObject}. */
+    private boolean isCacheObject(TypeMirror type) {
+        return cacheObjectMirror != null && assignableFrom(type, cacheObjectMirror);
+    }
+
+    /** Returns {@code true} if {@code type} (erased) is assignable to {@code java.util.Map}. */
+    private boolean isMap(TypeMirror type) {
+        return mapMirror != null && assignableFrom(erasedType(type), mapMirror);
+    }
+
+    /** Returns {@code true} if {@code type} (erased) is assignable to {@code java.util.Collection}. */
+    private boolean isCollection(TypeMirror type) {
+        return collectionMirror != null && assignableFrom(erasedType(type), collectionMirror);
+    }
+
+    /** Returns {@code true} if {@code te} implements {@code NonMarshallableMessage}. */
     private boolean isNonMarshallableMessage(TypeElement te) {
         return nonMarshallableMirror != null && assignableFrom(te.asType(), nonMarshallableMirror);
     }
 
-    /** */
+    /** Returns {@code true} if {@code te} implements {@code CacheIdAware}. */
     private boolean isCacheIdAwareMessage(TypeElement te) {
         return cacheIdAwareMirror != null && assignableFrom(te.asType(), cacheIdAwareMirror);
     }
 
-    /** */
+    /** Returns {@code true} if {@code te} is a {@code GridCacheGroupIdMessage}. */
     private boolean isCacheGroupIdMessage(TypeElement te) {
         return cacheGroupIdMsgMirror != null && assignableFrom(te.asType(), cacheGroupIdMsgMirror);
+    }
+
+    /** Returns {@code true} if {@code field} carries {@code @NioField}. */
+    private static boolean isNioField(VariableElement field) {
+        return field.getAnnotation(NioField.class) != null;
+    }
+
+    /** Returns all declared fields of the current type, keyed by simple name, preserving declaration order. */
+    private Map<String, VariableElement> enclosedFields() {
+        Map<String, VariableElement> enclosed = new LinkedHashMap<>();
+
+        for (VariableElement f : ElementFilter.fieldsIn(type.getEnclosedElements()))
+            enclosed.put(f.getSimpleName().toString(), f);
+
+        return enclosed;
+    }
+
+    /** Returns the enclosed field named {@code name}, or throws if absent. */
+    private VariableElement requireEnclosed(Map<String, VariableElement> enclosed, String name, String annotationName) {
+        VariableElement el = enclosed.get(name);
+
+        if (el == null)
+            throw new IllegalStateException(annotationName + " companion field '" + name + "' not found in " + type);
+
+        return el;
+    }
+
+    /** Iterates all {@code @Marshalled} fields and applies {@code codeGen(bytesAccessor, objAccessor)} to each. */
+    private void forEachMarshalled(BiFunction<String, String, List<String>> codeGen, List<String> body) {
+        for (VariableElement field : enclosed.values()) {
+            Marshalled ann = field.getAnnotation(Marshalled.class);
+
+            if (ann == null)
+                continue;
+
+            appendBlock(body, codeGen.apply("msg." + ann.value(), "msg." + field.getSimpleName()));
+        }
     }
 
     /** Returns the element for {@code t}; for a type variable, uses its upper bound. */
@@ -609,19 +1064,9 @@ public class MessageMarshallerGenerator extends MessageGenerator {
             ((DeclaredType)((TypeVariable)t).getUpperBound()).asElement();
     }
 
-    /** */
-    private static boolean isNioField(VariableElement field) {
-        return field.getAnnotation(NioField.class) != null;
-    }
-
-    /** Marshals each field and appends non-empty results to {@code body}. */
-    private void appendFields(List<String> body, List<VariableElement> fields, MarshalMode mode) {
-        for (VariableElement field : fields) {
-            List<String> result = codeFor(field.asType(), fieldAccessor(field), mode);
-
-            if (!result.isEmpty())
-                appendBlock(body, result);
-        }
+    /** Returns the simple name of the array component type of {@code field}. */
+    private static String arrayComponentName(VariableElement field) {
+        return ((DeclaredType)((ArrayType)field.asType()).getComponentType()).asElement().getSimpleName().toString();
     }
 
     /** Appends {@code block} to {@code body}, inserting a blank-line separator when {@code body} is non-empty. */
@@ -632,7 +1077,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         body.addAll(block);
     }
 
-    /** */
+    /** Marshal mode controls which overload is being generated. */
     private enum MarshalMode {
         /** Marshal. */
         PREPARE,

@@ -22,10 +22,13 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/** Marks an object field whose wire representation is a companion {@code byte[]} {@code @Order} field named by {@link #value()}. */
+/** Marks a {@code Map} field whose wire form is a pair of {@code @Order} companion fields: {@link #keys()} and {@link #values()}. */
 @Retention(RetentionPolicy.CLASS)
 @Target(ElementType.FIELD)
-public @interface Marshalled {
-    /** Name of the {@code @Order} {@code byte[]} field that holds the serialized form. */
-    String value();
+public @interface MarshalledMap {
+    /** Name of the {@code @Order} field that holds the keys. */
+    String keys();
+
+    /** Name of the {@code @Order} field that holds the values. */
+    String values();
 }

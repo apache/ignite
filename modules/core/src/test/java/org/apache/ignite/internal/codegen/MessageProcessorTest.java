@@ -402,6 +402,60 @@ public class MessageProcessorTest {
         assertThat(compilation).hadErrorContaining("@NioField has no effect on non-Message field");
     }
 
+    /** Verifies that {@code @Marshalled} generates {@code U.unmarshal} with blank line before null-out in finishUnmarshal. */
+    @Test
+    public void testMarshalledMessage() {
+        Compilation compilation = compile("TestMarshalledMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertEquals(2, compilation.generatedSourceFiles().size());
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestMarshalledMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("TestMarshalledMessageSerializer.java"));
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestMarshalledMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("TestMarshalledMessageMarshaller.java"));
+    }
+
+    /** Verifies that {@code @MarshalledCollection} generates Set reconstruction in FINISH_CACHE mode. */
+    @Test
+    public void testMarshalledCollectionMessage() {
+        Compilation compilation = compile("TestMarshalledCollectionMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertEquals(2, compilation.generatedSourceFiles().size());
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestMarshalledCollectionMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("TestMarshalledCollectionMessageSerializer.java"));
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestMarshalledCollectionMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("TestMarshalledCollectionMessageMarshaller.java"));
+    }
+
+    /** Verifies that {@code @MarshalledMap} generates Map reconstruction in FINISH_CACHE mode. */
+    @Test
+    public void testMarshalledMapMessage() {
+        Compilation compilation = compile("TestMarshalledMapMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertEquals(2, compilation.generatedSourceFiles().size());
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestMarshalledMapMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("TestMarshalledMapMessageSerializer.java"));
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestMarshalledMapMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("TestMarshalledMapMessageMarshaller.java"));
+    }
+
     /** */
     private Compilation compile(String... srcFiles) {
         return compile(new MessageProcessor(), srcFiles);

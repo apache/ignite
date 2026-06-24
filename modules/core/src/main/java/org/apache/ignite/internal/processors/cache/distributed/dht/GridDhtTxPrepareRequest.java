@@ -20,10 +20,10 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.MarshalledMap;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -37,7 +37,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -71,7 +70,8 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
     /** Owned versions by key. */
     @GridToStringInclude
-    private Map<IgniteTxKey, GridCacheVersion> owned;
+    @MarshalledMap(keys = "ownedKeys", values = "ownedVals")
+    Map<IgniteTxKey, GridCacheVersion> owned;
 
     /** Owned keys. */
     @Order(6)
@@ -325,39 +325,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
             prepareTxDeployment(nearWrites, ctx);
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (owned != null && ownedKeys == null) {
-            ownedKeys = owned.keySet();
-
-            ownedVals = owned.values();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (ownedKeys != null) {
-            assert ownedKeys.size() == ownedVals.size();
-
-            owned = U.newHashMap(ownedKeys.size());
-
-            Iterator<IgniteTxKey> keyIter = ownedKeys.iterator();
-
-            Iterator<GridCacheVersion> valIter = ownedVals.iterator();
-
-            while (keyIter.hasNext()) {
-                IgniteTxKey key = keyIter.next();
-
-                try {
-                    owned.put(key, valIter.next());
-                }
-                catch (IllegalStateException ignored) {
-                    // Skipping entries for removed cache.    
-                }
-            }
-        }
-    }
-    
     /** {@inheritDoc} */
     @Override public int partition() {
         return U.safeAbs(version().hashCode());

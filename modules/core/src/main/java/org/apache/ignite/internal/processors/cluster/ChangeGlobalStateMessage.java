@@ -56,10 +56,10 @@ public class ChangeGlobalStateMessage extends DiscoveryCustomMessage implements 
     List<StoredCacheData> storedCfgs;
 
     /** */
-    @Nullable BaselineTopology baselineTopology;
+    @Nullable @Marshalled("baselineTopologyBytes")
+    BaselineTopology baselineTopology;
 
     @Order(4)
-    @Marshalled("baselineTopology")
     byte[] baselineTopologyBytes;
 
     /** */

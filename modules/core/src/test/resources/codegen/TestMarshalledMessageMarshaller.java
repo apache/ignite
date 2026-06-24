@@ -19,7 +19,7 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.TestMarshallableMessage;
+import org.apache.ignite.internal.TestMarshalledMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -30,27 +30,32 @@ import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public class TestMarshallableMessageMarshaller implements MessageMarshaller<TestMarshallableMessage> {
+public class TestMarshalledMessageMarshaller implements MessageMarshaller<TestMarshalledMessage> {
     /** */
     private final Marshaller marshaller;
 
     /** */
-    public TestMarshallableMessageMarshaller(Marshaller marshaller) {
+    public TestMarshalledMessageMarshaller(Marshaller marshaller) {
         this.marshaller = marshaller;
 
     }
 
     /** */
-    @Override public void prepareMarshal(TestMarshallableMessage msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {
-        msg.prepareMarshal(marshaller);
+    @Override public void prepareMarshal(TestMarshalledMessage msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {
+        if (msg.data != null)
+            msg.dataBytes = U.marshal(marshaller, msg.data);
     }
 
     /** */
-    @Override public void finishUnmarshal(TestMarshallableMessage msg, GridKernalContext kctx, GridCacheContext<?, ?> nested, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(TestMarshalledMessage msg, GridKernalContext kctx, GridCacheContext<?, ?> nested, ClassLoader clsLdr) throws IgniteCheckedException {
     }
 
     /** */
-    @Override public void finishUnmarshal(TestMarshallableMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
-        msg.finishUnmarshal(marshaller, U.resolveClassLoader(kctx.config()));
+    @Override public void finishUnmarshal(TestMarshalledMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
+        if (msg.dataBytes != null) {
+            msg.data = U.unmarshal(marshaller, msg.dataBytes, U.resolveClassLoader(kctx.config()));
+
+            msg.dataBytes = null;
+        }
     }
 }

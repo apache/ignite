@@ -32,10 +32,10 @@ public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation imple
     private static final long serialVersionUID = 0L;
 
     /** */
+    @Marshalled("qryEntitiesBytes")
     Collection<QueryEntity> entities;
 
     @Order(0)
-    @Marshalled("entities")
     transient byte[] qryEntitiesBytes;
 
     /** */

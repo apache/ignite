@@ -90,7 +90,6 @@ public class IgniteTxKey implements Message, CacheIdAware {
         return res;
     }
 
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgniteTxKey.class, this);

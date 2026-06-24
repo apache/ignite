@@ -18,21 +18,14 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.BitSet;
-import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockRequest;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.GridLeanMap;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -40,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * DHT lock request.
  */
-public class GridDhtLockRequest extends GridDistributedLockRequest implements MarshallableMessage {
+public class GridDhtLockRequest extends GridDistributedLockRequest {
     /** Invalidate reader flags. */
     @Order(0)
     BitSet invalidateEntries;
@@ -49,38 +42,24 @@ public class GridDhtLockRequest extends GridDistributedLockRequest implements Ma
     @Order(1)
     IgniteUuid miniId;
 
-    /** Owner mapped version, if any. */
-    @GridToStringInclude
-    private Map<KeyCacheObject, GridCacheVersion> owned;
-
-    /** Wire-protocol keys for {@link #owned}. */
-    @Order(2)
-    @GridToStringExclude
-    KeyCacheObject[] ownedKeys;
-
-    /** Wire-protocol values for {@link #owned}. */
-    @Order(3)
-    @GridToStringExclude
-    GridCacheVersion[] ownedValues;
-
     /** Topology version. */
-    @Order(4)
+    @Order(2)
     AffinityTopologyVersion topVer;
 
     /** Task name hash. */
-    @Order(5)
+    @Order(3)
     int taskNameHash;
 
     /** Indexes of keys needed to be preloaded. */
-    @Order(6)
+    @Order(4)
     BitSet preloadKeys;
 
     /** TTL for read operation. */
-    @Order(7)
+    @Order(5)
     long accessTtl;
 
     /** Transaction label. */
-    @Order(8)
+    @Order(6)
     String txLbl;
 
     /**
@@ -220,19 +199,6 @@ public class GridDhtLockRequest extends GridDistributedLockRequest implements Ma
     }
 
     /**
-     * Sets owner and its mapped version.
-     *
-     * @param key Key.
-     * @param ownerMapped Owner mapped version.
-     */
-    public void owned(KeyCacheObject key, GridCacheVersion ownerMapped) {
-        if (owned == null)
-            owned = new GridLeanMap<>(3);
-
-        owned.put(key, ownerMapped);
-    }
-
-    /**
      * @param idx Entry index to check.
      * @return {@code True} if near entry should be invalidated.
      */
@@ -259,26 +225,6 @@ public class GridDhtLockRequest extends GridDistributedLockRequest implements Ma
      */
     @Nullable public String txLabel() {
         return txLbl;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (owned != null && ownedKeys == null) {
-            ownedKeys = new KeyCacheObject[owned.size()];
-            ownedValues = new GridCacheVersion[ownedKeys.length];
-
-            int i = 0;
-
-            for (Map.Entry<KeyCacheObject, GridCacheVersion> entry : owned.entrySet()) {
-                ownedKeys[i] = entry.getKey();
-                ownedValues[i] = entry.getValue();
-                i++;
-            }
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
     }
 
     /** {@inheritDoc} */

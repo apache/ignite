@@ -30,12 +30,12 @@ import org.jetbrains.annotations.Nullable;
 public class ObjectData implements Message {
     /** */
     @GridToStringInclude
+    @Marshalled("dataBytes")
     Serializable data;
 
     /** */
     @GridToStringExclude
     @Order(0)
-    @Marshalled("data")
     byte[] dataBytes;
 
     /** */

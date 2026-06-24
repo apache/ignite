@@ -54,11 +54,11 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
     @Nullable List<byte[]> invokeArgsBytes;
 
     /** Entry processors. */
+    @Marshalled("entryProcBytes")
     @Nullable EntryProcessor<Object, Object, Object> entryProc;
 
     /** */
     @Order(1)
-    @Marshalled("entryProc")
     @Nullable byte[] entryProcBytes;
 
     /**

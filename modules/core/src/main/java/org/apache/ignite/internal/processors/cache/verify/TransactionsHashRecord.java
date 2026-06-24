@@ -31,18 +31,18 @@ public class TransactionsHashRecord implements Message, Serializable {
 
     /** Consistent ID of local node that participated in the transaction. This node produces this record. */
     @GridToStringInclude
+    @Marshalled("locConsistentIdBytes")
     Object locConsistentId;
 
     @Order(0)
-    @Marshalled("locConsistentId")
     transient byte[] locConsistentIdBytes;
 
     /** Consistent ID of remote node that participated in the transactions. */
     @GridToStringInclude
+    @Marshalled("rmtConsistentIdBytes")
     Object rmtConsistentId;
 
     @Order(1)
-    @Marshalled("rmtConsistentId")
     transient byte[] rmtConsistentIdBytes;
 
     /** Committed transactions IDs hash. */

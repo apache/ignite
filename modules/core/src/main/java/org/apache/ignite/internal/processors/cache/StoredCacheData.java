@@ -49,18 +49,18 @@ public class StoredCacheData implements Serializable, CdcCacheEvent, Message {
 
     /** Cache configuration. */
     @GridToStringInclude
+    @Marshalled("ccfgBytes")
     CacheConfiguration<?, ?> ccfg;
 
     @Order(0)
-    @Marshalled("ccfg")
     transient byte[] ccfgBytes;
 
     /** Query entities. */
     @GridToStringInclude
+    @Marshalled("qryEntitiesBytes")
     Collection<QueryEntity> qryEntities;
 
     @Order(1)
-    @Marshalled("qryEntities")
     transient byte[] qryEntitiesBytes;
 
     /** SQL flag - {@code true} if cache was created with {@code CREATE TABLE}. */

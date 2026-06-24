@@ -36,6 +36,7 @@ import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
@@ -73,7 +74,8 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
 
     /** Consistent ID. */
     @GridToStringInclude
-    private Object consistentId;
+    @Marshalled("consistentIdBytes")
+    Object consistentId;
 
     /** Serialized {@link #consistentId}. */
     @Order(1)
@@ -81,7 +83,8 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
 
     /** Node attributes. */
     @GridToStringExclude
-    private Map<String, Object> attrs;
+    @Marshalled("attrsBytes")
+    Map<String, Object> attrs;
 
     /** Serialized {@link #attrs}. */
     @Order(2)
@@ -221,28 +224,14 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (attrs != null)
-            attrsBytes = U.marshal(marsh, attrs);
-
-        if (consistentId != null)
-            consistentIdBytes = U.marshal(marsh, consistentId);
-
         metricsMsg = new NodeMetricsMessage(metrics);
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (attrsBytes != null)
-            attrs = U.unmarshal(marsh, attrsBytes, clsLdr);
-
-        if (consistentIdBytes != null)
-            consistentId = U.unmarshal(marsh, consistentIdBytes, clsLdr);
-
         if (metricsMsg != null)
             metrics = new ClusterMetricsSnapshot(metricsMsg);
 
-        attrsBytes = null;
-        consistentIdBytes = null;
         metricsMsg = null;
     }
 

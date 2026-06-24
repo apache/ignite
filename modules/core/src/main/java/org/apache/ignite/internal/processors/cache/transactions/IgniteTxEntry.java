@@ -135,6 +135,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, MarshallableMessage, 
 
     /** Transform. */
     @GridToStringInclude
+    @Marshalled("transformClosBytes")
     Collection<T2<EntryProcessor<Object, Object, Object>, Object[]>> entryProcessorsCol;
 
     /** Transient field for calculated entry processor value. */
@@ -143,7 +144,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, MarshallableMessage, 
     /** */
     @GridToStringExclude
     @Order(4)
-    @Marshalled("entryProcessorsCol")
     byte[] transformClosBytes;
 
     /** Time to live. */

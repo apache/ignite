@@ -17,15 +17,18 @@
 
 package org.apache.ignite.internal;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.util.Set;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
-/** Marks an object field whose wire representation is a companion {@code byte[]} {@code @Order} field named by {@link #value()}. */
-@Retention(RetentionPolicy.CLASS)
-@Target(ElementType.FIELD)
-public @interface Marshalled {
-    /** Name of the {@code @Order} {@code byte[]} field that holds the serialized form. */
-    String value();
+public class TestMarshalledCollectionMessage implements Message {
+    @MarshalledCollection("keysArr")
+    Set<GridCacheVersion> keys;
+
+    @Order(0)
+    GridCacheVersion[] keysArr;
+
+    public short directType() {
+        return 0;
+    }
 }

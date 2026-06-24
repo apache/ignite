@@ -54,10 +54,10 @@ public class DynamicCacheChangeRequest implements Message, Serializable {
 
     /** Cache start configuration. */
     @GridToStringExclude
+    @Marshalled("cfgBytes")
     CacheConfiguration<?, ?> startCfg;
 
     @Order(3)
-    @Marshalled("startCfg")
     byte[] cfgBytes;
 
     /** Cache type. */
@@ -70,10 +70,10 @@ public class DynamicCacheChangeRequest implements Message, Serializable {
 
     /** Near cache configuration. */
     @GridToStringExclude
+    @Marshalled("nearCfgBytes")
     NearCacheConfiguration<?, ?> nearCacheCfg;
 
     @Order(6)
-    @Marshalled("nearCacheCfg")
     byte[] nearCfgBytes;
 
     /** Start only client cache, do not start data nodes. */
@@ -121,10 +121,10 @@ public class DynamicCacheChangeRequest implements Message, Serializable {
     boolean resetLostPartitions;
 
     /** Dynamic schema. */
+    @Marshalled("schemaBytes")
     QuerySchema schema;
 
     @Order(18)
-    @Marshalled("schema")
     byte[] schemaBytes;
 
     /** Is transient. */

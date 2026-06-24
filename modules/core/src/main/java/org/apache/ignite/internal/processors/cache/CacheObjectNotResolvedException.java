@@ -15,17 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.internal.processors.cache;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+/**
+ * Thrown by {@link KeyCacheObjectImpl#hashCode()} when the object has not been deserialized yet,
+ * which happens when the owning cache has been removed before {@code finishUnmarshal} could complete.
+ */
+public class CacheObjectNotResolvedException extends RuntimeException {
+    /** */
+    private static final long serialVersionUID = 0L;
 
-/** Marks an object field whose wire representation is a companion {@code byte[]} {@code @Order} field named by {@link #value()}. */
-@Retention(RetentionPolicy.CLASS)
-@Target(ElementType.FIELD)
-public @interface Marshalled {
-    /** Name of the {@code @Order} {@code byte[]} field that holds the serialized form. */
-    String value();
+    /** Disables stack trace for performance. */
+    public CacheObjectNotResolvedException() {
+        super(null, null, true, false);
+    }
 }

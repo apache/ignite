@@ -33,10 +33,10 @@ public final class BinaryMetadataVersionInfo implements Serializable, Message {
     private static final long serialVersionUID = 0L;
 
     /** The actual binary metadata. */
+    @Marshalled("metadataBytes")
     BinaryMetadata metadata;
 
     @Order(0)
-    @Marshalled("metadata")
     transient byte[] metadataBytes;
 
     /**

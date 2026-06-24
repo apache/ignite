@@ -53,11 +53,11 @@ public class GridEventStorageMessage implements MarshallableMessage {
     byte[] filterBytes;
 
     /** */
+    @Marshalled("evtsBytes")
     Collection<Event> evts;
 
     /** */
     @Order(2)
-    @Marshalled("evts")
     byte[] evtsBytes;
 
     /** */

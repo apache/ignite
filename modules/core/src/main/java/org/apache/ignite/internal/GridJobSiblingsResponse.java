@@ -28,11 +28,11 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridJobSiblingsResponse implements Message {
     /** */
+    @Marshalled("siblingsBytes")
     @Nullable Collection<ComputeJobSibling> siblings;
 
     /** */
     @Order(0)
-    @Marshalled("siblings")
     byte[] siblingsBytes;
 
     /**

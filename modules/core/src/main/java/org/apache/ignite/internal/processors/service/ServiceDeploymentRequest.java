@@ -30,10 +30,10 @@ import org.jetbrains.annotations.NotNull;
  */
 public class ServiceDeploymentRequest extends ServiceChangeAbstractRequest implements Message {
     /** Service configuration. */
+    @Marshalled("cfgBytes")
     LazyServiceConfiguration cfg;
 
     @Order(0)
-    @Marshalled("cfg")
     byte[] cfgBytes;
 
     /** Default constructor for {@link MessageFactory}. */

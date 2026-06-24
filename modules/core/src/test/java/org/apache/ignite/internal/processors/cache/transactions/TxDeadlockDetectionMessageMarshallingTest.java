@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -65,7 +66,13 @@ public class TxDeadlockDetectionMessageMarshallingTest extends GridCommonAbstrac
                 @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                     if (msg instanceof TxLocksResponse) {
                         try {
-                            ((TxLocksResponse)msg).finishUnmarshal(clientCtx.marshaller(), clientCtx.deploy().globalLoader());
+                            MessageMarshaller.finishUnmarshal(
+                                clientCtx.kernalContext().messageFactory(),
+                                (TxLocksResponse)msg,
+                                clientCtx.kernalContext(),
+                                null,
+                                clientCtx.deploy().globalLoader()
+                            );
 
                             res.set(true);
                         }

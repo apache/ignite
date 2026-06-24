@@ -52,11 +52,11 @@ public class PartitionHashRecord implements Message, Serializable {
 
     /** Consistent id. */
     @GridToStringInclude
+    @Marshalled("consistentIdBytes")
     Object consistentId;
 
     @Order(2)
     @GridToStringExclude
-    @Marshalled("consistentId")
     byte[] consistentIdBytes;
 
     /** Partition entries content hash. */
@@ -71,11 +71,11 @@ public class PartitionHashRecord implements Message, Serializable {
 
     /** Update counter's state. */
     @GridToStringInclude
+    @Marshalled("updateCntrBytes")
     Object updateCntr;
 
     @Order(5)
     @GridToStringExclude
-    @Marshalled("updateCntr")
     byte[] updateCntrBytes;
 
     /** Size. */

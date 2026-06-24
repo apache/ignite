@@ -77,10 +77,10 @@ public final class MetadataUpdateProposedMessage extends DiscoveryCustomMessage 
     UUID origNodeId;
 
     /** */
+    @Marshalled("metadataBytes")
     BinaryMetadata metadata;
 
     @Order(1)
-    @Marshalled("metadata")
     byte[] metadataBytes;
 
     /** Metadata type id. */

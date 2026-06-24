@@ -109,7 +109,7 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
     /** {@inheritDoc} */
     @Override public int hashCode() {
         if (val == null)
-            throw new IllegalStateException("Value is null");
+            throw new CacheObjectNotResolvedException();
 
         return IgniteUtils.hashCode(val);
     }
