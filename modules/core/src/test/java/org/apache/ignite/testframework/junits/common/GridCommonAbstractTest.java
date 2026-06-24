@@ -2470,7 +2470,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         List<T3<String, @Nullable PartitionUpdateCounter, Boolean>> cntrMap = G.allGrids().stream().filter(ignite ->
             !ignite.configuration().isClientMode()).map(ignite ->
             new T3<>(ignite.name(), counter(partId, cacheName, ignite.name()),
-                ignite.affinity(cacheName).isPrimary(ignite.cluster().localNode(), partId))).collect(toList());
+                    ignite.affinity(cacheName).isPrimary(ignite.cluster().localNode(), partId))).collect(toList());
 
         for (T3<String, PartitionUpdateCounter, Boolean> cntr : cntrMap) {
             if (cntr.get2() == null)
@@ -2502,8 +2502,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         long reserved) throws AssertionFailedError {
         List<T3<String, @Nullable PartitionUpdateCounter, Boolean>> cntrMap = G.allGrids().stream().filter(ignite ->
             !ignite.configuration().isClientMode()).map(ignite ->
-            new T3<>(ignite.name(), counter(partId, cacheName, ignite.name()),
-                ignite.affinity(cacheName).isPrimary(ignite.cluster().localNode(), partId))).collect(toList());
+                new T3<>(ignite.name(), counter(partId, cacheName, ignite.name()),
+                    ignite.affinity(cacheName).isPrimary(ignite.cluster().localNode(), partId))).collect(toList());
 
         for (T3<String, PartitionUpdateCounter, Boolean> cntr : cntrMap) {
             if (cntr.get2() == null)

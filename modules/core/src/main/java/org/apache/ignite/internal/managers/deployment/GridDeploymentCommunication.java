@@ -330,7 +330,6 @@ class GridDeploymentCommunication {
                     "(node does not exist): " + nodeId);
     }
 
-
     /**
      * @param rsrcName Resource to undeploy.
      * @param rmtNodes Nodes to send request to.
