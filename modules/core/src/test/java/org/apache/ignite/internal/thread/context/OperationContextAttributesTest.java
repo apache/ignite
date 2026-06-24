@@ -70,7 +70,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.messages.InetSocketAddressMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThread;
@@ -933,95 +932,69 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
         OperationContextAttribute.newInstance(1000);
 
         // Distributed attribute 1.
-        OperationContextAttribute<InetSocketAddressMessage> dAttr1 = DistributedOperationContextManager.instance()
+        OperationContextAttribute<InetSocketAddressMessage> dAttr0 = DistributedOperationContextManager.instance()
             .createDistributedAttribute(attrId1, dfltDistrAttr1Val);
 
         // Local attribute 2.
         OperationContextAttribute.newInstance("locaAttr2");
 
         // Distributed attribute 2.
-        OperationContextAttribute<GridCacheVersion> dAttr2 = DistributedOperationContextManager.instance()
+        OperationContextAttribute<GridCacheVersion> dAttr1 = DistributedOperationContextManager.instance()
             .createDistributedAttribute(attrId2, dfltDistrAttr2Val);
 
         startGrids(2);
         startClientGrid(2);
 
-        InetSocketAddressMessage valToSend1 = new InetSocketAddressMessage(dfltDistrAttr1Val.address(), 443);
-        GridCacheVersion valToSend2 = new GridCacheVersion(2, 2, 2);
+        InetSocketAddressMessage valToSend0 = new InetSocketAddressMessage(dfltDistrAttr1Val.address(), 443);
+        GridCacheVersion valToSend1 = new GridCacheVersion(2, 2, 2);
 
-        // From the coordinator to a server.
-        // One value.
-        checkOperationContextCommunicationTransmission(grid(0), grid(1), dAttr1, valToSend1, (v0, v1) ->
-            v0.port() == v1.port() && v0.address().equals(v1.address()));
-        // A couple of values.
-        checkOperationContextCommunicationTransmission(grid(0), grid(1), dAttr1, valToSend1, (v00, v01) ->
-                v00.port() == v01.port() && v00.address().equals(v01.address()),
-            dAttr2, valToSend2, GridCacheVersion::equals);
+        // Coordinator -> Server, Coordinator -> Client, Server -> Client, Client -> Server, etc.
+        for (int fromIdx = 0; fromIdx < 3; ++fromIdx) {
+            for (int toIdx = 0; toIdx < 3; ++toIdx) {
+                if (fromIdx == toIdx)
+                    continue;
 
-        // From a server to the coordinator.
-        // One value.
-        checkOperationContextCommunicationTransmission(grid(1), grid(0), dAttr1, valToSend1, (v0, v1) ->
-            v0.port() == v1.port() && v0.address().equals(v1.address()));
-        // A couple of values.
-        checkOperationContextCommunicationTransmission(grid(1), grid(0), dAttr1, valToSend1, (v00, v01) ->
-                v00.port() == v01.port() && v00.address().equals(v01.address()),
-            dAttr2, valToSend2, GridCacheVersion::equals);
+                // One value.
+                try (Scope ignored = OperationContext.set(dAttr0, valToSend0)) {
+                    checkOperationContextCommunicationTransmission(fromIdx, toIdx, dAttr0, null);
+                }
 
-        // From a client to a server.
-        // One value.
-        checkOperationContextCommunicationTransmission(grid(2), grid(1), dAttr1, valToSend1, (v0, v1) ->
-            v0.port() == v1.port() && v0.address().equals(v1.address()));
-        // A couple of values.
-        checkOperationContextCommunicationTransmission(grid(2), grid(1), dAttr1, valToSend1, (v00, v01) ->
-                v00.port() == v01.port() && v00.address().equals(v01.address()),
-            dAttr2, valToSend2, GridCacheVersion::equals);
-
-        // From a server to a client.
-        // One value.
-        checkOperationContextCommunicationTransmission(grid(1), grid(2), dAttr1, valToSend1, (v0, v1) ->
-            v0.port() == v1.port() && v0.address().equals(v1.address()));
-        // A couple of values.
-        checkOperationContextCommunicationTransmission(grid(1), grid(2), dAttr1, valToSend1, (v00, v01) ->
-                v00.port() == v01.port() && v00.address().equals(v01.address()),
-            dAttr2, valToSend2, GridCacheVersion::equals);
+                // A couple of values.
+                try (Scope ignored = OperationContext.set(dAttr0, valToSend0, dAttr1, valToSend1)) {
+                    checkOperationContextCommunicationTransmission(fromIdx, toIdx, dAttr0, dAttr1);
+                }
+            }
+        }
     }
 
     /** */
-    private <T extends Message> void checkOperationContextCommunicationTransmission(
-        Ignite from,
-        Ignite to,
-        OperationContextAttribute<T> attr0,
-        T valToSend0,
-        BiFunction<T, T, Boolean> valComparator
+    private void checkOperationContextCommunicationTransmission(
+        int gridFromIdx,
+        int gridToIdx,
+        OperationContextAttribute<InetSocketAddressMessage> attr0,
+        @Nullable OperationContextAttribute<GridCacheVersion> attr1
     ) throws InterruptedException {
-        checkOperationContextCommunicationTransmission(from, to, attr0, valToSend0, valComparator, null, null, null);
-    }
-
-    /** */
-    private <T0 extends Message, T1 extends Message> void checkOperationContextCommunicationTransmission(
-        Ignite from,
-        Ignite to,
-        OperationContextAttribute<T0> attr0,
-        T0 valToSend0,
-        BiFunction<T0, T0, Boolean> valCmp0,
-        @Nullable OperationContextAttribute<T1> attr1,
-        @Nullable T1 valToSend1,
-        @Nullable BiFunction<T1, T1, Boolean> valCmp1
-    ) throws InterruptedException {
-        assert (attr1 == null && valToSend1 == null && valCmp1 == null) || (attr1 != null && valToSend1 != null && valCmp1 != null);
+        Ignite from = grid(gridFromIdx);
+        Ignite to = grid(gridToIdx);
 
         CountDownLatch rcvLatch = new CountDownLatch(2 + (attr1 != null ? 2 : 0));
+
+        InetSocketAddressMessage expVal0 = OperationContext.get(attr0);
+        GridCacheVersion expVal1 = attr1 == null ? null : OperationContext.get(attr1);
 
         GridMessageListener lsnr = new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 if (msg instanceof IgniteIoTestMessage) {
-                    T0 receivedVal0 = OperationContext.get(attr0);
-                    T1 receivedVal1 = attr1 == null ? null : OperationContext.get(attr1);
+                    InetSocketAddressMessage receivedVal0 = OperationContext.get(attr0);
+                    GridCacheVersion receivedVal1 = attr1 == null ? null : OperationContext.get(attr1);
 
-                    if (valCmp0.apply(valToSend0, receivedVal0))
+                    assertNotNull(receivedVal0);
+                    assertTrue(attr1 == null || receivedVal1 != null);
+
+                    if (receivedVal0.port() == expVal0.port() && receivedVal0.address().equals(expVal0.address()))
                         rcvLatch.countDown();
 
-                    if (attr1 != null && valCmp1.apply(valToSend1, receivedVal1))
+                    if (attr1 != null && expVal1.equals(receivedVal1))
                         rcvLatch.countDown();
                 }
             }
@@ -1029,22 +1002,15 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
 
         ((IgniteEx)to).context().io().addMessageListener(GridTopic.TOPIC_IO_TEST, lsnr);
 
-        if (attr1 == null) {
-            try (Scope ignored = OperationContext.set(attr0, valToSend0)) {
-                ((IgniteEx)from).context().io().sendIoTest(node(to), null, false);
-                ((IgniteEx)from).context().io().sendIoTest(node(to), null, true);
-            }
-        }
-        else {
-            try (Scope ignored = OperationContext.set(attr0, valToSend0, attr1, valToSend1)) {
-                ((IgniteEx)from).context().io().sendIoTest(node(to), null, false);
-                ((IgniteEx)from).context().io().sendIoTest(node(to), null, true);
-            }
-        }
+        try {
+            ((IgniteEx)from).context().io().sendIoTest(node(to), null, false);
+            ((IgniteEx)from).context().io().sendIoTest(node(to), null, true);
 
-        assertTrue(rcvLatch.await(getTestTimeout(), MILLISECONDS));
-
-        assertTrue(((IgniteEx)to).context().io().removeMessageListener(GridTopic.TOPIC_IO_TEST, lsnr));
+            assertTrue(rcvLatch.await(getTestTimeout(), MILLISECONDS));
+        }
+        finally {
+            assertTrue(((IgniteEx)to).context().io().removeMessageListener(GridTopic.TOPIC_IO_TEST, lsnr));
+        }
     }
 
     /** @return a {@link ClusterNode} with {@link ClusterNode#isLocal()} == {@code false} to avoid some asserts/checks. */
