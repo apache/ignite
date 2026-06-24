@@ -17,22 +17,21 @@
 
 package org.apache.ignite.internal.processors.rest.handlers.task;
 
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Task result response.
  */
-public class GridTaskResultResponse implements MarshallableMessage {
+public class GridTaskResultResponse implements Message {
     /** Result. */
     public @Nullable Object res;
 
-    /** Serialized result. */
+    /** */
     @Order(0)
+    @Marshalled("res")
     @Nullable byte[] resBytes;
 
     /** Finished flag. */
@@ -96,19 +95,4 @@ public class GridTaskResultResponse implements MarshallableMessage {
         this.err = err;
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (res != null)
-            resBytes = U.marshal(marsh, res);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (resBytes != null) {
-            res = U.unmarshal(marsh, resBytes, clsLdr);
-
-            // It is not required anymore.
-            resBytes = null;
-        }
-    }
 }

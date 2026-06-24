@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -34,7 +35,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.INDEX;
@@ -44,7 +45,7 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
 /**
  * Query request.
  */
-public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCacheDeployable, MarshallableMessage {
+public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCacheDeployable, Message {
     /** */
     private static final int FLAG_DATA_PAGE_SCAN_DFLT = 0b00;
 
@@ -75,10 +76,11 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     String clause;
 
     /** */
-    private IndexQueryDesc idxQryDesc;
+    IndexQueryDesc idxQryDesc;
 
     /** */
     @Order(4)
+    @Marshalled("idxQryDesc")
     byte[] idxQryDescBytes;
 
     /** */
@@ -90,31 +92,35 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     String clsName;
 
     /** */
-    private IgniteBiPredicate<Object, Object> keyValFilter;
+    IgniteBiPredicate<Object, Object> keyValFilter;
 
     /** */
     @Order(7)
+    @Marshalled("keyValFilter")
     byte[] keyValFilterBytes;
 
     /** */
-    private IgniteReducer<Object, Object> rdc;
+    IgniteReducer<Object, Object> rdc;
 
     /** */
     @Order(8)
+    @Marshalled("rdc")
     byte[] rdcBytes;
 
     /** */
-    private IgniteClosure<?, ?> trans;
+    IgniteClosure<?, ?> trans;
 
     /** */
     @Order(9)
+    @Marshalled("trans")
     byte[] transBytes;
 
     /** */
-    private Object[] args;
+    Object[] args;
 
     /** */
     @Order(10)
+    @Marshalled("args")
     byte[] argsBytes;
 
     /** */
@@ -610,42 +616,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      */
     @Override public int partition() {
         return part;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (keyValFilter != null && keyValFilterBytes == null)
-            keyValFilterBytes = U.marshal(marsh, keyValFilter);
-
-        if (rdc != null && rdcBytes == null)
-            rdcBytes = U.marshal(marsh, rdc);
-
-        if (trans != null && transBytes == null)
-            transBytes = U.marshal(marsh, trans);
-
-        if (!F.isEmpty(args) && argsBytes == null)
-            argsBytes = U.marshal(marsh, args);
-
-        if (idxQryDesc != null && idxQryDescBytes == null)
-            idxQryDescBytes = U.marshal(marsh, idxQryDesc);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (keyValFilterBytes != null && keyValFilter == null)
-            keyValFilter = U.unmarshal(marsh, keyValFilterBytes, clsLdr);
-
-        if (rdcBytes != null && rdc == null)
-            rdc = U.unmarshal(marsh, rdcBytes, clsLdr);
-
-        if (transBytes != null && trans == null)
-            trans = U.unmarshal(marsh, transBytes, clsLdr);
-
-        if (argsBytes != null && args == null)
-            args = U.unmarshal(marsh, argsBytes, clsLdr);
-
-        if (idxQryDescBytes != null && idxQryDesc == null)
-            idxQryDesc = U.unmarshal(marsh, idxQryDescBytes, clsLdr);
     }
 
     /** {@inheritDoc} */
