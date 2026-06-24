@@ -66,7 +66,7 @@ public abstract class MessageGenerator {
     /** Collection of message-specific imports. */
     final java.util.Set<String> imports = new TreeSet<>();
 
-    /** Stored type of the message being processed. */
+    /** Message type being generated for. */
     TypeElement type;
 
     /** */
@@ -253,7 +253,6 @@ public abstract class MessageGenerator {
         while ((line = br.readLine()) != null)
             sb.append(line).append(NL);
 
-        // Delete last line separator.
         sb.deleteCharAt(sb.length() - 1);
 
         return sb.toString();

@@ -84,15 +84,15 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     MessageMarshallerGenerator(ProcessingEnvironment env) {
         super(env);
 
-        marshallableMsgType = mirror(env, MARSHALLABLE_MESSAGE_INTERFACE);
-        cacheMarshallableMsgType = mirror(env, "org.apache.ignite.plugin.extensions.communication.CacheMarshallableMessage");
-        messageMirror = mirror(env, MESSAGE_INTERFACE);
-        cacheObjectMirror = mirror(env, "org.apache.ignite.internal.processors.cache.CacheObject");
-        nonMarshallableMirror = mirror(env, "org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage");
-        cacheIdAwareMirror = mirror(env, "org.apache.ignite.plugin.extensions.communication.CacheIdAware");
-        cacheGroupIdMsgMirror = mirror(env, "org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage");
-        mapMirror = mirror(env, "java.util.Map");
-        collectionMirror = mirror(env, "java.util.Collection");
+        marshallableMsgType = type(MARSHALLABLE_MESSAGE_INTERFACE);
+        cacheMarshallableMsgType = type("org.apache.ignite.plugin.extensions.communication.CacheMarshallableMessage");
+        messageMirror = type(MESSAGE_INTERFACE);
+        cacheObjectMirror = type("org.apache.ignite.internal.processors.cache.CacheObject");
+        nonMarshallableMirror = type("org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage");
+        cacheIdAwareMirror = type("org.apache.ignite.plugin.extensions.communication.CacheIdAware");
+        cacheGroupIdMsgMirror = type("org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage");
+        mapMirror = type("java.util.Map");
+        collectionMirror = type("java.util.Collection");
     }
 
     /** {@inheritDoc} */
@@ -107,8 +107,8 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
     /** {@inheritDoc} */
     @Override void generateBody(List<VariableElement> fields) throws Exception {
-        marshallable = marshallableMsgType != null && env.getTypeUtils().isAssignable(type.asType(), marshallableMsgType);
-        cacheMarshallable = cacheMarshallableMsgType != null && env.getTypeUtils().isAssignable(type.asType(), cacheMarshallableMsgType);
+        marshallable = marshallableMsgType != null && assignableFrom(type.asType(), marshallableMsgType);
+        cacheMarshallable = cacheMarshallableMsgType != null && assignableFrom(type.asType(), cacheMarshallableMsgType);
         
         indent = 1;
 
@@ -570,12 +570,6 @@ public class MessageMarshallerGenerator extends MessageGenerator {
             body.add(EMPTY);
 
         body.addAll(block);
-    }
-
-    /** Returns the type mirror for {@code qualifiedName}, or {@code null} if the type is not on the compilation classpath. */
-    private static TypeMirror mirror(ProcessingEnvironment env, String qualifiedName) {
-        TypeElement elem = env.getElementUtils().getTypeElement(qualifiedName);
-        return elem != null ? elem.asType() : null;
     }
 
     /** */

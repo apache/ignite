@@ -90,7 +90,12 @@ public class MessageSerializerGenerator extends MessageGenerator {
     /** {@inheritDoc} */
     @Override String buildClassCode(String serClsName) throws IOException {
         try (Writer writer = new StringWriter()) {
-            writeSerializerHeader(writer, env.getElementUtils().getPackageOf(type).toString(), serClsName);
+            imports.add(type.toString());
+            imports.add("org.apache.ignite.plugin.extensions.communication.MessageSerializer");
+            imports.add("org.apache.ignite.plugin.extensions.communication.MessageWriter");
+            imports.add("org.apache.ignite.plugin.extensions.communication.MessageReader");
+
+            writeClassHeader(writer, "MessageSerializer", serClsName);
             
             writer.write(" {" + NL);
 
@@ -98,13 +103,11 @@ public class MessageSerializerGenerator extends MessageGenerator {
 
             writeConstructor(writer, serClsName);
 
-            // Write #writeTo method.
             for (String w: write)
                 writer.write(w + NL);
 
             writer.write(TAB + "}" + NL + NL);
 
-            // Write #readFrom method.
             for (String r: read)
                 writer.write(r + NL);
 
@@ -261,11 +264,7 @@ public class MessageSerializerGenerator extends MessageGenerator {
         indent--;
     }
 
-    /**
-     * Discover access write methods, like {@code writeInt}.
-     *
-     * @param field Field to generate write code.
-     */
+    /** */
     private void returnFalseIfWriteFailed(VariableElement field) throws Exception {
         String getExpr = field.getSimpleName().toString();
 
@@ -410,13 +409,7 @@ public class MessageSerializerGenerator extends MessageGenerator {
         return new String(typeNameChars);
     }
 
-    /**
-     * Generate code of writing header.
-     * <pre>
-     * if (!writer.writeHeader(msg.directType()))
-     *     return false;
-     * </pre>
-     */
+    /** */
     private void returnFalseIfWriteFailed(Collection<String> code, String accessor, @Nullable String... args) {
         String argsStr = String.join(", ", args);
 
@@ -429,9 +422,7 @@ public class MessageSerializerGenerator extends MessageGenerator {
         indent--;
     }
 
-    /**
-     * Generate code of writing single field:
-     */
+    /** */
     private void returnFalseIfWriteFailed(Collection<String> code, VariableElement field, String accessor, @Nullable String... args) {
         String argsStr = String.join(", ", args);
 
@@ -449,9 +440,7 @@ public class MessageSerializerGenerator extends MessageGenerator {
         indent--;
     }
 
-    /**
-     * Generate code of writing single enum field mapped with EnumMapper:
-     */
+    /** */
     private void returnFalseIfEnumWriteFailed(
         Collection<String> code,
         VariableElement field,
@@ -473,11 +462,7 @@ public class MessageSerializerGenerator extends MessageGenerator {
         indent--;
     }
 
-    /**
-     * Discover access read methods, like {@code readInt}.
-     *
-     * @param field Field.
-     */
+    /** */
     private void returnFalseIfReadFailed(VariableElement field) throws Exception {
         TypeMirror type = field.asType();
 
@@ -755,12 +740,7 @@ public class MessageSerializerGenerator extends MessageGenerator {
         }
     }
 
-    /**
-     * Generate code of reading single field.
-     *
-     * @param field Field.
-     * @param mtd Method name.
-     */
+    /** */
     private void returnFalseIfReadFailed(VariableElement field, String mtd, String... args) {
         String argsStr = String.join(", ", args);
 
@@ -783,11 +763,7 @@ public class MessageSerializerGenerator extends MessageGenerator {
         indent--;
     }
 
-    /**
-     * Generate code of reading single field:
-     *
-     * @param mapperDecodeCallStmnt Method name.
-     */
+    /** */
     private void returnFalseIfEnumReadFailed(VariableElement field, String mapperDecodeCallStmnt, String enumValuesFieldName) {
         String readOp;
 
@@ -828,11 +804,7 @@ public class MessageSerializerGenerator extends MessageGenerator {
         code.add(indentedLine("return true;"));
     }
 
-    /**
-     * Creates line from given arguments.
-     *
-     * @return Line.
-     */
+    /** */
     private String line(String format, Object... args) {
         SB sb = new SB();
 
@@ -859,16 +831,6 @@ public class MessageSerializerGenerator extends MessageGenerator {
         indent = 0;
     }
 
-    /** Write header of serializer class: license, imports, class declaration. */
-    private void writeSerializerHeader(Writer writer, String pkgName, String serClsName) throws IOException {
-        imports.add(type.toString());
-        imports.add("org.apache.ignite.plugin.extensions.communication.MessageSerializer");
-        imports.add("org.apache.ignite.plugin.extensions.communication.MessageWriter");
-        imports.add("org.apache.ignite.plugin.extensions.communication.MessageReader");
-
-        writeClassHeader(writer, "MessageSerializer", serClsName);
-    }
-
     /** */
     private boolean sameType(TypeMirror type, String typeStr) {
         return env.getTypeUtils().isSameType(type, type(typeStr));
@@ -886,7 +848,7 @@ public class MessageSerializerGenerator extends MessageGenerator {
         return element != null && element.getKind() == ElementKind.ENUM;
     }
 
-    /** Converts string "BYTE" to string "Byte", with first capital latter. */
+    /** Converts e.g. {@code "BYTE"} to {@code "Byte"}: uppercases first char, lowercases the rest. */
     private String capitalizeOnlyFirst(String input) {
         return input.substring(0, 1).toUpperCase() + input.substring(1).toLowerCase();
     }
