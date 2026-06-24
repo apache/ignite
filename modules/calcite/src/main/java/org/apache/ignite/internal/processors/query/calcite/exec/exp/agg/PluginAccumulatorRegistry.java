@@ -25,53 +25,48 @@ import org.apache.ignite.plugin.Extension;
 import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.Nullable;
 
-/** Registry for {@link AccumulatorFactory}s. */
-public class PluginAccumulatorFactoryRegistry {
+/** Registry for {@link AccumulatorSupplierFactory}s. */
+public class PluginAccumulatorRegistry {
     /** Factory by aggregate function name. */
-    private final Map<String, AccumulatorFactory<?>> factoryByAggFunName;
+    private final Map<String, AccumulatorSupplierFactory<?>> factoryByAggFunName;
 
     /** */
-    public PluginAccumulatorFactoryRegistry(GridKernalContext ctx) {
+    public PluginAccumulatorRegistry(GridKernalContext ctx) {
         factoryByAggFunName = factories(ctx);
     }
 
-    /** @return Plugin accumulator factory by aggregate function name or {@code null} if not found. */
-    public @Nullable <Row> AccumulatorFactory<Row> factory(String aggFunName) {
-        return (AccumulatorFactory<Row>) factoryByAggFunName.get(aggFunName);
+    /** @return Plugin accumulator supplier factory by aggregate function name or {@code null} if not found. */
+    public @Nullable <Row> AccumulatorSupplierFactory<Row> factory(String aggFunName) {
+        return (AccumulatorSupplierFactory<Row>) factoryByAggFunName.get(aggFunName);
     }
 
-    /** Extension for getting {@link AccumulatorFactory} from {@link PluginProvider}. */
+    /** Extension for getting {@link AccumulatorSupplierFactory} from {@link PluginProvider}. */
     @FunctionalInterface
-    public interface PluginAccumulatorFactoryExtension extends Extension {
-        /**
-         * @return Accumulator factories by aggregate function name. Name must be non-empty, unique, and not reserved.
-         */
-        Map<String, AccumulatorFactory<?>> factories();
+    public interface AccumulatorFactoryProvider extends Extension {
+        /** @return Factories by aggregate function name. Name must be non-empty, unique, and not reserved. */
+        Map<String, AccumulatorSupplierFactory<?>> factories();
     }
 
     /** */
-    private static Map<String, AccumulatorFactory<?>> factories(GridKernalContext ctx) {
-        PluginAccumulatorFactoryExtension[] extensions = ctx.plugins().extensions(
-            PluginAccumulatorFactoryExtension.class
+    private static Map<String, AccumulatorSupplierFactory<?>> factories(GridKernalContext ctx) {
+        AccumulatorFactoryProvider[] extensions = ctx.plugins().extensions(
+            AccumulatorFactoryProvider.class
         );
 
         if (F.isEmpty(extensions))
             return Map.of();
 
-        Map<String, AccumulatorFactory<?>> res = new HashMap<>();
+        Map<String, AccumulatorSupplierFactory<?>> res = new HashMap<>();
 
-        for (PluginAccumulatorFactoryExtension extension : extensions) {
-            for (Map.Entry<String, AccumulatorFactory<?>> e : extension.factories().entrySet()) {
+        for (AccumulatorFactoryProvider extension : extensions) {
+            for (Map.Entry<String, AccumulatorSupplierFactory<?>> e : extension.factories().entrySet()) {
                 String aggFunName = e.getKey();
 
                 if (aggFunName.isBlank())
                     throw new AssertionError("Invalid aggregate function name: " + aggFunName);
-                else if (Accumulators.BUILT_IN_AGGREGATE_NAMES.contains(aggFunName))
+                else if (Accumulators.isBuiltInAggregate(aggFunName))
                     throw new AssertionError("Aggregate function name is reserved: " + aggFunName);
-
-                AccumulatorFactory<?> prev = res.putIfAbsent(aggFunName, e.getValue());
-
-                if (prev != null)
+                else if (res.putIfAbsent(aggFunName, e.getValue()) != null)
                     throw new AssertionError("Duplicate aggregate function name: " + aggFunName);
             }
         }

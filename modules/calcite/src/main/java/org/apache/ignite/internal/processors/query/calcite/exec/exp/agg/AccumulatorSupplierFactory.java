@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.exp.agg;
 
+import java.util.function.Supplier;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 
-/** {@link Accumulator} factory. */
-@FunctionalInterface
-public interface AccumulatorFactory<Row> {
-    /** @return New accumulator. */
-    Accumulator<Row> create(AggregateCall call, ExecutionContext<Row> ctx);
+/** Factory that selects and creates an accumulator supplier for an aggregate call. */
+@FunctionalInterface public interface AccumulatorSupplierFactory<Row> {
+    /** @return Accumulator supplier. */
+    Supplier<Accumulator<Row>> create(AggregateCall call, ExecutionContext<Row> ctx);
 }

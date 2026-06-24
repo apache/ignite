@@ -82,7 +82,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecuto
 import org.apache.ignite.internal.processors.query.calcite.exec.TimeoutService;
 import org.apache.ignite.internal.processors.query.calcite.exec.TimeoutServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RexExecutorImpl;
-import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.PluginAccumulatorFactoryRegistry;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.PluginAccumulatorRegistry;
 import org.apache.ignite.internal.processors.query.calcite.exec.task.QueryBlockingTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.exec.task.StripedQueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintsConfig;
@@ -857,7 +857,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         FrameworkConfig customFrameworkCfg = ctx.plugins().createComponent(FrameworkConfig.class);
         customFrameworkCfg = customFrameworkCfg != null ? customFrameworkCfg : FRAMEWORK_CONFIG;
 
-        PluginAccumulatorFactoryRegistry registry = new PluginAccumulatorFactoryRegistry(ctx);
+        PluginAccumulatorRegistry registry = new PluginAccumulatorRegistry(ctx);
 
         return Frameworks.newConfigBuilder(customFrameworkCfg)
             .context(Contexts.chain(customFrameworkCfg.getContext(), Contexts.of(registry)))

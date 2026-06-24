@@ -37,7 +37,7 @@ import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumulator;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumulators.AbstractAccumulator;
-import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.PluginAccumulatorFactoryRegistry.PluginAccumulatorFactoryExtension;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.PluginAccumulatorRegistry.AccumulatorFactoryProvider;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
@@ -94,8 +94,8 @@ public class AddAggregatFunctionViaPluginProviderTest extends AbstractBasicInteg
         /** {@inheritDoc} */
         @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
             registry.registerExtension(
-                PluginAccumulatorFactoryExtension.class,
-                () -> Map.of(TEST_SUM_FUN_NAME, (call, ctx1) -> new TestSum<>(call, ctx1.rowHandler()))
+                AccumulatorFactoryProvider.class,
+                () -> Map.of(TEST_SUM_FUN_NAME, (call, ctx1) -> () -> new TestSum<>(call, ctx1.rowHandler()))
             );
         }
     }
