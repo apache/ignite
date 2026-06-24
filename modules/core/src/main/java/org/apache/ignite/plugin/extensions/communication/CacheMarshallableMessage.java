@@ -17,6 +17,6 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
-/** Unmarshalls when CacheObjects are already unmarshalled. */
+/** Marker for {@link MarshallableMessage} whose {@code finishUnmarshal} requires CacheObject fields to be deserialized first. */
 public interface CacheMarshallableMessage extends MarshallableMessage {
 }

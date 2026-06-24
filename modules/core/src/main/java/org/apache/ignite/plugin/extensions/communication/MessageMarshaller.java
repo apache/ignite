@@ -22,17 +22,17 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.jetbrains.annotations.Nullable;
 
-/** Marshalling logic for cache-object fields in a {@link Message}. */
+/** Handles {@code prepareMarshal}/{@code finishUnmarshal} for a {@link Message} type that requires custom serialization. */
 public interface MessageMarshaller<M extends Message> {
-    /** Marshals cache-object fields on the user thread. */
+    /** Pre-marshals the message on the user thread before sending. */
     public void prepareMarshal(M msg, GridKernalContext kctx, @Nullable GridCacheContext<?, ?> nested)
         throws IgniteCheckedException;
 
-    /** Unmarshals cache-object fields with full cache context and class loader. */
+    /** Post-unmarshals the message with full cache context and class loader. */
     public void finishUnmarshal(M msg, GridKernalContext kctx, @Nullable GridCacheContext<?, ?> nested, ClassLoader clsLdr)
         throws IgniteCheckedException;
 
-    /** Unmarshals message fields without a cache context. */
+    /** Post-unmarshals message fields that do not require a cache context. */
     public void finishUnmarshal(M msg, GridKernalContext kctx) throws IgniteCheckedException;
 
     /** Unmarshals only {@code @NioField}-annotated fields in the NIO/IO thread. No-op by default. */

@@ -17,6 +17,6 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
-/** */
+/** Marker interface: no {@link MessageMarshaller} is generated for implementing classes. */
 public interface NonMarshallableMessage extends Message {
 }
