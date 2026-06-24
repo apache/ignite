@@ -122,6 +122,8 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
 
         // Releases attribute IDs reserved during the test.
         OperationContextAttribute.ID_GEN.set(beforeTestReservedAttrIds);
+
+        DistributedOperationContextManager.instance().clear();
     }
 
     /** */

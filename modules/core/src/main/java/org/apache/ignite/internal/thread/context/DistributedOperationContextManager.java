@@ -145,4 +145,9 @@ public class DistributedOperationContextManager {
 
         return updater.apply();
     }
+
+    /** For testing purposes mostly. */
+    void clear() {
+        attrs.clear();
+    }
 }
