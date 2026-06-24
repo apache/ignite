@@ -48,7 +48,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
-import org.apache.ignite.plugin.extensions.communication.CacheMarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
@@ -60,7 +60,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
  * {@link #equals(Object)} method, as transaction entries should use referential
  * equality.
  */
-public class IgniteTxEntry implements GridPeerDeployAware, CacheMarshallableMessage, CacheIdAware {
+public class IgniteTxEntry implements GridPeerDeployAware, MarshallableMessage, CacheIdAware {
     /** */
     private static final long serialVersionUID = 0L;
 
