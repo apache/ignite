@@ -63,10 +63,10 @@ public class DistributedOperationContextManager {
      *
      * @see OperationContextAttribute#newInstance(Object)
      */
-    public <T extends Message> OperationContextAttribute<T> registerDistributedAttribute(byte id, OperationContextAttribute<T> attr) {
+    public <T extends Message> void registerDistributedAttribute(byte id, OperationContextAttribute<T> attr) {
         assert id >= 0 && id < MAX_DISTRIBUTED_ATTR_CNT : "Invalid distributed attributed id [id=" + id + ']';
 
-        return (OperationContextAttribute<T>)attrs.compute(id, (id0, attr0) -> {
+        attrs.compute(id, (id0, attr0) -> {
             if (attr0 != null)
                 throw new IgniteException("Duplicated distributed attribute id [id=" + id + ']');
 
