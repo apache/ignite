@@ -42,6 +42,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Assert;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
@@ -204,13 +205,22 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         fut4.get(3_000);
     }
 
+
     /** */
     @Test
-    public void testSetLength() {
-        SBLimitedLength sbLimitedLength = new SBLimitedLength(256);
-        SBLengthLimit sbLengthLimit = new SBLengthLimit();
-        sbLimitedLength.initLimit(sbLengthLimit);
-
+    public void testNPE() {
+        boolean success;
+        try {
+            SBLimitedLength sbLimitedLength = new SBLimitedLength(256);
+            sbLimitedLength.initLimit(new SBLengthLimit());
+            sbLimitedLength.a("a".repeat(7999));
+            sbLimitedLength.i(7000, "asd");
+            sbLimitedLength.a("a".repeat(10));
+            success = true;
+        } catch (NullPointerException ignored) {
+            success = false;
+        }
+        Assert.assertTrue(success);
     }
 
     /** */
