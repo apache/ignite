@@ -318,7 +318,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
             }
         }
     }
-    
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtPartitionsSingleMessage.class, this, super.toString());

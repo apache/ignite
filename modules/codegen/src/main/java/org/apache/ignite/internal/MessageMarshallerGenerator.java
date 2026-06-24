@@ -254,7 +254,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         appendFields(body, fields, mode);
 
         if (marshallable) {
-            if (mode == MarshalMode.FINISH_CACHE)
+            if (mode == MarshalMode.FINISH_CACHE && cacheMarshallable)
                 appendBlock(body, List.of(indentedLine("msg.finishUnmarshal(marshaller, clsLdr);")));
             else if (mode == MarshalMode.FINISH && !cacheMarshallable)
                 appendBlock(body, List.of(indentedLine("msg.finishUnmarshal(marshaller, U.resolveClassLoader(kctx.config()));")));
