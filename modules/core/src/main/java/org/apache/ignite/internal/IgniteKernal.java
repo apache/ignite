@@ -937,12 +937,12 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             );
 
             distrOperationContextMgr = new DistributedOperationContextManager() {
-                @Override public <T extends Message> OperationContextAttribute<T> createDistributedAttribute(byte id,
+                @Override public <T extends Message> OperationContextAttribute<T> registerDistributedAttribute(byte id,
                     @Nullable T initVal) {
                     if (gw.getState() != STARTING)
                         throw new IgniteException("Distributed operation context attributes is registered only at the starting.");
 
-                    return super.createDistributedAttribute(id, initVal);
+                    return super.registerDistributedAttribute(id, initVal);
                 }
             };
 

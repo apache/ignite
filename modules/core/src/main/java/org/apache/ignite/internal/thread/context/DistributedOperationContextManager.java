@@ -37,7 +37,7 @@ import org.jetbrains.annotations.Nullable;
  * {@link OperationContextAttribute} instance that is consistent across all cluster nodes.</p>
  *
  * <p>To enable propagation of an {@link OperationContextAttribute} value across cluster nodes, the
- * attribute must be created using the {@link #createDistributedAttribute(byte, Message)} method.
+ * attribute must be created using the {@link #registerDistributedAttribute(byte, Message)} method.
  *
  * <p> Note, that the maximum number of distributed attribute instances that can be created is currently limited to
  * {@link #MAX_DISTRIBUTED_ATTR_CNT} for implementation reasons.</p>
@@ -50,7 +50,7 @@ public class DistributedOperationContextManager {
     static final byte MAX_DISTRIBUTED_ATTR_CNT = Byte.SIZE;
 
     /** Registered distributed attributes by their cluster-wide id. */
-    private final Map<Byte, OperationContextAttribute<Message>> attrs = new ConcurrentSkipListMap<>();
+    private final Map<Byte, OperationContextAttribute<? extends Message>> attrs = new ConcurrentSkipListMap<>();
 
     /**
      * Creates a new {@link OperationContext} attribute with the specified distributed ID and initial value.
@@ -63,14 +63,14 @@ public class DistributedOperationContextManager {
      *
      * @see OperationContextAttribute#newInstance(Object)
      */
-    public <T extends Message> OperationContextAttribute<T> createDistributedAttribute(byte id, @Nullable T initVal) {
+    public <T extends Message> OperationContextAttribute<T> registerDistributedAttribute(byte id, OperationContextAttribute<T> attr) {
         assert id >= 0 && id < MAX_DISTRIBUTED_ATTR_CNT : "Invalid distributed attributed id [id=" + id + ']';
 
         return (OperationContextAttribute<T>)attrs.compute(id, (id0, attr0) -> {
             if (attr0 != null)
                 throw new IgniteException("Duplicated distributed attribute id [id=" + id + ']');
 
-            return OperationContextAttribute.newInstance(initVal);
+            return attr;
         });
     }
 
@@ -84,7 +84,7 @@ public class DistributedOperationContextManager {
         DistributedOperationContextMessage res = null;
         List<Message> vals = null;
 
-        for (Map.Entry<Byte, OperationContextAttribute<Message>> e : attrs.entrySet()) {
+        for (Map.Entry<Byte, OperationContextAttribute<? extends Message>> e : attrs.entrySet()) {
             OperationContextAttribute<? extends Message> attr = e.getValue();
 
             Message curVal = OperationContext.get(attr);
@@ -128,7 +128,7 @@ public class DistributedOperationContextManager {
             while ((msg.idBitmap & (1 << maskIdx)) == 0)
                 ++maskIdx;
 
-            OperationContextAttribute<Message> attr = attrs.get(maskIdx++);
+            OperationContextAttribute<Message> attr = (OperationContextAttribute<Message>)attrs.get(maskIdx++);
 
             assert attr != null;
 

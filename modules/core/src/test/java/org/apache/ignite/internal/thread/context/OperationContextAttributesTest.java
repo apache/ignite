@@ -860,13 +860,13 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
             @Override public void start(PluginContext ctx) {
                 // Distributed attribute 1.
                 OperationContextAttribute<InetSocketAddressMessage> a1 = ((IgniteEx)ctx.grid()).context()
-                    .distributedOperationContextManager().createDistributedAttribute(attrId1, dfltDistAttr1Val);
+                    .distributedOperationContextManager().registerDistributedAttribute(attrId1, dfltDistAttr1Val);
 
                 dAttr1.set(a1);
 
                 // Distributed attribute 2.
                 OperationContextAttribute<GridCacheVersion> a2 = ((IgniteEx)ctx.grid()).context()
-                    .distributedOperationContextManager().createDistributedAttribute(attrId2, dfltDistrAttr2Val);
+                    .distributedOperationContextManager().registerDistributedAttribute(attrId2, dfltDistrAttr2Val);
 
                 dAttr2.set(a2);
             }
@@ -880,7 +880,7 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
 
         assertThrows(
             null,
-            () -> grid(0).context().distributedOperationContextManager().createDistributedAttribute((byte)1, null),
+            () -> grid(0).context().distributedOperationContextManager().registerDistributedAttribute((byte)1, null),
             IgniteException.class,
             "Distributed operation context attributes is registered only at the starting"
         );
