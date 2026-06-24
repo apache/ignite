@@ -24,10 +24,9 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.calcite.avatica.util.ByteString;
@@ -39,7 +38,6 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
-import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.PluginAccumulatorsExtension.PluginAccumulatorFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
@@ -58,7 +56,10 @@ import static org.apache.calcite.sql.type.SqlTypeName.VARCHAR;
  */
 public class Accumulators {
     /** */
-    private static final Map<String, PluginAccumulatorFactory<?>> PLUGIN_FACTORY_BY_NAME = new ConcurrentHashMap<>();
+    static final Set<String> BUILT_IN_AGGREGATE_NAMES = Set.of(
+        "COUNT", "AVG", "SUM", "$SUM0", "MIN", "EVERY", "MAX", "SOME", "SINGLE_VALUE", "LITERAL_AGG",
+        "ANY_VALUE", "LISTAGG", "ARRAY_AGG", "ARRAY_CONCAT_AGG", "BIT_AND", "BIT_OR", "BIT_XOR"
+    );
 
     /** */
     public static <Row> Supplier<Accumulator<Row>> accumulatorFactory(AggregateCall call, ExecutionContext<Row> ctx) {
@@ -79,6 +80,7 @@ public class Accumulators {
 
         String aggFunName = call.getAggregation().getName();
 
+        // When adding a new one, remember to add it to BUILT_IN_AGGREGATE_NAMES.
         return switch (aggFunName) {
             case "COUNT" -> () -> new LongCount<>(call, hnd);
             case "AVG" -> avgFactory(call, hnd);
@@ -92,7 +94,7 @@ public class Accumulators {
             case "LISTAGG", "ARRAY_AGG", "ARRAY_CONCAT_AGG" -> listAggregateSupplier(call, ctx);
             case "BIT_AND", "BIT_OR", "BIT_XOR" -> bitWiseFactory(call, hnd);
             default -> {
-                PluginAccumulatorFactory<Row> factory = (PluginAccumulatorFactory<Row>) PLUGIN_FACTORY_BY_NAME.get(aggFunName);
+                AccumulatorFactory<Row> factory = ctx.unwrap(PluginAccumulatorFactoryRegistry.class).factory(aggFunName);
 
                 if (factory == null)
                     throw new AssertionError("Accumulator factory not found for: " + aggFunName);
@@ -1506,21 +1508,6 @@ public class Accumulators {
         /** {@inheritDoc} */
         @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
             return acc.returnType(typeFactory);
-        }
-    }
-
-    /** */
-    public static void addPluginAccumulatorFactories(Map<String, PluginAccumulatorFactory<?>> factoryByAggFunName) {
-        for (Map.Entry<String, PluginAccumulatorFactory<?>> e : factoryByAggFunName.entrySet()) {
-            String aggFunName = e.getKey().trim().toUpperCase(Locale.ROOT);
-
-            if (aggFunName.isBlank())
-                throw new AssertionError("Invalid aggregate function name: " + aggFunName);
-
-            PluginAccumulatorFactory<?> prev = PLUGIN_FACTORY_BY_NAME.putIfAbsent(aggFunName, e.getValue());
-
-//            if (prev != null)
-//                throw new AssertionError("Duplicate aggregate function name: " + aggFunName);
         }
     }
 }

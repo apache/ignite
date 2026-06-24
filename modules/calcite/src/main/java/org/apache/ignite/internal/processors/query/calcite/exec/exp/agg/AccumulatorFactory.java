@@ -17,22 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.exp.agg;
 
-import java.util.Map;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
-import org.apache.ignite.plugin.Extension;
-import org.apache.ignite.plugin.PluginProvider;
 
-/** Class for extending {@link Accumulators} via {@link PluginProvider plugins}. */
+/** {@link Accumulator} factory. */
 @FunctionalInterface
-public interface PluginAccumulatorsExtension extends Extension {
-    /** @return Accumulator factories by aggregate function name. Name must be non-empty and unique. */
-    Map<String, PluginAccumulatorFactory<?>> accumulatorFactories();
-
-    /** */
-    @FunctionalInterface
-    interface PluginAccumulatorFactory<Row> {
-        /** */
-        Accumulator<Row> create(AggregateCall call, ExecutionContext<Row> ctx);
-    }
+public interface AccumulatorFactory<Row> {
+    /** @return New accumulator. */
+    Accumulator<Row> create(AggregateCall call, ExecutionContext<Row> ctx);
 }
