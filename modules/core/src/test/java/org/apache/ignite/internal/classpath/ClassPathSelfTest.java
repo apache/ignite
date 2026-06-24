@@ -16,7 +16,6 @@
  */
 package org.apache.ignite.internal.classpath;
 
-
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -41,7 +40,6 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /** */
 public class ClassPathSelfTest extends GridCommonAbstractTest {
     // New node moves LOST to READY.
-    // Check corrupted descriptor don't break node.
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -122,7 +120,6 @@ public class ClassPathSelfTest extends GridCommonAbstractTest {
             READY
         );
 
-
         assertTrue(ft.classPathRoot(stale.name()).mkdirs());
         assertTrue(ft.classPathRoot(unknown.name()).mkdirs());
 
@@ -138,7 +135,6 @@ public class ClassPathSelfTest extends GridCommonAbstractTest {
         LogListener rmvUnknownLsnr = LogListener.matches("Unknown local data. Removing " +
                 "[icp=IgniteClassPath [id=" + unknown.id() + ", name=" + unknown.name() + ", state=" + unknown.state() + "]]")
             .times(1).build();
-
 
         lsnrLog.registerAllListeners(rmvStaleLsnr, rmvUnknownLsnr);
 

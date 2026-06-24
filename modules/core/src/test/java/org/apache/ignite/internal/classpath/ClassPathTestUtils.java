@@ -94,14 +94,16 @@ public class ClassPathTestUtils {
     }
 
     /** */
-    public static void checkFilesExists(IgniteEx node, String cpName, Set<Path> cpFiles) throws IOException {
+    public static void checkFilesExists(IgniteEx node, String cpName, Set<Path> cpFiles) throws IOException, IgniteCheckedException {
         NodeFileTree ft = node.context().pdsFolderResolver().fileTree();
+        IgniteClassPath icp = node.context().distributedMetastorage().read(metastorageKey(cpName));
 
         Set<Path> nodeCpFiles = Files.list(ft.classPathRoot(cpName).toPath()).collect(Collectors.toSet());
 
         Set<String> nodeCpFilesNames = fileNames(nodeCpFiles);
 
         nodeCpFilesNames.remove(NodeFileTree.ICP_DESCRIPTOR_NAME);
+        nodeCpFilesNames.remove(ClassPathProcessor.guardFile(ft.classPathRoot(cpName), icp.id()).getName());
 
         assertEquals(
             "Files must be deployed on each node",
@@ -130,7 +132,6 @@ public class ClassPathTestUtils {
             }
         }, 10_000));
     }
-
 
     /** */
     static ClassPathFilesTransmissionHandler transmissionHandler(IgniteEx grid1) {

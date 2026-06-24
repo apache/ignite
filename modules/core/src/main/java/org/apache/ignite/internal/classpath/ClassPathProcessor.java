@@ -135,7 +135,8 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
 
         if (!F.isEmpty(staleRoots)) {
             for (File cpRoot : staleRoots)
-                removeClassPathLocally(cpRoot);
+                if (!U.delete(cpRoot))
+                    throw new IgniteException("Cant delete stale ClassPath root: " + cpRoot);
         }
 
         ctx.distributedMetastorage().listen(key -> key.startsWith(METASTORE_PREFIX), new ClassPathChangeListener(ctx));
@@ -147,7 +148,7 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
 
             // Partially donwloaded or locally unknown ClassPath.
             if (loc == null) {
-                addClassPathTask(icp, CleanupTask.localCleanup(ctx, icp.id()));
+                addClassPathTask(icp, CleanupTask.localCleanup(ctx, icp));
 
                 if (icp.state() == READY)
                     addClassPathTask(icp, new DownloadTask(ctx, icp.id()));
@@ -187,16 +188,18 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
 
         IgniteClassPath icp = new IgniteClassPath(UUID.randomUUID(), Set.of(ctx.localNodeId()), name, files, lengths, NEW);
 
-        File root = ctx.pdsFolderResolver().fileTree().classPathRoot(name);
-
-        createRootAndCheckIsEmpty(root);
+        createRootAndCheckIsEmpty(icp);
 
         Boolean metastorageWritten = casToMetastorageAsync(null, icp).get();
 
-        if (metastorageWritten != null && !metastorageWritten)
-            throw new IgniteException("Fail to register ClassPath. Same ClassPath exists, already?");
+        if (metastorageWritten != null && !metastorageWritten) {
+            removeClassPathLocally(icp, true);
 
-        log.info("New IgniteClasspath created [root = " + root + ", icp=" + icp + ']');
+            throw new IgniteException("Fail to register ClassPath. Same ClassPath exists, already?");
+        }
+
+        log.info("New IgniteClasspath created " +
+            "[root = " + ctx.pdsFolderResolver().fileTree().classPathRoot(icp.name()) + ", icp=" + icp + ']');
 
         return icp.id();
     }
@@ -248,7 +251,7 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
                 "[name=" + icp.name() + ", id=" + icpId + ", file=" + name + ']', e);
 
             // Cleaning up synchronously.
-            CleanupTask.clusterWideCleanup(ctx, icpId).start();
+            CleanupTask.clusterWideCleanup(ctx, icp).start();
 
             throw new IgniteException(e);
         }
@@ -300,7 +303,7 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
                 "[name=" + icp.name() + ", id=" + icpId + ']', e);
 
             // Cleaning up synchronously.
-            CleanupTask.clusterWideCleanup(ctx, icpId).start();
+            CleanupTask.clusterWideCleanup(ctx, icp).start();
 
             throw new IgniteException(e);
         }
@@ -367,7 +370,7 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
         try {
             ctx.pools().getSystemExecutorService().submit(() -> {
                 if (ctx.isStopping()) {
-                    t.result().onDone(new IgniteException("Not stopping"));
+                    t.result().onDone(new IgniteException("Node stopping"));
 
                     return;
                 }
@@ -542,14 +545,6 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
             throw new IllegalArgumentException("Unexpected file offset [icp=" + icp.name() + ", file=" + name + ']');
     }
 
-    /** */
-    static void createRootAndCheckIsEmpty(File root) {
-        if (!root.exists())
-            NodeFileTree.mkdir(root, "Ignite Class Path root");
-        else if (!F.isEmpty(root.listFiles()))
-            throw new IgniteException("ClassPath root exists and not empty: " + root);
-    }
-
     /**
      * Iterates all existing {@link IgniteClassPath} in metastorage.
      * @param action Action to invoke for each {@link IgniteClassPath} instance.
@@ -606,7 +601,32 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
     }
 
     /** */
-    void removeClassPathLocally(File cpRoot) {
+    synchronized void createRootAndCheckIsEmpty(IgniteClassPath icp) {
+        File cpRoot = ctx.pdsFolderResolver().fileTree().classPathRoot(icp.name());
+
+        if (!cpRoot.exists())
+            NodeFileTree.mkdir(cpRoot, "Ignite Class Path root");
+        else if (!F.isEmpty(cpRoot.listFiles()))
+            throw new IgniteException("ClassPath root exists and not empty: " + cpRoot);
+
+        try {
+            guardFile(cpRoot, icp.id()).createNewFile();
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /** */
+    synchronized void removeClassPathLocally(IgniteClassPath icp, boolean force) {
+        File cpRoot = ctx.pdsFolderResolver().fileTree().classPathRoot(icp.name());
+
+        if (!guardFile(cpRoot, icp.id()).exists() && !force) {
+            log.warning("No guard file found. Skip local data removal. ClassPath concurrently recreated? [icp=" + icp + ']');
+
+            return;
+        }
+
         if (!cpRoot.exists() || U.delete(cpRoot))
             return;
 
@@ -615,6 +635,11 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
         log.warning(err);
 
         ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, new IgniteException(err)));
+    }
+
+    /** */
+    public static File guardFile(File cpRoot, UUID icpId) {
+        return new File(cpRoot, "." + icpId);
     }
 
     /**

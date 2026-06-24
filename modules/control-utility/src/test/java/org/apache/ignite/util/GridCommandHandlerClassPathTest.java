@@ -306,8 +306,8 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
 
         assertTrue(out.contains("Fail to register ClassPath. Same ClassPath exists, already?"));
         assertNotNull(grid(0).context().distributedMetastorage().read(ClassPathProcessor.metastorageKey(cpName())));
-        assertTrue(
-            "Classpath directory must be created",
+        assertFalse(
+            "Classpath directory must be removed",
             grid(0).context().pdsFolderResolver().fileTree().classPathRoot(cpName()).exists()
         );
         assertTrue(
@@ -362,7 +362,7 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
     }
 
     /** */
-    private void checkFilesExists(String cpName, int skip, Set<Path> files) throws IOException {
+    private void checkFilesExists(String cpName, int skip, Set<Path> files) throws IOException, IgniteCheckedException {
         for (int i = 0; i < GRID_CNT; i++) {
             if (skip == i)
                 continue;

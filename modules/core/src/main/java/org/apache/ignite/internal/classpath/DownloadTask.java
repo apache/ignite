@@ -23,7 +23,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.F;
 
-import static org.apache.ignite.internal.classpath.ClassPathProcessor.createRootAndCheckIsEmpty;
 import static org.apache.ignite.internal.classpath.ClassPathProcessor.fromMetastorage;
 import static org.apache.ignite.internal.classpath.IgniteClassPathState.READY;
 
@@ -60,7 +59,7 @@ class DownloadTask extends ClassPathProcessor.ClassPathTask<Void> {
             return;
         }
 
-        createRootAndCheckIsEmpty(ctx.pdsFolderResolver().fileTree().classPathRoot(icp.name()));
+        ctx.classPath().createRootAndCheckIsEmpty(icp);
 
         UUID rmtNode = F.rand(icp.deployedOnNodes());
 
@@ -105,7 +104,7 @@ class DownloadTask extends ClassPathProcessor.ClassPathTask<Void> {
             log.warning("Failed to download ClassPath files [icp=" + icp.name() + "]", t);
 
             // Cleanup local files.
-            ctx.classPath().addClassPathTask(icp, CleanupTask.localCleanup(ctx, icp.id()));
+            ctx.classPath().addClassPathTask(icp, CleanupTask.localCleanup(ctx, icp));
         }
         catch (Exception e) {
             log.warning("onDowloadFailed", e);
