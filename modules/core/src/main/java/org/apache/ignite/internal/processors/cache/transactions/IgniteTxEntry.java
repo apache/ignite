@@ -25,6 +25,7 @@ import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
@@ -134,14 +135,15 @@ public class IgniteTxEntry implements GridPeerDeployAware, MarshallableMessage, 
 
     /** Transform. */
     @GridToStringInclude
-    private Collection<T2<EntryProcessor<Object, Object, Object>, Object[]>> entryProcessorsCol;
+    Collection<T2<EntryProcessor<Object, Object, Object>, Object[]>> entryProcessorsCol;
 
     /** Transient field for calculated entry processor value. */
     private T2<GridCacheOperation, CacheObject> entryProcessorCalcVal;
 
-    /** Transform closure bytes. */
+    /** */
     @GridToStringExclude
     @Order(4)
+    @Marshalled("entryProcessorsCol")
     byte[] transformClosBytes;
 
     /** Time to live. */
@@ -1044,10 +1046,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, MarshallableMessage, 
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        // Do not serialize filters if they are null.
-        if (transformClosBytes == null && entryProcessorsCol != null)
-            transformClosBytes = U.marshal(marsh, entryProcessorsCol);
-
         transferExpiryPlc = expiryPlc != null && expiryPlc != ctx.expiry();
 
         if (transferExpiryPlc) {
@@ -1060,10 +1058,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, MarshallableMessage, 
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        // Unmarshal transform closure anyway if it exists.
-        if (transformClosBytes != null && entryProcessorsCol == null)
-            entryProcessorsCol = U.unmarshal(marsh, transformClosBytes, clsLdr);
-
         if (filters == null)
             filters = CU.empty0();
 

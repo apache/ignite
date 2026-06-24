@@ -24,6 +24,7 @@ import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -34,7 +35,6 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.jetbrains.annotations.NotNull;
@@ -54,10 +54,11 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
     @Nullable List<byte[]> invokeArgsBytes;
 
     /** Entry processors. */
-    private @Nullable EntryProcessor<Object, Object, Object> entryProc;
+    @Nullable EntryProcessor<Object, Object, Object> entryProc;
 
-    /** Entry processors bytes. */
+    /** */
     @Order(1)
+    @Marshalled("entryProc")
     @Nullable byte[] entryProcBytes;
 
     /**
@@ -188,18 +189,12 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (entryProc != null && entryProcBytes == null)
-            entryProcBytes = U.marshal(marsh, entryProc);
-        
         if (!F.isEmpty(invokeArgs) && invokeArgsBytes == null)
             invokeArgsBytes = Arrays.asList(marshallInvokeArguments(invokeArgs, marsh));
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (entryProcBytes != null && entryProc == null)
-            entryProc = U.unmarshal(marsh, entryProcBytes, clsLdr);
-
         if (invokeArgsBytes != null && invokeArgs == null)
             invokeArgs = unmarshalInvokeArguments(invokeArgsBytes.toArray(new byte[invokeArgsBytes.size()][]), marsh, clsLdr);
     }
