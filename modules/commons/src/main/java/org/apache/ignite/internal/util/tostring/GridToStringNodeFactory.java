@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import static org.apache.ignite.internal.util.tostring.GridToStringNode.CATCHED_NODES;
+import static org.apache.ignite.internal.util.tostring.GridToStringNode.identities;
 
 /**
  * A factory class responsible for creating appropriate GridToStringNode instances
@@ -47,15 +47,10 @@ public class GridToStringNodeFactory {
         List<GridToStringNode> result = new LinkedList<>();
         boolean includeSensitive = GridToStringBuilder.includeSensitive();
         for (int i = 0; i < addLen; i++) {
-            GridToStringNode node = CATCHED_NODES.get().remove(addVals[i]);
             if (!includeSensitive && shouldBeExcluded(addVals, addSens, i))
                 continue;
             String propName = String.valueOf(addNames[i]);
-            final int idx = i;
-            if (node == null)
-                node = getGridToStringNode(propName, () -> addVals[idx], () -> addVals[idx].getClass());
-            else
-                node.propName = propName;
+            GridToStringNode node = recoverOrCreate(propName, addVals[i]);
             result.add(node);
         }
         return result;
@@ -130,11 +125,7 @@ public class GridToStringNodeFactory {
             return new GridToStringMapNode(childPropName, (Map<?, ?>)val);
 
         String toStrResult = val.toString();
-        GridToStringNode catchedNode = CATCHED_NODES.get().remove(toStrResult);
-        if (catchedNode == null)
-            return new GridToStringValueNode(childPropName, toStrResult);
-        catchedNode.propName = childPropName;
-        return catchedNode;
+        return recoverOrCreate(childPropName, toStrResult);
     }
 
     /**
@@ -152,5 +143,22 @@ public class GridToStringNodeFactory {
                         .map(cls -> cls.getAnnotation(GridToStringInclude.class))
                         .filter(GridToStringInclude::sensitive)
                         .isPresent();
+    }
+
+    /**
+     * Tries to recover node from cached results or creates new,
+     * if {@link GridToStringBuilder#toString)} is not called to get candidate
+     * @param propName Property name.
+     * @param candidate Marker candidate to recover already computed node.
+     * @return Recovered node or new node with candidate's value
+     */
+    private static GridToStringNode recoverOrCreate(String propName, Object candidate) {
+        return identities()
+                .map(cache -> cache.remove(candidate))
+                .map(result -> {
+                    result.propName = propName;
+                    return result;
+                })
+                .orElseGet(() -> new GridToStringValueNode(propName, candidate));
     }
 }

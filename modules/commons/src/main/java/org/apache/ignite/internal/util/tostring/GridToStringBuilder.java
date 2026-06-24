@@ -784,7 +784,7 @@ public class GridToStringBuilder {
         assert addVals != null;
         assert addNames.length == addVals.length;
         assert addLen <= addNames.length;
-        boolean isNew = GridToStringNode.isNew();
+        boolean isNew = GridToStringNode.init();
         try {
             List<GridToStringNode> addNodes =
                     GridToStringNodeFactory.getNodes(addNames, addVals, addSens, addLen);
@@ -796,6 +796,10 @@ public class GridToStringBuilder {
                 return handleThrowable(throwable);
             else
                 throw throwable;
+        }
+        finally {
+            if (isNew)
+                GridToStringNode.clear();
         }
     }
 
@@ -1282,7 +1286,7 @@ public class GridToStringBuilder {
      */
     private static String toStringImpl(String str, Object[] propNames, Object[] propVals,
         boolean[] propSens, int propCnt) {
-        boolean isNew = GridToStringNode.isNew();
+        boolean isNew = GridToStringNode.init();
         try {
             List<GridToStringNode> addNodes =
                     GridToStringNodeFactory.getNodes(propNames, propVals, propSens, propCnt);
@@ -1294,6 +1298,10 @@ public class GridToStringBuilder {
                 return handleThrowable(throwable);
             else
                 throw throwable;
+        }
+        finally {
+            if (isNew)
+                GridToStringNode.clear();
         }
     }
 
@@ -1496,7 +1504,6 @@ public class GridToStringBuilder {
         throwable.printStackTrace(printWriter);
         printWriter.flush();
         printWriter.close();
-        GridToStringNode.clear();
         return strWriter.toString();
     }
 }

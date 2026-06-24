@@ -20,6 +20,7 @@ package org.apache.ignite.internal.util.tostring;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.internal.util.GridStringBuilder;
 
 import static org.apache.ignite.internal.util.tostring.NodeRecursionMonitor.OBJECT_REGISTRY;
@@ -34,8 +35,8 @@ public abstract class GridToStringNode {
      * A thread-local cache for nodes, used to handle references of
      * inner toString() calls by mapping temporary markers to actual nodes.
      */
-    public static final ThreadLocal<IdentityHashMap<String, GridToStringNode>> CATCHED_NODES =
-            ThreadLocal.withInitial(IdentityHashMap::new);
+    public static final ConcurrentHashMap<Thread, IdentityHashMap<String, GridToStringNode>> CATCHED_NODES
+            = new ConcurrentHashMap<>();
 
     /** The name of the property this node represents. */
     String propName;
@@ -54,7 +55,7 @@ public abstract class GridToStringNode {
      * @param addNodes Additional child nodes to include.
      * @return A new root node.
      */
-    public static GridToStringNode getRootNode(String str, List<GridToStringNode> addNodes) {
+    static GridToStringNode getRootNode(String str, List<GridToStringNode> addNodes) {
         return new GridToStringObjectNode(str, addNodes);
     }
 
@@ -66,7 +67,7 @@ public abstract class GridToStringNode {
      * @param addNodes Additional child nodes to include.
      * @return A new root node.
      */
-    public static GridToStringNode getRootNode(Object obj, Class<?> cls, List<GridToStringNode> addNodes) {
+    static GridToStringNode getRootNode(Object obj, Class<?> cls, List<GridToStringNode> addNodes) {
         return recursionTermination(obj)
                 .orElseGet(() -> new GridToStringObjectNode(null, obj, cls, addNodes));
     }
@@ -77,9 +78,11 @@ public abstract class GridToStringNode {
      * @param node The node to mark.
      * @return The unique marker string.
      */
-    public static String markNode(GridToStringNode node) {
-        String result = new String();
-        CATCHED_NODES.get().put(result, node);
+    static String markNode(GridToStringNode node) {
+        String result = new String(GridToStringNode.class.getSimpleName());
+        identities()
+                .orElseThrow()
+                .put(result, node);
         return result;
     }
 
@@ -87,8 +90,12 @@ public abstract class GridToStringNode {
      * Checks if the current context is new, meaning no recursion or inner calls are in progress.
      * @return True if the context is new; false otherwise.
      */
-    public static boolean isNew() {
-        return NodeRecursionMonitor.isEmpty() && CATCHED_NODES.get().isEmpty();
+    static boolean init() {
+        Thread curThread = Thread.currentThread();
+        boolean containsThread = CATCHED_NODES.containsKey(curThread);
+        if (!containsThread)
+            CATCHED_NODES.put(curThread, new IdentityHashMap<>());
+        return !containsThread;
     }
 
     /**
@@ -128,7 +135,7 @@ public abstract class GridToStringNode {
      * Clears the thread-local cache of nodes and recursion prevention storage.
      */
     static void clear() {
-        CATCHED_NODES.remove();
+        CATCHED_NODES.remove(Thread.currentThread());
         OBJECT_REGISTRY.remove();
     }
 
@@ -142,7 +149,27 @@ public abstract class GridToStringNode {
         SBLimitedLength sb = new SBLimitedLength(256);
         sb.initLimit(new SBLengthLimit());
         appendNode(sb);
-        clear();
         return sb.toString();
+    }
+
+    static Optional<IdentityHashMap<String, GridToStringNode>> identities() {
+        return Optional.ofNullable(CATCHED_NODES.get(Thread.currentThread()));
+    }
+
+    /**
+     * If someone decided to concat outside of default
+     * {@link org.apache.ignite.internal.util.typedef.internal.S#toString}
+     * we should replace the substring
+     * @param obj Object.
+     */
+    public static <T> T recoverObject(T obj) {
+        return Optional.ofNullable(obj)
+                .filter(String.class::isInstance)
+                .map(String.class::cast)
+                .flatMap(str -> identities()
+                        .map(storage -> storage.remove(str))
+                        .map(GridToStringNode::toString)
+                        .map(result -> (T) result))
+                .orElse(obj);
     }
 }

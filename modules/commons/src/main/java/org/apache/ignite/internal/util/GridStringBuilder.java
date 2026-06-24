@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import org.apache.ignite.internal.util.tostring.GridToStringNode;
 
 /**
  * Optimized string builder with better API.
@@ -99,6 +100,7 @@ public class GridStringBuilder implements Serializable {
      * @return This buffer for chaining method calls.
      */
     public GridStringBuilder a(Object obj) {
+        obj = GridToStringNode.recoverObject(obj);
         impl.append(String.valueOf(obj));
 
         return this;
@@ -110,6 +112,7 @@ public class GridStringBuilder implements Serializable {
      * @return This buffer for chaining method calls.
      */
     public GridStringBuilder a(String str) {
+        str = GridToStringNode.recoverObject(str);
         impl.append(str);
 
         return this;
@@ -132,6 +135,7 @@ public class GridStringBuilder implements Serializable {
      * @return This buffer for chaining method calls.
      */
     public GridStringBuilder a(CharSequence s) {
+        s = GridToStringNode.recoverObject(s);
         impl.append(s);
 
         return this;
@@ -145,6 +149,7 @@ public class GridStringBuilder implements Serializable {
      * @return This buffer for chaining method calls.
      */
     public GridStringBuilder a(CharSequence s, int start, int end) {
+        s = GridToStringNode.recoverObject(s);
         impl.append(s, start, end);
 
         return this;
@@ -296,6 +301,7 @@ public class GridStringBuilder implements Serializable {
      * @throws UnsupportedOperationException if not supported by this imlementation
      */
     public GridStringBuilder r(int start, int end, String str) {
+        str = GridToStringNode.recoverObject(str);
         impl.replace(start, end, str);
 
         return this;
@@ -322,6 +328,7 @@ public class GridStringBuilder implements Serializable {
      * @return This buffer for chaining method calls.
      */
     public GridStringBuilder i(int off, Object obj) {
+        obj = GridToStringNode.recoverObject(obj);
         return i(off, String.valueOf(obj));
     }
 
@@ -332,6 +339,7 @@ public class GridStringBuilder implements Serializable {
      * @return This buffer for chaining method calls.
      */
     public GridStringBuilder i(int off, String str) {
+        str = GridToStringNode.recoverObject(str);
         impl.insert(off, str);
 
         return this;
@@ -356,6 +364,7 @@ public class GridStringBuilder implements Serializable {
      * @return This buffer for chaining method calls.
      */
     public GridStringBuilder i(int dstOff, CharSequence s) {
+        s = GridToStringNode.recoverObject(s);
         impl.insert(dstOff, s);
 
         return this;
@@ -370,6 +379,7 @@ public class GridStringBuilder implements Serializable {
      * @return This buffer for chaining method calls.
      */
     public GridStringBuilder i(int dstOff, CharSequence s, int start, int end) {
+        s = GridToStringNode.recoverObject(s);
         impl.insert(dstOff, s, start, end);
 
         return this;
