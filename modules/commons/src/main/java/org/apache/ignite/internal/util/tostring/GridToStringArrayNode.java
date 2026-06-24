@@ -70,7 +70,7 @@ class GridToStringArrayNode extends NodeRecursionMonitor {
     @Override void appendNode(GridStringBuilder sb) {
         super.appendNode(sb);
         sb.a(arrType.getSimpleName()).a(" [");
-        for (int i = 0; i < nodes.length - 2; i++) {
+        for (int i = 0; i < nodes.length - 1; i++) {
             nodes[i].appendNode(sb);
             sb.a(", ");
         }
