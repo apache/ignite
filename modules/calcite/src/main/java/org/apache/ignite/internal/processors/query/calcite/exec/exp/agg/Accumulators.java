@@ -24,8 +24,10 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.calcite.avatica.util.ByteString;
@@ -37,6 +39,7 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.PluginAccumulatorsExtension.PluginAccumulatorFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
@@ -55,6 +58,9 @@ import static org.apache.calcite.sql.type.SqlTypeName.VARCHAR;
  */
 public class Accumulators {
     /** */
+    private static final Map<String, PluginAccumulatorFactory<?>> PLUGIN_FACTORY_BY_NAME = new ConcurrentHashMap<>();
+
+    /** */
     public static <Row> Supplier<Accumulator<Row>> accumulatorFactory(AggregateCall call, ExecutionContext<Row> ctx) {
         Supplier<Accumulator<Row>> supplier = accumulatorFunctionFactory(call, ctx);
 
@@ -71,38 +77,29 @@ public class Accumulators {
     ) {
         RowHandler<Row> hnd = ctx.rowHandler();
 
-        switch (call.getAggregation().getName()) {
-            case "COUNT":
-                return () -> new LongCount<>(call, hnd);
-            case "AVG":
-                return avgFactory(call, hnd);
-            case "SUM":
-                return sumFactory(call, hnd);
-            case "$SUM0":
-                return sumEmptyIsZeroFactory(call, hnd);
-            case "MIN":
-            case "EVERY":
-                return minFactory(call, hnd);
-            case "MAX":
-            case "SOME":
-                return maxFactory(call, hnd);
-            case "SINGLE_VALUE":
-                return () -> new SingleVal<>(call, hnd);
-            case "LITERAL_AGG":
-                return () -> new LiteralVal<>(call, hnd);
-            case "ANY_VALUE":
-                return () -> new AnyVal<>(call, hnd);
-            case "LISTAGG":
-            case "ARRAY_AGG":
-            case "ARRAY_CONCAT_AGG":
-                return listAggregateSupplier(call, ctx);
-            case "BIT_AND":
-            case "BIT_OR":
-            case "BIT_XOR":
-                return bitWiseFactory(call, hnd);
-            default:
-                throw new AssertionError(call.getAggregation().getName());
-        }
+        String aggFunName = call.getAggregation().getName();
+
+        return switch (aggFunName) {
+            case "COUNT" -> () -> new LongCount<>(call, hnd);
+            case "AVG" -> avgFactory(call, hnd);
+            case "SUM" -> sumFactory(call, hnd);
+            case "$SUM0" -> sumEmptyIsZeroFactory(call, hnd);
+            case "MIN", "EVERY" -> minFactory(call, hnd);
+            case "MAX", "SOME" -> maxFactory(call, hnd);
+            case "SINGLE_VALUE" -> () -> new SingleVal<>(call, hnd);
+            case "LITERAL_AGG" -> () -> new LiteralVal<>(call, hnd);
+            case "ANY_VALUE" -> () -> new AnyVal<>(call, hnd);
+            case "LISTAGG", "ARRAY_AGG", "ARRAY_CONCAT_AGG" -> listAggregateSupplier(call, ctx);
+            case "BIT_AND", "BIT_OR", "BIT_XOR" -> bitWiseFactory(call, hnd);
+            default -> {
+                PluginAccumulatorFactory<Row> factory = (PluginAccumulatorFactory<Row>) PLUGIN_FACTORY_BY_NAME.get(aggFunName);
+
+                if (factory == null)
+                    throw new AssertionError("Accumulator factory not found for: " + aggFunName);
+
+                yield () -> factory.create(call, ctx);
+            }
+        };
     }
 
     /** */
@@ -280,7 +277,7 @@ public class Accumulators {
     }
 
     /** */
-    private abstract static class AbstractAccumulator<Row> implements Accumulator<Row> {
+    public abstract static class AbstractAccumulator<Row> implements Accumulator<Row> {
         /** */
         private final RowHandler<Row> hnd;
 
@@ -288,13 +285,13 @@ public class Accumulators {
         private final transient AggregateCall aggCall;
 
         /** */
-        AbstractAccumulator(AggregateCall aggCall, RowHandler<Row> hnd) {
+        protected AbstractAccumulator(AggregateCall aggCall, RowHandler<Row> hnd) {
             this.aggCall = aggCall;
             this.hnd = hnd;
         }
 
         /** */
-        <T> T get(int idx, Row row) {
+        protected <T> T get(int idx, Row row) {
             assert idx < arguments().size() : "idx=" + idx + "; arguments=" + arguments();
 
             return (T)hnd.get(arguments().get(idx), row);
@@ -311,7 +308,7 @@ public class Accumulators {
         }
 
         /** */
-        int columnCount(Row row) {
+        protected int columnCount(Row row) {
             return hnd.columnCount(row);
         }
     }
@@ -1344,8 +1341,9 @@ public class Accumulators {
                 if (builder == null)
                     builder = new StringBuilder();
 
-                if (builder.length() != 0)
+                if (!builder.isEmpty())
                     builder.append(extractSeparator(row));
+
                 builder.append(val);
             }
 
@@ -1508,6 +1506,21 @@ public class Accumulators {
         /** {@inheritDoc} */
         @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
             return acc.returnType(typeFactory);
+        }
+    }
+
+    /** */
+    public static void addPluginAccumulatorFactories(Map<String, PluginAccumulatorFactory<?>> factoryByAggFunName) {
+        for (Map.Entry<String, PluginAccumulatorFactory<?>> e : factoryByAggFunName.entrySet()) {
+            String aggFunName = e.getKey().trim().toUpperCase(Locale.ROOT);
+
+            if (aggFunName.isBlank())
+                throw new AssertionError("Invalid aggregate function name: " + aggFunName);
+
+            PluginAccumulatorFactory<?> prev = PLUGIN_FACTORY_BY_NAME.putIfAbsent(aggFunName, e.getValue());
+
+//            if (prev != null)
+//                throw new AssertionError("Duplicate aggregate function name: " + aggFunName);
         }
     }
 }

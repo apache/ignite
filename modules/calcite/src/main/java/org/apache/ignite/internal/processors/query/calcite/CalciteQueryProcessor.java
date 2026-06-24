@@ -82,6 +82,8 @@ import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecuto
 import org.apache.ignite.internal.processors.query.calcite.exec.TimeoutService;
 import org.apache.ignite.internal.processors.query.calcite.exec.TimeoutServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RexExecutorImpl;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumulators;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.PluginAccumulatorsExtension;
 import org.apache.ignite.internal.processors.query.calcite.exec.task.QueryBlockingTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.exec.task.StripedQueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintsConfig;
@@ -313,6 +315,8 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         }
 
         distrCfg = new DistributedCalciteConfiguration(ctx, log);
+
+        extendAccumulatorsFromPlugins(ctx);
     }
 
     /**
@@ -852,5 +856,15 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     /** */
     public InjectResourcesService injectService() {
         return injectSvc;
+    }
+
+    /** */
+    private static void extendAccumulatorsFromPlugins(GridKernalContext ctx) {
+        PluginAccumulatorsExtension[] extensions = ctx.plugins().extensions(PluginAccumulatorsExtension.class);
+
+        if (!F.isEmpty(extensions)) {
+            for (PluginAccumulatorsExtension extension : extensions)
+                Accumulators.addPluginAccumulatorFactories(extension.accumulatorFactories());
+        }
     }
 }
