@@ -37,7 +37,7 @@
     <!--    // TODO: fix to IGNITE-28807-->
 
     <properties>
-        <maven.test.skip>true</maven.test.skip>
+        <narayana.version>7.0.0.Final</narayana.version>
     </properties>
 
     <dependencies>
@@ -59,16 +59,22 @@
         </dependency>
 
         <dependency>
-            <groupId>org.ow2.jotm</groupId>
-            <artifactId>jotm-core</artifactId>
-            <version>${jotm.version}</version>
+            <groupId>org.jboss.narayana.jta</groupId>
+            <artifactId>narayana-jta</artifactId>
+            <version>${narayana.version}</version>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>jakarta.transaction</groupId>
+                    <artifactId>jakarta.transaction-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
-            <groupId>javax.resource</groupId>
-            <artifactId>connector-api</artifactId>
-            <version>1.5</version>
+            <groupId>org.jboss.logging</groupId>
+            <artifactId>jboss-logging</artifactId>
+            <version>3.5.3.Final</version>
             <scope>test</scope>
         </dependency>
 
@@ -107,13 +113,7 @@
         </dependency>
 
         <!-- JDK9+ -->
-
-        <dependency>
-            <groupId>org.jboss.spec.javax.rmi</groupId>
-            <artifactId>jboss-rmi-api_1.0_spec</artifactId>
-            <version>${jboss.rmi.version}</version>
-            <scope>test</scope>
-        </dependency>
+        <!-- jboss-rmi-api_1.0_spec was needed for jotm on JDK9+, no longer required with Narayana -->
 
     </dependencies>
 
