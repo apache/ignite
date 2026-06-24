@@ -20,7 +20,7 @@ import java.util.UUID;
 import org.apache.ignite.internal.GridKernalContext;
 
 /**
- * Removes {@link #node} from {@link IgniteClassPath#deployedOnNodes()} set.
+ * Removes or adds {@link #node} to {@link IgniteClassPath#deployedOnNodes()} set.
  */
 public class ChangeNodesTask extends ClassPathProcessor.ClassPathTask<Void> {
     /** Node. */
