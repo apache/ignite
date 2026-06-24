@@ -494,6 +494,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         }, body);
     }
 
+    /** */
     private void appendMarshalledFinish(List<String> body, List<VariableElement> fields) {
         forEachMarshalled(fields, (bytesAcc, objAcc) -> {
             List<String> code = new ArrayList<>();
@@ -514,6 +515,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         }, body);
     }
 
+    /** */
     private void forEachMarshalled(List<VariableElement> fields, BiFunction<String, String, List<String>> codeGen, List<String> body) {
         for (VariableElement field : fields) {
             Marshalled ann = field.getAnnotation(Marshalled.class);
