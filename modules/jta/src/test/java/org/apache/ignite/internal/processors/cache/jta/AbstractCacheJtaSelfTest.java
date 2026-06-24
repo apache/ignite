@@ -30,6 +30,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.testframework.GridTestSafeThreadFactory;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
+import org.objectweb.jotm.Jotm;
+import org.objectweb.jotm.rmi.RmiLocalConfiguration;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -43,12 +45,12 @@ public abstract class AbstractCacheJtaSelfTest extends GridCacheAbstractSelfTest
     /** */
     private static final int GRID_CNT = 1;
 
-    /** Test transaction manager. */
-    protected static TestTransactionManager tm;
+    /** Java Open Transaction Manager facade. */
+    protected static Jotm jotm;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        tm = new TestTransactionManager();
+        jotm = new Jotm(true, false, new RmiLocalConfiguration());
 
         super.beforeTestsStarted();
     }
@@ -56,6 +58,8 @@ public abstract class AbstractCacheJtaSelfTest extends GridCacheAbstractSelfTest
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
+
+        jotm.stop();
     }
 
     /** {@inheritDoc} */
@@ -97,7 +101,7 @@ public abstract class AbstractCacheJtaSelfTest extends GridCacheAbstractSelfTest
      */
     @Test
     public void testJta() throws Exception {
-        UserTransaction jtaTx = tm;
+        UserTransaction jtaTx = jotm.getUserTransaction();
 
         IgniteCache<String, Integer> cache = jcache();
 
@@ -141,7 +145,7 @@ public abstract class AbstractCacheJtaSelfTest extends GridCacheAbstractSelfTest
      */
     @Test
     public void testJtaTwoCaches() throws Exception {
-        UserTransaction jtaTx = tm;
+        UserTransaction jtaTx = jotm.getUserTransaction();
 
         IgniteEx ignite = grid(0);
 
@@ -201,7 +205,7 @@ public abstract class AbstractCacheJtaSelfTest extends GridCacheAbstractSelfTest
             @Override public Object call() throws Exception {
                 assertNull(grid(0).transactions().tx());
 
-                UserTransaction jtaTx = tm;
+                UserTransaction jtaTx = jotm.getUserTransaction();
 
                 jtaTx.begin();
 
