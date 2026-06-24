@@ -265,7 +265,7 @@ public class PartitionHashRecord implements MarshallableMessage, Serializable {
         if (updateCntrBytes != null)
             updateCntr = U.unmarshal(marsh, updateCntrBytes, clsLdr);
 
-        consistentId = null;
+        consistentIdBytes = null;
         updateCntrBytes = null;
     }
 
