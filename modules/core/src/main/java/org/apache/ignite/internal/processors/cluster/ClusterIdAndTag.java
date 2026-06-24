@@ -20,20 +20,27 @@ package org.apache.ignite.internal.processors.cluster;
 import java.io.Serializable;
 import java.util.Objects;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Container class to send cluster ID and tag in disco data and to write them atomically to metastorage.
  */
-public class ClusterIdAndTag implements Serializable {
+public class ClusterIdAndTag implements Serializable, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final UUID id;
+    @Order(0)
+    UUID id;
 
     /** */
-    private final String tag;
+    @Order(1)
+    String tag;
+
+    /** */
+    public ClusterIdAndTag() { }
 
     /**
      * @param id Cluster ID.

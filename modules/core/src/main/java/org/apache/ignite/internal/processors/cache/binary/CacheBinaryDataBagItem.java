@@ -15,26 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.marshaller;
+package org.apache.ignite.internal.processors.cache.binary;
 
-import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
-public class MarshallerMappingsData implements Message {
+public class CacheBinaryDataBagItem implements Message {
     /** */
     @Order(0)
-    List<Map<Integer, MappedName>> mappings;
+    Map<Integer, BinaryMetadataVersionInfo> meta;
 
     /** */
-    public MarshallerMappingsData() {}
+    public CacheBinaryDataBagItem() {}
 
     /**
-     * @param mappings Mappings.
+     * @param meta Per-type binary metadata info.
      */
-    public MarshallerMappingsData(List<Map<Integer, MappedName>> mappings) {
-        this.mappings = mappings;
+    public CacheBinaryDataBagItem(Map<Integer, BinaryMetadataVersionInfo> meta) {
+        this.meta = Map.copyOf(meta);
     }
 }
