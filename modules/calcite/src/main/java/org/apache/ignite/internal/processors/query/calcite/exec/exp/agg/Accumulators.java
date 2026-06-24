@@ -93,7 +93,7 @@ public class Accumulators {
         String aggFunName = call.getAggregation().getName();
 
         AccumulatorSupplierFactory<Row> builtInFactory =
-            (AccumulatorSupplierFactory<Row>) BUILT_IN_FACTORY_BY_NAME.get(aggFunName);
+            (AccumulatorSupplierFactory<Row>)BUILT_IN_FACTORY_BY_NAME.get(aggFunName);
 
         if (builtInFactory != null)
             return builtInFactory.create(call, ctx);

@@ -84,7 +84,7 @@ public class AddAggregatFunctionViaPluginProviderTest extends AbstractBasicInteg
 
             FrameworkConfig cfg = CalciteQueryProcessor.FRAMEWORK_CONFIG;
 
-            return (T) Frameworks.newConfigBuilder(cfg)
+            return (T)Frameworks.newConfigBuilder(cfg)
                 .operatorTable(SqlOperatorTables.chain(
                     new TestSqlOperatorTable().init(), cfg.getOperatorTable()
                 ))

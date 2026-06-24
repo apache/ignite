@@ -37,7 +37,7 @@ public class PluginAccumulatorRegistry {
 
     /** @return Plugin accumulator supplier factory by aggregate function name or {@code null} if not found. */
     public @Nullable <Row> AccumulatorSupplierFactory<Row> factory(String aggFunName) {
-        return (AccumulatorSupplierFactory<Row>) factoryByAggFunName.get(aggFunName);
+        return (AccumulatorSupplierFactory<Row>)factoryByAggFunName.get(aggFunName);
     }
 
     /** Extension for getting {@link AccumulatorSupplierFactory} from {@link PluginProvider}. */
