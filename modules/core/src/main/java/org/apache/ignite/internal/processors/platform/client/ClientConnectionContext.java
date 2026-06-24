@@ -226,7 +226,7 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
 
         authenticate(ses, user, pwd);
 
-        initClientDescriptor("cli");
+        initClientContext("cli");
 
         handler = new ClientRequestHandler(this, currentProtocolContext);
         parser = new ClientMessageParser(this, currentProtocolContext);

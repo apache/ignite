@@ -48,7 +48,7 @@
         <dependency>
             <groupId>com.ibm.websphere.appserver.api</groupId>
             <artifactId>com.ibm.websphere.appserver.api.transaction</artifactId>
-            <version>1.1.10</version>
+            <version>1.1.113</version>
         </dependency>
     </dependencies>
 
@@ -66,7 +66,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-war-plugin</artifactId>
-                <version>3.2.2</version>
+                <version>3.5.1</version>
             </plugin>
         </plugins>
     </build>

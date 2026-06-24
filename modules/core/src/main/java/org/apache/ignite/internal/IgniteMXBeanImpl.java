@@ -33,6 +33,7 @@ import org.apache.ignite.mxbean.IgniteMXBean;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
+import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 
 /** Implementation of {@link IgniteMXBean}. */
 public class IgniteMXBeanImpl implements IgniteMXBean {
@@ -103,7 +104,7 @@ public class IgniteMXBeanImpl implements IgniteMXBean {
 
     /** {@inheritDoc} */
     @Override public String getFullVersion() {
-        return kernal.fullVersion();
+        return VER.toString();
     }
 
     /** {@inheritDoc} */

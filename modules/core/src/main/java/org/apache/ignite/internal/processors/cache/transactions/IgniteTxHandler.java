@@ -2212,6 +2212,8 @@ public class IgniteTxHandler {
                     resCntrs.add(part, partCntrs.initialCounter(i), partCntrs.updatesCount(i));
             }
 
+            resCntrs.finishUpdating();
+
             if (resCntrs.size() > 0)
                 res.add(resCntrs);
         }

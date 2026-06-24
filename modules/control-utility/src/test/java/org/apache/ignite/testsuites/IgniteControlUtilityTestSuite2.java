@@ -37,7 +37,6 @@ import org.apache.ignite.util.IdleVerifyCheckWithWriteThroughTest;
 import org.apache.ignite.util.IdleVerifyDumpTest;
 import org.apache.ignite.util.MetricCommandTest;
 import org.apache.ignite.util.PerformanceStatisticsCommandTest;
-import org.apache.ignite.util.RollingUpgradeCommandTest;
 import org.apache.ignite.util.SystemViewCommandTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -64,7 +63,6 @@ import org.junit.runners.Suite;
 
     GridCommandHandlerEventTest.class,
 
-    RollingUpgradeCommandTest.class,
     SystemViewCommandTest.class,
     MetricCommandTest.class,
     PerformanceStatisticsCommandTest.class,

@@ -33,6 +33,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntry;
+import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
@@ -222,10 +223,9 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public boolean skipStore();
 
     /**
-     * @param skipStore Skip store flag.
      * @return New internal cache instance based on this one, but with skip store flag enabled.
      */
-    public IgniteInternalCache<K, V> setSkipStore(boolean skipStore);
+    public IgniteInternalCache<K, V> withSkipStore();
 
     /** @return New internal cache instance based on this one, but with skip read-through cache store flag enabled. */
     public IgniteInternalCache<K, V> withSkipReadThrough();
@@ -1641,6 +1641,11 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return New projection based on this one, but with the specified expiry policy.
      */
     public IgniteInternalCache<K, V> withExpiryPolicy(ExpiryPolicy plc);
+
+    /**
+     * @return Cache with handle binary values during {@link CacheInterceptor} execution flag.
+     */
+    public IgniteInternalCache<K, V> withKeepBinaryInInterceptor();
 
     /**
      * @return Cache with no-retries behavior enabled.

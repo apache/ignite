@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
+import java.lang.management.ManagementFactory;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.SoftReference;
 import java.lang.reflect.Field;
@@ -35,8 +36,11 @@ import java.lang.reflect.Modifier;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.net.ServerSocket;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
@@ -77,10 +81,12 @@ import java.util.stream.Stream;
 import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
 import javax.management.Attribute;
+import javax.management.MBeanServer;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import com.google.common.collect.Lists;
+import com.sun.management.HotSpotDiagnosticMXBean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -166,6 +172,12 @@ public final class GridTestUtils {
     /** */
     private static final GridAbsClosure NOOP = new NoOpClosure();
 
+    /** This is the name of the HotSpot Diagnostic MBean. */
+    private static final String HOTSPOT_BEAN_NAME = "com.sun.management:type=HotSpotDiagnostic";
+
+    /** Field to store the hotspot diagnostic MBean. */
+    private static volatile HotSpotDiagnosticMXBean hotspotMBean;
+
     /**
      * Creates an absolute (no-arg) closure that does nothing.
      *
@@ -173,6 +185,64 @@ public final class GridTestUtils {
      */
     public static GridAbsClosure noop() {
         return NOOP;
+    }
+
+    /**
+     * Call this method from your application whenever you
+     * want to dump the heap snapshot into a file.
+     *
+     * @param fileName Name of the heap dump file.
+     * @param live Flag that tells whether to dump
+     * only the live objects.
+     */
+    public static void dumpHeap(String fileName, boolean live) {
+        // Initialize hotspot diagnostic MBean.
+        initHotspotMBean();
+
+        File f = new File(fileName);
+
+        if (f.exists())
+            f.delete();
+
+        try {
+            hotspotMBean.dumpHeap(fileName, live);
+        }
+        catch (RuntimeException re) {
+            throw re;
+        }
+        catch (Exception exp) {
+            throw new RuntimeException(exp);
+        }
+    }
+
+    /**
+     * Initialize the hotspot diagnostic MBean field.
+     */
+    private static void initHotspotMBean() {
+        if (hotspotMBean == null) {
+            synchronized (GridTestUtils.class) {
+                if (hotspotMBean == null)
+                    hotspotMBean = getMBean(HOTSPOT_BEAN_NAME, HotSpotDiagnosticMXBean.class);
+            }
+        }
+    }
+
+    /**
+     * Get MXBean from the platform MBeanServer.
+     *
+     * @param mxbeanName The name for uniquely identifying the MXBean within an MBeanServer.
+     * @param mxbeanItf The MXBean interface.
+     * @return A proxy for a platform MXBean interface.
+     */
+    private static <T> T getMBean(String mxbeanName, Class<T> mxbeanItf) {
+        try {
+            MBeanServer srv = ManagementFactory.getPlatformMBeanServer();
+
+            return ManagementFactory.newPlatformMXBeanProxy(srv, mxbeanName, mxbeanItf);
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /**
@@ -2657,5 +2727,30 @@ public final class GridTestUtils {
         catch (Exception e) {
             throw new RuntimeException("Unable to find serializer for message: " + msgCls, e);
         }
+    }
+
+    /**
+     * Calculates directory size, tolerating files that disappear during traversal.
+     *
+     * @param dir Directory.
+     * @return Size.
+     * @throws IOException If failed.
+     */
+    public static long sizeOfDirectory(File dir) throws IOException {
+        long[] size = {0L};
+
+        Files.walkFileTree(dir.toPath(), new SimpleFileVisitor<Path>() {
+            @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                size[0] += attrs.size();
+
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override public FileVisitResult visitFileFailed(Path file, IOException exc) {
+                return FileVisitResult.CONTINUE;
+            }
+        });
+
+        return size[0];
     }
 }

@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -55,7 +56,7 @@ public class TxDeadlockDetection {
     public static final int DFLT_TX_DEADLOCK_DETECTION_TIMEOUT = 60000;
 
     /** Deadlock detection maximum iterations. */
-    private static int deadLockTimeout =
+    private static final int DEAD_LOCK_TIMEOUT =
         getInteger(IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT, DFLT_TX_DEADLOCK_DETECTION_TIMEOUT);
 
     /** Sequence. */
@@ -80,7 +81,7 @@ public class TxDeadlockDetection {
      *
      * @param tx Target tx.
      * @param keys Keys.
-     * @return {@link TxDeadlock} if found, otherwise - {@code null}.
+     * @return {@link TxDeadlockFuture} future.
      */
     TxDeadlockFuture detectDeadlock(IgniteInternalTx tx, Set<IgniteTxKey> keys) {
         GridCacheVersion txId = tx.nearXidVersion();
@@ -101,7 +102,7 @@ public class TxDeadlockDetection {
      * @param wfg Wait-for-graph.
      * @param txId Tx ID - start vertex for cycle search in graph.
      */
-    static List<GridCacheVersion> findCycle(Map<GridCacheVersion, Set<GridCacheVersion>> wfg, GridCacheVersion txId) {
+    static @Nullable List<GridCacheVersion> findCycle(Map<GridCacheVersion, Set<GridCacheVersion>> wfg, GridCacheVersion txId) {
         if (wfg == null || wfg.isEmpty())
             return null;
 
@@ -181,7 +182,7 @@ public class TxDeadlockDetection {
 
         /** Pending keys. */
         @GridToStringInclude
-        private Map<UUID, Set<IgniteTxKey>> pendingKeys = new HashMap<>();
+        private final Map<UUID, Set<IgniteTxKey>> pendingKeys = new HashMap<>();
 
         /** Nodes queue. */
         @GridToStringInclude
@@ -233,7 +234,7 @@ public class TxDeadlockDetection {
             this.topVer = topVer;
             this.keys = keys;
 
-            if (deadLockTimeout > 0) {
+            if (DEAD_LOCK_TIMEOUT > 0) {
                 timeoutObj = new DeadlockTimeoutObject();
 
                 cctx.time().addTimeoutObject(timeoutObj);
@@ -322,7 +323,7 @@ public class TxDeadlockDetection {
          * Maps tx keys on nodes. Key can be mapped on some node if this node is primary for given key or
          * node is near for transaction that holds or requests lock for key.
          *
-         * Key will not be be mapped to node if both key and node are already handled.
+         * Key will not be mapped to node if both key and node are already handled.
          *
          * @param txKeys Tx keys.
          * @param txLocks Tx locks.
@@ -348,10 +349,7 @@ public class TxDeadlockDetection {
                         // Process this node earlier than other in order to optimize amount of requests.
                         preferredNodes.add(nodeId);
 
-                        Set<IgniteTxKey> mappedKeys = pendingKeys.get(nodeId);
-
-                        if (mappedKeys == null)
-                            pendingKeys.put(nodeId, mappedKeys = new HashSet<>());
+                        Set<IgniteTxKey> mappedKeys = pendingKeys.computeIfAbsent(nodeId, k -> new HashSet<>());
 
                         mappedKeys.add(txKey);
                     }
@@ -363,10 +361,7 @@ public class TxDeadlockDetection {
                         else
                             nodesQueue.addLast(nearNodeId);
 
-                        Set<IgniteTxKey> mappedKeys = pendingKeys.get(nearNodeId);
-
-                        if (mappedKeys == null)
-                            pendingKeys.put(nearNodeId, mappedKeys = new HashSet<>());
+                        Set<IgniteTxKey> mappedKeys = pendingKeys.computeIfAbsent(nearNodeId, k -> new HashSet<>());
 
                         mappedKeys.add(txKey);
                     }
@@ -387,10 +382,7 @@ public class TxDeadlockDetection {
 
                     nodesQueue.addLast(nodeId);
 
-                    Set<IgniteTxKey> mappedKeys = pendingKeys.get(nodeId);
-
-                    if (mappedKeys == null)
-                        pendingKeys.put(nodeId, mappedKeys = new HashSet<>());
+                    Set<IgniteTxKey> mappedKeys = pendingKeys.computeIfAbsent(nodeId, k -> new HashSet<>());
 
                     mappedKeys.add(txKey);
                 }
@@ -417,7 +409,7 @@ public class TxDeadlockDetection {
         private void merge(TxLocksResponse res) {
             Map<IgniteTxKey, List<TxLock>> txLocks = res.txLocks();
 
-            if (txLocks == null || txLocks.isEmpty())
+            if (F.isEmpty(txLocks))
                 return;
 
             for (Map.Entry<IgniteTxKey, List<TxLock>> e : txLocks.entrySet()) {
@@ -425,7 +417,7 @@ public class TxDeadlockDetection {
 
                 List<TxLock> lockList = e.getValue();
 
-                if (lockList != null && !lockList.isEmpty()) {
+                if (!F.isEmpty(lockList)) {
                     for (TxLock lock : lockList) {
                         if (lock.owner() || lock.candiate()) {
                             if (txs.get(lock.txId()) == null)
@@ -435,18 +427,12 @@ public class TxDeadlockDetection {
                         if (lock.owner()) {
                             GridCacheVersion txId = lock.txId();
 
-                            Set<IgniteTxKey> keys = txLockedKeys.get(txId);
-
-                            if (keys == null)
-                                txLockedKeys.put(txId, keys = new HashSet<>());
+                            Set<IgniteTxKey> keys = txLockedKeys.computeIfAbsent(txId, k -> new HashSet<>());
 
                             keys.add(txKey);
                         }
                         else if (lock.candiate()) {
-                            Set<GridCacheVersion> txs = txRequestedKeys.get(txKey);
-
-                            if (txs == null)
-                                txRequestedKeys.put(txKey, txs = new HashSet<>());
+                            Set<GridCacheVersion> txs = txRequestedKeys.computeIfAbsent(txKey, k -> new HashSet<>());
 
                             txs.add(lock.txId());
                         }
@@ -473,10 +459,7 @@ public class TxDeadlockDetection {
                         txOwner = lock.txId();
 
                         if (keys.contains(e.getKey()) && !txId.equals(lock.txId())) {
-                            Set<GridCacheVersion> waitingTxs = wfg.get(txId);
-
-                            if (waitingTxs == null)
-                                wfg.put(txId, waitingTxs = new HashSet<>());
+                            Set<GridCacheVersion> waitingTxs = wfg.computeIfAbsent(txId, k -> new HashSet<>());
 
                             waitingTxs.add(lock.txId());
                         }
@@ -487,10 +470,7 @@ public class TxDeadlockDetection {
                     if (lock.candiate() || lock.owner()) {
                         GridCacheVersion txId0 = lock.txId();
 
-                        Set<GridCacheVersion> waitForTxs = wfg.get(txId0);
-
-                        if (waitForTxs == null)
-                            wfg.put(txId0, waitForTxs = new HashSet<>());
+                        Set<GridCacheVersion> waitForTxs = wfg.computeIfAbsent(txId0, k -> new HashSet<>());
 
                         waitForTxs.add(txOwner);
                     }
@@ -562,7 +542,7 @@ public class TxDeadlockDetection {
              * Default constructor.
              */
             DeadlockTimeoutObject() {
-                super(deadLockTimeout);
+                super(DEAD_LOCK_TIMEOUT);
             }
 
             /** {@inheritDoc} */
@@ -571,7 +551,7 @@ public class TxDeadlockDetection {
 
                 IgniteLogger log = cctx.kernalContext().log(this.getClass());
 
-                U.warn(log, "Deadlock detection was timed out [timeout=" + deadLockTimeout + ", fut=" + this + ']');
+                U.warn(log, "Deadlock detection was timed out [timeout=" + DEAD_LOCK_TIMEOUT + ", fut=" + this + ']');
 
                 onDone();
             }

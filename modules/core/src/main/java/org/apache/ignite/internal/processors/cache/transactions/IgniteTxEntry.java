@@ -93,6 +93,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /** Skip read-through cache store flag bit mask. */
     private static final int TX_ENTRY_SKIP_READ_THROUGH_FLAG_MASK = 1 << 5;
 
+    /** Handle binary in interceptor operation bit mask. */
+    private static final int KEEP_BINARY_INTERCEPTOR_FLAG_MASK = 1 << 6;
+
     /** Prepared flag updater. */
     private static final AtomicIntegerFieldUpdater<IgniteTxEntry> PREPARED_UPD =
         AtomicIntegerFieldUpdater.newUpdater(IgniteTxEntry.class, "prepared");
@@ -280,6 +283,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @param conflictVer Data center replication version.
      * @param skipStore Skip store flag.
      * @param skipReadThrough Skip read-through cache store flag.
+     * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      * @param addReader Add reader flag.
      */
     public IgniteTxEntry(GridCacheContext<?, ?> ctx,
@@ -294,6 +298,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         GridCacheVersion conflictVer,
         boolean skipStore,
         boolean skipReadThrough,
+        boolean keepBinaryInInterceptor,
         boolean keepBinary,
         boolean addReader
     ) {
@@ -312,6 +317,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
         skipStore(skipStore);
         skipReadThrough(skipReadThrough);
+        keepBinaryInInterceptor(keepBinaryInInterceptor);
         keepBinary(keepBinary);
         addReader(addReader);
 
@@ -618,10 +624,24 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     }
 
     /**
-     * @return Skip store flag.
+     * @return Skip read through flag.
      */
     public boolean skipReadThrough() {
         return isFlag(TX_ENTRY_SKIP_READ_THROUGH_FLAG_MASK);
+    }
+
+    /**
+     * @param handleBinary Handle binary in interceptor flag.
+     */
+    public void keepBinaryInInterceptor(boolean handleBinary) {
+        setFlag(handleBinary, KEEP_BINARY_INTERCEPTOR_FLAG_MASK);
+    }
+
+    /**
+     * @return Handle binary in interceptor operation flag.
+     */
+    public boolean keepBinaryInInterceptor() {
+        return isFlag(KEEP_BINARY_INTERCEPTOR_FLAG_MASK);
     }
 
     /**

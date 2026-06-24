@@ -164,11 +164,6 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
     }
 
     /** {@inheritDoc} */
-    @Override public boolean localDeploymentOwner() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public long sequenceNumber() {
         return clsLdrId.localId();
     }

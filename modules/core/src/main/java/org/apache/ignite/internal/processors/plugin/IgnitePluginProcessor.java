@@ -33,6 +33,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridPluginContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
+import org.apache.ignite.internal.systemview.PluginViewWalker;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.Extension;
@@ -42,6 +44,7 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
+import org.apache.ignite.spi.systemview.view.PluginView;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.PLUGIN;
@@ -50,6 +53,12 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
  *
  */
 public class IgnitePluginProcessor extends GridProcessorAdapter {
+    /** */
+    public static final String PLUGINS_SYS_VIEW = MetricUtils.metricName("ignite", "plugins");
+
+    /** */
+    private static final String PLUGINS_SYS_VIEW_DESC = "Information about configured and loaded Ignite plugins.";
+
     /** */
     private final Map<String, PluginProvider> plugins = new LinkedHashMap<>();
 
@@ -194,7 +203,7 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void onJoiningNodeDataReceived(JoiningNodeDiscoveryData data) {
         if (data.hasJoiningNodeData()) {
-            Map<String, Serializable> pluginsData = (Map<String, Serializable>)data.joiningNodeData();
+            Map<String, Serializable> pluginsData = data.joiningNodeData();
 
             applyPluginsData(data.joiningNodeId(), pluginsData);
         }
@@ -244,7 +253,7 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
         }
         else {
             for (PluginProvider plugin : plugins.values()) {
-                U.quietAndInfo(log, "  ^-- " + plugin.name() + " " + plugin.version());
+                U.quietAndInfo(log, "  ^-- " + plugin.name() + " " + plugin.version() + " " + plugin.info());
                 U.quietAndInfo(log, "  ^-- " + plugin.copyright());
                 U.quietAndInfo(log, "");
             }
@@ -291,5 +300,19 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
 
             return extensions;
         }
+    }
+
+    /** */
+    public void registerSystemView() {
+        if (ctx.systemView().view(PLUGINS_SYS_VIEW) != null)
+            return;
+
+        ctx.systemView().registerView(
+            PLUGINS_SYS_VIEW,
+            PLUGINS_SYS_VIEW_DESC,
+            new PluginViewWalker(),
+            plugins::values,
+            PluginView::new
+        );
     }
 }

@@ -17,15 +17,9 @@
 
 package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
-import java.io.BufferedInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.LineNumberReader;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
 import java.security.cert.X509Certificate;
 import java.sql.Date;
 import java.sql.Time;
@@ -100,8 +94,8 @@ import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS
  * Jetty REST handler. The following URL format is supported: {@code /ignite?cmd=cmdName&param1=abc&param2=123}
  */
 public class GridJettyRestHandler extends AbstractHandler {
-    /** Used to sent request charset. */
-    private static final String CHARSET = StandardCharsets.UTF_8.name();
+    /** */
+    public static final String IGNITE_CMD_PATH = "/ignite";
 
     /** */
     private static final String FAILED_TO_PARSE_FORMAT = "Failed to parse parameter of %s type [%s=%s]";
@@ -148,12 +142,6 @@ public class GridJettyRestHandler extends AbstractHandler {
     /** Request handlers. */
     private GridRestProtocolHandler hnd;
 
-    /** Default page. */
-    private volatile String dfltPage;
-
-    /** Favicon. */
-    private volatile byte[] favicon;
-
     /** Mapper from Java object to JSON. */
     private final ObjectMapper jsonMapper;
 
@@ -175,27 +163,6 @@ public class GridJettyRestHandler extends AbstractHandler {
         this.authChecker = authChecker;
         this.log = ctx.log(getClass());
         this.jsonMapper = new IgniteObjectMapper(ctx);
-
-        // Init default page and favicon.
-        try {
-            initDefaultPage();
-
-            if (log.isDebugEnabled())
-                log.debug("Initialized default page.");
-        }
-        catch (IOException e) {
-            U.warn(log, "Failed to initialize default page: " + e.getMessage());
-        }
-
-        try {
-            initFavicon();
-
-            if (log.isDebugEnabled())
-                log.debug(favicon != null ? "Initialized favicon, size: " + favicon.length : "Favicon is null.");
-        }
-        catch (IOException e) {
-            U.warn(log, "Failed to initialize favicon: " + e.getMessage());
-        }
     }
 
     /**
@@ -302,115 +269,17 @@ public class GridJettyRestHandler extends AbstractHandler {
         }
     }
 
-    /**
-     * @throws IOException If failed.
-     */
-    private void initDefaultPage() throws IOException {
-        assert dfltPage == null;
-
-        InputStream in = getClass().getResourceAsStream("rest.html");
-
-        if (in != null) {
-            LineNumberReader rdr = new LineNumberReader(new InputStreamReader(in, CHARSET));
-
-            try {
-                StringBuilder buf = new StringBuilder(2048);
-
-                for (String line = rdr.readLine(); line != null; line = rdr.readLine()) {
-                    buf.append(line);
-
-                    if (!line.endsWith(" "))
-                        buf.append(' ');
-                }
-
-                dfltPage = buf.toString();
-            }
-            finally {
-                U.closeQuiet(rdr);
-            }
-        }
-    }
-
-    /**
-     * @throws IOException If failed.
-     */
-    private void initFavicon() throws IOException {
-        assert favicon == null;
-
-        InputStream in = getClass().getResourceAsStream("favicon.ico");
-
-        if (in != null) {
-            BufferedInputStream bis = new BufferedInputStream(in);
-
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-
-            try {
-                byte[] buf = new byte[2048];
-
-                while (true) {
-                    int n = bis.read(buf);
-
-                    if (n == -1)
-                        break;
-
-                    bos.write(buf, 0, n);
-                }
-
-                favicon = bos.toByteArray();
-            }
-            finally {
-                U.closeQuiet(bis);
-            }
-        }
-    }
-
     /** {@inheritDoc} */
-    @Override public void handle(String target, Request req, HttpServletRequest srvReq, HttpServletResponse res)
-        throws IOException {
+    @Override public void handle(String target, Request req, HttpServletRequest srvReq, HttpServletResponse res) {
         if (log.isDebugEnabled())
             log.debug("Handling request [target=" + target + ", req=" + req + ", srvReq=" + srvReq + ']');
 
-        if (target.startsWith("/ignite")) {
-            processRequest(target, srvReq, res);
+        if (!target.startsWith(IGNITE_CMD_PATH))
+            return;
 
-            req.setHandled(true);
-        }
-        else if (target.startsWith("/favicon.ico")) {
-            if (favicon == null) {
-                res.setStatus(HttpServletResponse.SC_NOT_FOUND);
+        processRequest(target, srvReq, res);
 
-                req.setHandled(true);
-
-                return;
-            }
-
-            res.setStatus(HttpServletResponse.SC_OK);
-
-            res.setContentType("image/x-icon");
-
-            res.getOutputStream().write(favicon);
-            res.getOutputStream().flush();
-
-            req.setHandled(true);
-        }
-        else {
-            if (dfltPage == null) {
-                res.setStatus(HttpServletResponse.SC_NOT_FOUND);
-
-                req.setHandled(true);
-
-                return;
-            }
-
-            res.setStatus(HttpServletResponse.SC_OK);
-
-            res.setContentType("text/html");
-
-            res.getWriter().write(dfltPage);
-            res.getWriter().flush();
-
-            req.setHandled(true);
-        }
+        req.setHandled(true);
     }
 
     /**
@@ -514,7 +383,7 @@ public class GridJettyRestHandler extends AbstractHandler {
      * @return REST request.
      * @throws IgniteCheckedException If creation failed.
      */
-    @Nullable private GridRestRequest createRequest(
+    private GridRestRequest createRequest(
         GridRestCommand cmd,
         Map<String, String> params,
         HttpServletRequest req
@@ -960,20 +829,7 @@ public class GridJettyRestHandler extends AbstractHandler {
             // Don't fail - try to execute locally.
         }
 
-        String sesTokStr = params.get("sessionToken");
-
-        try {
-            if (sesTokStr != null) {
-                // Token is a UUID encoded as 16 bytes as HEX.
-                byte[] bytes = U.hexString2ByteArray(sesTokStr);
-
-                if (bytes.length == 16)
-                    restReq.sessionToken(bytes);
-            }
-        }
-        catch (IllegalArgumentException ignored) {
-            // Ignore invalid session token.
-        }
+        restReq.sessionToken(sessionToken(params.get("sessionToken")));
 
         return restReq;
     }
@@ -1038,6 +894,25 @@ public class GridJettyRestHandler extends AbstractHandler {
 
         if (obj instanceof String[] && ((String[])obj).length > 0)
             return ((String[])obj)[0];
+
+        return null;
+    }
+
+    /** @return Bytes representation of the session token. */
+    public static byte[] sessionToken(String sesToken) {
+        if (sesToken == null)
+            return null;
+
+        try {
+            // Token is a UUID encoded as 16 bytes as HEX.
+            byte[] token = U.hexString2ByteArray(sesToken);
+
+            if (token.length == 16)
+                return token;
+        }
+        catch (IllegalArgumentException ignored) {
+            // Ignore invalid session token.
+        }
 
         return null;
     }

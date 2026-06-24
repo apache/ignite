@@ -17,25 +17,21 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.ExecutorAwareMessage;
-import org.apache.ignite.internal.GridTopic;
-import org.apache.ignite.internal.MarshallableMessage;
+import org.apache.ignite.internal.GridTopicMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.processors.tracing.messages.SpanTransport;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Wrapper for all grid messages.
  */
-public class GridIoMessage implements MarshallableMessage, SpanTransport {
+public class GridIoMessage implements Message, SpanTransport {
     /** */
     public static final Integer STRIPE_DISABLED_PART = Integer.MIN_VALUE;
 
@@ -43,36 +39,29 @@ public class GridIoMessage implements MarshallableMessage, SpanTransport {
     @Order(0)
     byte plc;
 
-    /** Message topic. */
-    @GridToStringInclude
-    private Object topic;
-
-    /** Topic bytes. */
+    /** Topic message. */
     @Order(1)
-    byte[] topicBytes;
-
-    /** Topic ordinal. */
-    @Order(2)
-    int topicOrd = -1;
+    @GridToStringInclude
+    GridTopicMessage topicMsg;
 
     /** Message ordered flag. */
-    @Order(3)
+    @Order(2)
     boolean ordered;
 
     /** Message timeout. */
-    @Order(4)
+    @Order(3)
     long timeout;
 
     /** Whether message can be skipped on timeout. */
-    @Order(5)
+    @Order(4)
     boolean skipOnTimeout;
 
     /** Message. */
-    @Order(6)
+    @Order(5)
     Message msg;
 
     /** Serialized span */
-    @Order(7)
+    @Order(6)
     byte[] span;
 
     /**
@@ -85,7 +74,6 @@ public class GridIoMessage implements MarshallableMessage, SpanTransport {
     /**
      * @param plc Policy.
      * @param topic Communication topic.
-     * @param topicOrd Topic ordinal value.
      * @param msg Message.
      * @param ordered Message ordered flag.
      * @param timeout Timeout.
@@ -94,20 +82,17 @@ public class GridIoMessage implements MarshallableMessage, SpanTransport {
     public GridIoMessage(
         byte plc,
         Object topic,
-        int topicOrd,
         Message msg,
         boolean ordered,
         long timeout,
         boolean skipOnTimeout
     ) {
         assert topic != null;
-        assert topicOrd <= Byte.MAX_VALUE;
         assert msg != null;
 
         this.plc = plc;
         this.msg = msg;
-        this.topic = topic;
-        this.topicOrd = topicOrd;
+        topicMsg = new GridTopicMessage(topic);
         this.ordered = ordered;
         this.timeout = timeout;
         this.skipOnTimeout = skipOnTimeout;
@@ -116,7 +101,7 @@ public class GridIoMessage implements MarshallableMessage, SpanTransport {
     /**
      * @return Policy.
      */
-    public byte policy() {
+    byte policy() {
         return plc;
     }
 
@@ -124,21 +109,14 @@ public class GridIoMessage implements MarshallableMessage, SpanTransport {
      * @return Topic.
      */
     Object topic() {
-        return topic;
-    }
-
-    /**
-     * @param topic Topic.
-     */
-    void topic(Object topic) {
-        this.topic = topic;
+        return GridTopicMessage.topic(topicMsg);
     }
 
     /**
      * @return Topic ordinal.
      */
-    public int topicOrdinal() {
-        return topicOrd;
+    int topicOrdinal() {
+        return GridTopicMessage.ordinal(topicMsg);
     }
 
     /**
@@ -165,7 +143,7 @@ public class GridIoMessage implements MarshallableMessage, SpanTransport {
     /**
      * @return {@code True} if message is ordered, {@code false} otherwise.
      */
-    public boolean isOrdered() {
+    boolean isOrdered() {
         return ordered;
     }
 
@@ -178,7 +156,6 @@ public class GridIoMessage implements MarshallableMessage, SpanTransport {
     @Override public int hashCode() {
         throw new AssertionError();
     }
-
 
     /** {@inheritDoc} */
     @Override public void span(byte[] span) {
@@ -212,23 +189,6 @@ public class GridIoMessage implements MarshallableMessage, SpanTransport {
             return ((ExecutorAwareMessage)msg).executorName();
 
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (topicOrd < 0 && topic != null)
-            topicBytes = U.marshal(marsh, topic);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader ldr) throws IgniteCheckedException {
-        if (topicOrd < 0 && topicBytes != null) {
-            topic = U.unmarshal(marsh, topicBytes, ldr);
-
-            topicBytes = null;
-        }
-        else if (topicOrd >= 0)
-            topic = GridTopic.fromOrdinal(topicOrd);
     }
 
     /** {@inheritDoc} */

@@ -108,7 +108,6 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.tracing.NoopSpan;
 import org.apache.ignite.internal.processors.tracing.Span;
@@ -146,7 +145,6 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents.serverJoinEvent;
 import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents.serverLeftEvent;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.isSnapshotOperation;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.remoteSecurityContext;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallelUninterruptibly;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
@@ -281,9 +279,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /** Cache change requests. */
     private ExchangeActions exchActions;
-
-    /** Security context. */
-    @Nullable private final SecurityContext secCtx;
 
     /** */
     private final IgniteLogger exchLog;
@@ -433,8 +428,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         log = cctx.logger(getClass());
         exchLog = cctx.logger(EXCHANGE_LOG);
 
-        secCtx = remoteSecurityContext(cctx.kernalContext());
-
         timeBag = new TimeBag(log.isInfoEnabled());
 
         initFut = new GridFutureAdapter<Boolean>() {
@@ -482,11 +475,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** {@inheritDoc} */
     @Override public boolean skipForExchangeMerge() {
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override @Nullable public SecurityContext securityContext() {
-        return secCtx;
     }
 
     /**
@@ -3664,6 +3652,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param sndResNodes Additional nodes to send finish message to.
      */
     private void onAllReceived(@Nullable Collection<ClusterNode> sndResNodes) {
+        if (!enterBusy())
+            return;
+
         try {
             initFut.get();
 
@@ -3716,6 +3707,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 onDone(new IgniteNeedReconnectException(cctx.localNode(), e));
             else
                 onDone(e);
+        }
+        finally {
+            leaveBusy();
         }
     }
 
@@ -3770,7 +3764,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     cctx.kernalContext().pools().getSystemExecutorService(),
                     cctx.affinity().cacheGroups().values(),
                     desc -> {
-                        partitionTopology(desc.groupId()).beforeExchange(this, true, true);
+                        if (!enterBusy())
+                            return null;
+
+                        try {
+                            partitionTopology(desc.groupId()).beforeExchange(this, true, true);
+                        }
+                        finally {
+                            leaveBusy();
+                        }
 
                         return null;
                     });
@@ -3787,7 +3789,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 cctx.kernalContext().pools().getSystemExecutorService(),
                 msgs.values(),
                 msg -> {
-                    processSingleMessageOnCrdFinish(msg, joinedNodeAff);
+                    if (!enterBusy())
+                        return null;
+
+                    try {
+                        processSingleMessageOnCrdFinish(msg, joinedNodeAff);
+                    }
+                    finally {
+                        leaveBusy();
+                    }
 
                     return null;
                 }

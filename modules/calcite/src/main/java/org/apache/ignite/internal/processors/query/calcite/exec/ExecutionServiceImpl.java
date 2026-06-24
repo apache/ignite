@@ -78,7 +78,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.tracker.Performa
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.QueryMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteErrorMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
-import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryStartRequest;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryStartResponse;
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
@@ -478,9 +477,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
     /** {@inheritDoc} */
     @Override public void init() {
-        messageService().register((n, m) -> onMessage(n, (QueryStartRequest)m), MessageType.QUERY_START_REQUEST);
-        messageService().register((n, m) -> onMessage(n, (QueryStartResponse)m), MessageType.QUERY_START_RESPONSE);
-        messageService().register((n, m) -> onMessage(n, (CalciteErrorMessage)m), MessageType.QUERY_ERROR_MESSAGE);
+        messageService().register((n, m) -> onMessage(n, (QueryStartRequest)m), QueryStartRequest.class);
+        messageService().register((n, m) -> onMessage(n, (QueryStartResponse)m), QueryStartResponse.class);
+        messageService().register((n, m) -> onMessage(n, (CalciteErrorMessage)m), CalciteErrorMessage.class);
 
         eventManager().addDiscoveryEventListener(discoLsnr, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
 
@@ -537,7 +536,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 );
 
             case EXPLAIN:
-                return executeExplain(qry, (ExplainPlan)plan);
+                return executeExplain((ExplainPlan)plan);
 
             case DDL:
                 return executeDdl(qry, (DdlPlan)plan);
@@ -883,7 +882,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private FieldsQueryCursor<List<?>> executeExplain(RootQuery<Row> qry, ExplainPlan plan) {
+    private FieldsQueryCursor<List<?>> executeExplain(ExplainPlan plan) {
         QueryCursorImpl<List<?>> cur = new QueryCursorImpl<>(singletonList(singletonList(plan.plan())));
         cur.fieldsMeta(plan.fieldsMeta().queryFieldsMetadata(Commons.typeFactory()));
 
@@ -981,7 +980,10 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 U.error(log, "Error occurred during send error message: " + X.getFullStackTrace(e));
             }
             finally {
-                qryReg.query(msg.queryId()).onError(ex);
+                Query<?> qry = qryReg.query(msg.queryId());
+
+                if (qry != null)
+                    qry.onError(ex);
             }
         }
     }

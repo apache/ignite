@@ -67,4 +67,9 @@ public class NoopTracingSpi extends IgniteSpiAdapter implements TracingSpi<NoopS
     @Override public byte type() {
         return TracingSpiType.NOOP_TRACING_SPI.index();
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "NoopTracingSpi";
+    }
 }

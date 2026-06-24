@@ -15,14 +15,14 @@
 # limitations under the License.
 #
 
-# Use Java 8 image as default one.
-FROM openjdk:11
+# Use Java 17 image as default one.
+FROM openjdk:17
 
 # Set Apache Ignite configuration file name.
 ARG IGNITE_CFG_XML="example-kube.xml"
 
 # Set Apache Ignite version.
-ARG IGNITE_VERSION="2.0.0"
+ARG IGNITE_VERSION="2.18.0"
 
 # Set IGNITE_HOME variable.
 ENV IGNITE_HOME /opt/ignite/apache-ignite-${IGNITE_VERSION}-bin

@@ -139,7 +139,7 @@ public class GridNioAsyncNotifyFilter extends GridNioFilterAdapter {
      * @param ses Session.
      * @param ex Exception.
      */
-    private void handleException(GridNioSession ses, IgniteCheckedException ex) {
+    protected void handleException(GridNioSession ses, IgniteCheckedException ex) {
         try {
             proceedExceptionCaught(ses, ex);
         }
