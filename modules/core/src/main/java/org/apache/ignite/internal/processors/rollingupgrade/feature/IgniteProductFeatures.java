@@ -17,20 +17,25 @@
 
 package org.apache.ignite.internal.processors.rollingupgrade.feature;
 
-import java.io.Serializable;
 import java.util.Objects;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** Represents a set of {@link IgniteFeature}s available for the specific Ignite product version. */
-public class IgniteProductFeatures implements Serializable {
+public class IgniteProductFeatures implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
+    @Order(0)
+    IgniteProductVersion ver;
 
     /** */
-    private final IgniteProductVersion ver;
+    @Order(1)
+    IgniteFeatureSet features;
 
     /** */
-    private final IgniteFeatureSet features;
+    public IgniteProductFeatures() {
+        // No-op.
+    }
 
     /** */
     public IgniteProductFeatures(IgniteProductVersion ver, IgniteFeatureSet features) {

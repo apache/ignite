@@ -212,12 +212,12 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
-        RollingUpgradeNodeData gridData = (RollingUpgradeNodeData)data.commonData();
+        RollingUpgradeNodeData gridData = data.commonData();
 
-        isVerUpgradeEnabled = gridData.isVersionUpgradeEnabled();
-        isNodeFenceActive = gridData.isNodeFenceActive();
+        isVerUpgradeEnabled = gridData.isVersionUpgradeEnabled;
+        isNodeFenceActive = gridData.isNodeFenceActive;
 
-        featureMgr.onGridDataReceived(gridData.activeFeatures());
+        featureMgr.onGridDataReceived(gridData.activeFeatures);
     }
 
     /** {@inheritDoc} */

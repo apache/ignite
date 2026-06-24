@@ -17,42 +17,33 @@
 
 package org.apache.ignite.internal.processors.rollingupgrade;
 
-import java.io.Serializable;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteProductFeatures;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
-public class RollingUpgradeNodeData implements Serializable {
+public class RollingUpgradeNodeData implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
+    @Order(0)
+    boolean isVersionUpgradeEnabled;
 
     /** */
-    private final boolean isVersionUpgradeEnabled;
+    @Order(1)
+    IgniteProductFeatures activeFeatures;
 
     /** */
-    private final IgniteProductFeatures activeFeatures;
+    @Order(2)
+    boolean isNodeFenceActive;
 
     /** */
-    private final boolean isNodeFenceActive;
+    public RollingUpgradeNodeData() {
+        // No-op.
+    }
 
     /** */
     public RollingUpgradeNodeData(boolean isVersionUpgradeEnabled, boolean isNodeFenceActive, IgniteProductFeatures activeFeatures) {
         this.isVersionUpgradeEnabled = isVersionUpgradeEnabled;
         this.isNodeFenceActive = isNodeFenceActive;
         this.activeFeatures = activeFeatures;
-    }
-
-    /** */
-    public boolean isVersionUpgradeEnabled() {
-        return isVersionUpgradeEnabled;
-    }
-
-    /** */
-    public boolean isNodeFenceActive() {
-        return isNodeFenceActive;
-    }
-
-    /** */
-    public IgniteProductFeatures activeFeatures() {
-        return activeFeatures;
     }
 }
