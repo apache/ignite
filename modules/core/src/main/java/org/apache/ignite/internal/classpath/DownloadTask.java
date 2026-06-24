@@ -32,12 +32,12 @@ import static org.apache.ignite.internal.classpath.IgniteClassPathState.READY;
  *
  * @see ClassPathFilesTransmissionHandler
  */
-public class DownloadClassPathTask extends ClassPathProcessor.ClassPathTask<Void> {
+class DownloadTask extends ClassPathProcessor.ClassPathTask<Void> {
     /**
      * @param ctx Kernal context.
      * @param icpId Ignite class path.
      */
-    protected DownloadClassPathTask(GridKernalContext ctx, UUID icpId) {
+    protected DownloadTask(GridKernalContext ctx, UUID icpId) {
         super(ctx, icpId);
     }
 
@@ -76,6 +76,15 @@ public class DownloadClassPathTask extends ClassPathProcessor.ClassPathTask<Void
             if (log.isDebugEnabled())
                 log.debug("ClassPath files from remote node has been fully received [icp=" + icp.name() + ']');
 
+            try {
+                ClassPathProcessor.writeClassPathDescriptor(ctx.pdsFolderResolver().fileTree(), icp);
+            }
+            catch (Exception e) {
+                result().onDone(e);
+
+                return;
+            }
+
             ctx.classPath()
                 .modifyInMetastorageAsync(icpId, READY, state -> state.addDeployedOnNode(ctx.localNodeId()))
                 .listen(this::finishTaskWithFutureResult);
@@ -96,7 +105,7 @@ public class DownloadClassPathTask extends ClassPathProcessor.ClassPathTask<Void
             log.warning("Failed to download ClassPath files [icp=" + icp.name() + "]", t);
 
             // Cleanup local files.
-            ctx.classPath().cleanupAsync(icp.id(), true);
+            ctx.classPath().addClassPathTask(icp, CleanupTask.localCleanup(ctx, icp.id()));
         }
         catch (Exception e) {
             log.warning("onDowloadFailed", e);

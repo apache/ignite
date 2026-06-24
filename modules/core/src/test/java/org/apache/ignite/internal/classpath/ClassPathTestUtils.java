@@ -27,12 +27,18 @@ import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.classpath.ClassPathProcessor.metastorageKey;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /** */
 public class ClassPathTestUtils {
@@ -93,10 +99,14 @@ public class ClassPathTestUtils {
 
         Set<Path> nodeCpFiles = Files.list(ft.classPathRoot(cpName).toPath()).collect(Collectors.toSet());
 
+        Set<String> nodeCpFilesNames = fileNames(nodeCpFiles);
+
+        nodeCpFilesNames.remove(NodeFileTree.ICP_DESCRIPTOR_NAME);
+
         assertEquals(
             "Files must be deployed on each node",
             fileNames(cpFiles),
-            fileNames(nodeCpFiles)
+            nodeCpFilesNames
         );
 
         for (Path cpFile : cpFiles) {
@@ -107,6 +117,20 @@ public class ClassPathTestUtils {
             assertEquals(Files.size(cpFile), Files.size(nodeFile));
         }
     }
+
+    /** */
+    public static void checkDeployedOn(IgniteEx srv, String cpName) throws IgniteInterruptedCheckedException {
+        assertTrue(waitForCondition(() -> {
+            try {
+                return srv.context().distributedMetastorage().<IgniteClassPath>read(metastorageKey(cpName))
+                    .deployedOnNodes().contains(srv.localNode().id());
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }, 10_000));
+    }
+
 
     /** */
     static ClassPathFilesTransmissionHandler transmissionHandler(IgniteEx grid1) {

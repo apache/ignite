@@ -20,6 +20,7 @@ package org.apache.ignite.internal.classpath;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Set;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterNode;
@@ -123,9 +124,8 @@ public class ClassPathCreationFailoverTest extends GridCommonAbstractTest {
 
         LogListener createdMsg = newClassPathListener();
         LogListener uploadNodeFailedMsg = logListener("Failed to download ClassPath files [icp=testcp]");
-        LogListener lostStateMsg = logListener("IgniteClassPath task done [task=ChangeClassPathState[newState=LOST]");
 
-        lsnrLog.registerAllListeners(createdMsg, uploadNodeFailedMsg, lostStateMsg);
+        lsnrLog.registerAllListeners(createdMsg, uploadNodeFailedMsg);
 
         ClassPathCreateCommandArg arg = new ClassPathCreateCommandArg();
 
@@ -154,7 +154,16 @@ public class ClassPathCreationFailoverTest extends GridCommonAbstractTest {
         }, TIMEOUT));
 
         assertTrue(waitForCondition(uploadNodeFailedMsg::check, TIMEOUT));
-        assertTrue(waitForCondition(lostStateMsg::check, TIMEOUT));
+        assertTrue(waitForCondition(() -> {
+                try {
+                    return grid1.context().distributedMetastorage().<IgniteClassPath>read(metastorageKey("testcp")).state() == LOST;
+                }
+                catch (IgniteCheckedException e) {
+                    return false;
+                }
+            },
+            TIMEOUT
+        ));
         assertTrue(waitForCondition(
             () -> !grid1.context().pdsFolderResolver().fileTree().classPathRoot("testcp").exists(),
             TIMEOUT
@@ -213,8 +222,9 @@ public class ClassPathCreationFailoverTest extends GridCommonAbstractTest {
         assertNotNull(icp);
         assertEquals(READY, icp.state());
         assertEquals(2, icp.deployedOnNodes().size());
-        assertTrue(icp.deployedOnNodes().contains(grid(0).localNode().id()));
-        assertTrue(icp.deployedOnNodes().contains(grid(2).localNode().id()));
+
+        ClassPathTestUtils.checkDeployedOn(grid(0), "testcp");
+        ClassPathTestUtils.checkDeployedOn(grid(2), "testcp");
     }
 
     /** */
@@ -261,7 +271,8 @@ public class ClassPathCreationFailoverTest extends GridCommonAbstractTest {
         assertNotNull(icp);
         assertEquals(READY, icp.state());
         assertEquals(1, icp.deployedOnNodes().size());
-        assertTrue(icp.deployedOnNodes().contains(grid(0).localNode().id()));
+
+        ClassPathTestUtils.checkDeployedOn(grid(0), "testcp");
 
         assertFalse(grid(1).context().pdsFolderResolver().fileTree().classPathRoot("testcp").exists());
     }

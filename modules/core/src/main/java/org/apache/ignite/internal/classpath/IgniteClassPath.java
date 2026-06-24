@@ -21,9 +21,12 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
+
+import static org.apache.ignite.internal.classpath.IgniteClassPathState.READY;
 
 /**
  * Class path POJO.
@@ -63,12 +66,55 @@ public class IgniteClassPath implements Serializable {
         long[] lengths,
         IgniteClassPathState state
     ) {
+        assert files.length == lengths.length;
+
         this.id = id;
         this.deployedOnNodes = deployedOnNodes;
         this.name = name;
         this.files = files;
         this.lengths = lengths;
         this.state = state;
+    }
+
+    /** */
+    public static IgniteClassPath fromProperties(Properties p, UUID locNodeId) {
+        int sz = 0;
+
+        while (p.containsKey("files." + sz))
+            sz++;
+
+        String[] files = new String[sz];
+        long[] lengths = new long[sz];
+
+        for (int i = 0; i < sz; i++) {
+            files[i] = p.getProperty("files." + i);
+            lengths[i] = Long.parseLong(p.getProperty("length." + i));
+        }
+
+        return new IgniteClassPath(
+            UUID.fromString(p.getProperty("id")),
+            Set.of(locNodeId),
+            p.getProperty("name"),
+            files,
+            lengths,
+            IgniteClassPathState.valueOf(p.getProperty("state"))
+        );
+    }
+
+    /** */
+    public Properties toProperties() {
+        Properties p = new Properties();
+
+        p.setProperty("id", id.toString());
+        p.setProperty("name", name);
+        p.setProperty("state", state.name());
+
+        for (int i = 0; i < files.length; i++) {
+            p.setProperty("files." + i, files[i]);
+            p.setProperty("length." + i, Long.toString(lengths[i]));
+        }
+
+        return p;
     }
 
     /**
@@ -114,7 +160,9 @@ public class IgniteClassPath implements Serializable {
 
         deployedOnNodes0.add(node);
 
-        return new IgniteClassPath(id, deployedOnNodes0, name, files, lengths, state);
+        IgniteClassPathState newState = state == IgniteClassPathState.LOST ? READY : state;
+
+        return new IgniteClassPath(id, deployedOnNodes0, name, files, lengths, newState);
     }
 
     /**
@@ -130,7 +178,9 @@ public class IgniteClassPath implements Serializable {
 
         deployedOnNodes0.remove(node);
 
-        return new IgniteClassPath(id, deployedOnNodes0, name, files, lengths, state);
+        IgniteClassPathState newState = (state == READY && deployedOnNodes0.isEmpty()) ? IgniteClassPathState.LOST : state;
+
+        return new IgniteClassPath(id, deployedOnNodes0, name, files, lengths, newState);
     }
 
     /** */

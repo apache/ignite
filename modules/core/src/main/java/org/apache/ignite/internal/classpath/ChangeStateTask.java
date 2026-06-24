@@ -20,38 +20,37 @@ import java.util.UUID;
 import org.apache.ignite.internal.GridKernalContext;
 
 /**
- * Removes {@link #node2rmv} from {@link IgniteClassPath#deployedOnNodes()} set.
+ * Changes {@link IgniteClassPath} state to {@link #state}.
  */
-public class RemoveNodeFromClassPathTask extends ClassPathProcessor.ClassPathTask<Void> {
-    /** Node to remove from {@link IgniteClassPath#deployedOnNodes()} set. */
-    private final UUID node2rmv;
+class ChangeStateTask extends ClassPathProcessor.ClassPathTask<Void> {
+    /** New {@link IgniteClassPath} state. */
+    private final IgniteClassPathState state;
 
     /** */
-    public RemoveNodeFromClassPathTask(GridKernalContext ctx, UUID icpId, UUID node2rmv) {
+    public ChangeStateTask(GridKernalContext ctx, UUID icpId, IgniteClassPathState state) {
         super(ctx, icpId);
-        this.node2rmv = node2rmv;
+
+        this.state = state;
     }
 
     /** {@inheritDoc} */
     @Override void start() {
-        ctx.classPath()
-            .modifyInMetastorageAsync(icpId, null, icp -> icp.removeDeployedOnNode(node2rmv))
-            .listen(this::finishTaskWithFutureResult);
+        ctx.classPath().modifyInMetastorageAsync(icpId, null, icp -> icp.newState(state)).listen(this::finishTaskWithFutureResult);
     }
 
     /** {@inheritDoc} */
     @Override String name() {
-        return "Remove node";
+        return "ChangeClassPathState[newState=" + state + ']';
     }
 
     /** {@inheritDoc} */
     @Override void ok() {
         if (log.isDebugEnabled())
-            log.debug("Node removed from ClassPath [icpId=" + icpId + ", node2rmv=" + node2rmv + ']');
+            log.debug("ClassPath state changed [icpId=" + icpId + ", newState=" + state + ']');
     }
 
     /** {@inheritDoc} */
     @Override void fail(Throwable t) {
-        log.warning("Fail to remove node from ClassPath [icpId=" + icpId + ", node2rmv=" + node2rmv + ']', t);
+        log.warning("Fail to change ClassPath state [icpId=" + icpId + ", newState=" + state + ']', t);
     }
 }

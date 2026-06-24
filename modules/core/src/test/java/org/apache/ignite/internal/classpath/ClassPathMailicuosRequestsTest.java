@@ -27,7 +27,9 @@ import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
-/** */
+/**
+ * TODO: add filter for class path descriptor.
+ */
 public class ClassPathMailicuosRequestsTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {

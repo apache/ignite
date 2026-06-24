@@ -18,12 +18,15 @@
 package org.apache.ignite.internal.classpath;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
@@ -31,18 +34,20 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -51,8 +56,11 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.classpath.ChangeNodesTask.addNode;
+import static org.apache.ignite.internal.classpath.ChangeNodesTask.removeNode;
 import static org.apache.ignite.internal.classpath.IgniteClassPathState.NEW;
 import static org.apache.ignite.internal.classpath.IgniteClassPathState.READY;
+import static org.apache.ignite.internal.classpath.IgniteClassPathState.REMOVING;
 
 /**
  * TODO:
@@ -99,17 +107,9 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
                 try {
                     ctx.pools().getSystemExecutorService().submit(() -> {
                         try {
-                            ctx.distributedMetastorage().iterate(METASTORE_PREFIX, (key, val) -> {
-                                if (!isClassPath(val)) {
-                                    log.warning("Wrong data in IgniteClassPath metastorage data [key=" + key + ", val=" + (val) + ']');
-
-                                    return;
-                                }
-
-                                IgniteClassPath icp = (IgniteClassPath)val;
-
-                                addClassPathTask(icp, new RemoveNodeFromClassPathTask(ctx, icp.id(), leftNodeId));
-                            });
+                            iterateMetastorage(
+                                (key, icp) -> addClassPathTask(icp, removeNode(ctx, icp.id(), leftNodeId))
+                            );
                         }
                         catch (IgniteCheckedException e) {
                             log.warning("Distributed metastore iteration error", e);
@@ -127,7 +127,36 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
     @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
         super.onKernalStart(active);
 
+        // Removing stale local data:
+        // 1. Partially downloaded: descriptor not exists or can't be read.
+        // 2. Differs from cluster state: id not equals.
+        // 3. Remove in progress: state REMOVING.
+        File[] staleRoots = staleLocalRoots();
+
+        if (!F.isEmpty(staleRoots)) {
+            for (File cpRoot : staleRoots)
+                removeClassPathLocally(cpRoot);
+        }
+
         ctx.distributedMetastorage().listen(key -> key.startsWith(METASTORE_PREFIX), new ClassPathChangeListener(ctx));
+
+        iterateMetastorage((key, icp) -> {
+            NodeFileTree ft = ctx.pdsFolderResolver().fileTree();
+
+            IgniteClassPath loc = readClassPathDescriptor(ft.classPathDescriptor(icp.name()));
+
+            // Partially donwloaded or locally unknown ClassPath.
+            if (loc == null) {
+                addClassPathTask(icp, CleanupTask.localCleanup(ctx, icp.id()));
+
+                if (icp.state() == READY)
+                    addClassPathTask(icp, new DownloadTask(ctx, icp.id()));
+
+                return;
+            }
+
+            addClassPathTask(icp, addNode(ctx, icp.id(), ctx.localNodeId()));
+        });
     }
 
     /** {@inheritDoc} */
@@ -218,7 +247,8 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
             log.error("Failed to upload ClassPath file, the ClassPath will be removed " +
                 "[name=" + icp.name() + ", id=" + icpId + ", file=" + name + ']', e);
 
-            cleanup(icpId, false);
+            // Cleaning up synchronously.
+            CleanupTask.clusterWideCleanup(ctx, icpId).start();
 
             throw new IgniteException(e);
         }
@@ -269,7 +299,8 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
             log.error("Failed to copy ClassPath file locally, the ClassPath will be removed " +
                 "[name=" + icp.name() + ", id=" + icpId + ']', e);
 
-            cleanup(icpId, false);
+            // Cleaning up synchronously.
+            CleanupTask.clusterWideCleanup(ctx, icpId).start();
 
             throw new IgniteException(e);
         }
@@ -279,7 +310,7 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
     public void makeReady(UUID icpId) throws IgniteCheckedException {
         IgniteClassPath icp = fromMetastorage(icpId, NEW, ctx);
 
-        ChangeClassPathStateTask task = new ChangeClassPathStateTask(ctx, icpId, READY);
+        ChangeStateTask task = new ChangeStateTask(ctx, icpId, READY);
 
         addClassPathTask(icp, task);
 
@@ -520,68 +551,20 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
     }
 
     /**
-     * Asynchronously removes the classpath metastorage record and deletes its local files.
-     *
-     * @param icpId ClassPath id.
-     * @param loc If {@code true} then delete local files, only. Don't remove distributed key.
+     * Iterates all existing {@link IgniteClassPath} in metastorage.
+     * @param action Action to invoke for each {@link IgniteClassPath} instance.
+     * @throws IgniteCheckedException In case of error.
      */
-    IgniteInternalFuture<Void> cleanupAsync(UUID icpId, boolean loc) {
-        try {
-            GridFutureAdapter<Void> res = new GridFutureAdapter<>();
+    private void iterateMetastorage(BiConsumer<String, IgniteClassPath> action) throws IgniteCheckedException {
+        ctx.distributedMetastorage().iterate(METASTORE_PREFIX, (key, val) -> {
+            if (!isClassPath(val)) {
+                log.warning("Wrong data in IgniteClassPath metastorage data [key=" + key + ", val=" + (val) + ']');
 
-            ctx.pools().getSystemExecutorService().submit(() -> {
-                try {
-                    cleanup(icpId, loc);
-
-                    res.onDone((Void)null);
-                }
-                catch (Throwable e) {
-                    res.onDone(e);
-                }
-            });
-
-            if (log.isDebugEnabled()) {
-                res.listen(f -> {
-                    if (log.isDebugEnabled())
-                        log.debug("Async cleanup done. " + (res.error() == null ? "OK" : "FAIL"));
-                });
+                return;
             }
 
-            return res;
-        }
-        catch (RejectedExecutionException e) {
-            return new GridFinishedFuture<>(e);
-        }
-    }
-
-    /**
-     * Removes the classpath metastorage record and deletes its local files.
-     *
-     * @param icpId ClassPath id to clean up.
-     * @param loc If {@code true} then delete local files, only. Don't remove distributed key.
-     */
-    void cleanup(UUID icpId, boolean loc) {
-        IgniteClassPath icp = fromMetastorage(icpId, null, ctx);
-
-        String key = metastorageKey(icp.name());
-
-        if (!loc) {
-            boolean rmvd = false;
-
-            while (!rmvd) {
-                try {
-                    rmvd = ctx.distributedMetastorage().compareAndRemove(key, icp) || ctx.distributedMetastorage().read(key) == null;
-
-                    if (!rmvd)
-                        icp = fromMetastorage(icpId, null, ctx);
-                }
-                catch (IgniteCheckedException e) {
-                    log.error("Failed to remove ClassPath metastorage record [name=" + icp.name() + ']', e);
-                }
-            }
-        }
-
-        U.delete(ctx.pdsFolderResolver().fileTree().classPathRoot(icp.name()));
+            action.accept(key, (IgniteClassPath)val);
+        });
     }
 
     /** */
@@ -592,6 +575,97 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
     /** */
     public static String className(@Nullable Serializable oldVal) {
         return oldVal == null ? null : oldVal.getClass().getName();
+    }
+
+    /** */
+    public static void writeClassPathDescriptor(NodeFileTree ft, IgniteClassPath icp) throws IOException {
+        File desc = ft.classPathDescriptor(icp.name());
+
+        try (FileOutputStream fos = new FileOutputStream(desc)) {
+            icp.toProperties().store(fos, null);
+        }
+    }
+
+    /** */
+    public @Nullable IgniteClassPath readClassPathDescriptor(File desc) {
+        if (!desc.exists())
+            return null;
+
+        try (FileInputStream fis = new FileInputStream(desc)) {
+            Properties p = new Properties();
+
+            p.load(fis);
+
+            return IgniteClassPath.fromProperties(p, ctx.localNodeId());
+        }
+        catch (Exception e) {
+            log.warning("Can't read ClassPath descriptor", e);
+
+            return null;
+        }
+    }
+
+    /** */
+    void removeClassPathLocally(File cpRoot) {
+        if (!cpRoot.exists() || U.delete(cpRoot))
+            return;
+
+        String err = "Can't delete local files. Remove manually [dir=" + cpRoot + ']';
+
+        log.warning(err);
+
+        ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, new IgniteException(err)));
+    }
+
+    /**
+     * Checks local ClassPath roots with the cluster state.
+     *
+     * @return Array of local ClassPath root directories to remove on start.
+     */
+    private File[] staleLocalRoots() {
+        NodeFileTree ft = ctx.pdsFolderResolver().fileTree();
+
+        return ft.classPathRoot().listFiles(cpRoot -> {
+            if (!cpRoot.isDirectory())
+                return false;
+
+            try {
+                IgniteClassPath loc = readClassPathDescriptor(ft.classPathDescriptor(cpRoot.getName()));
+
+                if (loc == null)
+                    return true;
+
+                Serializable fromMetastore = ctx.distributedMetastorage().read(metastorageKey(loc.name()));
+
+                if (fromMetastore == null) {
+                    log.info("Unknown local data. Removing [icp=" + loc + ']');
+
+                    return true;
+                }
+
+                if (!isClassPath(fromMetastore)) {
+                    log.warning("Wrong data in IgniteClassPath metastorage data " +
+                        "[key=" + metastorageKey(loc.name()) + ", val=" + fromMetastore + ']');
+
+                    return true;
+                }
+
+                IgniteClassPath rmt = (IgniteClassPath)fromMetastore;
+
+                if (!Objects.equals(loc.id(), rmt.id()) || rmt.state() == REMOVING) {
+                    log.info("Stale local data. Removing [loc=" + loc + ", rmt=" + rmt + ']');
+
+                    return true;
+                }
+            }
+            catch (Exception e) {
+                log.warning("Error filter local root: " + cpRoot, e);
+
+                return true;
+            }
+
+            return false;
+        });
     }
 
     /** */

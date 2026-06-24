@@ -196,9 +196,10 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
 
         assertEquals(READY, icp.state());
         assertEquals(GRID_CNT, icp.deployedOnNodes().size());
-        assertTrue(icp.deployedOnNodes().contains(grid(0).localNode().id()));
-        assertTrue(icp.deployedOnNodes().contains(grid(1).localNode().id()));
-        assertTrue(icp.deployedOnNodes().contains(grid(2).localNode().id()));
+
+        ClassPathTestUtils.checkDeployedOn(grid(0), cpName());
+        ClassPathTestUtils.checkDeployedOn(grid(1), cpName());
+        ClassPathTestUtils.checkDeployedOn(grid(2), cpName());
 
         checkFilesExists(cpName(), -1, cpFiles);
     }
@@ -230,8 +231,9 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
 
         assertEquals(READY, icp.state());
         assertEquals(2, icp.deployedOnNodes().size());
-        assertTrue(icp.deployedOnNodes().contains(grid(0).localNode().id()));
-        assertTrue(icp.deployedOnNodes().contains(grid(1).localNode().id()));
+
+        ClassPathTestUtils.checkDeployedOn(grid(0), cpName());
+        ClassPathTestUtils.checkDeployedOn(grid(1), cpName());
 
         checkFilesExists(cpName(), FAIL_NODE_IDX, cpFiles);
     }

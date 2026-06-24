@@ -36,7 +36,7 @@ import static org.apache.ignite.internal.classpath.IgniteClassPathState.READY;
  *
  * @see ClassPathProcessor
  */
-public class ClassPathChangeListener implements DistributedMetaStorageListener<Serializable> {
+class ClassPathChangeListener implements DistributedMetaStorageListener<Serializable> {
     /** */
     private final IgniteLogger log;
 
@@ -72,7 +72,7 @@ public class ClassPathChangeListener implements DistributedMetaStorageListener<S
         if (newIcp.deployedOnNodes().isEmpty() && (newIcp.state() == NEW || newIcp.state() == READY)) {
             log.warning("All nodes that haves IgniteClassPath files left the grid [icp=" + newIcp.name() + ']');
 
-            ctx.classPath().addClassPathTask(newIcp, new ChangeClassPathStateTask(ctx, newIcp.id(), IgniteClassPathState.LOST));
+            ctx.classPath().addClassPathTask(newIcp, new ChangeStateTask(ctx, newIcp.id(), IgniteClassPathState.LOST));
 
             return;
         }
@@ -100,7 +100,7 @@ public class ClassPathChangeListener implements DistributedMetaStorageListener<S
 
                     log.info("IgniteClassPath READY. Starting download to local node.");
 
-                    ctx.classPath().addClassPathTask(newIcp, new DownloadClassPathTask(ctx, newIcp.id()));
+                    ctx.classPath().addClassPathTask(newIcp, new DownloadTask(ctx, newIcp.id()));
                 }
                 else
                     log.warning("Wrong state change. Ignore [prev=" + oldIcp.state() + ", new=" + newIcp.state() + ']');

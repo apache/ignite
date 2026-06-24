@@ -20,37 +20,52 @@ import java.util.UUID;
 import org.apache.ignite.internal.GridKernalContext;
 
 /**
- * Changes {@link IgniteClassPath} state to {@link #state}.
+ * Removes {@link #node} from {@link IgniteClassPath#deployedOnNodes()} set.
  */
-public class ChangeClassPathStateTask extends ClassPathProcessor.ClassPathTask<Void> {
-    /** New {@link IgniteClassPath} state. */
-    private final IgniteClassPathState state;
+public class ChangeNodesTask extends ClassPathProcessor.ClassPathTask<Void> {
+    /** Node. */
+    private final UUID node;
+
+    /** Add flag. */
+    private final boolean add;
 
     /** */
-    public ChangeClassPathStateTask(GridKernalContext ctx, UUID icpId, IgniteClassPathState state) {
+    private ChangeNodesTask(GridKernalContext ctx, UUID icpId, UUID node, boolean add) {
         super(ctx, icpId);
+        this.node = node;
+        this.add = add;
+    }
 
-        this.state = state;
+    /** */
+    public static ChangeNodesTask removeNode(GridKernalContext ctx, UUID icpId, UUID node) {
+        return new ChangeNodesTask(ctx, icpId, node, false);
+    }
+
+    /** */
+    public static ChangeNodesTask addNode(GridKernalContext ctx, UUID icpId, UUID node) {
+        return new ChangeNodesTask(ctx, icpId, node, true);
     }
 
     /** {@inheritDoc} */
     @Override void start() {
-        ctx.classPath().modifyInMetastorageAsync(icpId, null, icp -> icp.newState(state)).listen(this::finishTaskWithFutureResult);
+        ctx.classPath()
+            .modifyInMetastorageAsync(icpId, null, icp -> add ? icp.addDeployedOnNode(node) : icp.removeDeployedOnNode(node))
+            .listen(this::finishTaskWithFutureResult);
     }
 
     /** {@inheritDoc} */
     @Override String name() {
-        return "ChangeClassPathState[newState=" + state + ']';
+        return add ? "Add node" : "Remove node";
     }
 
     /** {@inheritDoc} */
     @Override void ok() {
         if (log.isDebugEnabled())
-            log.debug("ClassPath state changed [icpId=" + icpId + ", newState=" + state + ']');
+            log.debug("ClassPath nodes changed [icpId=" + icpId + ", node=" + node + ", add=" + add + ']');
     }
 
     /** {@inheritDoc} */
     @Override void fail(Throwable t) {
-        log.warning("Fail to change ClassPath state [icpId=" + icpId + ", newState=" + state + ']', t);
+        log.warning("Fail to change ClassPath nodes [icpId=" + icpId + ", node=" + node + ", add=" + add + ']', t);
     }
 }
