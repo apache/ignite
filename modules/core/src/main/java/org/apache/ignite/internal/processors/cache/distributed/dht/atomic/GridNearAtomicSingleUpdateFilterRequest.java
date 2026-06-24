@@ -27,14 +27,14 @@ import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.CacheMarshallableMessage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingleUpdateRequest implements MarshallableMessage {
+public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingleUpdateRequest implements CacheMarshallableMessage {
     /** Filter. */
     @Order(0)
     CacheEntryPredicate[] filter;

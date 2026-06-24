@@ -167,7 +167,7 @@ public abstract class MessageGenerator {
         writer.write(NL);
         writer.write(CLS_JAVADOC);
         writer.write(NL);
-        writer.write("public class " + clsName + " implements " + interfaceName + "<" + simpleNameWithGeneric(type) + "> {" + NL);
+        writer.write("public class " + clsName + " implements " + interfaceName + "<" + simpleNameWithGeneric(type) + ">");
     }
 
     /** */

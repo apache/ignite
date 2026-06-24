@@ -91,6 +91,8 @@ public class MessageSerializerGenerator extends MessageGenerator {
     @Override String buildClassCode(String serClsName) throws IOException {
         try (Writer writer = new StringWriter()) {
             writeSerializerHeader(writer, env.getElementUtils().getPackageOf(type).toString(), serClsName);
+            
+            writer.write(" {" + NL);
 
             writeClassFields(writer);
 

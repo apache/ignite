@@ -36,13 +36,13 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.CacheMarshallableMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Near cache prepare response.
  */
-public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse implements MarshallableMessage {
+public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse implements CacheMarshallableMessage {
     /** Versions that are less than lock version ({@link #version()}). */
     @GridToStringInclude
     @Order(0)

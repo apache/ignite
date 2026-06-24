@@ -34,7 +34,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.CacheMarshallableMessage;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.INDEX;
@@ -44,7 +44,7 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
 /**
  * Query request.
  */
-public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCacheDeployable, MarshallableMessage {
+public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCacheDeployable, CacheMarshallableMessage {
     /** */
     private static final int FLAG_DATA_PAGE_SCAN_DFLT = 0b00;
 
