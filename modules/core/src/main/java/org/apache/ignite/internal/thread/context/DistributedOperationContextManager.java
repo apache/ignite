@@ -52,11 +52,6 @@ public class DistributedOperationContextManager {
     /** Registered distributed attributes by their cluster-wide id. */
     private final Map<Byte, OperationContextAttribute<Message>> attrs = new ConcurrentSkipListMap<>();
 
-    /** */
-    public static DistributedOperationContextManager instance() {
-        return INSTANCE;
-    }
-
     /**
      * Creates a new {@link OperationContext} attribute with the specified distributed ID and initial value.
      *

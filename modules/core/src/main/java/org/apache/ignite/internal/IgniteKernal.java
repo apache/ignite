@@ -3075,7 +3075,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         return msgFactory;
     }
 
-    /** @return {@link DistributedOperationContextManager}. */
+    /** @return Instance of {@link DistributedOperationContextManager}. */
     DistributedOperationContextManager distributedOperationContextManager() {
         return distrOperationContextMgr;
     }
