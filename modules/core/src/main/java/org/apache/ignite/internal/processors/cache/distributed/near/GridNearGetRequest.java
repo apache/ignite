@@ -37,15 +37,13 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.CacheMarshallableMessage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Get request. Responsible for obtaining entry from primary node. 'Near' means 'Initiating node' here, not 'Near Cache'.
  */
-public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheDeployable, GridCacheVersionable, CacheMarshallableMessage {
+public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheDeployable, GridCacheVersionable {
     /** */
     private static final int READ_THROUGH_FLAG_MASK = 0x01;
 
@@ -216,6 +214,18 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
      * @return Keys.
      */
     public LinkedHashMap<KeyCacheObject, Boolean> keyMap() {
+        if (keyMap == null && !F.isEmpty(keys)) {
+            keyMap = U.newLinkedHashMap(keys.size());
+
+            Iterator<KeyCacheObject> keysIt = keys.iterator();
+
+            for (int i = 0; i < keys.size(); i++) {
+                Boolean addRdr = readersFlags != null ? readersFlags.get(i) : Boolean.FALSE;
+
+                keyMap.put(keysIt.next(), addRdr);
+            }
+        }
+
         return keyMap;
     }
 
@@ -300,29 +310,6 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return addDepInfo;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        assert !F.isEmpty(keys);
-        assert readersFlags == null || keys.size() == readersFlags.size();
-
-        if (keyMap == null) {
-            keyMap = U.newLinkedHashMap(keys.size());
-
-            Iterator<KeyCacheObject> keysIt = keys.iterator();
-
-            for (int i = 0; i < keys.size(); i++) {
-                Boolean addRdr = readersFlags != null ? readersFlags.get(i) : Boolean.FALSE;
-
-                keyMap.put(keysIt.next(), addRdr);
-            }
-        }
     }
 
     /** {@inheritDoc} */

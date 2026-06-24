@@ -32,7 +32,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.CacheMarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -40,7 +40,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * DHT lock request.
  */
-public class GridDhtLockRequest extends GridDistributedLockRequest implements CacheMarshallableMessage {
+public class GridDhtLockRequest extends GridDistributedLockRequest implements MarshallableMessage {
     /** Invalidate reader flags. */
     @Order(0)
     BitSet invalidateEntries;
@@ -53,12 +53,12 @@ public class GridDhtLockRequest extends GridDistributedLockRequest implements Ca
     @GridToStringInclude
     private Map<KeyCacheObject, GridCacheVersion> owned;
 
-    /** Array of keys from {@link #owned}. Used during marshalling and unmarshalling. */
+    /** Wire-protocol keys for {@link #owned}. */
     @Order(2)
     @GridToStringExclude
     KeyCacheObject[] ownedKeys;
 
-    /** Array of values from {@link #owned}. Used during marshalling and unmarshalling. */
+    /** Wire-protocol values for {@link #owned}. */
     @Order(3)
     @GridToStringExclude
     GridCacheVersion[] ownedValues;
@@ -279,15 +279,6 @@ public class GridDhtLockRequest extends GridDistributedLockRequest implements Ca
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (ownedKeys != null) {
-            owned = new GridLeanMap<>(ownedKeys.length);
-
-            for (int i = 0; i < ownedKeys.length; i++)
-                owned.put(ownedKeys[i], ownedValues[i]);
-
-            ownedKeys = null;
-            ownedValues = null;
-        }
     }
 
     /** {@inheritDoc} */

@@ -28,12 +28,12 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.CacheMarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 
 /**
  * Transactions lock list request.
  */
-public class TxLocksRequest extends GridCacheMessage implements CacheMarshallableMessage {
+public class TxLocksRequest extends GridCacheMessage implements MarshallableMessage {
     /** Future ID. */
     @Order(0)
     long futId;
@@ -42,7 +42,7 @@ public class TxLocksRequest extends GridCacheMessage implements CacheMarshallabl
     @GridToStringInclude
     private Set<IgniteTxKey> txKeys;
 
-    /** Array of txKeys from {@link #txKeys}. Used during marshalling and unmarshalling. */
+    /** Wire-protocol array for {@link #txKeys}. */
     @GridToStringExclude
     @Order(1)
     IgniteTxKey[] txKeysArr;
@@ -76,7 +76,20 @@ public class TxLocksRequest extends GridCacheMessage implements CacheMarshallabl
      * @return Tx keys.
      */
     public Collection<IgniteTxKey> txKeys() {
+        if (txKeys == null && txKeysArr != null) {
+            txKeys = U.newHashSet(txKeysArr.length);
+
+            for (IgniteTxKey key : txKeysArr)
+                txKeys.add(key);
+
+            txKeysArr = null;
+        }
+
         return txKeys;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
     }
 
     /** {@inheritDoc} */
@@ -97,13 +110,5 @@ public class TxLocksRequest extends GridCacheMessage implements CacheMarshallabl
 
         for (IgniteTxKey key : txKeys)
             txKeysArr[i++] = key;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        txKeys = U.newHashSet(txKeysArr.length);
-
-        for (IgniteTxKey key : txKeysArr) 
-            txKeys.add(key);
     }
 }

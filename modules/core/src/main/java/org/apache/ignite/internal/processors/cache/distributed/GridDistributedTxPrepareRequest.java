@@ -38,7 +38,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.CacheMarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
@@ -47,7 +47,7 @@ import org.jetbrains.annotations.Nullable;
  * Transaction prepare request for optimistic and eventually consistent
  * transactions.
  */
-public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage implements IgniteTxStateAware, CacheMarshallableMessage {
+public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage implements IgniteTxStateAware, MarshallableMessage {
     /** */
     private static final int NEED_RETURN_VALUE_FLAG_MASK = 0x01;
 
@@ -105,11 +105,11 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     @GridToStringInclude
     private Map<IgniteTxKey, GridCacheVersion> dhtVers;
 
-    /** */
+    /** Wire-protocol keys for {@link #dhtVers}. */
     @Order(7)
     public Collection<IgniteTxKey> dhtVerKeys;
 
-    /** */
+    /** Wire-protocol values for {@link #dhtVers}. */
     @Order(8)
     public Collection<GridCacheVersion> dhtVerVals;
 
@@ -254,6 +254,22 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
      * @return Map of versions to be verified.
      */
     public Map<IgniteTxKey, GridCacheVersion> dhtVersions() {
+        if (dhtVerKeys != null && dhtVers == null) {
+            assert dhtVerVals != null;
+            assert dhtVerKeys.size() == dhtVerVals.size();
+
+            Iterator<IgniteTxKey> keyIt = dhtVerKeys.iterator();
+            Iterator<GridCacheVersion> verIt = dhtVerVals.iterator();
+
+            dhtVers = U.newHashMap(dhtVerKeys.size());
+
+            while (keyIt.hasNext())
+                dhtVers.put(keyIt.next(), verIt.next());
+
+            dhtVerKeys = null;
+            dhtVerVals = null;
+        }
+
         return dhtVers == null ? Collections.emptyMap() : dhtVers;
     }
 
@@ -423,21 +439,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (dhtVerKeys != null && dhtVers == null) {
-            assert dhtVerVals != null;
-            assert dhtVerKeys.size() == dhtVerVals.size();
-
-            Iterator<IgniteTxKey> keyIt = dhtVerKeys.iterator();
-            Iterator<GridCacheVersion> verIt = dhtVerVals.iterator();
-
-            dhtVers = U.newHashMap(dhtVerKeys.size());
-
-            while (keyIt.hasNext()) {
-                IgniteTxKey key = keyIt.next();
-
-                dhtVers.put(key, verIt.next());
-            }
-        }
     }
 
     /** {@inheritDoc} */

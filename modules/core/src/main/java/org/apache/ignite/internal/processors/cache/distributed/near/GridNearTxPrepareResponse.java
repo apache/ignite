@@ -36,13 +36,13 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.CacheMarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Near cache prepare response.
  */
-public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse implements CacheMarshallableMessage {
+public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse implements MarshallableMessage {
     /** Versions that are less than lock version ({@link #version()}). */
     @GridToStringInclude
     @Order(0)
@@ -68,11 +68,11 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     @GridToStringInclude
     private Map<IgniteTxKey, CacheVersionedValue> ownedVals;
 
-    /** OwnedVals' keys for marshalling. */
+    /** Wire-protocol keys for {@link #ownedVals}. */
     @Order(5)
     @Nullable Collection<IgniteTxKey> ownedValKeys;
 
-    /** OwnedVals' values for marshalling. */
+    /** Wire-protocol values for {@link #ownedVals}. */
     @Order(6)
     @Nullable Collection<CacheVersionedValue> ownedValVals;
 
@@ -205,6 +205,8 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
      * @return Map of owned values to set on near node.
      */
     public Map<IgniteTxKey, CacheVersionedValue> ownedValues() {
+        rebuildOwnedValsIfNeeded();
+
         return ownedVals == null ? Collections.emptyMap() : Collections.unmodifiableMap(ownedVals);
     }
 
@@ -232,7 +234,25 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
      * @return {@code True} if response has owned value for given key.
      */
     public boolean hasOwnedValue(IgniteTxKey key) {
+        rebuildOwnedValsIfNeeded();
+
         return F.mapContainsKey(ownedVals, key);
+    }
+
+    /** */
+    private void rebuildOwnedValsIfNeeded() {
+        if (ownedValKeys != null && ownedVals == null) {
+            ownedVals = U.newHashMap(ownedValKeys.size());
+
+            Iterator<IgniteTxKey> keyIter = ownedValKeys.iterator();
+            Iterator<CacheVersionedValue> valIter = ownedValVals.iterator();
+
+            while (keyIter.hasNext())
+                ownedVals.put(keyIter.next(), valIter.next());
+
+            ownedValKeys = null;
+            ownedValVals = null;
+        }
     }
 
     /** {@inheritDoc} */
@@ -246,25 +266,8 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (ownedValKeys != null && ownedVals == null) {
-            ownedVals = U.newHashMap(ownedValKeys.size());
-
-            assert ownedValKeys.size() == ownedValVals.size();
-
-            Iterator<IgniteTxKey> keyIter = ownedValKeys.iterator();
-
-            Iterator<CacheVersionedValue> valIter = ownedValVals.iterator();
-
-            while (keyIter.hasNext()) {
-                IgniteTxKey key = keyIter.next();
-
-                CacheVersionedValue val = valIter.next();
-
-                ownedVals.put(key, val);
-            }
-        }
     }
-    
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridNearTxPrepareResponse.class, this, "super", super.toString());

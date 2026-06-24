@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import javax.cache.processor.EntryProcessorResult;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
@@ -31,15 +30,14 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
-import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Return value for cases where both, value and success flag need to be returned.
  */
-public class GridCacheReturn implements MarshallableMessage, CacheIdAware {
+public class GridCacheReturn implements Message, CacheIdAware {
     /** Value. */
     @GridToStringInclude(sensitive = true)
     private volatile Object v;
@@ -345,17 +343,6 @@ public class GridCacheReturn implements MarshallableMessage, CacheIdAware {
             for (CacheInvokeDirectResult directRes : invokeResCol)
                 directRes.marshalResult(ctx);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        // Mark the message as local — it has arrived at the target node.
-        loc = true;
     }
 
     /** {@inheritDoc} */

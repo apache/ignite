@@ -31,12 +31,12 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.CacheMarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 
 /**
  * Transactions lock list response.
  */
-public class TxLocksResponse extends GridCacheMessage implements CacheMarshallableMessage {
+public class TxLocksResponse extends GridCacheMessage implements MarshallableMessage {
     /** Future ID. */
     @Order(0)
     long futId;
@@ -49,17 +49,17 @@ public class TxLocksResponse extends GridCacheMessage implements CacheMarshallab
     @GridToStringInclude
     private Set<IgniteTxKey> txKeys;
 
-    /** Array of txKeys from {@link #nearTxKeyLocks}. Used during marshalling and unmarshalling. */
+    /** Wire-protocol array of keys from {@link #nearTxKeyLocks}. */
     @GridToStringExclude
     @Order(1)
     IgniteTxKey[] nearTxKeysArr;
 
-    /** Array of txKeys from {@link #txKeys}. Used during marshalling and unmarshalling. */
+    /** Wire-protocol array for {@link #txKeys}. */
     @GridToStringExclude
     @Order(2)
     IgniteTxKey[] txKeysArr;
 
-    /** Array of locksArr from {@link #nearTxKeyLocks}. Used during marshalling and unmarshalling. */
+    /** Wire-protocol array of values from {@link #nearTxKeyLocks}. */
     @GridToStringExclude
     @Order(3)
     List<TxLock>[] locksArr;
@@ -86,9 +86,25 @@ public class TxLocksResponse extends GridCacheMessage implements CacheMarshallab
     }
 
     /**
-     * @return Lock lists for all tx nearTxKeysArr.
+     * @return Lock lists for all near tx keys.
      */
     public Map<IgniteTxKey, List<TxLock>> txLocks() {
+        if (nearTxKeysArr != null) {
+            for (int i = 0; i < nearTxKeysArr.length; i++) {
+                IgniteTxKey txKey = nearTxKeysArr[i];
+
+                try {
+                    nearTxKeyLocks.put(txKey, locksArr[i]);
+                }
+                catch (IllegalStateException ignored) {
+                    // Skipping entries for missed cache.
+                }
+            }
+
+            nearTxKeysArr = null;
+            locksArr = null;
+        }
+
         return nearTxKeyLocks;
     }
 
@@ -97,7 +113,7 @@ public class TxLocksResponse extends GridCacheMessage implements CacheMarshallab
      * @return Lock list for given tx key.
      */
     public List<TxLock> txLocks(IgniteTxKey txKey) {
-        return nearTxKeyLocks.get(txKey);
+        return txLocks().get(txKey);
     }
 
     /**
@@ -114,6 +130,21 @@ public class TxLocksResponse extends GridCacheMessage implements CacheMarshallab
      * @return Remote txKeys involved into tx.
      */
     public Set<IgniteTxKey> keys() {
+        if (txKeysArr != null) {
+            txKeys = U.newHashSet(txKeysArr.length);
+
+            for (IgniteTxKey txKey : txKeysArr) {
+                try {
+                    txKeys.add(txKey);
+                }
+                catch (IllegalStateException ignored) {
+                    // Skipping entries for removed cache.
+                }
+            }
+
+            txKeysArr = null;
+        }
+
         return txKeys;
     }
 
@@ -130,6 +161,10 @@ public class TxLocksResponse extends GridCacheMessage implements CacheMarshallab
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return addDepInfo;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
     }
 
     /** {@inheritDoc} */
@@ -167,37 +202,4 @@ public class TxLocksResponse extends GridCacheMessage implements CacheMarshallab
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (nearTxKeysArr != null) {
-            for (int i = 0; i < nearTxKeysArr.length; i++) {
-                IgniteTxKey txKey = nearTxKeysArr[i];
-
-                try {
-                    txLocks().put(txKey, locksArr[i]);
-                }
-                catch (IllegalStateException ignored) {
-                    // Skipping entries for missed cache.    
-                }
-            }
-
-            nearTxKeysArr = null;
-            locksArr = null;
-        }
-
-        if (txKeysArr != null) {
-            txKeys = U.newHashSet(txKeysArr.length);
-
-            for (IgniteTxKey txKey : txKeysArr) {
-                try {
-                    txKeys.add(txKey);
-                }
-                catch (IllegalStateException ignored) {
-                    // Skipping entries for removed cache.    
-                }
-            }
-
-            txKeysArr = null;
-        }
-    }
 }
