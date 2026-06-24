@@ -37,7 +37,7 @@ import org.jetbrains.annotations.Nullable;
  * {@link OperationContextAttribute} instance that is consistent across all cluster nodes.</p>
  *
  * <p>To enable propagation of an {@link OperationContextAttribute} value across cluster nodes, the
- * attribute must be created using the {@link #registerDistributedAttribute(byte, Message)} method.
+fi * attribute must be created using the {@link #registerDistributedAttribute(byte, OperationContextAttribute)} method.
  *
  * <p> Note, that the maximum number of distributed attribute instances that can be created is currently limited to
  * {@link #MAX_DISTRIBUTED_ATTR_CNT} for implementation reasons.</p>
