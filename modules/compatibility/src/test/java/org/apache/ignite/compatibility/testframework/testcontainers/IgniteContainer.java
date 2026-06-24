@@ -21,16 +21,11 @@ import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import com.github.dockerjava.api.model.ContainerNetwork;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterState;
-import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.BindMode;
@@ -64,7 +59,7 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> implement
     private static final String WORK_DIR_PATH = ROOT_DIR_PATH + "work";
 
     /** Config path in container. */
-    private static final String CFG_PATH = ROOT_DIR_PATH + "config/test-config-%d.xml";
+    private static final String CFG_PATH = ROOT_DIR_PATH + "config/test-config.xml";
 
     /** */
     private static final String ENABLE_EXPERIMENTAL_FLAG = "--enable-experimental";
@@ -76,19 +71,17 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> implement
     private final String hostname;
 
     /** Constructor. */
-    public IgniteContainer(String commitHash, Network net, String hostname, String staticIp, int idx) {
+    public IgniteContainer(String commitHash, String hostname) {
         super(DockerImageName.parse("apacheignite/ignite:" + commitHash));
-
-        String finalPath = String.format(CFG_PATH, idx);
 
         this.hostname = hostname;
 
-        withEnv("CONFIG_URI", "file://" + finalPath);
+        withEnv("CONFIG_URI", "file://" + CFG_PATH);
         withEnv("IGNITE_QUIET", "false");
         withEnv("IGNITE_WORK_DIR", WORK_DIR_PATH + "/" + hostname);
         withEnv("TZ", java.time.ZoneId.systemDefault().toString());
 
-        this.withLogConsumer(new Slf4jLogConsumer(LOGGER));
+        withLogConsumer(new Slf4jLogConsumer(LOGGER));
 
         File nodeDir = new File(LOCAL_WORK_DIR_PATH + '/' + hostname);
 
@@ -100,16 +93,9 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> implement
         nodeDir.setExecutable(true, false); // Required for directories so users can enter them
 
         withFileSystemBind(nodeDir.getAbsolutePath(), WORK_DIR_PATH + '/' + hostname, BindMode.READ_WRITE);
-        withCopyFileToContainer(forClasspathResource("docker/test-config.xml"), finalPath);
+        withCopyFileToContainer(forClasspathResource("docker/test-config.xml"), CFG_PATH);
 
-        withNetwork(net);
-        withNetworkAliases(hostname);
-        withExposedPorts(ClientConnectorConfiguration.DFLT_PORT, TcpCommunicationSpi.DFLT_PORT, TcpDiscoverySpi.DFLT_PORT);
-
-        this.withCreateContainerCmdModifier(cmd -> {
-            cmd.getHostConfig().withNetworkMode(net.getId());
-            cmd.withIpv4Address(staticIp);
-        });
+        withNetworkMode("host");
 
         waitingFor(Wait.forLogMessage(".*Node started.*", 1).withStartupTimeout(Duration.ofSeconds(90)));
     }
@@ -117,21 +103,6 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> implement
     /** */
     public String localWorkDirectory() {
         return LOCAL_WORK_DIR_PATH + "/" + hostname;
-    }
-
-    /** @return Client address. */
-    public String serverAddress() {
-        return address(TcpDiscoverySpi.DFLT_PORT);
-    }
-
-    /** @return Client address. */
-    public String clientAddress() {
-        return address(ClientConnectorConfiguration.DFLT_PORT);
-    }
-
-    /** */
-    private String address(int port) {
-        return getHost() + ":" + getMappedPort(port);
     }
 
     /** Activate cluster. */
@@ -239,25 +210,4 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> implement
 
         super.stop();
     }
-
-    /**
-     * Dynamically resolves the Docker Network Gateway IP address for this container.
-     */
-    public String getGatewayIp() {
-        if (!isRunning())
-            throw new IllegalStateException("Container must be running to extract runtime network parameters.");
-
-        Map<String, ContainerNetwork> networks = getContainerInfo().getNetworkSettings().getNetworks();
-
-        if (networks.isEmpty())
-            return "127.0.0.1";
-
-        ContainerNetwork activeNet = networks.values().iterator().next();
-        String gateway = activeNet.getGateway();
-
-        LOGGER.info("Successfully discovered dynamic Docker gateway IP: {}", gateway);
-
-        return gateway;
-    }
-
 }

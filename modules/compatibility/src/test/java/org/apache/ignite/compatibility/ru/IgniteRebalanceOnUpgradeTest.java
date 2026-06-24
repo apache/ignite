@@ -18,30 +18,24 @@
 package org.apache.ignite.compatibility.ru;
 
 import java.io.File;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
+import org.apache.ignite.client.Config;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.compatibility.testframework.testcontainers.IgniteClusterContainer;
 import org.apache.ignite.compatibility.testframework.testcontainers.IgniteContainer;
-import org.apache.ignite.configuration.BasicAddressResolver;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -86,9 +80,7 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
 
             ClientCacheConfiguration cliCacheCfg = getClientConfiguration();
 
-            String cliAddr = cluster.containers().get(0).clientAddress();
-
-            try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(cliAddr))) {
+            try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))) {
                 ClientCache<Integer, Integer> cache = client.getOrCreateCache(cliCacheCfg);
 
                 for (int i = 0; i < 1000; i++)
@@ -110,21 +102,21 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
 
     /** */
     private void upgradeCluster(IgniteClusterContainer srcCluster) throws Exception {
-        Collection<String> liveClusterAddrs = srcCluster.serverAddresses();
-
-        String dynamicGatewayIp = srcCluster.containers().get(0).getGatewayIp();
+        int nodeIdx = 0;
 
         for (IgniteContainer container : srcCluster.containers()) {
             System.out.println(">>> Upgrade " + container.getHost());
 
             container.stop();
 
-            IgniteEx ignite = null;
+            IgniteEx ignite;
 
             try {
                 Thread.sleep(20_000);
 
-                ignite = startGrid(configuration(container.localWorkDirectory(), liveClusterAddrs, dynamicGatewayIp));
+                ignite = startGrid(configuration(nodeIdx, container.localWorkDirectory()));
+
+                nodeIdx++;
             }
             catch (Exception ex) {
                 System.out.println(">>> ERR=" + ex);
@@ -141,34 +133,21 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private IgniteConfiguration configuration(String workDir, Collection<String> seedAddrs, String gatewayIp) throws UnknownHostException {
+    private IgniteConfiguration configuration(int nodeIdx, String workDir) {
         DataRegionConfiguration dataRegionCfg = new DataRegionConfiguration()
             .setName("testRegion")
             .setInitialSize(100L * 1024 * 1024)
             .setMaxSize(1024 * 1024 * 1024)
             .setPersistenceEnabled(true);
 
-//        Map<String, String> addrMap = new HashMap<>();
-//        addrMap.put("127.0.0.1", gatewayIp);
-
-//        BasicAddressResolver addrResolver = new BasicAddressResolver(addrMap);
-
-        Set<String> combinedIpFinderAddrs = new HashSet<>(seedAddrs);
-
         TcpDiscoverySpi discoverySpi = new TcpDiscoverySpi()
-            .setLocalAddress(gatewayIp)
-            .setIpFinder(new TcpDiscoveryVmIpFinder().setAddresses(combinedIpFinderAddrs));
-
-        TcpCommunicationSpi communicationSpi = new TcpCommunicationSpi()
-            .setLocalAddress(gatewayIp);
+            .setIpFinder(new TcpDiscoveryVmIpFinder().setAddresses(Collections.singleton("127.0.0.1:47500..47509")));
 
         return new IgniteConfiguration()
-            .setLocalHost(gatewayIp)
+            .setIgniteInstanceName(getTestIgniteInstanceName(nodeIdx))
             .setWorkDirectory(workDir)
             .setDataStorageConfiguration(
                 new DataStorageConfiguration().setDefaultDataRegionConfiguration(dataRegionCfg))
-//            .setAddressResolver(addrResolver)
-            .setCommunicationSpi(communicationSpi)
             .setDiscoverySpi(discoverySpi);
     }
 
