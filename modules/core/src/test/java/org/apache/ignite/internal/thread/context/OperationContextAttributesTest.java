@@ -37,11 +37,13 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridTopic;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.managers.communication.GridIoManager;
+import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.communication.IgniteIoTestMessage;
@@ -68,11 +70,13 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.messages.InetSocketAddressMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThread;
 import org.junit.Test;
 import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
@@ -942,86 +946,118 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
         startGrids(2);
         startClientGrid(2);
 
-        CountDownLatch coordLatch = new CountDownLatch(2);
-        CountDownLatch srvrLatch = new CountDownLatch(4);
-        CountDownLatch clientLatch = new CountDownLatch(2);
-
         InetSocketAddressMessage valToSend1 = new InetSocketAddressMessage(dfltDistrAttr1Val.address(), 443);
         GridCacheVersion valToSend2 = new GridCacheVersion(2, 2, 2);
 
-        for (int i = 0; i < G.allGrids().size(); ++i) {
-            int i0 = i;
-
-            grid(i).context().io().addMessageListener(GridTopic.TOPIC_IO_TEST, new GridMessageListener() {
-                @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
-                    if (msg instanceof IgniteIoTestMessage) {
-                        InetSocketAddressMessage receivedVal1 = OperationContext.get(dAttr1);
-                        GridCacheVersion receivedVal2 = OperationContext.get(dAttr2);
-
-                        assertNotNull(receivedVal1);
-                        assertNotNull(receivedVal2);
-
-                        assertFalse(dfltDistrAttr1Val.port() == receivedVal1.port());
-                        assertEquals(receivedVal1.port(), valToSend1.port());
-                        assertEquals(receivedVal1.address(), valToSend1.address());
-
-                        assertEquals(receivedVal2, valToSend2);
-
-                        if (grid(i0).localNode().isClient())
-                            clientLatch.countDown();
-                        else if (grid(i0).localNode().order() == 1)
-                            coordLatch.countDown();
-                        else
-                            srvrLatch.countDown();
-                    }
-                }
-            });
-        }
-
-        assertFalse(valToSend1.equals(dfltDistrAttr1Val));
-        assertFalse(valToSend2.equals(dfltDistrAttr2Val));
-
         // From the coordinator to a server.
-        try (Scope ignored = OperationContext.set(dAttr1, valToSend1, dAttr2, valToSend2)) {
-            io(0).sendIoTest(node(1), null, false);
-            io(0).sendIoTest(node(1), null, true);
-        }
-
-        assertTrue(waitForCondition(() -> coordLatch.getCount() == 2, getTestTimeout()));
+        // One value.
+        checkOperationContextCommunicationTransmission(grid(0), grid(1), dAttr1, valToSend1, (v0, v1) ->
+            v0.port() == v1.port() && v0.address().equals(v1.address()));
+        // A couple of values.
+        checkOperationContextCommunicationTransmission(grid(0), grid(1), dAttr1, valToSend1, (v00, v01) ->
+                v00.port() == v01.port() && v00.address().equals(v01.address()),
+            dAttr2, valToSend2, GridCacheVersion::equals);
 
         // From a server to the coordinator.
-        try (Scope ignored = OperationContext.set(dAttr1, valToSend1, dAttr2, valToSend2)) {
-            io(1).sendIoTest(node(0), null, false);
-            io(1).sendIoTest(node(0), null, true);
-        }
-
-        assertTrue(coordLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+        // One value.
+        checkOperationContextCommunicationTransmission(grid(1), grid(0), dAttr1, valToSend1, (v0, v1) ->
+            v0.port() == v1.port() && v0.address().equals(v1.address()));
+        // A couple of values.
+        checkOperationContextCommunicationTransmission(grid(1), grid(0), dAttr1, valToSend1, (v00, v01) ->
+                v00.port() == v01.port() && v00.address().equals(v01.address()),
+            dAttr2, valToSend2, GridCacheVersion::equals);
 
         // From a client to a server.
-        try (Scope ignored = OperationContext.set(dAttr1, valToSend1, dAttr2, valToSend2)) {
-            io(2).sendIoTest(node(1), null, false);
-            io(2).sendIoTest(node(1), null, true);
-        }
-
-        assertTrue(srvrLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+        // One value.
+        checkOperationContextCommunicationTransmission(grid(2), grid(1), dAttr1, valToSend1, (v0, v1) ->
+            v0.port() == v1.port() && v0.address().equals(v1.address()));
+        // A couple of values.
+        checkOperationContextCommunicationTransmission(grid(2), grid(1), dAttr1, valToSend1, (v00, v01) ->
+                v00.port() == v01.port() && v00.address().equals(v01.address()),
+            dAttr2, valToSend2, GridCacheVersion::equals);
 
         // From a server to a client.
-        try (Scope ignored = OperationContext.set(dAttr1, valToSend1, dAttr2, valToSend2)) {
-            io(1).sendIoTest(node(2), null, false);
-            io(1).sendIoTest(node(2), null, true);
-        }
-
-        assertTrue(clientLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
-    }
-
-    /** @return a {@link ClusterNode} with {@link ClusterNode#isLocal()} == {@code false} to avoid some asserts/checks. */
-    private ClusterNode node(int nodeIdx) {
-        return grid(0).cluster().node(grid(nodeIdx).localNode().id());
+        // One value.
+        checkOperationContextCommunicationTransmission(grid(1), grid(2), dAttr1, valToSend1, (v0, v1) ->
+            v0.port() == v1.port() && v0.address().equals(v1.address()));
+        // A couple of values.
+        checkOperationContextCommunicationTransmission(grid(1), grid(2), dAttr1, valToSend1, (v00, v01) ->
+                v00.port() == v01.port() && v00.address().equals(v01.address()),
+            dAttr2, valToSend2, GridCacheVersion::equals);
     }
 
     /** */
-    private GridIoManager io(int nodeIdx) {
-        return grid(nodeIdx).context().io();
+    private <T extends Message> void checkOperationContextCommunicationTransmission(
+        Ignite from,
+        Ignite to,
+        OperationContextAttribute<T> attr0,
+        T valToSend0,
+        BiFunction<T, T, Boolean> valComparator
+    ) throws InterruptedException {
+        checkOperationContextCommunicationTransmission(from, to, attr0, valToSend0, valComparator, null, null, null);
+    }
+
+    /** */
+    private <T0 extends Message, T1 extends Message> void checkOperationContextCommunicationTransmission(
+        Ignite from,
+        Ignite to,
+        OperationContextAttribute<T0> attr0,
+        T0 valToSend0,
+        BiFunction<T0, T0, Boolean> valCmp0,
+        @Nullable OperationContextAttribute<T1> attr1,
+        @Nullable T1 valToSend1,
+        @Nullable BiFunction<T1, T1, Boolean> valCmp1
+    ) throws InterruptedException {
+        assert (attr1 == null && valToSend1 == null && valCmp1 == null) || (attr1 != null && valToSend1 != null && valCmp1 != null);
+
+        CountDownLatch rcvLatch = new CountDownLatch(2 + (attr1 != null ? 2 : 0));
+
+        GridMessageListener lsnr = new GridMessageListener() {
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
+                if (msg instanceof IgniteIoTestMessage) {
+                    T0 receivedVal0 = OperationContext.get(attr0);
+                    T1 receivedVal1 = attr1 == null ? null : OperationContext.get(attr1);
+
+                    if (valCmp0.apply(valToSend0, receivedVal0))
+                        rcvLatch.countDown();
+
+                    if (attr1 != null && valCmp1.apply(valToSend1, receivedVal1))
+                        rcvLatch.countDown();
+                }
+            }
+        };
+
+        ((IgniteEx)to).context().io().addMessageListener(GridTopic.TOPIC_IO_TEST, lsnr);
+
+        if (attr1 == null) {
+            try (Scope ignored = OperationContext.set(attr0, valToSend0)) {
+                ((IgniteEx)from).context().io().sendIoTest(node(to), null, false);
+                ((IgniteEx)from).context().io().sendIoTest(node(to), null, true);
+            }
+        }
+        else {
+            try (Scope ignored = OperationContext.set(attr0, valToSend0, attr1, valToSend1)) {
+                ((IgniteEx)from).context().io().sendIoTest(node(to), null, false);
+                ((IgniteEx)from).context().io().sendIoTest(node(to), null, true);
+            }
+        }
+
+        assertTrue(rcvLatch.await(getTestTimeout(), MILLISECONDS));
+
+        assertTrue(((IgniteEx)to).context().io().removeMessageListener(GridTopic.TOPIC_IO_TEST, lsnr));
+    }
+
+    /** @return a {@link ClusterNode} with {@link ClusterNode#isLocal()} == {@code false} to avoid some asserts/checks. */
+    private ClusterNode node(Ignite ig) {
+        ClusterNode res = new DetachedClusterNode(ig.cluster().localNode().consistentId(), ig.cluster().localNode().attributes()) {
+            @Override public UUID id() {
+                return ig.cluster().localNode().id();
+            }
+        };
+
+        assert !res.isLocal();
+
+        return res;
     }
 
     /** */
