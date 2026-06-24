@@ -34,7 +34,7 @@ class GridToStringValueNode extends GridToStringNode {
      */
     GridToStringValueNode(String propName, Object val) {
         super(propName);
-        this.val = (val instanceof String) ? (String) val : String.valueOf(val);
+        this.val = String.valueOf(val);
     }
 
     /** {@inheritDoc} */

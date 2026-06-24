@@ -152,6 +152,9 @@ public abstract class GridToStringNode {
         return sb.toString();
     }
 
+    /** Retrieves identity hash map if it was initialized earlier
+     * @return Optional identity hash map that stores catched nodes
+     * */
     static Optional<IdentityHashMap<String, GridToStringNode>> identities() {
         return Optional.ofNullable(CATCHED_NODES.get(Thread.currentThread()));
     }
@@ -169,7 +172,7 @@ public abstract class GridToStringNode {
                 .flatMap(str -> identities()
                         .map(storage -> storage.remove(str))
                         .map(GridToStringNode::toString)
-                        .map(result -> (T) result))
+                        .map(result -> (T)result))
                 .orElse(obj);
     }
 }
