@@ -66,9 +66,9 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
 
             if (!NonMarshallableMessage.class.isAssignableFrom(cls)) {
                 Class<?> marshallerCls = Class.forName(cls.getName() + "Marshaller");
-                boolean marshallable = MarshallableMessage.class.isAssignableFrom(cls);
+                boolean needsMarsh = marshallerCls.getConstructors()[0].getParameterCount() > 0;
 
-                marshaller = marshallable
+                marshaller = needsMarsh
                     ? (MessageMarshaller<T>)marshallerCls.getConstructor(Marshaller.class).newInstance(marsh)
                     : (MessageMarshaller<T>)marshallerCls.getConstructor().newInstance();
             }

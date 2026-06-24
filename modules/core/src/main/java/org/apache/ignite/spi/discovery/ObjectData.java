@@ -18,26 +18,24 @@
 package org.apache.ignite.spi.discovery;
 
 import java.io.Serializable;
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /** Wrapper message for serializable data. */
-public class ObjectData implements MarshallableMessage {
+public class ObjectData implements Message {
     /** */
     @GridToStringInclude
-    private Serializable data;
+    Serializable data;
 
     /** */
     @GridToStringExclude
     @Order(0)
+    @Marshalled("data")
     byte[] dataBytes;
 
     /** */
@@ -48,21 +46,6 @@ public class ObjectData implements MarshallableMessage {
      */
     public ObjectData(Serializable data) {
         this.data = data;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (data != null)
-            dataBytes = U.marshal(marsh, data);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (dataBytes != null) {
-            data = U.unmarshal(marsh, dataBytes, clsLdr);
-
-            dataBytes = null;
-        }
     }
 
     /**

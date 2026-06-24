@@ -22,6 +22,7 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiFunction;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.QualifiedNameable;
@@ -80,6 +81,9 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     /** Whether the current message type implements {@code CacheMarshallableMessage}. */
     private boolean cacheMarshallable;
 
+    /** Whether the current message type has any {@code @Marshalled} fields. */
+    private boolean hasMarshalled;
+
     /** */
     MessageMarshallerGenerator(ProcessingEnvironment env) {
         super(env);
@@ -109,6 +113,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     @Override void generateBody(List<VariableElement> fields) throws Exception {
         marshallable = marshallableMsgType != null && assignableFrom(type.asType(), marshallableMsgType);
         cacheMarshallable = cacheMarshallableMsgType != null && assignableFrom(type.asType(), cacheMarshallableMsgType);
+        hasMarshalled = fields.stream().anyMatch(f -> f.getAnnotation(Marshalled.class) != null);
         
         indent = 1;
 
@@ -122,7 +127,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
             imports.add(type.toString());
             imports.add("org.apache.ignite.plugin.extensions.communication.MessageMarshaller");
 
-            if (marshallable)
+            if (marshallable || hasMarshalled)
                 imports.add("org.apache.ignite.marshaller.Marshaller");
 
             writeClassHeader(writer, "MessageMarshaller", marshallerClsName);
@@ -145,7 +150,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         writer.write(indentedLine(METHOD_JAVADOC));
         writer.write(NL);
 
-        if (marshallable) {
+        if (marshallable || hasMarshalled) {
             writer.write(indentedLine("private final Marshaller marshaller;"));
             writer.write(NL + NL);
 
@@ -189,6 +194,8 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
         if (needsCtx(orderedFields))
             appendBlock(body, List.of(ctxResolutionLine()));
+
+        appendMarshalledPrepare(body, orderedFields);
 
         if (marshallable)
             appendBlock(body, List.of(indentedLine("msg.prepareMarshal(marshaller);")));
@@ -259,6 +266,9 @@ public class MessageMarshallerGenerator extends MessageGenerator {
             else if (mode == MarshalMode.FINISH && !cacheMarshallable)
                 appendBlock(body, List.of(indentedLine("msg.finishUnmarshal(marshaller, U.resolveClassLoader(kctx.config()));")));
         }
+
+        if (mode == MarshalMode.FINISH)
+            appendMarshalledFinish(body, fields);
 
         marshall.addAll(body);
 
@@ -465,6 +475,54 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         indent--;
 
         return wrapNullGuarded(accessor, combined);
+    }
+
+    /** Generates {@code U.marshal} calls for all {@code @Marshalled} fields in prepareMarshal. */
+    private void appendMarshalledPrepare(List<String> body, List<VariableElement> fields) {
+        forEachMarshalled(fields, (bytesAcc, objAcc) -> {
+            List<String> code = new ArrayList<>();
+            
+            code.add(indentedLine("if (%s != null)", objAcc));
+            
+            indent++;
+            
+            code.add(indentedLine("%s = U.marshal(marshaller, %s);", bytesAcc, objAcc));
+            
+            indent--;
+            
+            return code;
+        }, body);
+    }
+
+    private void appendMarshalledFinish(List<String> body, List<VariableElement> fields) {
+        forEachMarshalled(fields, (bytesAcc, objAcc) -> {
+            List<String> code = new ArrayList<>();
+            
+            code.add(indentedLine("if (%s != null) {", bytesAcc));
+            
+            indent++;
+            
+            code.add(indentedLine("%s = U.unmarshal(marshaller, %s, U.resolveClassLoader(kctx.config()));", objAcc, bytesAcc));
+            
+            code.add(indentedLine("%s = null;", bytesAcc));
+            
+            indent--;
+            
+            code.add(indentedLine("}"));
+           
+            return code;
+        }, body);
+    }
+
+    private void forEachMarshalled(List<VariableElement> fields, BiFunction<String, String, List<String>> codeGen, List<String> body) {
+        for (VariableElement field : fields) {
+            Marshalled ann = field.getAnnotation(Marshalled.class);
+            
+            if (ann == null)
+                continue;
+            
+            appendBlock(body, codeGen.apply("msg." + field.getSimpleName(), "msg." + ann.value()));
+        }
     }
 
     /** Returns empty if {@code inner} is empty. */

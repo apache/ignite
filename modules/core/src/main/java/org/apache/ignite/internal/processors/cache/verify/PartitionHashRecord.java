@@ -18,8 +18,8 @@ package org.apache.ignite.internal.processors.cache.verify;
 
 import java.io.Serializable;
 import java.util.Objects;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.BinaryConfiguration;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.management.cache.PartitionKey;
@@ -27,16 +27,14 @@ import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.Veri
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Record containing partition checksum, primary flag and consistent ID of owner.
  */
-public class PartitionHashRecord implements MarshallableMessage, Serializable {
+public class PartitionHashRecord implements Message, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -56,9 +54,9 @@ public class PartitionHashRecord implements MarshallableMessage, Serializable {
     @GridToStringInclude
     Object consistentId;
 
-    /** Bytes of {@link #consistentId}. */
     @Order(2)
     @GridToStringExclude
+    @Marshalled("consistentId")
     byte[] consistentIdBytes;
 
     /** Partition entries content hash. */
@@ -75,9 +73,9 @@ public class PartitionHashRecord implements MarshallableMessage, Serializable {
     @GridToStringInclude
     Object updateCntr;
 
-    /** Bytes of {@link #updateCntr}. */
     @Order(5)
     @GridToStringExclude
+    @Marshalled("updateCntr")
     byte[] updateCntrBytes;
 
     /** Size. */
@@ -246,27 +244,6 @@ public class PartitionHashRecord implements MarshallableMessage, Serializable {
     /** */
     public void hasExpiringEntries(boolean hasExpiringEntries) {
         this.hasExpiringEntries = hasExpiringEntries;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (consistentId != null)
-            consistentIdBytes = U.marshal(marsh, consistentId);
-
-        if (updateCntr != null)
-            updateCntrBytes = U.marshal(marsh, updateCntr);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (consistentIdBytes != null)
-            consistentId = U.unmarshal(marsh, consistentIdBytes, clsLdr);
-
-        if (updateCntrBytes != null)
-            updateCntr = U.unmarshal(marsh, updateCntrBytes, clsLdr);
-
-        consistentIdBytes = null;
-        updateCntrBytes = null;
     }
 
     /** {@inheritDoc} */

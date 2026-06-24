@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.cluster;
 
 import java.util.List;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
@@ -31,16 +31,14 @@ import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentActions;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Message represent request for change cluster global state.
  */
-public class ChangeGlobalStateMessage extends DiscoveryCustomMessage implements MarshallableMessage {
+public class ChangeGlobalStateMessage extends DiscoveryCustomMessage implements Message {
     /** Request ID */
     @Order(0)
     UUID reqId;
@@ -58,10 +56,10 @@ public class ChangeGlobalStateMessage extends DiscoveryCustomMessage implements 
     List<StoredCacheData> storedCfgs;
 
     /** */
-    @Nullable private BaselineTopology baselineTopology;
+    @Nullable BaselineTopology baselineTopology;
 
-    /** JDK Serialized version of baselineTopology. */
     @Order(4)
+    @Marshalled("baselineTopology")
     byte[] baselineTopologyBytes;
 
     /** */
@@ -219,18 +217,6 @@ public class ChangeGlobalStateMessage extends DiscoveryCustomMessage implements 
      */
     public UUID requestId() {
         return reqId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (baselineTopology != null)
-            baselineTopologyBytes = U.marshal(marsh, baselineTopology);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (baselineTopologyBytes != null)
-            baselineTopology = U.unmarshal(marsh, baselineTopologyBytes, clsLdr);
     }
 
     /** {@inheritDoc} */
