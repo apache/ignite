@@ -35,7 +35,7 @@ LABEL ducker.creator=$ducker_creator
 RUN cat /etc/apt/sources.list | sed 's/http:\/\/deb.debian.org/https:\/\/deb.debian.org/g' > /etc/apt/sources.list.2 && mv /etc/apt/sources.list.2 /etc/apt/sources.list
 
 # ---------------------------------------------------------------------
-# 2. System Utilities & Python 3.8 Installation
+# 2. System Utilities & Python 3.9 Installation
 # ---------------------------------------------------------------------
 RUN apt update && apt install -y software-properties-common gpg \
     && add-apt-repository -y ppa:deadsnakes/ppa \
@@ -52,9 +52,9 @@ RUN apt update && apt install -y software-properties-common gpg \
     openssh-server \
     net-tools \
     vim \
-    python3.8 \
-    python3.8-dev \
-    python3.8-venv \
+    python3.9 \
+    python3.9-dev \
+    python3.9-venv \
     python3-pip \
     libffi-dev \
     libssl-dev \
@@ -70,11 +70,11 @@ RUN apt update && apt install -y software-properties-common gpg \
 # ---------------------------------------------------------------------
 # 3. Python Virtual Environment Setup & Requirements
 # ---------------------------------------------------------------------
-# Enforce Python 3.8 for our internal virtual environment
-RUN python3.8 -m venv /opt/venv
+# Enforce Python 3.9 for our internal virtual environment
+RUN python3.9 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Print the active python version to the build terminal to confirm 3.8 is loaded
+# Print the active python version to the build terminal to confirm 3.9 is loaded
 RUN python3 --version
 
 COPY ./requirements.txt /root/requirements.txt
