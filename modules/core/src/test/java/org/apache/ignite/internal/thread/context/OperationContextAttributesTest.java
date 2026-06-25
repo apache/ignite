@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -36,10 +37,15 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.GridTopic;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.managers.communication.IgniteIoTestMessage;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
@@ -68,6 +74,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThread;
 import org.junit.Test;
 import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
@@ -114,6 +121,8 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
 
         // Releases attribute IDs reserved during the test.
         OperationContextAttribute.ID_GEN.set(beforeTestReservedAttrIds);
+
+        DistributedOperationContextManager.instance().clear();
     }
 
     /** */
@@ -909,6 +918,104 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
         assertTrue(coordLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
         assertTrue(srvrLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
         assertTrue(clientLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+    }
+
+    /** */
+    @Test
+    public void testSendAttributesByCommunication() throws Exception {
+        byte attrId1 = 0;
+        byte attrId2 = DistributedOperationContextManager.MAX_DISTRIBUTED_ATTR_CNT - 1;
+
+        InetSocketAddressMessage dfltDistrAttr1Val = new InetSocketAddressMessage(InetAddress.getLoopbackAddress(), 80);
+        GridCacheVersion dfltDistrAttr2Val = new GridCacheVersion(1, 1, 1);
+
+        // Local attribute 1.
+        OperationContextAttribute.newInstance(1000);
+
+        // Distributed attribute 1.
+        OperationContextAttribute<InetSocketAddressMessage> dAttr0 = DistributedOperationContextManager.instance()
+            .createDistributedAttribute(attrId1, dfltDistrAttr1Val);
+
+        // Local attribute 2.
+        OperationContextAttribute.newInstance("locaAttr2");
+
+        // Distributed attribute 2.
+        OperationContextAttribute<GridCacheVersion> dAttr1 = DistributedOperationContextManager.instance()
+            .createDistributedAttribute(attrId2, dfltDistrAttr2Val);
+
+        startGrids(2);
+        startClientGrid(2);
+
+        InetSocketAddressMessage valToSend0 = new InetSocketAddressMessage(dfltDistrAttr1Val.address(), 443);
+        GridCacheVersion valToSend1 = new GridCacheVersion(2, 2, 2);
+
+        // Coordinator -> Server, Coordinator -> Client, Server -> Client, Client -> Server, etc.
+        for (int fromIdx = 0; fromIdx < 3; ++fromIdx) {
+            for (int toIdx = 0; toIdx < 3; ++toIdx) {
+                if (fromIdx == toIdx)
+                    continue;
+
+                // One value.
+                try (Scope ignored = OperationContext.set(dAttr0, valToSend0)) {
+                    checkOperationContextCommunicationTransmission(fromIdx, toIdx, dAttr0, null);
+                }
+
+                // A couple of values.
+                try (Scope ignored = OperationContext.set(dAttr0, valToSend0, dAttr1, valToSend1)) {
+                    checkOperationContextCommunicationTransmission(fromIdx, toIdx, dAttr0, dAttr1);
+                }
+            }
+        }
+    }
+
+    /** */
+    private void checkOperationContextCommunicationTransmission(
+        int gridFromIdx,
+        int gridToIdx,
+        OperationContextAttribute<InetSocketAddressMessage> attr0,
+        @Nullable OperationContextAttribute<GridCacheVersion> attr1
+    ) throws InterruptedException {
+        Ignite from = grid(gridFromIdx);
+        Ignite to = grid(gridToIdx);
+
+        CountDownLatch rcvLatch = new CountDownLatch(2);
+
+        InetSocketAddressMessage expVal0 = OperationContext.get(attr0);
+        GridCacheVersion expVal1 = attr1 == null ? null : OperationContext.get(attr1);
+
+        GridMessageListener lsnr = new GridMessageListener() {
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
+                if (msg instanceof IgniteIoTestMessage && ((IgniteIoTestMessage)msg).request()) {
+                    InetSocketAddressMessage receivedVal0 = OperationContext.get(attr0);
+                    GridCacheVersion receivedVal1 = attr1 == null ? null : OperationContext.get(attr1);
+
+                    assertTrue(receivedVal0 != null && expVal0.port() == receivedVal0.port());
+                    assertTrue(receivedVal0 != null && expVal0.address().equals(receivedVal0.address()));
+
+                    if (attr1 != null)
+                        assertEquals(expVal1, receivedVal1);
+
+                    rcvLatch.countDown();
+                }
+            }
+        };
+
+        ((IgniteEx)to).context().io().addMessageListener(GridTopic.TOPIC_IO_TEST, lsnr);
+
+        try {
+            ((IgniteEx)from).context().io().sendIoTest(node(from, to), null, false);
+            ((IgniteEx)from).context().io().sendIoTest(node(from, to), null, true);
+
+            assertTrue(rcvLatch.await(getTestTimeout(), MILLISECONDS));
+        }
+        finally {
+            assertTrue(((IgniteEx)to).context().io().removeMessageListener(GridTopic.TOPIC_IO_TEST, lsnr));
+        }
+    }
+
+    /** Prevents {@link ClusterNode#isLocal()} to be negative. */
+    private ClusterNode node(Ignite from, Ignite to) {
+        return from.cluster().node(((IgniteEx)to).localNode().id());
     }
 
     /** */

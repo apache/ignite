@@ -680,7 +680,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchemaResolvedClassLoader(PluginsDataBagItem.class);
         withSchema(EventsDataBagItem.class);
 
-        // [13400 - 13600]: Operation context messages.
+        // [13400 - 13500]: Operation context messages.
         msgIdx = 13400;
         withNoSchema(DistributedOperationContextMessage.class);
 
