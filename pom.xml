@@ -43,6 +43,7 @@
         <module>modules/binary/api</module>
         <module>modules/binary/impl</module>
         <module>modules/thin-client/api</module>
+        <module>modules/thin-client/impl</module>
         <module>modules/unsafe</module>
         <module>modules/core</module>
         <module>modules/compress</module>
