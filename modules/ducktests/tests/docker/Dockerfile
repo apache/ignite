@@ -35,7 +35,7 @@ LABEL ducker.creator=$ducker_creator
 RUN cat /etc/apt/sources.list | sed 's/http:\/\/deb.debian.org/https:\/\/deb.debian.org/g' > /etc/apt/sources.list.2 && mv /etc/apt/sources.list.2 /etc/apt/sources.list
 
 # ---------------------------------------------------------------------
-# 2. System Utilities & Python 3.12 Installation
+# 2. System Utilities & Python 3.8 Installation
 # ---------------------------------------------------------------------
 RUN apt update && apt install -y software-properties-common gpg curl wget unzip rsync sudo \
     && add-apt-repository -y ppa:deadsnakes/ppa \
@@ -52,9 +52,10 @@ RUN apt update && apt install -y software-properties-common gpg curl wget unzip 
     openssh-server \
     net-tools \
     vim \
-    python3.12 \
-    python3.12-dev \
-    python3.12-venv \
+    python3.8 \
+    python3.8-dev \
+    python3.8-venv \
+    python3-pip \
     libffi-dev \
     libssl-dev \
     cmake \
@@ -69,11 +70,11 @@ RUN apt update && apt install -y software-properties-common gpg curl wget unzip 
 # ---------------------------------------------------------------------
 # 3. Python Virtual Environment Setup & Requirements
 # ---------------------------------------------------------------------
-# Enforce Python 3.12 for our internal virtual environment
-RUN python3.12 -m venv /opt/venv
+# Enforce Python 3.8 for our internal virtual environment
+RUN python3.8 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Print the active python version to the build terminal to confirm 3.12 is loaded
+# Print the active python version to the build terminal to confirm 3.8 is loaded
 RUN python3 --version
 
 COPY ./requirements.txt /root/requirements.txt
@@ -92,38 +93,38 @@ RUN echo 'PermitUserEnvironment yes' >> /etc/ssh/sshd_config
 ARG APACHE_MIRROR="https://apache-mirror.rbc.ru/pub/apache/"
 ARG APACHE_ARCHIVE="https://archive.apache.org/dist/"
 
-# Install Ignite
-RUN for v in "2.7.6" "2.17.0"; \
-    do cd /opt; \
-    curl -O $APACHE_ARCHIVE/ignite/$v/apache-ignite-$v-bin.zip;\
-    unzip apache-ignite-$v-bin.zip && mv /opt/apache-ignite-$v-bin /opt/ignite-$v; \
-    done \
-    && rm /opt/apache-ignite-*-bin.zip
-
-# Install Zookeeper
-ARG ZOOKEEPER_VERSION="3.5.8"
-ARG ZOOKEEPER_NAME="zookeeper-$ZOOKEEPER_VERSION"
-ARG ZOOKEEPER_RELEASE_NAME="apache-$ZOOKEEPER_NAME-bin"
-ARG ZOOKEEPER_RELEASE_ARTIFACT="$ZOOKEEPER_RELEASE_NAME.tar.gz"
-RUN cd /opt && curl -O $APACHE_ARCHIVE/zookeeper/$ZOOKEEPER_NAME/$ZOOKEEPER_RELEASE_ARTIFACT \
-    && tar xvf $ZOOKEEPER_RELEASE_ARTIFACT && rm $ZOOKEEPER_RELEASE_ARTIFACT \
-    && mv /opt/$ZOOKEEPER_RELEASE_NAME /opt/$ZOOKEEPER_NAME
-
-# Install Kafka
-ARG KAFKA_VERSION="3.9.1"
-ARG KAFKA_NAME="kafka"
-ARG KAFKA_RELEASE_NAME="${KAFKA_NAME}_2.13-$KAFKA_VERSION"
-ARG KAFKA_RELEASE_ARTIFACT="$KAFKA_RELEASE_NAME.tgz"
-RUN cd /opt && curl -O $APACHE_ARCHIVE/kafka/$KAFKA_VERSION/$KAFKA_RELEASE_ARTIFACT \
-    && tar xvf $KAFKA_RELEASE_ARTIFACT && rm $KAFKA_RELEASE_ARTIFACT \
-    && mv /opt/$KAFKA_RELEASE_NAME /opt/$KAFKA_NAME-$KAFKA_VERSION
-
-# Install Jmxterm
-ARG JMXTERM_NAME="jmxterm"
-ARG JMXTERM_VERSION="1.0.1"
-ARG JMXTERM_ARTIFACT="$JMXTERM_NAME-$JMXTERM_VERSION-uber.jar"
-RUN cd /opt && curl -OL https://github.com/jiaqi/jmxterm/releases/download/v$JMXTERM_VERSION/$JMXTERM_ARTIFACT \
-    && mv $JMXTERM_ARTIFACT $JMXTERM_NAME.jar
+## Install Ignite
+#RUN for v in "2.7.6" "2.17.0"; \
+#    do cd /opt; \
+#    curl -O $APACHE_ARCHIVE/ignite/$v/apache-ignite-$v-bin.zip;\
+#    unzip apache-ignite-$v-bin.zip && mv /opt/apache-ignite-$v-bin /opt/ignite-$v; \
+#    done \
+#    && rm /opt/apache-ignite-*-bin.zip
+#
+## Install Zookeeper
+#ARG ZOOKEEPER_VERSION="3.5.8"
+#ARG ZOOKEEPER_NAME="zookeeper-$ZOOKEEPER_VERSION"
+#ARG ZOOKEEPER_RELEASE_NAME="apache-$ZOOKEEPER_NAME-bin"
+#ARG ZOOKEEPER_RELEASE_ARTIFACT="$ZOOKEEPER_RELEASE_NAME.tar.gz"
+#RUN cd /opt && curl -O $APACHE_ARCHIVE/zookeeper/$ZOOKEEPER_NAME/$ZOOKEEPER_RELEASE_ARTIFACT \
+#    && tar xvf $ZOOKEEPER_RELEASE_ARTIFACT && rm $ZOOKEEPER_RELEASE_ARTIFACT \
+#    && mv /opt/$ZOOKEEPER_RELEASE_NAME /opt/$ZOOKEEPER_NAME
+#
+## Install Kafka
+#ARG KAFKA_VERSION="3.9.1"
+#ARG KAFKA_NAME="kafka"
+#ARG KAFKA_RELEASE_NAME="${KAFKA_NAME}_2.13-$KAFKA_VERSION"
+#ARG KAFKA_RELEASE_ARTIFACT="$KAFKA_RELEASE_NAME.tgz"
+#RUN cd /opt && curl -O $APACHE_ARCHIVE/kafka/$KAFKA_VERSION/$KAFKA_RELEASE_ARTIFACT \
+#    && tar xvf $KAFKA_RELEASE_ARTIFACT && rm $KAFKA_RELEASE_ARTIFACT \
+#    && mv /opt/$KAFKA_RELEASE_NAME /opt/$KAFKA_NAME-$KAFKA_VERSION
+#
+## Install Jmxterm
+#ARG JMXTERM_NAME="jmxterm"
+#ARG JMXTERM_VERSION="1.0.1"
+#ARG JMXTERM_ARTIFACT="$JMXTERM_NAME-$JMXTERM_VERSION-uber.jar"
+#RUN cd /opt && curl -OL https://github.com/jiaqi/jmxterm/releases/download/v$JMXTERM_VERSION/$JMXTERM_ARTIFACT \
+#    && mv $JMXTERM_ARTIFACT $JMXTERM_NAME.jar
 
 # ---------------------------------------------------------------------
 # 6. User Isolation Permissions (Ducker Execution Account Setup)
