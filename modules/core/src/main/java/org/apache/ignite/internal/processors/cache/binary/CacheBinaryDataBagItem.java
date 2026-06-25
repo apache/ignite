@@ -22,18 +22,18 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
-public class BinaryMetadataVersionsData implements Message {
+public class CacheBinaryDataBagItem implements Message {
     /** */
     @Order(0)
-    Map<Integer, BinaryMetadataVersionInfo> data;
+    Map<Integer, BinaryMetadataVersionInfo> meta;
 
     /** */
-    public BinaryMetadataVersionsData() {}
+    public CacheBinaryDataBagItem() {}
 
     /**
-     * @param data Data.
+     * @param meta Per-type binary metadata info.
      */
-    public BinaryMetadataVersionsData(Map<Integer, BinaryMetadataVersionInfo> data) {
-        this.data = Map.copyOf(data);
+    public CacheBinaryDataBagItem(Map<Integer, BinaryMetadataVersionInfo> meta) {
+        this.meta = Map.copyOf(meta);
     }
 }

@@ -15,26 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.marshaller;
+package org.apache.ignite.internal;
 
-import java.util.List;
-import java.util.Map;
-import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.thread.context.DistributedOperationContextManager;
+import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-/** */
-public class MarshallerMappingsData implements Message {
-    /** */
+/**
+ * Transport for {@link OperationContext} distributed attributes.
+ *
+ * @see DistributedOperationContextManager
+ */
+public class DistributedOperationContextMessage implements Message {
+    /** Values of operation context attributes. */
     @Order(0)
-    List<Map<Integer, MappedName>> mappings;
+    public Message[] vals;
 
-    /** */
-    public MarshallerMappingsData() {}
+    /** Bitmap of effective attributes ids. */
+    @Order(1)
+    public byte idBitmap;
 
-    /**
-     * @param mappings Mappings.
-     */
-    public MarshallerMappingsData(List<Map<Integer, MappedName>> mappings) {
-        this.mappings = mappings;
+    /** Empty constructor for serialization purposes. */
+    public DistributedOperationContextMessage() {
+        // No-op.
     }
 }

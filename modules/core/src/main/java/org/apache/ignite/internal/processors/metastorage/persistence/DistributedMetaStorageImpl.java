@@ -958,7 +958,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         lock.writeLock().lock();
 
         try {
-            DistributedMetaStorageClusterNodeData nodeData = (DistributedMetaStorageClusterNodeData)data.commonData();
+            DistributedMetaStorageClusterNodeData nodeData = data.commonData();
 
             if (nodeData != null) {
                 if (nodeData.fullData != null) {

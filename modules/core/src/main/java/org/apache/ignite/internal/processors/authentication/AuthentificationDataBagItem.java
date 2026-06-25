@@ -15,45 +15,41 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.discovery.tcp.messages;
+package org.apache.ignite.internal.processors.authentication;
 
-import java.net.InetAddress;
+import java.util.ArrayList;
+import java.util.Collection;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
-/** Socket address utility container message. Is not a pure {@link TcpDiscoveryAbstractMessage}. */
-public class InetSocketAddressMessage extends InetAddressMessage {
-    /** */
+/** Initial data is collected on coordinator to send to join node. */
+public class AuthentificationDataBagItem implements Message {
+    /** Users. */
+    @GridToStringInclude
     @Order(0)
-    int port;
+    ArrayList<User> usrs;
+
+    /** Active user operations. */
+    @GridToStringInclude
+    @Order(1)
+    ArrayList<UserManagementOperation> activeOps;
+
+    /** */
+    public AuthentificationDataBagItem() { }
 
     /**
-     * Default constructor for {@link MessageFactory}.
+     * @param usrs Users.
+     * @param ops  Active operations on cluster.
      */
-    public InetSocketAddressMessage() {
-        // No-op.
-    }
-
-    /**
-     * Constructor.
-     *
-     * @param addr Address.
-     * @param port Port.
-     */
-    public InetSocketAddressMessage(InetAddress addr, int port) {
-        super(addr);
-
-        this.port = port;
-    }
-
-    /** @return Port. */
-    public int port() {
-        return port;
+    AuthentificationDataBagItem(Collection<User> usrs, Collection<UserManagementOperation> ops) {
+        this.usrs = new ArrayList<>(usrs);
+        activeOps = new ArrayList<>(ops);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(InetSocketAddressMessage.class, this);
+        return S.toString(AuthentificationDataBagItem.class, this);
     }
 }

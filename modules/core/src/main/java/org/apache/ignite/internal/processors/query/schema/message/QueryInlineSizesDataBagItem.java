@@ -15,36 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.discovery.zk.internal;
+package org.apache.ignite.internal.processors.query.schema.message;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
-import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-/**
- *
- */
-class ZkBulkJoinContext {
+/** */
+public class QueryInlineSizesDataBagItem implements Message {
     /** */
-    List<T2<ZkJoinedNodeEvtData, ZkDiscoDataBagWrapper>> nodes;
+    @Order(0)
+    Map<String, Integer> sizes;
 
-    /**
-     * @param nodeEvtData Node event data.
-     * @param discoData Discovery data for node.
-     */
-    void addJoinedNode(ZkJoinedNodeEvtData nodeEvtData, Map<Integer, Message> discoData) {
-        if (nodes == null)
-            nodes = new ArrayList<>();
+    /** */
+    public QueryInlineSizesDataBagItem() {}
 
-        nodes.add(new T2<>(nodeEvtData, new ZkDiscoDataBagWrapper(discoData)));
+    /** @param sizes Inline sizes. */
+    public QueryInlineSizesDataBagItem(Map<String, Integer> sizes) {
+        this.sizes = sizes;
     }
 
-    /**
-     * @return Number of joined nodes.
-     */
-    int nodes() {
-        return nodes != null ? nodes.size() : 0;
+    /** @return Inline sizes. */
+    public Map<String, Integer> sizes() {
+        return sizes;
     }
 }
