@@ -26,13 +26,13 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
 
-/** */
+/** Diagnostic request carrying cache keys pending transaction lock info for a specific cache. */
 public final class TxEntriesInfo extends IgniteDiagnosticRequest.DiagnosticBaseInfo implements CacheIdAware {
     /** */
     @Order(0)
     int cacheId;
 
-    /** */
+    /** Keys to look up lock/entry diagnostic information for. */
     @Order(1)
     Collection<KeyCacheObject> keys;
 
@@ -51,7 +51,6 @@ public final class TxEntriesInfo extends IgniteDiagnosticRequest.DiagnosticBaseI
         this.cacheId = cacheId;
         this.keys = new HashSet<>(keys);
     }
-
 
     /** {@inheritDoc} */
     @Override public void appendInfo(StringBuilder sb, GridKernalContext ctx) {

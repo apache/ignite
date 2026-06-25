@@ -24,13 +24,16 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.Writer;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeSet;
 import javax.annotation.processing.FilerException;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.ElementFilter;
 import javax.lang.model.util.Elements;
 import javax.tools.Diagnostic;
 import javax.tools.FileObject;
@@ -41,19 +44,17 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 
 /** Base class for message code generators ({@link MessageSerializerGenerator}, {@link MessageMarshallerGenerator}). */
 public abstract class MessageGenerator {
-    /** */
+    /** Blank separator line in generated code. */
     public static final String EMPTY = "";
 
-    /** */
     public static final String NL = System.lineSeparator();
 
-    /** */
     public static final String TAB = "    ";
 
-    /** */
+    /** Javadoc stub emitted on every generated {@code @Override} method. */
     public static final String METHOD_JAVADOC = "/** */";
 
-    /** */
+    /** Javadoc block emitted on every generated class. */
     public static final String CLS_JAVADOC = "/**" + NL +
         " * This class is generated automatically." + NL +
         " *" + NL +
@@ -63,23 +64,20 @@ public abstract class MessageGenerator {
     /** */
     final ProcessingEnvironment env;
 
-    /** Collection of message-specific imports. */
+    /** */
     final java.util.Set<String> imports = new TreeSet<>();
 
-    /** Message type being generated for. */
+    /** */
     TypeElement type;
 
     /** */
     int indent;
 
-    /** */
     MessageGenerator(ProcessingEnvironment env) {
         this.env = env;
     }
 
-    /**
-     * Generates and writes the source file for the given message type.
-     * Template method: subclasses implement {@link #generateBody} and {@link #buildClassCode}.
+    /** Generates and writes the source file for {@code type}; skipped when {@link #shouldSkip} returns {@code true}.
      */
     final void generate(TypeElement type, List<VariableElement> fields) throws Exception {
         assert this.type == null : "Message" + typeSuffix() + " generator isn't stateless and is supposed to be single-use.";
@@ -105,8 +103,7 @@ public abstract class MessageGenerator {
         }
         catch (FilerException e) {
             if (!identicalFileIsAlreadyGenerated(env, code, fqnClsName)) {
-                env.getMessager().printMessage(
-                    Diagnostic.Kind.ERROR,
+                env.getMessager().printMessage(Diagnostic.Kind.ERROR,
                     "Message" + typeSuffix() + " " + clsName + " is already generated. Try 'mvn clean install' to fix the issue.");
 
                 throw e;
@@ -117,24 +114,19 @@ public abstract class MessageGenerator {
     /** @return Class name suffix: {@code "Serializer"} or {@code "Marshaller"}. */
     abstract String typeSuffix();
 
-    /**
-     * @return {@code true} if no source file should be generated for the given message type.
-     * Default: {@code false} (generate for all types).
-     */
+    /** @return {@code true} if no file should be generated for this type; default is {@code false}. */
     boolean shouldSkip(TypeElement type) {
         return false;
     }
 
-    /**
-     * Generates the body of the class by populating internal state (e.g. write/read or marshal/unmarshal lists).
-     * Called before {@link #buildClassCode}.
+    /** Populates internal state (method body lines etc.) from {@code fields}; called before {@link #buildClassCode}.
      */
     abstract void generateBody(List<VariableElement> fields) throws Exception;
 
     /** Generates and returns the complete source code for the generated class. */
     abstract String buildClassCode(String clsName) throws IOException;
 
-    /** Writes the Apache license header to the given writer. */
+    /** */
     void writeLicense(Writer writer) throws IOException {
         try (InputStream in = getClass().getClassLoader().getResourceAsStream("license.txt");
              BufferedReader reader = new BufferedReader(new InputStreamReader(in))) {
@@ -147,14 +139,7 @@ public abstract class MessageGenerator {
         }
     }
 
-    /**
-     * Writes the common class header: license, package declaration, imports, Javadoc, and class declaration line.
-     * Callers must have already populated {@link #imports} with all required imports before calling this method.
-     *
-     * @param writer Target writer.
-     * @param interfaceName Simple name of the implemented interface (e.g. {@code "MessageSerializer"}).
-     * @param clsName Generated class name (e.g. {@code "FooSerializer"}).
-     */
+    /** Writes license, package, imports, javadoc, and class declaration; {@link #imports} must be populated before calling. */
     void writeClassHeader(Writer writer, String interfaceName, String clsName) throws IOException {
         writeLicense(writer);
 
@@ -170,7 +155,7 @@ public abstract class MessageGenerator {
         writer.write("public class " + clsName + " implements " + interfaceName + "<" + simpleNameWithGeneric(type) + ">");
     }
 
-    /** */
+    /** @return {@code format} formatted with {@code args}, prefixed with {@link #indent} tabs. */
     String indentedLine(String format, Object... args) {
         SB sb = new SB();
 
@@ -182,7 +167,7 @@ public abstract class MessageGenerator {
         return sb.toString();
     }
 
-    /** */
+    /** @return simple name of {@code te} with {@code <?, ?>} wildcard type arguments appended when parameterised. */
     String simpleNameWithGeneric(TypeElement te) {
         if (F.size(te.getTypeParameters()) == 0)
             return te.getSimpleName().toString();
@@ -206,7 +191,7 @@ public abstract class MessageGenerator {
         return env.getTypeUtils().isAssignable(type, superType);
     }
 
-    /** */
+    /** @return the {@link TypeMirror} for the fully-qualified {@code clazz}, or {@code null} if not on classpath. */
     TypeMirror type(String clazz) {
         Elements elementUtils = env.getElementUtils();
         TypeElement typeElement = elementUtils.getTypeElement(clazz);
@@ -218,12 +203,30 @@ public abstract class MessageGenerator {
         return env.getTypeUtils().erasure(type);
     }
 
-    /** */
+    /** @return {@code "msg.<fieldName>"} accessor expression for {@code field}. */
     String fieldAccessor(VariableElement field) {
         return "msg." + field.getSimpleName().toString();
     }
 
-    /** @return {@code true} if a file with identical content is already generated (e.g. during IDE incremental build). */
+    /** Returns all fields declared directly on {@link #type}, in declaration order. */
+    protected Map<String, VariableElement> enclosedFields() {
+        Map<String, VariableElement> result = new LinkedHashMap<>();
+
+        for (VariableElement f : ElementFilter.fieldsIn(type.getEnclosedElements()))
+            result.put(f.getSimpleName().toString(), f);
+
+        return result;
+    }
+
+    /** Appends {@code block} to {@code body}, inserting a blank-line separator when {@code body} is non-empty. */
+    protected static void appendBlock(List<String> body, List<String> block) {
+        if (!body.isEmpty())
+            body.add(EMPTY);
+
+        body.addAll(block);
+    }
+
+    /** @return {@code true} if a file with identical content is already generated (e.g. during incremental build). */
     public static boolean identicalFileIsAlreadyGenerated(ProcessingEnvironment env, String srcCode, String fqnClsName) {
         try {
             String fileName = fqnClsName.replace('.', '/') + ".java";

@@ -17,17 +17,25 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.DeployableMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 
-/** */
-public class NioFieldOnNonMessageMessage implements Message {
-    /** */
-    @NioField
+public class TestDeployableMessage extends GridCacheIdMessage implements DeployableMessage {
     @Order(0)
-    int id;
+    KeyCacheObject key;
 
-    /** */
     public short directType() {
         return 0;
+    }
+
+    @Override public boolean addDeploymentInfo() {
+        return true;
+    }
+
+    @Override public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        // Custom deployment that cannot be inferred from field types.
     }
 }

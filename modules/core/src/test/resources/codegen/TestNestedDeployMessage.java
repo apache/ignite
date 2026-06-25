@@ -17,17 +17,17 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 
-/** */
-public class NioFieldOnNonMessageMessage implements Message {
-    /** */
-    @NioField
+public class TestNestedDeployMessage extends GridCacheIdMessage {
     @Order(0)
-    int id;
+    TestCacheIdMessage nested;
 
-    /** */
     public short directType() {
         return 0;
+    }
+
+    @Override public boolean addDeploymentInfo() {
+        return true;
     }
 }

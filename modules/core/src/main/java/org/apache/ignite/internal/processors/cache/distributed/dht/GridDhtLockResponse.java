@@ -23,8 +23,10 @@ import java.util.HashSet;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
+import org.apache.ignite.internal.processors.cache.DeployableMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -36,7 +38,7 @@ import org.apache.ignite.lang.IgniteUuid;
  * DHT cache lock response.
  */
 @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-public class GridDhtLockResponse extends GridDistributedLockResponse {
+public class GridDhtLockResponse extends GridDistributedLockResponse implements DeployableMessage {
     /** Mini future ID. */
     @Order(0)
     IgniteUuid miniId;
@@ -125,14 +127,13 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
 
     /** {@inheritDoc} */
     @Override public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareDeployment(ctx);
+        if (preloadEntries != null) {
+            GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
-        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
-
-        if (preloadEntries != null)
-            prepareInfosDeployment(preloadEntries, cctx.shared(), cctx.cacheObjectContext());
+            GridCacheMessageDeployer.prepareInfos(this, preloadEntries, cctx);
+        }
     }
-    
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtLockResponse.class, this, super.toString());

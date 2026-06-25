@@ -79,8 +79,7 @@ public interface MessageMarshaller<M extends Message> {
      * @param kctx Kernal context.
      * @throws IgniteCheckedException If unmarshalling failed.
      */
-    static <M extends Message> void finishUnmarshalNio(
-        MessageFactory factory, M msg, GridKernalContext kctx)
+    static <M extends Message> void finishUnmarshalNio(MessageFactory factory, M msg, GridKernalContext kctx)
         throws IgniteCheckedException {
         MessageMarshaller<M> m = (MessageMarshaller<M>)factory.marshaller(msg.directType());
 
@@ -98,9 +97,8 @@ public interface MessageMarshaller<M extends Message> {
      * @param nested Nested cache context, or {@code null} if not applicable.
      * @throws IgniteCheckedException If marshalling failed.
      */
-    static <M extends Message> void prepareMarshal(
-        MessageFactory factory, M msg, GridKernalContext kctx, @Nullable GridCacheContext<?, ?> nested)
-        throws IgniteCheckedException {
+    static <M extends Message> void prepareMarshal(MessageFactory factory, M msg, GridKernalContext kctx,
+        @Nullable GridCacheContext<?, ?> nested) throws IgniteCheckedException {
         MessageMarshaller<M> m = (MessageMarshaller<M>)factory.marshaller(msg.directType());
 
         if (m != null)
@@ -118,9 +116,8 @@ public interface MessageMarshaller<M extends Message> {
      * @param clsLdr Class loader for unmarshalling.
      * @throws IgniteCheckedException If unmarshalling failed.
      */
-    static <M extends Message> void finishUnmarshal(
-        MessageFactory factory, M msg, GridKernalContext kctx, @Nullable GridCacheContext<?, ?> nested, ClassLoader clsLdr)
-        throws IgniteCheckedException {
+    static <M extends Message> void finishUnmarshal(MessageFactory factory, M msg, GridKernalContext kctx,
+        @Nullable GridCacheContext<?, ?> nested, ClassLoader clsLdr) throws IgniteCheckedException {
         MessageMarshaller<M> m = (MessageMarshaller<M>)factory.marshaller(msg.directType());
 
         if (m != null)
@@ -136,8 +133,7 @@ public interface MessageMarshaller<M extends Message> {
      * @param kctx Kernal context.
      * @throws IgniteCheckedException If unmarshalling failed.
      */
-    static <M extends Message> void finishUnmarshal(
-        MessageFactory factory, M msg, GridKernalContext kctx)
+    static <M extends Message> void finishUnmarshal(MessageFactory factory, M msg, GridKernalContext kctx)
         throws IgniteCheckedException {
         MessageMarshaller<M> m = (MessageMarshaller<M>)factory.marshaller(msg.directType());
 

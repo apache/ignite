@@ -19,12 +19,9 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -156,21 +153,9 @@ public class GridCacheTtlUpdateRequest extends GridCacheIdMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareDeployment(GridCacheSharedContext ctx) throws IgniteCheckedException {
-        super.prepareDeployment(ctx);
-
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
-
-        prepareCacheObjectsDeployment(keys, cctx);
-
-        prepareCacheObjectsDeployment(nearKeys, cctx);
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return false;
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

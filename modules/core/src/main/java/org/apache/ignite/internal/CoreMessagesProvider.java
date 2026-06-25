@@ -286,7 +286,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryServerOnlyCustom
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessage;
 import org.jetbrains.annotations.Nullable;
 
-/** */
+/** Registers all built-in core messages into {@link MessageFactory}. */
 public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProvider {
     /** Node ID message type. */
     public static final short NODE_ID_MSG_TYPE = 11500;
@@ -297,7 +297,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
     /** Handshake wait message type. */
     public static final short HANDSHAKE_WAIT_MSG_TYPE = HANDSHAKE_MSG_TYPE + 1;
 
-    /** */
+    /** Upper bound on message type IDs allocated by this provider; used to detect range exhaustion. */
     public static final short MAX_MESSAGE_ID = 15_000;
 
     /** */

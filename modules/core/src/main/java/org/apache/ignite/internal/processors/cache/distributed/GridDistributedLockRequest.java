@@ -20,10 +20,8 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -382,16 +380,6 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         return ctx.txLockMessageLogger();
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
-    @Override public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareDeployment(ctx);
-
-        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
-
-        prepareCacheObjectsDeployment(keys, cctx);
-    }
-    
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDistributedLockRequest.class, this, "keysCnt", retVals.length,

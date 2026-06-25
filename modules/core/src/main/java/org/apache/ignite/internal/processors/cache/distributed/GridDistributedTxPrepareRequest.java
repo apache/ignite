@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.MarshalledMap;
 import org.apache.ignite.internal.Order;
@@ -36,7 +35,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
@@ -104,11 +102,11 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     @MarshalledMap(keys = "dhtVerKeys", values = "dhtVerVals")
     Map<IgniteTxKey, GridCacheVersion> dhtVers;
 
-    /** Wire-protocol keys for {@link #dhtVers}. */
+    /** */
     @Order(7)
     public Collection<IgniteTxKey> dhtVerKeys;
 
-    /** Wire-protocol values for {@link #dhtVers}. */
+    /** */
     @Order(8)
     public Collection<GridCacheVersion> dhtVerVals;
 
@@ -369,17 +367,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     /** {@inheritDoc} */
     @Override public void txState(IgniteTxState txState) {
         this.txState = txState;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareDeployment(ctx);
-
-        if (writes != null)
-            prepareTxDeployment(writes, ctx);
-
-        if (reads != null)
-            prepareTxDeployment(reads, ctx);
     }
 
     /** {@inheritDoc} */

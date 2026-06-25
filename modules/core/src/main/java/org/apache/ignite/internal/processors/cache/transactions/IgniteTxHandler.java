@@ -371,9 +371,8 @@ public class IgniteTxHandler {
      * @return First entry.
      * @throws IgniteCheckedException If failed.
      */
-    private IgniteTxEntry initialize(
-        @Nullable Collection<IgniteTxEntry> entries,
-        AffinityTopologyVersion topVer) throws IgniteCheckedException {
+    private IgniteTxEntry initialize(@Nullable Collection<IgniteTxEntry> entries, AffinityTopologyVersion topVer)
+        throws IgniteCheckedException {
         if (entries == null)
             return null;
 

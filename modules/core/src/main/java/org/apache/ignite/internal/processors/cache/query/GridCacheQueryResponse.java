@@ -23,9 +23,11 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
+import org.apache.ignite.internal.processors.cache.DeployableMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -36,7 +38,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Page of cache query response.
  */
-public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCacheDeployable, MarshallableMessage {
+public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCacheDeployable, MarshallableMessage, DeployableMessage {
     /** */
     @Order(0)
     boolean finished;
@@ -97,28 +99,6 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
         this.addDepInfo = addDepInfo;
 
         finished = true;
-    }
-
-    /** {@inheritDoc}
-     * @param ctx*/
-    @Override public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareDeployment(ctx);
-
-        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
-
-        if (dataBytes == null && data != null)
-            prepareCollectionDeployment(data, cctx);
-
-        if (addDepInfo && !F.isEmpty(data)) {
-            for (Object o : data) {
-                if (o instanceof Map.Entry) {
-                    Map.Entry<?, ?> e = (Map.Entry<?, ?>)o;
-
-                    prepareObjectDeployment(e.getKey(), cctx);
-                    prepareObjectDeployment(e.getValue(), cctx);
-                }
-            }
-        }
     }
 
     /** {@inheritDoc} */
@@ -188,6 +168,25 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         if (dataBytes != null)
             data = unmarshalCollection(dataBytes, marsh, clsLdr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
+
+        if (dataBytes == null && data != null)
+            GridCacheMessageDeployer.prepareCollection(this, data, cctx);
+
+        if (addDepInfo && !F.isEmpty(data)) {
+            for (Object o : data) {
+                if (o instanceof Map.Entry) {
+                    Map.Entry<?, ?> e = (Map.Entry<?, ?>)o;
+
+                    GridCacheMessageDeployer.prepareObject(this, e.getKey(), cctx);
+                    GridCacheMessageDeployer.prepareObject(this, e.getValue(), cctx);
+                }
+            }
+        }
     }
 
     /** {@inheritDoc} */

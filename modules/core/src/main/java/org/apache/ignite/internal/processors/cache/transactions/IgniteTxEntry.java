@@ -71,10 +71,10 @@ public class IgniteTxEntry implements GridPeerDeployAware, MarshallableMessage, 
     /** Dummy version for any existing entry read in SERIALIZABLE transaction. */
     public static final GridCacheVersion SER_READ_NOT_EMPTY_VER = new GridCacheVersion(0, 0, 1);
 
-    /** */
+    /** Dummy version for an updated entry read in GET operation. */
     public static final GridCacheVersion GET_ENTRY_INVALID_VER_UPDATED = new GridCacheVersion(0, 0, 2);
 
-    /** */
+    /** Dummy version for an entry read after a GET operation. */
     public static final GridCacheVersion GET_ENTRY_INVALID_VER_AFTER_GET = new GridCacheVersion(0, 0, 3);
 
     /** Skip store flag bit mask. */
@@ -212,7 +212,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, MarshallableMessage, 
     /** Partition update counter. */
     private long partUpdateCntr;
 
-    /** */
+    /** Version read in SERIALIZABLE transaction to track conflicts. */
     @Order(12)
     GridCacheVersion serReadVer;
 

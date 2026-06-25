@@ -19,6 +19,7 @@ package org.apache.ignite.plugin.extensions.communication;
 
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -117,6 +118,22 @@ public interface MessageFactory {
     }
 
     /**
+     * Register message factory with given direct type, serializer, marshaller, and deployer. All messages must be
+     * registered during construction of class which implements this interface.
+     *
+     * @param directType Direct type.
+     * @param supplier Message factory.
+     * @param serializer Message serializer.
+     * @param marshaller Message marshaller, or {@code null} for non-marshallable messages.
+     * @param deployer Message deployer, or {@code null} for messages without deployable fields.
+     * @throws IgniteException In case of attempt to register message with direct type which is already registered.
+     */
+    default void register(short directType, Supplier<Message> supplier, MessageSerializer serializer,
+        @Nullable MessageMarshaller marshaller, @Nullable GridCacheMessageDeployer deployer) throws IgniteException {
+        register(directType, supplier, serializer, marshaller);
+    }
+
+    /**
      * Returns {@code MessageSerializer} for provided type.
      *
      * @param type Message type.
@@ -132,4 +149,15 @@ public interface MessageFactory {
      * @return Message marshaller, or {@code null}.
      */
     public @Nullable MessageMarshaller marshaller(short type);
+
+    /**
+     * Returns {@code GridCacheMessageDeployer} for provided type, or {@code null} if none is registered
+     * (e.g. for messages without deployable fields).
+     *
+     * @param type Message type.
+     * @return Message deployer, or {@code null}.
+     */
+    default @Nullable GridCacheMessageDeployer deployer(short type) {
+        return null;
+    }
 }

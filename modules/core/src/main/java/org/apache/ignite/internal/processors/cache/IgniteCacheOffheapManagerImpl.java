@@ -1000,9 +1000,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     info.value(),
                     info.version(),
                     part.id(),
-                    info.expireTime(),
-                    info.cacheId(),
-                    grp.storeCacheIdInDataPage()));
+                    info.expireTime(), info.cacheId(), grp.storeCacheIdInDataPage()));
             }
             catch (IllegalStateException th) {
                 assert ctx.cacheContext(info.cacheId()) == null; // Ignoring removed cache entries.

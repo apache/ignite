@@ -21,6 +21,7 @@ import java.lang.reflect.Constructor;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
@@ -30,6 +31,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * An extension of {@link MessageFactoryProvider} allowing to use provided schema-aware marshaller
@@ -52,32 +54,24 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
         this.schemaAwareMarsh = schemaAwareMarsh;
     }
 
-    /** Registers message automatically generating message supplier, serializer, and marshaller (if applicable). */
+    /** Registers a message with its generated serializer, marshaller (if marshallable), and deployer (if any). */
     protected static <T extends Message> void register(MessageFactory factory, Class<T> cls, short id, Marshaller marsh) {
         Constructor<T> ctor;
-        MessageSerializer<T> serializer;
-        MessageMarshaller<T> marshaller = null;
 
         try {
             ctor = cls.getConstructor();
-
-            Class<?> serCls = Class.forName(cls.getName() + "Serializer");
-            serializer = (MessageSerializer<T>)serCls.getConstructor().newInstance();
-
-            if (!NonMarshallableMessage.class.isAssignableFrom(cls)) {
-                Class<?> marshallerCls = Class.forName(cls.getName() + "Marshaller");
-                boolean needsMarsh = marshallerCls.getConstructors()[0].getParameterCount() > 0;
-
-                marshaller = needsMarsh
-                    ? (MessageMarshaller<T>)marshallerCls.getConstructor(Marshaller.class).newInstance(marsh)
-                    : (MessageMarshaller<T>)marshallerCls.getConstructor().newInstance();
-            }
         }
-        catch (Exception e) {
+        catch (NoSuchMethodException e) {
             throw new IgniteException("Failed to register message of type " + cls.getSimpleName(), e);
         }
 
-        MessageMarshaller<T> marshallerFinal = marshaller;
+        MessageSerializer<T> serializer = loadGenerated(cls, "Serializer", marsh);
+
+        MessageMarshaller<T> marshaller = NonMarshallableMessage.class.isAssignableFrom(cls)
+            ? null
+            : loadGenerated(cls, "Marshaller", marsh);
+
+        GridCacheMessageDeployer deployer = loadGenerated(cls, "Deployer", marsh);
 
         factory.register(
             id,
@@ -90,7 +84,33 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
                 }
             },
             serializer,
-            marshallerFinal
+            marshaller,
+            deployer
         );
+    }
+
+    /**
+     * Loads and instantiates the generated companion class {@code <message>Serializer/Marshaller/Deployer}, or returns
+     * {@code null} when it does not exist. The sole declared constructor is used, passing {@code marsh} when it takes one.
+     */
+    @SuppressWarnings("unchecked")
+    private static <T> @Nullable T loadGenerated(Class<?> cls, String suffix, Marshaller marsh) {
+        Class<?> generated;
+
+        try {
+            generated = Class.forName(cls.getName() + suffix);
+        }
+        catch (ClassNotFoundException ignored) {
+            return null;
+        }
+
+        try {
+            Constructor<?> ctor = generated.getConstructors()[0];
+
+            return (T)(ctor.getParameterCount() == 0 ? ctor.newInstance() : ctor.newInstance(marsh));
+        }
+        catch (Exception e) {
+            throw new IgniteException("Failed to instantiate " + cls.getSimpleName() + suffix, e);
+        }
     }
 }

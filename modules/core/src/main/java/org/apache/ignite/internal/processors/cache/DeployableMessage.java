@@ -15,19 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.IgniteCheckedException;
 
-/** */
-public class NioFieldOnNonMessageMessage implements Message {
-    /** */
-    @NioField
-    @Order(0)
-    int id;
-
-    /** */
-    public short directType() {
-        return 0;
-    }
+/**
+ * A {@link GridCacheMessage} with custom deployment logic that cannot be inferred from field types (conditional
+ * deployment, non-standard accessors, etc.). The generated {@code *Deployer} calls {@link #prepareDeployment} after
+ * its inferred field deployment, mirroring how a generated marshaller calls {@code MarshallableMessage#prepareMarshal}.
+ */
+public interface DeployableMessage {
+    /**
+     * Prepares deployment info for fields whose handling cannot be inferred from their type.
+     *
+     * @param ctx Cache shared context.
+     * @throws IgniteCheckedException If failed.
+     */
+    void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException;
 }

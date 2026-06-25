@@ -28,6 +28,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -66,13 +67,8 @@ public class TxDeadlockDetectionMessageMarshallingTest extends GridCommonAbstrac
                 @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                     if (msg instanceof TxLocksResponse) {
                         try {
-                            MessageMarshaller.finishUnmarshal(
-                                clientCtx.kernalContext().messageFactory(),
-                                (TxLocksResponse)msg,
-                                clientCtx.kernalContext(),
-                                null,
-                                clientCtx.deploy().globalLoader()
-                            );
+                            MessageMarshaller.finishUnmarshal(clientCtx.kernalContext().messageFactory(), (TxLocksResponse)msg,
+                                clientCtx.kernalContext(), null, clientCtx.deploy().globalLoader());
 
                             res.set(true);
                         }
@@ -93,7 +89,7 @@ public class TxDeadlockDetectionMessageMarshallingTest extends GridCommonAbstrac
             TxLocksResponse msg = new TxLocksResponse();
             msg.addKey(cctx.txKey(key));
 
-            msg.prepareDeployment(cctx.shared());
+            GridCacheMessageDeployer.prepareDeployment(cctx.kernalContext().messageFactory(), msg, cctx.shared());
 
             ((IgniteKernal)ignite).context().cache().context().gridIO().sendToCustomTopic(
                 ((IgniteKernal)client).localNode(), TOPIC, msg, GridIoPolicy.PUBLIC_POOL);

@@ -43,15 +43,11 @@ public class CacheVersionedValue implements Message, CacheIdAware {
     @Order(2)
     int cacheId;
 
-    /** */
     public CacheVersionedValue() {
         // No-op.
     }
 
-    /**
-     * @param val Cache value.
-     * @param ver Cache version.
-     */
+    /** */
     public CacheVersionedValue(CacheObject val, GridCacheVersion ver, int cacheId) {
         this.val = val;
         this.ver = ver;

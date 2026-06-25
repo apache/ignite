@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridNearUnlockRequest;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -68,13 +67,6 @@ public class GridDhtUnlockRequest extends GridNearUnlockRequest {
             nearKeys = new ArrayList<>();
 
         nearKeys.add(key);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareDeployment(ctx);
-
-        prepareCacheObjectsDeployment(nearKeys, ctx.cacheContext(cacheId));
     }
 
     /** {@inheritDoc} */

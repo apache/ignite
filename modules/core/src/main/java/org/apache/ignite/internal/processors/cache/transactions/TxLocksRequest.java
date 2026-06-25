@@ -39,22 +39,17 @@ public class TxLocksRequest extends GridCacheMessage {
     @MarshalledCollection("txKeysArr")
     Set<IgniteTxKey> txKeys;
 
-    /** Wire-protocol array for {@link #txKeys}. */
+    /** */
     @GridToStringExclude
     @Order(1)
     IgniteTxKey[] txKeysArr;
 
-    /**
-     * Default constructor.
-     */
+    /** */
     public TxLocksRequest() {
         // No-op.
     }
 
-    /**
-     * @param futId Future ID.
-     * @param txKeys Target tx keys.
-     */
+    /** */
     public TxLocksRequest(long futId, Set<IgniteTxKey> txKeys) {
         A.notEmpty(txKeys, "txKeys");
 
@@ -62,16 +57,12 @@ public class TxLocksRequest extends GridCacheMessage {
         this.txKeys = txKeys;
     }
 
-    /**
-     * @return Future ID.
-     */
+    /** */
     public long futureId() {
         return futId;
     }
 
-    /**
-     * @return Tx keys.
-     */
+    /** */
     public Set<IgniteTxKey> txKeys() {
         return txKeys;
     }

@@ -35,6 +35,7 @@ import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.MessageProcessor;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.cache.query.QueryIndexMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteUuid;
@@ -402,7 +403,7 @@ public class MessageProcessorTest {
         assertThat(compilation).hadErrorContaining("@NioField has no effect on non-Message field");
     }
 
-    /** Verifies that {@code @Marshalled} generates {@code U.unmarshal} with blank line before null-out in finishUnmarshal. */
+    /** Verifies that {@code @Marshalled} generates {@code U.unmarshal} with a blank line before the null-out. */
     @Test
     public void testMarshalledMessage() {
         Compilation compilation = compile("TestMarshalledMessage.java");
@@ -454,6 +455,53 @@ public class MessageProcessorTest {
         assertThat(compilation)
             .generatedSourceFile("org.apache.ignite.internal.TestMarshalledMapMessageMarshaller")
             .hasSourceEquivalentTo(javaFile("TestMarshalledMapMessageMarshaller.java"));
+    }
+
+    /** Verifies a deployable {@link GridCacheIdMessage} gets a generated deployer that bridges cache-object fields. */
+    @Test
+    public void testDeployerGeneration() {
+        Compilation compilation = compile("TestCacheIdMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertEquals(3, compilation.generatedSourceFiles().size());
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestCacheIdMessageDeployer")
+            .hasSourceEquivalentTo(javaFile("TestCacheIdMessageDeployer.java"));
+    }
+
+    /** Verifies a {@code DeployableMessage}'s generated deployer delegates to its custom {@code prepareDeployment}. */
+    @Test
+    public void testDeployerDelegatesToCustomDeployment() {
+        Compilation compilation = compile("TestDeployableMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestDeployableMessageDeployer")
+            .hasSourceEquivalentTo(javaFile("TestDeployableMessageDeployer.java"));
+    }
+
+    /** Verifies a nested {@link GridCacheMessage} field is deployed by delegating to the static facade entry point. */
+    @Test
+    public void testDeployerHandlesNestedMessage() {
+        Compilation compilation = compile("TestNestedDeployMessage.java", "TestCacheIdMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestNestedDeployMessageDeployer")
+            .hasSourceEquivalentTo(javaFile("TestNestedDeployMessageDeployer.java"));
+    }
+
+    /** Verifies the generator fails fast when a deployable message cannot resolve a cache context. */
+    @Test
+    public void testDeployerFailsWithoutCacheContext() {
+        Compilation compilation = compile("TestNoCacheCtxMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("Cannot resolve cache context");
     }
 
     /** */

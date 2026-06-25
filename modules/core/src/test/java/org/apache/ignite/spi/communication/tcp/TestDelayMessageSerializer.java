@@ -23,9 +23,9 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
-/** */
+/** Serializer for {@link TestDelayMessage} that injects an optional write delay for testing. */
 public class TestDelayMessageSerializer implements MessageSerializer<TestDelayMessage> {
-    /** */
+    /** {@inheritDoc} */
     @Override public boolean writeTo(TestDelayMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
@@ -46,7 +46,7 @@ public class TestDelayMessageSerializer implements MessageSerializer<TestDelayMe
         return true;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public boolean readFrom(TestDelayMessage msg, MessageReader reader) {
         return true;
     }

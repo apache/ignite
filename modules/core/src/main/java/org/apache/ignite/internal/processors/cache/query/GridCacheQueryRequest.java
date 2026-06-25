@@ -22,9 +22,11 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.DeployableMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -45,7 +47,7 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
 /**
  * Query request.
  */
-public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCacheDeployable, Message {
+public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCacheDeployable, Message, DeployableMessage {
     /** */
     private static final int FLAG_DATA_PAGE_SCAN_DFLT = 0b00;
 
@@ -412,40 +414,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareDeployment(ctx);
-
-        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
-
-        if (keyValFilter != null && keyValFilterBytes == null) {
-            if (addDepInfo)
-                prepareObjectDeployment(keyValFilter, cctx);
-        }
-
-        if (rdc != null && rdcBytes == null) {
-            if (addDepInfo)
-                prepareObjectDeployment(rdc, cctx);
-        }
-
-        if (trans != null && transBytes == null) {
-            if (addDepInfo)
-                prepareObjectDeployment(trans, cctx);
-        }
-
-        if (!F.isEmpty(args) && argsBytes == null) {
-            if (addDepInfo) {
-                for (Object arg : args)
-                    prepareObjectDeployment(arg, cctx);
-            }
-        }
-
-        if (idxQryDesc != null && idxQryDescBytes == null) {
-            if (addDepInfo)
-                prepareObjectDeployment(idxQryDesc, cctx);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return addDepInfo;
     }
@@ -616,6 +584,38 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      */
     @Override public int partition() {
         return part;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
+
+        if (keyValFilter != null && keyValFilterBytes == null) {
+            if (addDepInfo)
+                GridCacheMessageDeployer.prepareObject(this, keyValFilter, cctx);
+        }
+
+        if (rdc != null && rdcBytes == null) {
+            if (addDepInfo)
+                GridCacheMessageDeployer.prepareObject(this, rdc, cctx);
+        }
+
+        if (trans != null && transBytes == null) {
+            if (addDepInfo)
+                GridCacheMessageDeployer.prepareObject(this, trans, cctx);
+        }
+
+        if (!F.isEmpty(args) && argsBytes == null) {
+            if (addDepInfo) {
+                for (Object arg : args)
+                    GridCacheMessageDeployer.prepareObject(this, arg, cctx);
+            }
+        }
+
+        if (idxQryDesc != null && idxQryDescBytes == null) {
+            if (addDepInfo)
+                GridCacheMessageDeployer.prepareObject(this, idxQryDesc, cctx);
+        }
     }
 
     /** {@inheritDoc} */

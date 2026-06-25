@@ -24,10 +24,8 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 public class ZkMessageFactory implements MessageFactoryProvider {
     /** {@inheritDoc} */
     @Override public void registerAll(MessageFactory factory) {
-        factory.register(400, 
-            ZkCommunicationErrorResolveFinishMessage::new, new ZkCommunicationErrorResolveFinishMessageSerializer());
-        factory.register(401, 
-            ZkCommunicationErrorResolveStartMessage::new, new ZkCommunicationErrorResolveStartMessageSerializer());
+        factory.register(400,  ZkCommunicationErrorResolveFinishMessage::new, new ZkCommunicationErrorResolveFinishMessageSerializer());
+        factory.register(401,  ZkCommunicationErrorResolveStartMessage::new, new ZkCommunicationErrorResolveStartMessageSerializer());
         factory.register(402, ZkForceNodeFailMessage::new, new ZkForceNodeFailMessageSerializer());
         factory.register(403, ZkNoServersMessage::new, new ZkNoServersMessageSerializer());
     }

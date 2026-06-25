@@ -25,6 +25,7 @@ import com.tngtech.archunit.core.domain.properties.HasOwner;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.lang.ArchRule;
+import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.junit.BeforeClass;
@@ -32,13 +33,13 @@ import org.junit.Test;
 
 import static com.tngtech.archunit.core.domain.JavaCall.Predicates.target;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.assignableTo;
-import static com.tngtech.archunit.core.domain.properties.HasName.Predicates.nameMatching;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 /**
- * Verifies that instance methods of {@link MessageSerializer} and {@link MessageMarshaller} are only
- * called from classes that implement these interfaces (i.e. generated serializers/marshallers and their
- * hand-written wrappers). All other code must use the static convenience methods:
+ * Verifies that instance methods of {@link MessageSerializer}, {@link MessageMarshaller} and
+ * {@link GridCacheMessageDeployer} are only called from classes that implement these interfaces (i.e. generated
+ * serializers/marshallers/deployers and their hand-written wrappers). All other code must use the static
+ * convenience methods:
  * <ul>
  *     <li>{@link MessageSerializer#writeTo(org.apache.ignite.plugin.extensions.communication.MessageFactory,
  *         org.apache.ignite.plugin.extensions.communication.Message,
@@ -48,7 +49,11 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
  *         org.apache.ignite.plugin.extensions.communication.MessageReader)}</li>
  *     <li>{@link MessageMarshaller#prepareMarshal}</li>
  *     <li>{@link MessageMarshaller#finishUnmarshal}</li>
+ *     <li>static {@code GridCacheMessageDeployer.prepareDeployment(factory, msg, ctx)}</li>
  * </ul>
+ *
+ * <p>The rules key on whether the called method is {@code static}, not on its name — so any instance method added
+ * to these interfaces is covered automatically.
  */
 public class MessageSerializationArchitectureTest {
     /** Matches method calls that resolve to a non-static (instance) method. */
@@ -92,9 +97,7 @@ public class MessageSerializationArchitectureTest {
                 // Exclude MessageSerializer itself and all its implementations (generated + wrappers).
                 .areNotAssignableTo(MessageSerializer.class)
             .should()
-                .callMethodWhere(
-                    TO_INSTANCE_METHOD
-                        .and(target(nameMatching("writeTo|readFrom")))
+                .callMethodWhere(TO_INSTANCE_METHOD
                         .and(target(HasOwner.Predicates.With.owner(assignableTo(MessageSerializer.class))))
                 )
             .because("Use static MessageSerializer.writeTo(factory, msg, writer) and " +
@@ -118,13 +121,33 @@ public class MessageSerializationArchitectureTest {
                 // Exclude MessageMarshaller itself and all its implementations (generated + wrappers).
                 .areNotAssignableTo(MessageMarshaller.class)
             .should()
-                .callMethodWhere(
-                    TO_INSTANCE_METHOD
-                        .and(target(nameMatching("prepareMarshal|finishUnmarshal")))
+                .callMethodWhere(TO_INSTANCE_METHOD
                         .and(target(HasOwner.Predicates.With.owner(assignableTo(MessageMarshaller.class))))
                 )
             .because("Use static MessageMarshaller.prepareMarshal(factory, ...) and " +
                 "MessageMarshaller.finishUnmarshal(factory, ...) instead of calling instance methods directly.");
+
+        rule.check(classes);
+    }
+
+    /**
+     * Instance method of {@link GridCacheMessageDeployer} ({@code prepareDeployment}) must only be called from
+     * within classes that themselves implement {@link GridCacheMessageDeployer} — i.e. generated deployers.
+     *
+     * Everyone else must use the static {@code GridCacheMessageDeployer.prepareDeployment(factory, msg, ctx)} facade.
+     */
+    @Test
+    public void deployerInstanceMethodOnlyCalledFromImplementations() {
+        ArchRule rule = noClasses()
+            .that()
+                // Exclude GridCacheMessageDeployer itself and all its implementations (generated deployers).
+                .areNotAssignableTo(GridCacheMessageDeployer.class)
+            .should()
+                .callMethodWhere(TO_INSTANCE_METHOD
+                        .and(target(HasOwner.Predicates.With.owner(assignableTo(GridCacheMessageDeployer.class))))
+                )
+            .because("Use static GridCacheMessageDeployer.prepareDeployment(factory, msg, ctx) instead of " +
+                "calling the instance method directly.");
 
         rule.check(classes);
     }

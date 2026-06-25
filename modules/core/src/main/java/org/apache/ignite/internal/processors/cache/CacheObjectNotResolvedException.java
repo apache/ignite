@@ -25,7 +25,7 @@ public class CacheObjectNotResolvedException extends RuntimeException {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Disables stack trace for performance. */
+    /** */
     public CacheObjectNotResolvedException() {
         super(null, null, true, false);
     }

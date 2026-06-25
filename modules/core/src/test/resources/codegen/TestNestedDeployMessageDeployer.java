@@ -17,17 +17,19 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.TestNestedDeployMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 
-/** */
-public class NioFieldOnNonMessageMessage implements Message {
+/**
+ * This class is generated automatically.
+ *
+ * @see org.apache.ignite.internal.MessageProcessor
+ */
+public class TestNestedDeployMessageDeployer implements GridCacheMessageDeployer<TestNestedDeployMessage> {
     /** */
-    @NioField
-    @Order(0)
-    int id;
-
-    /** */
-    public short directType() {
-        return 0;
+    @Override public void prepareDeployment(TestNestedDeployMessage msg, GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        GridCacheMessageDeployer.prepareDeployment(ctx.kernalContext().messageFactory(), msg.nested, ctx);
     }
 }

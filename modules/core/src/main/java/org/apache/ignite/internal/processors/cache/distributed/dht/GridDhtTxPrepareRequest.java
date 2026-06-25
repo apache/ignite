@@ -26,7 +26,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.MarshalledMap;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.DeployableMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -42,7 +44,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * DHT prepare request.
  */
-public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
+public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest implements DeployableMessage {
     /** Max order. */
     @Order(0)
     UUID nearNodeId;
@@ -304,25 +306,16 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         return txLbl;
     }
 
-    /**
-     * {@inheritDoc}
-     *
-     * @param ctx
-     */
+    /** {@inheritDoc} */
     @Override public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareDeployment(ctx);
-
         if (owned != null && ownedKeys == null) {
-            for (IgniteTxKey key: owned.keySet()) {
+            for (IgniteTxKey key : owned.keySet()) {
                 GridCacheContext<?, ?> cctx = ctx.cacheContext(key.cacheId());
 
                 if (addDepInfo)
-                    prepareObjectDeployment(key, cctx);
+                    GridCacheMessageDeployer.prepareObject(this, key, cctx);
             }
         }
-
-        if (nearWrites != null)
-            prepareTxDeployment(nearWrites, ctx);
     }
 
     /** {@inheritDoc} */

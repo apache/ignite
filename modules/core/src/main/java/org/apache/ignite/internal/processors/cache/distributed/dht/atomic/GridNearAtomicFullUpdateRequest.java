@@ -29,7 +29,9 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.DeployableMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -53,7 +55,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPD
 /**
  * Lite DHT cache update request sent from near node to primary node.
  */
-public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdateRequest implements MarshallableMessage {
+public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdateRequest implements MarshallableMessage, DeployableMessage {
     /** Keys to update. */
     @Order(0)
     @GridToStringInclude
@@ -64,7 +66,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     List<CacheObject> vals;
 
     /** Entry processors. */
-    private List<EntryProcessor<Object, Object, Object>> entryProcessors;
+    List<EntryProcessor<Object, Object, Object>> entryProcessors;
 
     /** Entry processors bytes. */
     @Order(2)
@@ -330,32 +332,6 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareDeployment(ctx);
-
-        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
-
-        prepareCacheObjectsDeployment(keys, cctx);
-
-        if (filter != null && filter.length == 0)
-            filter = null;
-
-        if (operation() == TRANSFORM) {
-            // force addition of deployment info for entry processors if P2P is enabled globally.
-            if (!addDepInfo && ctx.deploymentEnabled())
-                addDepInfo = true;
-
-            if (entryProcessorsBytes == null)
-                prepareCollectionDeployment(entryProcessors, cctx);
-
-            if (!F.isEmpty(invokeArgs) && invokeArgsBytes == null)
-                prepareInvokeArgumentsDeployment(invokeArgs, cctx);
-        }
-        else
-            prepareCacheObjectsDeployment(vals, cctx);
-    }
-
-    /** {@inheritDoc} */
     @Override public int partition() {
         assert !F.isEmpty(keys);
 
@@ -399,6 +375,24 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
             if (invokeArgsBytes != null && invokeArgs == null)
                 invokeArgs = unmarshalInvokeArguments(invokeArgsBytes.toArray(new byte[invokeArgsBytes.size()][]), marsh, clsLdr);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        if (filter != null && filter.length == 0)
+            filter = null;
+
+        if (operation() == TRANSFORM) {
+            GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
+
+            GridCacheMessageDeployer.forceDeploymentInfo(this, ctx);
+
+            if (entryProcessorsBytes == null)
+                GridCacheMessageDeployer.prepareCollection(this, entryProcessors, cctx);
+
+            if (!F.isEmpty(invokeArgs) && invokeArgsBytes == null)
+                GridCacheMessageDeployer.prepareInvokeArguments(this, invokeArgs, cctx);
         }
     }
 

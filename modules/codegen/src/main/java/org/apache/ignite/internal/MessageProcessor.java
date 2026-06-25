@@ -90,12 +90,10 @@ public class MessageProcessor extends AbstractProcessor {
         "org.apache.ignite.spi.communication.tcp.TestDelayMessage"
     };
 
-    /** */
+    /** Tracks enum-to-mapper bindings to detect inconsistent mapper usage across messages. */
     private final Map<String, IgniteBiTuple<String, String>> enumMappersInUse = new HashMap<>();
 
-    /**
-     * Processes all classes implementing the {@code Message} interface and generates corresponding serializer code.
-     */
+    /** Processes all classes implementing the {@code Message} interface and generates corresponding serializer code. */
     @Override public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         TypeMirror msgType = processingEnv.getElementUtils().getTypeElement(MESSAGE_INTERFACE).asType();
 
@@ -147,10 +145,16 @@ public class MessageProcessor extends AbstractProcessor {
                 new MessageMarshallerGenerator(processingEnv).generate(type.getKey(), type.getValue());
             }
             catch (Exception e) {
-                processingEnv.getMessager().printMessage(
-                    Diagnostic.Kind.ERROR,
-                    "Failed to generate a message marshaller:" + e.getMessage(),
-                    type.getKey());
+                processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                    "Failed to generate a message marshaller:" + e.getMessage(), type.getKey());
+            }
+
+            try {
+                new MessageDeploymentGenerator(processingEnv).generate(type.getKey(), type.getValue());
+            }
+            catch (Exception e) {
+                processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                    "Failed to generate a message deployer:" + e.getMessage(), type.getKey());
             }
         }
 
@@ -163,7 +167,7 @@ public class MessageProcessor extends AbstractProcessor {
      * The resulting list is sorted in ascending order of the {@code @Order} value.
      *
      * @param type the {@code TypeElement} representing the class to inspect.
-     * @return a list of {@code VariableElement} objects representing all ordered fields, including those declared in superclasses.
+     * @return all ordered fields including those in superclasses, sorted by ascending {@code @Order} value.
      */
     private List<VariableElement> orderedFields(TypeElement type) {
         List<List<VariableElement>> hierList = hierarchicalOrderedFields(type);
@@ -188,7 +192,7 @@ public class MessageProcessor extends AbstractProcessor {
         return result;
     }
 
-    /** */
+    /** Recursively collects ordered fields from {@code type} and all its superclasses, one list per level. */
     private List<List<VariableElement>> hierarchicalOrderedFields(TypeElement type) {
         Element superType = processingEnv.getTypeUtils().asElement(type.getSuperclass());
 
@@ -217,7 +221,7 @@ public class MessageProcessor extends AbstractProcessor {
     }
 
     /**
-     * Validates consistency of enum field mappers configuration: the same mapper is used for the same enum in different messages,
+     * Validates consistency of enum field mappers configuration: the same mapper is used for the same enum across different messages,
      * CustomMapper annotation is used only for enum fields.
      *
      * @param type Type implementing Message interface.

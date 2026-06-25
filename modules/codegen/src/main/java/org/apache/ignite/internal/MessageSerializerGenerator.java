@@ -45,31 +45,27 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.MessageProcessor.COMPRESSED_MESSAGE_CLASS;
 import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
 
-/**
- * Generates serializer class for given {@code Message} class. The generated serializer follows the naming convention:
- * {@code org.apache.ignite.internal.codegen.[MessageClassName]Serializer}.
- */
+/** Generates {@code *Serializer} classes for {@link org.apache.ignite.plugin.extensions.communication.Message} types. */
 public class MessageSerializerGenerator extends MessageGenerator {
     /** */
     private static final String RETURN_FALSE_STMT = "return false;";
 
-    /** */
+    /** FQN of the default enum mapper used when no custom mapper is specified. */
     static final String DLFT_ENUM_MAPPER_CLS = "org.apache.ignite.plugin.extensions.communication.mappers.DefaultEnumMapper";
 
     /** */
     private static final String COMPRESSED_MSG_ERROR = "CompressedMessage should not be used explicitly. " +
         "To compress the required field use the @Compress annotation.";
 
-    /** Collection of lines for {@code writeTo} method. */
+    /** */
     private final List<String> write = new ArrayList<>();
 
-    /** Collection of lines for {@code readFrom} method. */
+    /** */
     private final List<String> read = new ArrayList<>();
 
-    /** Collection of Serializer class fields containing mappers for message enum fields. */
+    /** Enum-mapper field declarations emitted at the top of the generated {@code *Serializer} class. */
     private final Set<String> fields = new java.util.TreeSet<>();
 
-    /** */
     MessageSerializerGenerator(ProcessingEnvironment env) {
         super(env);
     }
@@ -119,7 +115,7 @@ public class MessageSerializerGenerator extends MessageGenerator {
         }
     }
 
-    /** */
+    /** Writes a no-arg constructor stub to the generated serializer class. */
     private void writeConstructor(Writer writer, String serClsName) throws IOException {
         ++indent;
 
@@ -173,8 +169,7 @@ public class MessageSerializerGenerator extends MessageGenerator {
         code.add(indentedLine(METHOD_JAVADOC));
 
         code.add(indentedLine("@Override public boolean %s(" + simpleNameWithGeneric(type) + " msg, %s) {",
-            write ? "writeTo" : "readFrom",
-            write ? "MessageWriter writer" : "MessageReader reader"));
+            write ? "writeTo" : "readFrom", write ? "MessageWriter writer" : "MessageReader reader"));
 
         indent++;
 
@@ -264,7 +259,7 @@ public class MessageSerializerGenerator extends MessageGenerator {
         indent--;
     }
 
-    /** */
+    /** Appends a write-fail guard for {@code field}, emitting {@code return false;} when the write fails. */
     private void returnFalseIfWriteFailed(VariableElement field) throws Exception {
         String getExpr = field.getSimpleName().toString();
 
@@ -409,7 +404,7 @@ public class MessageSerializerGenerator extends MessageGenerator {
         return new String(typeNameChars);
     }
 
-    /** */
+    /** Appends an accessor-based write-fail guard, emitting {@code return false;} when the write fails. */
     private void returnFalseIfWriteFailed(Collection<String> code, String accessor, @Nullable String... args) {
         String argsStr = String.join(", ", args);
 
@@ -422,7 +417,7 @@ public class MessageSerializerGenerator extends MessageGenerator {
         indent--;
     }
 
-    /** */
+    /** Appends a field-based write-fail guard, casting to the declaring class for inherited fields. */
     private void returnFalseIfWriteFailed(Collection<String> code, VariableElement field, String accessor, @Nullable String... args) {
         String argsStr = String.join(", ", args);
 
@@ -440,7 +435,7 @@ public class MessageSerializerGenerator extends MessageGenerator {
         indent--;
     }
 
-    /** */
+    /** Appends an enum write-fail guard using the mapper call to convert the field value before writing. */
     private void returnFalseIfEnumWriteFailed(
         Collection<String> code,
         VariableElement field,
@@ -462,7 +457,7 @@ public class MessageSerializerGenerator extends MessageGenerator {
         indent--;
     }
 
-    /** */
+    /** Appends a read-fail guard for {@code field}, returning {@code false} when reading is incomplete. */
     private void returnFalseIfReadFailed(VariableElement field) throws Exception {
         TypeMirror type = field.asType();
 
@@ -588,7 +583,7 @@ public class MessageSerializerGenerator extends MessageGenerator {
         throw new IllegalArgumentException("Unsupported type kind: " + type.getKind());
     }
 
-    /** */
+    /** @return the field name of the item-type descriptor constant for {@code field}'s collection element type. */
     private String messageCollectionItemTypes(VariableElement field, TypeMirror type) throws Exception {
         String desc = messageCollectionItemTypeDescriptor(type);
         String descName = field.getSimpleName() + "CollDesc";
@@ -599,7 +594,7 @@ public class MessageSerializerGenerator extends MessageGenerator {
         return descName;
     }
 
-    /** */
+    /** @return constructor expression for the {@code MessageCollectionItemType} descriptor of {@code type}. */
     private String messageCollectionItemTypeDescriptor(TypeMirror type) throws Exception {
         imports.add("org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType");
 
@@ -740,7 +735,7 @@ public class MessageSerializerGenerator extends MessageGenerator {
         }
     }
 
-    /** */
+    /** Appends a read-fail guard using {@code mtd} to read and assign {@code field}, casting for inherited fields. */
     private void returnFalseIfReadFailed(VariableElement field, String mtd, String... args) {
         String argsStr = String.join(", ", args);
 
@@ -763,7 +758,7 @@ public class MessageSerializerGenerator extends MessageGenerator {
         indent--;
     }
 
-    /** */
+    /** Appends an enum read-fail guard using the mapper decode call to set {@code field}. */
     private void returnFalseIfEnumReadFailed(VariableElement field, String mapperDecodeCallStmnt, String enumValuesFieldName) {
         String readOp;
 
@@ -791,7 +786,7 @@ public class MessageSerializerGenerator extends MessageGenerator {
         indent--;
     }
 
-    /** */
+    /** Closes the write/read method with a final {@code return true;} statement. */
     private void finish(List<String> code) {
         String lastLine = code.get(code.size() - 1);
 
@@ -804,7 +799,7 @@ public class MessageSerializerGenerator extends MessageGenerator {
         code.add(indentedLine("return true;"));
     }
 
-    /** */
+    /** @return {@code format} with {@code args} applied, without indentation. */
     private String line(String format, Object... args) {
         SB sb = new SB();
 
@@ -831,7 +826,7 @@ public class MessageSerializerGenerator extends MessageGenerator {
         indent = 0;
     }
 
-    /** */
+    /** @return {@code true} if {@code type} corresponds to the class named {@code typeStr}. */
     private boolean sameType(TypeMirror type, String typeStr) {
         return env.getTypeUtils().isSameType(type, type(typeStr));
     }

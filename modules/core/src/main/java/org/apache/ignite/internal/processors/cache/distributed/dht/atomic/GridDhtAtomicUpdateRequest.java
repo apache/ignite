@@ -26,7 +26,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.DeployableMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -44,7 +46,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Lite dht cache backup update request.
  */
-public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateRequest implements MarshallableMessage {
+public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateRequest implements MarshallableMessage, DeployableMessage {
     /** Keys to update. */
     @GridToStringInclude
     @Order(0)
@@ -100,14 +102,14 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     boolean forceTransformBackups;
 
     /** Entry processors. */
-    private List<EntryProcessor<Object, Object, Object>> entryProcessors;
+    List<EntryProcessor<Object, Object, Object>> entryProcessors;
 
     /** Entry processors bytes. */
     @Order(12)
     List<byte[]> entryProcessorsBytes;
 
     /** Near entry processors. */
-    private List<EntryProcessor<Object, Object, Object>> nearEntryProcessors;
+    List<EntryProcessor<Object, Object, Object>> nearEntryProcessors;
 
     /** Near entry processors bytes. */
     @Order(13)
@@ -467,38 +469,6 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareDeployment(ctx);
-
-        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
-
-        prepareCacheObjectsDeployment(keys, cctx);
-
-        prepareCacheObjectsDeployment(vals, cctx);
-
-        prepareCacheObjectsDeployment(nearKeys, cctx);
-
-        prepareCacheObjectsDeployment(nearVals, cctx);
-
-        prepareCacheObjectsDeployment(prevVals, cctx);
-
-        if (forceTransformBackups) {
-            // force addition of deployment info for entry processors if P2P is enabled globally.
-            if (!addDepInfo && ctx.deploymentEnabled())
-                addDepInfo = true;
-
-            if (!F.isEmpty(invokeArgs) && invokeArgsBytes == null)
-                prepareInvokeArgumentsDeployment(invokeArgs, cctx);
-
-            if (entryProcessorsBytes == null)
-                prepareCollectionDeployment(entryProcessors, cctx);
-
-            if (nearEntryProcessorsBytes == null)
-                prepareCollectionDeployment(nearEntryProcessors, cctx);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override protected void cleanup() {
         nearVals = null;
         prevVals = null;
@@ -529,6 +499,24 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
 
             if (nearEntryProcessors == null)
                 nearEntryProcessors = unmarshalCollection(nearEntryProcessorsBytes, marsh, clsLdr);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        if (forceTransformBackups) {
+            GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
+
+            GridCacheMessageDeployer.forceDeploymentInfo(this, ctx);
+
+            if (!F.isEmpty(invokeArgs) && invokeArgsBytes == null)
+                GridCacheMessageDeployer.prepareInvokeArguments(this, invokeArgs, cctx);
+
+            if (entryProcessorsBytes == null)
+                GridCacheMessageDeployer.prepareCollection(this, entryProcessors, cctx);
+
+            if (nearEntryProcessorsBytes == null)
+                GridCacheMessageDeployer.prepareCollection(this, nearEntryProcessors, cctx);
         }
     }
 

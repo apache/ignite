@@ -20,6 +20,7 @@ package org.apache.ignite.internal.managers.communication;
 import java.lang.reflect.Array;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -45,6 +46,10 @@ public class IgniteMessageFactoryImpl implements MessageFactory {
 
     /** Message marshallers (null entry = no marshaller registered for that type). */
     private final MessageMarshaller[] msgMarshallers = (MessageMarshaller[])Array.newInstance(MessageMarshaller.class, ARR_SIZE);
+
+    /** Message deployers (null entry = no deployer registered for that type). */
+    private final GridCacheMessageDeployer[] msgDeployers =
+        (GridCacheMessageDeployer[])Array.newInstance(GridCacheMessageDeployer.class, ARR_SIZE);
 
     /** Initialized flag. If {@code true} then new message type couldn't be registered. */
     private boolean initialized;
@@ -78,20 +83,23 @@ public class IgniteMessageFactoryImpl implements MessageFactory {
         register(directType, supplier, serializer, null);
     }
 
+    /** {@inheritDoc} */
+    @Override public void register(short directType, Supplier<Message> supplier, MessageSerializer serializer,
+        @Nullable MessageMarshaller marshaller) throws IgniteException {
+        register(directType, supplier, serializer, marshaller, null);
+    }
+
     /**
-     * Registers a message type with both a serializer and an optional marshaller.
+     * Registers a message type with a serializer, an optional marshaller, and an optional deployer.
      *
      * @param directType  Direct type.
      * @param supplier    Message factory.
      * @param serializer  Message serializer.
      * @param marshaller  Message marshaller, or {@code null} for NonMarshallableMessage types.
+     * @param deployer    Message deployer, or {@code null} for messages without deployable fields.
      */
-    @Override public void register(
-        short directType,
-        Supplier<Message> supplier,
-        MessageSerializer serializer,
-        @Nullable MessageMarshaller marshaller
-    ) throws IgniteException {
+    @Override public void register(short directType, Supplier<Message> supplier, MessageSerializer serializer,
+        @Nullable MessageMarshaller marshaller, @Nullable GridCacheMessageDeployer deployer) throws IgniteException {
         if (initialized) {
             throw new IllegalStateException("Message factory is already initialized. " +
                     "Registration of new message types is forbidden.");
@@ -113,6 +121,7 @@ public class IgniteMessageFactoryImpl implements MessageFactory {
             msgSuppliers[idx] = supplier;
             msgSerializers[idx] = serializer;
             msgMarshallers[idx] = marshaller;
+            msgDeployers[idx] = deployer;
 
             minIdx = Math.min(idx, minIdx);
 
@@ -157,6 +166,11 @@ public class IgniteMessageFactoryImpl implements MessageFactory {
     /** {@inheritDoc} */
     @Override public @Nullable MessageMarshaller marshaller(short directType) {
         return msgMarshallers[directTypeToIndex(directType)];
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable GridCacheMessageDeployer deployer(short directType) {
+        return msgDeployers[directTypeToIndex(directType)];
     }
 
     /**

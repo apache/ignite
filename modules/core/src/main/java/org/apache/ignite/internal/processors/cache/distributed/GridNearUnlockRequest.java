@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -91,14 +90,6 @@ public class GridNearUnlockRequest extends GridDistributedBaseMessage {
     /** {@inheritDoc} */
     @Override public int partition() {
         return keys != null && !keys.isEmpty() ? keys.get(0).partition() : -1;
-    }
-
-    /** {@inheritDoc}
-     * @param ctx*/
-    @Override public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareDeployment(ctx);
-
-        prepareCacheObjectsDeployment(keys, ctx.cacheContext(cacheId));
     }
 
     /** {@inheritDoc} */

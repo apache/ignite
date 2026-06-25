@@ -86,12 +86,12 @@ public class IgniteExceptionInNioWorkerSelfTest extends GridCommonAbstractTest {
         // No-op.
     }
 
-    /** */
+    /** Serializer that throws on the first {@code writeTo} call to simulate a broken message. */
     private static class BrokenMessageSerializer implements MessageSerializer<BrokenMessage> {
         /** */
         private boolean fail = true;
 
-        /** */
+        /** {@inheritDoc} */
         @Override public boolean writeTo(BrokenMessage msg, MessageWriter writer) {
             if (!writer.isHeaderWritten()) {
                 if (!writer.writeHeader(msg.directType()))
@@ -109,13 +109,13 @@ public class IgniteExceptionInNioWorkerSelfTest extends GridCommonAbstractTest {
             return true;
         }
 
-        /** */
+        /** {@inheritDoc} */
         @Override public boolean readFrom(BrokenMessage msg, MessageReader reader) {
             return true;
         }
     }
 
-    /** */
+    /** Plugin provider that registers {@link BrokenMessageSerializer} for {@link BrokenMessage}. */
     public static class BrokenMessageProvider extends AbstractTestPluginProvider {
         /** {@inheritDoc} */
         @Override public String name() {

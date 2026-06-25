@@ -18,10 +18,8 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -81,11 +79,6 @@ public class IncrementalSnapshotAwareMessage extends GridCacheMessage {
         return topVer;
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareDeployment(GridCacheSharedContext ctx) throws IgniteCheckedException {
-        payload.prepareDeployment(ctx);
-    }
-    
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return false;

@@ -1096,7 +1096,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             msg.messageId(idGen.incrementAndGet());
 
         if (destNodeId == null || !cctx.localNodeId().equals(destNodeId)) {
-            msg.prepareDeployment(cctx);
+            GridCacheMessageDeployer.prepareDeployment(cctx.kernalContext().messageFactory(), msg, cctx);
 
             if (msg instanceof GridCacheDeployable && msg.addDeploymentInfo())
                 cctx.deploy().prepare((GridCacheDeployable)msg);
@@ -1552,8 +1552,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     log.debug("Set P2P context [senderId=" + nodeId + ", msg=" + cacheMsg + ']');
             }
 
-            MessageMarshaller.finishUnmarshal(
-                cctx.kernalContext().messageFactory(), cacheMsg, cctx.kernalContext(), null, cctx.deploy().globalLoader());
+            MessageMarshaller.finishUnmarshal(cctx.kernalContext().messageFactory(),
+                cacheMsg, cctx.kernalContext(), null, cctx.deploy().globalLoader());
         }
         catch (IgniteCheckedException e) {
             cacheMsg.onClassError(e);

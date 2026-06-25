@@ -22,7 +22,6 @@ import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -116,17 +115,6 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
     /** {@inheritDoc} */
     @Override public int partition() {
         return partId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareDeployment(GridCacheSharedContext ctx) throws IgniteCheckedException {
-        super.prepareDeployment(ctx);
-
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
-
-        // Can be null if client near cache was removed, in this case assume do not need prepareMarshal.
-        if (cctx != null)
-            prepareCacheObjectsDeployment(nearEvicted, cctx);
     }
 
     /** {@inheritDoc} */

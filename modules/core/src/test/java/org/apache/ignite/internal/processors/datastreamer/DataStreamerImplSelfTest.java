@@ -716,8 +716,8 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
                         );
 
                         try {
-                            MessageMarshaller.prepareMarshal(
-                                ((IgniteEx)ignite).context().messageFactory(), msg, ((IgniteEx)ignite).context(), null);
+                            MessageMarshaller.prepareMarshal(((IgniteEx)ignite).context().messageFactory(),
+                                msg, ((IgniteEx)ignite).context(), null);
                         }
                         catch (IgniteCheckedException e) {
                             throw new RuntimeException(e);

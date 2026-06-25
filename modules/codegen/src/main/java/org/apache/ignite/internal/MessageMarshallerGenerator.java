@@ -22,7 +22,7 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -38,62 +38,59 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
-import javax.lang.model.util.ElementFilter;
+
 import javax.tools.Diagnostic;
 
 import static org.apache.ignite.internal.MessageProcessor.MARSHALLABLE_MESSAGE_INTERFACE;
 import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
 
 /**
- * Generates marshaller class for a given {@code Message} class. The generated marshaller follows the naming convention:
- * {@code org.apache.ignite.internal.codegen.[MessageClassName]Marshaller}.
- * <p>
- * No marshaller is generated for {@code NonMarshallableMessage} types.
+ * Generates {@code *Marshaller} classes for {@link org.apache.ignite.plugin.extensions.communication.Message}
+ * types that are not {@link NonMarshallableMessage}.
  */
 public class MessageMarshallerGenerator extends MessageGenerator {
     /** Accumulated source lines for all generated marshal/unmarshal methods. */
     private final List<String> marshall = new ArrayList<>();
 
-    /** MarshallableMessage type mirror. */
+    /** */
     private final TypeMirror marshallableMsgType;
 
-    /** Message type mirror. */
+    /** */
     private final TypeMirror messageMirror;
 
-    /** CacheObject type mirror. */
+    /** */
     private final TypeMirror cacheObjectMirror;
 
-    /** NonMarshallableMessage type mirror. */
+    /** */
     private final TypeMirror nonMarshallableMirror;
 
-    /** CacheIdAware type mirror. */
+    /** */
     private final TypeMirror cacheIdAwareMirror;
 
-    /** GridCacheGroupIdMessage type mirror. */
+    /** */
     private final TypeMirror cacheGroupIdMsgMirror;
 
-    /** java.util.Map type mirror. */
+    /** */
     private final TypeMirror mapMirror;
 
-    /** java.util.Collection type mirror. */
+    /** */
     private final TypeMirror collectionMirror;
 
-    /** CacheMarshallableMessage type mirror. */
+    /** */
     private final TypeMirror cacheMarshallableMsgType;
 
-    /** Whether the current message type implements {@code MarshallableMessage}. */
+    /** */
     private boolean marshallable;
 
-    /** Whether the current message type implements {@code CacheMarshallableMessage}. */
+    /** */
     private boolean cacheMarshallable;
 
-    /** Whether the current message type has any {@code @Marshalled} fields. */
+    /** */
     private boolean hasMarshalled;
 
     /** Enclosed fields of the currently processed type. Computed once per {@link #generateBody} call. */
     private Map<String, VariableElement> enclosed;
 
-    /** @param env annotation processing environment. */
     MessageMarshallerGenerator(ProcessingEnvironment env) {
         super(env);
 
@@ -194,9 +191,8 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
         marshall.add(indentedLine(METHOD_JAVADOC));
 
-        marshall.add(indentedLine(
-            "@Override public void prepareMarshal(" + simpleNameWithGeneric(type) +
-                " msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {"));
+        marshall.add(indentedLine("@Override public void prepareMarshal(" + simpleNameWithGeneric(type) +
+            " msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {"));
 
         indent++;
 
@@ -233,8 +229,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
             else {
                 if (nioField)
                     env.getMessager().printMessage(Diagnostic.Kind.ERROR,
-                        "@NioField has no effect on non-Message field '" + f.getSimpleName() + "' of type " + f.asType(),
-                        f);
+                        "@NioField has no effect on non-Message field '" + f.getSimpleName() + "' of type " + f.asType(), f);
 
                 workerFields.add(f);
             }
@@ -259,8 +254,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
         marshall.add(indentedLine(METHOD_JAVADOC));
 
-        marshall.add(indentedLine(
-            "@Override public void " + methodName + "(" + params + ") throws IgniteCheckedException {"));
+        marshall.add(indentedLine("@Override public void " + methodName + "(" + params + ") throws IgniteCheckedException {"));
 
         indent++;
 
@@ -301,8 +295,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
         marshall.add(indentedLine(METHOD_JAVADOC));
 
-        marshall.add(indentedLine(
-            "@Override public void finishUnmarshalNio(" + params + ") throws IgniteCheckedException {"));
+        marshall.add(indentedLine("@Override public void finishUnmarshalNio(" + params + ") throws IgniteCheckedException {"));
 
         indent++;
 
@@ -534,14 +527,8 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     }
 
     /** Generates indexed-loop Map reconstruction for array-backed {@code @MarshalledMap} fields. */
-    private List<String> mapFinishArrayBlock(
-        VariableElement field,
-        VariableElement keysEl,
-        VariableElement valsEl,
-        String mapField,
-        String keysField,
-        String valsField
-    ) {
+    private List<String> mapFinishArrayBlock(VariableElement field, VariableElement keysEl, VariableElement valsEl, String mapField,
+        String keysField, String valsField) {
         boolean isFinal = field.getModifiers().contains(Modifier.FINAL);
         String keyCompName = arrayComponentName(keysEl);
         String valCompName = arrayComponentName(valsEl);
@@ -615,14 +602,8 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     }
 
     /** Generates iterator-based Map reconstruction for collection-backed {@code @MarshalledMap} fields. */
-    private List<String> mapFinishCollectionBlock(
-        VariableElement field,
-        VariableElement keysEl,
-        VariableElement valsEl,
-        String mapField,
-        String keysField,
-        String valsField
-    ) {
+    private List<String> mapFinishCollectionBlock(VariableElement field, VariableElement keysEl, VariableElement valsEl, String mapField,
+        String keysField, String valsField) {
         List<? extends TypeMirror> keyArgs = ((DeclaredType)keysEl.asType()).getTypeArguments();
         List<? extends TypeMirror> valArgs = ((DeclaredType)valsEl.asType()).getTypeArguments();
 
@@ -706,13 +687,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     }
 
     /** Generates key/value array population from the map's entry set. */
-    private List<String> arrayMapBody(
-        MarshalledMap ann,
-        String mapField,
-        String keysField,
-        VariableElement keysEl,
-        String valuesField
-    ) {
+    private List<String> arrayMapBody(MarshalledMap ann, String mapField, String keysField, VariableElement keysEl, String valuesField) {
         String compName = arrayComponentName(keysEl);
         String valCompName = arrayComponentName(requireEnclosed(enclosed, ann.values(), "@MarshalledMap"));
 
@@ -798,16 +773,13 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
         switch (mode) {
             case PREPARE:
-                code.add(indentedLine(
-                    "MessageMarshaller.prepareMarshal(kctx.messageFactory(), %s, kctx, ctx);", accessor));
+                code.add(indentedLine("MessageMarshaller.prepareMarshal(kctx.messageFactory(), %s, kctx, ctx);", accessor));
                 break;
             case FINISH:
-                code.add(indentedLine(
-                    "MessageMarshaller.finishUnmarshal(kctx.messageFactory(), %s, kctx);", accessor));
+                code.add(indentedLine("MessageMarshaller.finishUnmarshal(kctx.messageFactory(), %s, kctx);", accessor));
                 break;
             case FINISH_CACHE:
-                code.add(indentedLine(
-                    "MessageMarshaller.finishUnmarshal(kctx.messageFactory(), %s, kctx, ctx, clsLdr);", accessor));
+                code.add(indentedLine("MessageMarshaller.finishUnmarshal(kctx.messageFactory(), %s, kctx, ctx, clsLdr);", accessor));
                 break;
         }
 
@@ -985,12 +957,12 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         return false;
     }
 
-    /** Returns {@code true} if {@code type} is assignable to {@code Message}. */
+    /** */
     private boolean isMessage(TypeMirror type) {
         return messageMirror != null && assignableFrom(type, messageMirror);
     }
 
-    /** Returns {@code true} if {@code type} is assignable to {@code CacheObject}. */
+    /** */
     private boolean isCacheObject(TypeMirror type) {
         return cacheObjectMirror != null && assignableFrom(type, cacheObjectMirror);
     }
@@ -1005,34 +977,24 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         return collectionMirror != null && assignableFrom(erasedType(type), collectionMirror);
     }
 
-    /** Returns {@code true} if {@code te} implements {@code NonMarshallableMessage}. */
+    /** */
     private boolean isNonMarshallableMessage(TypeElement te) {
         return nonMarshallableMirror != null && assignableFrom(te.asType(), nonMarshallableMirror);
     }
 
-    /** Returns {@code true} if {@code te} implements {@code CacheIdAware}. */
+    /** */
     private boolean isCacheIdAwareMessage(TypeElement te) {
         return cacheIdAwareMirror != null && assignableFrom(te.asType(), cacheIdAwareMirror);
     }
 
-    /** Returns {@code true} if {@code te} is a {@code GridCacheGroupIdMessage}. */
+    /** */
     private boolean isCacheGroupIdMessage(TypeElement te) {
         return cacheGroupIdMsgMirror != null && assignableFrom(te.asType(), cacheGroupIdMsgMirror);
     }
 
-    /** Returns {@code true} if {@code field} carries {@code @NioField}. */
+    /** */
     private static boolean isNioField(VariableElement field) {
         return field.getAnnotation(NioField.class) != null;
-    }
-
-    /** Returns all declared fields of the current type, keyed by simple name, preserving declaration order. */
-    private Map<String, VariableElement> enclosedFields() {
-        Map<String, VariableElement> enclosed = new LinkedHashMap<>();
-
-        for (VariableElement f : ElementFilter.fieldsIn(type.getEnclosedElements()))
-            enclosed.put(f.getSimpleName().toString(), f);
-
-        return enclosed;
     }
 
     /** Returns the enclosed field named {@code name}, or throws if absent. */
@@ -1069,17 +1031,9 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         return ((DeclaredType)((ArrayType)field.asType()).getComponentType()).asElement().getSimpleName().toString();
     }
 
-    /** Appends {@code block} to {@code body}, inserting a blank-line separator when {@code body} is non-empty. */
-    private static void appendBlock(List<String> body, List<String> block) {
-        if (!body.isEmpty())
-            body.add(EMPTY);
-
-        body.addAll(block);
-    }
-
     /** Marshal mode controls which overload is being generated. */
     private enum MarshalMode {
-        /** Marshal. */
+        /** */
         PREPARE,
 
         /** Lightweight unmarshal. Messages only, CacheObject fields are skipped (no cache context available). */

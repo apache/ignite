@@ -38,7 +38,7 @@ public class ObjectData implements Message {
     @Order(0)
     byte[] dataBytes;
 
-    /** */
+    /** Default no-arg constructor required for deserialization. */
     public ObjectData() {}
 
     /**

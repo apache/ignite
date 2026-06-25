@@ -25,10 +25,12 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
+import org.apache.ignite.internal.processors.cache.DeployableMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -39,7 +41,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * DHT atomic cache near update response.
  */
-public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements GridCacheDeployable {
+public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements GridCacheDeployable, DeployableMessage {
     /** Cache message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
 
@@ -337,16 +339,6 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
         errs.addFailedKeys(keys, e);
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
-    @Override public void prepareDeployment(GridCacheSharedContext ctx) throws IgniteCheckedException {
-        super.prepareDeployment(ctx);
-
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
-
-        if (nearUpdates != null)
-            prepareCacheObjectsDeployment(nearUpdates.nearValues(), cctx);
-    }
 
     /**
      * @return Data for near cache update.
@@ -384,6 +376,14 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
         return ctx.atomicMessageLogger();
     }
 
+    /** {@inheritDoc} */
+    @Override public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        if (nearUpdates != null) {
+            GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
+
+            GridCacheMessageDeployer.prepareCacheObjects(this, nearUpdates.nearValues(), cctx);
+        }
+    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

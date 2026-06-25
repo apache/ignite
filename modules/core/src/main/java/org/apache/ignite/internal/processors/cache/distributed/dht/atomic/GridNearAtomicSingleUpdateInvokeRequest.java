@@ -28,7 +28,9 @@ import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.DeployableMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -45,7 +47,8 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 /**
  *
  */
-public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingleUpdateRequest implements MarshallableMessage {
+public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingleUpdateRequest
+    implements MarshallableMessage, DeployableMessage {
     /** Optional arguments for entry processor. */
     private @Nullable Object[] invokeArgs;
 
@@ -162,25 +165,6 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareDeployment(GridCacheSharedContext ctx) throws IgniteCheckedException {
-        super.prepareDeployment(ctx);
-
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
-
-        // force addition of deployment info for entry processors if P2P is enabled globally.
-        if (!addDepInfo && ctx.deploymentEnabled())
-            addDepInfo = true;
-
-        if (entryProc != null && entryProcBytes == null) {
-            if (addDepInfo)
-                prepareObjectDeployment(entryProc, cctx);
-        }
-
-        if (!F.isEmpty(invokeArgs) && invokeArgsBytes == null)
-            prepareInvokeArgumentsDeployment(invokeArgs, cctx);
-    }
-
-    /** {@inheritDoc} */
     @Override public void cleanup(boolean clearKey) {
         super.cleanup(clearKey);
 
@@ -197,6 +181,21 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         if (invokeArgsBytes != null && invokeArgs == null)
             invokeArgs = unmarshalInvokeArguments(invokeArgsBytes.toArray(new byte[invokeArgsBytes.size()][]), marsh, clsLdr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
+
+        GridCacheMessageDeployer.forceDeploymentInfo(this, ctx);
+
+        if (entryProc != null && entryProcBytes == null) {
+            if (addDepInfo)
+                GridCacheMessageDeployer.prepareObject(this, entryProc, cctx);
+        }
+
+        if (!F.isEmpty(invokeArgs) && invokeArgsBytes == null)
+            GridCacheMessageDeployer.prepareInvokeArguments(this, invokeArgs, cctx);
     }
 
     /** {@inheritDoc} */

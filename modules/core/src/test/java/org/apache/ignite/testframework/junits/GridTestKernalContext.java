@@ -47,7 +47,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.reader
  * Test context.
  */
 public class GridTestKernalContext extends GridKernalContextImpl {
-    /** */
+    /** Message factory override for tests; when non-null, replaces the default factory. */
     public MessageFactory messageFactory;
     
     /**

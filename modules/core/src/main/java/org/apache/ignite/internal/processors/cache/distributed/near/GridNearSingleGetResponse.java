@@ -22,9 +22,11 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.DeployableMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -33,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public class GridNearSingleGetResponse extends GridCacheIdMessage implements GridCacheDeployable {
+public class GridNearSingleGetResponse extends GridCacheIdMessage implements GridCacheDeployable, DeployableMessage {
     /** */
     public static final int INVALID_PART_FLAG_MASK = 0x1;
 
@@ -145,13 +147,10 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
 
     /** {@inheritDoc} */
     @Override public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareDeployment(ctx);
-
-        if (res != null) {
+        if (res instanceof CacheObject) {
             GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
-            if (res instanceof CacheObject)
-                prepareCacheObjectDeployment((CacheObject)res, cctx);
+            GridCacheMessageDeployer.prepareCacheObject(this, (CacheObject)res, cctx);
         }
     }
 
@@ -159,7 +158,6 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
     @Override public boolean addDeploymentInfo() {
         return addDepInfo;
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

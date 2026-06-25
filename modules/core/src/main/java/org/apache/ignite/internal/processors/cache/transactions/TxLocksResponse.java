@@ -49,17 +49,17 @@ public class TxLocksResponse extends GridCacheMessage {
     @MarshalledCollection("txKeysArr")
     Set<IgniteTxKey> txKeys;
 
-    /** Wire-protocol array of keys from {@link #nearTxKeyLocks}. */
+    /** */
     @GridToStringExclude
     @Order(1)
     IgniteTxKey[] nearTxKeysArr;
 
-    /** Wire-protocol array for {@link #txKeys}. */
+    /** */
     @GridToStringExclude
     @Order(2)
     IgniteTxKey[] txKeysArr;
 
-    /** Wire-protocol array of values from {@link #nearTxKeyLocks}. */
+    /** */
     @GridToStringExclude
     @Order(3)
     List<TxLock>[] locksArr;

@@ -66,6 +66,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWrapper;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
@@ -2432,7 +2433,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         try {
             if (!cctx.localNodeId().equals(nodeId))
-                req.prepareDeployment(cctx);
+                GridCacheMessageDeployer.prepareDeployment(cctx.kernalContext().messageFactory(), req, cctx);
 
             cctx.gridIO().sendToGridTopic(node, TOPIC_TX, req, SYSTEM_POOL);
         }
@@ -3362,7 +3363,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                     try {
                         if (!cctx.localNodeId().equals(nodeId))
-                            res.prepareDeployment(cctx);
+                            GridCacheMessageDeployer.prepareDeployment(cctx.kernalContext().messageFactory(), res, cctx);
 
                         cctx.gridIO().sendToGridTopic(nodeId, TOPIC_TX, res, SYSTEM_POOL);
                     }
@@ -3447,8 +3448,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 return;
 
             try {
-                MessageMarshaller.finishUnmarshal(
-                    cctx.kernalContext().messageFactory(), cacheMsg, cctx.kernalContext(), null, cctx.deploy().globalLoader());
+                MessageMarshaller.finishUnmarshal(cctx.kernalContext().messageFactory(),
+                    cacheMsg, cctx.kernalContext(), null, cctx.deploy().globalLoader());
             }
             catch (IgniteCheckedException e) {
                 cacheMsg.onClassError(e);

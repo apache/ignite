@@ -2717,7 +2717,7 @@ public final class GridTestUtils {
         }
     }
 
-    /** */
+    /** Loads the generated {@code *Marshaller} class for {@code msgCls} and instantiates it with {@code dfltMarsh}. */
     public static <T extends Message> MessageMarshaller<T> loadMarshaller(Class<? extends Message> msgCls,
         @Nullable Marshaller dfltMarsh) {
         try {
