@@ -114,7 +114,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.jar.JarFile;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
@@ -144,13 +143,7 @@ import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryField;
-import org.apache.ignite.binary.BinaryIdMapper;
-import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinarySerializer;
-import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.cluster.ClusterGroupEmptyException;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
@@ -171,7 +164,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderEx;
@@ -412,10 +404,6 @@ public abstract class IgniteUtils extends CommonUtils {
     /** Ignite test features enabled flag. */
     public static boolean IGNITE_TEST_FEATURES_ENABLED =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_TEST_FEATURES_ENABLED);
-
-    /** For tests. */
-    @SuppressWarnings("PublicField")
-    public static boolean useTestBinaryCtx;
 
     /** */
     private static final boolean assertionsEnabled;
@@ -7896,35 +7884,16 @@ public abstract class IgniteUtils extends CommonUtils {
     ) {
         BinaryConfiguration bcfg = cfg.getBinaryConfiguration() == null ? new BinaryConfiguration() : cfg.getBinaryConfiguration();
 
-        return useTestBinaryCtx
-            ? new TestBinaryContext(
-                metaHnd,
-                marsh,
-                cfg.getIgniteInstanceName(),
-                cfg.getClassLoader(),
-                bcfg.getSerializer(),
-                bcfg.getIdMapper(),
-                bcfg.getNameMapper(),
-                bcfg.getTypeConfigurations(),
-                CU.affinityFields(cfg),
-                bcfg.isCompactFooter(),
-                CU::affinityFieldName,
-                log
-            )
-            : new BinaryContext(
-                metaHnd,
-                marsh,
-                cfg.getIgniteInstanceName(),
-                cfg.getClassLoader(),
-                bcfg.getSerializer(),
-                bcfg.getIdMapper(),
-                bcfg.getNameMapper(),
-                bcfg.getTypeConfigurations(),
-                CU.affinityFields(cfg),
-                bcfg.isCompactFooter(),
-                CU::affinityFieldName,
-                log
-            );
+        return BinaryUtils.binaryContext(
+            metaHnd,
+            marsh,
+            cfg.getIgniteInstanceName(),
+            cfg.getClassLoader(),
+            bcfg,
+            CU.affinityFields(cfg),
+            BinaryUtils::affinityFieldName,
+            log
+        );
     }
 
     /**
@@ -8007,97 +7976,6 @@ public abstract class IgniteUtils extends CommonUtils {
      */
     public static IgniteThread newThread(GridWorker worker) {
         return new IgniteThread(worker.igniteInstanceName(), worker.name(), worker);
-    }
-
-    /** */
-    @SuppressWarnings("PublicInnerClass")
-    public static class TestBinaryContext extends BinaryContext {
-        /** */
-        private List<TestBinaryContextListener> listeners;
-
-        /** */
-        public TestBinaryContext(
-            BinaryMetadataHandler metaHnd,
-            @Nullable BinaryMarshaller marsh,
-            @Nullable String igniteInstanceName,
-            @Nullable ClassLoader clsLdr,
-            @Nullable BinarySerializer dfltSerializer,
-            @Nullable BinaryIdMapper idMapper,
-            @Nullable BinaryNameMapper nameMapper,
-            @Nullable Collection<BinaryTypeConfiguration> typeCfgs,
-            Map<String, String> affFlds,
-            boolean compactFooter,
-            Function<Class<?>, String> affFldNameProvider,
-            IgniteLogger log
-        ) {
-            super(
-                metaHnd,
-                marsh,
-                igniteInstanceName,
-                clsLdr,
-                dfltSerializer,
-                idMapper,
-                nameMapper,
-                typeCfgs,
-                affFlds,
-                compactFooter,
-                affFldNameProvider,
-                log
-            );
-        }
-
-
-        /** {@inheritDoc} */
-        @Nullable @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
-            BinaryType metadata = super.metadata(typeId);
-
-            if (listeners != null) {
-                for (TestBinaryContextListener listener : listeners)
-                    listener.onAfterMetadataRequest(typeId, metadata);
-            }
-
-            return metadata;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void updateMetadata(int typeId, BinaryMetadata meta, boolean failIfUnregistered) throws BinaryObjectException {
-            if (listeners != null) {
-                for (TestBinaryContextListener listener : listeners)
-                    listener.onBeforeMetadataUpdate(typeId, meta);
-            }
-
-            super.updateMetadata(typeId, meta, failIfUnregistered);
-        }
-
-        /** */
-        public interface TestBinaryContextListener {
-            /**
-             * @param typeId Type id.
-             * @param type Type.
-             */
-            void onAfterMetadataRequest(int typeId, BinaryType type);
-
-            /**
-             * @param typeId Type id.
-             * @param metadata Metadata.
-             */
-            void onBeforeMetadataUpdate(int typeId, BinaryMetadata metadata);
-        }
-
-        /** @param lsnr Listener. */
-        public void addListener(TestBinaryContextListener lsnr) {
-            if (listeners == null)
-                listeners = new ArrayList<>();
-
-            if (!listeners.contains(lsnr))
-                listeners.add(lsnr);
-        }
-
-        /** */
-        public void clearAllListener() {
-            if (listeners != null)
-                listeners.clear();
-        }
     }
 
     /** */
