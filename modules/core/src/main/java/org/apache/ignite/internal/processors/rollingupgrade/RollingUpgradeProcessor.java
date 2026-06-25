@@ -55,6 +55,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_VALIDATION_FAILED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.ROLLING_UPGRADE_PROC;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_FEATURES;
+import static org.apache.ignite.internal.IgniteVersionUtils.semanticVersion;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RU_ABORT_VERSION_FINALIZATION;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RU_COMPLETE_VERSION_FINALIZATION;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RU_ENABLE;
@@ -610,11 +611,11 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
             StringBuilder sb = new StringBuilder("[compatibleProductVersions=");
 
             if (isClusterVerHomogenous)
-                sb.append("[").append(srcVer.semanticName()).append(" or greater]");
+                sb.append("[").append(semanticVersion(srcVer)).append(" or greater]");
             else {
-                String targetVerName = targetVer == null ? null : targetVer.semanticName();
+                String targetVerName = targetVer == null ? null : semanticVersion(targetVer);
 
-                sb.append("[").append(srcVer.semanticName()).append(", ").append(targetVerName).append("]");
+                sb.append("[").append(semanticVersion(srcVer)).append(", ").append(targetVerName).append("]");
             }
 
             sb.append("]");

@@ -52,6 +52,7 @@ import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
+import static org.apache.ignite.internal.IgniteVersionUtils.semanticVersion;
 import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
 import static org.apache.ignite.internal.processors.rollingupgrade.feature.TestIgniteReleaseFeatures_2_19_2.VER_2_19_2_ID_1_FEATURE;
 import static org.apache.ignite.internal.processors.security.NodeSecurityContextPropagationTest.discoveryRingMessageWorkerQueue;
@@ -1139,7 +1140,7 @@ public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTes
 
     /** */
     private void restartNode(int nodeIdx) throws Exception {
-        String ver = grid(nodeIdx).context().discovery().localNode().version().semanticName();
+        String ver = semanticVersion(grid(nodeIdx).context().discovery().localNode().version());
         boolean isClient = grid(nodeIdx).context().clientNode();
 
         stopGrid(nodeIdx);
@@ -1154,7 +1155,7 @@ public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTes
 
     /** */
     private void checkUpgradeFailed(int nodeIdx, String targetVer, String errMsg) throws Exception {
-        String srcVer = grid(nodeIdx).context().discovery().localNode().version().semanticName();
+        String srcVer = semanticVersion(grid(nodeIdx).context().discovery().localNode().version());
         boolean isClient = grid(nodeIdx).context().clientNode();
 
         stopGrid(nodeIdx);
@@ -1168,12 +1169,12 @@ public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTes
     private void checkRollingUpgradeState(String expLogicalVer, String expSrcVer, String expTargetVer) {
         for (Ignite ignite : Ignition.allGrids()) {
             assertTrue(ru(ignite).isVersionUpgradeEnabled());
-            assertEquals(expLogicalVer, ru(ignite).features().activeFeatures().version().semanticName());
+            assertEquals(expLogicalVer, semanticVersion(ru(ignite).features().activeFeatures().version()));
 
             RollingUpgradeState state = ru(ignite).state();
 
-            assertEquals(expSrcVer, state.srcVer.semanticName());
-            assertEquals(expTargetVer, state.targetVer == null ? null : state.targetVer.semanticName());
+            assertEquals(expSrcVer, semanticVersion(state.srcVer));
+            assertEquals(expTargetVer, state.targetVer == null ? null : semanticVersion(state.targetVer));
         }
     }
     
