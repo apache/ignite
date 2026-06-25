@@ -311,7 +311,7 @@ public class SnapshotCheckProcess {
     }
 
     /** Phase 2 beginning.  */
-    private IgniteInternalFuture<SnapshotCheckResponse> validateParts(SnapshotCheckProcessRequest req) {
+    private IgniteInternalFuture<SnapshotCheckResponse> validateParts(UUID ignored, SnapshotCheckProcessRequest req) {
         if (!req.nodes().contains(kctx.localNodeId()))
             return new GridFinishedFuture<>();
 
@@ -477,7 +477,7 @@ public class SnapshotCheckProcess {
     }
 
     /** Phase 1 beginning: prepare, collect and check local metas. */
-    private IgniteInternalFuture<SnapshotCheckResponse> prepareAndCheckMetas(SnapshotCheckProcessRequest req) {
+    private IgniteInternalFuture<SnapshotCheckResponse> prepareAndCheckMetas(UUID ignored, SnapshotCheckProcessRequest req) {
         if (!req.nodes().contains(kctx.localNodeId()) && clusterOpFuts.get(req.requestId()) == null)
             return new GridFinishedFuture<>();
 

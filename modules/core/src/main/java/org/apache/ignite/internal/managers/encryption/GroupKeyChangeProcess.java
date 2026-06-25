@@ -183,7 +183,7 @@ class GroupKeyChangeProcess {
      * @param req Request.
      * @return Result future.
      */
-    private IgniteInternalFuture<Message> prepare(ChangeCacheEncryptionRequest req) {
+    private IgniteInternalFuture<Message> prepare(UUID ignored, ChangeCacheEncryptionRequest req) {
         if (ctx.clientNode())
             return new GridFinishedFuture<>();
 
@@ -285,7 +285,7 @@ class GroupKeyChangeProcess {
      * @param req Request.
      * @return Result future.
      */
-    private IgniteInternalFuture<Message> perform(ChangeCacheEncryptionRequest req) {
+    private IgniteInternalFuture<Message> perform(UUID ignored, ChangeCacheEncryptionRequest req) {
         if (this.req == null || !this.req.equals(req))
             return new GridFinishedFuture<>(new IgniteException("Unknown cache group key change was rejected."));
 
