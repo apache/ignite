@@ -88,14 +88,15 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMess
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IGridClusterStateProcessor;
-import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.processors.security.SecurityContextImpl;
 import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
 import org.apache.ignite.internal.systemview.ClusterNodeViewWalker;
 import org.apache.ignite.internal.systemview.NodeAttributeViewWalker;
 import org.apache.ignite.internal.systemview.NodeMetricsViewWalker;
 import org.apache.ignite.internal.thread.OomExceptionHandler;
 import org.apache.ignite.internal.thread.context.OperationContext;
+import org.apache.ignite.internal.thread.context.OperationContextAttribute;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.thread.context.function.OperationContextAwareWrapper;
 import org.apache.ignite.internal.util.GridAtomicLong;
@@ -134,7 +135,6 @@ import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.DiscoveryNotification;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiDataExchange;
 import org.apache.ignite.spi.discovery.DiscoverySpiHistorySupport;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
@@ -192,6 +192,8 @@ import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.NOOP;
  */
 public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** */
+    public static final OperationContextAttribute<SecurityContextImpl> SEC_OP_CTX_ATTR = OperationContextAttribute.newInstance();
+    /** */
     private static final String PREFIX = "Topology snapshot";
 
     /** */
@@ -226,7 +228,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     };
 
     /** Discovery cached history size. */
-    private final int DISCOVERY_HISTORY_SIZE = getInteger(IGNITE_DISCOVERY_HISTORY_SIZE, DFLT_DISCOVERY_HISTORY_SIZE);
+    private static final int DISCOVERY_HISTORY_SIZE = getInteger(IGNITE_DISCOVERY_HISTORY_SIZE, DFLT_DISCOVERY_HISTORY_SIZE);
 
     /** */
     private final Object discoEvtMux = new Object();
@@ -924,12 +926,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 /** */
                 @Override public void run() {
-                    DiscoverySpiCustomMessage customMsg = notification.customMessage();
+                    SecurityContext secOpCtx = OperationContext.get(SEC_OP_CTX_ATTR);
 
-                    if (customMsg instanceof SecurityAwareCustomMessageWrapper) {
-                        UUID secSubjId = ((SecurityAwareCustomMessageWrapper)customMsg).securitySubjectId();
-
-                        try (Scope ignored = ctx.security().withContext(secSubjId)) {
+                    if (secOpCtx != null) {
+                        try (Scope ignored = ctx.security().withContext(secOpCtx.subject().id())) {
                             super.run();
                         }
                     }
@@ -2334,12 +2334,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @throws IgniteCheckedException If failed.
      */
     public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteCheckedException {
-        try {
-            IgniteSecurity security = ctx.security();
+        UUID secSubjId = ctx.security().enabled() ? ctx.security().securityContext().subject().id() : null;
 
-            getSpi().sendCustomEvent(security.enabled()
-                ? new SecurityAwareCustomMessageWrapper(msg, security.securityContext().subject().id())
-                : msg);
+        try (Scope ignored = secSubjId == null
+            ? Scope.NOOP_SCOPE
+            : OperationContext.set(SEC_OP_CTX_ATTR, new SecurityContextImpl(secSubjId))
+        ) {
+            getSpi().sendCustomEvent(msg);
         }
         catch (IgniteClientDisconnectedException e) {
             IgniteFuture<?> reconnectFut = ctx.cluster().clientReconnectFuture();

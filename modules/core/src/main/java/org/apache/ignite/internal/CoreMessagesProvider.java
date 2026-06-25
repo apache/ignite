@@ -35,7 +35,6 @@ import org.apache.ignite.internal.managers.communication.SessionChannelMessage;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentResponse;
-import org.apache.ignite.internal.managers.discovery.SecurityAwareCustomMessageWrapper;
 import org.apache.ignite.internal.managers.encryption.ChangeCacheEncryptionRequest;
 import org.apache.ignite.internal.managers.encryption.EncryptionDataBagItem;
 import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyRequest;
@@ -236,6 +235,7 @@ import org.apache.ignite.internal.processors.query.stat.messages.StatisticsReque
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsResponse;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultRequest;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultResponse;
+import org.apache.ignite.internal.processors.security.SecurityContextImpl;
 import org.apache.ignite.internal.processors.service.ServiceChangeBatchRequest;
 import org.apache.ignite.internal.processors.service.ServiceClusterDeploymentResult;
 import org.apache.ignite.internal.processors.service.ServiceClusterDeploymentResultBatch;
@@ -432,7 +432,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(FullMessage.class);
         withNoSchema(InitMessage.class);
         withNoSchema(CacheStatisticsModeChangeMessage.class);
-        withNoSchema(SecurityAwareCustomMessageWrapper.class);
+        ++msgIdx; // Former SecurityAwareCustomMessageWrapper
         withNoSchema(MetadataRemoveAcceptedMessage.class);
         withNoSchema(MetadataRemoveProposedMessage.class);
         withNoSchema(WalStateFinishMessage.class);
@@ -683,6 +683,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         // [13400 - 13500]: Operation context messages.
         msgIdx = 13400;
         withNoSchema(OperationContextMessage.class);
+        withNoSchema(SecurityContextImpl.class);
 
         assert msgIdx <= MAX_MESSAGE_ID;
     }

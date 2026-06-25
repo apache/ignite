@@ -64,13 +64,13 @@ public class OperationContextDispatcher {
      * <p>A value of the attribute is automatically captured and propagated between cluster nodes
      * during message transmission.</p>
      */
-    public <T extends Message> void registerDistributedAttribute(byte id, OperationContextAttribute<T> attr) {
+    public <T extends Message> void registerDistributedAttribute(int id, OperationContextAttribute<T> attr) {
         if (initialized)
             throw new IgniteException("Initialization of distributed operation context attributes has already finished.");
 
         assert id >= 0 && id < MAX_DISTRIBUTED_ATTR_CNT : "Invalid distributed attributed id [id=" + id + ']';
 
-        if (attrs.putIfAbsent(id, attr) != null)
+        if (attrs.putIfAbsent((byte)id, attr) != null)
             throw new IgniteException("Duplicated distributed attribute id [id=" + id + ']');
     }
 
