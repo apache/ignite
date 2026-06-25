@@ -35,11 +35,17 @@ public abstract class GridToStringNode {
      * A thread-local cache for nodes, used to handle references of
      * inner toString() calls by mapping temporary markers to actual nodes.
      */
-    public static final ConcurrentHashMap<Thread, IdentityHashMap<String, GridToStringNode>> CATCHED_NODES
+    static final ConcurrentHashMap<Thread, IdentityHashMap<String, GridToStringNode>> CATCHED_NODES
             = new ConcurrentHashMap<>();
+
+    /** Last constructed node. */
+    static final ThreadLocal<GridToStringNode> LAST_CONSTRUCTED_GRID_TO_STRING_NODE = new ThreadLocal<>();
 
     /** The name of the property this node represents. */
     String propName;
+
+    /** Inner buffer. For inner calls. */
+    StringBuilder innerBuf = new StringBuilder(0);
 
     /**
      * Base constructor.
@@ -84,6 +90,16 @@ public abstract class GridToStringNode {
                 .orElseThrow()
                 .put(result, node);
         return result;
+    }
+
+    /**
+     * Appends inner buffer to last created node.
+     * @param node Node - new node to fill inner buffer.
+     */
+    static String appendInnerBuffer(GridToStringNode node) {
+        GridToStringNode parent = LAST_CONSTRUCTED_GRID_TO_STRING_NODE.get();
+        parent.innerBuf.append(node.toString());
+        return "";
     }
 
     /**
@@ -137,6 +153,7 @@ public abstract class GridToStringNode {
     static void clear() {
         CATCHED_NODES.remove(Thread.currentThread());
         OBJECT_REGISTRY.remove();
+        LAST_CONSTRUCTED_GRID_TO_STRING_NODE.remove();
     }
 
     /**
