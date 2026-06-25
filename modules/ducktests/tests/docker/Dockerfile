@@ -74,6 +74,9 @@ RUN apt update && apt install -y software-properties-common gpg \
 RUN python3.9 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
+# Upgrade pip to suppress the notice warning and ensure faster dependency checks
+RUN pip install --no-cache-dir --upgrade pip
+
 # Print the active python version to the build terminal to confirm 3.9 is loaded
 RUN python3 --version
 
