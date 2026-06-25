@@ -61,7 +61,7 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
     );
 
     /** Source commit hash. Used for docker image tag. */
-    private static final String SOURCE_COMMIT_HASH = "f239499b";
+    private static final String SOURCE_COMMIT_HASH = "75bd37ef56b2ea533b474e99d00b06524ffc063f";
 
     /** Cache name. */
     private static final String CACHE_NAME = "ru-test-cache";
