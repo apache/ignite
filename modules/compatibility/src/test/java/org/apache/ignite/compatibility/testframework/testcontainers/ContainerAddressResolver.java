@@ -33,13 +33,13 @@ public class ContainerAddressResolver implements AddressResolver {
 
     /** {@inheritDoc} */
     @Override public Collection<InetSocketAddress> getExternalAddresses(InetSocketAddress addr) {
-       String ext = System.getProperty(EXT_ADDR_PROP_PREFIX + addr.getPort());
+        String ext = System.getProperty(EXT_ADDR_PROP_PREFIX + addr.getPort());
 
-       if (ext == null)
-           return Collections.singletonList(addr);
+        if (ext == null)
+            return Collections.singletonList(addr);
 
-       int sep = ext.lastIndexOf(':');
+        int sep = ext.lastIndexOf(':');
 
-       return Collections.singletonList(new InetSocketAddress(ext.substring(0, sep), Integer.parseInt(ext.substring(sep + 1))));
+        return Collections.singletonList(new InetSocketAddress(ext.substring(0, sep), Integer.parseInt(ext.substring(sep + 1))));
     }
 }
