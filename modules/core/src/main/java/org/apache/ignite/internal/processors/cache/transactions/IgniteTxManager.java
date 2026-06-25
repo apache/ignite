@@ -3146,7 +3146,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                         // Delay a commit, on backup. It will be raised further after near or coord. node will confirm it.
                     }
                     else if ((tx.near() && !tx.local() && tx.originatingNodeId().equals(evtNodeId))
-                        || (tx.storeWriteThrough() && tx.masterNodeIds().contains(evtNodeId))) {
+                        || (tx.storeWriteThrough() && tx.masterNodeIds().contains(evtNodeId)) && !tx.eventNodeId().equals(cctx.localNodeId())) {
                         // Invalidate transactions.
                         salvageTx(tx, RECOVERY_FINISH);
                     }

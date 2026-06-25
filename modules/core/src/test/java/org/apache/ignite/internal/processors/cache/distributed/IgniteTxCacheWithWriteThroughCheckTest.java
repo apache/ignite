@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.util;
+package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.Collection;
 import java.util.List;
@@ -23,17 +23,17 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.regex.Pattern;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridTopic;
@@ -52,25 +52,23 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
-import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
-import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
-import static org.hamcrest.CoreMatchers.anyOf;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.is;
 
 /** */
-public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClusterPerMethodAbstractTest {
+@RunWith(Parameterized.class)
+public class IgniteTxCacheWithWriteThroughCheckTest extends GridCommonAbstractTest {
     /** Node kill trigger. */
     private static CountDownLatch nodeKillLatch;
 
@@ -78,21 +76,17 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
     private static CountDownLatch nodeLeftRegisteredOnBackup;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameterized.Parameter(0)
     public Boolean withPersistence;
 
     /** */
-    @Parameterized.Parameter(2)
+    @Parameterized.Parameter(1)
     public TransactionConcurrency conc;
 
     /** */
-    private static final String CORRECT_VERIFY_MSG = "The check procedure has finished, no conflicts have been found.";
-
-    /** */
-    @Parameterized.Parameters(name = "cmdHnd={0}, withPersistence={1}, concMode={2}")
+    @Parameterized.Parameters(name = "withPersistence={0}, concMode={1}")
     public static Collection<Object[]> parameters() {
         return cartesianProduct(
-            List.of(CLI_CMD_HND),
             List.of(true, false),
             List.of(OPTIMISTIC, PESSIMISTIC)
         );
@@ -103,8 +97,6 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
         super.beforeTest();
 
         stopAllGrids();
-
-        persistenceEnable(withPersistence);
 
         if (withPersistence)
             cleanPersistenceDir();
@@ -133,13 +125,11 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean persistenceEnable() {
-        return withPersistence;
-    }
-
-    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
+            .setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(withPersistence)))
+            .setConsistentId(igniteInstanceName)
             .setCommunicationSpi(new TestRecordingCommunicationSpi());
     }
 
@@ -154,15 +144,15 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
      */
     @Test
     public void testTxCoordinatorLeftClusterWithEnabledReadWriteThrough() throws Exception {
-        // sequential start is important here
+        // Sequential start is important here.
         IgniteEx nodeCoord = startGrid(0);
-        // near node
+        // Near node.
         IgniteEx nodePrimary = startGrid(1);
-        // backup node
+        // Backup node.
         IgniteEx nodeBackup = startGrid(2);
 
-        int firstVal = 0;
-        int secondVal = 1;
+        int firstVal = 1;
+        int secondVal = 2;
 
         nodeCoord.cluster().state(ClusterState.ACTIVE);
 
@@ -209,6 +199,7 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
         nodeCoord.context().cache().context().io().start0(); // Register cache listener again.
 
         nodeCoord.cluster().state(ClusterState.ACTIVE);
+        awaitPartitionMapExchange(true, true, null);
 
         nodeCoord.context().event().addDiscoveryEventListener(new BeforeRecoveryListener(), EVT_NODE_FAILED, EVT_NODE_LEFT);
         nodeBackup.context().event().addDiscoveryEventListener(new BeforeBackupRecoveryListener(), EVT_NODE_FAILED, EVT_NODE_LEFT);
@@ -217,8 +208,6 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
             nodeKillLatch.await();
             nodePrimary.close();
         });
-
-        injectTestSystemOut();
 
         try (Transaction tx = nodeCoord.transactions().txStart(conc, READ_COMMITTED)) {
             cache.put(primaryKey, secondVal);
@@ -233,50 +222,21 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
 
         awaitPartitionMapExchange();
 
-        assertEquals(EXIT_CODE_OK, execute("--port", connectorPort(grid(2)), "--cache", "idle_verify"));
-
-        String out = testOut.toString();
-
-        // partVerHash can be different
-        if (withPersistence) {
-            Assert.assertThat(out, anyOf(is(containsString("updateCntr=[lwm=2, missed=[], hwm=2], " +
-                "partitionState=OWNING, size=1")), is(containsString(CORRECT_VERIFY_MSG))));
-            Assert.assertThat(out, anyOf(is(containsString("updateCntr=[lwm=2, missed=[], hwm=2], " +
-                "partitionState=OWNING, size=1")), is(containsString(CORRECT_VERIFY_MSG))));
-        }
-        else {
-            Assert.assertThat(out, anyOf(is(containsString("consistentId=gridCommandHandlerTest0, " +
-                "updateCntr=1, partitionState=OWNING, size=1")), is(containsString(CORRECT_VERIFY_MSG))));
-            Assert.assertThat(out, anyOf(is(containsString("consistentId=gridCommandHandlerTest2, " +
-                "updateCntr=1, partitionState=OWNING, size=1")), is(containsString(CORRECT_VERIFY_MSG))));
-        }
-        testOut.reset();
+        assertEquals(secondVal, nodeCoord.cache(DEFAULT_CACHE_NAME).get(primaryKey));
+        assertEquals(secondVal, nodeBackup.cache(DEFAULT_CACHE_NAME).get(primaryKey));
 
         if (withPersistence) {
+            for (Ignite ignite : G.allGrids())
+                forceCheckpoint(ignite);
+
+            // Check value after restart.
             stopAllGrids();
             startGridsMultiThreaded(3);
 
             awaitPartitionMapExchange(true, true, null);
 
-            assertEquals(EXIT_CODE_OK, execute("--port", connectorPort(grid(2)), "--cache", "idle_verify"));
-            out = testOut.toString();
-
-            Pattern regexCorrectCheck = Pattern.compile(CORRECT_VERIFY_MSG);
-            boolean correctOut = regexCorrectCheck.matcher(out).find();
-
-            // partVerHash are different, thus only regex check here
-            String regexCheck = "Partition instances: \\[PartitionHashRecord" +
-                ".*?consistentId=%s, updateCntr=\\[lwm=2, missed=\\[\\], hwm=2\\], partitionState=OWNING, size=1";
-            Pattern part0Pattern = Pattern.compile(String.format(regexCheck, "gridCommandHandlerTest0"));
-            Pattern part1Pattern = Pattern.compile(String.format(regexCheck, "gridCommandHandlerTest1"));
-            Pattern part2Pattern = Pattern.compile(String.format(regexCheck, "gridCommandHandlerTest2"));
-
-            boolean matches =
-                part0Pattern.matcher(out).find() &&
-                part1Pattern.matcher(out).find() &&
-                part2Pattern.matcher(out).find();
-
-            assertTrue(out, matches || correctOut);
+            for (Ignite ignite : G.allGrids())
+                assertEquals(secondVal, ignite.cache(ccfgWithWriteThrough.getName()).get(primaryKey));
         }
     }
 
@@ -286,28 +246,12 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setCacheMode(CacheMode.REPLICATED);
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        ccfg.setQueryEntities(List.of(queryEntity(cacheName)));
 
         ccfg.setReadThrough(true);
         ccfg.setWriteThrough(true);
         ccfg.setCacheStoreFactory(MapCacheStore::new);
 
         return ccfg;
-    }
-
-    /** */
-    private QueryEntity queryEntity(String cacheName) {
-        var entity = new QueryEntity();
-
-        entity.setKeyType(Integer.class.getName());
-        entity.setValueType(Integer.class.getName());
-        entity.addQueryField("ID", Integer.class.getName(), null);
-        entity.addQueryField("VAL", Integer.class.getName(), null);
-        entity.setKeyFieldName("ID");
-        entity.setValueFieldName("VAL");
-        entity.setTableName(cacheName);
-
-        return entity;
     }
 
     /** */
