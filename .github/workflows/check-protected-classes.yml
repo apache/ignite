@@ -39,26 +39,35 @@ jobs:
         run: |
           BASE_SHA=${{ github.event.pull_request.base.sha }}
           HEAD_SHA=${{ github.event.pull_request.head.sha }}
+          ANNOTATION='org.apache.ignite.internal.Order'
+          HITS_FILE=/tmp/protected-hits.txt
 
-          HITS=""
+          # Added/deleted/modified .java files in the PR as "<status>\t<path>" lines.
+          changed_java_files() {
+            git diff --name-status --no-renames --diff-filter=ADM "$BASE_SHA"..."$HEAD_SHA" -- '*.java'
+          }
 
-          # New and deleted files: check diff content for @Order annotation.
-          for file in $(git diff --name-only --no-renames --diff-filter=AD "$BASE_SHA"..."$HEAD_SHA" -- '*.java'); do
-            if git diff "$BASE_SHA"..."$HEAD_SHA" -- "$file" | grep -q 'org.apache.ignite.internal.Order'; then
-              HITS="${HITS}${file}\n"
-            fi
-          done
+          # A protected class carries the @Order annotation; an added file is
+          # defined by the new revision, a deleted/modified one by the base.
+          is_protected_class() {
+            local status=$1 file=$2 ref=$BASE_SHA
+            [ "$status" = A ] && ref=$HEAD_SHA
+            git show "$ref:$file" 2>/dev/null | grep -q "$ANNOTATION"
+          }
 
-          # Modified files: check base version content for @Order annotation.
-          for file in $(git diff --name-only --no-renames --diff-filter=M "$BASE_SHA"..."$HEAD_SHA" -- '*.java'); do
-            if git show "${BASE_SHA}:${file}" 2>/dev/null | grep -q 'org.apache.ignite.internal.Order'; then
-              HITS="${HITS}${file}\n"
-            fi
-          done
+          # Read "<status>\t<path>" lines, emit the paths that are protected.
+          filter_protected() {
+            while IFS=$'\t' read -r status file; do
+              if is_protected_class "$status" "$file"; then
+                echo "$file"
+              fi
+            done
+          }
 
-          if [ -n "$HITS" ]; then
+          changed_java_files | filter_protected > "$HITS_FILE"
+
+          if [ -s "$HITS_FILE" ]; then
             echo "affected=true" >> "$GITHUB_OUTPUT"
-            printf '%b' "$HITS" > /tmp/protected-hits.txt
           fi
 
       - name: Comment on PR
