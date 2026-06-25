@@ -70,12 +70,8 @@ public class OperationContextDispatcher {
 
         assert id >= 0 && id < MAX_DISTRIBUTED_ATTR_CNT : "Invalid distributed attributed id [id=" + id + ']';
 
-        attrs.compute(id, (id0, attr0) -> {
-            if (attr0 != null)
-                throw new IgniteException("Duplicated distributed attribute id [id=" + id + ']');
-
-            return attr;
-        });
+        if (attrs.putIfAbsent(id, attr) != null)
+            throw new IgniteException("Duplicated distributed attribute id [id=" + id + ']');
     }
 
     /**
