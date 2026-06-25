@@ -56,15 +56,13 @@ public class OperationContextDispatcher {
     private volatile boolean initialized;
 
     /**
-     * Creates a new {@link OperationContext} attribute with the specified distributed ID and initial value.
+     * Registers an attribute of {@link OperationContext} with the specified distributed ID.
      *
      * <p>The distributed ID is used to consistently identify the attribute across all nodes in the cluster.
-     * It must be unique, and its value must be in the range from {@code 0} (inclusive) to {@code Byte.SIZE} (exclusive).</p>
+     * It must be unique, and its value must be in the range [{@code 0} : {@code Byte.SIZE}).</p>
      *
-     * <p>The value of the created attribute is automatically captured and propagated between cluster nodes
+     * <p>A value of the attribute is automatically captured and propagated between cluster nodes
      * during message transmission.</p>
-     *
-     * @see OperationContextAttribute#newInstance(Object)
      */
     public <T extends Message> void registerDistributedAttribute(byte id, OperationContextAttribute<T> attr) {
         if (initialized)
@@ -81,8 +79,7 @@ public class OperationContextDispatcher {
     }
 
     /**
-     * Collects the values of all distributed {@link OperationContextAttribute}s registered by this manager in a format
-     * suitable for transmission between cluster nodes.
+     * Collects the values of all distributed {@link OperationContextAttribute}s registered by this manager.
      *
      * @see OperationContext#get(OperationContextAttribute)
      */
