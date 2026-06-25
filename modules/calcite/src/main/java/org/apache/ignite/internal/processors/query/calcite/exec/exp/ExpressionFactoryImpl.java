@@ -232,7 +232,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
                     Object c2 = hnd.get(rIdx, o2);
 
                     if (c1 == null && c2 == null && !hasNulls) {
-                        hasNulls = !allowNulls.get(i);
+                        hasNulls = allowNulls.get(i);
 
                         continue;
                     }

@@ -338,13 +338,13 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         List<RelFieldCollation> rightCollations = rel.rightCollation().getFieldCollations();
 
         ImmutableList<Boolean> nullExclusions = rel.analyzeCondition().nullExclusionFlags;
-        ImmutableBitSet.Builder collsAllowNullsBuilder = ImmutableBitSet.builder();
+        ImmutableBitSet.Builder nullCompAsEqual = ImmutableBitSet.builder();
         int lastCollField = -1;
 
         for (int c = 0; c < Math.min(leftCollations.size(), rightCollations.size()); ++c) {
             RelFieldCollation leftColl = leftCollations.get(c);
             RelFieldCollation rightColl = rightCollations.get(c);
-            collsAllowNullsBuilder.set(c);
+            nullCompAsEqual.set(c);
 
             for (int p = 0; p < pairsCnt; ++p) {
                 IntPair pair = joinPairs.get(p);
@@ -352,8 +352,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
                 if (pair.source == leftColl.getFieldIndex() && pair.target == rightColl.getFieldIndex()) {
                     lastCollField = c;
 
-                    if (nullExclusions.get(p)) {
-                        collsAllowNullsBuilder.clear(c);
+                    if (!nullExclusions.get(p)) {
+                        nullCompAsEqual.clear(c);
 
                         break;
                     }
@@ -364,7 +364,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         Comparator<Row> comp = expressionFactory.comparator(
             leftCollations.subList(0, lastCollField + 1),
             rightCollations.subList(0, lastCollField + 1),
-            collsAllowNullsBuilder.build()
+            nullCompAsEqual.build()
         );
 
         Node<Row> node = MergeJoinNode.create(ctx, outType, leftType, rightType, joinType, comp, hasExchange(rel));
