@@ -43,6 +43,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -62,6 +63,7 @@ import org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolExecutor;
 import org.apache.ignite.internal.thread.pool.IgniteStripedExecutor;
 import org.apache.ignite.internal.thread.pool.IgniteStripedThreadPoolExecutor;
 import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
+import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -863,8 +865,9 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
         OperationContextAttribute<InetSocketAddressMessage> dAttr1 =
             OperationContextAttribute.newInstance(new InetSocketAddressMessage(InetAddress.getLoopbackAddress(), 80));
 
-        OperationContextAttribute<GridCacheVersion> dAttr2 =
-            OperationContextAttribute.newInstance(new GridCacheVersion(1, 1, 1));
+        OperationContextAttribute<GridCacheVersion> dAttr2 = OperationContextAttribute.newInstance(new GridCacheVersion(1, 1, 1));
+
+        OperationContextAttribute<GridByteArrayList> otherTestAttr = OperationContextAttribute.newInstance(new GridByteArrayList());
 
         pluginProvider = new AbstractTestPluginProvider() {
             @Override public String name() {
@@ -872,11 +875,20 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
             }
 
             @Override public void start(PluginContext ctx) {
-                ((IgniteEx)ctx.grid()).context().operationContextDispatcher().registerDistributedAttribute((byte)0, dAttr1);
+                GridKernalContext kctx = ((IgniteEx)ctx.grid()).context();
 
-                ((IgniteEx)ctx.grid()).context().operationContextDispatcher().registerDistributedAttribute(
-                    (byte)(OperationContextDispatcher.MAX_DISTRIBUTED_ATTR_CNT - 1),
-                    dAttr2
+                kctx.operationContextDispatcher().registerDistributedAttribute(0, dAttr1);
+
+                kctx.operationContextDispatcher().registerDistributedAttribute(OperationContextDispatcher.MAX_ATTRS_CNT - 1, dAttr2);
+
+                assertThrowsAnyCause(
+                    log,
+                    () -> {
+                        kctx.operationContextDispatcher().registerDistributedAttribute(0, otherTestAttr);
+                        return null;
+
+                    }, IgniteException.class,
+                    "Duplicated distributed attribute id"
                 );
             }
         };
@@ -889,7 +901,7 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
 
         assertThrows(
             null,
-            () -> grid(0).context().operationContextDispatcher().registerDistributedAttribute((byte)1, null),
+            () -> grid(0).context().operationContextDispatcher().registerDistributedAttribute(1, null),
             IgniteException.class,
             "Initialization of distributed operation context attributes has already finished"
         );

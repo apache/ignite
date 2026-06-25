@@ -40,20 +40,20 @@ import org.jetbrains.annotations.Nullable;
  * attribute must be registered via the {@link #registerDistributedAttribute(byte, OperationContextAttribute)} method.
  *
  * <p> Note, that the maximum number of distributed attributes to register is currently limited to
- * {@link #MAX_DISTRIBUTED_ATTR_CNT} for implementation reasons.</p>
+ * {@link #MAX_ATTRS_CNT} for implementation reasons.</p>
  *
  * @see OperationContext
  * @see OperationContextMessage
  */
 public class OperationContextDispatcher {
     /** Maximal number of supported distributed attributes. */
-    static final byte MAX_DISTRIBUTED_ATTR_CNT = Byte.SIZE;
+    static final byte MAX_ATTRS_CNT = Byte.SIZE;
 
     /** Registered distributed attributes by their cluster-wide id. */
     private final Map<Byte, OperationContextAttribute<? extends Message>> attrs = new ConcurrentSkipListMap<>();
 
     /** Whether the registration of new distributed attributes is allowed. */
-    private volatile boolean registrationFinished;
+    private volatile boolean regFinished;
 
     /**
      * Registers an attribute of {@link OperationContext} with the specified distributed ID.
@@ -64,13 +64,13 @@ public class OperationContextDispatcher {
      * <p>Registered attribute value is automatically captured and propagated between cluster nodes
      * during the messages transmission.</p>
      */
-    public <T extends Message> void registerDistributedAttribute(byte id, OperationContextAttribute<T> attr) {
-        if (registrationFinished)
+    public <T extends Message> void registerDistributedAttribute(int id, OperationContextAttribute<T> attr) {
+        if (regFinished)
             throw new IgniteException("Initialization of distributed operation context attributes has already finished.");
 
-        assert id >= 0 && id < MAX_DISTRIBUTED_ATTR_CNT : "Invalid distributed attributed id [id=" + id + ']';
+        assert id >= 0 && id < MAX_ATTRS_CNT : "Invalid distributed attributed id [id=" + id + ']';
 
-        if (attrs.putIfAbsent(id, attr) != null)
+        if (attrs.putIfAbsent((byte)id, attr) != null)
             throw new IgniteException("Duplicated distributed attribute id [id=" + id + ']');
     }
 
@@ -92,7 +92,7 @@ public class OperationContextDispatcher {
                 if (res == null) {
                     res = new OperationContextMessage();
 
-                    vals = new ArrayList<>(MAX_DISTRIBUTED_ATTR_CNT / 2);
+                    vals = new ArrayList<>(MAX_ATTRS_CNT / 2);
                 }
 
                 byte mask = (byte)(1 << e.getKey());
@@ -117,7 +117,7 @@ public class OperationContextDispatcher {
 
         assert msg.idBitmap != 0;
         assert !F.isEmpty(msg.vals);
-        assert msg.vals.length <= MAX_DISTRIBUTED_ATTR_CNT;
+        assert msg.vals.length <= MAX_ATTRS_CNT;
 
         OperationContext.ContextUpdater updater = OperationContext.ContextUpdater.create();
 
@@ -139,6 +139,6 @@ public class OperationContextDispatcher {
 
     /** Restricts further registration of distributed attributes. */
     public void finishRegistration() {
-        registrationFinished = true;
+        regFinished = true;
     }
 }
