@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 
+import static org.apache.ignite.internal.classpath.ClassPathProcessor.isClassPath;
 import static org.apache.ignite.internal.classpath.ClassPathProcessor.metastorageKey;
 
 /**
@@ -71,7 +72,7 @@ class CleanupTask extends ClassPathProcessor.ClassPathTask<Void> {
             while (true) {
                 Serializable curData = ctx.distributedMetastorage().read(key);
 
-                if (curData == null || !ClassPathProcessor.isClassPath(curData) || !Objects.equals(((IgniteClassPath)curData).id(), icp.id()))
+                if (curData == null || !isClassPath(curData) || !Objects.equals(((IgniteClassPath)curData).id(), icp.id()))
                     break;
 
                 if (ctx.distributedMetastorage().compareAndRemove(key, curData))

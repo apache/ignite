@@ -25,6 +25,7 @@ import java.io.RandomAccessFile;
 import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Queue;
@@ -61,6 +62,7 @@ import static org.apache.ignite.internal.classpath.ChangeNodesTask.removeNode;
 import static org.apache.ignite.internal.classpath.IgniteClassPathState.NEW;
 import static org.apache.ignite.internal.classpath.IgniteClassPathState.READY;
 import static org.apache.ignite.internal.classpath.IgniteClassPathState.REMOVING;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.TMP_SUFFIX;
 
 /**
  * TODO:
@@ -576,9 +578,15 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
     public static void writeClassPathDescriptor(NodeFileTree ft, IgniteClassPath icp) throws IOException {
         File desc = ft.classPathDescriptor(icp.name());
 
-        try (FileOutputStream fos = new FileOutputStream(desc)) {
+        File tmp = new File(desc.getParentFile(), desc.getName() + TMP_SUFFIX);
+
+        try (FileOutputStream fos = new FileOutputStream(tmp)) {
             icp.toProperties().store(fos, null);
+
+            fos.getFD().sync();
         }
+
+        Files.move(tmp.toPath(), desc.toPath(), StandardCopyOption.ATOMIC_MOVE);
     }
 
     /** */

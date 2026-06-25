@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.classpath;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Set;
@@ -34,6 +35,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.internal.classpath.ClassPathCreationFailoverTest.TIMEOUT;
 import static org.apache.ignite.internal.classpath.ClassPathProcessor.metastorageKey;
+import static org.apache.ignite.internal.classpath.IgniteClassPathState.LOST;
 import static org.apache.ignite.internal.classpath.IgniteClassPathState.READY;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -149,6 +151,60 @@ public class ClassPathSelfTest extends GridCommonAbstractTest {
         ClassPathTestUtils.checkDeployedOn(srv1, "testcp_v2");
 
         assertNull(srv.context().distributedMetastorage().read(metastorageKey("unknown")));
+    }
+
+    /** */
+    @Test
+    public void testNewNodeMoveFromLostToReady() throws Exception {
+        IgniteEx srv = startGrid(0);
+
+        Set<Path> cpFiles = ClassPathTestUtils.files();
+
+        int idx = 0;
+        String[] names = new String[cpFiles.size()];
+        long[] lengths = new long[cpFiles.size()];
+
+        for (Path cpFile : cpFiles) {
+            names[idx] = cpFile.getFileName().toString();
+            lengths[idx] = Files.size(cpFile);
+            idx++;
+        }
+
+        IgniteClassPath lost = new IgniteClassPath(
+            UUID.randomUUID(),
+            Collections.emptySet(),
+            "testcp",
+            names,
+            lengths,
+            LOST
+        );
+
+        assertTrue(srv.context().distributedMetastorage().compareAndSet(metastorageKey(lost.name()), null, lost));
+
+        NodeFileTree ft = new NodeFileTree(new File(U.defaultWorkDirectory()), "second_node");
+
+        File cpRoot = ft.classPathRoot(lost.name());
+
+        assertTrue(cpRoot.mkdirs());
+        assertTrue(ClassPathProcessor.guardFile(cpRoot, lost.id()).createNewFile());
+        ClassPathProcessor.writeClassPathDescriptor(ft, lost);
+
+        for (Path cpFile : cpFiles)
+            Files.copy(cpFile, new File(cpRoot, cpFile.getFileName().toString()).toPath());
+
+        ListeningTestLogger lsnrLog = new ListeningTestLogger(log);
+
+        IgniteEx srv1 = startGrid(getConfiguration(getTestIgniteInstanceName(1))
+            .setConsistentId("second_node")
+            .setGridLogger(lsnrLog));
+
+        ClassPathTestUtils.checkDeployedOn(srv, "testcp");
+        ClassPathTestUtils.checkDeployedOn(srv1, "testcp");
+
+        ClassPathTestUtils.checkFilesExists(srv, "testcp", cpFiles);
+        ClassPathTestUtils.checkFilesExists(srv1, "testcp", cpFiles);
+
+        assertEquals(READY, srv.context().distributedMetastorage().<IgniteClassPath>read(metastorageKey(lost.name())).state());
     }
 
     /** */
