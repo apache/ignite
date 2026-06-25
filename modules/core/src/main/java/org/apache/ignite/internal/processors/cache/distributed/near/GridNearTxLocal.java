@@ -623,7 +623,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 ret,
                 opCtx != null && opCtx.skipStore(),
                 opCtx != null && opCtx.skipReadThrough(),
-                opCtx != null && opCtx.isKeepBinaryInInterceptor(),
+                opCtx != null && opCtx.keepBinaryInInterceptor(),
                 keepBinary,
                 opCtx != null && opCtx.recovery(),
                 dataCenterId);
@@ -751,7 +751,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         final Byte dataCenterId;
 
-        if (opCtx != null && opCtx.hasDataCenterId()) {
+        if (opCtx != null && opCtx.dataCenterId() != null) {
             assert drMap == null : drMap;
 
             dataCenterId = opCtx.dataCenterId();
@@ -800,7 +800,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 null,
                 opCtx != null && opCtx.skipStore(),
                 opCtx != null && opCtx.skipReadThrough(),
-                opCtx != null && opCtx.isKeepBinaryInInterceptor(),
+                opCtx != null && opCtx.keepBinaryInInterceptor(),
                 false,
                 keepBinary,
                 opCtx != null && opCtx.recovery(),
@@ -1633,7 +1633,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         final Byte dataCenterId;
 
-        if (opCtx != null && opCtx.hasDataCenterId()) {
+        if (opCtx != null && opCtx.dataCenterId() != null) {
             assert drMap == null : drMap;
 
             dataCenterId = opCtx.dataCenterId();
@@ -1703,7 +1703,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             drMap,
             opCtx != null && opCtx.skipStore(),
             opCtx != null && opCtx.skipReadThrough(),
-            opCtx != null && opCtx.isKeepBinaryInInterceptor(),
+            opCtx != null && opCtx.keepBinaryInInterceptor(),
             singleRmv,
             keepBinary,
             opCtx != null && opCtx.recovery(),

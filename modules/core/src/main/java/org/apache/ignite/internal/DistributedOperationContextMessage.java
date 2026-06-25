@@ -15,25 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query;
+package org.apache.ignite.internal;
 
-import java.util.Map;
-import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.thread.context.DistributedOperationContextManager;
+import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-/** */
-public class InlineSizesData implements Message {
-    /** */
+/**
+ * Transport for {@link OperationContext} distributed attributes.
+ *
+ * @see DistributedOperationContextManager
+ */
+public class DistributedOperationContextMessage implements Message {
+    /** Values of operation context attributes. */
     @Order(0)
-    Map<String, Integer> sizes;
+    public Message[] vals;
 
-    /** */
-    public InlineSizesData() {}
+    /** Bitmap of effective attributes ids. */
+    @Order(1)
+    public byte idBitmap;
 
-    /**
-     * @param sizes Inline sizes.
-     */
-    public InlineSizesData(Map<String, Integer> sizes) {
-        this.sizes = sizes;
+    /** Empty constructor for serialization purposes. */
+    public DistributedOperationContextMessage() {
+        // No-op.
     }
 }

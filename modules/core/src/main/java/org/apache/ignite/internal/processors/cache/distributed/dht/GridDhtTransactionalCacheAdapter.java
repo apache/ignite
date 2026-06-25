@@ -742,7 +742,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             accessTtl,
             opCtx != null && opCtx.skipStore(),
             opCtx != null && opCtx.skipReadThrough(),
-            opCtx != null && opCtx.isKeepBinaryInInterceptor(),
+            opCtx != null && opCtx.keepBinaryInInterceptor(),
             opCtx != null && opCtx.isKeepBinary());
     }
 

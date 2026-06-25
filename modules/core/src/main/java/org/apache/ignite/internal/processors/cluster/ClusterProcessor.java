@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cluster;
 
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
@@ -76,6 +75,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.mxbean.IgniteClusterMXBean;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
@@ -101,9 +101,6 @@ import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeConsisten
  *
  */
 public class ClusterProcessor extends GridProcessorAdapter implements DistributedMetastorageLifecycleListener {
-    /** */
-    private static final String ATTR_UPDATE_NOTIFIER_STATUS = "UPDATE_NOTIFIER_STATUS";
-
     /** */
     private static final String CLUSTER_ID_TAG_KEY =
         DistributedMetaStorage.IGNITE_INTERNAL_KEY_PREFIX + "cluster.id.tag";
@@ -473,42 +470,31 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
 
     /** {@inheritDoc} */
     @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
-        dataBag.addJoiningNodeData(CLUSTER_PROC.ordinal(), getDiscoveryData());
+        dataBag.addJoiningNodeData(CLUSTER_PROC.ordinal(), new ClusterUpdateNotifierDataBagItem(notifyEnabled.get()));
     }
 
     /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
-        dataBag.addNodeSpecificData(CLUSTER_PROC.ordinal(), getDiscoveryData());
+        dataBag.addNodeSpecificData(CLUSTER_PROC.ordinal(), new ClusterUpdateNotifierDataBagItem(notifyEnabled.get()));
 
-        dataBag.addGridCommonData(CLUSTER_PROC.ordinal(), new ClusterIdAndTag(cluster.id(), cluster.tag()));
-    }
-
-    /**
-     * @return Discovery data.
-     */
-    private Serializable getDiscoveryData() {
-        HashMap<String, Object> map = new HashMap<>(2);
-
-        map.put(ATTR_UPDATE_NOTIFIER_STATUS, notifyEnabled.get());
-
-        return map;
+        dataBag.addGridCommonData(CLUSTER_PROC.ordinal(), (Message)new ClusterIdAndTag(cluster.id(), cluster.tag()));
     }
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(GridDiscoveryData data) {
-        Map<UUID, Serializable> nodeSpecData = data.nodeSpecificData();
+        Map<UUID, ClusterUpdateNotifierDataBagItem> updateNotifierData = data.nodeSpecificData();
 
-        if (nodeSpecData != null) {
-            Boolean lstFlag = findLastFlag(nodeSpecData.values());
+        if (updateNotifierData != null) {
+            Boolean updateNotifierEnabled = findLastUpdateNotifierStatus(updateNotifierData.values());
 
-            if (lstFlag != null)
-                notifyEnabled.set(lstFlag);
+            if (updateNotifierEnabled != null)
+                notifyEnabled.set(updateNotifierEnabled);
         }
 
-        ClusterIdAndTag commonData = (ClusterIdAndTag)data.commonData();
+        ClusterIdAndTag idAndTag = data.commonData();
 
-        if (commonData != null) {
-            Serializable remoteClusterId = commonData.id();
+        if (idAndTag != null) {
+            UUID remoteClusterId = idAndTag.id();
 
             if (remoteClusterId != null) {
                 if (locClusterId != null && !locClusterId.equals(remoteClusterId)) {
@@ -518,10 +504,10 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
                         ", local cluster ID: " + locClusterId);
                 }
 
-                locClusterId = (UUID)remoteClusterId;
+                locClusterId = remoteClusterId;
             }
 
-            String remoteClusterTag = commonData.tag();
+            String remoteClusterTag = idAndTag.tag();
 
             if (remoteClusterTag != null)
                 locClusterTag = remoteClusterTag;
@@ -529,21 +515,17 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
     }
 
     /**
-     * @param vals collection to seek through.
+     * @param notifierItems Collection of update notifiers statuses to seek through.
      */
-    private Boolean findLastFlag(Collection<Serializable> vals) {
-        Boolean flag = null;
+    private Boolean findLastUpdateNotifierStatus(Collection<ClusterUpdateNotifierDataBagItem> notifierItems) {
+        Boolean updateNotifierEnabled = null;
 
-        for (Serializable ser : vals) {
-            if (ser != null) {
-                Map<String, Object> map = (Map<String, Object>)ser;
-
-                if (map.containsKey(ATTR_UPDATE_NOTIFIER_STATUS))
-                    flag = (Boolean)map.get(ATTR_UPDATE_NOTIFIER_STATUS);
-            }
+        for (ClusterUpdateNotifierDataBagItem notifierItem : notifierItems) {
+            if (notifierItem != null)
+                updateNotifierEnabled = notifierItem.notifierEnabled;
         }
 
-        return flag;
+        return updateNotifierEnabled;
     }
 
     /** {@inheritDoc} */

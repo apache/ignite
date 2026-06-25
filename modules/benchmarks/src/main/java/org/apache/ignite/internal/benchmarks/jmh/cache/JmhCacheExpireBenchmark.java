@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -43,9 +44,6 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
-import org.openjdk.jmh.runner.Runner;
-import org.openjdk.jmh.runner.options.Options;
-import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 /**
  * Compare put with expiry policy and without expiry policy.
@@ -135,10 +133,8 @@ public class JmhCacheExpireBenchmark {
      * @throws Exception Exception.
      */
     public static void main(String[] args) throws Exception {
-        final Options options = new OptionsBuilder()
-            .include(JmhCacheExpireBenchmark.class.getSimpleName())
-            .build();
-
-        new Runner(options).run();
+        JmhIdeBenchmarkRunner.create()
+            .benchmarks(JmhCacheExpireBenchmark.class.getSimpleName())
+            .run();
     }
 }

@@ -15,51 +15,51 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.discovery;
+package org.apache.ignite.internal.processors.rollingupgrade.feature;
 
-import java.io.Serializable;
-import org.apache.ignite.internal.Marshalled;
-import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import java.util.Objects;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.jetbrains.annotations.Nullable;
 
-/** Wrapper message for serializable data. */
-public class ObjectData implements Message {
+/** Represents an implementation of {@link IgniteFeature} used to define incompatible changes in Ignite core functionality. */
+public class IgniteCoreFeature implements IgniteFeature {
     /** */
     @GridToStringInclude
-    @Marshalled("dataBytes")
-    Serializable data;
+    private final int id;
 
     /** */
-    @GridToStringExclude
-    @Order(0)
-    byte[] dataBytes;
+    public IgniteCoreFeature(int id) {
+        A.ensure(id >= 0, "Feature ID must be non-negative");
 
-    /** Default no-arg constructor required for deserialization. */
-    public ObjectData() {}
-
-    /**
-     * @param data Original data.
-     */
-    public ObjectData(Serializable data) {
-        this.data = data;
+        this.id = id;
     }
 
-    /**
-     * @param msg Message.
-     * @param <T> Type of data.
-     *
-     * @return Original data unwrapped from a message.
-     */
-    public static <T> T unwrap(@Nullable Message msg) {
-        return msg != null ? (T)(((ObjectData)msg).data) : null;
+    /** {@inheritDoc} */
+    @Override public int id() {
+        return id;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        IgniteCoreFeature that = (IgniteCoreFeature)o;
+
+        return id == that.id;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return Objects.hash(id);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(ObjectData.class, this);
+        return S.toString(IgniteCoreFeature.class, this);
     }
 }

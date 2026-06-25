@@ -28,7 +28,6 @@ import org.apache.ignite.internal.GridMbeansMiscTest;
 import org.apache.ignite.internal.GridNodeMetricsLogSelfTest;
 import org.apache.ignite.internal.GridProjectionForCachesSelfTest;
 import org.apache.ignite.internal.GridReduceSelfTest;
-import org.apache.ignite.internal.GridReleaseTypeSelfTest;
 import org.apache.ignite.internal.GridSelfTest;
 import org.apache.ignite.internal.GridStartStopSelfTest;
 import org.apache.ignite.internal.GridStopWithCancelSelfTest;
@@ -65,6 +64,8 @@ import org.apache.ignite.internal.processors.odbc.ClientSessionOutboundQueueLimi
 import org.apache.ignite.internal.processors.odbc.OdbcConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.odbc.OdbcEscapeSequenceSelfTest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtilsTest;
+import org.apache.ignite.internal.processors.rollingupgrade.ClusterVersionsRollingUpgradeTest;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureSetTest;
 import org.apache.ignite.internal.product.GridProductVersionSelfTest;
 import org.apache.ignite.internal.util.nio.IgniteExceptionInNioWorkerSelfTest;
 import org.apache.ignite.messaging.GridMessagingNoPeerClassLoadingSelfTest;
@@ -105,7 +106,7 @@ import org.junit.runners.Suite;
     GridMessagingSelfTest.class,
     GridMessagingNoPeerClassLoadingSelfTest.class,
 
-    GridReleaseTypeSelfTest.class,
+    ClusterVersionsRollingUpgradeTest.class,
     GridProductVersionSelfTest.class,
     GridAffinityAssignmentV2Test.class,
     GridAffinityAssignmentV2TestNoOptimizations.class,
@@ -159,6 +160,8 @@ import org.junit.runners.Suite;
     MessageFactoryMarshallerInitializationTest.class,
 
     LogEvictionResultsTest.class,
+
+    IgniteFeatureSetTest.class,
 })
 public class IgniteBasicTestSuite {
 }

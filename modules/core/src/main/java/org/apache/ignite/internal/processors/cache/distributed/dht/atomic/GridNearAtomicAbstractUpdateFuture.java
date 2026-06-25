@@ -917,7 +917,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
             CacheOperationContext prevOpCtx = cctx.operationContextPerCall();
 
             if (appAttrs != null)
-                cctx.operationContextPerCall(new CacheOperationContext().setApplicationAttributes(appAttrs));
+                cctx.operationContextPerCall(CacheOperationContext.builder().applicationAttributes(appAttrs).build());
 
             try {
                 apply0(req, res);
