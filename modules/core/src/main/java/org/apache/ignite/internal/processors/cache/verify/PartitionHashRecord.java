@@ -55,6 +55,7 @@ public class PartitionHashRecord implements Message, Serializable {
     @Marshalled("consistentIdBytes")
     Object consistentId;
 
+    /** Bytes of {@link #consistentId}. */
     @Order(2)
     @GridToStringExclude
     byte[] consistentIdBytes;
@@ -74,6 +75,7 @@ public class PartitionHashRecord implements Message, Serializable {
     @Marshalled("updateCntrBytes")
     Object updateCntr;
 
+    /** Bytes of {@link #updateCntr}. */
     @Order(5)
     @GridToStringExclude
     byte[] updateCntrBytes;

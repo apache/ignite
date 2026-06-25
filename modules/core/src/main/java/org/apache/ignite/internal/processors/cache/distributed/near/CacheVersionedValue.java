@@ -43,6 +43,7 @@ public class CacheVersionedValue implements Message, CacheIdAware {
     @Order(2)
     int cacheId;
 
+    /** */
     public CacheVersionedValue() {
         // No-op.
     }

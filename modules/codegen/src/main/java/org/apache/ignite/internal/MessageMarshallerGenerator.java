@@ -22,7 +22,6 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.HashSet;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -38,7 +37,6 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
-
 import javax.tools.Diagnostic;
 
 import static org.apache.ignite.internal.MessageProcessor.MARSHALLABLE_MESSAGE_INTERFACE;
@@ -91,6 +89,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     /** Enclosed fields of the currently processed type. Computed once per {@link #generateBody} call. */
     private Map<String, VariableElement> enclosed;
 
+    /** @param env Annotation processing environment. */
     MessageMarshallerGenerator(ProcessingEnvironment env) {
         super(env);
 
@@ -446,7 +445,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     /** Generates the {@code for} loop body: per-element finishUnmarshal + try/catch add into the collection. */
     private List<String> collectionFinishForBlock(VariableElement wireField, String colField, String arrField, String fieldName) {
         String compName = arrayComponentName(wireField);
-        TypeMirror compType = ((ArrayType) wireField.asType()).getComponentType();
+        TypeMirror compType = ((ArrayType)wireField.asType()).getComponentType();
 
         List<String> code = new ArrayList<>();
 

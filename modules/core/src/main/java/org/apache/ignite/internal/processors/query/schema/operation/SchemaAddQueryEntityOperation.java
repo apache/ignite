@@ -35,6 +35,7 @@ public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation imple
     @Marshalled("qryEntitiesBytes")
     Collection<QueryEntity> entities;
 
+    /** Serialized form of query entities. */
     @Order(0)
     transient byte[] qryEntitiesBytes;
 
@@ -91,6 +92,4 @@ public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation imple
     public boolean isSqlEscape() {
         return sqlEscape;
     }
-
-
 }

@@ -34,6 +34,7 @@ public class TransactionsHashRecord implements Message, Serializable {
     @Marshalled("locConsistentIdBytes")
     Object locConsistentId;
 
+    /** Bytes of {@link #locConsistentId}. */
     @Order(0)
     transient byte[] locConsistentIdBytes;
 
@@ -42,6 +43,7 @@ public class TransactionsHashRecord implements Message, Serializable {
     @Marshalled("rmtConsistentIdBytes")
     Object rmtConsistentId;
 
+    /** Bytes of {@link #rmtConsistentId}. */
     @Order(1)
     transient byte[] rmtConsistentIdBytes;
 

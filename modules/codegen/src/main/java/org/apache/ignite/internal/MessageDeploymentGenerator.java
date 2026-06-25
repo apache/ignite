@@ -46,13 +46,28 @@ public class MessageDeploymentGenerator extends MessageGenerator {
     /** FQN of GridCacheMessage; hierarchy scan stops here (exclusive). */
     private static final String GRID_CACHE_MESSAGE = "org.apache.ignite.internal.processors.cache.GridCacheMessage";
 
+    /** */
     private final TypeMirror cacheIdMsgMirror;
+
+    /** */
     private final TypeMirror cacheGroupIdMsgMirror;
+
+    /** */
     private final TypeMirror gridCacheMessageMirror;
+
+    /** */
     private final TypeMirror deployableMessageMirror;
+
+    /** */
     private final TypeMirror cacheObjectMirror;
+
+    /** */
     private final TypeMirror txEntryMirror;
+
+    /** */
     private final TypeMirror collectionMirror;
+
+    /** */
     private final TypeMirror iterableMirror;
 
     /** Accumulated source lines for the generated {@code prepareDeployment} method. */
@@ -61,6 +76,7 @@ public class MessageDeploymentGenerator extends MessageGenerator {
     /** */
     private boolean needsCctx;
 
+    /** @param env Annotation processing environment. */
     MessageDeploymentGenerator(ProcessingEnvironment env) {
         super(env);
 
@@ -269,5 +285,18 @@ public class MessageDeploymentGenerator extends MessageGenerator {
         return arg;
     }
 
-    private enum DeployKind { CACHE_OBJECT, CACHE_OBJECTS, TX_ENTRIES, NESTED }
+    /** Deployment strategy inferred from a field's type. */
+    private enum DeployKind {
+        /** */
+        CACHE_OBJECT,
+
+        /** */
+        CACHE_OBJECTS,
+
+        /** */
+        TX_ENTRIES,
+
+        /** */
+        NESTED
+    }
 }

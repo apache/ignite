@@ -52,6 +52,7 @@ public class StoredCacheData implements Serializable, CdcCacheEvent, Message {
     @Marshalled("ccfgBytes")
     CacheConfiguration<?, ?> ccfg;
 
+    /** Serialized {@link #ccfg}. */
     @Order(0)
     transient byte[] ccfgBytes;
 
@@ -60,6 +61,7 @@ public class StoredCacheData implements Serializable, CdcCacheEvent, Message {
     @Marshalled("qryEntitiesBytes")
     Collection<QueryEntity> qryEntities;
 
+    /** Serialized {@link #qryEntities}. */
     @Order(1)
     transient byte[] qryEntitiesBytes;
 

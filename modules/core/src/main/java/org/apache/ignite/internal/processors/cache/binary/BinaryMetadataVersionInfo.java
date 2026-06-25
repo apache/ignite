@@ -36,6 +36,7 @@ public final class BinaryMetadataVersionInfo implements Serializable, Message {
     @Marshalled("metadataBytes")
     BinaryMetadata metadata;
 
+    /** Serialized binary metadata. */
     @Order(0)
     transient byte[] metadataBytes;
 

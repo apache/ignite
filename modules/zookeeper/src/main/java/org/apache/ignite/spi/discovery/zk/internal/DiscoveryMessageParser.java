@@ -51,6 +51,10 @@ public class DiscoveryMessageParser {
     /** */
     private final ZookeeperDiscoverySpi spi;
 
+    /**
+     * @param msgFactory Message factory.
+     * @param spi Discovery SPI.
+     */
     public DiscoveryMessageParser(MessageFactory msgFactory, ZookeeperDiscoverySpi spi) {
         this.msgFactory = msgFactory;
         this.spi = spi;

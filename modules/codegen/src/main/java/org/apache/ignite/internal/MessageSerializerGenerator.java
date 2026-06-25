@@ -66,6 +66,7 @@ public class MessageSerializerGenerator extends MessageGenerator {
     /** Enum-mapper field declarations emitted at the top of the generated {@code *Serializer} class. */
     private final Set<String> fields = new java.util.TreeSet<>();
 
+    /** @param env Annotation processing environment. */
     MessageSerializerGenerator(ProcessingEnvironment env) {
         super(env);
     }

@@ -57,6 +57,7 @@ public class DynamicCacheChangeRequest implements Message, Serializable {
     @Marshalled("cfgBytes")
     CacheConfiguration<?, ?> startCfg;
 
+    /** Bytes of {@link #startCfg}. */
     @Order(3)
     byte[] cfgBytes;
 
@@ -73,6 +74,7 @@ public class DynamicCacheChangeRequest implements Message, Serializable {
     @Marshalled("nearCfgBytes")
     NearCacheConfiguration<?, ?> nearCacheCfg;
 
+    /** Bytes of {@link #nearCacheCfg}. */
     @Order(6)
     byte[] nearCfgBytes;
 
@@ -124,6 +126,7 @@ public class DynamicCacheChangeRequest implements Message, Serializable {
     @Marshalled("schemaBytes")
     QuerySchema schema;
 
+    /** Bytes of {@link #schema}. */
     @Order(18)
     byte[] schemaBytes;
 

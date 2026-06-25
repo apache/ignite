@@ -33,6 +33,7 @@ public class ServiceDeploymentRequest extends ServiceChangeAbstractRequest imple
     @Marshalled("cfgBytes")
     LazyServiceConfiguration cfg;
 
+    /** JDK serialization for {@link #cfg}. */
     @Order(0)
     byte[] cfgBytes;
 

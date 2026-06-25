@@ -80,6 +80,7 @@ public final class MetadataUpdateProposedMessage extends DiscoveryCustomMessage 
     @Marshalled("metadataBytes")
     BinaryMetadata metadata;
 
+    /** Serialized {@link #metadata}. */
     @Order(1)
     byte[] metadataBytes;
 

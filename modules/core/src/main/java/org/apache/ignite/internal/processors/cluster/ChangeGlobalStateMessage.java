@@ -59,6 +59,7 @@ public class ChangeGlobalStateMessage extends DiscoveryCustomMessage implements 
     @Nullable @Marshalled("baselineTopologyBytes")
     BaselineTopology baselineTopology;
 
+    /** JDK Serialized version of baselineTopology. */
     @Order(4)
     byte[] baselineTopologyBytes;
 

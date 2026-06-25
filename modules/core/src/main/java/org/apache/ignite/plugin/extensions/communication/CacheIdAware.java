@@ -19,6 +19,6 @@ package org.apache.ignite.plugin.extensions.communication;
 
 /** Implemented by messages that carry a cache ID identifying the target cache. */
 public interface CacheIdAware {
-    /** */
+    /** @return Cache ID identifying the target cache. */
     public int cacheId();
 }

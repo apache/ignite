@@ -47,8 +47,10 @@ public abstract class MessageGenerator {
     /** Blank separator line in generated code. */
     public static final String EMPTY = "";
 
+    /** Platform line separator used in generated code. */
     public static final String NL = System.lineSeparator();
 
+    /** Single indentation unit. */
     public static final String TAB = "    ";
 
     /** Javadoc stub emitted on every generated {@code @Override} method. */
@@ -73,6 +75,7 @@ public abstract class MessageGenerator {
     /** */
     int indent;
 
+    /** @param env Annotation processing environment. */
     MessageGenerator(ProcessingEnvironment env) {
         this.env = env;
     }
