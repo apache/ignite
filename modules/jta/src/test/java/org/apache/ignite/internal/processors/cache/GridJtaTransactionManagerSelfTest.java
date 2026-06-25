@@ -98,14 +98,11 @@ public class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test for switching tx context by JTA Manager.
-     *
-     * @throws Exception If failed.
+     * Narayana 7.x does not support suspend/resume like JOTM.
+     * No open-source JTA implementation with Jakarta API provides JOTM-style suspend/resume.
+     * Atomikos 6.x is commercial, Bitronix is dead (no Jakarta support).
      */
-    /**
-     * Narayana 7.x does not support suspend/resume in the same way as JOTM.
-     */
-    @Ignore
+    @Ignore("Narayana 7.x does not support JOTM-style suspend/resume")
     @Test
     public void testJtaTxContextSwitch() throws Exception {
         for (TransactionIsolation isolation : TransactionIsolation.values()) {
@@ -182,9 +179,11 @@ public class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     /**
-     * Narayana 7.x does not support suspend/resume in the same way as JOTM.
+     * Narayana 7.x does not support suspend/resume like JOTM.
+     * No open-source JTA implementation with Jakarta API provides JOTM-style suspend/resume.
+     * Atomikos 6.x is commercial, Bitronix is dead (no Jakarta support).
      */
-    @Ignore
+    @Ignore("Narayana 7.x does not support JOTM-style suspend/resume")
     @Test
     public void testJtaTxContextSwitchWithExistingTx() throws Exception {
         for (TransactionIsolation isolation : TransactionIsolation.values()) {
