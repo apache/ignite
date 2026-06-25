@@ -1013,7 +1013,7 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
         }
     }
 
-    /** @return a {@link ClusterNode} with {@link ClusterNode#isLocal()} == {@code false} to avoid some asserts/checks. */
+    /** Prevents {@link ClusterNode#isLocal()} to be negative. */
     private ClusterNode node(Ignite from, Ignite to) {
         return from.cluster().node(((IgniteEx)to).localNode().id());
     }
