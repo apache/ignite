@@ -978,7 +978,7 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
         Ignite from = grid(gridFromIdx);
         Ignite to = grid(gridToIdx);
 
-        CountDownLatch rcvLatch = new CountDownLatch(1);
+        CountDownLatch rcvLatch = new CountDownLatch(2);
 
         InetSocketAddressMessage expVal0 = OperationContext.get(attr0);
         GridCacheVersion expVal1 = attr1 == null ? null : OperationContext.get(attr1);
