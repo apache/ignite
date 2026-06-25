@@ -37,9 +37,9 @@ import org.jetbrains.annotations.Nullable;
  * {@link OperationContextAttribute} instance that is consistent across all cluster nodes.</p>
  *
  * <p>To enable propagation of an {@link OperationContextAttribute} value across cluster nodes, the
- * attribute must be created using the {@link #registerDistributedAttribute(byte, OperationContextAttribute)} method.
+ * attribute must be registered via the {@link #registerDistributedAttribute(byte, OperationContextAttribute)} method.
  *
- * <p> Note, that the maximum number of distributed attribute instances that can be created is currently limited to
+ * <p> Note, that the maximum number of distributed attributes to register is currently limited to
  * {@link #MAX_DISTRIBUTED_ATTR_CNT} for implementation reasons.</p>
  *
  * @see OperationContext
@@ -52,8 +52,8 @@ public class OperationContextDispatcher {
     /** Registered distributed attributes by their cluster-wide id. */
     private final Map<Byte, OperationContextAttribute<? extends Message>> attrs = new ConcurrentSkipListMap<>();
 
-    /** The initialization flag. */
-    private volatile boolean initialized;
+    /** Whether the registration of new distributed attributes is allowed. */
+    private volatile boolean registrationFinished;
 
     /**
      * Registers an attribute of {@link OperationContext} with the specified distributed ID.
@@ -61,11 +61,11 @@ public class OperationContextDispatcher {
      * <p>The distributed ID is used to consistently identify the attribute across all nodes in the cluster.
      * It must be unique, and its value must be in the range [{@code 0} : {@code Byte.SIZE}).</p>
      *
-     * <p>A value of the attribute is automatically captured and propagated between cluster nodes
-     * during message transmission.</p>
+     * <p>Registered attribute value is automatically captured and propagated between cluster nodes
+     * during the messages transmission.</p>
      */
     public <T extends Message> void registerDistributedAttribute(byte id, OperationContextAttribute<T> attr) {
-        if (initialized)
+        if (registrationFinished)
             throw new IgniteException("Initialization of distributed operation context attributes has already finished.");
 
         assert id >= 0 && id < MAX_DISTRIBUTED_ATTR_CNT : "Invalid distributed attributed id [id=" + id + ']';
@@ -75,7 +75,7 @@ public class OperationContextDispatcher {
     }
 
     /**
-     * Collects the values of all distributed {@link OperationContextAttribute}s registered by this manager.
+     * Collects the values of all distributed {@link OperationContextAttribute}s registered by this dispatcher.
      *
      * @see OperationContext#get(OperationContextAttribute)
      */
@@ -137,8 +137,8 @@ public class OperationContextDispatcher {
         return updater.apply();
     }
 
-    /** Deprecated fuhrter filling of distributed attributes. */
-    public void initialized() {
-        initialized = true;
+    /** Restricts further registration of distributed attributes. */
+    public void finishRegistration() {
+        registrationFinished = true;
     }
 }
