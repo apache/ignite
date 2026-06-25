@@ -174,7 +174,7 @@ import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.suggestions.JvmConfigurationSuggestions;
 import org.apache.ignite.internal.suggestions.OsConfigurationSuggestions;
 import org.apache.ignite.internal.systemview.ConfigurationViewWalker;
-import org.apache.ignite.internal.thread.context.DistributedOperationContextManager;
+import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
 import org.apache.ignite.internal.util.TimeBag;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -445,8 +445,8 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     /** Core message factory. */
     private MessageFactory msgFactory;
 
-    /** */
-    private DistributedOperationContextManager distrOperationContextMgr;
+    /** Distributed operation context dispatcher. */
+    private OperationContextDispatcher operationCtxDispatcher;
 
     /**
      * No-arg constructor is required by externalization.
@@ -934,7 +934,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 longJVMPauseDetector
             );
 
-            distrOperationContextMgr = new DistributedOperationContextManager();
+            operationCtxDispatcher = new OperationContextDispatcher();
 
             startProcessor(new DiagnosticProcessor(ctx));
 
@@ -1158,7 +1158,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             // All components exept Discovery are started, time to check if maintenance is still needed.
             mntcProc.prepareAndExecuteMaintenance();
 
-            distrOperationContextMgr.initialized();
+            operationCtxDispatcher.initialized();
 
             gw.writeLock();
 
@@ -3067,9 +3067,9 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         return msgFactory;
     }
 
-    /** @return Distributed operation context manager. */
-    DistributedOperationContextManager distributedOperationContextManager() {
-        return distrOperationContextMgr;
+    /** @return Distributed operation context dispatcher. */
+    OperationContextDispatcher distributedOperationContextManager() {
+        return operationCtxDispatcher;
     }
 
     /**

@@ -3048,7 +3048,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (!fromSocket)
-                msg.opCtxMsg = distrOperationContextMgr.collectDistributedAttributes();
+                msg.opCtxMsg = operationCtxDispatcher.collectDistributedAttributes();
 
             if (msg instanceof TraceableMessage tMsg) {
 
@@ -3320,7 +3320,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (msg == WAKEUP)
                 return;
 
-            try (Scope ignored = distrOperationContextMgr.restoreDistributedAttributes(msg.opCtxMsg)) {
+            try (Scope ignored = operationCtxDispatcher.restoreDistributedAttributes(msg.opCtxMsg)) {
                 processMessage0(msg);
             }
         }

@@ -17,16 +17,16 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.internal.thread.context.DistributedOperationContextManager;
+import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
- * Transport for {@link OperationContext} distributed attributes.
+ * Message for {@link OperationContext} distributed attributes.
  *
- * @see DistributedOperationContextManager
+ * @see OperationContextDispatcher
  */
-public class DistributedOperationContextMessage implements Message {
+public class OperationContextMessage implements Message {
     /** Values of operation context attributes. */
     @Order(0)
     public Message[] vals;
@@ -36,7 +36,7 @@ public class DistributedOperationContextMessage implements Message {
     public byte idBitmap;
 
     /** Empty constructor for serialization purposes. */
-    public DistributedOperationContextMessage() {
+    public OperationContextMessage() {
         // No-op.
     }
 }

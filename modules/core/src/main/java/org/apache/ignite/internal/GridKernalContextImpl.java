@@ -101,7 +101,7 @@ import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
-import org.apache.ignite.internal.thread.context.DistributedOperationContextManager;
+import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
 import org.apache.ignite.internal.thread.pool.IgniteForkJoinPool;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
@@ -699,7 +699,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public DistributedOperationContextManager distributedOperationContextManager() {
+    @Override public OperationContextDispatcher operationContextDispatcher() {
         return grid.distributedOperationContextManager();
     }
 

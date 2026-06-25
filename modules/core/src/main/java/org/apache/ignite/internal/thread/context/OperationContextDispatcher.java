@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.DistributedOperationContextMessage;
+import org.apache.ignite.internal.OperationContextMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
@@ -43,9 +43,9 @@ import org.jetbrains.annotations.Nullable;
  * {@link #MAX_DISTRIBUTED_ATTR_CNT} for implementation reasons.</p>
  *
  * @see OperationContext
- * @see DistributedOperationContextMessage
+ * @see OperationContextMessage
  */
-public class DistributedOperationContextManager {
+public class OperationContextDispatcher {
     /** Maximal number of supported distributed attributes. */
     static final byte MAX_DISTRIBUTED_ATTR_CNT = Byte.SIZE;
 
@@ -86,8 +86,8 @@ public class DistributedOperationContextManager {
      *
      * @see OperationContext#get(OperationContextAttribute)
      */
-    public @Nullable DistributedOperationContextMessage collectDistributedAttributes() {
-        DistributedOperationContextMessage res = null;
+    public @Nullable OperationContextMessage collectDistributedAttributes() {
+        OperationContextMessage res = null;
         List<Message> vals = null;
 
         for (Map.Entry<Byte, OperationContextAttribute<? extends Message>> e : attrs.entrySet()) {
@@ -97,7 +97,7 @@ public class DistributedOperationContextManager {
 
             if (curVal != attr.initialValue()) {
                 if (res == null) {
-                    res = new DistributedOperationContextMessage();
+                    res = new OperationContextMessage();
 
                     vals = new ArrayList<>(MAX_DISTRIBUTED_ATTR_CNT / 2);
                 }
@@ -118,7 +118,7 @@ public class DistributedOperationContextManager {
     }
 
     /** Restores distributed {@link OperationContextAttribute} values received from a remote node. */
-    public Scope restoreDistributedAttributes(@Nullable DistributedOperationContextMessage msg) {
+    public Scope restoreDistributedAttributes(@Nullable OperationContextMessage msg) {
         if (msg == null)
             return Scope.NOOP_SCOPE;
 

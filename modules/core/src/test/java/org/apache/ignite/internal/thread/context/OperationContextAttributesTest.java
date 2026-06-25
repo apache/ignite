@@ -843,7 +843,7 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
     @Test
     public void testSendAttributesByDiscovery() throws Exception {
         byte attrId1 = 0;
-        byte attrId2 = DistributedOperationContextManager.MAX_DISTRIBUTED_ATTR_CNT - 1;
+        byte attrId2 = OperationContextDispatcher.MAX_DISTRIBUTED_ATTR_CNT - 1;
 
         InetSocketAddressMessage dfltDistAttr1Val = new InetSocketAddressMessage(InetAddress.getLoopbackAddress(), 80);
         GridCacheVersion dfltDistrAttr2Val = new GridCacheVersion(1, 1, 1);
@@ -857,8 +857,8 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
             }
 
             @Override public void start(PluginContext ctx) {
-                ((IgniteEx)ctx.grid()).context().distributedOperationContextManager().registerDistributedAttribute(attrId1, dAttr1);
-                ((IgniteEx)ctx.grid()).context().distributedOperationContextManager().registerDistributedAttribute(attrId2, dAttr2);
+                ((IgniteEx)ctx.grid()).context().operationContextDispatcher().registerDistributedAttribute(attrId1, dAttr1);
+                ((IgniteEx)ctx.grid()).context().operationContextDispatcher().registerDistributedAttribute(attrId2, dAttr2);
             }
         };
 
@@ -870,7 +870,7 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
 
         assertThrows(
             null,
-            () -> grid(0).context().distributedOperationContextManager().registerDistributedAttribute((byte)1, null),
+            () -> grid(0).context().operationContextDispatcher().registerDistributedAttribute((byte)1, null),
             IgniteException.class,
             "Initialization of distributed operation context attributes has already finished"
         );
