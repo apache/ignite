@@ -37,7 +37,7 @@ RUN cat /etc/apt/sources.list | sed 's/http:\/\/deb.debian.org/https:\/\/deb.deb
 # ---------------------------------------------------------------------
 # 2. System Utilities & Python 3.8 Installation
 # ---------------------------------------------------------------------
-RUN apt update && apt install -y software-properties-common gpg curl wget unzip rsync sudo \
+RUN apt update && apt install -y software-properties-common gpg \
     && add-apt-repository -y ppa:deadsnakes/ppa \
     && apt update && apt install -y \
     sudo \
