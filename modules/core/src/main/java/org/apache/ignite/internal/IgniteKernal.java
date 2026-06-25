@@ -3068,7 +3068,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     }
 
     /** @return Distributed operation context dispatcher. */
-    OperationContextDispatcher distributedOperationContextManager() {
+    OperationContextDispatcher operationContextDispatcher() {
         return operationCtxDispatcher;
     }
 

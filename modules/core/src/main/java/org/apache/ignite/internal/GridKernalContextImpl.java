@@ -700,7 +700,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public OperationContextDispatcher operationContextDispatcher() {
-        return grid.distributedOperationContextManager();
+        return grid.operationContextDispatcher();
     }
 
     /** {@inheritDoc} */

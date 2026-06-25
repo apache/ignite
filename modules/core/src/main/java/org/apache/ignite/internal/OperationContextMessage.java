@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
 import org.apache.ignite.internal.thread.context.OperationContext;
+import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**

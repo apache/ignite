@@ -40,6 +40,9 @@ import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridTopic;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -126,8 +129,6 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
 
         // Releases attribute IDs reserved during the test.
         OperationContextAttribute.ID_GEN.set(beforeTestReservedAttrIds);
-
-        DistributedOperationContextManager.instance().clear();
     }
 
     /** {@inheritDoc} */
@@ -846,14 +847,11 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testSendAttributesByDiscovery() throws Exception {
-        byte attrId1 = 0;
-        byte attrId2 = OperationContextDispatcher.MAX_DISTRIBUTED_ATTR_CNT - 1;
+        OperationContextAttribute<InetSocketAddressMessage> dAttr1 =
+            OperationContextAttribute.newInstance(new InetSocketAddressMessage(InetAddress.getLoopbackAddress(), 80));
 
-        InetSocketAddressMessage dfltDistAttr1Val = new InetSocketAddressMessage(InetAddress.getLoopbackAddress(), 80);
-        GridCacheVersion dfltDistrAttr2Val = new GridCacheVersion(1, 1, 1);
-
-        OperationContextAttribute<InetSocketAddressMessage> dAttr1 = OperationContextAttribute.newInstance(dfltDistAttr1Val);
-        OperationContextAttribute<GridCacheVersion> dAttr2 = OperationContextAttribute.newInstance(dfltDistrAttr2Val);
+        OperationContextAttribute<GridCacheVersion> dAttr2 =
+            OperationContextAttribute.newInstance(new GridCacheVersion(1, 1, 1));
 
         pluginProvider = new AbstractTestPluginProvider() {
             @Override public String name() {
@@ -861,8 +859,12 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
             }
 
             @Override public void start(PluginContext ctx) {
-                ((IgniteEx)ctx.grid()).context().operationContextDispatcher().registerDistributedAttribute(attrId1, dAttr1);
-                ((IgniteEx)ctx.grid()).context().operationContextDispatcher().registerDistributedAttribute(attrId2, dAttr2);
+                ((IgniteEx)ctx.grid()).context().operationContextDispatcher().registerDistributedAttribute((byte)0, dAttr1);
+
+                ((IgniteEx)ctx.grid()).context().operationContextDispatcher().registerDistributedAttribute(
+                    (byte)(OperationContextDispatcher.MAX_DISTRIBUTED_ATTR_CNT - 1),
+                    dAttr2
+                );
             }
         };
 
@@ -886,7 +888,7 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
         CountDownLatch srvrLatch = new CountDownLatch(3);
         CountDownLatch clientLatch = new CountDownLatch(3);
 
-        InetSocketAddressMessage valToSend1 = new InetSocketAddressMessage(dfltDistAttr1Val.address(), 443);
+        InetSocketAddressMessage valToSend1 = new InetSocketAddressMessage(dAttr1.initialValue().address(), 443);
         GridCacheVersion valToSend2 = new GridCacheVersion(2, 2, 2);
 
         for (int i = 0; i < G.allGrids().size(); ++i) {
@@ -900,15 +902,10 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
                         InetSocketAddressMessage receivedVal1 = OperationContext.get(dAttr1);
                         GridCacheVersion receivedVal2 = OperationContext.get(dAttr2);
 
-                        assertNotNull(receivedVal1);
-                        assertNotNull(receivedVal2);
+                        assertTrue(receivedVal1 != null && valToSend1.port() == receivedVal1.port());
+                        assertTrue(receivedVal1 != null && valToSend1.address().equals(receivedVal1.address()));
 
-                        assertFalse(dfltDistAttr1Val.port() == receivedVal1.port());
-                        assertEquals(receivedVal1.port(), valToSend1.port());
-                        assertEquals(receivedVal1.address(), valToSend1.address());
-
-                        assertFalse(dfltDistrAttr2Val.equals(receivedVal2));
-                        assertTrue(valToSend2.equals(receivedVal2));
+                        assertEquals(valToSend2, receivedVal2);
 
                         if (grid(i0).localNode().isClient())
                             clientLatch.countDown();
@@ -951,31 +948,38 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testSendAttributesByCommunication() throws Exception {
-        byte attrId1 = 0;
-        byte attrId2 = DistributedOperationContextManager.MAX_DISTRIBUTED_ATTR_CNT - 1;
+        OperationContextAttribute<InetSocketAddressMessage> dAttr1 =
+            OperationContextAttribute.newInstance(new InetSocketAddressMessage(InetAddress.getLoopbackAddress(), 80));
 
-        InetSocketAddressMessage dfltDistrAttr1Val = new InetSocketAddressMessage(InetAddress.getLoopbackAddress(), 80);
-        GridCacheVersion dfltDistrAttr2Val = new GridCacheVersion(1, 1, 1);
+        OperationContextAttribute<GridCacheVersion> dAttr2 =
+            OperationContextAttribute.newInstance(new GridCacheVersion(1, 1, 1));
+
+        pluginProvider = new AbstractTestPluginProvider() {
+            @Override public String name() {
+                return "TestDistributedOperationContextAttributesRegistrator";
+            }
+
+            @Override public void start(PluginContext ctx) {
+                ((IgniteEx)ctx.grid()).context().operationContextDispatcher().registerDistributedAttribute((byte)0, dAttr1);
+
+                ((IgniteEx)ctx.grid()).context().operationContextDispatcher().registerDistributedAttribute(
+                    (byte)(OperationContextDispatcher.MAX_DISTRIBUTED_ATTR_CNT - 1),
+                    dAttr2
+                );
+            }
+        };
 
         // Local attribute 1.
         OperationContextAttribute.newInstance(1000);
 
-        // Distributed attribute 1.
-        OperationContextAttribute<InetSocketAddressMessage> dAttr0 = DistributedOperationContextManager.instance()
-            .createDistributedAttribute(attrId1, dfltDistrAttr1Val);
+        startGrids(2);
+        startClientGrid(2);
 
         // Local attribute 2.
         OperationContextAttribute.newInstance("locaAttr2");
 
-        // Distributed attribute 2.
-        OperationContextAttribute<GridCacheVersion> dAttr1 = DistributedOperationContextManager.instance()
-            .createDistributedAttribute(attrId2, dfltDistrAttr2Val);
-
-        startGrids(2);
-        startClientGrid(2);
-
-        InetSocketAddressMessage valToSend0 = new InetSocketAddressMessage(dfltDistrAttr1Val.address(), 443);
-        GridCacheVersion valToSend1 = new GridCacheVersion(2, 2, 2);
+        InetSocketAddressMessage valToSend1 = new InetSocketAddressMessage(dAttr1.initialValue().address(), 443);
+        GridCacheVersion valToSend2 = new GridCacheVersion(2, 2, 2);
 
         // Coordinator -> Server, Coordinator -> Client, Server -> Client, Client -> Server, etc.
         for (int fromIdx = 0; fromIdx < 3; ++fromIdx) {
@@ -984,13 +988,13 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
                     continue;
 
                 // One value.
-                try (Scope ignored = OperationContext.set(dAttr0, valToSend0)) {
-                    checkOperationContextCommunicationTransmission(fromIdx, toIdx, dAttr0, null);
+                try (Scope ignored = OperationContext.set(dAttr1, valToSend1)) {
+                    checkOperationContextCommunicationTransmission(fromIdx, toIdx, dAttr1, null);
                 }
 
                 // A couple of values.
-                try (Scope ignored = OperationContext.set(dAttr0, valToSend0, dAttr1, valToSend1)) {
-                    checkOperationContextCommunicationTransmission(fromIdx, toIdx, dAttr0, dAttr1);
+                try (Scope ignored = OperationContext.set(dAttr1, valToSend1, dAttr2, valToSend2)) {
+                    checkOperationContextCommunicationTransmission(fromIdx, toIdx, dAttr1, dAttr2);
                 }
             }
         }
@@ -1000,44 +1004,44 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
     private void checkOperationContextCommunicationTransmission(
         int gridFromIdx,
         int gridToIdx,
-        OperationContextAttribute<InetSocketAddressMessage> attr0,
-        @Nullable OperationContextAttribute<GridCacheVersion> attr1
+        OperationContextAttribute<InetSocketAddressMessage> attr1,
+        @Nullable OperationContextAttribute<GridCacheVersion> attr2
     ) throws InterruptedException {
-        Ignite from = grid(gridFromIdx);
-        Ignite to = grid(gridToIdx);
+        IgniteEx from = grid(gridFromIdx);
+        IgniteEx to = grid(gridToIdx);
 
         CountDownLatch rcvLatch = new CountDownLatch(2);
 
-        InetSocketAddressMessage expVal0 = OperationContext.get(attr0);
-        GridCacheVersion expVal1 = attr1 == null ? null : OperationContext.get(attr1);
+        InetSocketAddressMessage expVal1 = OperationContext.get(attr1);
+        GridCacheVersion expVal2 = attr2 == null ? null : OperationContext.get(attr2);
 
         GridMessageListener lsnr = new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 if (msg instanceof IgniteIoTestMessage && ((IgniteIoTestMessage)msg).request()) {
-                    InetSocketAddressMessage receivedVal0 = OperationContext.get(attr0);
-                    GridCacheVersion receivedVal1 = attr1 == null ? null : OperationContext.get(attr1);
+                    InetSocketAddressMessage receivedVal1 = OperationContext.get(attr1);
+                    GridCacheVersion receivedVal2 = attr2 == null ? null : OperationContext.get(attr2);
 
-                    assertTrue(receivedVal0 != null && expVal0.port() == receivedVal0.port());
-                    assertTrue(receivedVal0 != null && expVal0.address().equals(receivedVal0.address()));
+                    assertTrue(receivedVal1 != null && expVal1.port() == receivedVal1.port());
+                    assertTrue(receivedVal1 != null && expVal1.address().equals(receivedVal1.address()));
 
-                    if (attr1 != null)
-                        assertEquals(expVal1, receivedVal1);
+                    if (attr2 != null)
+                        assertEquals(expVal2, receivedVal2);
 
                     rcvLatch.countDown();
                 }
             }
         };
 
-        ((IgniteEx)to).context().io().addMessageListener(GridTopic.TOPIC_IO_TEST, lsnr);
+        to.context().io().addMessageListener(GridTopic.TOPIC_IO_TEST, lsnr);
 
         try {
-            ((IgniteEx)from).context().io().sendIoTest(node(from, to), null, false);
-            ((IgniteEx)from).context().io().sendIoTest(node(from, to), null, true);
+            from.context().io().sendIoTest(node(from, to), null, false);
+            from.context().io().sendIoTest(node(from, to), null, true);
 
             assertTrue(rcvLatch.await(getTestTimeout(), MILLISECONDS));
         }
         finally {
-            assertTrue(((IgniteEx)to).context().io().removeMessageListener(GridTopic.TOPIC_IO_TEST, lsnr));
+            assertTrue(to.context().io().removeMessageListener(GridTopic.TOPIC_IO_TEST, lsnr));
         }
     }
 
