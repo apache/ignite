@@ -43,7 +43,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.communication.IgniteIoTestMessage;
@@ -979,25 +978,24 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
         Ignite from = grid(gridFromIdx);
         Ignite to = grid(gridToIdx);
 
-        CountDownLatch rcvLatch = new CountDownLatch(2 + (attr1 != null ? 2 : 0));
+        CountDownLatch rcvLatch = new CountDownLatch(1);
 
         InetSocketAddressMessage expVal0 = OperationContext.get(attr0);
         GridCacheVersion expVal1 = attr1 == null ? null : OperationContext.get(attr1);
 
         GridMessageListener lsnr = new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
-                if (msg instanceof IgniteIoTestMessage) {
+                if (msg instanceof IgniteIoTestMessage && ((IgniteIoTestMessage)msg).request()) {
                     InetSocketAddressMessage receivedVal0 = OperationContext.get(attr0);
                     GridCacheVersion receivedVal1 = attr1 == null ? null : OperationContext.get(attr1);
 
-                    assertNotNull(receivedVal0);
-                    assertTrue(attr1 == null || receivedVal1 != null);
+                    assertTrue(receivedVal0 != null && expVal0.port() == receivedVal0.port());
+                    assertTrue(receivedVal0 != null && expVal0.address().equals(receivedVal0.address()));
 
-                    if (receivedVal0.port() == expVal0.port() && receivedVal0.address().equals(expVal0.address()))
-                        rcvLatch.countDown();
+                    if (attr1 != null)
+                        assertEquals(expVal1, receivedVal1);
 
-                    if (attr1 != null && expVal1.equals(receivedVal1))
-                        rcvLatch.countDown();
+                    rcvLatch.countDown();
                 }
             }
         };
@@ -1005,8 +1003,8 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
         ((IgniteEx)to).context().io().addMessageListener(GridTopic.TOPIC_IO_TEST, lsnr);
 
         try {
-            ((IgniteEx)from).context().io().sendIoTest(node(to), null, false);
-            ((IgniteEx)from).context().io().sendIoTest(node(to), null, true);
+            ((IgniteEx)from).context().io().sendIoTest(node(from, to), null, false);
+            ((IgniteEx)from).context().io().sendIoTest(node(from, to), null, true);
 
             assertTrue(rcvLatch.await(getTestTimeout(), MILLISECONDS));
         }
@@ -1016,16 +1014,8 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
     }
 
     /** @return a {@link ClusterNode} with {@link ClusterNode#isLocal()} == {@code false} to avoid some asserts/checks. */
-    private ClusterNode node(Ignite ig) {
-        ClusterNode res = new DetachedClusterNode(ig.cluster().localNode().consistentId(), ig.cluster().localNode().attributes()) {
-            @Override public UUID id() {
-                return ig.cluster().localNode().id();
-            }
-        };
-
-        assert !res.isLocal();
-
-        return res;
+    private ClusterNode node(Ignite from, Ignite to) {
+        return from.cluster().node(((IgniteEx)to).localNode().id());
     }
 
     /** */
