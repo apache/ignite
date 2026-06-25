@@ -144,8 +144,14 @@ public class OperationContextDispatcher {
         return updater.apply();
     }
 
+
     /** Deprecated fuhrter filling of distributed attributes. */
     public void initialized() {
         initialized = true;
+    }
+
+    /** For testing purposes mostly. */
+    void clear() {
+        attrs.clear();
     }
 }

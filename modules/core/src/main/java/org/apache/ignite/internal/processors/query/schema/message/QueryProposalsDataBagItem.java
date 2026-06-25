@@ -15,25 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.binary;
+package org.apache.ignite.internal.processors.query.schema.message;
 
-import java.util.Map;
+import java.util.LinkedHashMap;
+import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-/** */
-public class BinaryMetadataVersionsData implements Message {
-    /** */
+/** Wrapper for active schema change propose discovery messages. */
+public class QueryProposalsDataBagItem implements Message {
+    /** Active proposals. */
     @Order(0)
-    Map<Integer, BinaryMetadataVersionInfo> data;
+    LinkedHashMap<UUID, SchemaProposeDiscoveryMessage> activeProposals;
 
     /** */
-    public BinaryMetadataVersionsData() {}
+    public QueryProposalsDataBagItem() {
+        // No-op.
+    }
 
-    /**
-     * @param data Data.
-     */
-    public BinaryMetadataVersionsData(Map<Integer, BinaryMetadataVersionInfo> data) {
-        this.data = Map.copyOf(data);
+    /** @param activeProposals Active proposals. */
+    public QueryProposalsDataBagItem(LinkedHashMap<UUID, SchemaProposeDiscoveryMessage> activeProposals) {
+        this.activeProposals = activeProposals;
+    }
+
+    /** @return Active proposals. */
+    public LinkedHashMap<UUID, SchemaProposeDiscoveryMessage> activeProposals() {
+        return activeProposals;
     }
 }

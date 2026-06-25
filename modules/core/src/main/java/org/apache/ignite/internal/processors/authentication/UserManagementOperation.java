@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.authentication;
 
-import java.io.Serializable;
 import java.util.Objects;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -27,10 +26,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /**
  * The operation with users. Used to deliver the information about requested operation to all server nodes.
  */
-public class UserManagementOperation implements Serializable, Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class UserManagementOperation implements Message {
     /** User. */
     @Order(0)
     User usr;

@@ -2582,36 +2582,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (addedMsg.gridDiscoveryData() != null)
                     addedMsg.clearDiscoveryData();
             }
-            else if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
-                TcpDiscoveryNodeAddFinishedMessage addFinishMsg = (TcpDiscoveryNodeAddFinishedMessage)msg;
-
-                if (addFinishMsg.clientDiscoData() != null) {
-                    addFinishMsg = new TcpDiscoveryNodeAddFinishedMessage(addFinishMsg);
-
-                    msg = addFinishMsg;
-
-                    DiscoveryDataPacket discoData = addFinishMsg.clientDiscoData();
-
-                    Set<Integer> mrgdCmnData = new HashSet<>();
-                    Set<UUID> mrgdSpecData = new HashSet<>();
-
-                    boolean allMerged = false;
-
-                    for (TcpDiscoveryAbstractMessage msg0 : msgs) {
-
-                        if (msg0 instanceof TcpDiscoveryNodeAddFinishedMessage) {
-                            DiscoveryDataPacket existingDiscoData =
-                                ((TcpDiscoveryNodeAddFinishedMessage)msg0).clientDiscoData();
-
-                            if (existingDiscoData != null)
-                                allMerged = discoData.mergeDataFrom(existingDiscoData, mrgdCmnData, mrgdSpecData);
-                        }
-
-                        if (allMerged)
-                            break;
-                    }
-                }
-            }
             else if (msg instanceof TcpDiscoveryNodeLeftMessage)
                 clearClientAddFinished(msg.creatorNodeId());
             else if (msg instanceof TcpDiscoveryNodeFailedMessage)
@@ -4778,9 +4748,17 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** */
         private IgniteNodeValidationResult validateByIgniteComponentsWithJoiningNodeData(TcpDiscoveryJoinRequestMessage req) {
-            DiscoveryDataBag data = req.gridDiscoveryData().bagWithJoiningNodeData();
+            DiscoveryDataPacket packet = req.gridDiscoveryData();
 
-            return spi.getSpiContext().validateNode(req.node(), data);
+            try {
+                DiscoveryDataBag dataBag = packet.bagWithJoiningNodeData(spi.ignite().log(),
+                    spi.ignite().configuration().isClientMode());
+
+                return spi.getSpiContext().validateNode(req.node(), dataBag);
+            }
+            catch (IgniteCheckedException e) {
+                return new IgniteNodeValidationResult(req.node().id(), e.getMessage());
+            }
         }
 
         /** */

@@ -15,25 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query;
+package org.apache.ignite.internal.processors.marshaller;
 
+import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
-public class InlineSizesData implements Message {
+public class MarshallerDataBagItem implements Message {
     /** */
     @Order(0)
-    Map<String, Integer> sizes;
+    List<Map<Integer, MappedName>> mappings;
 
     /** */
-    public InlineSizesData() {}
+    public MarshallerDataBagItem() {}
 
-    /**
-     * @param sizes Inline sizes.
-     */
-    public InlineSizesData(Map<String, Integer> sizes) {
-        this.sizes = sizes;
+    /** @param mappings Mappings. */
+    public MarshallerDataBagItem(List<Map<Integer, MappedName>> mappings) {
+        this.mappings = mappings;
+    }
+
+    /** @return Mappings. */
+    public List<Map<Integer, MappedName>> mappings() {
+        return mappings;
     }
 }
