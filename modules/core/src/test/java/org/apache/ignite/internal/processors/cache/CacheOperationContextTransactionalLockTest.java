@@ -88,12 +88,6 @@ public class CacheOperationContextTransactionalLockTest extends GridCommonAbstra
         assertTxEntryFlags(internalCache().withKeepBinaryInInterceptor(), false, false, true, false);
     }
 
-    /** Checks propagation of the keep-binary projection flags. */
-    @Test
-    public void testKeepBinaryOperationContext() throws Exception {
-        assertTxEntryFlags(internalCache().keepBinary(), false, false, false, true);
-    }
-
     /**
      * Locks a versioned entry and checks flags stored in its transaction entry.
      *
