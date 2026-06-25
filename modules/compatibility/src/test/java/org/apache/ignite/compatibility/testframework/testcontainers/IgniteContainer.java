@@ -159,7 +159,7 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
                     .exec();
 
                 await()
-                    .atMost(Duration.ofSeconds(20))
+                    .atMost(Duration.ofSeconds(60))
                     .pollInterval(Duration.ofMillis(500))
                     .until(() -> !isRunning());
             }
