@@ -175,7 +175,6 @@ import org.apache.ignite.internal.suggestions.JvmConfigurationSuggestions;
 import org.apache.ignite.internal.suggestions.OsConfigurationSuggestions;
 import org.apache.ignite.internal.systemview.ConfigurationViewWalker;
 import org.apache.ignite.internal.thread.context.DistributedOperationContextManager;
-import org.apache.ignite.internal.thread.context.OperationContextAttribute;
 import org.apache.ignite.internal.util.TimeBag;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -212,7 +211,6 @@ import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.IgniteSpi;
@@ -936,17 +934,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 longJVMPauseDetector
             );
 
-            distrOperationContextMgr = new DistributedOperationContextManager() {
-                @Override public <T extends Message> void registerDistributedAttribute(
-                    byte id,
-                    OperationContextAttribute<T> attr
-                ) {
-                    if (gw.getState() != STARTING)
-                        throw new IgniteException("Distributed operation context attributes is registered only at the starting.");
-
-                    super.registerDistributedAttribute(id, attr);
-                }
-            };
+            distrOperationContextMgr = new DistributedOperationContextManager();
 
             startProcessor(new DiagnosticProcessor(ctx));
 
@@ -1169,6 +1157,8 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
             // All components exept Discovery are started, time to check if maintenance is still needed.
             mntcProc.prepareAndExecuteMaintenance();
+
+            distrOperationContextMgr.initialized();
 
             gw.writeLock();
 
@@ -3077,7 +3067,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         return msgFactory;
     }
 
-    /** @return Instance of {@link DistributedOperationContextManager}. */
+    /** @return Distributed operation context manager. */
     DistributedOperationContextManager distributedOperationContextManager() {
         return distrOperationContextMgr;
     }

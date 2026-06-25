@@ -853,7 +853,7 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
 
         pluginProvider = new AbstractTestPluginProvider() {
             @Override public String name() {
-                return "DistributedOperationContextAttributesRegistrator";
+                return "TestDistributedOperationContextAttributesRegistrator";
             }
 
             @Override public void start(PluginContext ctx) {
@@ -872,7 +872,7 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
             null,
             () -> grid(0).context().distributedOperationContextManager().registerDistributedAttribute((byte)1, null),
             IgniteException.class,
-            "Distributed operation context attributes is registered only at the starting"
+            "Initialization of distributed operation context attributes has already finished"
         );
 
         // Local attribute 2.

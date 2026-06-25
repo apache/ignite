@@ -37,7 +37,7 @@ import org.jetbrains.annotations.Nullable;
  * {@link OperationContextAttribute} instance that is consistent across all cluster nodes.</p>
  *
  * <p>To enable propagation of an {@link OperationContextAttribute} value across cluster nodes, the
-fi * attribute must be created using the {@link #registerDistributedAttribute(byte, OperationContextAttribute)} method.
+ * attribute must be created using the {@link #registerDistributedAttribute(byte, OperationContextAttribute)} method.
  *
  * <p> Note, that the maximum number of distributed attribute instances that can be created is currently limited to
  * {@link #MAX_DISTRIBUTED_ATTR_CNT} for implementation reasons.</p>
@@ -52,6 +52,9 @@ public class DistributedOperationContextManager {
     /** Registered distributed attributes by their cluster-wide id. */
     private final Map<Byte, OperationContextAttribute<? extends Message>> attrs = new ConcurrentSkipListMap<>();
 
+    /** The initialization flag. */
+    private volatile boolean initialized;
+
     /**
      * Creates a new {@link OperationContext} attribute with the specified distributed ID and initial value.
      *
@@ -64,6 +67,9 @@ public class DistributedOperationContextManager {
      * @see OperationContextAttribute#newInstance(Object)
      */
     public <T extends Message> void registerDistributedAttribute(byte id, OperationContextAttribute<T> attr) {
+        if (initialized)
+            throw new IgniteException("Initialization of distributed operation context attributes has already finished.");
+
         assert id >= 0 && id < MAX_DISTRIBUTED_ATTR_CNT : "Invalid distributed attributed id [id=" + id + ']';
 
         attrs.compute(id, (id0, attr0) -> {
@@ -136,5 +142,10 @@ public class DistributedOperationContextManager {
         }
 
         return updater.apply();
+    }
+
+    /** Deprecated fuhrter filling of distributed attributes. */
+    public void initialized() {
+        initialized = true;
     }
 }
