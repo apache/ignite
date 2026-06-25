@@ -847,6 +847,17 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testSendAttributesByDiscovery() throws Exception {
+        doTestOperationContextAttributesPropagation(true);
+    }
+
+    /** */
+    @Test
+    public void testSendAttributesByCommunication() throws Exception {
+        doTestOperationContextAttributesPropagation(false);
+    }
+
+    /** */
+    private void doTestOperationContextAttributesPropagation(boolean discovery) throws Exception {
         OperationContextAttribute<InetSocketAddressMessage> dAttr1 =
             OperationContextAttribute.newInstance(new InetSocketAddressMessage(InetAddress.getLoopbackAddress(), 80));
 
@@ -884,12 +895,25 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
         // Local attribute 2.
         OperationContextAttribute.newInstance("locaAttr2");
 
+        InetSocketAddressMessage valToSend1 = new InetSocketAddressMessage(dAttr1.initialValue().address(), 443);
+        GridCacheVersion valToSend2 = new GridCacheVersion(2, 2, 2);
+
+        if (discovery)
+            doTestOperationContextAttributesPropagationThroughDiscovery(dAttr1, valToSend1, dAttr2, valToSend2);
+        else
+            doTestOperationContextAttributesPropagationThroughCommunication(dAttr1, valToSend1, dAttr2, valToSend2);
+    }
+
+    /** */
+    private void doTestOperationContextAttributesPropagationThroughDiscovery(
+        OperationContextAttribute<InetSocketAddressMessage> dAttr1,
+        InetSocketAddressMessage valToSend1,
+        OperationContextAttribute<GridCacheVersion> dAttr2,
+        GridCacheVersion valToSend2
+    ) throws Exception {
         CountDownLatch coordLatch = new CountDownLatch(3);
         CountDownLatch srvrLatch = new CountDownLatch(3);
         CountDownLatch clientLatch = new CountDownLatch(3);
-
-        InetSocketAddressMessage valToSend1 = new InetSocketAddressMessage(dAttr1.initialValue().address(), 443);
-        GridCacheVersion valToSend2 = new GridCacheVersion(2, 2, 2);
 
         for (int i = 0; i < G.allGrids().size(); ++i) {
             int i0 = i;
@@ -946,41 +970,12 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testSendAttributesByCommunication() throws Exception {
-        OperationContextAttribute<InetSocketAddressMessage> dAttr1 =
-            OperationContextAttribute.newInstance(new InetSocketAddressMessage(InetAddress.getLoopbackAddress(), 80));
-
-        OperationContextAttribute<GridCacheVersion> dAttr2 =
-            OperationContextAttribute.newInstance(new GridCacheVersion(1, 1, 1));
-
-        pluginProvider = new AbstractTestPluginProvider() {
-            @Override public String name() {
-                return "TestDistributedOperationContextAttributesRegistrator";
-            }
-
-            @Override public void start(PluginContext ctx) {
-                ((IgniteEx)ctx.grid()).context().operationContextDispatcher().registerDistributedAttribute((byte)0, dAttr1);
-
-                ((IgniteEx)ctx.grid()).context().operationContextDispatcher().registerDistributedAttribute(
-                    (byte)(OperationContextDispatcher.MAX_DISTRIBUTED_ATTR_CNT - 1),
-                    dAttr2
-                );
-            }
-        };
-
-        // Local attribute 1.
-        OperationContextAttribute.newInstance(1000);
-
-        startGrids(2);
-        startClientGrid(2);
-
-        // Local attribute 2.
-        OperationContextAttribute.newInstance("locaAttr2");
-
-        InetSocketAddressMessage valToSend1 = new InetSocketAddressMessage(dAttr1.initialValue().address(), 443);
-        GridCacheVersion valToSend2 = new GridCacheVersion(2, 2, 2);
-
+    private void doTestOperationContextAttributesPropagationThroughCommunication(
+        OperationContextAttribute<InetSocketAddressMessage> dAttr1,
+        InetSocketAddressMessage valToSend1,
+        OperationContextAttribute<GridCacheVersion> dAttr2,
+        GridCacheVersion valToSend2
+    ) throws Exception {
         // Coordinator -> Server, Coordinator -> Client, Server -> Client, Client -> Server, etc.
         for (int fromIdx = 0; fromIdx < 3; ++fromIdx) {
             for (int toIdx = 0; toIdx < 3; ++toIdx) {
@@ -1006,7 +1001,7 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
         int gridToIdx,
         OperationContextAttribute<InetSocketAddressMessage> attr1,
         @Nullable OperationContextAttribute<GridCacheVersion> attr2
-    ) throws InterruptedException {
+    ) throws Exception {
         IgniteEx from = grid(gridFromIdx);
         IgniteEx to = grid(gridToIdx);
 
