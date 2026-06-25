@@ -43,6 +43,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: ${{ matrix.java }}
+          cache: 'maven'
 
       - name: Install prerequisites
         run: |
@@ -96,11 +97,12 @@ jobs:
 
       - name: Run codestyle and licenses checks
         run: |
-          ./mvnw test-compile -Pall-java,licenses,lgpl,checkstyle,examples,scala,check-licenses -B -V
+          ./mvnw test-compile -Pall-java,licenses,lgpl,checkstyle,examples,scala,check-licenses -B -V -T 1C
 
       - name: Run abandoned tests checks.
+        # Reuse classes from the previous step; the differing profiles otherwise trigger a full reactor recompile.
         run : |
-          ./mvnw test -Pcheck-test-suites,all-java,scala -B -V
+          ./mvnw test -Pcheck-test-suites,all-java,scala -B -V -Dmaven.compiler.useIncrementalCompilation=false
 
       - name: Check javadocs.
         run : |
