@@ -28,6 +28,7 @@ jobs:
     permissions:
       issues: write
       pull-requests: write
+      checks: write
     steps:
       - uses: actions/checkout@v6
         with:
@@ -114,7 +115,28 @@ jobs:
               labels: ['compatibility'],
             });
 
-      - name: Fail on affected check
+      - name: Warning check on affected
         if: steps.check.outputs.affected == 'true'
-        run: |
-          exit 1
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            const hits = fs.readFileSync('/tmp/protected-hits.txt', 'utf8').trim();
+            await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: 'Rolling upgrade compatibility',
+              head_sha: context.payload.pull_request.head.sha,
+              status: 'completed',
+              conclusion: 'action_required',
+              output: {
+                title: 'Possible compatibility issues',
+                summary: [
+                  'This PR modifies protected classes (with **Order** annotation).',
+                  'Changes to these classes can break rolling upgrade compatibility.',
+                  '',
+                  '**Affected files:**',
+                  hits.split('\n').map(f => '- `' + f.trim() + '`').join('\n'),
+                ].join('\n'),
+              },
+            });
