@@ -273,6 +273,9 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     private final InjectResourcesService injectSvc;
 
     /** */
+    private final PluginAccumulatorRegistry pluginAccRegistry;
+
+    /** */
     private volatile boolean started;
 
     /**
@@ -281,6 +284,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     public CalciteQueryProcessor(GridKernalContext ctx) {
         super(ctx);
 
+        pluginAccRegistry = new PluginAccumulatorRegistry(ctx);
         frameworkCfg = frameworkCfg(ctx);
         failureProcessor = ctx.failure();
         schemaHolder = new SchemaHolderImpl(ctx, frameworkCfg);
@@ -713,7 +717,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         if (timeout <= 0)
             timeout = distrCfg.defaultQueryTimeout();
 
-        qryCtx = QueryContext.of(frameworkCfg, qryCtx);
+        qryCtx = QueryContext.of(frameworkCfg(qryCtx), qryCtx);
 
         RootQuery<Object[]> qry = new RootQuery<>(
             sql,
@@ -853,14 +857,33 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     }
 
     /** */
-    private static FrameworkConfig frameworkCfg(GridKernalContext ctx) {
+    private FrameworkConfig frameworkCfg(GridKernalContext ctx) {
         FrameworkConfig customFrameworkCfg = ctx.plugins().createComponent(FrameworkConfig.class);
         customFrameworkCfg = customFrameworkCfg != null ? customFrameworkCfg : FRAMEWORK_CONFIG;
 
-        PluginAccumulatorRegistry registry = new PluginAccumulatorRegistry(ctx);
+        return withPluginAccumulatorRegistry(customFrameworkCfg, pluginAccRegistry);
+    }
 
-        return Frameworks.newConfigBuilder(customFrameworkCfg)
-            .context(Contexts.chain(customFrameworkCfg.getContext(), Contexts.of(registry)))
+    /** */
+    private FrameworkConfig frameworkCfg(@Nullable QueryContext ctx) {
+        FrameworkConfig customFrameworkCfg = ctx != null ? ctx.unwrap(FrameworkConfig.class) : null;
+
+        if (customFrameworkCfg == null || customFrameworkCfg == frameworkCfg)
+            return frameworkCfg;
+
+        if (customFrameworkCfg.getContext().unwrap(PluginAccumulatorRegistry.class) != null)
+            return customFrameworkCfg;
+
+        return withPluginAccumulatorRegistry(customFrameworkCfg, pluginAccRegistry);
+    }
+
+    /** */
+    private static FrameworkConfig withPluginAccumulatorRegistry(
+        FrameworkConfig cfg,
+        PluginAccumulatorRegistry registry
+    ) {
+        return Frameworks.newConfigBuilder(cfg)
+            .context(Contexts.chain(cfg.getContext(), Contexts.of(registry)))
             .build();
     }
 }

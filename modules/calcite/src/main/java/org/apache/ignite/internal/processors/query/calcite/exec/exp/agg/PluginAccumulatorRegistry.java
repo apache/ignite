@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.exp.agg;
 
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.typedef.F;
@@ -60,7 +61,7 @@ public class PluginAccumulatorRegistry {
 
         for (AccumulatorFactoryProvider extension : extensions) {
             for (Map.Entry<String, AccumulatorSupplierFactory<?>> e : extension.factories().entrySet()) {
-                String aggFunName = e.getKey();
+                String aggFunName = e.getKey().trim().toUpperCase(Locale.ROOT);
 
                 if (aggFunName.isBlank())
                     throw new AssertionError("Invalid aggregate function name: " + aggFunName);
