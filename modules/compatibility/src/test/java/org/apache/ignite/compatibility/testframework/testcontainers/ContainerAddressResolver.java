@@ -29,7 +29,7 @@ import org.apache.ignite.configuration.AddressResolver;
  */
 public class ContainerAddressResolver implements AddressResolver {
     /** Prefix of the system property that holds the external {@code host:port} for a given bound port. */
-    public static final String EXT_ADDR_PROP_PREFIX = "external.address.";
+    static final String EXT_ADDR_PROP_PREFIX = "external.address.";
 
     /** {@inheritDoc} */
     @Override public Collection<InetSocketAddress> getExternalAddresses(InetSocketAddress addr) {

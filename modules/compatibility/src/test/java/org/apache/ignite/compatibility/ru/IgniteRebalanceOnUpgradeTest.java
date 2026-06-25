@@ -21,10 +21,10 @@ import java.io.File;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -53,15 +53,15 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** Smoke test for rolling upgrade with persistence. */
 public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
-    /** Node IDs. */
-    private static final List<String> NODE_IDS = List.of(
+    /** Consistent ID's. */
+    private static final List<String> CONSISTENT_IDS = List.of(
         "ad26bff6-5ff5-49f1-9a61-425a827953ed",
         "c1099d16-e7d7-49f4-925c-53329286c444",
         "7b880b69-8a9e-4b84-b555-250d365e2e67"
     );
 
-    /** Source commit hash. */
-    private static final String SOURCE_COMMIT_HASH = "f239499b"; //"6b172a8b";
+    /** Source commit hash. Used for docker image tag. */
+    private static final String SOURCE_COMMIT_HASH = "f239499b";
 
     /** Cache name. */
     private static final String CACHE_NAME = "ru-test-cache";
@@ -69,22 +69,19 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
     /** Local work directory. */
     private static final File LOCAL_WORK_DIR = new File(LOCAL_WORK_DIR_PATH);
 
-    /** Thin client. */
-    private IgniteClient client;
-
-    /** */
+    /** Local nodes. */
     private final List<IgniteEx> nodes = new ArrayList<>();
 
-    /** */
+    /** Consistent ID -> discovery address. */
     private final Map<String, String> addrs = new HashMap<>();
+
+    /** Thin client. */
+    private IgniteClient client;
 
     /** */
     @BeforeClass
     public static void beforeClass() {
         U.delete(LOCAL_WORK_DIR);
-
-        System.setProperty("java.net.preferIPv4Stack", "true");
-        System.setProperty("java.net.preferIPv6Addresses", "false");
     }
 
     /** */
@@ -106,11 +103,11 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
     /** Basic RU test. */
     @Test
     public void testRollingUpgrade() throws Exception {
-        try (IgniteClusterContainer cluster = new IgniteClusterContainer(SOURCE_COMMIT_HASH, NODE_IDS)) {
+        try (IgniteClusterContainer cluster = new IgniteClusterContainer(SOURCE_COMMIT_HASH, CONSISTENT_IDS)) {
             cluster.start();
 
             for (IgniteContainer container : cluster.containers())
-                addrs.put(container.nodeId(), container.discoveryAddress());
+                addrs.put(container.consistentId(), container.discoveryAddress());
 
             ClientCacheConfiguration cfg = new ClientCacheConfiguration()
                 .setName(CACHE_NAME)
@@ -143,21 +140,21 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
     /** */
     private void upgradeCluster(IgniteClusterContainer srcCluster) throws Exception {
         for (IgniteContainer container : srcCluster.containers()) {
-            log.info(">>> Upgrade node=" + container.nodeId());
+            log.info(">>> Upgrade node=" + container.consistentId());
 
             String hostIp = container.execInContainer("sh", "-c",
                 "getent ahostsv4 host.docker.internal | awk '{print $1}' | head -1").getStdout().trim();
 
             container.stop();
 
-            addrs.remove(container.nodeId());
+            addrs.remove(container.consistentId());
 
-            IgniteEx ignite = startGrid(configuration(container.nodeId(), container.localWorkDirectory(), addrs.values(), hostIp));
+            IgniteEx ignite = startGrid(configuration(container.consistentId(), container.localWorkDirectory(), addrs.values(), hostIp));
 
-            waitForCondition(() -> NODE_IDS.size() == ignite.cluster().nodes().size(), DFLT_TEST_TIMEOUT);
+            waitForCondition(() -> CONSISTENT_IDS.size() == ignite.cluster().nodes().size(), DFLT_TEST_TIMEOUT);
 
             // Already-upgraded host nodes live in this JVM on localhost within the discovery port range.
-            addrs.put(container.nodeId(), "127.0.0.1:48500..48599");
+            addrs.put(container.consistentId(), "127.0.0.1:48500..48599");
 
             nodes.add(ignite);
         }
@@ -178,10 +175,8 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
             // host-reachable 127.0.0.1:<published-port> (advertised by the containers) is tried.
             .setSocketTimeout(1000)
             .setNetworkTimeout(20000)
-            .setAckTimeout(5000)
             .setJoinTimeout(30000)
-            .setLocalPort(48500)
-            .setLocalPortRange(100);
+            .setLocalPort(48500);
 
         // Bind communication to loopback (discovery stays on 0.0.0.0 to satisfy Ignite's non-loopback join
         // check) so the node advertises only 127.0.0.1 + the resolver-mapped Docker host address -- no
@@ -211,9 +206,9 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
                 // communication (47100+) ranges; map them all to the Docker host address so the containers
                 // can reach every host JVM node.
                 if ((port >= 48500 && port < 48600) || (port >= 49100 && port < 49200))
-                    return Collections.singleton(new InetSocketAddress(ip, port));
+                    return Set.of(new InetSocketAddress(ip, port));
 
-                return Collections.singleton(addr);
+                return Set.of(addr);
             })
             .setCommunicationSpi(commSpi);
     }

@@ -24,12 +24,14 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.util.Arrays;
+import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.compatibility.testframework.plugins.TestCompatibilityPluginProvider;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -51,11 +53,11 @@ import static org.testcontainers.utility.MountableFile.forHostPath;
 /** Ignite container. */
 public class IgniteContainer extends GenericContainer<IgniteContainer> {
     /** Property for local work directory. */
-    static final String LOCAL_WORK_DIR_PROP = "local.work.dir";
+    private static final String LOCAL_WORK_DIR_PROP = "local.work.dir";
 
     /** Local work directory. */
     public static final String LOCAL_WORK_DIR_PATH = System.getProperty(LOCAL_WORK_DIR_PROP,
-        System.getProperty("user.home") + "/test-ignite-work");
+        System.getProperty("user.dir") + "/target/test-ignite-work");
 
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger(IgniteContainer.class);
@@ -84,24 +86,30 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
     /** Base host port for the published thin-client port (node index added). */
     private static final int CLIENT_HOST_PORT_BASE = 50800;
 
-    /** Jar holding {@link ContainerAddressResolver}, injected so the old image can load it. */
-    private static volatile File resolverJar;
+    /** Custom classes used by node in containers. */
+    private static final List<String> TEST_CLASSES = List.of(
+        ContainerAddressResolver.class.getName(),
+        TestCompatibilityPluginProvider.class.getName()
+    );
+
+    /** Jar holding {@link #TEST_CLASSES}, injected so the old image can load it. */
+    private static volatile File testClassesJar;
 
     /** Hostname. */
     private final String hostname;
 
-    /** Node ID. */
-    private final String nodeId;
+    /** Consistent ID. */
+    private final String consistentId;
 
     /** Path to work directory. */
     private final String workDirPath;
 
     /** Constructor. */
-    public IgniteContainer(String commitHash, Network net, String hostname, String nodeId, int idx) throws IOException {
+    public IgniteContainer(String commitHash, Network net, String hostname, String consistentId, int idx) throws IOException {
         super(DockerImageName.parse("apacheignite/ignite:" + commitHash));
 
         this.hostname = hostname;
-        this.nodeId = nodeId;
+        this.consistentId = consistentId;
         workDirPath = WORK_DIR_PATH + "/" + hostname;
 
         int discoHostPort = DISCO_HOST_PORT_BASE + idx;
@@ -109,25 +117,27 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
 
         withEnv("CONFIG_URI", "file://" + CFG_PATH);
         withEnv("IGNITE_QUIET", "false");
-        withEnv("IGNITE_NODE_NAME", nodeId);
         withEnv("IGNITE_WORK_DIR", workDirPath);
         withEnv("IGNITE_LOCAL_HOST", "0.0.0.0");
         withEnv("TZ", ZoneId.systemDefault().toString());
 
         // On macOS the host JVM cannot reach container-internal addresses, so each node advertises its
         // host-published discovery/communication ports (127.0.0.1:hostPort) via ContainerAddressResolver.
-        // node.consistent.id pins the node's consistent id (and thus its persistence folder) to nodeId so the
+        // node.consistent.id pins the node's consistent id (and thus its persistence folder) to consistentId so the
         // upgraded host node, started with the same consistent id, inherits this node's persisted data.
-        withEnv("JVM_OPTS", "-Xms512m -Xmx1g" + " -Dnode.consistent.id=" + nodeId
+        withEnv("JVM_OPTS", "-Xms512m -Xmx1g" + " -Dnode.consistent.id=" + consistentId
             + " -D" + EXT_ADDR_PROP_PREFIX + TcpDiscoverySpi.DFLT_PORT + "=127.0.0.1:" + discoHostPort
             + " -D" + EXT_ADDR_PROP_PREFIX + TcpCommunicationSpi.DFLT_PORT + "=127.0.0.1:" + commHostPort);
 
         withFileSystemBind(LOCAL_WORK_DIR_PATH, WORK_DIR_PATH, BindMode.READ_WRITE);
         withCopyFileToContainer(forClasspathResource("docker/test-config.xml"), CFG_PATH);
-        withCopyFileToContainer(forHostPath(resolverJar().getAbsolutePath()), ROOT_DIR_PATH + "libs/container-addr-resolver.jar");
+        withCopyFileToContainer(forHostPath(testClassesJar().getAbsolutePath()), ROOT_DIR_PATH + "libs/test-classes.jar");
 
         withNetwork(net);
         withNetworkAliases(hostname);
+
+        // Stream container logs to stdout so they appear in the IDE test runner.
+        withLogConsumer(frame -> System.out.println("[" + consistentId + "] " + frame.getUtf8String().trim()));
 
         // Fixed host ports so the host JVM node can target each container deterministically.
         addFixedExposedPort(CLIENT_HOST_PORT_BASE + idx, ClientConnectorConfiguration.DFLT_PORT);
@@ -163,9 +173,9 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
         super.stop();
     }
 
-    /** @return Node ID. */
-    public String nodeId() {
-        return nodeId;
+    /** @return Consistent ID. */
+    public String consistentId() {
+        return consistentId;
     }
 
     /** */
@@ -249,35 +259,38 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
         return result.getStdout();
     }
 
-    /** @return Jar with {@link ContainerAddressResolver}, built once and reused for all containers. */
-    private static File resolverJar() throws IOException {
-        File jar = resolverJar;
+    /** @return Jar with {@link #TEST_CLASSES}, built once and reused for all containers. */
+    private static File testClassesJar() throws IOException {
+        File jar = testClassesJar;
 
         if (jar != null)
             return jar;
 
         synchronized (IgniteContainer.class) {
-            if (resolverJar != null)
-                return resolverJar;
+            if (testClassesJar != null)
+                return testClassesJar;
 
-            String clsPath = ContainerAddressResolver.class.getName().replace('.', '/') + ".class";
-
-            jar = File.createTempFile("container-addr-resolver", ".jar");
+            jar = File.createTempFile("test-classes", ".jar");
             jar.deleteOnExit();
 
-            try (InputStream in = IgniteContainer.class.getClassLoader().getResourceAsStream(clsPath);
-                 JarOutputStream out = new JarOutputStream(new FileOutputStream(jar))) {
-                if (in == null)
-                    throw new IOException("Resolver class not found on classpath: " + clsPath);
+            try (JarOutputStream out = new JarOutputStream(new FileOutputStream(jar))) {
+                for (String cls : TEST_CLASSES) {
+                    String clsPath = cls.replace('.', '/') + ".class";
 
-                out.putNextEntry(new JarEntry(clsPath));
+                    try (InputStream in = IgniteContainer.class.getClassLoader().getResourceAsStream(clsPath)) {
+                        if (in == null)
+                            throw new IOException("Class not found on classpath: " + clsPath);
 
-                in.transferTo(out);
+                        out.putNextEntry(new JarEntry(clsPath));
 
-                out.closeEntry();
+                        in.transferTo(out);
+
+                        out.closeEntry();
+                    }
+                }
             }
 
-            return resolverJar = jar;
+            return testClassesJar = jar;
         }
     }
 }

@@ -1269,7 +1269,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         // Do not give own loopback to avoid requesting current node.
         if (!node.equals(locNode))
-            addrs.removeIf(addr -> addr.getAddress() == null || addr.getAddress().isLoopbackAddress() && locNode.socketAddresses().contains(addr));
+            addrs.removeIf(addr -> addr.getAddress().isLoopbackAddress() && locNode.socketAddresses().contains(addr));
 
         addrs.sort(U.inetAddressesComparator(sameHost));
 
