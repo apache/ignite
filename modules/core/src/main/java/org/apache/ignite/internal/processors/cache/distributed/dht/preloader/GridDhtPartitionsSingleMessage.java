@@ -31,7 +31,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.CacheMarshallableMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -39,7 +39,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * Sent in response to {@link GridDhtPartitionsSingleRequest} and during processing partitions exchange future.
  */
-public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMessage implements MarshallableMessage {
+public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMessage implements CacheMarshallableMessage {
     /** Local partitions. */
     @Order(0)
     @Compress

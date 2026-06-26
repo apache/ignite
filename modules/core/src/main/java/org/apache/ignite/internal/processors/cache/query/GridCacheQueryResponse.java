@@ -32,13 +32,13 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.CacheMarshallableMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Page of cache query response.
  */
-public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCacheDeployable, MarshallableMessage, DeployableMessage {
+public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCacheDeployable, CacheMarshallableMessage, DeployableMessage {
     /** */
     @Order(0)
     boolean finished;
