@@ -91,7 +91,7 @@ public class GridToStringNodeFactory {
                     getGridToStringNode(childPropName, () -> fd.longField(obj), () -> long.class);
             case GridToStringFieldDescriptor.FIELD_TYPE_DOUBLE ->
                     getGridToStringNode(childPropName, () -> fd.doubleField(obj), () -> double.class);
-            default -> new GridToStringValueNode(childPropName, "toString is not implemented yet");
+            default -> throw new IllegalStateException("Unexpected field descriptor type: " + fd.type());
         };
     }
 
