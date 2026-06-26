@@ -345,18 +345,14 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     public void testRemoteHttpCfgUrlAllowedWhenFlagSet() {
         final String url = CFG_URL_PREFIX + "http://127.0.0.1:1/nonexistent.xml";
 
-        GridTestUtils.assertThrows(
-            log,
-            new Callable<Object>() {
-                @Override
-                public Object call() throws Exception {
-                    try (Connection conn = DriverManager.getConnection(url)) {
-                        return conn;
-                    }
-                }
-            },
-            SQLException.class,
-            null
-        );
+        try {
+            DriverManager.getConnection(url);
+        }
+        catch (SQLException e) {
+            assertFalse(
+                "Security exception should not be thrown when flag is enabled",
+                e.getMessage().contains("Remote Spring configuration URLs")
+            );
+        }
     }
 }
