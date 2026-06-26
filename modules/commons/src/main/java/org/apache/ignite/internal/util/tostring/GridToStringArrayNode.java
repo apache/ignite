@@ -55,7 +55,7 @@ class GridToStringArrayNode extends NodeRecursionMonitor {
             nodes = new GridToStringNode[Math.min(COLLECTION_LIMIT, srcArrLength)];
             for (int i = 0; i < nodes.length; i++) {
                 Object child = Array.get(arr, i);
-                nodes[i] = getGridToStringNode(null, () -> child, child::getClass);
+                nodes[i] = getGridToStringNode(null, () -> child, () -> child.getClass());
             }
         }
         finally {
