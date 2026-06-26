@@ -39,14 +39,14 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.CacheMarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Lite dht cache backup update request.
  */
-public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateRequest implements CacheMarshallableMessage, DeployableMessage {
+public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateRequest implements MarshallableMessage, DeployableMessage {
     /** Keys to update. */
     @GridToStringInclude
     @Order(0)

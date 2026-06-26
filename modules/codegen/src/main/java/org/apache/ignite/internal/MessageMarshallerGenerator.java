@@ -69,19 +69,19 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     private final TypeMirror cacheGroupIdMsgMirror;
 
     /** */
+    private final TypeMirror gridCacheMessageMirror;
+
+    /** */
     private final TypeMirror mapMirror;
 
     /** */
     private final TypeMirror collectionMirror;
 
     /** */
-    private final TypeMirror cacheMarshallableMsgType;
-
-    /** */
     private boolean marshallable;
 
-    /** */
-    private boolean cacheMarshallable;
+    /** Whether the message is a {@code GridCacheMessage} subtype, i.e. received via the cache deployment path. */
+    private boolean cacheMsg;
 
     /** */
     private boolean hasMarshalled;
@@ -94,12 +94,12 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         super(env);
 
         marshallableMsgType = type(MARSHALLABLE_MESSAGE_INTERFACE);
-        cacheMarshallableMsgType = type("org.apache.ignite.plugin.extensions.communication.CacheMarshallableMessage");
         messageMirror = type(MESSAGE_INTERFACE);
         cacheObjectMirror = type("org.apache.ignite.internal.processors.cache.CacheObject");
         nonMarshallableMirror = type("org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage");
         cacheIdAwareMirror = type("org.apache.ignite.plugin.extensions.communication.CacheIdAware");
         cacheGroupIdMsgMirror = type("org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage");
+        gridCacheMessageMirror = type("org.apache.ignite.internal.processors.cache.GridCacheMessage");
         mapMirror = type("java.util.Map");
         collectionMirror = type("java.util.Collection");
     }
@@ -118,7 +118,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     @Override void generateBody(List<VariableElement> fields) throws Exception {
         enclosed = enclosedFields();
         marshallable = marshallableMsgType != null && assignableFrom(type.asType(), marshallableMsgType);
-        cacheMarshallable = cacheMarshallableMsgType != null && assignableFrom(type.asType(), cacheMarshallableMsgType);
+        cacheMsg = gridCacheMessageMirror != null && assignableFrom(type.asType(), gridCacheMessageMirror);
         hasMarshalled = enclosed.values().stream().anyMatch(f -> f.getAnnotation(Marshalled.class) != null);
 
         indent = 1;
@@ -267,9 +267,9 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         appendFields(body, fields, mode, wireFieldSkip);
 
         if (marshallable) {
-            if (mode == MarshalMode.FINISH_CACHE && cacheMarshallable)
+            if (mode == MarshalMode.FINISH_CACHE)
                 appendBlock(body, List.of(indentedLine("msg.finishUnmarshal(marshaller, clsLdr);")));
-            else if (mode == MarshalMode.FINISH && !cacheMarshallable)
+            else if (mode == MarshalMode.FINISH && !cacheMsg)
                 appendBlock(body, List.of(indentedLine("msg.finishUnmarshal(marshaller, U.resolveClassLoader(kctx.config()));")));
         }
 
