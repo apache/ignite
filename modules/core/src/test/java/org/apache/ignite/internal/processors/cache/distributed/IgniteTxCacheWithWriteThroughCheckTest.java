@@ -226,9 +226,6 @@ public class IgniteTxCacheWithWriteThroughCheckTest extends GridCommonAbstractTe
         assertEquals(secondVal, nodeBackup.cache(DEFAULT_CACHE_NAME).get(primaryKey));
 
         if (withPersistence) {
-            for (Ignite ignite : G.allGrids())
-                forceCheckpoint(ignite);
-
             // Check value after restart.
             stopAllGrids();
             startGridsMultiThreaded(3);
