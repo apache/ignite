@@ -31,6 +31,7 @@ public class Snapshots {
         //tag::config[]
         IgniteConfiguration cfg = new IgniteConfiguration();
 
+        // Any directory the Ignite process can write to (example value).
         File exSnpDir = new File("work", "ex_snapshots");
 
         cfg.setSnapshotPath(exSnpDir.getAbsolutePath());
