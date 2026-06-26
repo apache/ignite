@@ -365,9 +365,11 @@ public class JavaThinClient {
         try (IgniteClient client = Ignition.startClient(cfg)) {
             ClientCache<Integer, String> cache = client.cache("myCache");
             // Put, get or remove data from the cache...
-            cache.put(0, "Hello, world!");
-            // The partition number can be specified with IndexQuery#setPartition(Integer) as well.
-            ScanQuery scanQuery = new ScanQuery().setPartition(0);
+
+            // Route the scan query to a node that owns the specified partition.
+            ScanQuery<Integer, String> scanQuery = new ScanQuery<Integer, String>().setPartition(0);
+
+            cache.query(scanQuery);
         } catch (ClientException e) {
             System.err.println(e.getMessage());
         }
