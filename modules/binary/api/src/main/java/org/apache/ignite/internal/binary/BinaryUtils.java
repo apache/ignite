@@ -86,6 +86,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.platform.PlatformType;
 import org.jetbrains.annotations.Nullable;
@@ -3117,6 +3118,25 @@ public class BinaryUtils {
         }
 
         return null;
+    }
+
+    /**
+     * Creates a binary context with default (empty) configuration for the given marshaller.
+     *
+     * @param marsh Binary marshaller (may be {@code null}).
+     * @return Binary context instance.
+     */
+    public static BinaryContext binaryContext(BinaryMarshaller marsh) {
+        return binaryContext(
+            cachingMetadataHandler(),
+            marsh,
+            null,
+            null,
+            new BinaryConfiguration(),
+            Collections.emptyMap(),
+            BinaryUtils::affinityFieldName,
+            NullLogger.INSTANCE
+        );
     }
 
     /**
