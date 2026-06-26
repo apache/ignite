@@ -151,7 +151,7 @@ public class IgniteCacheAtomicFullSyncPartialUpdateAllTest extends GridCommonAbs
                 return null;
             },
             CachePartialUpdateCheckedException.class,
-            "Failed to update keys (retry update if possible).: [" + NODE_1_SECOND_KEY + ']'
+            "Failed to update keys (retry update if possible) [failedKeys=[" + NODE_1_SECOND_KEY + "]]"
         );
     }
 

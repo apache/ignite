@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -29,7 +30,9 @@ import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
@@ -159,7 +162,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
         // Workaround for initial update job metadata.
         grid(0).compute().affinityRun(
             Arrays.asList(Person.class.getSimpleName(), Organization.class.getSimpleName()),
-            new Integer(orgIds.get(0)),
+            orgIds.get(0),
             new NotReservedCacheOpAffinityRun(0, 0, cacheName));
 
         // Run restart threads: start re-balancing
@@ -175,7 +178,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
                         try {
                             grid(0).compute().affinityRun(
                                 Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
-                                new Integer(i),
+                                i,
                                 new NotReservedCacheOpAffinityRun(i, key.getAndIncrement() * KEYS_CNT, cacheName));
                         }
                         catch (IgniteException e) {
@@ -228,7 +231,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
                         try {
                             grid(0).compute().affinityRun(
                                 Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
-                                new Integer(i),
+                                i,
                                 new ReservedPartitionCacheOpAffinityRun(i, key.getAndIncrement() * KEYS_CNT));
                         }
                         catch (IgniteException e) {
@@ -312,8 +315,14 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
             log.info("Begin run " + keyBegin);
             IgniteCache cache = ignite.cache(cacheName);
 
-            for (int i = 0; i < KEYS_CNT; ++i)
-                cache.put(i + keyBegin, i + keyBegin);
+            for (int i = 0; i < KEYS_CNT; ++i) {
+                try {
+                    cache.put(i + keyBegin, i + keyBegin);
+                }
+                catch (CacheException e) {
+                    assertTrue(X.hasCause(e, NodeStoppingException.class));
+                }
+            }
 
             log.info("End run " + keyBegin);
         }
@@ -356,7 +365,13 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
 
             for (int i = 0; i < KEYS_CNT; ++i) {
                 Person p = new Person(i + keyBegin, orgId);
-                cache.put(p.createKey(), p);
+
+                try {
+                    cache.put(p.createKey(), p);
+                }
+                catch (CacheException e) {
+                    assertTrue(X.hasCause(e, NodeStoppingException.class));
+                }
             }
         }
     }

@@ -46,11 +46,13 @@ import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlResponse;
 import org.apache.ignite.internal.processors.query.running.GridRunningQueryInfo;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -59,6 +61,7 @@ import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
+import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
 
 /**
  * Tests for distributed DML.
@@ -89,6 +92,8 @@ public class IgniteSqlSkipReducerOnUpdateDmlSelfTest extends AbstractIndexingCom
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
+
+        c.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
         List<CacheConfiguration> ccfgs = new ArrayList<>();
 
@@ -434,7 +439,11 @@ public class IgniteSqlSkipReducerOnUpdateDmlSelfTest extends AbstractIndexingCom
             }
         }, 5000));
 
+        spi(grid(NODE_COUNT + 1)).blockMessages((n, m) -> m instanceof GridH2DmlResponse);
+
         latch.countDown();
+
+        spi(grid(NODE_COUNT + 1)).waitForBlocked();
 
         stopGrid(NODE_COUNT + 1);
 
