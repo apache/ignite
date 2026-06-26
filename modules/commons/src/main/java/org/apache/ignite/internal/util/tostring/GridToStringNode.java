@@ -47,6 +47,9 @@ abstract class GridToStringNode {
     /** Inner buffer. For inner calls. */
     StringBuilder innerBuf = new StringBuilder(0);
 
+    /** Previously calculated result. */
+    String previouslyCalculatedResult;
+
     /**
      * Base constructor.
      * @param propName The name of the property.
@@ -85,7 +88,7 @@ abstract class GridToStringNode {
      * @return The marker string.
      */
     static String markNode(GridToStringNode node) {
-        String result = node.toString();
+        String result = new String(node.toString());
         identities()
                 .orElseThrow()
                 .put(result, node);
@@ -163,10 +166,12 @@ abstract class GridToStringNode {
      * @return The string representation of the node.
      */
     @Override public String toString() {
+        if (previouslyCalculatedResult != null)
+            return previouslyCalculatedResult;
         SBLimitedLength sb = new SBLimitedLength(256);
         sb.initLimit(new SBLengthLimit());
         appendNode(sb);
-        return sb.toString();
+        return previouslyCalculatedResult = sb.toString();
     }
 
     /** Retrieves identity hash map if it was initialized earlier

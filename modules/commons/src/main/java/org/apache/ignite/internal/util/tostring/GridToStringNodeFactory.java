@@ -157,6 +157,8 @@ public class GridToStringNodeFactory {
                 .map(cache -> cache.remove(candidate))
                 .map(result -> {
                     result.propName = propName;
+                    if (result.previouslyCalculatedResult != null)
+                        result.previouslyCalculatedResult = propName + "=" + result.previouslyCalculatedResult;
                     return result;
                 })
                 .orElseGet(() -> new GridToStringValueNode(propName, candidate));
