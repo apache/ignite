@@ -16,8 +16,6 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
-//CHECKSTYLE:OFF
-
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
@@ -1444,4 +1442,3 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         return methodCall;
     }
 }
-//CHECKSTYLE:ON
