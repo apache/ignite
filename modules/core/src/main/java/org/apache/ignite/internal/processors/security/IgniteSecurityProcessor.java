@@ -29,7 +29,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.security.sandbox.AccessControllerSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.NoOpSandbox;
@@ -236,8 +235,6 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         super.start();
-
-        ctx.operationContextDispatcher().registerDistributedAttribute(0, GridDiscoveryManager.SEC_OP_CTX_ATTR);
 
         ctx.addNodeAttribute(ATTR_GRID_SEC_PROC_CLASS, secPrc.getClass().getName());
 

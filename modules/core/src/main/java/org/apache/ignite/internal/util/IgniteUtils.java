@@ -8132,6 +8132,8 @@ public abstract class IgniteUtils extends CommonUtils {
      * @param msg Message.
      */
     public static DiscoveryCustomMessage unwrapCustomMessage(DiscoverySpiCustomMessage msg) {
+        assert msg instanceof DiscoveryCustomMessage;
+
         return (DiscoveryCustomMessage)msg;
     }
 }
