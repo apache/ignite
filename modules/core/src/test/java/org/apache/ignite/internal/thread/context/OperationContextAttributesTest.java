@@ -877,14 +877,16 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
             @Override public void start(PluginContext ctx) {
                 GridKernalContext kctx = ((IgniteEx)ctx.grid()).context();
 
-                kctx.operationContextDispatcher().registerDistributedAttribute(0, dAttr1);
+                int dAttr1Id = OperationContextDispatcher.MAX_ATTRS_CNT - 2;
+                int dAttr2Id = OperationContextDispatcher.MAX_ATTRS_CNT - 1;
 
-                kctx.operationContextDispatcher().registerDistributedAttribute(OperationContextDispatcher.MAX_ATTRS_CNT - 1, dAttr2);
+                kctx.operationContextDispatcher().registerDistributedAttribute(dAttr1Id, dAttr1);
+                kctx.operationContextDispatcher().registerDistributedAttribute(dAttr2Id, dAttr2);
 
                 assertThrowsAnyCause(
                     log,
                     () -> {
-                        kctx.operationContextDispatcher().registerDistributedAttribute(0, otherTestAttr);
+                        kctx.operationContextDispatcher().registerDistributedAttribute(dAttr2Id, otherTestAttr);
                         return null;
 
                     }, IgniteException.class,
