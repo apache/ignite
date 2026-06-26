@@ -1158,6 +1158,8 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             // All components exept Discovery are started, time to check if maintenance is still needed.
             mntcProc.prepareAndExecuteMaintenance();
 
+            operationCtxDispatcher.finishRegistration();
+
             gw.writeLock();
 
             try {
@@ -1169,8 +1171,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             finally {
                 gw.writeUnlock();
             }
-
-            operationCtxDispatcher.finishRegistration();
 
             startTimer.finishGlobalStage("Join topology");
 
