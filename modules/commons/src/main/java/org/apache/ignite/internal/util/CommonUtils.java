@@ -79,6 +79,7 @@ import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheClassLoaderMarker;
+import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -2353,5 +2354,48 @@ public abstract class CommonUtils {
         ));
 
         return sqlClasses;
+    }
+
+    /**
+     * Unwraps closure exceptions.
+     *
+     * @param t Exception.
+     * @return Unwrapped exception.
+     */
+    public static Exception unwrap(Throwable t) {
+        assert t != null;
+
+        while (true) {
+            if (t instanceof Error)
+                throw (Error)t;
+
+            if (t instanceof GridClosureException) {
+                t = ((GridClosureException)t).unwrap();
+
+                continue;
+            }
+
+            return (Exception)t;
+        }
+    }
+
+    /**
+     * Casts the passed {@code Throwable t} to {@link IgniteCheckedException}.<br>
+     * If {@code t} is a {@link GridClosureException}, it is unwrapped and then cast to {@link IgniteCheckedException}.
+     * If {@code t} is an {@link IgniteCheckedException}, it is returned.
+     * If {@code t} is not a {@link IgniteCheckedException}, a new {@link IgniteCheckedException} caused by {@code t}
+     * is returned.
+     *
+     * @param t Throwable to cast.
+     * @return {@code t} cast to {@link IgniteCheckedException}.
+     */
+    public static IgniteCheckedException cast(Throwable t) {
+        assert t != null;
+
+        t = unwrap(t);
+
+        return t instanceof IgniteCheckedException
+            ? (IgniteCheckedException)t
+            : new IgniteCheckedException(t);
     }
 }
