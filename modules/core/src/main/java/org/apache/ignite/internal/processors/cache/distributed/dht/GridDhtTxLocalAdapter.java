@@ -756,7 +756,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
         IgniteInternalFuture<Boolean> fut = dhtCache.lockAllAsyncInternal(passedKeys,
             timeout,
-            waitTimeout == 0 ? timeout : waitTimeout,
+            waitTimeout,
             this,
             isInvalidate(),
             read,
@@ -771,9 +771,9 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
         return new GridEmbeddedFuture<>(
             fut,
-            new PLC1<GridCacheReturn>(ret, true, !waitTimeoutExpiresFirst(waitTimeout, timeout)) {
+            new PLC1<GridCacheReturn>(ret, true, !CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout)) {
                 @Override protected GridCacheReturn postLock(GridCacheReturn ret) throws IgniteCheckedException {
-                    assert fut.error() == null;
+                    assert fut.error() == null : "Lock future completed with an error: " + fut.error();
 
                     boolean success = Boolean.TRUE.equals(fut.get());
 
@@ -796,22 +796,13 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                             accessTtl,
                             CU.empty0(),
                             /*computeInvoke*/false,
-                            /*skipIfLockLost*/waitTimeoutExpiresFirst(waitTimeout, timeout));
+                            /*skipIfLockLost*/CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout));
                     }
 
                     return ret;
                 }
             }
         );
-    }
-
-    /**
-     * @param waitTimeout Lock wait timeout.
-     * @param timeout Transaction timeout.
-     * @return {@code True} if separate lock wait timeout expires before transaction timeout.
-     */
-    private static boolean waitTimeoutExpiresFirst(long waitTimeout, long timeout) {
-        return timeout >= 0 && (timeout == 0 ? waitTimeout != 0 : timeout > waitTimeout);
     }
 
     /** {@inheritDoc} */

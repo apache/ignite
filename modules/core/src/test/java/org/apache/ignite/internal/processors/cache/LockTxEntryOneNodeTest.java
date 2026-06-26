@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
@@ -37,9 +36,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionTimeoutException;
-import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -55,10 +52,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 @RunWith(Parameterized.class)
 public class LockTxEntryOneNodeTest extends GridCommonAbstractTest {
-    /** Global test timeout. */
-    @ClassRule
-    public static Timeout globalTimeout = new Timeout(30, TimeUnit.SECONDS);
-
     /** */
     private static final int KEY = 1;
 
@@ -161,6 +154,11 @@ public class LockTxEntryOneNodeTest extends GridCommonAbstractTest {
         ignite.destroyCache(DEFAULT_CACHE_NAME);
 
         super.afterTest();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 30_000;
     }
 
     /**
@@ -301,6 +299,45 @@ public class LockTxEntryOneNodeTest extends GridCommonAbstractTest {
         }
 
         assertEquals(INIT_VAL, cache.get(KEY).intValue());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testLockTxEntryReturnsFalseForLockedKeyAndTrueForOtherKey() throws Exception {
+        int otherKey = KEY + 1;
+
+        cache.put(otherKey, INIT_VAL);
+
+        CacheEntry<Integer, Integer> entry = cache.getEntry(KEY);
+        CacheEntry<Integer, Integer> otherEntry = cache.getEntry(otherKey);
+
+        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+            assertTrue(acquireLockForEntry(entry, 0));
+
+            IgniteInternalFuture<Void> lockFut = GridTestUtils.runAsync(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+                        assertFalse(acquireLockForEntry(entry, -1));
+                        assertTrue(acquireLockForEntry(otherEntry, -1));
+
+                        if (commit)
+                            tx.commit();
+                    }
+
+                    return null;
+                }
+            });
+
+            lockFut.get(10_000);
+
+            if (commit)
+                tx.commit();
+        }
+
+        assertEquals(INIT_VAL, cache.get(KEY).intValue());
+        assertEquals(INIT_VAL, cache.get(otherKey).intValue());
     }
 
     /**

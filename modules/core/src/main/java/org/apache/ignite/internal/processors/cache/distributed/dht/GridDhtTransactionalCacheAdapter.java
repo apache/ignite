@@ -1112,7 +1112,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                         @Override public GridNearLockResponse apply(Boolean b, Exception e) {
                             if (e != null)
                                 e = U.unwrap(e);
-                            else if (!b && !waitTimeoutExpiresFirst(req.waitTimeout(), req.timeout()))
+                            else if (!b && !CU.isWaitTimeoutExpiresFirst(req.waitTimeout(), req.timeout()))
                                 e = new GridCacheLockTimeoutException(req.version());
 
                             boolean lockAcquired = e != null || b;
@@ -1203,15 +1203,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
     }
 
     /**
-     * @param waitTimeout Lock wait timeout.
-     * @param timeout Transaction timeout.
-     * @return {@code True} if separate lock wait timeout expires before transaction timeout.
-     */
-    private static boolean waitTimeoutExpiresFirst(long waitTimeout, long timeout) {
-        return timeout >= 0 && (timeout == 0 ? waitTimeout != 0 : timeout > waitTimeout);
-    }
-
-    /**
      * @param nearNode Near node.
      * @param entries Entries.
      * @param req Lock request.
@@ -1282,7 +1273,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 boolean ownsLock = e.lockedBy(mappedVer) ||
                                     ctx.mvcc().isRemoved(e.context(), mappedVer);
 
-                                if (!ownsLock && waitTimeoutExpiresFirst(req.waitTimeout(), req.timeout())) {
+                                if (!ownsLock && CU.isWaitTimeoutExpiresFirst(req.waitTimeout(), req.timeout())) {
                                     res.lockAcquired(false);
 
                                     return res;

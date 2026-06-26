@@ -452,7 +452,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
             if (log.isDebugEnabled())
                 log.debug("Failed to acquire lock with negative timeout: " + entry);
 
-            if (waitTimeoutExpiresFirst())
+            if (CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout))
                 onComplete(false, false, false, false);
             else
                 onFailed();
@@ -643,7 +643,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                     if (lockTimeout() < 0) {
                         if (owners == null || !owners.hasCandidate(lockVer)) {
                             // We did not send any requests yet.
-                            if (waitTimeoutExpiresFirst())
+                            if (CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout))
                                 onComplete(false, false, false, false);
                             else
                                 onFailed();
@@ -761,7 +761,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                     this.err = err;
             }
 
-            if (!success && err == null && waitTimeoutExpiresFirst())
+            if (!success && err == null && CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout))
                 return onComplete(false, false, false, false);
 
             return onComplete(success, err instanceof NodeStoppingException, true);
@@ -1197,14 +1197,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
      * @return Timeout value for this lock future.
      */
     private long lockTimeout() {
-        return waitTimeoutExpiresFirst() ? waitTimeout : timeout;
-    }
-
-    /**
-     * @return {@code True} if separate lock wait timeout expires before transaction timeout.
-     */
-    private boolean waitTimeoutExpiresFirst() {
-        return timeout >= 0 && (timeout == 0 ? waitTimeout != 0 : timeout > waitTimeout);
+        return CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout) ? waitTimeout : timeout;
     }
 
     /**
@@ -1240,7 +1233,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                 clear();
             }
 
-            if (waitTimeoutExpiresFirst())
+            if (CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout))
                 onComplete(false, false, false, false);
             else {
                 boolean releaseLocks = !(inTx() && cctx.tm().deadlockDetectionEnabled());

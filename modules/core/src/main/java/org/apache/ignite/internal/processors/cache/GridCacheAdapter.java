@@ -3152,7 +3152,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         IgniteInternalFuture<Boolean> lockFut = txLockAsync(keys,
             timeout,
-            waitTimeout == 0 ? timeout : waitTimeout,
+            waitTimeout,
             tx,
             /*isRead*/true,
             /*retval*/false,

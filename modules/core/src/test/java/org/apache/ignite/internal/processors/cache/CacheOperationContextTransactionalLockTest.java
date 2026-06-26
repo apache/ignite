@@ -88,6 +88,12 @@ public class CacheOperationContextTransactionalLockTest extends GridCommonAbstra
         assertTxEntryFlags(internalCache().withKeepBinaryInInterceptor(), false, false, true, false);
     }
 
+    /** Checks propagation of the keep-binary flag. */
+    @Test
+    public void testKeepBinaryOperationContext() throws Exception {
+        assertTxEntryFlags(internalCache().keepBinary(), false, false, true, true);
+    }
+
     /**
      * Locks a versioned entry and checks flags stored in its transaction entry.
      *
@@ -129,7 +135,7 @@ public class CacheOperationContextTransactionalLockTest extends GridCommonAbstra
 
     /** Returns the cache's internal proxy. */
     @SuppressWarnings("unchecked")
-    private IgniteInternalCache<Integer, Integer> internalCache() {
+    private static IgniteInternalCache<Integer, Integer> internalCache() {
         return cache.unwrap(IgniteCacheProxy.class).internalProxy();
     }
 }

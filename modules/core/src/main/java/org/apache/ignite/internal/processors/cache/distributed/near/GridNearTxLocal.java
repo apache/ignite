@@ -4308,9 +4308,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         return new GridEmbeddedFuture<>(
             fut,
-            new PLC1<GridCacheReturn>(ret, false, !waitTimeoutExpiresFirst(waitTimeout, timeout)) {
+            new PLC1<GridCacheReturn>(ret, false, !CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout)) {
                 @Override protected GridCacheReturn postLock(GridCacheReturn ret) throws IgniteCheckedException {
-                    assert fut.error() == null;
+                    assert fut.error() == null : "Lock future completed with an error: " + fut.error();
 
                     boolean success = Boolean.TRUE.equals(fut.get());
 
@@ -4327,15 +4327,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 }
             }
         );
-    }
-
-    /**
-     * @param waitTimeout Lock wait timeout.
-     * @param timeout Transaction timeout.
-     * @return {@code True} if separate lock wait timeout expires before transaction timeout.
-     */
-    private static boolean waitTimeoutExpiresFirst(long waitTimeout, long timeout) {
-        return timeout >= 0 && (timeout == 0 ? waitTimeout != 0 : timeout > waitTimeout);
     }
 
     /** {@inheritDoc} */

@@ -1032,7 +1032,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 txRead,
                 retval,
                 timeout,
-                waitTimeout == 0 ? timeout : waitTimeout,
+                waitTimeout,
                 tx,
                 threadId,
                 createTtl,
@@ -1086,7 +1086,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                     @Override public Exception apply(Boolean b, Exception e) {
                         if (e != null)
                             e = U.unwrap(e);
-                        else if (!b && !waitTimeoutExpiresFirst(waitTimeout, timeout))
+                        else if (!b && !CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout))
                             e = new GridCacheLockTimeoutException(ver);
 
                         return e;
@@ -1127,15 +1127,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 },
                 txFut);
         }
-    }
-
-    /**
-     * @param waitTimeout Lock wait timeout.
-     * @param timeout Transaction timeout.
-     * @return {@code True} if separate lock wait timeout expires before transaction timeout.
-     */
-    private static boolean waitTimeoutExpiresFirst(long waitTimeout, long timeout) {
-        return timeout >= 0 && (timeout == 0 ? waitTimeout != 0 : timeout > waitTimeout);
     }
 
     /**

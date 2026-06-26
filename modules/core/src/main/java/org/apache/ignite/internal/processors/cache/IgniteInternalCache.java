@@ -1355,6 +1355,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      *      lock cannot be acquired immediately).
      * @return {@code True} if lock was acquired with the same entry version.
      * @throws IgniteCheckedException If lock acquisition resulted in an error.
+     * @throws NullPointerException If entry is {@code null}.
      */
     public boolean lockTxEntry(CacheEntry<K, V> entry, long waitTimeout) throws IgniteCheckedException;
 
@@ -1369,6 +1370,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      *      locks cannot be acquired immediately).
      * @return {@code True} if all locks were acquired with the same entry versions.
      * @throws IgniteCheckedException If lock acquisition resulted in an error.
+     * @throws NullPointerException If entries is {@code null}.
      */
     public boolean lockTxEntries(Collection<CacheEntry<K, V>> entries, long waitTimeout) throws IgniteCheckedException;
 
@@ -1383,6 +1385,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      *      lock cannot be acquired immediately).
      * @return Future that resolves to {@code true} if the lock was acquired and the versions matched, or to
      *      {@code false} otherwise.
+     * @throws NullPointerException If entry is {@code null}.
      */
     public IgniteInternalFuture<Boolean> lockTxEntryAsync(CacheEntry<K, V> entry, long waitTimeout);
 
@@ -1397,6 +1400,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      *      locks cannot be acquired immediately).
      * @return Future that resolves to {@code true} if all locks were acquired and all versions matched, or to
      *      {@code false} otherwise.
+     * @throws NullPointerException If entries is {@code null}.
      */
     public IgniteInternalFuture<Boolean> lockTxEntriesAsync(Collection<CacheEntry<K, V>> entries, long waitTimeout);
 

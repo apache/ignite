@@ -632,7 +632,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             if (err != null)
                 success = false;
 
-            if (!success && err == null && waitTimeoutExpiresFirst())
+            if (!success && err == null && CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout))
                 return onComplete(false, true, false);
 
             return onComplete(success, true);
@@ -1504,14 +1504,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      * @return Timeout value for this lock future.
      */
     private long lockTimeout() {
-        return waitTimeoutExpiresFirst() ? waitTimeout : timeout;
-    }
-
-    /**
-     * @return {@code True} if separate lock wait timeout expires before transaction timeout.
-     */
-    private boolean waitTimeoutExpiresFirst() {
-        return timeout >= 0 && (timeout == 0 ? waitTimeout != 0 : timeout > waitTimeout);
+        return CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout) ? waitTimeout : timeout;
     }
 
     /**
@@ -1533,7 +1526,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             if (log.isDebugEnabled())
                 log.debug("Timed out waiting for lock response: " + this);
 
-            if (waitTimeoutExpiresFirst()) {
+            if (CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout)) {
                 synchronized (GridDhtColocatedLockFuture.this) {
                     requestedKeys = requestedKeys0();
 

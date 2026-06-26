@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -33,9 +32,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -48,10 +45,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 @RunWith(Parameterized.class)
 public class CacheVersionedEntryTransactionalLockTest extends GridCommonAbstractTest {
-    /** Global test timeout. */
-    @ClassRule
-    public static Timeout globalTimeout = new Timeout(120, TimeUnit.SECONDS);
-
     /** */
     private static Ignite ignite0;
 
@@ -146,6 +139,11 @@ public class CacheVersionedEntryTransactionalLockTest extends GridCommonAbstract
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setConsistentId(igniteInstanceName);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 120_000;
     }
 
     /**
