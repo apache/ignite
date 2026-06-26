@@ -158,8 +158,8 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
 
             for (int i = 1; i <= SPLIT_COUNT; i++) {
                 jobs.add(new ComputeJobAdapter(i) {
-                    @Override @SuppressWarnings({"UnconditionalWait"})
-                    public Serializable execute() {
+                    @SuppressWarnings({"UnconditionalWait"})
+                    @Override public Serializable execute() {
                         assert taskSes != null;
 
                         if (log.isInfoEnabled())

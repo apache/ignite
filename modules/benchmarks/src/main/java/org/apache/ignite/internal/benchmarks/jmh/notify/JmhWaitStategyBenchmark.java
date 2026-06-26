@@ -106,6 +106,7 @@ public class JmhWaitStategyBenchmark extends JmhCacheAbstractBenchmark {
 
     /** Decreasing expiry policy. */
     private static final ExpiryPolicy DECREASING_EXPIRY_POLICY = new ExpiryPolicy() {
+        /** */
         AtomicLong duration = new AtomicLong(1_000_000_000);
 
         @Override public Duration getExpiryForCreation() {
@@ -123,6 +124,7 @@ public class JmhWaitStategyBenchmark extends JmhCacheAbstractBenchmark {
 
     /** Increasing expiry policy. */
     private static final ExpiryPolicy INCREASING_EXPIRY_POLICY = new ExpiryPolicy() {
+        /** */
         AtomicLong duration = new AtomicLong(1_000_000);
 
         @Override public Duration getExpiryForCreation() {
