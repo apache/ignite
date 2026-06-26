@@ -21,7 +21,10 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import jakarta.transaction.RollbackException;
 import jakarta.transaction.SystemException;
 import jakarta.transaction.Transaction;
@@ -33,26 +36,25 @@ import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
 /**
- * Narayana TransactionManager wrapper that attempts to simulate JOTM-style suspend/resume.
+ * Narayana TransactionManager wrapper that simulates JOTM-style suspend/resume.
  * <p>
- * <b>Important limitation:</b> Narayana 7.x does NOT support proper suspend/resume like JOTM did.
- * Narayana's thread-local management (Arjuna ThreadAction) does not restore the transaction context
- * after resume() in a way that Ignite's cache transaction can detect. The suspend/resume tests
- * in {@link org.apache.ignite.internal.processors.cache.GridJtaTransactionManagerSelfTest}
- * are therefore ignored when using Narayana.
- * <p>
- * This wrapper still provides basic pass-through functionality for non-suspend/resume operations.
+ * Each wrapper instance has its own state (not shared between parallel tests).
  */
 public class NarayanaTransactionManagerWrapper implements TransactionManager {
     /** Narayana TransactionManager. */
     private final com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionManagerImple delegate;
 
-    /** Tracks whether current thread has suspended transaction. */
-    private static final ThreadLocal<Boolean> SUSPENDED = ThreadLocal.withInitial(() -> false);
+    /** CacheJtaManager reference for suspend/resume support (instance, not shared). */
+    private Object cacheJtaManager;
 
-    /** Saved (XAResource, TxInfo, Xid) pairs from last suspend. */
-    private static final ThreadLocal<List<ResourceTxInfoPair>> SUSPENDED_RESOURCES =
-        ThreadLocal.withInitial(ArrayList::new);
+    /** Tracks whether current thread has suspended transaction. */
+    private final ThreadLocal<Boolean> suspended = ThreadLocal.withInitial(() -> false);
+
+    /** Stores saved XA resources per suspended JTA Transaction (instance). */
+    private final Map<Transaction, List<ResourceTxInfoPair>> txResourceMap = new ConcurrentHashMap<>();
+
+    /** Stores saved Ignite CacheJtaResource per suspended JTA Transaction (instance). */
+    private final Map<Transaction, SavedIgniteContext> txIgniteMap = new ConcurrentHashMap<>();
 
     /** Narayana TransactionImple._resources field (Hashtable<XAResource, TxInfo>). */
     private static final Field RESOURCES_FIELD;
@@ -96,6 +98,19 @@ public class NarayanaTransactionManagerWrapper implements TransactionManager {
         }
     }
 
+    /** Saved Ignite context for a suspended transaction. */
+    private static class SavedIgniteContext {
+        final Object cacheJtaResource;
+        final Object cacheTx;
+        final long originalThreadId;
+
+        SavedIgniteContext(Object cacheJtaResource, Object cacheTx, long originalThreadId) {
+            this.cacheJtaResource = cacheJtaResource;
+            this.cacheTx = cacheTx;
+            this.originalThreadId = originalThreadId;
+        }
+    }
+
     /**
      * @param delegate Narayana TransactionManager to wrap.
      */
@@ -105,12 +120,21 @@ public class NarayanaTransactionManagerWrapper implements TransactionManager {
     }
 
     /**
+     * Sets the CacheJtaManager reference for suspend/resume support.
+     * @param manager CacheJtaManager instance
+     */
+    public void setCacheJtaManager(Object manager) {
+        cacheJtaManager = manager;
+    }
+
+    /**
      * Calls end(TMSUSPEND) and removes resources from Narayana's internal map.
      */
     @SuppressWarnings("unchecked")
-    private void saveAndRemoveResources(com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionImple tx) {
-        List<ResourceTxInfoPair> saved = SUSPENDED_RESOURCES.get();
-        saved.clear();
+    private void saveAndRemoveResources(
+        Transaction jtaTx,
+        com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionImple tx) {
+        List<ResourceTxInfoPair> saved = new ArrayList<>();
         try {
             Hashtable<XAResource, Object> resources = (Hashtable<XAResource, Object>) RESOURCES_FIELD.get(tx);
             if (resources != null && !resources.isEmpty()) {
@@ -139,14 +163,25 @@ public class NarayanaTransactionManagerWrapper implements TransactionManager {
             }
         }
         catch (Exception ignored) {}
+
+        txResourceMap.put(jtaTx, saved);
+
+        // Save Ignite CacheJtaResource
+        saveIgniteCacheJtaResource(jtaTx);
     }
 
     /**
      * Restores resources and calls start(TMRESUME).
      */
     @SuppressWarnings("unchecked")
-    private void restoreResourcesAndResume(com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionImple tx) {
-        List<ResourceTxInfoPair> saved = SUSPENDED_RESOURCES.get();
+    private void restoreResourcesAndResume(
+        Transaction jtaTx,
+        com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionImple tx) {
+        List<ResourceTxInfoPair> saved = txResourceMap.remove(jtaTx);
+        if (saved == null) {
+            return;
+        }
+
         try {
             Hashtable<XAResource, Object> resources = (Hashtable<XAResource, Object>) RESOURCES_FIELD.get(tx);
             for (ResourceTxInfoPair pair : saved) {
@@ -160,7 +195,6 @@ public class NarayanaTransactionManagerWrapper implements TransactionManager {
             }
         }
         catch (Exception ignored) {}
-        saved.clear();
     }
 
     @Override public void setRollbackOnly() throws IllegalStateException, SecurityException, SystemException {
@@ -176,7 +210,7 @@ public class NarayanaTransactionManagerWrapper implements TransactionManager {
     }
 
     @Override public Transaction getTransaction() throws SystemException {
-        if (Boolean.TRUE.equals(SUSPENDED.get())) {
+        if (Boolean.TRUE.equals(suspended.get())) {
             return null;
         }
         return delegate.getTransaction();
@@ -184,46 +218,192 @@ public class NarayanaTransactionManagerWrapper implements TransactionManager {
 
     @Override public void begin() throws NotSupportedException, SystemException {
         delegate.begin();
-        SUSPENDED.remove();
-        SUSPENDED_RESOURCES.remove();
+        if (!Boolean.TRUE.equals(suspended.get())) {
+            suspended.remove();
+        }
     }
 
     @Override public void commit() throws RollbackException, HeuristicMixedException, HeuristicRollbackException,
         SecurityException, IllegalStateException, SystemException {
         delegate.commit();
-        SUSPENDED.remove();
-        SUSPENDED_RESOURCES.remove();
+        suspended.remove();
     }
 
     @Override public void rollback() throws IllegalStateException, SecurityException, SystemException {
         delegate.rollback();
-        SUSPENDED.remove();
-        SUSPENDED_RESOURCES.remove();
+        suspended.remove();
     }
 
     @Override public Transaction suspend() throws SystemException {
         Transaction tx = delegate.getTransaction();
         if (tx instanceof com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionImple) {
-            saveAndRemoveResources((com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionImple) tx);
+            saveAndRemoveResources(tx, (com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionImple) tx);
+        }
+        else {
+            saveIgniteCacheJtaResource(tx);
         }
 
-        Transaction suspended = delegate.suspend();
-        if (suspended != null) {
-            SUSPENDED.set(true);
+        Transaction suspendedTx = delegate.suspend();
+        if (suspendedTx != null) {
+            suspended.set(true);
         }
-        return suspended;
+        return suspendedTx;
     }
 
     @Override public void resume(Transaction tobj) throws jakarta.transaction.InvalidTransactionException,
         IllegalStateException, SystemException {
         delegate.resume(tobj);
 
+        // Restore XA resources first
         Transaction currentTx = delegate.getTransaction();
         if (currentTx instanceof com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionImple) {
-            restoreResourcesAndResume((com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionImple) currentTx);
+            restoreResourcesAndResume(tobj, (com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionImple) currentTx);
         }
 
-        SUSPENDED.remove();
-        SUSPENDED_RESOURCES.remove();
+        // Restore Ignite context — must be done for the calling thread
+        restoreIgniteCacheJtaResource(tobj);
+
+        suspended.remove();
+    }
+
+    /**
+     * Saves Ignite's CacheJtaManager.rsrc ThreadLocal before suspend, keyed by JTA Transaction.
+     */
+    @SuppressWarnings("unchecked")
+    private void saveIgniteCacheJtaResource(Transaction jtaTx) {
+        if (cacheJtaManager == null) {
+            return;
+        }
+        try {
+            Field rsrcField = cacheJtaManager.getClass().getDeclaredField("rsrc");
+            rsrcField.setAccessible(true);
+            ThreadLocal<Object> rsrc = (ThreadLocal<Object>) rsrcField.get(cacheJtaManager);
+            Object cacheJtaResource = rsrc.get();
+
+            if (cacheJtaResource != null) {
+                // Get cacheTx
+                Field cacheTxField = cacheJtaResource.getClass().getDeclaredField("cacheTx");
+                cacheTxField.setAccessible(true);
+                Object cacheTx = cacheTxField.get(cacheJtaResource);
+
+                // Get original threadId via public method threadId()
+                Method threadIdMethod = cacheTx.getClass().getMethod("threadId");
+                long originalThreadId = (Long) threadIdMethod.invoke(cacheTx);
+
+                txIgniteMap.put(jtaTx, new SavedIgniteContext(cacheJtaResource, cacheTx, originalThreadId));
+
+                // Remove from CacheJtaManager.rsrc so checkJta won't reuse it
+                rsrc.remove();
+            }
+        }
+        catch (Exception ignored) {
+            // Not critical — may not have Ignite context in some tests
+        }
+    }
+
+    /**
+     * Restores Ignite's CacheJtaManager.rsrc ThreadLocal, threadMap, and threadCtx after resume.
+     */
+    @SuppressWarnings("unchecked")
+    private void restoreIgniteCacheJtaResource(Transaction jtaTx) {
+        if (cacheJtaManager == null) {
+            return;
+        }
+        SavedIgniteContext ctx = txIgniteMap.get(jtaTx);
+        if (ctx == null) {
+            return;
+        }
+
+        try {
+            // Restore rsrc ThreadLocal in CacheJtaManager
+            Field rsrcField = cacheJtaManager.getClass().getDeclaredField("rsrc");
+            rsrcField.setAccessible(true);
+            ThreadLocal<Object> rsrc = (ThreadLocal<Object>) rsrcField.get(cacheJtaManager);
+            rsrc.set(ctx.cacheJtaResource);
+
+            // Navigate to IgniteTxManager
+            Class<?> clazz = cacheJtaManager.getClass();
+            while (clazz != null && !clazz.getName().contains("GridCacheSharedManagerAdapter")) {
+                clazz = clazz.getSuperclass();
+            }
+            if (clazz == null) {
+                return;
+            }
+
+            Field cctxField = clazz.getDeclaredField("cctx");
+            cctxField.setAccessible(true);
+            Object cctx = cctxField.get(cacheJtaManager);
+
+            Method tmMethod = cctx.getClass().getMethod("tm");
+            Object tm = tmMethod.invoke(cctx);
+
+            // Restore threadCtx ThreadLocal (IgniteTxManager.threadCtx)
+            Field threadCtxField = tm.getClass().getDeclaredField("threadCtx");
+            threadCtxField.setAccessible(true);
+            ThreadLocal<Object> threadCtx = (ThreadLocal<Object>) threadCtxField.get(tm);
+            threadCtx.set(ctx.cacheTx);
+
+            // Restore threadMap — essential for threadLocalTx() to find the tx
+            Field threadMapField = tm.getClass().getDeclaredField("threadMap");
+            threadMapField.setAccessible(true);
+            Object threadMap = threadMapField.get(tm);
+            long currentThreadId = Thread.currentThread().getId();
+
+            // Update threadId on the transaction
+            Method threadIdMethod = ctx.cacheTx.getClass().getMethod("threadId", long.class);
+            threadIdMethod.invoke(ctx.cacheTx, currentThreadId);
+
+            // Put into current thread
+            Method putMethod = threadMap.getClass().getMethod("put", Object.class, Object.class);
+            putMethod.invoke(threadMap, currentThreadId, ctx.cacheTx);
+        }
+        catch (Exception ignored) {
+            // Not critical
+        }
+    }
+
+    /**
+     * Cleans up all saved state after commit/rollback.
+     */
+    private void cleanupAll() {
+        // Clean up Ignite context and remove threadMap entries
+        if (cacheJtaManager != null) {
+            for (SavedIgniteContext ctx : txIgniteMap.values()) {
+                try {
+                    Class<?> clazz = cacheJtaManager.getClass();
+                    while (clazz != null && !clazz.getName().contains("GridCacheSharedManagerAdapter")) {
+                        clazz = clazz.getSuperclass();
+                    }
+                    if (clazz != null) {
+                        Field cctxField = clazz.getDeclaredField("cctx");
+                        cctxField.setAccessible(true);
+                        Object cctx = cctxField.get(cacheJtaManager);
+
+                        Method tmMethod = cctx.getClass().getMethod("tm");
+                        Object tm = tmMethod.invoke(cctx);
+
+                        // Remove from threadMap
+                        Field threadMapField = tm.getClass().getDeclaredField("threadMap");
+                        threadMapField.setAccessible(true);
+                        Object threadMap = threadMapField.get(tm);
+
+                        Method removeMethod = threadMap.getClass().getMethod("remove", Object.class);
+                        removeMethod.invoke(threadMap, ctx.cacheTx);
+
+                        // Clear threadCtx
+                        Field threadCtxField = tm.getClass().getDeclaredField("threadCtx");
+                        threadCtxField.setAccessible(true);
+                        ThreadLocal<Object> threadCtx = (ThreadLocal<Object>) threadCtxField.get(tm);
+                        if (threadCtx.get() == ctx.cacheTx) {
+                            threadCtx.remove();
+                        }
+                    }
+                }
+                catch (Exception ignored) {}
+            }
+        }
+
+        txIgniteMap.clear();
+        txResourceMap.clear();
     }
 }

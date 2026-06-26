@@ -31,7 +31,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.internal.processors.cache.jta.NarayanaTransactionManagerWrapper;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -46,8 +45,13 @@ import static org.apache.ignite.transactions.TransactionState.ACTIVE;
  */
 @RunWith(Parameterized.class)
 public class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
-    /** Narayana TransactionManager (wrapped for proper suspend/resume). */
-    private static NarayanaTransactionManagerWrapper narayanaTm;
+    /**
+     * Thread-local Narayana wrapper so each test thread (OPTIMISTIC/PESSIMISTIC) 
+     * gets its own TransactionManager and doesn't interfere with the other.
+     */
+    private static final ThreadLocal<NarayanaTransactionManagerWrapper> narayanaTm = 
+        ThreadLocal.withInitial(() -> new NarayanaTransactionManagerWrapper(
+            new com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionManagerImple()));
 
     /** Narayana UserTransaction. */
     private static UserTransaction narayanaUt;
@@ -81,28 +85,29 @@ public class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        narayanaTm = new NarayanaTransactionManagerWrapper(
-            new com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionManagerImple());
         narayanaUt = new com.arjuna.ats.internal.jta.transaction.arjunacore.UserTransactionImple();
 
         startGrid();
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+        // Initialize CacheJtaManager for the per-thread wrapper
+        narayanaTm.get().setCacheJtaManager(grid().context().cache().context().jta());
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        if (narayanaTm != null) {
-            Transaction tx = narayanaTm.getTransaction();
+        NarayanaTransactionManagerWrapper tm = narayanaTm.get();
+        if (tm != null) {
+            Transaction tx = tm.getTransaction();
             if (tx != null && tx.getStatus() == Status.STATUS_ACTIVE)
-                narayanaTm.rollback();
+                tm.rollback();
         }
     }
 
-    /**
-     * Narayana 7.x does not support suspend/resume like JOTM.
-     * No open-source JTA implementation with Jakarta API provides JOTM-style suspend/resume.
-     * Atomikos 6.x is commercial, Bitronix is dead (no Jakarta support).
-     */
-    @Ignore("Narayana 7.x does not support JOTM-style suspend/resume")
+    /** */
     @Test
     public void testJtaTxContextSwitch() throws Exception {
         for (TransactionIsolation isolation : TransactionIsolation.values()) {
@@ -111,7 +116,7 @@ public class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
             cfg.setDefaultTxConcurrency(txConcurrency);
             cfg.setDefaultTxIsolation(isolation);
 
-            TransactionManager jtaTm = narayanaTm;
+            TransactionManager jtaTm = narayanaTm.get();
 
             IgniteCache<Integer, String> cache = jcache();
 
@@ -178,12 +183,7 @@ public class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    /**
-     * Narayana 7.x does not support suspend/resume like JOTM.
-     * No open-source JTA implementation with Jakarta API provides JOTM-style suspend/resume.
-     * Atomikos 6.x is commercial, Bitronix is dead (no Jakarta support).
-     */
-    @Ignore("Narayana 7.x does not support JOTM-style suspend/resume")
+    /** */
     @Test
     public void testJtaTxContextSwitchWithExistingTx() throws Exception {
         for (TransactionIsolation isolation : TransactionIsolation.values()) {
@@ -192,7 +192,7 @@ public class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
             cfg.setDefaultTxConcurrency(txConcurrency);
             cfg.setDefaultTxIsolation(isolation);
 
-            TransactionManager jtaTm = narayanaTm;
+            TransactionManager jtaTm = narayanaTm.get();
 
             IgniteCache<Integer, String> cache = jcache();
 
@@ -246,7 +246,7 @@ public class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public TransactionManager create() {
-            return narayanaTm;
+            return narayanaTm.get();
         }
     }
 }
