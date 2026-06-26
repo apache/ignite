@@ -34,7 +34,6 @@ import org.apache.ignite.internal.managers.communication.SessionChannelMessage;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentResponse;
-import org.apache.ignite.internal.managers.discovery.SecurityAwareCustomMessageWrapper;
 import org.apache.ignite.internal.managers.encryption.ChangeCacheEncryptionRequest;
 import org.apache.ignite.internal.managers.encryption.EncryptionDataBagItem;
 import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyRequest;
@@ -238,6 +237,7 @@ import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultRe
 import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeNodeData;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureSet;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteProductFeatures;
+import org.apache.ignite.internal.processors.security.SecurityContextMessage;
 import org.apache.ignite.internal.processors.service.ServiceChangeBatchRequest;
 import org.apache.ignite.internal.processors.service.ServiceClusterDeploymentResult;
 import org.apache.ignite.internal.processors.service.ServiceClusterDeploymentResultBatch;
@@ -436,7 +436,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(FullMessage.class);
         withNoSchema(InitMessage.class);
         withNoSchema(CacheStatisticsModeChangeMessage.class);
-        withNoSchema(SecurityAwareCustomMessageWrapper.class);
+        ++msgIdx; // Former SecurityAwareCustomMessageWrapper
         withNoSchema(MetadataRemoveAcceptedMessage.class);
         withNoSchema(MetadataRemoveProposedMessage.class);
         withNoSchema(WalStateFinishMessage.class);
@@ -605,12 +605,14 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         // [11500 - 11600]:  IO, networking messages.
         msgIdx = NODE_ID_MSG_TYPE;
         withNoSchema(NodeIdMessage.class);
+        msgIdx = HANDSHAKE_MSG_TYPE;
         withNoSchema(HandshakeMessage.class);
+        msgIdx = HANDSHAKE_WAIT_MSG_TYPE;
         withNoSchema(HandshakeWaitMessage.class);
         withNoSchema(GridIoMessage.class);
         withNoSchema(IgniteIoTestMessage.class);
         withSchema(GridIoUserMessage.class);
-        ++msgIdx; // Former GridIoSecurityAwareMessage.
+        withSchema(GridIoSecurityAwareMessage.class);
         withNoSchema(RecoveryLastReceivedMessage.class);
         withNoSchema(TcpInverseConnectionResponseMessage.class);
         withNoSchema(SessionChannelMessage.class);
@@ -687,10 +689,10 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         // [13400 - 13500]: Operation context messages.
         msgIdx = 13400;
         withNoSchema(OperationContextMessage.class);
-        withNoSchema(SecuritySubjectMessage.class);
+        withNoSchema(SecurityContextMessage.class);
 
-        // [13500 - 13600]: Rolling Upgrade messages.
-        msgIdx = 13500;
+        // [13600 - 13700]: Rolling Upgrade messages.
+        msgIdx = 13600;
         withNoSchema(IgniteFeatureSet.class);
         withNoSchema(IgniteProductFeatures.class);
         withNoSchema(RollingUpgradeNodeData.class);

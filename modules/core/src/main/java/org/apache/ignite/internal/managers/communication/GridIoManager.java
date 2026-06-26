@@ -83,8 +83,6 @@ import org.apache.ignite.internal.IgniteDeploymentCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.OperationContexMessage;
-import org.apache.ignite.internal.OperationContextAttributeType;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
@@ -99,12 +97,14 @@ import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccess
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
-import org.apache.ignite.internal.processors.security.SecuritySubjectMessage;
+import org.apache.ignite.internal.processors.security.IgniteSecurityProcessor;
+import org.apache.ignite.internal.processors.security.SecurityContextMessage;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.processors.tracing.SpanTags;
+import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -1319,7 +1319,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
                     assert obj != null;
 
-                    invokeListener(msg.policy(), lsnr, nodeId, obj, secSubjId(msg));
+                    invokeListener(msg.policy(), lsnr, nodeId, obj);
                 }
                 finally {
                     threadProcessingMessage(false, null);
@@ -1457,7 +1457,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
         assert obj != null;
 
-        invokeListener(msg.policy(), lsnr, nodeId, obj, secSubjId(msg));
+        invokeListener(msg.policy(), lsnr, nodeId, obj);
     }
 
     /**
@@ -1821,9 +1821,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
      * @param lsnr Listener.
      * @param nodeId Node ID.
      * @param msg Message.
-     * @param secSubjId Security subject that will be used to open a security session.
      */
-    private void invokeListener(Byte plc, GridMessageListener lsnr, UUID nodeId, Object msg, UUID secSubjId) {
+    private void invokeListener(Byte plc, GridMessageListener lsnr, UUID nodeId, Object msg) {
         MTC.span().addLog(() -> "Invoke listener");
 
         Byte oldPlc = CUR_PLC.get();
@@ -1833,7 +1832,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         if (change)
             CUR_PLC.set(plc);
 
-        UUID newSecSubjId = secSubjId != null ? secSubjId : nodeId;
+        SecurityContextMessage secCtxMsg = OperationContext.get(IgniteSecurityProcessor.SEC_CTX_ATTR);
+
+        UUID newSecSubjId = secCtxMsg == null ? nodeId : secCtxMsg.subjId;
 
         try (Scope ignored = ctx.security().withContext(newSecSubjId)) {
             lsnr.onMessage(nodeId, msg, plc);
@@ -2042,18 +2043,16 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
     ) {
         GridIoMessage res;
 
-        if (ctx.security().enabled()) {
-            UUID secSubjId = null;
+        UUID secSubjId = ctx.security().enabled() && !ctx.security().isDefaultContext()
+            ? ctx.security().securityContext().subject().id()
+            : null;
 
-            if (!ctx.security().isDefaultContext())
-                secSubjId = ctx.security().securityContext().subject().id();
+        res = new GridIoMessage(plc, topic, msg, ordered, timeout, skipOnTimeout);
 
-            res = new GridIoSecurityAwareMessage(secSubjId, plc, topic, msg, ordered, timeout, skipOnTimeout);
+        try (Scope ignored = secSubjId == null ? Scope.NOOP_SCOPE
+            : OperationContext.set(IgniteSecurityProcessor.SEC_CTX_ATTR, new SecurityContextMessage(secSubjId))) {
+            res.opCtxMsg = ctx.operationContextDispatcher().collectDistributedAttributes();
         }
-        else
-            res = new GridIoMessage(plc, topic, msg, ordered, timeout, skipOnTimeout);
-
-        res.opCtxMsg = ctx.operationContextDispatcher().collectDistributedAttributes();
 
         return res;
     }
@@ -3811,7 +3810,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
                         MTC.span().addTag(SpanTags.MESSAGE, () -> traceName(fmc.message));
 
-                        invokeListener(plc, lsnr, nodeId, mc.message.message(), secSubjId(mc.message));
+                        invokeListener(plc, lsnr, nodeId, mc.message.message());
                     }
                     finally {
                         if (mc.closure != null)
@@ -4238,19 +4237,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
             return latencyLimit / (1000 * (resLatency.length - 1));
         }
-    }
-
-    /**
-     * @return Security subject id.
-     */
-    private UUID secSubjId(GridIoMessage msg) {
-        if (ctx.security().enabled()) {
-            assert msg instanceof GridIoSecurityAwareMessage;
-
-            return ((GridIoSecurityAwareMessage)msg).securitySubjectId();
-        }
-
-        return null;
     }
 
     /**

@@ -188,7 +188,6 @@ import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.managers.discovery.SecurityAwareCustomMessageWrapper;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
 import org.apache.ignite.internal.processors.cache.CacheDefaultBinaryAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -8116,7 +8115,7 @@ public abstract class IgniteUtils extends CommonUtils {
     /** */
     public static <T extends IgniteDataTransferObject> IgniteDataTransferObjectSerializer<T> loadSerializer(Class<T> cls) {
         try {
-            Class cls0 = IgniteUtils.class.getClassLoader()
+            Class<?> cls0 = IgniteUtils.class.getClassLoader()
                 .loadClass(cls.getPackage().getName() + "." + cls.getSimpleName() + "Serializer");
 
             return (IgniteDataTransferObjectSerializer<T>)cls0.getDeclaredConstructor().newInstance();
@@ -8128,12 +8127,13 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * Unwraps messsage if it is wrapped by {@link SecurityAwareCustomMessageWrapper}.
+     * Unwraps messsage as {@link DiscoveryCustomMessage}.
      *
      * @param msg Message.
      */
-    public static DiscoveryCustomMessage unwrapCustomMessage(DiscoverySpiCustomMessage msg) {
-        return msg instanceof SecurityAwareCustomMessageWrapper ?
-            ((SecurityAwareCustomMessageWrapper)msg).delegate() : (DiscoveryCustomMessage)msg;
+    public static DiscoveryCustomMessage unwrapCustomMessage(@Nullable DiscoverySpiCustomMessage msg) {
+        assert msg == null || msg instanceof DiscoveryCustomMessage;
+
+        return (DiscoveryCustomMessage)msg;
     }
 }

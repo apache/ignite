@@ -22,8 +22,6 @@ import java.util.UUID;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteDiagnosticRequest;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.OperationContexMessage;
-import org.apache.ignite.internal.OperationContextAttributeType;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;

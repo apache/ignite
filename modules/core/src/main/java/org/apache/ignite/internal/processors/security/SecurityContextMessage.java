@@ -17,29 +17,30 @@
 
 package org.apache.ignite.internal.processors.security;
 
-import java.io.Serializable;
 import java.util.UUID;
-import org.apache.ignite.internal.OperationContextAttributeType;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.plugin.security.SecuritySubject;
 
-/** A message for {@link OperationContextAttributeType#SECURITY}. */
-public class SecuritySubjectMessage implements Message, Serializable {
+/**
+ * Message for {@link SecurityContext}.
+ *
+ * @see SecuritySubject
+ * @see OperationContextDispatcher
+ */
+public class SecurityContextMessage implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** Security subject identifier. */
     @Order(0)
-    public @Nullable UUID id;
+    public UUID subjId;
 
-    /** Empty constructor for serialization purposes */
-    public SecuritySubjectMessage() {
+    /** Empty constructor for serialization purposes. */
+    public SecurityContextMessage() {
         // No-op.
     }
 
     /** */
-    public SecuritySubjectMessage(@Nullable UUID id) {
-        this.id = id;
+    public SecurityContextMessage(UUID subjId) {
+        this.subjId = subjId;
     }
 }
