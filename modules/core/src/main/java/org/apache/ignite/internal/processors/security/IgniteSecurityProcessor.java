@@ -24,7 +24,6 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -89,11 +88,8 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
         return SANDBOXED_NODES_COUNTER.get() > 0;
     }
 
-    /** Security Context holder. */
-    private static final AtomicReference<SecurityContext> SEC_CTX = new AtomicReference<>();
-
-    /** Distributed attribute holding Security Context data to resend. */
-    public static final OperationContextAttribute<SecurityContextMessage> SEC_CTX_ATTR = OperationContextAttribute.newInstance();
+    /** Attribute that holds local and distributed Security Context. */
+    public static final OperationContextAttribute<SecurityContextImpl> SEC_CTX_ATTR = OperationContextAttribute.newInstance();
 
     /** Security processor. */
     private final GridSecurityProcessor secPrc;
@@ -130,7 +126,7 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
 
     /** {@inheritDoc} */
     @Override public Scope withContext(SecurityContext secCtx) {
-        return SEC_CTX, secCtx == dfltSecCtx ? null : secCtx);
+        return OperationContext.set(SEC_CTX_ATTR, secCtx == dfltSecCtx ? null : SecurityContextImpl.of(secCtx));
     }
 
     /** {@inheritDoc} */

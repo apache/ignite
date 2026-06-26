@@ -24,6 +24,8 @@ import org.apache.ignite.internal.IgniteDiagnosticRequest;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.thread.context.OperationContext;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -78,10 +80,9 @@ public class IgniteSecurityProcessorTest extends AbstractSecurityTest {
 
         GridIoMessage msg = new GridIoMessage(PUBLIC_POOL, TOPIC_CACHE, new IgniteDiagnosticRequest(), false, 0, false);
 
-        msg.opCtxMsg = OperationContexMessage.enrich(null, OperationContextAttributeType.SECURITY,
-            new SecuritySubjectMessage(UUID.randomUUID()));
-
-        spi.sendMessage(srv.localNode(), msg);
+        try (Scope ignored = OperationContext.set(IgniteSecurityProcessor.SEC_CTX_ATTR, new SecurityContextImpl(UUID.randomUUID()))) {
+            spi.sendMessage(srv.localNode(), msg);
+        }
 
         GridTestUtils.waitForCondition(logPattern::check, getTestTimeout());
     }
