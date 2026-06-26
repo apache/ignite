@@ -17,8 +17,10 @@
 package org.apache.ignite.snippets;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -26,6 +28,7 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
+import org.apache.ignite.cache.query.annotations.QuerySqlTableFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.junit.jupiter.api.Test;
 
