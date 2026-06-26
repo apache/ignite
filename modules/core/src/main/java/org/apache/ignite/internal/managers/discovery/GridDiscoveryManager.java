@@ -88,15 +88,15 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMess
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IGridClusterStateProcessor;
+import org.apache.ignite.internal.processors.security.IgniteSecurityProcessor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
-import org.apache.ignite.internal.processors.security.SecurityContextMessage;
+import org.apache.ignite.internal.processors.security.SecurityContextImpl;
 import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
 import org.apache.ignite.internal.systemview.ClusterNodeViewWalker;
 import org.apache.ignite.internal.systemview.NodeAttributeViewWalker;
 import org.apache.ignite.internal.systemview.NodeMetricsViewWalker;
 import org.apache.ignite.internal.thread.OomExceptionHandler;
 import org.apache.ignite.internal.thread.context.OperationContext;
-import org.apache.ignite.internal.thread.context.OperationContextAttribute;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.thread.context.function.OperationContextAwareWrapper;
 import org.apache.ignite.internal.util.GridAtomicLong;
@@ -191,9 +191,6 @@ import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.NOOP;
  * Discovery SPI manager.
  */
 public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
-    /** */
-    private static final OperationContextAttribute<SecurityContextMessage> SEC_OP_CTX_ATTR = OperationContextAttribute.newInstance();
-    
     /** */
     private static final String PREFIX = "Topology snapshot";
 
@@ -481,8 +478,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        ctx.operationContextDispatcher().registerDistributedAttribute(0, SEC_OP_CTX_ATTR);
-
         ctx.addNodeAttribute(ATTR_OFFHEAP_SIZE, requiredOffheap());
         ctx.addNodeAttribute(ATTR_DATA_REGIONS_OFFHEAP_SIZE, configuredOffheap());
 
@@ -934,7 +929,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 /** */
                 @Override public void run() {
-                    SecurityContextMessage secCtxMsg = OperationContext.get(SEC_OP_CTX_ATTR);
+                    SecurityContextImpl secCtxMsg = OperationContext.get(IgniteSecurityProcessor.SEC_CTX_ATTR);
 
                     if (secCtxMsg != null) {
                         try (Scope ignored = ctx.security().withContext(secCtxMsg.subjId)) {
@@ -2346,7 +2341,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         try (Scope ignored = secSubjId == null
             ? Scope.NOOP_SCOPE
-            : OperationContext.set(SEC_OP_CTX_ATTR, new SecurityContextMessage(secSubjId))
+            : OperationContext.set(IgniteSecurityProcessor.SEC_CTX_ATTR, new SecurityContextImpl(secSubjId))
         ) {
             getSpi().sendCustomEvent(msg);
         }

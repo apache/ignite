@@ -88,8 +88,8 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
         return SANDBOXED_NODES_COUNTER.get() > 0;
     }
 
-    /** Context attribute that holds Security Context. */
-    private static final OperationContextAttribute<SecurityContext> SEC_CTX = OperationContextAttribute.newInstance();
+    /** Attribute that holds local and distributed Security Context. */
+    public static final OperationContextAttribute<SecurityContextImpl> SEC_CTX_ATTR = OperationContextAttribute.newInstance();
 
     /** Security processor. */
     private final GridSecurityProcessor secPrc;
@@ -126,7 +126,7 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
 
     /** {@inheritDoc} */
     @Override public Scope withContext(SecurityContext secCtx) {
-        return OperationContext.set(SEC_CTX, secCtx == dfltSecCtx ? null : secCtx);
+        return OperationContext.set(SEC_CTX_ATTR, secCtx == dfltSecCtx ? null : SecurityContextImpl.of(secCtx));
     }
 
     /** {@inheritDoc} */
@@ -172,12 +172,12 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
 
     /** {@inheritDoc} */
     @Override public boolean isDefaultContext() {
-        return OperationContext.get(SEC_CTX) == null;
+        return OperationContext.get(SEC_CTX_ATTR) == null;
     }
 
     /** {@inheritDoc} */
     @Override public SecurityContext securityContext() {
-        SecurityContext res = OperationContext.get(SEC_CTX);
+        SecurityContext res = OperationContext.get(SEC_CTX_ATTR);
 
         return res == null ? dfltSecCtx : res;
     }
@@ -235,6 +235,8 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         super.start();
+
+        ctx.operationContextDispatcher().registerDistributedAttribute(0, SEC_CTX_ATTR);
 
         ctx.addNodeAttribute(ATTR_GRID_SEC_PROC_CLASS, secPrc.getClass().getName());
 
