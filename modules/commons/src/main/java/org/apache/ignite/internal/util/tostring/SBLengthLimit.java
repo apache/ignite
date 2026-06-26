@@ -59,7 +59,7 @@ class SBLengthLimit {
      * @return {@code True} if this string builder exceeds limit, false otherwise
      */
     boolean overflowed(SBLimitedLength sb) {
-        return sb.impl().length() > getHeadLengthLimit();
+        return sb.length() >= getHeadLengthLimit();
     }
 
     /**
