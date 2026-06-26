@@ -1158,7 +1158,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             // All components exept Discovery are started, time to check if maintenance is still needed.
             mntcProc.prepareAndExecuteMaintenance();
 
-            operationCtxDispatcher.initialized();
+            operationCtxDispatcher.finishRegistration();
 
             gw.writeLock();
 

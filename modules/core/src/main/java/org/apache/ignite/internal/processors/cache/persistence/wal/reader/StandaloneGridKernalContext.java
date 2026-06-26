@@ -177,6 +177,9 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /** Marshaller. */
     private final BinaryMarshaller marsh;
 
+    /** Operation context dispacther. */
+    private final OperationContextDispatcher opCtxDispatcher = new OperationContextDispatcher();
+
     /**
      * @param log Logger.
      * @param ft Node file tree.
@@ -457,7 +460,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public OperationContextDispatcher operationContextDispatcher() {
-        return null;
+        return opCtxDispatcher;
     }
 
     /** {@inheritDoc} */

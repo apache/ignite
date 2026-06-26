@@ -235,7 +235,9 @@ import org.apache.ignite.internal.processors.query.stat.messages.StatisticsReque
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsResponse;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultRequest;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultResponse;
-import org.apache.ignite.internal.processors.security.SecurityContextImpl;
+import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeNodeData;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureSet;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteProductFeatures;
 import org.apache.ignite.internal.processors.service.ServiceChangeBatchRequest;
 import org.apache.ignite.internal.processors.service.ServiceClusterDeploymentResult;
 import org.apache.ignite.internal.processors.service.ServiceClusterDeploymentResultBatch;
@@ -245,6 +247,7 @@ import org.apache.ignite.internal.processors.service.ServiceSingleNodeDeployment
 import org.apache.ignite.internal.processors.service.ServiceSingleNodeDeploymentResultBatch;
 import org.apache.ignite.internal.processors.service.ServiceUndeploymentRequest;
 import org.apache.ignite.internal.util.GridByteArrayList;
+import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.internal.util.distributed.InitMessage;
@@ -362,6 +365,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(WALPointer.class);
         withNoSchemaResolvedClassLoader(SerializableDataBagItemWrapper.class);
         withSchemaResolvedClassLoader(GridTopicMessage.class);
+        withNoSchema(GridIntList.class);
 
         // [5700 - 5900]: Discovery originated messages.
         msgIdx = 5700;
@@ -663,7 +667,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(NodeEncryptionKeys.class);
         withNoSchema(EncryptionDataBagItem.class);
 
-        // [13000 - 13300]: Control, configuration, diagnostincs and other messages.
+        // [13000 - 13300]: Control, configuration, diagnostics and other messages.
         msgIdx = 13000;
         withSchema(GridEventStorageMessage.class);
         withNoSchema(ChangeGlobalStateMessage.class);
@@ -684,6 +688,12 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         msgIdx = 13400;
         withNoSchema(OperationContextMessage.class);
         withNoSchema(SecurityContextImpl.class);
+
+        // [13600 - 13700]: Rolling Upgrade messages.
+        msgIdx = 13600;
+        withNoSchema(IgniteFeatureSet.class);
+        withNoSchema(IgniteProductFeatures.class);
+        withNoSchema(RollingUpgradeNodeData.class);
 
         assert msgIdx <= MAX_MESSAGE_ID;
     }
