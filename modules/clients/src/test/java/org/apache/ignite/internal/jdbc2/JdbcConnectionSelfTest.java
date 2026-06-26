@@ -38,14 +38,10 @@ import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
  * Connection test.
  */
 public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
-    /**
-     * Custom cache name.
-     */
+    /** Custom cache name. */
     private static final String CUSTOM_CACHE_NAME = "custom-cache";
 
-    /**
-     * Grid count.
-     */
+    /** Grid count. */
     private static final int GRID_CNT = 2;
 
     /**
@@ -55,11 +51,8 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
         return "modules/clients/src/test/config/jdbc-config.xml";
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME), cacheConfiguration(CUSTOM_CACHE_NAME));
@@ -80,11 +73,8 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void beforeTestsStarted() throws Exception {
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(GRID_CNT);
     }
 
@@ -136,8 +126,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
         GridTestUtils.assertThrows(
                 log,
                 new Callable<Object>() {
-                    @Override
-                    public Object call() throws Exception {
+                    @Override public Object call() throws Exception {
                         try (Connection conn = DriverManager.getConnection(url)) {
                             return conn;
                         }
@@ -162,8 +151,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
         GridTestUtils.assertThrows(
                 log,
                 new Callable<Object>() {
-                    @Override
-                    public Object call() throws Exception {
+                    @Override public Object call() throws Exception {
                         try (Connection conn = DriverManager.getConnection(url)) {
                             return conn;
                         }
@@ -196,8 +184,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
         GridTestUtils.assertThrows(
                 log,
                 new Callable<Object>() {
-                    @Override
-                    public Object call() throws Exception {
+                    @Override public Object call() throws Exception {
                         try (Connection conn = DriverManager.getConnection(url)) {
                             return conn;
                         }
@@ -226,8 +213,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
             GridTestUtils.assertThrows(
                     log,
                     new Callable<Object>() {
-                        @Override
-                        public Object call() throws Exception {
+                        @Override public Object call() throws Exception {
                             conn.isValid(2);
 
                             return null;
@@ -313,9 +299,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /**
-     * Test that JDBC cfg:// URL with remote HTTP, HTTPS, and FTP location is blocked.
-     */
+    /** Test that JDBC cfg:// URL with remote HTTP, HTTPS, and FTP location is blocked. */
     @Test
     public void testRemoteCfgUrlsAreBlocked() {
         for (String scheme : Arrays.asList("http", "https", "ftp", "ftps")) {
@@ -324,8 +308,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
             GridTestUtils.assertThrows(
                     log,
                     new Callable<Object>() {
-                        @Override
-                        public Object call() throws Exception {
+                        @Override public Object call() throws Exception {
                             try (Connection conn = DriverManager.getConnection(url)) {
                                 return conn;
                             }
@@ -337,9 +320,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /**
-     * Test that JDBC cfg:// URL with remote HTTP location is allowed when system property is set.
-     */
+    /** Test that JDBC cfg:// URL with remote HTTP location is allowed when system property is set. */
     @Test
     @WithSystemProperty(key = "ignite.spring.cfg.allowRemoteUrl", value = "true")
     public void testRemoteHttpCfgUrlAllowedWhenFlagSet() {
