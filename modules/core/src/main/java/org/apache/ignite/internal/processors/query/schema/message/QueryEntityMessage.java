@@ -44,15 +44,15 @@ public class QueryEntityMessage implements MarshallableMessage {
     @Order(1)
     String valType;
 
-    /** Key name. Can be used in field list to denote the key as a whole. */
+    /** Key name. */
     @Order(2)
     String keyFieldName;
 
-    /** Value name. Can be used in field list to denote the entire value. */
+    /** Value name. */
     @Order(3)
     String valFieldName;
 
-    /** Fields available for query. A map from field name to type name. */
+    /** Fields available for query. */
     @Order(4)
     LinkedHashMap<String, String> fields;
 
@@ -72,7 +72,10 @@ public class QueryEntityMessage implements MarshallableMessage {
     @Order(8)
     String tableName;
 
-    /** Fields that must have non-null value. NB: DO NOT remove underscore to avoid clashes with QueryEntityEx. */
+    /**
+     * Fields that must have non-null value.
+     * NB: Used in serde of both QueryEntity and QueryEntityEx in orther to avoid duplication.
+     */
     @Order(9)
     Set<String> notNullFields;
 
@@ -94,9 +97,7 @@ public class QueryEntityMessage implements MarshallableMessage {
     /** */
     public QueryEntityMessage() { }
 
-    /**
-     * @param qryEntity Original {@link QueryEntity}.
-     */
+    /** @param qryEntity Original {@link QueryEntity}. */
     public QueryEntityMessage(QueryEntity qryEntity) {
         keyType = qryEntity.getKeyType();
         valType = qryEntity.getValueType();
@@ -121,9 +122,7 @@ public class QueryEntityMessage implements MarshallableMessage {
         fieldsScale = qryEntity.getFieldsScale();
     }
 
-    /**
-     * @return Original {@link QueryEntity}.
-     */
+    /** @return Original {@link QueryEntity}. */
     public QueryEntity toEntity() {
         return new QueryEntity()
             .setKeyType(keyType)

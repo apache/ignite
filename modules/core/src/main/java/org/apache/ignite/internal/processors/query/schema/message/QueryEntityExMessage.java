@@ -21,9 +21,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
 
-/**
- * Message for {@link QueryEntityEx} transfer.
- */
+/** Message for {@link QueryEntityEx} transfer. */
 public class QueryEntityExMessage extends QueryEntityMessage {
     /** Whether to preserve order specified by 'keyFields' or not. */
     @Order(0)
@@ -71,7 +69,13 @@ public class QueryEntityExMessage extends QueryEntityMessage {
 
     /** {@inheritDoc} */
     @Override public QueryEntity toEntity() {
-        QueryEntityEx qryEntity = new QueryEntityEx(super.toEntity());
+        QueryEntity baseEntity = super.toEntity();
+
+        // We should nullify '_notNullFields' field of base entity,
+        // because 'QueryEntityEx' uses extra 'notNullFields' field for storing of not null fields.
+        baseEntity.setNotNullFields(null);
+
+        QueryEntityEx qryEntity = new QueryEntityEx(baseEntity);
 
         qryEntity.setNotNullFields(notNullFields);
         qryEntity.setPreserveKeysOrder(preserveKeysOrder);
