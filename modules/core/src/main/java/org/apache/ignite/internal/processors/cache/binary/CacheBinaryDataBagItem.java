@@ -15,14 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.typedef.internal;
+package org.apache.ignite.internal.processors.cache.binary;
 
-import org.apache.ignite.internal.util.GridDebug;
+import java.util.Map;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
-/**
- * Convenience alias for {@link GridDebug} class.
- */
-@SuppressWarnings("ExtendsUtilityClass")
-public class D extends GridDebug {
-    // No-op.
+/** */
+public class CacheBinaryDataBagItem implements Message {
+    /** */
+    @Order(0)
+    Map<Integer, BinaryMetadataVersionInfo> meta;
+
+    /** */
+    public CacheBinaryDataBagItem() {}
+
+    /**
+     * @param meta Per-type binary metadata info.
+     */
+    public CacheBinaryDataBagItem(Map<Integer, BinaryMetadataVersionInfo> meta) {
+        this.meta = Map.copyOf(meta);
+    }
 }

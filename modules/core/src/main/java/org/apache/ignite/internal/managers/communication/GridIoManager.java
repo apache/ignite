@@ -457,10 +457,14 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
         ioMetric.register(RCVD_BYTES_CNT, spi::getReceivedBytesCount, "Received bytes count.");
 
-        getSpi().setListener(commLsnr = new CommunicationListenerEx<Object>() {
+        getSpi().setListener(commLsnr = new CommunicationListenerEx<>() {
             @Override public void onMessage(UUID nodeId, Object msg, IgniteRunnable msgC) {
                 try {
-                    onMessage0(nodeId, (GridIoMessage)msg, msgC);
+                    GridIoMessage msg0 = (GridIoMessage)msg;
+
+                    try (Scope ignored = ctx.operationContextDispatcher().restoreDistributedAttributes(msg0.opCtxMsg)) {
+                        onMessage0(nodeId, msg0, msgC);
+                    }
                 }
                 catch (ClassCastException ignored) {
                     U.error(log, "Communication manager received message of unknown type (will ignore): " +
@@ -2036,16 +2040,20 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         long timeout,
         boolean skipOnTimeout
     ) {
-        GridIoMessage res = new GridIoMessage(plc, topic, msg, ordered, timeout, skipOnTimeout);
+        GridIoMessage res;
 
         if (ctx.security().enabled()) {
-            assert res.opCtxMsg == null : "Several context operation attributes aren't supported yet.";
+            UUID secSubjId = null;
 
-            UUID secSubjId = ctx.security().isDefaultContext() ? null : ctx.security().securityContext().subject().id();
+            if (!ctx.security().isDefaultContext())
+                secSubjId = ctx.security().securityContext().subject().id();
 
-            res.opCtxMsg = OperationContexMessage.enrich(res.opCtxMsg, OperationContextAttributeType.SECURITY,
-                new SecuritySubjectMessage(secSubjId));
+            res = new GridIoSecurityAwareMessage(secSubjId, plc, topic, msg, ordered, timeout, skipOnTimeout);
         }
+        else
+            res = new GridIoMessage(plc, topic, msg, ordered, timeout, skipOnTimeout);
+
+        res.opCtxMsg = ctx.operationContextDispatcher().collectDistributedAttributes();
 
         return res;
     }
@@ -4237,12 +4245,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
      */
     private UUID secSubjId(GridIoMessage msg) {
         if (ctx.security().enabled()) {
-            assert msg.opCtxMsg != null;
-            assert msg.opCtxMsg.hasAttribute(OperationContextAttributeType.SECURITY);
+            assert msg instanceof GridIoSecurityAwareMessage;
 
-            SecuritySubjectMessage secSubjMsg = msg.opCtxMsg.attributeValue(OperationContextAttributeType.SECURITY);
-
-            return secSubjMsg.id;
+            return ((GridIoSecurityAwareMessage)msg).securitySubjectId();
         }
 
         return null;

@@ -495,7 +495,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
     }
 
     /**
-     * Continues prepare after previous mapping successfully finished.
+     * Continues to prepare after previous mapping successfully finished.
      *
      * @param m Mapping.
      * @param mappings Queue of mappings.

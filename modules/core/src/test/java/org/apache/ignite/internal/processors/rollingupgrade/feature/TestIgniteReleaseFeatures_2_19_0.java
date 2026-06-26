@@ -15,25 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.binary;
-
-import java.util.Map;
-import org.apache.ignite.internal.Order;
-import org.apache.ignite.plugin.extensions.communication.Message;
+package org.apache.ignite.internal.processors.rollingupgrade.feature;
 
 /** */
-public class BinaryMetadataVersionsData implements Message {
+public class TestIgniteReleaseFeatures_2_19_0 {
     /** */
-    @Order(0)
-    Map<Integer, BinaryMetadataVersionInfo> data;
-
-    /** */
-    public BinaryMetadataVersionsData() {}
-
-    /**
-     * @param data Data.
-     */
-    public BinaryMetadataVersionsData(Map<Integer, BinaryMetadataVersionInfo> data) {
-        this.data = Map.copyOf(data);
-    }
+    public static final IgniteFeature ROLLING_UPGRADE_FEATURE = new IgniteCoreFeature(0);
 }

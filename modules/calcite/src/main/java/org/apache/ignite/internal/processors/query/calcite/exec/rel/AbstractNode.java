@@ -79,8 +79,8 @@ public abstract class AbstractNode<Row> implements Node<Row> {
     /**
      * {@link Inbox} node may not have proper context at creation time in case it
      * creates on first message received from a remote source. This case the context
-     * sets in scope of {@link Inbox#init(ExecutionContext, Collection, Comparator)} method call.
-     */ /** {@inheritDoc} */
+     * sets in scope of {@link Inbox#init(ExecutionContext, RelDataType, Collection, Comparator)} method call.
+     */
     @Override public ExecutionContext<Row> context() {
         return ctx;
     }

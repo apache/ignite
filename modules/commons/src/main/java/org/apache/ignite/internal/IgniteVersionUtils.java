@@ -49,6 +49,11 @@ public class IgniteVersionUtils {
         COPYRIGHT = year + " Copyright(C) Apache Software Foundation";
     }
 
+    /** Builds a string containing the semantic version based on the specified Ignite product version. */
+    public static String semanticVersion(IgniteProductVersion productVer) {
+        return productVer.major() + "." + productVer.minor() + "." + productVer.maintenance();
+    }
+
     /**
      * Private constructor.
      */

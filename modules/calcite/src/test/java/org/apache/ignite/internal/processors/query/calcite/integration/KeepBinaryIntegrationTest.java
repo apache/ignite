@@ -157,6 +157,53 @@ public class KeepBinaryIntegrationTest extends AbstractBasicIntegrationTransacti
     }
 
     /** */
+    @Test
+    public void testDmlWithCompositePk() {
+        IgniteCache<Object, Object> cache = client.createCache(cacheConfiguration().setName("testInsert"));
+
+        if (sqlTxMode != SqlTransactionMode.NONE && tx == null)
+            startTransaction(client);
+
+        SupplierX<?> checker = () -> {
+            checkDml(0, nodeCount() * 10, cache);
+
+            IgniteCache<Object, Object> cacheBin = cache.withKeepBinary();
+
+            checkDml(nodeCount() * 10, 2 * nodeCount() * 10, cacheBin);
+
+            List<List<?>> res = cacheBin.query(new SqlFieldsQuery("SELECT * FROM emp")).getAll();
+
+            assertEquals("Unexpected result set size: " + res.size(), 1, res.size());
+
+            return null;
+        };
+
+        if (sqlTxMode == SqlTransactionMode.NONE)
+            checker.get();
+        else
+            txAction(client, checker);
+    }
+
+    /** */
+    private void checkDml(int begin, int end, IgniteCache<?, ?> cache) {
+        cache.query(new SqlFieldsQuery("CREATE TABLE IF NOT EXISTS emp(empid INTEGER, deptid INTEGER, name VARCHAR, salary INTEGER, " +
+                "PRIMARY KEY(empid, deptid)) WITH \"AFFINITY_KEY=deptid," + atomicity() + "\""))
+            .getAll();
+
+        for (int i = begin; i < end; i++) {
+            cache.query(new SqlFieldsQuery("INSERT INTO emp (empid, deptid, name, salary) VALUES (?, ?, ?, ?)").setArgs(
+                i, i % 2, "Employee " + i, i)).getAll();
+
+            cache.query(new SqlFieldsQuery("UPDATE emp SET name = '' WHERE empid = ? AND deptid = ?").setArgs(i, i % 2)).getAll();
+            cache.query(new SqlFieldsQuery("DELETE FROM emp WHERE empid = ?").setArgs(i - 1)).getAll();
+
+            cache.query(new SqlFieldsQuery(
+                "MERGE INTO emp dst USING table(system_range(1, 1000)) src ON dst.salary = src.x " +
+                    "WHEN MATCHED THEN UPDATE SET dst.salary = src.x")).getAll();
+        }
+    }
+
+    /** */
     private static class Person {
         /** */
         @QuerySqlField

@@ -2068,21 +2068,14 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         assert dataPacket != null;
         assert dataPacket.joiningNodeId() != null;
 
-        //create data bag, pass it to exchange.collect
         DiscoveryDataBag dataBag = dataPacket.bagForDataCollection();
 
         exchange.collect(dataBag);
 
-        //marshall collected bag into packet, return packet
         if (dataPacket.joiningNodeId().equals(locNode.id()))
             dataPacket.addJoiningNodeData(dataBag);
         else
-            dataPacket.marshalGridNodeData(
-                dataBag,
-                locNode.id(),
-                marshaller(),
-                ignite.configuration().getNetworkCompressionLevel(),
-                log);
+            dataPacket.addNodeData(dataBag, locNode.id());
 
         return dataPacket;
     }
@@ -2097,22 +2090,21 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         DiscoveryDataBag dataBag;
 
-        if (dataPacket.joiningNodeId().equals(locNode.id())) {
-            try {
-                dataBag = dataPacket.unmarshalGridData(marshaller(), clsLdr, locNode.clientRouterNodeId() != null, log);
-            }
-            catch (IgniteCheckedException e) {
-                if (ignite() instanceof IgniteEx) {
-                    FailureProcessor failure = ((IgniteEx)ignite()).context().failure();
-
-                    failure.process(new FailureContext(CRITICAL_ERROR, e));
-                }
-
-                throw new IgniteException(e);
-            }
+        try {
+            if (dataPacket.joiningNodeId().equals(locNode.id()))
+                dataBag = dataPacket.bagWithNodeData(ignite.log(), ignite.configuration().isClientMode());
+            else
+                dataBag = dataPacket.bagWithJoiningNodeData(ignite.log(), ignite.configuration().isClientMode());
         }
-        else
-            dataBag = dataPacket.bagWithJoiningNodeData();
+        catch (IgniteCheckedException e) {
+            if (ignite() instanceof IgniteEx) {
+                FailureProcessor failure = ((IgniteEx)ignite()).context().failure();
+
+                failure.process(new FailureContext(CRITICAL_ERROR, e));
+            }
+
+            throw new IgniteException(e);
+        }
 
         exchange.onExchange(dataBag);
     }
