@@ -38,7 +38,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
@@ -133,6 +132,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DU
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MAX_COMPLETED_TX_COUNT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SLOW_TX_WARN_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.configuration.TransactionConfiguration.TX_AWARE_QUERIES_SUPPORTED_MODES;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -144,6 +144,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.REA
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.RECOVERY_FINISH;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.USER_FINISH;
+import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateImpl.deriveSyncMode;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 import static org.apache.ignite.internal.util.GridConcurrentFactory.newMap;
 import static org.apache.ignite.transactions.TransactionState.ACTIVE;
@@ -3136,16 +3137,13 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                         sendTxSalvage(tx, evtNodeId);
                     }
 
-                    Supplier<Boolean> fullSyncedOp = () -> tx.writeEntries().stream().map(e ->
-                        cctx.cacheContext(e.cacheId())).allMatch(GridCacheContext::syncCommit);
-
                     if (tx.storeWriteThrough() && tx.masterNodeIds().contains(evtNodeId) && tx.eventNodeId().equals(evtNodeId))
                         salvageTx(tx, RECOVERY_FINISH);
                     else if (tx.storeWriteThrough() && !tx.masterNodeIds().contains(cctx.localNodeId())
                         && tx.nodeId().equals(evtNodeId) && tx.state() == PREPARED) {
                         // Delay a commit, on backup. It will be raised further after near or coord. node will confirm it.
                         // In different from {@code FULL_SYNC} modes, appropriate recovery message can never be raized.
-                        if (!fullSyncedOp.get())
+                        if (deriveSyncMode(cctx, tx.txState().cacheIds()) != FULL_SYNC)
                             cctx.time().schedule(() -> salvageTx(tx, RECOVERY_FINISH), 1000, -1);
                     }
                     else if ((tx.near() && !tx.local() && tx.originatingNodeId().equals(evtNodeId))
