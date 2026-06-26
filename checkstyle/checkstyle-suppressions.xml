@@ -27,9 +27,6 @@
     <suppress checks="NoWhitespaceBefore"
               files="ConcurrentLinkedHashMap\.java"/>
 
-    <suppress checks=".*"
-              files="RexImpTable\.java|RexToLixTranslator\.java"/>
-
     <suppress checks="LineLength"
               files="ClusterTagGenerator\.java|PagesWriteSpeedBasedThrottle\.java|GridExecutorService\.java|CatboostClassificationModel\.java|classnames\.properties"/>
 
