@@ -1346,7 +1346,7 @@ public class IgniteTxHandler {
     }
 
     /**
-     * @param req Rrequest.
+     * @param req Request.
      */
     private void processDhtTxSalvageRequest(GridDhtTxSalvageMessage req) {
         for (IgniteInternalTx active : ctx.tm().activeTransactions()) {

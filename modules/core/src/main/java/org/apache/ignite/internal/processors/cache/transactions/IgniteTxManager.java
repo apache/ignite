@@ -3142,8 +3142,11 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     if (tx.storeWriteThrough() && tx.masterNodeIds().contains(evtNodeId) && tx.eventNodeId().equals(evtNodeId))
                         salvageTx(tx, RECOVERY_FINISH);
                     else if (tx.storeWriteThrough() && !tx.masterNodeIds().contains(cctx.localNodeId())
-                        && tx.nodeId().equals(evtNodeId) && tx.state() == PREPARED && fullSyncedOp.get()) {
+                        && tx.nodeId().equals(evtNodeId) && tx.state() == PREPARED) {
                         // Delay a commit, on backup. It will be raised further after near or coord. node will confirm it.
+                        // In different from {@code FULL_SYNC} modes, appropriate recovery message can never be raized.
+                        if (!fullSyncedOp.get())
+                            cctx.time().schedule(() -> salvageTx(tx, RECOVERY_FINISH), 1000, -1);
                     }
                     else if ((tx.near() && !tx.local() && tx.originatingNodeId().equals(evtNodeId))
                         || (tx.storeWriteThrough() && tx.masterNodeIds().contains(evtNodeId)) &&
