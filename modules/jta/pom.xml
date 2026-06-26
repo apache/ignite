@@ -34,12 +34,6 @@
 
     <url>http://ignite.apache.org</url>
 
-    <!--    // TODO: fix to IGNITE-28807-->
-
-    <properties>
-        <narayana.version>7.0.0.Final</narayana.version>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
@@ -63,18 +57,12 @@
             <artifactId>narayana-jta</artifactId>
             <version>${narayana.version}</version>
             <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>jakarta.transaction</groupId>
-                    <artifactId>jakarta.transaction-api</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <dependency>
             <groupId>org.jboss.logging</groupId>
             <artifactId>jboss-logging</artifactId>
-            <version>3.5.3.Final</version>
+            <version>${jboss.logging.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -111,9 +99,6 @@
             <version>6.0.43</version>
             <scope>test</scope>
         </dependency>
-
-        <!-- JDK9+ -->
-        <!-- jboss-rmi-api_1.0_spec was needed for jotm on JDK9+, no longer required with Narayana -->
 
     </dependencies>
 
