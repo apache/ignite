@@ -3209,9 +3209,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     if (tx.masterNodeIds().contains(nodeId))
                         continue;
 
-                    ClusterNode involvedNode = cctx.discovery().node(nodeId);
+                    ClusterNode backupNode = cctx.discovery().node(nodeId);
 
-                    if (involvedNode != null && !involvedNode.isLocal()) {
+                    if (backupNode != null && !backupNode.isLocal()) {
                         if (salvageReq == null)
                             salvageReq = new GridDhtTxSalvageMessage(tx.nearXidVersion());
 

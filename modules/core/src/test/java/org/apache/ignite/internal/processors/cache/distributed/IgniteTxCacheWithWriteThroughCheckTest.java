@@ -186,7 +186,7 @@ public class IgniteTxCacheWithWriteThroughCheckTest extends GridCommonAbstractTe
 
                     U.awaitQuiet(nodeLeftRegisteredOnBackup);
 
-                    // let`s wait until all discovery events have been processed on backup node.
+                    // Let`s wait until all discovery events have been processed on backup node.
                     doSleep(1000);
 
                     MapCacheStore.txCoordStoreLatch.countDown();
@@ -225,16 +225,14 @@ public class IgniteTxCacheWithWriteThroughCheckTest extends GridCommonAbstractTe
         assertEquals(secondVal, nodeCoord.cache(DEFAULT_CACHE_NAME).get(primaryKey));
         assertEquals(secondVal, nodeBackup.cache(DEFAULT_CACHE_NAME).get(primaryKey));
 
-        if (withPersistence) {
-            // Check value after restart.
-            stopAllGrids();
-            startGridsMultiThreaded(3);
+        // Check value after restart.
+        stopAllGrids();
+        startGridsMultiThreaded(3);
 
-            awaitPartitionMapExchange(true, true, null);
+        awaitPartitionMapExchange(true, true, null);
 
-            for (Ignite ignite : G.allGrids())
-                assertEquals(secondVal, ignite.cache(ccfgWithWriteThrough.getName()).get(primaryKey));
-        }
+        for (Ignite ignite : G.allGrids())
+            assertEquals(secondVal, ignite.getOrCreateCache(ccfgWithWriteThrough).get(primaryKey));
     }
 
     /** */
