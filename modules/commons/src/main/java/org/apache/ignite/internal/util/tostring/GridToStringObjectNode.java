@@ -66,7 +66,7 @@ class GridToStringObjectNode extends NodeRecursionMonitor {
         GridToStringNode parentObjNode = LAST_CONSTRUCTED_GRID_TO_STRING_NODE.get();
         LAST_CONSTRUCTED_GRID_TO_STRING_NODE.set(this);
         try {
-            aqcuireRecursionMonitor(this);
+            acquireRecursionMonitor();
             List<GridToStringNode> childNodes = new LinkedList<>();
             GridToStringClassDescriptor cd = GridToStringBuilder.getClassDescriptor(cls);
             for (GridToStringFieldDescriptor fd : cd.getFields()) {

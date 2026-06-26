@@ -118,7 +118,7 @@ public class GridToStringNodeFactory {
         if (childFieldCls.isPrimitive())
             return new GridToStringValueNode(childPropName, val);
         else if (childFieldCls.isArray())
-            return new GridToStringArrayNode(childPropName, (Object[])val, childFieldCls);
+            return new GridToStringArrayNode(childPropName, val, childFieldCls);
         else if (val instanceof Collection)
             return new GridToStringCollectionNode(childPropName, (Collection<?>)val);
         else if (val instanceof Map)

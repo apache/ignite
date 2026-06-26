@@ -48,10 +48,9 @@ abstract class NodeRecursionMonitor extends GridToStringNode {
 
     /**
      * Registers the current node in the thread-local registry for the given object.
-     * @param node The node to register.
      */
-    void aqcuireRecursionMonitor(NodeRecursionMonitor node) {
-        OBJECT_REGISTRY.get().put(obj, node);
+    void acquireRecursionMonitor() {
+        OBJECT_REGISTRY.get().put(obj, this);
     }
 
     /** Removes the current node from the thread-local registry. */

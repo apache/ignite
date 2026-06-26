@@ -30,7 +30,7 @@ import static org.apache.ignite.internal.util.tostring.NodeRecursionMonitor.OBJE
  * Defines the common interface for appending a node's value to a string builder
  * and provides static factory and utility methods for all subclasses.
  */
-public abstract class GridToStringNode {
+abstract class GridToStringNode {
     /**
      * A thread-local cache for nodes, used to handle references of
      * inner toString() calls by mapping temporary markers to actual nodes.
@@ -82,10 +82,10 @@ public abstract class GridToStringNode {
      * Marks a node in the thread-local cache with a unique, empty string key.
      * Used to handle references during object graph traversal.
      * @param node The node to mark.
-     * @return The unique marker string.
+     * @return The marker string.
      */
     static String markNode(GridToStringNode node) {
-        String result = new String(GridToStringNode.class.getSimpleName());
+        String result = node.toString();
         identities()
                 .orElseThrow()
                 .put(result, node);
@@ -174,22 +174,5 @@ public abstract class GridToStringNode {
      * */
     static Optional<IdentityHashMap<String, GridToStringNode>> identities() {
         return Optional.ofNullable(CATCHED_NODES.get(Thread.currentThread()));
-    }
-
-    /**
-     * If someone decided to concat outside of default
-     * {@link org.apache.ignite.internal.util.typedef.internal.S#toString}
-     * we should replace the substring
-     * @param obj Object.
-     */
-    public static <T> T recoverObject(T obj) {
-        return Optional.ofNullable(obj)
-                .filter(String.class::isInstance)
-                .map(String.class::cast)
-                .flatMap(str -> identities()
-                        .map(storage -> storage.remove(str))
-                        .map(GridToStringNode::toString)
-                        .map(result -> (T)result))
-                .orElse(obj);
     }
 }

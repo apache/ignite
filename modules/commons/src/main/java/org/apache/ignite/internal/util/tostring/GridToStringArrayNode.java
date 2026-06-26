@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.util.tostring;
 
+import java.lang.reflect.Array;
 import org.apache.ignite.internal.util.GridStringBuilder;
 
 import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.COLLECTION_LIMIT;
@@ -44,16 +45,17 @@ class GridToStringArrayNode extends NodeRecursionMonitor {
      * @param arr The source array.
      * @param arrType The class object of the array's type.
      */
-    GridToStringArrayNode(String propName, Object[] arr, Class<?> arrType) {
+    GridToStringArrayNode(String propName, Object arr, Class<?> arrType) {
         super(propName, arr);
         try {
-            aqcuireRecursionMonitor(this);
+            acquireRecursionMonitor();
             this.arrType = arrType;
-            skipRule = new LongSequenceSkipRule(() -> arr.length);
-            nodes = new GridToStringNode[Math.min(COLLECTION_LIMIT, arr.length)];
+            int srcArrLength = Array.getLength(arr);
+            skipRule = new LongSequenceSkipRule(() -> srcArrLength);
+            nodes = new GridToStringNode[Math.min(COLLECTION_LIMIT, srcArrLength)];
             for (int i = 0; i < nodes.length; i++) {
-                final int idx = i;
-                nodes[idx] = getGridToStringNode(null, () -> arr[idx], () -> arr[idx].getClass());
+                Object child = Array.get(arr, i);
+                nodes[i] = getGridToStringNode(null, () -> child, child::getClass);
             }
         }
         finally {

@@ -236,10 +236,10 @@ public class CircularStringBuilder {
     public String substring(int beginIdx, int endIdx) {
         if (beginIdx < 0 || endIdx < 0 || endIdx > skipped + length())
             throw new StringIndexOutOfBoundsException(
-                    "Some of indexes is out of bounds. Begind index = " + beginIdx + " end index = " + endIdx);
+                    "Index out of bounds: beginIdx=" + beginIdx + ", endIdx=" + endIdx);
         if (beginIdx > endIdx)
             throw new IllegalArgumentException(
-                    "Begin index can not be greater then end index (begin = " + beginIdx + " end = " + endIdx + ")");
+                    "Begin index cannot be greater than end index: beginIdx=" + beginIdx + ", endIdx=" + endIdx);
         if (endIdx <= skipped || beginIdx == endIdx) return "";
         char resultArr[] = new char[Math.max(skipped, endIdx) - Math.max(skipped, beginIdx)];
         int effectiveBeginIdx = ((full ? (finishAt + 1) : 0) + Math.max(skipped, beginIdx) - skipped) % value.length;

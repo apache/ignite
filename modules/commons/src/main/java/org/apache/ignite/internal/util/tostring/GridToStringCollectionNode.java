@@ -49,7 +49,7 @@ class GridToStringCollectionNode extends NodeRecursionMonitor {
     GridToStringCollectionNode(String propName, Collection<?> col) {
         super(propName, col);
         try {
-            aqcuireRecursionMonitor(this);
+            acquireRecursionMonitor();
             colSimpleClsName = col.getClass().getSimpleName();
             this.col = new ArrayList<>(Math.min(col.size(), COLLECTION_LIMIT));
             skipRule = new LongSequenceSkipRule(col::size);

@@ -49,7 +49,7 @@ class GridToStringMapNode extends NodeRecursionMonitor {
     GridToStringMapNode(String propName, Map<?, ?> map) {
         super(propName, map);
         try {
-            aqcuireRecursionMonitor(this);
+            acquireRecursionMonitor();
             mapClsSimpleName = map.getClass().getSimpleName();
             this.map = new HashMap<>();
             skipRule = new LongSequenceSkipRule(map::size);
