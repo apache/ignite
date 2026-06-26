@@ -60,8 +60,9 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
         "7b880b69-8a9e-4b84-b555-250d365e2e67"
     );
 
-    /** Source commit hash. Used for docker image tag. */
-    private static final String SOURCE_COMMIT_HASH = "0ad4656eef09acda288cbad96f80f0138732d94a";
+    /** Source version image tag, overridable via {@code -Dru.source.commit.hash}. */
+    private static final String SOURCE_COMMIT_HASH =
+        System.getProperty("ru.source.commit.hash", "0ad4656eef09acda288cbad96f80f0138732d94a");
 
     /** Cache name. */
     private static final String CACHE_NAME = "ru-test-cache";
@@ -126,7 +127,7 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
             IgniteCache<Integer, Integer> targetCache = nodes.get(0).cache(CACHE_NAME);
 
             for (int i = 0; i < 1000; i++)
-                assertEquals("Data mismatch after upgrade at key: " + i, i, (int)targetCache.get(i));
+                assertEquals("Data mismatch after upgrade at key: " + i, (Integer)i, targetCache.get(i));
 
             targetCache.put(1001, 1001);
 
@@ -142,8 +143,12 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
         for (IgniteContainer container : srcCluster.containers()) {
             log.info(">>> Upgrade node=" + container.consistentId());
 
-            String hostIp = container.execInContainer("sh", "-c",
-                "getent ahostsv4 host.docker.internal | awk '{print $1}' | head -1").getStdout().trim();
+            // Address containers use to reach this (host JVM) node: the Docker bridge gateway on Linux, the
+            // host.docker.internal alias on macOS.
+            String hostIp = IgniteContainer.LINUX
+                ? container.gatewayIp()
+                : container.execInContainer("sh", "-c",
+                    "getent ahostsv4 host.docker.internal | awk '{print $1}' | head -1").getStdout().trim();
 
             container.stop();
 
@@ -151,7 +156,8 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
 
             IgniteEx ignite = startGrid(configuration(container.consistentId(), container.localWorkDirectory(), addrs.values(), hostIp));
 
-            waitForCondition(() -> CONSISTENT_IDS.size() == ignite.cluster().nodes().size(), DFLT_TEST_TIMEOUT);
+            assertTrue("Upgraded node did not rejoin the full topology in time",
+                waitForCondition(() -> CONSISTENT_IDS.size() == ignite.cluster().nodes().size(), DFLT_TEST_TIMEOUT));
 
             // Already-upgraded host nodes live in this JVM on localhost within the discovery port range.
             addrs.put(container.consistentId(), "127.0.0.1:48500..48599");
@@ -184,7 +190,9 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
         // own outgoing attempts to unreachable container-internal (172.x) addresses give up in ~1s (they
         // otherwise hang in SYN_SENT) and fall through to the reachable 127.0.0.1:<published-port>.
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi()
-            .setLocalAddress("127.0.0.1")
+            // macOS: bind comm to loopback (advertised to containers via the resolver as the Docker-host address).
+            // Linux: bind to all interfaces so containers reach this host node at the Docker bridge gateway IP.
+            .setLocalAddress(IgniteContainer.LINUX ? "0.0.0.0" : "127.0.0.1")
             .setLocalPort(49100)
             .setConnectTimeout(1000)
             .setMaxConnectTimeout(10000)

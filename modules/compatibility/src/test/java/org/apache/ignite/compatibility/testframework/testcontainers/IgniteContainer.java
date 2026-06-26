@@ -17,10 +17,13 @@
 
 package org.apache.ignite.compatibility.testframework.testcontainers;
 
+import com.github.dockerjava.api.model.ContainerNetwork;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Files;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.util.Arrays;
@@ -62,6 +65,13 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger(IgniteContainer.class);
 
+    /**
+     * {@code true} on Linux, where the host shares the Docker bridge and reaches containers directly. Elsewhere
+     * (macOS/Windows Docker Desktop) the host talks to containers through a VM proxy, so the address hacks
+     * (published ports + ContainerAddressResolver + host.docker.internal) are used instead.
+     */
+    public static final boolean LINUX = System.getProperty("os.name", "").toLowerCase().contains("linux");
+
     /** Ignite root directory in container. */
     private static final String ROOT_DIR_PATH = "/opt/ignite/apache-ignite/";
 
@@ -86,10 +96,12 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
     /** Base host port for the published thin-client port (node index added). */
     private static final int CLIENT_HOST_PORT_BASE = 50800;
 
-    /** Custom classes used by node in containers. */
+    /** Custom classes (with their nested classes) used by node in containers. */
     private static final List<String> TEST_CLASSES = List.of(
         ContainerAddressResolver.class.getName(),
-        TestCompatibilityPluginProvider.class.getName()
+        TestCompatibilityPluginProvider.class.getName(),
+        "org.apache.ignite.compatibility.testframework.plugins.DisabledRollingUpgradeProcessor",
+        "org.apache.ignite.compatibility.testframework.plugins.DisabledValidationProcessor"
     );
 
     /** Jar holding {@link #TEST_CLASSES}, injected so the old image can load it. */
@@ -121,13 +133,19 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
         withEnv("IGNITE_LOCAL_HOST", "0.0.0.0");
         withEnv("TZ", ZoneId.systemDefault().toString());
 
-        // On macOS the host JVM cannot reach container-internal addresses, so each node advertises its
-        // host-published discovery/communication ports (127.0.0.1:hostPort) via ContainerAddressResolver.
-        // node.consistent.id pins the node's consistent id (and thus its persistence folder) to consistentId so the
-        // upgraded host node, started with the same consistent id, inherits this node's persisted data.
-        withEnv("JVM_OPTS", "-Xms512m -Xmx1g" + " -Dnode.consistent.id=" + consistentId
-            + " -D" + EXT_ADDR_PROP_PREFIX + TcpDiscoverySpi.DFLT_PORT + "=127.0.0.1:" + discoHostPort
-            + " -D" + EXT_ADDR_PROP_PREFIX + TcpCommunicationSpi.DFLT_PORT + "=127.0.0.1:" + commHostPort);
+        // node.consistent.id pins the node's consistent id (and thus its persistence folder) so the upgraded host
+        // node, started with the same consistent id, inherits this node's persisted data.
+        String jvmOpts = "-Xms512m -Xmx1g -Dnode.consistent.id=" + consistentId;
+
+        // Proxy-networking hosts (macOS/Windows) can't reach container-internal addresses, so each node advertises
+        // its host-published ports (127.0.0.1:hostPort) via ContainerAddressResolver. On Linux containers are
+        // directly routable and advertise their real address, so no override is needed.
+        if (!LINUX) {
+            jvmOpts += " -D" + EXT_ADDR_PROP_PREFIX + TcpDiscoverySpi.DFLT_PORT + "=127.0.0.1:" + discoHostPort
+                + " -D" + EXT_ADDR_PROP_PREFIX + TcpCommunicationSpi.DFLT_PORT + "=127.0.0.1:" + commHostPort;
+        }
+
+        withEnv("JVM_OPTS", jvmOpts);
 
         withFileSystemBind(LOCAL_WORK_DIR_PATH, WORK_DIR_PATH, BindMode.READ_WRITE);
         withCopyFileToContainer(forClasspathResource("docker/test-config.xml"), CFG_PATH);
@@ -139,10 +157,13 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
         // Stream container logs to stdout so they appear in the IDE test runner.
         withLogConsumer(frame -> System.out.println("[" + consistentId + "] " + frame.getUtf8String().trim()));
 
-        // Fixed host ports so the host JVM node can target each container deterministically.
-        addFixedExposedPort(CLIENT_HOST_PORT_BASE + idx, ClientConnectorConfiguration.DFLT_PORT);
-        addFixedExposedPort(commHostPort, TcpCommunicationSpi.DFLT_PORT);
-        addFixedExposedPort(discoHostPort, TcpDiscoverySpi.DFLT_PORT);
+        // Proxy-networking hosts only: publish fixed host ports so the host JVM node can target each container at
+        // 127.0.0.1:<port>. On Linux the host reaches containers at their bridge IP directly, so nothing is published.
+        if (!LINUX) {
+            addFixedExposedPort(CLIENT_HOST_PORT_BASE + idx, ClientConnectorConfiguration.DFLT_PORT);
+            addFixedExposedPort(commHostPort, TcpCommunicationSpi.DFLT_PORT);
+            addFixedExposedPort(discoHostPort, TcpDiscoverySpi.DFLT_PORT);
+        }
 
         waitingFor(Wait.forLogMessage(".*Node started.*", 1)
             .withStartupTimeout(Duration.ofSeconds(600)));
@@ -159,7 +180,7 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
                     .exec();
 
                 await()
-                    .atMost(Duration.ofSeconds(60))
+                    .atMost(Duration.ofSeconds(10))
                     .pollInterval(Duration.ofMillis(500))
                     .until(() -> !isRunning());
             }
@@ -228,9 +249,24 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
         return address(TcpDiscoverySpi.DFLT_PORT);
     }
 
-    /** */
+    /** @return Address the host JVM uses to reach this container's {@code port}. */
     private String address(int port) {
-        return getHost() + ":" + getMappedPort(port);
+        return LINUX ? bridgeIp() + ":" + port : getHost() + ":" + getMappedPort(port);
+    }
+
+    /** @return Gateway IP of the test Docker network — the address containers use to reach the host JVM on Linux. */
+    public String gatewayIp() {
+        return network().getGateway();
+    }
+
+    /** @return This container's IP on the test Docker network (directly routable from the host on Linux). */
+    private String bridgeIp() {
+        return network().getIpAddress();
+    }
+
+    /** @return This container's attachment to the single test Docker network. */
+    private ContainerNetwork network() {
+        return getContainerInfo().getNetworkSettings().getNetworks().values().iterator().next();
     }
 
     /** */
@@ -277,13 +313,28 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
                 for (String cls : TEST_CLASSES) {
                     String clsPath = cls.replace('.', '/') + ".class";
 
-                    try (InputStream in = IgniteContainer.class.getClassLoader().getResourceAsStream(clsPath)) {
-                        if (in == null)
-                            throw new IOException("Class not found on classpath: " + clsPath);
+                    URL url = IgniteContainer.class.getClassLoader().getResource(clsPath);
 
-                        out.putNextEntry(new JarEntry(clsPath));
+                    if (url == null)
+                        throw new IOException("Class not found on classpath: " + clsPath);
 
-                        in.transferTo(out);
+                    File dir;
+
+                    try {
+                        dir = new File(url.toURI()).getParentFile();
+                    }
+                    catch (URISyntaxException e) {
+                        throw new IOException(e);
+                    }
+
+                    String pkg = clsPath.substring(0, clsPath.lastIndexOf('/') + 1);
+                    String simple = cls.substring(cls.lastIndexOf('.') + 1);
+
+                    // Include the class and its nested classes (e.g. the provider's anonymous $1).
+                    for (File f : dir.listFiles((d, name) -> name.equals(simple + ".class") || name.startsWith(simple + '$'))) {
+                        out.putNextEntry(new JarEntry(pkg + f.getName()));
+
+                        Files.copy(f.toPath(), out);
 
                         out.closeEntry();
                     }
