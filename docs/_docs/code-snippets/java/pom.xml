@@ -80,6 +80,8 @@
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
+            <!-- ignite-cloud-ext is not published to Maven Central, so use the last released legacy
+                 artifact that still provides TcpDiscoveryCloudIpFinder. -->
             <artifactId>ignite-cloud</artifactId>
             <version>2.13.0</version>
         </dependency>
