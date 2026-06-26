@@ -63,7 +63,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
     public static final byte JDBC_CLIENT = 1;
 
     /** Thin client handshake code. */
-    public static final byte THIN_CLIENT = 2;
+    public static final byte THIN_CLIENT = ClientListenerProtocol.THIN_CLIENT;
 
     /** Client types. */
     public static final byte[] CLI_TYPES = {ODBC_CLIENT, JDBC_CLIENT, THIN_CLIENT};

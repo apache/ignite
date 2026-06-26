@@ -18,19 +18,17 @@
 package org.apache.ignite.internal.processors.odbc;
 
 /**
- * Client listener command request.
+ * Client listener protocol constants shared between the server-side listener and the thin client.
  */
-public interface ClientListenerRequest {
-    /** Handshake request. */
-    public static final int HANDSHAKE = ClientListenerProtocol.HANDSHAKE;
+public final class ClientListenerProtocol {
+    /** Thin client handshake (connection type) code. */
+    public static final byte THIN_CLIENT = 2;
 
-    /**
-     * @return Request ID.
-     */
-    public long requestId();
+    /** Handshake request command code. */
+    public static final int HANDSHAKE = 1;
 
-    /** @return {@code True} if request can be handled before node join topology. */
-    default boolean beforeStartupRequest() {
-        return false;
+    /** */
+    private ClientListenerProtocol() {
+        // No-op.
     }
 }
