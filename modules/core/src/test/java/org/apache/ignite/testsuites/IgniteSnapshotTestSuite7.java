@@ -20,18 +20,23 @@ package org.apache.ignite.testsuites;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import org.apache.ignite.internal.processors.cache.CacheSerializableTransactionsTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManagerSelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotRemoteRequestTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotRestoreFromRemoteMdcTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotRestoreFromRemoteTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotWithMetastorageTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
 
 /**
- * Test suite.
+ * Split off from {@link IgniteSnapshotTestSuite} to reduce the single-suite runtime in CI;
+ * contains an independent subset of the same test classes.
  */
 @RunWith(DynamicSuite.class)
-public class IgniteCacheTestSuite5 {
+public class IgniteSnapshotTestSuite7 {
     /**
-     * @return IgniteCache test suite.
+     * @return Test suite.
      */
     public static List<Class<?>> suite() {
         return suite(null);
@@ -44,7 +49,11 @@ public class IgniteCacheTestSuite5 {
     public static List<Class<?>> suite(Collection<Class> ignoredTests) {
         List<Class<?>> suite = new ArrayList<>();
 
-        GridTestUtils.addTestIfNeeded(suite, CacheSerializableTransactionsTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteSnapshotManagerSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteSnapshotRemoteRequestTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteSnapshotRestoreFromRemoteMdcTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteSnapshotRestoreFromRemoteTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteSnapshotWithMetastorageTest.class, ignoredTests);
 
         return suite;
     }
