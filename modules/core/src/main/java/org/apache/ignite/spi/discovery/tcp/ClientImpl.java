@@ -70,7 +70,6 @@ import org.apache.ignite.internal.processors.tracing.SpanTags;
 import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessage;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesTable;
-import org.apache.ignite.internal.thread.context.DistributedOperationContextManager;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -1312,7 +1311,7 @@ class ClientImpl extends TcpDiscoveryImpl {
          * @param msg Message.
          */
         private void sendMessage(TcpDiscoveryAbstractMessage msg) {
-            msg.opCtxMsg = DistributedOperationContextManager.instance().collectDistributedAttributes();
+            msg.opCtxMsg = operationCtxDispatcher.collectDistributedAttributes();
 
             synchronized (mux) {
                 queue.add(msg);
@@ -1765,8 +1764,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         ? (TcpDiscoveryAbstractMessage)msg
                         : null;
 
-                    try (Scope ignored = DistributedOperationContextManager.instance()
-                        .restoreDistributedAttributes(dm == null ? null : dm.opCtxMsg)) {
+                    try (Scope ignored = operationCtxDispatcher.restoreDistributedAttributes(dm == null ? null : dm.opCtxMsg)) {
                         if (msg instanceof JoinTimeout) {
                             int joinCnt0 = ((JoinTimeout)msg).joinCnt;
 

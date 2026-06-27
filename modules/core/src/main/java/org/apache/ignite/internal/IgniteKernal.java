@@ -174,6 +174,7 @@ import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.suggestions.JvmConfigurationSuggestions;
 import org.apache.ignite.internal.suggestions.OsConfigurationSuggestions;
 import org.apache.ignite.internal.systemview.ConfigurationViewWalker;
+import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
 import org.apache.ignite.internal.util.TimeBag;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -444,6 +445,9 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
     /** Core message factory. */
     private MessageFactory msgFactory;
+
+    /** Distributed operation context dispatcher. */
+    private OperationContextDispatcher operationCtxDispatcher;
 
     /**
      * No-arg constructor is required by externalization.
@@ -931,6 +935,8 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 longJVMPauseDetector
             );
 
+            operationCtxDispatcher = new OperationContextDispatcher();
+
             startProcessor(new DiagnosticProcessor(ctx));
 
             mBeansMgr = new IgniteMBeansManager(this);
@@ -1152,6 +1158,8 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
             // All components exept Discovery are started, time to check if maintenance is still needed.
             mntcProc.prepareAndExecuteMaintenance();
+
+            operationCtxDispatcher.finishRegistration();
 
             gw.writeLock();
 
@@ -3059,6 +3067,11 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     /** @return Core message factory. */
     MessageFactory messageFactory() {
         return msgFactory;
+    }
+
+    /** @return Distributed operation context dispatcher. */
+    OperationContextDispatcher operationContextDispatcher() {
+        return operationCtxDispatcher;
     }
 
     /**

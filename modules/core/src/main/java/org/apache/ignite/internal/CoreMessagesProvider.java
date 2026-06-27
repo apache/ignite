@@ -687,7 +687,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
 
         // [13400 - 13500]: Operation context messages.
         msgIdx = 13400;
-        withNoSchema(DistributedOperationContextMessage.class);
+        withNoSchema(OperationContextMessage.class);
 
         // [13500 - 13600]: Rolling Upgrade messages.
         msgIdx = 13500;
