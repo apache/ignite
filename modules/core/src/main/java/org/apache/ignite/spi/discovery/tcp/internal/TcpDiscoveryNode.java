@@ -272,6 +272,10 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         map.put(ATTR_NODE_CONSISTENT_ID, consistentId);
 
         attrs = Collections.unmodifiableMap(map);
+
+        // Invalidate the @Marshalled caches — both fields are mutated here (see setAttributes).
+        consistentIdBytes = null;
+        attrsBytes = null;
     }
 
     /** {@inheritDoc} */
@@ -300,6 +304,10 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
      */
     public void setAttributes(Map<String, Object> attrs) {
         this.attrs = U.sealMap(attrs);
+
+        // Invalidate the @Marshalled cache: attrs are mutated after the first marshal (auth adds the security
+        // subject on join), and a stale attrsBytes would propagate the pre-auth attributes.
+        attrsBytes = null;
     }
 
     /**
