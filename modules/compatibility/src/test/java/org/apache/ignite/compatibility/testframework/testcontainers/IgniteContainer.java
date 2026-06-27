@@ -189,8 +189,6 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
             }
         }
 
-        LOGGER.info("Ignite node {} shut down gracefully.", hostname);
-
         super.stop();
     }
 
@@ -331,7 +329,13 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
                     String simple = cls.substring(cls.lastIndexOf('.') + 1);
 
                     // Include the class and its nested classes (e.g. the provider's anonymous $1).
-                    for (File f : dir.listFiles((d, name) -> name.equals(simple + ".class") || name.startsWith(simple + '$'))) {
+                    File[] clsFiles = dir.listFiles((d, name) ->
+                        name.equals(simple + ".class") || name.startsWith(simple + '$'));
+
+                    if (clsFiles == null)
+                        throw new IOException("Cannot list class directory: " + dir);
+
+                    for (File f : clsFiles) {
                         out.putNextEntry(new JarEntry(pkg + f.getName()));
 
                         Files.copy(f.toPath(), out);

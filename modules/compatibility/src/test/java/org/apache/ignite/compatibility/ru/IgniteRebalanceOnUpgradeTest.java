@@ -121,7 +121,7 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
                 cache.put(i, i);
 
             closeClient();
-            
+
             upgradeCluster(cluster);
 
             IgniteCache<Integer, Integer> targetCache = nodes.get(0).cache(CACHE_NAME);
@@ -131,7 +131,7 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
 
             targetCache.put(1001, 1001);
 
-            assertEquals(1001, (int)targetCache.get(1001));
+            assertEquals((Integer)1001, targetCache.get(1001));
         }
         finally {
             closeClient();
@@ -184,8 +184,8 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
             .setJoinTimeout(30000)
             .setLocalPort(48500);
 
-        // Bind communication to loopback (discovery stays on 0.0.0.0 to satisfy Ignite's non-loopback join
-        // check) so the node advertises only 127.0.0.1 + the resolver-mapped Docker host address -- no
+        // On macOS communication binds to loopback (discovery stays on 0.0.0.0 to satisfy Ignite's non-loopback
+        // join check) so the node advertises only 127.0.0.1 + the resolver-mapped Docker host address -- no
         // unreachable host LAN IPs for the containers to stall on. A short connect timeout makes the node's
         // own outgoing attempts to unreachable container-internal (172.x) addresses give up in ~1s (they
         // otherwise hang in SYN_SENT) and fall through to the reachable 127.0.0.1:<published-port>.
