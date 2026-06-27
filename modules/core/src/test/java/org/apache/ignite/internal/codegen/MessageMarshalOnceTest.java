@@ -19,7 +19,7 @@ package org.apache.ignite.internal.codegen;
 
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.verify.TransactionsHashRecord;
-import org.apache.ignite.internal.processors.cache.verify.TransactionsHashRecordMarshaller;
+import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -48,15 +48,13 @@ public class MessageMarshalOnceTest extends GridCommonAbstractTest {
         // (only field names vary), so a regression in it breaks every such message identically.
         TransactionsHashRecord msg = new TransactionsHashRecord("local", "remote", 0);
 
-        TransactionsHashRecordMarshaller marshaller = new TransactionsHashRecordMarshaller(kctx.marshaller());
-
-        marshaller.prepareMarshal(msg, kctx, null);
+        MessageMarshaller.prepareMarshal(kctx.messageFactory(), msg, kctx, null);
 
         byte[] first = GridTestUtils.getFieldValue(msg, "locConsistentIdBytes");
 
         assertNotNull("First prepareMarshal must marshal the field", first);
 
-        marshaller.prepareMarshal(msg, kctx, null);
+        MessageMarshaller.prepareMarshal(kctx.messageFactory(), msg, kctx, null);
 
         byte[] second = GridTestUtils.getFieldValue(msg, "locConsistentIdBytes");
 

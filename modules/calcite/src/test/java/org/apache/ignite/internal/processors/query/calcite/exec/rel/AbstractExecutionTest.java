@@ -399,11 +399,6 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
         @Override public boolean alive(UUID nodeId) {
             return true;
         }
-
-        /** {@inheritDoc} */
-        @Override protected void prepareUnmarshal(Message msg) {
-            // No-op: TestIoManager delivers messages in-memory, no deserialization needed.
-        }
     }
 
     /**
