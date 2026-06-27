@@ -1182,6 +1182,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
             byte plc = initMsg.policy();
 
+            // Restore the @NioField topic (as onMessage0 does); otherwise GridIoMessage.topic() is null here.
+            MessageMarshaller.finishUnmarshalNio(ctx.messageFactory(), initMsg, ctx);
+
             MessageMarshaller.finishUnmarshal(ctx.messageFactory(), initMsg, ctx);
 
             pools.poolForPolicy(plc).execute(new Runnable() {
