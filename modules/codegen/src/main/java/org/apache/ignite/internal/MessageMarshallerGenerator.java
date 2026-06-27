@@ -69,9 +69,6 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     private final TypeMirror cacheGroupIdMsgMirror;
 
     /** */
-    private final TypeMirror gridCacheMessageMirror;
-
-    /** */
     private final TypeMirror mapMirror;
 
     /** */
@@ -79,9 +76,6 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
     /** */
     private boolean marshallable;
-
-    /** Whether the message is a {@code GridCacheMessage} subtype, i.e. received via the cache deployment path. */
-    private boolean cacheMsg;
 
     /** */
     private boolean hasMarshalled;
@@ -99,7 +93,6 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         nonMarshallableMirror = type("org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage");
         cacheIdAwareMirror = type("org.apache.ignite.plugin.extensions.communication.CacheIdAware");
         cacheGroupIdMsgMirror = type("org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage");
-        gridCacheMessageMirror = type("org.apache.ignite.internal.processors.cache.GridCacheMessage");
         mapMirror = type("java.util.Map");
         collectionMirror = type("java.util.Collection");
     }
@@ -118,7 +111,6 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     @Override void generateBody(List<VariableElement> fields) throws Exception {
         enclosed = enclosedFields();
         marshallable = marshallableMsgType != null && assignableFrom(type.asType(), marshallableMsgType);
-        cacheMsg = gridCacheMessageMirror != null && assignableFrom(type.asType(), gridCacheMessageMirror);
         hasMarshalled = enclosed.values().stream().anyMatch(f -> f.getAnnotation(Marshalled.class) != null);
 
         indent = 1;
@@ -269,12 +261,11 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         if (marshallable) {
             if (mode == MarshalMode.FINISH_CACHE)
                 appendBlock(body, List.of(indentedLine("msg.finishUnmarshal(marshaller, clsLdr);")));
-            else if (mode == MarshalMode.FINISH && !cacheMsg)
+            else
                 appendBlock(body, List.of(indentedLine("msg.finishUnmarshal(marshaller, U.resolveClassLoader(kctx.config()));")));
         }
 
-        if (mode == MarshalMode.FINISH)
-            appendMarshalledFinish(body);
+        appendMarshalledFinish(body, mode);
 
         if (mode == MarshalMode.FINISH_CACHE) {
             appendMarshalledCollectionFinish(body);
@@ -375,7 +366,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         forEachMarshalled((bytesAcc, objAcc) -> {
             List<String> code = new ArrayList<>();
 
-            code.add(indentedLine("if (%s != null)", objAcc));
+            code.add(indentedLine("if (%s != null && %s == null)", objAcc, bytesAcc));
 
             indent++;
 
@@ -388,21 +379,19 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     }
 
     /** Generates {@code U.unmarshal} calls for all {@code @Marshalled} fields in finishUnmarshal. */
-    private void appendMarshalledFinish(List<String> body) {
+    private void appendMarshalledFinish(List<String> body, MarshalMode mode) {
+        String clsLdr = mode == MarshalMode.FINISH_CACHE ? "clsLdr" : "U.resolveClassLoader(kctx.config())";
+
         forEachMarshalled((bytesAcc, objAcc) -> {
             List<String> code = new ArrayList<>();
 
-            code.add(indentedLine("if (%s != null) {", bytesAcc));
+            code.add(indentedLine("if (%s != null)", bytesAcc));
 
             indent++;
 
-            code.add(indentedLine("%s = U.unmarshal(marshaller, %s, U.resolveClassLoader(kctx.config()));", objAcc, bytesAcc));
-            code.add(EMPTY);
-            code.add(indentedLine("%s = null;", bytesAcc));
+            code.add(indentedLine("%s = U.unmarshal(marshaller, %s, %s);", objAcc, bytesAcc, clsLdr));
 
             indent--;
-
-            code.add(indentedLine("}"));
 
             return code;
         }, body);

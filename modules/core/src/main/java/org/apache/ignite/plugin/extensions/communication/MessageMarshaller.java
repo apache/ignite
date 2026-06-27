@@ -17,7 +17,13 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
+import java.lang.ref.Reference;
+import java.lang.ref.ReferenceQueue;
+import java.lang.ref.WeakReference;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.jetbrains.annotations.Nullable;
@@ -118,6 +124,8 @@ public interface MessageMarshaller<M extends Message> {
      */
     static <M extends Message> void finishUnmarshal(MessageFactory factory, M msg, GridKernalContext kctx,
         @Nullable GridCacheContext<?, ?> nested, ClassLoader clsLdr) throws IgniteCheckedException {
+        assert !Dedup.ENABLED || Dedup.firstUnmarshal(msg) : "Message finish-unmarshalled more than once: " + msg.getClass().getName();
+
         MessageMarshaller<M> m = (MessageMarshaller<M>)factory.marshaller(msg.directType());
 
         if (m != null)
@@ -135,9 +143,79 @@ public interface MessageMarshaller<M extends Message> {
      */
     static <M extends Message> void finishUnmarshal(MessageFactory factory, M msg, GridKernalContext kctx)
         throws IgniteCheckedException {
+        assert !Dedup.ENABLED || Dedup.firstUnmarshal(msg) : "Message finish-unmarshalled more than once: " + msg.getClass().getName();
+
         MessageMarshaller<M> m = (MessageMarshaller<M>)factory.marshaller(msg.directType());
 
         if (m != null)
             m.finishUnmarshal(msg, kctx);
+    }
+
+    /**
+     * Detects a {@link MarshallableMessage} instance being finish-unmarshalled more than once — a class-loader or
+     * receive-path bug. Gated by {@link #ENABLED}, so it runs only under tests and is folded away in production.
+     */
+    class Dedup {
+        /**
+         * When {@code true}, the no-double-unmarshal check runs. {@code static final} so the JIT folds the guard away
+         * in production (even with assertions on); enabled only by tests via {@code IGNITE_MESSAGE_UNMARSHAL_ONCE_CHECK}.
+         */
+        static final boolean ENABLED = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_MESSAGE_UNMARSHAL_ONCE_CHECK);
+
+        /** Queue of collected referents, drained on each call to evict stale {@link IdRef}s from {@link #SEEN}. */
+        private static final ReferenceQueue<Message> Q = new ReferenceQueue<>();
+
+        /** Finish-unmarshalled instances, held weakly and keyed by identity so they vanish with the message. */
+        private static final Set<IdRef> SEEN = ConcurrentHashMap.newKeySet();
+
+        /** */
+        private Dedup() {
+            // No-op.
+        }
+
+        /**
+         * @param msg Message about to be finish-unmarshalled.
+         * @return {@code true} if {@code msg} is not a {@link MarshallableMessage} or is finish-unmarshalled the first time.
+         */
+        static boolean firstUnmarshal(Message msg) {
+            if (!(msg instanceof MarshallableMessage))
+                return true;
+
+            for (Reference<? extends Message> r; (r = Q.poll()) != null; )
+                SEEN.remove(r);
+
+            return SEEN.add(new IdRef(msg));
+        }
+
+        /** Weak reference to a message keyed by identity, so two equal-but-distinct messages remain distinct keys. */
+        private static final class IdRef extends WeakReference<Message> {
+            /** Referent identity hash, captured up front since the referent may be cleared later. */
+            private final int hash;
+
+            /** @param msg Tracked message. */
+            IdRef(Message msg) {
+                super(msg, Q);
+
+                hash = System.identityHashCode(msg);
+            }
+
+            /** {@inheritDoc} */
+            @Override public int hashCode() {
+                return hash;
+            }
+
+            /** {@inheritDoc} */
+            @Override public boolean equals(Object o) {
+                if (this == o)
+                    return true;
+
+                if (!(o instanceof IdRef))
+                    return false;
+
+                Message m = get();
+
+                return m != null && m == ((IdRef)o).get();
+            }
+        }
     }
 }

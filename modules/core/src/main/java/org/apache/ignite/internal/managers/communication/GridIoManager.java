@@ -91,6 +91,7 @@ import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
@@ -1458,6 +1459,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
     /** */
     private void finishUnmarshalPayload(GridIoMessage msg) {
+        // Unmarshalled by GridCacheIoManager with the deployment loader; the loader here can't see its peer classes.
+        if (msg.message() instanceof GridCacheMessage)
+            return;
+
         try {
             MessageMarshaller.finishUnmarshal(ctx.messageFactory(), msg.message(), ctx);
         }
