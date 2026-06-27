@@ -23,6 +23,8 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -34,8 +36,10 @@ import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 
 /**
  *
@@ -46,6 +50,9 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
 
     /** */
     private final GridCacheSharedContext<?, ?> ctx;
+
+    /** */
+    private final ClassLoader clsLdr;
 
     /** */
     private UUID locNodeId;
@@ -67,6 +74,7 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
         super(ctx);
 
         this.ctx = ctx.cache().context();
+        clsLdr = U.resolveClassLoader(ctx.config());
         ioMgr = ctx.io();
         msgLsnr = this::onMessage;
     }
@@ -172,6 +180,18 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     }
 
     /** */
+    protected void prepareUnmarshal(Message msg) throws IgniteCheckedException {
+        try {
+            MessageMarshaller.finishUnmarshal(ctx.kernalContext().messageFactory(), msg, ctx.kernalContext(), null, clsLdr);
+        }
+        catch (Exception e) {
+            failureProcessor().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+
+            throw e;
+        }
+    }
+
+    /** */
     protected void onMessage(UUID nodeId, Message msg) {
         if (msg instanceof ExecutionContextAware) {
             ExecutionContextAware msg0 = (ExecutionContextAware)msg;
@@ -193,8 +213,14 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
 
     /** */
     private void onMessageInternal(UUID nodeId, Message msg) {
-        MessageListener lsnr = Objects.requireNonNull(lsnrs.get(msg.getClass()));
+        try {
+            prepareUnmarshal(msg);
 
-        lsnr.onMessage(nodeId, msg);
+            MessageListener lsnr = Objects.requireNonNull(lsnrs.get(msg.getClass()));
+            lsnr.onMessage(nodeId, msg);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 }
