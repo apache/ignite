@@ -741,12 +741,11 @@ public class IDTOSerializerGenerator {
 
     /** @return FQN of {@code comp}. */
     private static String className(TypeMirror comp) {
-        String n = comp.toString();
-
-        int spaceIdx = n.indexOf(' ');
-
-        if (spaceIdx != -1)
-            n = n.substring(spaceIdx + 1);
+        // A type-use annotation (e.g. @Nullable, @NotNull) is rendered by the compiler either before the whole type
+        // ("@a.b.C java.util.Collection") or inline, right before the simple name of a qualified type
+        // ("java.util.@a.b.C Collection"). Strip such annotations wherever they appear so the package qualifier is
+        // preserved; otherwise only the simple name would remain and lookups by FQN (e.g. COLL_IMPL) would fail.
+        String n = comp.toString().replaceAll("@[^\\s()]+(?:\\([^)]*\\))?\\s*", "");
 
         int genIdx = n.indexOf('<');
 
