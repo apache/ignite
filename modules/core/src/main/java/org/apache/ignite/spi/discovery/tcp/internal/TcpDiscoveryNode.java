@@ -272,10 +272,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         map.put(ATTR_NODE_CONSISTENT_ID, consistentId);
 
         attrs = Collections.unmodifiableMap(map);
-
-        // Invalidate the @Marshalled caches — both fields are mutated here (see setAttributes).
-        consistentIdBytes = null;
-        attrsBytes = null;
     }
 
     /** {@inheritDoc} */

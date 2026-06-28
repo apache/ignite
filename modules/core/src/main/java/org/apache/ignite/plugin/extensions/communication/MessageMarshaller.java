@@ -124,7 +124,7 @@ public interface MessageMarshaller<M extends Message> {
      */
     static <M extends Message> void finishUnmarshal(MessageFactory factory, M msg, GridKernalContext kctx,
         @Nullable GridCacheContext<?, ?> nested, ClassLoader clsLdr) throws IgniteCheckedException {
-        assert !Dedup.ENABLED || Dedup.firstUnmarshal(msg) : "Message finish-unmarshalled more than once: " + msg.getClass().getName();
+        assert !Dedup.ENABLED || Dedup.firstUnmarshal(msg, true) : "Finish-unmarshalled more than once: " + msg.getClass().getName();
 
         MessageMarshaller<M> m = (MessageMarshaller<M>)factory.marshaller(msg.directType());
 
@@ -143,7 +143,7 @@ public interface MessageMarshaller<M extends Message> {
      */
     static <M extends Message> void finishUnmarshal(MessageFactory factory, M msg, GridKernalContext kctx)
         throws IgniteCheckedException {
-        assert !Dedup.ENABLED || Dedup.firstUnmarshal(msg) : "Message finish-unmarshalled more than once: " + msg.getClass().getName();
+        assert !Dedup.ENABLED || Dedup.firstUnmarshal(msg, false) : "Finish-unmarshalled more than once: " + msg.getClass().getName();
 
         MessageMarshaller<M> m = (MessageMarshaller<M>)factory.marshaller(msg.directType());
 
@@ -152,8 +152,10 @@ public interface MessageMarshaller<M extends Message> {
     }
 
     /**
-     * Detects a {@link MarshallableMessage} instance being finish-unmarshalled more than once — a class-loader or
-     * receive-path bug. Gated by {@link #ENABLED}, so it runs only under tests and is folded away in production.
+     * Detects a {@link MarshallableMessage} instance being finish-unmarshalled more than once within the same pass
+     * (cache-aware or cache-free) — a class-loader or receive-path bug. The two passes over one message (e.g. the
+     * generic {@code GridIoManager} pass plus a subsystem's cache-aware pass) are legitimate and tracked separately.
+     * Gated by {@link #ENABLED}, so it runs only under tests and is folded away in production.
      */
     class Dedup {
         /**
@@ -175,28 +177,38 @@ public interface MessageMarshaller<M extends Message> {
 
         /**
          * @param msg Message about to be finish-unmarshalled.
-         * @return {@code true} if {@code msg} is not a {@link MarshallableMessage} or is finish-unmarshalled the first time.
+         * @param cacheMode {@code true} for the cache-aware pass, {@code false} for the cache-free pass; the two passes
+         * over one message are legitimate and tracked separately, so only a repeat of the same pass is reported.
+         * @return {@code true} if {@code msg} is not a {@link MarshallableMessage} or is finish-unmarshalled the first
+         * time in this pass.
          */
-        static boolean firstUnmarshal(Message msg) {
+        static boolean firstUnmarshal(Message msg, boolean cacheMode) {
             if (!(msg instanceof MarshallableMessage))
                 return true;
 
             for (Reference<? extends Message> r; (r = Q.poll()) != null; )
                 SEEN.remove(r);
 
-            return SEEN.add(new IdRef(msg));
+            return SEEN.add(new IdRef(msg, cacheMode));
         }
 
-        /** Weak reference to a message keyed by identity, so two equal-but-distinct messages remain distinct keys. */
+        /** Weak reference to a message keyed by (identity, pass), so distinct messages and the two passes stay distinct. */
         private static final class IdRef extends WeakReference<Message> {
-            /** Referent identity hash, captured up front since the referent may be cleared later. */
+            /** Referent identity hash folded with the pass, captured up front since the referent may be cleared later. */
             private final int hash;
 
-            /** @param msg Tracked message. */
-            IdRef(Message msg) {
+            /** Unmarshal pass: cache-aware vs cache-free. Keeps the two legitimate passes over one message distinct. */
+            private final boolean cacheMode;
+
+            /**
+             * @param msg Tracked message.
+             * @param cacheMode Unmarshal pass.
+             */
+            IdRef(Message msg, boolean cacheMode) {
                 super(msg, Q);
 
-                hash = System.identityHashCode(msg);
+                this.cacheMode = cacheMode;
+                hash = 31 * System.identityHashCode(msg) + (cacheMode ? 1 : 0);
             }
 
             /** {@inheritDoc} */
@@ -212,9 +224,11 @@ public interface MessageMarshaller<M extends Message> {
                 if (!(o instanceof IdRef))
                     return false;
 
+                IdRef ref = (IdRef)o;
+
                 Message m = get();
 
-                return m != null && m == ((IdRef)o).get();
+                return m != null && m == ref.get() && cacheMode == ref.cacheMode;
             }
         }
     }

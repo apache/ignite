@@ -23,9 +23,10 @@ import org.junit.Test;
 
 /**
  * Verifies the no-double-unmarshal check itself, not its coverage: {@link MessageMarshaller.Dedup#firstUnmarshal} must
- * detect a second finish-unmarshal of the same instance, and the check must be enabled for every test — otherwise the
- * suite-wide guard would silently turn off and pass every test vacuously. The actual coverage (no real receive path
- * unmarshals an instance twice) comes from running the check across the whole suite via {@code GridAbstractTest}.
+ * detect a second finish-unmarshal of the same instance within one pass, while allowing the two legitimate passes
+ * (cache-free and cache-aware), and the check must be enabled for every test — otherwise the suite-wide guard would
+ * silently turn off and pass every test vacuously. The actual coverage (no real receive path unmarshals an instance
+ * twice in the same pass) comes from running the check across the whole suite via {@code GridAbstractTest}.
  */
 public class MessageFinishUnmarshalOnceTest extends GridCommonAbstractTest {
     /** The suite-wide guard must be on, so a silently-disabled check cannot pass every test without verifying anything. */
@@ -35,14 +36,24 @@ public class MessageFinishUnmarshalOnceTest extends GridCommonAbstractTest {
             MessageMarshaller.Dedup.ENABLED);
     }
 
-    /** A second finish-unmarshal of the same instance must be detected; the first must be allowed. */
+    /** A second finish-unmarshal of the same instance within one pass must be detected; the first must be allowed. */
     @Test
     public void testSecondUnmarshalDetected() {
         MarshallableMessage msg = new NoopMarshallableMessage();
 
-        assertTrue("First finish-unmarshal must be allowed", MessageMarshaller.Dedup.firstUnmarshal(msg));
-        assertFalse("Second finish-unmarshal of the same instance must be detected",
-            MessageMarshaller.Dedup.firstUnmarshal(msg));
+        assertTrue("First finish-unmarshal must be allowed", MessageMarshaller.Dedup.firstUnmarshal(msg, false));
+        assertFalse("Second finish-unmarshal of the same instance in the same pass must be detected",
+            MessageMarshaller.Dedup.firstUnmarshal(msg, false));
+    }
+
+    /** The two legitimate passes (cache-free and cache-aware) over one instance must both be allowed. */
+    @Test
+    public void testBothPassesAllowed() {
+        MarshallableMessage msg = new NoopMarshallableMessage();
+
+        assertTrue("Cache-free pass must be allowed", MessageMarshaller.Dedup.firstUnmarshal(msg, false));
+        assertTrue("Cache-aware pass over the same instance must also be allowed",
+            MessageMarshaller.Dedup.firstUnmarshal(msg, true));
     }
 
     /** Minimal {@link MarshallableMessage}; only its identity matters to the check. */
