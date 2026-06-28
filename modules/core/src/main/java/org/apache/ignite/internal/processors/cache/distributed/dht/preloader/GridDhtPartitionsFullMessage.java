@@ -92,17 +92,13 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @Order(6)
     AffinityTopologyVersion topVer;
 
-    /** Exceptions. */
-    @GridToStringInclude
-    private Map<UUID, Throwable> errs;
-
     /**
-     * Used as a stub for serialization of {@link #errs}.
-     * All logic resides within getter and setter.
+     * Exceptions in wire form. The logical {@code Map<UUID, Throwable>} is exposed via
+     * {@link #getErrorsMap()} / {@link #setErrorsMap(Map)}.
      */
     @Order(7)
     @Compress
-    @SuppressWarnings("unused")
+    @GridToStringInclude
     Map<UUID, ErrorMessage> errMsgs;
 
     /** */
@@ -169,7 +165,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         cp.partsToReload = partsToReload;
         cp.partsSizes = partsSizes;
         cp.topVer = topVer;
-        cp.errs = errs;
+        cp.errMsgs = errMsgs;
         cp.resTopVer = resTopVer;
         cp.joinedNodeAff = joinedNodeAff;
         cp.idealAffDiff = idealAffDiff;
@@ -364,14 +360,17 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      * @return Errors map.
      */
     @Nullable Map<UUID, Throwable> getErrorsMap() {
-        return errs;
+        return errMsgs == null ? null : F.viewReadOnly(errMsgs, e -> e.error());
     }
 
     /**
      * @param errs Errors map.
      */
     void setErrorsMap(Map<UUID, Throwable> errs) {
-        this.errs = new HashMap<>(errs);
+        errMsgs = new HashMap<>();
+
+        for (Map.Entry<UUID, Throwable> e : errs.entrySet())
+            errMsgs.put(e.getKey(), new ErrorMessage(e.getValue()));
     }
 
     /**
@@ -392,14 +391,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
         if (!F.isEmpty(parts) && locParts == null)
             locParts = copyPartitionsMap(parts);
-
-        if (errs != null) {
-            errMsgs = new HashMap<>();
-
-            for (Map.Entry<UUID, Throwable> entry : errs.entrySet()) {
-                errMsgs.put(entry.getKey(), new ErrorMessage(entry.getValue()));
-            }
-        }
     }
 
     /**
@@ -449,8 +440,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
         if (parts == null)
             parts = new HashMap<>();
-
-        errs = errMsgs == null ? null : F.viewReadOnly(errMsgs, e -> e.error());
     }
 
 
