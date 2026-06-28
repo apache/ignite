@@ -19,17 +19,15 @@ package org.apache.ignite.internal.processors.plugin;
 
 import java.io.Serializable;
 import java.util.Map;
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class PluginsDataBagItem implements MarshallableMessage {
+public class PluginsDataBagItem implements Message {
     /** Original plugins data. */
+    @Marshalled("dataBytes")
     @Nullable Map<String, Serializable> data;
 
     /** Serialized plugins data. */
@@ -42,18 +40,6 @@ public class PluginsDataBagItem implements MarshallableMessage {
     /** @param data Plugins data. */
     public PluginsDataBagItem(@Nullable Map<String, Serializable> data) {
         this.data = data;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (!F.isEmpty(data))
-            dataBytes = U.marshal(marsh, data);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (dataBytes != null)
-            data = U.unmarshal(marsh, dataBytes, clsLdr);
     }
 
     /** @return Original plugins data. */
