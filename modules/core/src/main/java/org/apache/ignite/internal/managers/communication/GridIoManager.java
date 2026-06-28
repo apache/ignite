@@ -507,6 +507,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
                 msg0.senderNodeId(nodeId);
 
+                msg0.onAfterRead();
+
                 if (msg0.request()) {
                     IgniteIoTestMessage res = new IgniteIoTestMessage(msg0.id(), false, null);
 
@@ -516,6 +518,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                     res.copyDataFromRequest(msg0);
 
                     try {
+                        res.onBeforeWrite();
+
                         sendToGridTopic(node, GridTopic.TOPIC_IO_TEST, res, GridIoPolicy.SYSTEM_POOL);
                     }
                     catch (IgniteCheckedException e) {
@@ -560,6 +564,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
         ioTestMap().put(id, fut);
 
+        msg.onBeforeWrite();
+
         for (int i = 0; i < nodes.size(); i++) {
             ClusterNode node = nodes.get(i);
 
@@ -596,6 +602,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         msg.processFromNioThread(procFromNioThread);
 
         ioTestMap().put(id, fut);
+
+        msg.onBeforeWrite();
 
         try {
             sendToGridTopic(node, GridTopic.TOPIC_IO_TEST, msg, GridIoPolicy.SYSTEM_POOL);
