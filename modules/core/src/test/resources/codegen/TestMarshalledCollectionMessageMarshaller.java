@@ -20,8 +20,7 @@ package org.apache.ignite.internal;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.TestMarshalledCollectionMessage;
-import org.apache.ignite.internal.processors.cache.CacheObjectNotResolvedException;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
@@ -38,8 +37,8 @@ public class TestMarshalledCollectionMessageMarshaller implements MessageMarshal
     }
 
     /** */
-    @Override public void prepareMarshal(TestMarshalledCollectionMessage msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {
-        GridCacheContext<?, ?> ctx = nested;
+    @Override public void prepareMarshal(TestMarshalledCollectionMessage msg, GridKernalContext kctx, CacheObjectContext nested) throws IgniteCheckedException {
+        CacheObjectContext ctx = nested;
 
         if (msg.keys != null && msg.keysArr == null)
             msg.keysArr = msg.keys.toArray(new GridCacheVersion[0]);
@@ -53,8 +52,8 @@ public class TestMarshalledCollectionMessageMarshaller implements MessageMarshal
     }
 
     /** */
-    @Override public void finishUnmarshal(TestMarshalledCollectionMessage msg, GridKernalContext kctx, GridCacheContext<?, ?> nested, ClassLoader clsLdr) throws IgniteCheckedException {
-        GridCacheContext<?, ?> ctx = nested;
+    @Override public void finishUnmarshal(TestMarshalledCollectionMessage msg, GridKernalContext kctx, CacheObjectContext nested, ClassLoader clsLdr) throws IgniteCheckedException {
+        CacheObjectContext ctx = nested;
 
         if (msg.keysArr != null) {
             msg.keys = U.newHashSet(msg.keysArr.length);
@@ -63,12 +62,7 @@ public class TestMarshalledCollectionMessageMarshaller implements MessageMarshal
                 if (e != null)
                     MessageMarshaller.finishUnmarshal(kctx.messageFactory(), e, kctx, ctx, clsLdr);
 
-                try {
-                    msg.keys.add(e);
-                }
-                catch (CacheObjectNotResolvedException ex) {
-                    U.warn(kctx.log(getClass()), "Skipping unresolved element [field=keys]: " + ex.getMessage());
-                }
+                msg.keys.add(e);
             }
 
             msg.keysArr = null;

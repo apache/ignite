@@ -34,7 +34,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.TestCollectionsMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -53,8 +53,8 @@ public class TestCollectionsMessageMarshaller implements MessageMarshaller<TestC
     }
 
     /** */
-    @Override public void prepareMarshal(TestCollectionsMessage msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {
-        GridCacheContext<?, ?> ctx = nested;
+    @Override public void prepareMarshal(TestCollectionsMessage msg, GridKernalContext kctx, CacheObjectContext nested) throws IgniteCheckedException {
+        CacheObjectContext ctx = nested;
 
         if (msg.messageList != null) {
             for (GridCacheVersion e4 : (Collection<? extends GridCacheVersion>)msg.messageList) {
@@ -66,14 +66,14 @@ public class TestCollectionsMessageMarshaller implements MessageMarshaller<TestC
         if (msg.cacheObjectSet != null) {
             for (CacheObject e4 : (Collection<? extends CacheObject>)msg.cacheObjectSet) {
                 if (e4 != null && ctx != null)
-                    e4.prepareMarshal(ctx.cacheObjectContext());
+                    e4.prepareMarshal(ctx);
             }
         }
     }
 
     /** */
-    @Override public void finishUnmarshal(TestCollectionsMessage msg, GridKernalContext kctx, GridCacheContext<?, ?> nested, ClassLoader clsLdr) throws IgniteCheckedException {
-        GridCacheContext<?, ?> ctx = nested;
+    @Override public void finishUnmarshal(TestCollectionsMessage msg, GridKernalContext kctx, CacheObjectContext nested, ClassLoader clsLdr) throws IgniteCheckedException {
+        CacheObjectContext ctx = nested;
 
         if (msg.messageList != null) {
             for (GridCacheVersion e4 : (Collection<? extends GridCacheVersion>)msg.messageList) {
@@ -85,7 +85,7 @@ public class TestCollectionsMessageMarshaller implements MessageMarshaller<TestC
         if (msg.cacheObjectSet != null) {
             for (CacheObject e4 : (Collection<? extends CacheObject>)msg.cacheObjectSet) {
                 if (e4 != null && ctx != null)
-                    e4.finishUnmarshal(ctx.cacheObjectContext(), clsLdr);
+                    e4.finishUnmarshal(ctx, clsLdr);
             }
         }
     }

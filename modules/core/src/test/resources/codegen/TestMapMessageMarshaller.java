@@ -36,7 +36,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.TestMapMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
@@ -56,8 +56,8 @@ public class TestMapMessageMarshaller implements MessageMarshaller<TestMapMessag
     }
 
     /** */
-    @Override public void prepareMarshal(TestMapMessage msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {
-        GridCacheContext<?, ?> ctx = nested;
+    @Override public void prepareMarshal(TestMapMessage msg, GridKernalContext kctx, CacheObjectContext nested) throws IgniteCheckedException {
+        CacheObjectContext ctx = nested;
 
         if (msg.messageBoxedDoubleMap != null) {
             for (GridCacheVersion e4 : ((Collection<? extends GridCacheVersion>)msg.messageBoxedDoubleMap.keySet())) {
@@ -69,7 +69,7 @@ public class TestMapMessageMarshaller implements MessageMarshaller<TestMapMessag
         if (msg.gridCacheObjectMap != null) {
             for (KeyCacheObject e4 : ((Collection<? extends KeyCacheObject>)msg.gridCacheObjectMap.keySet())) {
                 if (e4 != null && ctx != null)
-                    e4.prepareMarshal(ctx.cacheObjectContext());
+                    e4.prepareMarshal(ctx);
             }
             for (Map e4 : ((Collection<? extends Map>)msg.gridCacheObjectMap.values())) {
                 if (e4 != null) {
@@ -77,7 +77,7 @@ public class TestMapMessageMarshaller implements MessageMarshaller<TestMapMessag
                         if (e6 != null) {
                             for (CacheObject e8 : (Collection<? extends CacheObject>)e6) {
                                 if (e8 != null && ctx != null)
-                                    e8.prepareMarshal(ctx.cacheObjectContext());
+                                    e8.prepareMarshal(ctx);
                             }
                         }
                     }
@@ -87,8 +87,8 @@ public class TestMapMessageMarshaller implements MessageMarshaller<TestMapMessag
     }
 
     /** */
-    @Override public void finishUnmarshal(TestMapMessage msg, GridKernalContext kctx, GridCacheContext<?, ?> nested, ClassLoader clsLdr) throws IgniteCheckedException {
-        GridCacheContext<?, ?> ctx = nested;
+    @Override public void finishUnmarshal(TestMapMessage msg, GridKernalContext kctx, CacheObjectContext nested, ClassLoader clsLdr) throws IgniteCheckedException {
+        CacheObjectContext ctx = nested;
 
         if (msg.messageBoxedDoubleMap != null) {
             for (GridCacheVersion e4 : ((Collection<? extends GridCacheVersion>)msg.messageBoxedDoubleMap.keySet())) {
@@ -100,7 +100,7 @@ public class TestMapMessageMarshaller implements MessageMarshaller<TestMapMessag
         if (msg.gridCacheObjectMap != null) {
             for (KeyCacheObject e4 : ((Collection<? extends KeyCacheObject>)msg.gridCacheObjectMap.keySet())) {
                 if (e4 != null && ctx != null)
-                    e4.finishUnmarshal(ctx.cacheObjectContext(), clsLdr);
+                    e4.finishUnmarshal(ctx, clsLdr);
             }
             for (Map e4 : ((Collection<? extends Map>)msg.gridCacheObjectMap.values())) {
                 if (e4 != null) {
@@ -108,7 +108,7 @@ public class TestMapMessageMarshaller implements MessageMarshaller<TestMapMessag
                         if (e6 != null) {
                             for (CacheObject e8 : (Collection<? extends CacheObject>)e6) {
                                 if (e8 != null && ctx != null)
-                                    e8.finishUnmarshal(ctx.cacheObjectContext(), clsLdr);
+                                    e8.finishUnmarshal(ctx, clsLdr);
                             }
                         }
                     }

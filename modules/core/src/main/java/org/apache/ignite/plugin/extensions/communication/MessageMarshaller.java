@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -39,10 +39,10 @@ public interface MessageMarshaller<M extends Message> {
      *
      * @param msg Message to marshal.
      * @param kctx Kernal context.
-     * @param nested Nested cache context, or {@code null} if not applicable.
+     * @param nested Cache object context, or {@code null} if not applicable.
      * @throws IgniteCheckedException If marshalling failed.
      */
-    public void prepareMarshal(M msg, GridKernalContext kctx, @Nullable GridCacheContext<?, ?> nested)
+    public void prepareMarshal(M msg, GridKernalContext kctx, @Nullable CacheObjectContext nested)
         throws IgniteCheckedException;
 
     /**
@@ -50,11 +50,11 @@ public interface MessageMarshaller<M extends Message> {
      *
      * @param msg Message to unmarshal.
      * @param kctx Kernal context.
-     * @param nested Nested cache context, or {@code null} if not applicable.
+     * @param nested Cache object context, or {@code null} if not applicable.
      * @param clsLdr Class loader for unmarshalling.
      * @throws IgniteCheckedException If unmarshalling failed.
      */
-    public void finishUnmarshal(M msg, GridKernalContext kctx, @Nullable GridCacheContext<?, ?> nested, ClassLoader clsLdr)
+    public void finishUnmarshal(M msg, GridKernalContext kctx, @Nullable CacheObjectContext nested, ClassLoader clsLdr)
         throws IgniteCheckedException;
 
     /**
@@ -100,11 +100,11 @@ public interface MessageMarshaller<M extends Message> {
      * @param factory Message factory.
      * @param msg Message to marshal.
      * @param kctx Kernal context.
-     * @param nested Nested cache context, or {@code null} if not applicable.
+     * @param nested Cache object context, or {@code null} if not applicable.
      * @throws IgniteCheckedException If marshalling failed.
      */
     static <M extends Message> void prepareMarshal(MessageFactory factory, M msg, GridKernalContext kctx,
-        @Nullable GridCacheContext<?, ?> nested) throws IgniteCheckedException {
+        @Nullable CacheObjectContext nested) throws IgniteCheckedException {
         MessageMarshaller<M> m = (MessageMarshaller<M>)factory.marshaller(msg.directType());
 
         if (m != null)
@@ -118,12 +118,12 @@ public interface MessageMarshaller<M extends Message> {
      * @param factory Message factory.
      * @param msg Message to unmarshal.
      * @param kctx Kernal context.
-     * @param nested Nested cache context, or {@code null} if not applicable.
+     * @param nested Cache object context, or {@code null} if not applicable.
      * @param clsLdr Class loader for unmarshalling.
      * @throws IgniteCheckedException If unmarshalling failed.
      */
     static <M extends Message> void finishUnmarshal(MessageFactory factory, M msg, GridKernalContext kctx,
-        @Nullable GridCacheContext<?, ?> nested, ClassLoader clsLdr) throws IgniteCheckedException {
+        @Nullable CacheObjectContext nested, ClassLoader clsLdr) throws IgniteCheckedException {
         assert !Dedup.ENABLED || Dedup.firstUnmarshal(msg, true) : "Finish-unmarshalled more than once: " + msg.getClass().getName();
 
         MessageMarshaller<M> m = (MessageMarshaller<M>)factory.marshaller(msg.directType());

@@ -179,12 +179,12 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     private void generatePrepareMarshalMethod(List<VariableElement> orderedFields) {
         imports.add("org.apache.ignite.IgniteCheckedException");
         imports.add("org.apache.ignite.internal.GridKernalContext");
-        imports.add("org.apache.ignite.internal.processors.cache.GridCacheContext");
+        imports.add("org.apache.ignite.internal.processors.cache.CacheObjectContext");
 
         marshall.add(indentedLine(METHOD_JAVADOC));
 
         marshall.add(indentedLine("@Override public void prepareMarshal(" + simpleNameWithGeneric(type) +
-            " msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {"));
+            " msg, GridKernalContext kctx, CacheObjectContext nested) throws IgniteCheckedException {"));
 
         indent++;
 
@@ -231,7 +231,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
         String msgParam = simpleNameWithGeneric(type) + " msg, GridKernalContext kctx";
 
-        generateFinishUnmarshalMethod("finishUnmarshal", msgParam + ", GridCacheContext<?, ?> nested, ClassLoader clsLdr",
+        generateFinishUnmarshalMethod("finishUnmarshal", msgParam + ", CacheObjectContext nested, ClassLoader clsLdr",
             workerFields, MarshalMode.FINISH_CACHE);
 
         generateFinishUnmarshalMethod("finishUnmarshal", msgParam, workerFields, MarshalMode.FINISH);
@@ -446,8 +446,6 @@ public class MessageMarshallerGenerator extends MessageGenerator {
             String arrField = "msg." + colAnn.value();
             VariableElement wireField = requireEnclosed(enclosed, colAnn.value(), "@MarshalledCollection");
 
-            imports.add("org.apache.ignite.internal.processors.cache.CacheObjectNotResolvedException");
-
             List<String> code = new ArrayList<>();
 
             code.add(indentedLine("if (%s != null) {", arrField));
@@ -521,24 +519,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
         code.addAll(codeFor(compType, "e", MarshalMode.FINISH_CACHE));
         code.add(EMPTY);
-        code.add(indentedLine("try {"));
-
-        indent++;
-
         code.add(indentedLine("%s.add(e);", colField));
-
-        indent--;
-
-        code.add(indentedLine("}"));
-        code.add(indentedLine("catch (CacheObjectNotResolvedException ex) {"));
-
-        indent++;
-
-        code.add(indentedLine("U.warn(kctx.log(getClass()), \"Skipping unresolved element [field=%s]: \" + ex.getMessage());", fieldName));
-
-        indent--;
-
-        code.add(indentedLine("}"));
 
         indent--;
 
@@ -584,8 +565,6 @@ public class MessageMarshallerGenerator extends MessageGenerator {
             String mapField = "msg." + field.getSimpleName();
             String keysField = "msg." + ann.keys();
             String valsField = "msg." + ann.values();
-
-            imports.add("org.apache.ignite.internal.processors.cache.CacheObjectNotResolvedException");
 
             List<String> code = keysEl.asType().getKind() == TypeKind.ARRAY
                 ? mapFinishArrayBlock(field, keysEl, valsEl, mapField, keysField, valsField)
@@ -636,25 +615,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         }
 
         code.add(EMPTY);
-        code.add(indentedLine("try {"));
-
-        indent++;
-
         code.add(indentedLine("%s.put(k, v);", mapField));
-
-        indent--;
-
-        code.add(indentedLine("}"));
-        code.add(indentedLine("catch (CacheObjectNotResolvedException ex) {"));
-
-        indent++;
-
-        code.add(indentedLine("U.warn(kctx.log(getClass()), \"Skipping unresolved element [field=%s]: \" + ex.getMessage());",
-            field.getSimpleName()));
-
-        indent--;
-
-        code.add(indentedLine("}"));
 
         indent--;
 
@@ -721,25 +682,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         }
 
         code.add(EMPTY);
-        code.add(indentedLine("try {"));
-
-        indent++;
-
         code.add(indentedLine("%s.put(k, v);", mapField));
-
-        indent--;
-
-        code.add(indentedLine("}"));
-        code.add(indentedLine("catch (CacheObjectNotResolvedException ex) {"));
-
-        indent++;
-
-        code.add(indentedLine("U.warn(kctx.log(getClass()), \"Skipping unresolved element [field=%s]: \" + ex.getMessage());",
-            field.getSimpleName()));
-
-        indent--;
-
-        code.add(indentedLine("}"));
 
         indent--;
 
@@ -869,8 +812,8 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         indent++;
 
         code.add(mode == MarshalMode.PREPARE
-            ? indentedLine("%s.prepareMarshal(ctx.cacheObjectContext());", accessor)
-            : indentedLine("%s.finishUnmarshal(ctx.cacheObjectContext(), clsLdr);", accessor));
+            ? indentedLine("%s.prepareMarshal(ctx);", accessor)
+            : indentedLine("%s.finishUnmarshal(ctx, clsLdr);", accessor));
 
         indent--;
 
@@ -986,16 +929,22 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         return code;
     }
 
-    /** Returns the {@code GridCacheContext ctx} resolution line for the current message type. */
+    /**
+     * Returns the {@code CacheObjectContext ctx} resolution line for the current message type. Cache messages resolve
+     * via the cache, group messages via the cache group — the group's context outlives the stop of individual caches,
+     * so cache objects still unmarshal while a cache (group) is being destroyed.
+     */
     private String ctxResolutionLine() {
         if (isCacheIdAwareMessage(type))
-            return indentedLine("GridCacheContext<?, ?> ctx = nested == null ? " +
-                    "kctx.cache().context().cacheContext(msg.cacheId()) : nested;");
+            return indentedLine("CacheObjectContext ctx = nested != null ? nested : " +
+                    "kctx.cache().context().cacheContext(msg.cacheId()) == null ? null : " +
+                    "kctx.cache().context().cacheContext(msg.cacheId()).cacheObjectContext();");
         else if (isCacheGroupIdMessage(type))
-            return indentedLine("GridCacheContext<?, ?> ctx = nested == null ? " +
-                    "kctx.cache().context().cacheContext(msg.groupId()) : nested;");
+            return indentedLine("CacheObjectContext ctx = nested != null ? nested : " +
+                    "kctx.cache().cacheGroup(msg.groupId()) == null ? null : " +
+                    "kctx.cache().cacheGroup(msg.groupId()).cacheObjectContext();");
         else
-            return indentedLine("GridCacheContext<?, ?> ctx = nested;");
+            return indentedLine("CacheObjectContext ctx = nested;");
     }
 
     /** Returns {@code true} if any field requires {@code ctx} in generated marshal/unmarshal code. */

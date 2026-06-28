@@ -863,6 +863,7 @@
                                         <inputExclude>**/.asf.yaml</inputExclude>
                                         <inputExclude>.travis.yml</inputExclude>
                                         <inputExclude>.github/PULL_REQUEST_TEMPLATE.md</inputExclude>
+                                        <inputExclude>.mvn/jvm.config</inputExclude><!--raw JVM args for codegen; header would break the build-->
                                         <inputExclude>idea/ignite_codeStyle.xml</inputExclude>
                                         <inputExclude>**/DEVNOTES*.txt</inputExclude>
                                         <inputExclude>**/NOTICE*</inputExclude>

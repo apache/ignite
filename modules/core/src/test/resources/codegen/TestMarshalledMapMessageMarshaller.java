@@ -22,8 +22,7 @@ import java.util.Iterator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.TestMarshalledMapMessage;
-import org.apache.ignite.internal.processors.cache.CacheObjectNotResolvedException;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
@@ -40,8 +39,8 @@ public class TestMarshalledMapMessageMarshaller implements MessageMarshaller<Tes
     }
 
     /** */
-    @Override public void prepareMarshal(TestMarshalledMapMessage msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {
-        GridCacheContext<?, ?> ctx = nested;
+    @Override public void prepareMarshal(TestMarshalledMapMessage msg, GridKernalContext kctx, CacheObjectContext nested) throws IgniteCheckedException {
+        CacheObjectContext ctx = nested;
 
         if (msg.theMap != null && msg.mapKeys == null) {
             msg.mapKeys = msg.theMap.keySet();
@@ -64,8 +63,8 @@ public class TestMarshalledMapMessageMarshaller implements MessageMarshaller<Tes
     }
 
     /** */
-    @Override public void finishUnmarshal(TestMarshalledMapMessage msg, GridKernalContext kctx, GridCacheContext<?, ?> nested, ClassLoader clsLdr) throws IgniteCheckedException {
-        GridCacheContext<?, ?> ctx = nested;
+    @Override public void finishUnmarshal(TestMarshalledMapMessage msg, GridKernalContext kctx, CacheObjectContext nested, ClassLoader clsLdr) throws IgniteCheckedException {
+        CacheObjectContext ctx = nested;
 
         if (msg.mapKeys != null) {
             msg.theMap = U.newHashMap(msg.mapKeys.size());
@@ -83,12 +82,7 @@ public class TestMarshalledMapMessageMarshaller implements MessageMarshaller<Tes
                 if (v != null)
                     MessageMarshaller.finishUnmarshal(kctx.messageFactory(), v, kctx, ctx, clsLdr);
 
-                try {
-                    msg.theMap.put(k, v);
-                }
-                catch (CacheObjectNotResolvedException ex) {
-                    U.warn(kctx.log(getClass()), "Skipping unresolved element [field=theMap]: " + ex.getMessage());
-                }
+                msg.theMap.put(k, v);
             }
 
             msg.mapKeys = null;

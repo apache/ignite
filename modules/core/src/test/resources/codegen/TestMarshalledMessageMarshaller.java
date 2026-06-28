@@ -20,7 +20,7 @@ package org.apache.ignite.internal;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.TestMarshalledMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
@@ -41,13 +41,13 @@ public class TestMarshalledMessageMarshaller implements MessageMarshaller<TestMa
     }
 
     /** */
-    @Override public void prepareMarshal(TestMarshalledMessage msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {
+    @Override public void prepareMarshal(TestMarshalledMessage msg, GridKernalContext kctx, CacheObjectContext nested) throws IgniteCheckedException {
         if (msg.data != null && msg.dataBytes == null)
             msg.dataBytes = U.marshal(marshaller, msg.data);
     }
 
     /** */
-    @Override public void finishUnmarshal(TestMarshalledMessage msg, GridKernalContext kctx, GridCacheContext<?, ?> nested, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(TestMarshalledMessage msg, GridKernalContext kctx, CacheObjectContext nested, ClassLoader clsLdr) throws IgniteCheckedException {
         if (msg.dataBytes != null)
             msg.data = U.unmarshal(marshaller, msg.dataBytes, clsLdr);
     }

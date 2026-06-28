@@ -20,7 +20,7 @@ package org.apache.ignite.internal;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.CustomMapperEnumFieldsMessage;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 
@@ -36,11 +36,11 @@ public class CustomMapperEnumFieldsMessageMarshaller implements MessageMarshalle
     }
 
     /** */
-    @Override public void prepareMarshal(CustomMapperEnumFieldsMessage msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {
+    @Override public void prepareMarshal(CustomMapperEnumFieldsMessage msg, GridKernalContext kctx, CacheObjectContext nested) throws IgniteCheckedException {
     }
 
     /** */
-    @Override public void finishUnmarshal(CustomMapperEnumFieldsMessage msg, GridKernalContext kctx, GridCacheContext<?, ?> nested, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(CustomMapperEnumFieldsMessage msg, GridKernalContext kctx, CacheObjectContext nested, ClassLoader clsLdr) throws IgniteCheckedException {
     }
 
     /** */
