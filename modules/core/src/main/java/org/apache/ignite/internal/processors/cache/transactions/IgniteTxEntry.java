@@ -198,9 +198,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, MarshallableMessage, 
     /** Expiry policy. */
     private ExpiryPolicy expiryPlc;
 
-    /** Expiry policy transfer flag. */
-    private boolean transferExpiryPlc;
-
     /** Expiry policy bytes. */
     @Order(10)
     byte[] expiryPlcBytes;
@@ -418,7 +415,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, MarshallableMessage, 
         cp.nodeId = nodeId;
         cp.locMapped = locMapped;
         cp.expiryPlc = expiryPlc;
-        cp.transferExpiryPlc = transferExpiryPlc;
         cp.expiryPlcBytes = expiryPlcBytes;
         cp.flags = flags;
         cp.partUpdateCntr = partUpdateCntr;
@@ -463,7 +459,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, MarshallableMessage, 
         nodeId = snapshot.nodeId;
         locMapped = snapshot.locMapped;
         expiryPlc = snapshot.expiryPlc;
-        transferExpiryPlc = snapshot.transferExpiryPlc;
         expiryPlcBytes = snapshot.expiryPlcBytes;
         flags = snapshot.flags;
         partUpdateCntr = snapshot.partUpdateCntr;
@@ -1046,9 +1041,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, MarshallableMessage, 
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        transferExpiryPlc = expiryPlc != null && expiryPlc != ctx.expiry();
+        boolean transfer = expiryPlc != null && expiryPlc != ctx.expiry();
 
-        if (transferExpiryPlc) {
+        if (transfer) {
             if (expiryPlcBytes == null)
                 expiryPlcBytes = U.marshal(marsh, new IgniteExternalizableExpiryPolicy(expiryPlc));
         }
