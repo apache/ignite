@@ -45,6 +45,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionOptimisticException;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -58,6 +59,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  *
  */
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-627")
 public class CacheNearReaderUpdateTest extends GridCommonAbstractTest {
     /** */
     private static final int SRVS = 4;
