@@ -36,6 +36,7 @@ import org.apache.ignite.internal.IgniteLocalNodeMapBeforeStartTest;
 import org.apache.ignite.internal.IgniteSlowClientDetectionSelfTest;
 import org.apache.ignite.internal.TransactionsMXBeanImplTest;
 import org.apache.ignite.internal.codegen.IgniteDataTransferObjectProcessorTest;
+import org.apache.ignite.internal.codegen.MarshallerCacheFreeFinishTest;
 import org.apache.ignite.internal.codegen.MessageMarshalOnceTest;
 import org.apache.ignite.internal.codegen.MessageProcessorTest;
 import org.apache.ignite.internal.codegen.MessageSerializationArchitectureTest;
@@ -156,6 +157,7 @@ import org.junit.runners.Suite;
     MessageProcessorTest.class,
     MessageMarshalOnceTest.class,
     MessageFinishUnmarshalOnceTest.class,
+    MarshallerCacheFreeFinishTest.class,
     MessageSerializationArchitectureTest.class,
     ErrorMessageSelfTest.class,
     DefaultEnumMapperTest.class,
