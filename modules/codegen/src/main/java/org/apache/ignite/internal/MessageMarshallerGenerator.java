@@ -111,7 +111,8 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     @Override void generateBody(List<VariableElement> fields) throws Exception {
         enclosed = enclosedFields();
         marshallable = marshallableMsgType != null && assignableFrom(type.asType(), marshallableMsgType);
-        hasMarshalled = enclosed.values().stream().anyMatch(f -> f.getAnnotation(Marshalled.class) != null);
+        hasMarshalled = enclosed.values().stream().anyMatch(f ->
+            f.getAnnotation(Marshalled.class) != null || f.getAnnotation(MarshalledObjects.class) != null);
 
         indent = 1;
 
@@ -270,6 +271,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         if (mode == MarshalMode.FINISH_CACHE) {
             appendMarshalledCollectionFinish(body);
             appendMarshalledMapFinish(body);
+            appendMarshalledObjectsFinish(body);
         }
 
         marshall.addAll(body);
@@ -305,7 +307,42 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         for (VariableElement field : enclosed.values()) {
             appendCollectionPrepare(body, field);
             appendMapPrepare(body, field);
+            appendObjectsPrepare(body, field);
         }
+    }
+
+    /** Generates the {@code Collection<byte[]>} build-up for a {@code @MarshalledObjects} field in prepareMarshal. */
+    private void appendObjectsPrepare(List<String> body, VariableElement field) {
+        MarshalledObjects ann = field.getAnnotation(MarshalledObjects.class);
+
+        if (ann == null)
+            return;
+
+        String objField = "msg." + field.getSimpleName();
+        String bytesField = "msg." + ann.value();
+
+        imports.add("java.util.ArrayList");
+
+        List<String> code = new ArrayList<>();
+
+        code.add(indentedLine("if (%s != null && %s == null) {", objField, bytesField));
+
+        indent++;
+
+        code.add(indentedLine("%s = new ArrayList<>(%s.size());", bytesField, objField));
+        code.add(EMPTY);
+        code.add(indentedLine("for (Object e : %s)", objField));
+
+        indent++;
+
+        code.add(indentedLine("%s.add(U.marshal(marshaller, e));", bytesField));
+
+        indent--;
+        indent--;
+
+        code.add(indentedLine("}"));
+
+        appendBlock(body, code);
     }
 
     /** Appends a {@code toArray} assignment for a {@code @MarshalledCollection} field, if present. */
@@ -431,6 +468,46 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         }
     }
 
+    /** Generates Collection reconstruction for all {@code @MarshalledObjects} fields (cache-aware pass only). */
+    private void appendMarshalledObjectsFinish(List<String> body) {
+        for (VariableElement field : enclosed.values()) {
+            MarshalledObjects ann = field.getAnnotation(MarshalledObjects.class);
+
+            if (ann == null)
+                continue;
+
+            String objField = "msg." + field.getSimpleName();
+            String bytesField = "msg." + ann.value();
+
+            imports.add("java.util.ArrayList");
+
+            List<String> code = new ArrayList<>();
+
+            code.add(indentedLine("if (%s != null) {", bytesField));
+
+            indent++;
+
+            code.add(indentedLine("%s = new ArrayList<>(%s.size());", objField, bytesField));
+            code.add(EMPTY);
+            code.add(indentedLine("for (byte[] e : %s)", bytesField));
+
+            indent++;
+
+            code.add(indentedLine("%s.add(U.unmarshal(marshaller, e, clsLdr));", objField));
+
+            indent--;
+
+            code.add(EMPTY);
+            code.add(indentedLine("%s = null;", bytesField));
+
+            indent--;
+
+            code.add(indentedLine("}"));
+
+            appendBlock(body, code);
+        }
+    }
+
     /** Generates the {@code for} loop body: per-element finishUnmarshal + try/catch add into the collection. */
     private List<String> collectionFinishForBlock(VariableElement wireField, String colField, String arrField, String fieldName) {
         String compName = arrayComponentName(wireField);
@@ -484,6 +561,10 @@ public class MessageMarshallerGenerator extends MessageGenerator {
                 names.add(mapAnn.keys());
                 names.add(mapAnn.values());
             }
+
+            MarshalledObjects objAnn = f.getAnnotation(MarshalledObjects.class);
+            if (objAnn != null)
+                names.add(objAnn.value());
         }
 
         return names;

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.query;
 import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.MarshalledObjects;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
@@ -31,14 +32,12 @@ import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Page of cache query response.
  */
-public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCacheDeployable, MarshallableMessage, DeployableMessage {
+public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCacheDeployable, DeployableMessage {
     /** */
     @Order(0)
     boolean finished;
@@ -64,7 +63,8 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
     Collection<byte[]> dataBytes;
 
     /** */
-    private Collection<Object> data;
+    @MarshalledObjects("dataBytes")
+    Collection<Object> data;
 
     /**
      * Empty constructor.
@@ -156,18 +156,6 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
      */
     public boolean fields() {
         return fields;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (data != null)
-            dataBytes = marshallCollection(data, marsh);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (dataBytes != null)
-            data = unmarshalCollection(dataBytes, marsh, clsLdr);
     }
 
     /** {@inheritDoc} */
