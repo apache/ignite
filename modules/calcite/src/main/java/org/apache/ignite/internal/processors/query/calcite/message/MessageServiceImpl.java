@@ -205,22 +205,24 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
             );
     }
 
-    /** */
+    /** Listener for messages arriving from remote nodes; they are marshalled and must be finish-unmarshalled here. */
     private void onMessage(UUID nodeId, Object msg, byte plc) {
-        if (msg instanceof Message && CalciteMessageFactory.isCalciteMessage((Message)msg))
+        if (msg instanceof Message && CalciteMessageFactory.isCalciteMessage((Message)msg)) {
+            try {
+                prepareUnmarshal((Message)msg);
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
+
             onMessage(nodeId, (Message)msg);
+        }
     }
 
     /** */
     private void onMessageInternal(UUID nodeId, Message msg) {
-        try {
-            prepareUnmarshal(msg);
+        MessageListener lsnr = Objects.requireNonNull(lsnrs.get(msg.getClass()));
 
-            MessageListener lsnr = Objects.requireNonNull(lsnrs.get(msg.getClass()));
-            lsnr.onMessage(nodeId, msg);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
+        lsnr.onMessage(nodeId, msg);
     }
 }
