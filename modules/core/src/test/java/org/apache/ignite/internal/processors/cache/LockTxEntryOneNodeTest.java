@@ -32,6 +32,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -293,6 +294,47 @@ public class LockTxEntryOneNodeTest extends GridCommonAbstractTest {
             });
 
             assertFalse(lockFut.get(10_000));
+
+            if (commit)
+                tx.commit();
+        }
+
+        assertEquals(INIT_VAL, cache.get(KEY).intValue());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testLockTxEntryDoesNotWaitMuchLongerThanTimeout() throws Exception {
+        CacheEntry<Integer, Integer> entry = cache.getEntry(KEY);
+
+        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+            assertTrue(acquireLockForEntry(entry, 0));
+
+            IgniteInternalFuture<Long> lockFut = GridTestUtils.runAsync(new Callable<Long>() {
+                @Override public Long call() throws Exception {
+                    long waitTime;
+
+                    try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+                        long start = U.currentTimeMillis();
+
+                        assertFalse(acquireLockForEntry(entry, 200));
+
+                        waitTime = U.currentTimeMillis() - start;
+
+                        if (commit)
+                            tx.commit();
+                    }
+
+                    return waitTime;
+                }
+            });
+
+            long waitTime = lockFut.get(10_000);
+
+            assertTrue("Waited for lock for " + waitTime + " ms it is unexpectedly long.",
+                waitTime < 1_000);
 
             if (commit)
                 tx.commit();
