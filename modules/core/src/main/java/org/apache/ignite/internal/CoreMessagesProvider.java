@@ -34,6 +34,7 @@ import org.apache.ignite.internal.managers.communication.SessionChannelMessage;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentResponse;
+import org.apache.ignite.internal.managers.discovery.SecurityAwareCustomMessageWrapper;
 import org.apache.ignite.internal.managers.encryption.ChangeCacheEncryptionRequest;
 import org.apache.ignite.internal.managers.encryption.EncryptionDataBagItem;
 import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyRequest;
@@ -436,7 +437,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(FullMessage.class);
         withNoSchema(InitMessage.class);
         withNoSchema(CacheStatisticsModeChangeMessage.class);
-        ++msgIdx; // Former SecurityAwareCustomMessageWrapper
+        withNoSchema(SecurityAwareCustomMessageWrapper.class);
         withNoSchema(MetadataRemoveAcceptedMessage.class);
         withNoSchema(MetadataRemoveProposedMessage.class);
         withNoSchema(WalStateFinishMessage.class);

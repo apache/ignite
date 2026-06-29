@@ -88,9 +88,8 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMess
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IGridClusterStateProcessor;
-import org.apache.ignite.internal.processors.security.IgniteSecurityProcessor;
+import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.SecurityContext;
-import org.apache.ignite.internal.processors.security.SecurityContextImpl;
 import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
 import org.apache.ignite.internal.systemview.ClusterNodeViewWalker;
 import org.apache.ignite.internal.systemview.NodeAttributeViewWalker;
@@ -135,6 +134,7 @@ import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.DiscoveryNotification;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiDataExchange;
 import org.apache.ignite.spi.discovery.DiscoverySpiHistorySupport;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
@@ -929,10 +929,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 /** */
                 @Override public void run() {
-                    SecurityContextImpl secCtxMsg = OperationContext.get(IgniteSecurityProcessor.SEC_CTX_ATTR);
+                    DiscoverySpiCustomMessage customMsg = notification.customMessage();
 
-                    if (secCtxMsg != null) {
-                        try (Scope ignored = ctx.security().withContext(secCtxMsg.subjId)) {
+                    if (customMsg instanceof SecurityAwareCustomMessageWrapper) {
+                        UUID secSubjId = ((SecurityAwareCustomMessageWrapper)customMsg).securitySubjectId();
+
+                        try (Scope ignored = ctx.security().withContext(secSubjId)) {
                             super.run();
                         }
                     }
@@ -2337,13 +2339,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @throws IgniteCheckedException If failed.
      */
     public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteCheckedException {
-        UUID secSubjId = ctx.security().enabled() ? ctx.security().securityContext().subject().id() : null;
+        try {
+            IgniteSecurity security = ctx.security();
 
-        try (Scope ignored = secSubjId == null
-            ? Scope.NOOP_SCOPE
-            : OperationContext.set(IgniteSecurityProcessor.SEC_CTX_ATTR, new SecurityContextImpl(secSubjId))
-        ) {
-            getSpi().sendCustomEvent(msg);
+            getSpi().sendCustomEvent(security.enabled()
+                ? new SecurityAwareCustomMessageWrapper(msg, security.securityContext().subject().id())
+                : msg);
         }
         catch (IgniteClientDisconnectedException e) {
             IgniteFuture<?> reconnectFut = ctx.cluster().clientReconnectFuture();
