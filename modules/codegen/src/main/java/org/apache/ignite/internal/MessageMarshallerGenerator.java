@@ -937,8 +937,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     private String ctxResolutionLine() {
         if (isCacheIdAwareMessage(type))
             return indentedLine("CacheObjectContext ctx = nested != null ? nested : " +
-                    "kctx.cache().context().cacheContext(msg.cacheId()) == null ? null : " +
-                    "kctx.cache().context().cacheContext(msg.cacheId()).cacheObjectContext();");
+                    "kctx.cache().context().cacheObjectContext(msg.cacheId());");
         else if (isCacheGroupIdMessage(type))
             return indentedLine("CacheObjectContext ctx = nested != null ? nested : " +
                     "kctx.cache().cacheGroup(msg.groupId()) == null ? null : " +
