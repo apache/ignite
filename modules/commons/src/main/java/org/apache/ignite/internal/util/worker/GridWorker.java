@@ -24,9 +24,9 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -140,9 +140,10 @@ public abstract class GridWorker implements Runnable, WorkProgressDispatcher {
             if (!X.hasCause(e, InterruptedException.class) &&
                 !X.hasCause(e, IgniteInterruptedCheckedException.class) &&
                 !X.hasCause(e, IgniteInterruptedException.class))
-                U.error(log, "Runtime error caught during grid runnable execution: " + this, e);
+                CommonUtils.error(log, "Runtime error caught during grid runnable execution: " + this, e);
             else
-                U.warn(log, "Runtime exception occurred during grid runnable execution caused by thread interruption: " + e.getMessage());
+                CommonUtils.warn(log,
+                    "Runtime exception occurred during grid runnable execution caused by thread interruption: " + e.getMessage());
 
             if (e instanceof Error)
                 throw e;
@@ -271,7 +272,7 @@ public abstract class GridWorker implements Runnable, WorkProgressDispatcher {
 
     /** {@inheritDoc} */
     @Override public void updateHeartbeat() {
-        long curTs = U.currentTimeMillis();
+        long curTs = CommonUtils.currentTimeMillis();
         long hbTs = heartbeatTs;
 
         // Avoid heartbeat update while in the blocking section.
@@ -290,7 +291,7 @@ public abstract class GridWorker implements Runnable, WorkProgressDispatcher {
 
     /** {@inheritDoc} */
     @Override public void blockingSectionEnd() {
-        heartbeatTs = U.currentTimeMillis();
+        heartbeatTs = CommonUtils.currentTimeMillis();
     }
 
     /** Can be called from {@link #runner()} thread to perform idleness handling. */
