@@ -1291,7 +1291,7 @@ public class GridToStringBuilder {
             List<GridToStringNode> addNodes =
                     GridToStringNodeFactory.getNodes(propNames, propVals, propSens, propCnt);
             GridToStringNode node = GridToStringNode.getRootNode(str, addNodes);
-            return isNew ? node.toString() : GridToStringNode.appendInnerBuffer(node);
+            return isNew ? node.toString() : GridToStringNode.memorizeNode(node);
         }
         catch (RuntimeException | StackOverflowError throwable) {
             if (isNew)

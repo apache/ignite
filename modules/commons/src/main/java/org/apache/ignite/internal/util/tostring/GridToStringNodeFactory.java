@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import static org.apache.ignite.internal.util.tostring.GridToStringNode.INNER_BUILDER;
 import static org.apache.ignite.internal.util.tostring.GridToStringNode.identities;
 
 /**
@@ -40,17 +41,18 @@ public class GridToStringNodeFactory {
      * @param addLen The number of elements to process.
      * @return A list of constructed GridToStringNode objects.
      */
-    public static List<GridToStringNode> getNodes(Object[] addNames,
-                                                  Object[] addVals,
-                                                  boolean[] addSens,
-                                                  int addLen) {
+    static List<GridToStringNode> getNodes(Object[] addNames,
+                                           Object[] addVals,
+                                           boolean[] addSens,
+                                           int addLen) {
         List<GridToStringNode> result = new LinkedList<>();
         boolean includeSensitive = GridToStringBuilder.includeSensitive();
         for (int i = 0; i < addLen; i++) {
             if (!includeSensitive && shouldBeExcluded(addVals, addSens, i))
                 continue;
             String propName = String.valueOf(addNames[i]);
-            GridToStringNode node = recoverOrCreate(propName, addVals[i]);
+            int idx = i;
+            GridToStringNode node = getGridToStringNode(propName, () -> addVals[idx], () -> addVals[idx].getClass());
             result.add(node);
         }
         return result;
@@ -125,7 +127,10 @@ public class GridToStringNodeFactory {
             return new GridToStringMapNode(childPropName, (Map<?, ?>)val);
 
         String toStrResult = val.toString();
-        return recoverOrCreate(childPropName, toStrResult);
+        GridToStringNode node = recoverOrCreate(childPropName, toStrResult);
+        node.innerBuf = INNER_BUILDER.get();
+        INNER_BUILDER.set(null);
+        return node;
     }
 
     /**
@@ -155,11 +160,11 @@ public class GridToStringNodeFactory {
     private static GridToStringNode recoverOrCreate(String propName, Object candidate) {
         return identities()
                 .map(cache -> cache.remove(candidate))
-                .map(result -> {
-                    result.propName = propName;
-                    if (result.previouslyCalculatedResult != null)
-                        result.previouslyCalculatedResult = propName + "=" + result.previouslyCalculatedResult;
-                    return result;
+                .map(node -> {
+                    node.propName = propName;
+                    if (node.previouslyCalculatedResult != null)
+                        node.previouslyCalculatedResult = propName + "=" + node.previouslyCalculatedResult;
+                    return node;
                 })
                 .orElseGet(() -> new GridToStringValueNode(propName, candidate));
     }

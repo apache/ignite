@@ -45,11 +45,8 @@ class GridToStringObjectNode extends NodeRecursionMonitor {
      */
     GridToStringObjectNode(String str, List<GridToStringNode> childNodes) {
         super(null, null);
-        GridToStringNode parentObjNode = LAST_CONSTRUCTED_GRID_TO_STRING_NODE.get();
-        LAST_CONSTRUCTED_GRID_TO_STRING_NODE.set(this);
         entryName = str;
         this.childNodes = Collections.unmodifiableList(childNodes);
-        LAST_CONSTRUCTED_GRID_TO_STRING_NODE.set(parentObjNode);
     }
 
     /**
@@ -63,8 +60,6 @@ class GridToStringObjectNode extends NodeRecursionMonitor {
      */
     GridToStringObjectNode(String propName, Object obj, Class<?> cls, List<GridToStringNode> additionalChildNodes) {
         super(propName, obj);
-        GridToStringNode parentObjNode = LAST_CONSTRUCTED_GRID_TO_STRING_NODE.get();
-        LAST_CONSTRUCTED_GRID_TO_STRING_NODE.set(this);
         try {
             acquireRecursionMonitor();
             List<GridToStringNode> childNodes = new LinkedList<>();
@@ -79,7 +74,6 @@ class GridToStringObjectNode extends NodeRecursionMonitor {
         }
         finally {
             releaseRecursionMonitor();
-            LAST_CONSTRUCTED_GRID_TO_STRING_NODE.set(parentObjNode);
         }
     }
 
@@ -97,7 +91,7 @@ class GridToStringObjectNode extends NodeRecursionMonitor {
             sb.a(' ');
         }
         sb.a('[');
-        sb.a(innerBuf);
+        appendInnerBuffer(sb);
         Iterator<GridToStringNode> iter = childNodes.iterator();
         while (iter.hasNext()) {
             GridToStringNode node = iter.next();

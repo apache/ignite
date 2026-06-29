@@ -20,7 +20,6 @@ package org.apache.ignite.internal.util.tostring;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.internal.util.GridStringBuilder;
 
 import static org.apache.ignite.internal.util.tostring.NodeRecursionMonitor.OBJECT_REGISTRY;
@@ -35,17 +34,16 @@ abstract class GridToStringNode {
      * A thread-local cache for nodes, used to handle references of
      * inner toString() calls by mapping temporary markers to actual nodes.
      */
-    static final ConcurrentHashMap<Thread, IdentityHashMap<String, GridToStringNode>> CATCHED_NODES
-            = new ConcurrentHashMap<>();
+    static final ThreadLocal<IdentityHashMap<String, GridToStringNode>> CACHED_NODES = new ThreadLocal<>();
 
-    /** Last constructed node. */
-    static final ThreadLocal<GridToStringNode> LAST_CONSTRUCTED_GRID_TO_STRING_NODE = new ThreadLocal<>();
+    /** Inner builder for calls that return empty string by design */
+    static final ThreadLocal<StringBuilder> INNER_BUILDER = new ThreadLocal<>();
 
     /** The name of the property this node represents. */
     String propName;
 
     /** Inner buffer. For inner calls. */
-    StringBuilder innerBuf = new StringBuilder(0);
+    StringBuilder innerBuf;
 
     /** Previously calculated result. */
     String previouslyCalculatedResult;
@@ -89,19 +87,19 @@ abstract class GridToStringNode {
      */
     static String markNode(GridToStringNode node) {
         String result = new String(node.toString());
-        identities()
-                .orElseThrow()
-                .put(result, node);
+        CACHED_NODES.get().put(result, node);
         return result;
     }
 
     /**
-     * Appends inner buffer to last created node.
+     * Save node string representation to inner builder
      * @param node Node - new node to fill inner buffer.
      */
-    static String appendInnerBuffer(GridToStringNode node) {
-        GridToStringNode parent = LAST_CONSTRUCTED_GRID_TO_STRING_NODE.get();
-        parent.innerBuf.append(node.toString());
+    static String memorizeNode(GridToStringNode node) {
+        String result = node.toString();
+        if (INNER_BUILDER.get() == null)
+            INNER_BUILDER.set(new StringBuilder());
+        INNER_BUILDER.get().append(result);
         return "";
     }
 
@@ -110,11 +108,10 @@ abstract class GridToStringNode {
      * @return True if the context is new; false otherwise.
      */
     static boolean init() {
-        Thread curThread = Thread.currentThread();
-        boolean containsThread = CATCHED_NODES.containsKey(curThread);
-        if (!containsThread)
-            CATCHED_NODES.put(curThread, new IdentityHashMap<>());
-        return !containsThread;
+        boolean isNew = CACHED_NODES.get() == null;
+        if (isNew)
+            CACHED_NODES.set(new IdentityHashMap<>());
+        return isNew;
     }
 
     /**
@@ -154,9 +151,9 @@ abstract class GridToStringNode {
      * Clears the thread-local cache of nodes and recursion prevention storage.
      */
     static void clear() {
-        CATCHED_NODES.remove(Thread.currentThread());
+        CACHED_NODES.remove();
         OBJECT_REGISTRY.remove();
-        LAST_CONSTRUCTED_GRID_TO_STRING_NODE.remove();
+        INNER_BUILDER.remove();
     }
 
     /**
@@ -178,6 +175,15 @@ abstract class GridToStringNode {
      * @return Optional identity hash map that stores catched nodes
      * */
     static Optional<IdentityHashMap<String, GridToStringNode>> identities() {
-        return Optional.ofNullable(CATCHED_NODES.get(Thread.currentThread()));
+        return Optional.ofNullable(CACHED_NODES.get());
+    }
+
+    /**
+     * Appends inner buffer if it exists to specified builder
+     * @param sb Sb. string builder to append
+     */
+    void appendInnerBuffer(GridStringBuilder sb) {
+        if (innerBuf != null)
+            sb.a(innerBuf);
     }
 }

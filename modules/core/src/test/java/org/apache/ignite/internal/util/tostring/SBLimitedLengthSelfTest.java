@@ -64,19 +64,15 @@ public class SBLimitedLengthSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testDoesNotThrowNPEOnHeadOverflow() {
-        boolean success;
-        try {
-            SBLimitedLength sbLimitedLength = new SBLimitedLength(256);
-            sbLimitedLength.initLimit(new SBLengthLimit());
-            sbLimitedLength.a("a".repeat(7999));
-            sbLimitedLength.i(7000, "asd");
-            sbLimitedLength.a("a".repeat(10));
-            success = true;
-        }
-        catch (NullPointerException ignored) {
-            success = false;
-        }
-        Assert.assertTrue(success);
+        SBLimitedLength sbLimitedLength = new SBLimitedLength(256);
+        sbLimitedLength.initLimit(new SBLengthLimit());
+        sbLimitedLength.a("a".repeat(7999));
+        sbLimitedLength.i(7000, "asd");
+        sbLimitedLength.a("a".repeat(10));
+        String result = sbLimitedLength.toString();
+        Assert.assertNotNull(result);
+        Assert.assertFalse(result.isEmpty());
+        Assert.assertTrue(result.contains("asd"));
     }
 
     /** Ensure all insert operations are working fine */

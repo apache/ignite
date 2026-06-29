@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.util.tostring;
 
+import java.util.Optional;
 import org.apache.ignite.internal.util.GridStringBuilder;
 
 /**
@@ -41,5 +42,7 @@ class GridToStringValueNode extends GridToStringNode {
     @Override void appendNode(GridStringBuilder sb) {
         super.appendNode(sb);
         sb.a(val);
+        Optional.ofNullable(innerBuf)
+                .ifPresent(sb::a);
     }
 }
