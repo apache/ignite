@@ -773,9 +773,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 "Another snapshot operation in progress [req=" + req + ", curr=" + curSnpOp + ']'));
         }
 
-        // Let's keep the metrics on each server node.
-        if (clusterSnpFut == null && !cctx.localNode().isClient()) {
-            clusterSnpFut = new ClusterSnapshotFuture(req.reqId, req.snpName, req.incremental() ? req.incrementIndex() : null);
+        // Keeps the metrics on each server node.
+        if (!cctx.localNode().isClient()) {
+            if (clusterSnpFut == null)
+                clusterSnpFut = new ClusterSnapshotFuture(req.reqId, req.snpName, req.incremental() ? req.incrementIndex() : null);
 
             lastFuture(req.incremental(), clusterSnpFut);
         }
@@ -1434,7 +1435,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return true;
 
         synchronized (snpOpMux) {
-            return clusterSnpFut != null;
+            return curSnpOp != null || clusterSnpFut != null;
         }
     }
 
@@ -2057,8 +2058,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 snpFut0 = new ClusterSnapshotFuture(UUID.randomUUID(), name, incIdx);
 
                 clusterSnpFut = snpFut0;
-
-                lastFuture(incremental, snpFut0);
             }
 
             Set<String> cacheGrpNames0 = cacheGrpNames == null ? null : new HashSet<>(cacheGrpNames);
