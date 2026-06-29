@@ -17,17 +17,17 @@
 
 package org.apache.ignite.spi.discovery.zk.internal;
 
+import org.apache.ignite.internal.plugin.AbstractMarshallableMessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 
 /** */
-public class ZkMessageFactory implements MessageFactoryProvider {
+public class ZkMessageFactory extends AbstractMarshallableMessageFactoryProvider {
     /** {@inheritDoc} */
     @Override public void registerAll(MessageFactory factory) {
-        factory.register(400, ZkCommunicationErrorResolveFinishMessage::new, new ZkCommunicationErrorResolveFinishMessageSerializer());
-        factory.register(401, ZkCommunicationErrorResolveStartMessage::new, new ZkCommunicationErrorResolveStartMessageSerializer());
-        factory.register(402, ZkForceNodeFailMessage::new, new ZkForceNodeFailMessageSerializer());
-        factory.register(403, ZkNoServersMessage::new, new ZkNoServersMessageSerializer());
-        factory.register(404, ZkDiscoDataBagWrapper::new, new ZkDiscoDataBagWrapperSerializer());
+        register(factory, ZkCommunicationErrorResolveFinishMessage.class, (short)400, dfltMarsh);
+        register(factory, ZkCommunicationErrorResolveStartMessage.class, (short)401, dfltMarsh);
+        register(factory, ZkForceNodeFailMessage.class, (short)402, dfltMarsh);
+        register(factory, ZkNoServersMessage.class, (short)403, dfltMarsh);
+        register(factory, ZkDiscoDataBagWrapper.class, (short)404, dfltMarsh);
     }
 }
