@@ -45,6 +45,7 @@
         <module>modules/thin-client/api</module>
         <module>modules/thin-client/impl</module>
         <module>modules/unsafe</module>
+        <module>modules/nio</module>
         <module>modules/core</module>
         <module>modules/compress</module>
         <module>modules/dev-utils</module>
