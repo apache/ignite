@@ -24,7 +24,6 @@ import org.apache.ignite.cache.affinity.PendingExchangeTest;
 import org.apache.ignite.internal.processors.cache.CacheIgniteOutOfMemoryExceptionTest;
 import org.apache.ignite.internal.processors.cache.CacheNoAffinityExchangeTest;
 import org.apache.ignite.internal.processors.cache.ClientFastReplyCoordinatorFailureTest;
-import org.apache.ignite.internal.processors.cache.DynamicCacheStartDuringRestartExchangeTest;
 import org.apache.ignite.internal.processors.cache.IgniteOutOfMemoryPropagationTest;
 import org.apache.ignite.internal.processors.cache.PartitionedAtomicCacheGetsDistributionTest;
 import org.apache.ignite.internal.processors.cache.PartitionedTransactionalPessimisticCacheGetsDistributionTest;
@@ -118,8 +117,6 @@ public class IgniteCacheTestSuite6 {
         GridTestUtils.addTestIfNeeded(suite, StartImplicitlyTxOnStopCacheTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, TransactionContextCleanupTest.class, ignoredTests);
-
-        GridTestUtils.addTestIfNeeded(suite, DynamicCacheStartDuringRestartExchangeTest.class, ignoredTests);
 
         return suite;
     }
