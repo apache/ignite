@@ -115,7 +115,7 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
             return handle0(req);
         }
         catch (SecurityException ex) {
-            throw IgniteClientException.wrapAuthorizationExeption(ex);
+            throw wrapAuthorizationExeption(ex);
         }
     }
 
@@ -228,5 +228,19 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
         }
 
         return ClientStatus.FAILED;
+    }
+
+    /**
+     * Wraps a security exception into a client authorization exception.
+     *
+     * @param e Security exception.
+     * @return Client exception.
+     */
+    public static IgniteClientException wrapAuthorizationExeption(SecurityException e) {
+        return new IgniteClientException(
+            ClientStatus.SECURITY_VIOLATION,
+            "Client is not authorized to perform this operation [errMsg=" + e.getMessage() + ']',
+            e
+        );
     }
 }
