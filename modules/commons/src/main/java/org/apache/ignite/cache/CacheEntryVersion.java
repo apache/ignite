@@ -19,9 +19,6 @@ package org.apache.ignite.cache;
 
 import java.io.Serializable;
 import java.util.Map;
-import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 
 /**
  * Entry event order.
