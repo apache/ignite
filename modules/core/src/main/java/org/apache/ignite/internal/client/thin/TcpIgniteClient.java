@@ -792,7 +792,7 @@ public class TcpIgniteClient implements IgniteClient {
          */
         public ClientMarshallerContext() {
             try {
-                MarshallerUtils.processSystemClasses(U.gridClassLoader(), null, sysTypes::add);
+                MarshallerUtils.processSystemClasses(U.gridClassLoader(), sysTypes::add);
             }
             catch (IOException e) {
                 throw new IllegalStateException("Failed to initialize marshaller context.", e);
