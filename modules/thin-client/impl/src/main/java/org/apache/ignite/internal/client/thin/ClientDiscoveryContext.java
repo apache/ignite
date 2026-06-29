@@ -37,8 +37,8 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.client.ClientAddressFinder;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.logger.NullLogger;
@@ -231,8 +231,8 @@ public class ClientDiscoveryContext {
             try {
                 ranges.add(HostAndPortRange.parse(
                     a,
-                    ClientConnectorConfiguration.DFLT_PORT,
-                    ClientConnectorConfiguration.DFLT_PORT + ClientConnectorConfiguration.DFLT_PORT_RANGE,
+                    CommonUtils.DFLT_PORT,
+                    CommonUtils.DFLT_PORT + CommonUtils.DFLT_PORT_RANGE,
                     "Failed to parse Ignite server address"
                 ));
             }
