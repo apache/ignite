@@ -18,8 +18,12 @@
 package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.util.UUID;
+import org.apache.ignite.internal.OperationContextMessage;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -41,14 +45,14 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
     byte[] msgBytes;
 
     /** Unmarshalled message. */
-    transient DiscoverySpiCustomMessage resolvedMsg;
+    transient ZkCustomEventMessage cstMsgHldr;
 
     /**
      * @param evtId Event ID.
      * @param origEvtId For acknowledge events ID of original event.
      * @param topVer Topology version.
      * @param sndNodeId Sender node ID.
-     * @param msg Message instance.
+     * @param msg Message to process.
      * @param evtPath Event path.
      */
     ZkDiscoveryCustomEventData(
@@ -65,21 +69,31 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
         assert msg != null || origEvtId != 0 || !F.isEmpty(evtPath);
 
         this.origEvtId = origEvtId;
-        this.resolvedMsg = msg;
+        this.cstMsgHldr = ZkCustomEventMessage.of(msg);
         this.sndNodeId = sndNodeId;
         this.evtPath = evtPath;
     }
 
+    /** @return Original {@link DiscoveryCustomMessage}. */
+    public DiscoverySpiCustomMessage resolvedCustomMessage() {
+        return cstMsgHldr.originalMsg;
+    }
+
+    /** @return Received {@link OperationContext}. */
+    public @Nullable OperationContextMessage operationContext() {
+        return cstMsgHldr.opCtxMsg;
+    }
+
     /** */
     public void prepareMarshal(DiscoveryMessageParser parser) {
-        if (resolvedMsg != null)
-            msgBytes = parser.marshalZip(resolvedMsg);
+        if (cstMsgHldr != null)
+            msgBytes = parser.marshalZip(cstMsgHldr);
     }
 
     /** */
     public void finishUnmarshal(DiscoveryMessageParser parser) {
         if (msgBytes != null)
-            resolvedMsg = parser.unmarshalZip(msgBytes);
+            cstMsgHldr = parser.unmarshalZip(msgBytes);
     }
 
     /**
