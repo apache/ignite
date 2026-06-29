@@ -1959,10 +1959,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                 CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
-                if (skipNotStartedDynamicGroupOnFirstLocalJoin(fut, desc, grp, newAff)) {
+                if (skipNotStartedDynamicGroup(fut, desc, grp, newAff)) {
                     if (log.isDebugEnabled()) {
-                        log.debug("Skip coordinator affinity initialization for not-started dynamic cache group" +
-                            " on first local join exchange [grp=" + desc.cacheOrGroupName() +
+                        log.debug("Skip coordinator affinity initialization for cache group started after" +
+                            " current exchange [grp=" + desc.cacheOrGroupName() +
                             ", grpId=" + desc.groupId() + ", curTopVer=" + topVer +
                             ", grpStartTopVer=" + desc.startTopologyVersion() + ']');
                     }
@@ -2091,37 +2091,18 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /** */
-    private boolean skipNotStartedDynamicGroupOnFirstLocalJoin(
+    private boolean skipNotStartedDynamicGroup(
         GridDhtPartitionsExchangeFuture fut,
         CacheGroupDescriptor desc,
         @Nullable CacheGroupContext grp,
         boolean newAff
     ) {
-        if (grp != null)
-            return false;
-
-        if (newAff)
-            return false;
-
-        if (!firstLocalJoinExchange(fut))
+        if (grp != null || newAff)
             return false;
 
         AffinityTopologyVersion grpStartTopVer = desc.startTopologyVersion();
 
-        if (grpStartTopVer == null)
-            return false;
-
-        return grpStartTopVer.after(fut.initialVersion());
-    }
-
-    /** */
-    private boolean firstLocalJoinExchange(GridDhtPartitionsExchangeFuture fut) {
-        AffinityTopologyVersion topVer = fut.initialVersion();
-
-        return fut.firstEvent().eventNode().isLocal()
-            && topVer.topologyVersion() == 1
-            && topVer.minorTopologyVersion() == 0
-            && cctx.localNode().order() == 1;
+        return grpStartTopVer != null && grpStartTopVer.after(fut.initialVersion());
     }
 
     /**
