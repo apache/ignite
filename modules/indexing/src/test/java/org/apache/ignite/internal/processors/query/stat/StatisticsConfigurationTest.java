@@ -169,6 +169,11 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
             }
 
             F.first(G.allGrids()).cluster().setBaselineTopology(F.first(G.allGrids()).cluster().topologyVersion());
+
+            // setBaselineTopology detects lost partitions but does NOT reset them.
+            // Reset them so owners are restored to OWNING state (awaitPartitionMapExchange relies on this).
+            for (Ignite grid : G.allGrids())
+                grid.resetLostPartitions(((IgniteEx)grid).context().cache().cacheNames());
         }
 
         try {
