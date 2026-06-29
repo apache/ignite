@@ -2028,25 +2028,72 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             else {
                 MessageMarshaller.prepareMarshal(ctx.messageFactory(), ioMsg, ctx, null);
                 
+                sendMarshalled(node, ioMsg, topic, msg, plc, ackC);
+            }
+        }
+    }
+
+    /**
+     * Sends an already-marshalled message to a remote node. Marshalling is the caller's job, so one {@code ioMsg} can
+     * be prepared once and delivered to many nodes (see {@link #sendToMany}).
+     */
+    private void sendMarshalled(ClusterNode node, GridIoMessage ioMsg, Object topic, Message msg, byte plc,
+        IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException {
+        try {
+            if ((CommunicationSpi<?>)getSpi() instanceof TcpCommunicationSpi)
+                getTcpCommunicationSpi().sendMessage(node, ioMsg, ackC);
+            else
+                getSpi().sendMessage(node, ioMsg);
+        }
+        catch (IgniteSpiException e) {
+            if (e.getCause() instanceof ClusterTopologyCheckedException)
+                throw (ClusterTopologyCheckedException)e.getCause();
+
+            if (!ctx.discovery().alive(node))
+                throw new ClusterTopologyCheckedException("Failed to send message, node left: " + node.id(), e);
+
+            throw new IgniteCheckedException("Failed to send message (node may have left the grid or " +
+                "TCP connection cannot be established due to firewall issues) " +
+                "[node=" + node + ", topic=" + topic +
+                ", msg=" + msg + ", policy=" + plc + ']', e);
+        }
+    }
+
+    /**
+     * Marshals {@code msg} once and delivers it to every node, instead of re-marshalling per destination. The local
+     * node, if present, goes through the regular per-node path, unmarshalled.
+     */
+    private void sendToMany(Collection<? extends ClusterNode> nodes, Object topic, Message msg, byte plc,
+        boolean ordered, long timeout, boolean skipOnTimeout) throws IgniteCheckedException {
+        try (TraceSurroundings ignored = support(null)) {
+            GridIoMessage ioMsg = null;
+
+            IgniteCheckedException err = null;
+
+            for (ClusterNode node : nodes) {
                 try {
-                    if ((CommunicationSpi<?>)getSpi() instanceof TcpCommunicationSpi)
-                        getTcpCommunicationSpi().sendMessage(node, ioMsg, ackC);
-                    else
-                        getSpi().sendMessage(node, ioMsg);
+                    if (locNodeId.equals(node.id()))
+                        send(node, topic, msg, plc, ordered, timeout, skipOnTimeout, null, false);
+                    else {
+                        if (ioMsg == null) {
+                            ioMsg = createGridIoMessage(topic, msg, plc, ordered, timeout, skipOnTimeout);
+
+                            MessageMarshaller.prepareMarshal(ctx.messageFactory(), ioMsg, ctx, null);
+                        }
+
+                        sendMarshalled(node, ioMsg, topic, msg, plc, null);
+                    }
                 }
-                catch (IgniteSpiException e) {
-                    if (e.getCause() instanceof ClusterTopologyCheckedException)
-                        throw (ClusterTopologyCheckedException)e.getCause();
-
-                    if (!ctx.discovery().alive(node))
-                        throw new ClusterTopologyCheckedException("Failed to send message, node left: " + node.id(), e);
-
-                    throw new IgniteCheckedException("Failed to send message (node may have left the grid or " +
-                        "TCP connection cannot be established due to firewall issues) " +
-                        "[node=" + node + ", topic=" + topic +
-                        ", msg=" + msg + ", policy=" + plc + ']', e);
+                catch (IgniteCheckedException e) {
+                    if (err == null)
+                        err = e;
+                    else
+                        err.addSuppressed(e);
                 }
             }
+
+            if (err != null)
+                throw err;
         }
     }
 
@@ -2214,22 +2261,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         throws IgniteCheckedException {
         assert timeout > 0 || skipOnTimeout;
 
-        IgniteCheckedException err = null;
-
-        for (ClusterNode node : nodes) {
-            try {
-                send(node, topic, msg, plc, true, timeout, skipOnTimeout, null, false);
-            }
-            catch (IgniteCheckedException e) {
-                if (err == null)
-                    err = e;
-                else
-                    err.addSuppressed(e);
-            }
-        }
-
-        if (err != null)
-            throw err;
+        sendToMany(nodes, topic, msg, plc, true, timeout, skipOnTimeout);
     }
 
     /**
@@ -2245,22 +2277,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         Message msg,
         byte plc
     ) throws IgniteCheckedException {
-        IgniteCheckedException err = null;
-
-        for (ClusterNode node : nodes) {
-            try {
-                send(node, topic, msg, plc, false, 0, false, null, false);
-            }
-            catch (IgniteCheckedException e) {
-                if (err == null)
-                    err = e;
-                else
-                    err.addSuppressed(e);
-            }
-        }
-
-        if (err != null)
-            throw err;
+        sendToMany(nodes, topic, msg, plc, false, 0, false);
     }
 
     /**

@@ -315,7 +315,7 @@ public class ColocationGroup implements MarshallableMessage {
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (assignments == null || primaryAssignment)
+        if (!F.isEmpty(marshalledAssignments) || assignments == null || primaryAssignment)
             return;
 
         Map<UUID, Integer> nodeIdxs = new HashMap<>();
