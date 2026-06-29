@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -37,7 +38,9 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -91,6 +94,17 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
 
         for (int i = 0; i < CLIENTS; i++)
             assertTrue(grid(SRVS + i).configuration().isClientMode());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        for (Ignite node : G.allGrids()) {
+            Collection<IgniteInternalTx> txs = ((IgniteEx)node).context().cache().context().tm().activeTransactions();
+
+            assertTrue("Unfinished txs [node=" + node.name() + ", txs=" + txs + ']', txs.isEmpty());
+        }
+
+        super.afterTest();
     }
 
     /**
