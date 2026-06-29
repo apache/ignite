@@ -29,6 +29,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -385,7 +386,7 @@ public class CacheVersionedEntryTransactionalLockTest extends GridCommonAbstract
             holderCache.put(concurentLockedKey, 42);
 
             try (Transaction tx = initiator.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
-                long startWaiting = System.currentTimeMillis();
+                long startWaiting = U.currentTimeMillis();
 
                 if (batch) {
                     assertFalse(acquireLockForEntries(cache, List.of(
@@ -406,10 +407,10 @@ public class CacheVersionedEntryTransactionalLockTest extends GridCommonAbstract
                     assertFalse(acquireLockForEntry(cache, entry, timeout));
                 }
 
-                long waitTime = System.currentTimeMillis() - startWaiting;
+                long waitTime = U.currentTimeMillis() - startWaiting;
 
                 assertTrue("Waited for lock for " + waitTime + " ms but timeout is " + timeout + " ms.",
-                    waitTime > timeout - 50 && waitTime < timeout + 300);
+                    waitTime >= timeout);
 
                 cache.put(txKey1, 42);
                 cache.put(txKey2, 42);

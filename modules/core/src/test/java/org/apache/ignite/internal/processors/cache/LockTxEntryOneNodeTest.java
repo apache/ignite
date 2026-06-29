@@ -462,7 +462,7 @@ public class LockTxEntryOneNodeTest extends GridCommonAbstractTest {
 
         GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                return accessFut.get();
+                return accessFut.get(10_000);
             }
         }, TransactionTimeoutException.class);
     }
