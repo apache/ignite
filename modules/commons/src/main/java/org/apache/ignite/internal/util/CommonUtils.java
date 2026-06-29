@@ -2423,6 +2423,58 @@ public abstract class CommonUtils {
     }
 
     /**
+     * Gets absolute value for integer. If integer is {@link Integer#MIN_VALUE}, then {@code 0} is returned.
+     *
+     * @param i Integer.
+     * @return Absolute value.
+     */
+    public static int safeAbs(int i) {
+        i = Math.abs(i);
+
+        return i < 0 ? 0 : i;
+    }
+
+    /**
+     * Gets absolute value for long. If argument is {@link Long#MIN_VALUE}, then {@code 0} is returned.
+     *
+     * @param i Argument.
+     * @return Absolute value.
+     */
+    public static long safeAbs(long i) {
+        i = Math.abs(i);
+
+        return i < 0 ? 0 : i;
+    }
+
+    /**
+     * Helper method to calculates mask.
+     *
+     * @param parts Number of partitions.
+     * @return Mask to use in calculation when partitions count is power of 2.
+     */
+    public static int calculateMask(int parts) {
+        return (parts & (parts - 1)) == 0 ? parts - 1 : -1;
+    }
+
+    /**
+     * Helper method to calculate partition.
+     *
+     * @param key Key to get partition for.
+     * @param mask Mask to use in calculation when partitions count is power of 2.
+     * @param parts Number of partitions.
+     * @return Partition number for a given key.
+     */
+    public static int calculatePartition(Object key, int mask, int parts) {
+        if (mask >= 0) {
+            int h;
+
+            return ((h = key.hashCode()) ^ (h >>> 16)) & mask;
+        }
+
+        return safeAbs(key.hashCode() % parts);
+    }
+
+    /**
      * Unwraps closure exceptions.
      *
      * @param t Exception.
