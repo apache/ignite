@@ -17,28 +17,21 @@
 
 package org.apache.ignite.testsuites;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotSelfTest;
-import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.DynamicSuite;
+import org.apache.ignite.internal.processors.cache.consistency.inmem.ExplicitTransactionalReadRepairTest;
+import org.apache.ignite.internal.processors.cache.consistency.inmem.SingleBackupImplicitTransactionalReadRepairTest;
+import org.apache.ignite.internal.processors.cache.consistency.persistence.PdsExplicitTransactionalReadRepairTest;
 import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
-/** */
-@RunWith(DynamicSuite.class)
-public class IgniteSnapshotTestSuite {
-    /** */
-    public static List<Class<?>> suite() {
-        List<Class<?>> suite = new ArrayList<>();
-
-        addSnapshotTests(suite, null);
-
-        return suite;
-    }
-
-    /** */
-    public static void addSnapshotTests(List<Class<?>> suite, Collection<Class> ignoredTests) {
-        GridTestUtils.addTestIfNeeded(suite, IgniteClusterSnapshotSelfTest.class, ignoredTests);
-    }
+/**
+ * Split off from {@link IgniteCacheConsistencySelfTestSuite} to reduce the single-suite runtime in CI;
+ * contains an independent subset of the same test classes.
+ */
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    ExplicitTransactionalReadRepairTest.class,
+    PdsExplicitTransactionalReadRepairTest.class,
+    SingleBackupImplicitTransactionalReadRepairTest.class,
+})
+public class IgniteCacheConsistencySelfTestSuite2 {
 }
