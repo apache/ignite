@@ -495,9 +495,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         udfQryLimit.set(ctx.config().getQueryThreadPoolSize() - 1);
 
-        binaryMarshaller = obj -> {
-            return ctx.cacheObjects().binary().toBinary(obj);
-        };
+        binaryMarshaller = obj -> ctx.cacheObjects().binary().toBinary(obj);
 
         init();
     }

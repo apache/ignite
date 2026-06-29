@@ -54,7 +54,7 @@ public class IndexWrappedKeyScan<Row> extends IndexScan<Row> {
     }
 
     /** */
-    @Override @Nullable protected IndexRow row2indexRow(Row bound) {
+    @Override @Nullable protected IndexRow row2indexRow(@Nullable Row bound) {
         if (bound == null)
             return null;
 
