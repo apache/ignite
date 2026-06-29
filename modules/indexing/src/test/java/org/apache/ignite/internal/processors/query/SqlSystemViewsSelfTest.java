@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
@@ -81,6 +82,7 @@ import org.apache.ignite.internal.util.lang.GridNodePredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -92,6 +94,7 @@ import org.apache.ignite.spi.systemview.view.SqlQueryView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.sql.SqlTableView;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.transactions.Transaction;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -102,6 +105,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.metastorag
 import static org.apache.ignite.internal.processors.query.running.RunningQueryManager.SQL_QRY_VIEW;
 import static org.apache.ignite.internal.util.IgniteUtils.MB;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.junit.Assert.assertNotEquals;
 
 /**
@@ -1893,6 +1898,56 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
                 ),
                 execSql(n, sql, "FOR_SYS_VIEW_PLUGIN_NAME").get(0)
             );
+        }
+    }
+
+    /** */
+    @Test
+    public void testLocksView() throws Exception {
+        try (IgniteEx ignite = startGrid()) {
+            IgniteCache<Object, Object> cache = ignite.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
+
+            Lock lock1 = cache.lock(1);
+            Lock lock2 = cache.lock(2);
+
+            lock1.lock();
+            lock2.lock();
+            try (Transaction ignored = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                cache.put(3, 3);
+
+                // Join explicit locks with key locks.
+                List<List<?>> res = execSql("SELECT el.cache_id, el.thread_id, kl.is_owner, kl.is_tx, kl.originating_node_id " +
+                    "FROM SYS.CACHE_EXPLICIT_LOCKS el JOIN SYS.CACHE_KEY_LOCKS kl ON el.xid = kl.xid");
+
+                assertEquals(2, res.size());
+
+                for (List<?> lock : res) {
+                    assertEquals(CU.cacheId(DEFAULT_CACHE_NAME), lock.get(0));
+                    assertEquals(Thread.currentThread().getId(), lock.get(1));
+                    assertEquals(true, lock.get(2));
+                    assertEquals(false, lock.get(3));
+                    assertEquals(ignite.localNode().id(), lock.get(4));
+                }
+
+                // Join transactions with key locks.
+                res = execSql("SELECT kl.cache_id, tx.thread_id, kl.is_owner, kl.is_tx, kl.originating_node_id " +
+                    "FROM SYS.TRANSACTIONS tx JOIN SYS.CACHE_KEY_LOCKS kl ON tx.xid = kl.xid");
+
+                assertEquals(1, res.size());
+
+                for (List<?> lock : res) {
+                    assertEquals(CU.cacheId(DEFAULT_CACHE_NAME), lock.get(0));
+                    assertEquals(Thread.currentThread().getId(), lock.get(1));
+                    assertEquals(true, lock.get(2));
+                    assertEquals(true, lock.get(3));
+                    assertEquals(ignite.localNode().id(), lock.get(4));
+                }
+            }
+            finally {
+                lock2.unlock();
+                lock1.unlock();
+            }
         }
     }
 
