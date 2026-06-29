@@ -49,17 +49,17 @@ public class TxLocksResponse extends GridCacheMessage {
     @MarshalledCollection("txKeysArr")
     Set<IgniteTxKey> txKeys;
 
-    /** */
+    /** Array of txKeys from {@link #nearTxKeyLocks}. Used during marshalling and unmarshalling. */
     @GridToStringExclude
     @Order(1)
     IgniteTxKey[] nearTxKeysArr;
 
-    /** */
+    /** Array of txKeys from {@link #txKeys}. Used during marshalling and unmarshalling. */
     @GridToStringExclude
     @Order(2)
     IgniteTxKey[] txKeysArr;
 
-    /** */
+    /** Array of locksArr from {@link #nearTxKeyLocks}. Used during marshalling and unmarshalling. */
     @GridToStringExclude
     @Order(3)
     List<TxLock>[] locksArr;
@@ -86,7 +86,7 @@ public class TxLocksResponse extends GridCacheMessage {
     }
 
     /**
-     * @return Lock lists for all near tx keys.
+     * @return Lock lists for all tx nearTxKeysArr.
      */
     public Map<IgniteTxKey, List<TxLock>> txLocks() {
         return nearTxKeyLocks;

@@ -54,12 +54,19 @@ public class QueryTxEntry implements Message, CacheIdAware {
     @Order(3)
     GridCacheVersion ver;
 
-    /** */
+    /**
+     * Empty constructor.
+     */
     public QueryTxEntry() {
         // No-op.
     }
 
-    /** */
+    /**
+     * @param cacheId Cache id.
+     * @param key Key.
+     * @param val Value.
+     * @param ver Version.
+     */
     public QueryTxEntry(int cacheId, KeyCacheObject key, CacheObject val, GridCacheVersion ver) {
         this.cacheId = cacheId;
         this.key = key;

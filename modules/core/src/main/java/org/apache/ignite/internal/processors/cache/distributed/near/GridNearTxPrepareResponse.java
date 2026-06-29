@@ -65,11 +65,11 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     @MarshalledMap(keys = "ownedValKeys", values = "ownedValVals")
     Map<IgniteTxKey, CacheVersionedValue> ownedVals;
 
-    /** */
+    /** OwnedVals' keys for marshalling. */
     @Order(5)
     @Nullable Collection<IgniteTxKey> ownedValKeys;
 
-    /** */
+    /** OwnedVals' values for marshalling. */
     @Order(6)
     @Nullable Collection<CacheVersionedValue> ownedValVals;
 

@@ -114,12 +114,14 @@ public class QueryStartRequest implements MarshallableMessage, ExecutionContextA
         this.keepBinaryMode = keepBinaryMode;
     }
 
-    /** Default no-arg constructor required for deserialization. */
+    /** */
     public QueryStartRequest() {
         // No-op.
     }
 
-    /** */
+    /**
+     * @return Schema name.
+     */
     public String schema() {
         return schema;
     }
@@ -129,7 +131,9 @@ public class QueryStartRequest implements MarshallableMessage, ExecutionContextA
         return qryId;
     }
 
-    /** */
+    /**
+     * @return Registered local query ID on originating node.
+     */
     public long originatingQueryId() {
         return originatingQryId;
     }
@@ -139,44 +143,60 @@ public class QueryStartRequest implements MarshallableMessage, ExecutionContextA
         return fragmentDesc.fragmentId();
     }
 
-    /** */
+    /**
+     * @return Fragment description.
+     */
     public FragmentDescription fragmentDescription() {
         return fragmentDesc;
     }
 
-    /** */
+    /**
+     * @return Topology version.
+     */
     public AffinityTopologyVersion topologyVersion() {
         return ver;
     }
 
-    /** */
+    /**
+     * @return Fragment plan.
+     */
     public String root() {
         return root;
     }
 
-    /** */
+    /**
+     * @return Total count of fragments in query for this node.
+     */
     public int totalFragmentsCount() {
         return totalFragmentsCnt;
     }
 
-    /** */
+    /**
+     * @return Query parameters.
+     */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public @Nullable Object[] parameters() {
         return params;
     }
 
-    /** */
+    /**
+     * @return Query parameters marshalled.
+     */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public byte[] parametersMarshalled() {
         return paramsBytes;
     }
 
-    /** */
+    /**
+     * @return Query timeout.
+     */
     public long timeout() {
         return timeout;
     }
 
-    /** */
+    /**
+     * @return Transaction entries to mixin on query processing.
+     */
     public @Nullable Collection<QueryTxEntry> queryTransactionEntries() {
         return qryTxEntries;
     }

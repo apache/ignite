@@ -141,7 +141,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, MarshallableMessage, 
     /** Transient field for calculated entry processor value. */
     private T2<GridCacheOperation, CacheObject> entryProcessorCalcVal;
 
-    /** */
+    /** Transform closure bytes. */
     @GridToStringExclude
     @Order(4)
     byte[] transformClosBytes;

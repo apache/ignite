@@ -30,7 +30,7 @@ public class GridTaskResultResponse implements Message {
     @Marshalled("resBytes")
     public @Nullable Object res;
 
-    /** */
+    /** Serialized result. */
     @Order(0)
     @Nullable byte[] resBytes;
 

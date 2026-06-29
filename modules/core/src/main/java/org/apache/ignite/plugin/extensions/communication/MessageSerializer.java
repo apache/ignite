@@ -17,7 +17,9 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
-/** */
+/**
+ * Interface for message serialization logic.
+ */
 public interface MessageSerializer<M extends Message> {
     /**
      * Writes this message to provided byte buffer.

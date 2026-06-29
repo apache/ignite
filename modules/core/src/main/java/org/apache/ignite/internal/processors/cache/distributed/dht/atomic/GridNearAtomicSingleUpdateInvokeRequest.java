@@ -60,7 +60,7 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
     @Marshalled("entryProcBytes")
     @Nullable EntryProcessor<Object, Object, Object> entryProc;
 
-    /** */
+    /** Entry processors bytes. */
     @Order(1)
     @Nullable byte[] entryProcBytes;
 
