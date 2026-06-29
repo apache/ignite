@@ -105,7 +105,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual("ERROR: Apache.Ignite.Core.Common.IgniteException: Java class is not found " +
                             "(did you set IGNITE_HOME environment variable?): " +
                             "org/apache/ignite/internal/processors/platform/utils/PlatformUtils",
-                reader.GetOutput().First());
+                reader.GetOutputWithoutJavaWarnings().First());
         }
 
         /// <summary>

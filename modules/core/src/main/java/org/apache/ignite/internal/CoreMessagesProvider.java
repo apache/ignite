@@ -37,13 +37,16 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentResponse;
 import org.apache.ignite.internal.managers.discovery.SecurityAwareCustomMessageWrapper;
 import org.apache.ignite.internal.managers.encryption.ChangeCacheEncryptionRequest;
+import org.apache.ignite.internal.managers.encryption.EncryptionDataBagItem;
 import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyRequest;
 import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyResponse;
 import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.managers.encryption.MasterKeyChangeRequest;
 import org.apache.ignite.internal.managers.encryption.NodeEncryptionKeys;
+import org.apache.ignite.internal.managers.eventstorage.EventsDataBagItem;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageMessage;
 import org.apache.ignite.internal.plugin.AbstractMarshallableMessageFactoryProvider;
+import org.apache.ignite.internal.processors.authentication.AuthentificationDataBagItem;
 import org.apache.ignite.internal.processors.authentication.User;
 import org.apache.ignite.internal.processors.authentication.UserAcceptedMessage;
 import org.apache.ignite.internal.processors.authentication.UserAuthenticateRequestMessage;
@@ -72,7 +75,7 @@ import org.apache.ignite.internal.processors.cache.WalStateAckMessage;
 import org.apache.ignite.internal.processors.cache.WalStateFinishMessage;
 import org.apache.ignite.internal.processors.cache.WalStateProposeMessage;
 import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataVersionInfo;
-import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataVersionsData;
+import org.apache.ignite.internal.processors.cache.binary.CacheBinaryDataBagItem;
 import org.apache.ignite.internal.processors.cache.binary.MetadataRemoveAcceptedMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataRemoveProposedMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataRequestMessage;
@@ -182,7 +185,9 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.processors.cluster.CacheMetricsMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
+import org.apache.ignite.internal.processors.cluster.ClusterIdAndTag;
 import org.apache.ignite.internal.processors.cluster.ClusterMetricsUpdateMessage;
+import org.apache.ignite.internal.processors.cluster.ClusterUpdateNotifierDataBagItem;
 import org.apache.ignite.internal.processors.cluster.NodeFullMetricsMessage;
 import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.processors.continuous.ContinuousRoutineStartResultMessage;
@@ -198,15 +203,15 @@ import org.apache.ignite.internal.processors.datastreamer.DataStreamerResponse;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.marshaller.MappingAcceptedMessage;
 import org.apache.ignite.internal.processors.marshaller.MappingProposedMessage;
+import org.apache.ignite.internal.processors.marshaller.MarshallerDataBagItem;
 import org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem;
-import org.apache.ignite.internal.processors.marshaller.MarshallerMappingsData;
 import org.apache.ignite.internal.processors.marshaller.MissingMappingRequestMessage;
 import org.apache.ignite.internal.processors.marshaller.MissingMappingResponseMessage;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageCasAckMessage;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageCasMessage;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUpdateAckMessage;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUpdateMessage;
-import org.apache.ignite.internal.processors.query.InlineSizesData;
+import org.apache.ignite.internal.processors.plugin.PluginsDataBagItem;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
@@ -214,6 +219,8 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
 import org.apache.ignite.internal.processors.query.messages.GridQueryKillRequest;
 import org.apache.ignite.internal.processors.query.messages.GridQueryKillResponse;
+import org.apache.ignite.internal.processors.query.schema.message.QueryInlineSizesDataBagItem;
+import org.apache.ignite.internal.processors.query.schema.message.QueryProposalsDataBagItem;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
@@ -230,6 +237,9 @@ import org.apache.ignite.internal.processors.query.stat.messages.StatisticsReque
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsResponse;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultRequest;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultResponse;
+import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeNodeData;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureSet;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteProductFeatures;
 import org.apache.ignite.internal.processors.service.ServiceChangeBatchRequest;
 import org.apache.ignite.internal.processors.service.ServiceClusterDeploymentResult;
 import org.apache.ignite.internal.processors.service.ServiceClusterDeploymentResultBatch;
@@ -239,6 +249,7 @@ import org.apache.ignite.internal.processors.service.ServiceSingleNodeDeployment
 import org.apache.ignite.internal.processors.service.ServiceSingleNodeDeploymentResultBatch;
 import org.apache.ignite.internal.processors.service.ServiceUndeploymentRequest;
 import org.apache.ignite.internal.util.GridByteArrayList;
+import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.internal.util.distributed.InitMessage;
@@ -254,7 +265,7 @@ import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage;
 import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
 import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage;
-import org.apache.ignite.spi.discovery.ObjectData;
+import org.apache.ignite.spi.discovery.SerializableDataBagItemWrapper;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.messages.InetAddressMessage;
@@ -354,8 +365,9 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(GridCacheVersion.class);
         withNoSchema(GridCacheVersionEx.class);
         withNoSchema(WALPointer.class);
-        withNoSchemaResolvedClassLoader(ObjectData.class);
+        withNoSchemaResolvedClassLoader(SerializableDataBagItemWrapper.class);
         withSchemaResolvedClassLoader(GridTopicMessage.class);
+        withNoSchema(GridIntList.class);
 
         // [5700 - 5900]: Discovery originated messages.
         msgIdx = 5700;
@@ -576,7 +588,8 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(CacheContinuousQueryBatchAck.class);
         withNoSchema(GridDhtTxSalvageMessage.class);
         withSchema(CacheContinuousQueryEntry.class);
-        withNoSchema(InlineSizesData.class);
+        withNoSchema(QueryInlineSizesDataBagItem.class);
+        withSchema(QueryProposalsDataBagItem.class);
 
         // [11200 - 11300]: Compute, distributed process messages.
         msgIdx = 11200;
@@ -630,6 +643,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(UserAuthenticateRequestMessage.class);
         withNoSchema(UserAuthenticateResponseMessage.class);
         withNoSchema(TcpDiscoveryAuthFailedMessage.class);
+        withSchema(AuthentificationDataBagItem.class);
 
         // [12200 - 12300]: Binary, classloading and marshalling messages.
         msgIdx = 12200;
@@ -642,9 +656,9 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(MetadataResponseMessage.class);
         withNoSchema(MarshallerMappingItem.class);
         withSchemaResolvedClassLoader(BinaryMetadataVersionInfo.class);
-        withNoSchema(BinaryMetadataVersionsData.class);
+        withNoSchema(CacheBinaryDataBagItem.class);
         withNoSchema(MappedName.class);
-        withNoSchema(MarshallerMappingsData.class);
+        withNoSchema(MarshallerDataBagItem.class);
 
         // [12400 - 12500]: Encryption messages.
         msgIdx = 12400;
@@ -654,8 +668,9 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(MasterKeyChangeRequest.class);
         withNoSchema(GroupKeyEncrypted.class);
         withNoSchema(NodeEncryptionKeys.class);
+        withNoSchema(EncryptionDataBagItem.class);
 
-        // [13000 - 13300]: Control, configuration, diagnostincs and other messages.
+        // [13000 - 13300]: Control, configuration, diagnostics and other messages.
         msgIdx = 13000;
         withSchema(GridEventStorageMessage.class);
         withNoSchema(ChangeGlobalStateMessage.class);
@@ -667,6 +682,20 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchemaResolvedClassLoader(DynamicCacheChangeRequest.class);
         withNoSchema(PartitionHashRecord.class);
         withNoSchema(TransactionsHashRecord.class);
+        withNoSchema(ClusterIdAndTag.class);
+        withNoSchema(ClusterUpdateNotifierDataBagItem.class);
+        withNoSchemaResolvedClassLoader(PluginsDataBagItem.class);
+        withSchema(EventsDataBagItem.class);
+
+        // [13400 - 13500]: Operation context messages.
+        msgIdx = 13400;
+        withNoSchema(OperationContextMessage.class);
+
+        // [13500 - 13600]: Rolling Upgrade messages.
+        msgIdx = 13500;
+        withNoSchema(IgniteFeatureSet.class);
+        withNoSchema(IgniteProductFeatures.class);
+        withNoSchema(RollingUpgradeNodeData.class);
 
         assert msgIdx <= MAX_MESSAGE_ID;
     }

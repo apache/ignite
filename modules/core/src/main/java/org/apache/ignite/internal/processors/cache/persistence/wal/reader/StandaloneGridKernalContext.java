@@ -103,6 +103,7 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.processors.tracing.NoopTracing;
 import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
+import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -175,6 +176,9 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** Marshaller. */
     private final BinaryMarshaller marsh;
+
+    /** Operation context dispacther. */
+    private final OperationContextDispatcher opCtxDispatcher = new OperationContextDispatcher();
 
     /**
      * @param log Logger.
@@ -452,6 +456,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /** {@inheritDoc} */
     @Override public MessageFactory messageFactory() {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public OperationContextDispatcher operationContextDispatcher() {
+        return opCtxDispatcher;
     }
 
     /** {@inheritDoc} */
