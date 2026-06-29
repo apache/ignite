@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageT
 import org.apache.ignite.internal.processors.security.cluster.ActivationOnJoinWithoutPermissionsWithPersistenceTest;
 import org.apache.ignite.internal.processors.security.cluster.NodeJoinPermissionsTest;
 import org.apache.ignite.spi.discovery.DiscoverySpiDataExchangeTest;
+import org.apache.ignite.spi.discovery.zk.internal.ZkOperationContextSendAttributesTest;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -50,6 +51,7 @@ import org.junit.runners.Suite;
     DistributedMetaStoragePersistentTest.class,
     IgniteNodeValidationFailedEventTest.class,
     DiscoverySpiDataExchangeTest.class,
+    ZkOperationContextSendAttributesTest.class,
     CacheCreateDestroyEventSecurityContextTest.class,
     NodeJoinPermissionsTest.class,
     ActivationOnJoinWithoutPermissionsWithPersistenceTest.class,

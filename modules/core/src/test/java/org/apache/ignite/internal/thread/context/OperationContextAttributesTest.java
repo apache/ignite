@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.thread.context;
 
-import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -42,8 +41,6 @@ import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -63,7 +60,6 @@ import org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolExecutor;
 import org.apache.ignite.internal.thread.pool.IgniteStripedExecutor;
 import org.apache.ignite.internal.thread.pool.IgniteStripedThreadPoolExecutor;
 import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
-import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -74,9 +70,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.AbstractTestPluginProvider;
-import org.apache.ignite.plugin.PluginContext;
-import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.discovery.tcp.messages.InetSocketAddressMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThread;
@@ -85,7 +78,6 @@ import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -110,9 +102,6 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
     /** */
     private int beforeTestReservedAttrIds;
 
-    /** */
-    private @Nullable PluginProvider pluginProvider;
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
@@ -126,23 +115,11 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        stopAllGrids();
-
         if (poolToShutdownAfterTest != null)
             poolToShutdownAfterTest.shutdownNow();
 
         // Releases attribute IDs reserved during the test.
         OperationContextAttribute.ID_GEN.set(beforeTestReservedAttrIds);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        if (pluginProvider != null)
-            cfg.setPluginProviders(pluginProvider);
-
-        return cfg;
     }
 
     /** */
@@ -846,78 +823,6 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
             U.cancel(proc);
             U.join(proc);
         }
-    }
-
-    /** */
-    @Test
-    public void testSendAttributesByDiscovery() throws Exception {
-        doTestOperationContextAttributesPropagation(true);
-    }
-
-    /** */
-    @Test
-    public void testSendAttributesByCommunication() throws Exception {
-        doTestOperationContextAttributesPropagation(false);
-    }
-
-    /** */
-    private void doTestOperationContextAttributesPropagation(boolean discovery) throws Exception {
-        OperationContextAttribute<InetSocketAddressMessage> dAttr1 =
-            OperationContextAttribute.newInstance(new InetSocketAddressMessage(InetAddress.getLoopbackAddress(), 80));
-
-        OperationContextAttribute<GridCacheVersion> dAttr2 = OperationContextAttribute.newInstance(new GridCacheVersion(1, 1, 1));
-
-        OperationContextAttribute<GridByteArrayList> otherTestAttr = OperationContextAttribute.newInstance(new GridByteArrayList());
-
-        pluginProvider = new AbstractTestPluginProvider() {
-            @Override public String name() {
-                return "TestDistributedOperationContextAttributesRegistrator";
-            }
-
-            @Override public void start(PluginContext ctx) {
-                GridKernalContext kctx = ((IgniteEx)ctx.grid()).context();
-
-                int dAttr1Id = OperationContextDispatcher.MAX_ATTRS_CNT - 2;
-                int dAttr2Id = OperationContextDispatcher.MAX_ATTRS_CNT - 1;
-
-                kctx.operationContextDispatcher().registerDistributedAttribute(dAttr1Id, dAttr1);
-                kctx.operationContextDispatcher().registerDistributedAttribute(dAttr2Id, dAttr2);
-
-                assertThrowsAnyCause(
-                    log,
-                    () -> {
-                        kctx.operationContextDispatcher().registerDistributedAttribute(dAttr2Id, otherTestAttr);
-                        return null;
-
-                    }, IgniteException.class,
-                    "Duplicated distributed attribute id"
-                );
-            }
-        };
-
-        // Local attribute 1.
-        OperationContextAttribute.newInstance(1000);
-
-        startGrids(2);
-        startClientGrid(2);
-
-        assertThrows(
-            null,
-            () -> grid(0).context().operationContextDispatcher().registerDistributedAttribute(1, null),
-            IgniteException.class,
-            "Initialization of distributed operation context attributes has already finished"
-        );
-
-        // Local attribute 2.
-        OperationContextAttribute.newInstance("locaAttr2");
-
-        InetSocketAddressMessage valToSend1 = new InetSocketAddressMessage(dAttr1.initialValue().address(), 443);
-        GridCacheVersion valToSend2 = new GridCacheVersion(2, 2, 2);
-
-        if (discovery)
-            doTestOperationContextAttributesPropagationThroughDiscovery(dAttr1, valToSend1, dAttr2, valToSend2);
-        else
-            doTestOperationContextAttributesPropagationThroughCommunication(dAttr1, valToSend1, dAttr2, valToSend2);
     }
 
     /** */
