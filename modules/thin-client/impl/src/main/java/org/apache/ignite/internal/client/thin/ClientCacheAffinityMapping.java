@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 import org.apache.ignite.IgniteBinary;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
 import org.apache.ignite.client.ClientPartitionAwarenessMapper;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
@@ -384,12 +383,12 @@ public class ClientCacheAffinityMapping {
          */
         private RendezvousAffinityKeyMapper(int parts) {
             this.parts = parts;
-            affinityMask = RendezvousAffinityFunction.calculateMask(parts);
+            affinityMask = CommonUtils.calculateMask(parts);
         }
 
         /** {@inheritDoc} */
         @Override public int partition(Object key) {
-            return RendezvousAffinityFunction.calculatePartition(key, affinityMask, parts);
+            return CommonUtils.calculatePartition(key, affinityMask, parts);
         }
     }
 }
