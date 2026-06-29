@@ -41,7 +41,6 @@ import org.apache.ignite.internal.processors.performancestatistics.FilePerforman
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCachePartitionWorker;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.mxbean.MetricsMxBean;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
@@ -743,12 +742,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
     @SystemProperty(value = "Maximum size for discovery messages history", type = Integer.class,
         defaults = "" + DFLT_DISCOVERY_HISTORY_SIZE)
     public static final String IGNITE_DISCOVERY_HISTORY_SIZE = "IGNITE_DISCOVERY_HISTORY_SIZE";
-
-    /** Human-readable ID of a data center where the node is running. */
-    @IgniteExperimental
-    @SystemProperty(value = "Data Center ID where local node is running. Not required for a single Data Center deployments",
-        type = String.class)
-    public static final String IGNITE_DATA_CENTER_ID = "IGNITE_DATA_CENTER_ID";
 
     /** Maximum number of discovery message history used to support client reconnect. */
     @SystemProperty(value = "Maximum number of discovery message history used to support client reconnect",
