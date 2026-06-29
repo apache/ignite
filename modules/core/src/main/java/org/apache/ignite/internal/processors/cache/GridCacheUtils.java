@@ -41,6 +41,7 @@ import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.integration.CacheLoader;
 import javax.cache.integration.CacheWriter;
 import javax.cache.integration.CacheWriterException;
+import javax.cache.processor.EntryProcessorException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -65,6 +66,8 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.UnregisteredBinaryTypeException;
+import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
@@ -2201,6 +2204,26 @@ public class GridCacheUtils {
             affFields.put(keyCfg.getTypeName(), keyCfg.getAffinityKeyFieldName());
 
         return affFields;
+    }
+
+    /**
+     * Prepares an entry processor error so it can be stored in a {@link CacheInvokeResult} and rethrown
+     * as-is by {@link CacheInvokeResult#get()}: an {@link UnregisteredClassException} or
+     * {@link UnregisteredBinaryTypeException} (which must propagate unwrapped) and an existing
+     * {@link EntryProcessorException} are returned unchanged; any other error is wrapped in an
+     * {@link EntryProcessorException}.
+     *
+     * @param err Error thrown by the entry processor.
+     * @return Prepared error to store in the cache invoke result.
+     */
+    public static Throwable prepareEntryProcessorError(Throwable err) {
+        if (err instanceof UnregisteredClassException || err instanceof UnregisteredBinaryTypeException)
+            return err;
+
+        if (err instanceof EntryProcessorException)
+            return err;
+
+        return new EntryProcessorException(err);
     }
 
     /**
