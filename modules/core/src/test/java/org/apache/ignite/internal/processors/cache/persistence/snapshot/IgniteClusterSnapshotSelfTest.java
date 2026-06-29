@@ -853,6 +853,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         CountDownLatch deltaBlock = new CountDownLatch(1);
         IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
 
+        startClientGrid();
+
         // Snapshot process will be blocked when delta partition files processing starts.
         snp(ignite).localSnapshotSenderFactory(
             blockingLocalSnapshotSender(ignite, deltaApply, deltaBlock));
@@ -865,6 +867,16 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             ObjectGauge<String> snpName = mreg.findMetric("LastSnapshotName");
             ObjectGauge<String> errMsg = mreg.findMetric("LastSnapshotErrorMessage");
             ObjectGauge<List<String>> snpList = mreg.findMetric("LocalSnapshotNames");
+
+            if (g.cluster().localNode().isClient()) {
+                assertNull("Snapshot start time must not be created on a client node.", startTime);
+                assertNull("Snapshot end time must not be created on a client node.", endTime);
+                assertNull("Snapshot name must not be created on a client node.", snpName);
+                assertNull("Snapshot error message must not be created on a client node.", errMsg);
+                assertNull("Snapshot local names must not be created on a client node.", snpList);
+
+                continue;
+            }
 
             assertEquals("Snapshot start time must be undefined prior to snapshot operation started.",
                 0, startTime.value());
@@ -886,6 +898,15 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             LongMetric endTime = mreg.findMetric("LastSnapshotEndTime");
             ObjectGauge<String> snpName = mreg.findMetric("LastSnapshotName");
             ObjectGauge<String> errMsg = mreg.findMetric("LastSnapshotErrorMessage");
+
+            if (g.cluster().localNode().isClient()) {
+                assertNull("Snapshot start time must not be created on a client node.", startTime);
+                assertNull("Snapshot end time must not be created on a client node.", endTime);
+                assertNull("Snapshot name must not be created on a client node.", snpName);
+                assertNull("Snapshot error message must not be created on a client node.", errMsg);
+
+                continue;
+            }
 
             assertTrue("Snapshot start time must be set prior to snapshot operation started " +
                     "[startTime=" + startTime.value() + ", cutoffTime=" + cutoffStartTime + ']',
@@ -910,6 +931,13 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
             LongMetric startTime = mreg.findMetric("LastSnapshotStartTime");
             LongMetric endTime = mreg.findMetric("LastSnapshotEndTime");
+
+            if (g.cluster().localNode().isClient()) {
+                assertNull("Snapshot start time must not be created on a client node.", startTime);
+                assertNull("Snapshot end time must not be created on a client node.", endTime);
+
+                continue;
+            }
 
             waitForCondition(() -> endTime.value() != 0L && startTime.value() != 0 && endTime.value() > startTime.value(),
                 getTestTimeout());
