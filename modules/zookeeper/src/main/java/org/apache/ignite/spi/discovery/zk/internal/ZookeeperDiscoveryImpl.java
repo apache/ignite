@@ -78,6 +78,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
@@ -1781,7 +1782,7 @@ public class ZookeeperDiscoveryImpl {
 
         long evtId = rtState.evtsData.evtIdGen;
 
-        List<T2<ZkJoinedNodeEvtData, Map<Integer, Serializable>>> nodes = joinCtx.nodes;
+        List<T2<ZkJoinedNodeEvtData, ZkDiscoDataBagWrapper>> nodes = joinCtx.nodes;
 
         assert nodes != null && !nodes.isEmpty();
 
@@ -1793,11 +1794,9 @@ public class ZookeeperDiscoveryImpl {
         Map<Long, Long> dupDiscoData = null;
 
         for (int i = 0; i < nodeCnt; i++) {
-            T2<ZkJoinedNodeEvtData, Map<Integer, Serializable>> nodeEvtData = nodes.get(i);
+            T2<ZkJoinedNodeEvtData, ZkDiscoDataBagWrapper> nodeEvtData = nodes.get(i);
 
-            Map<Integer, Serializable> discoData = nodeEvtData.get2();
-
-            byte[] discoDataBytes = U.marshal(marsh, discoData);
+            byte[] discoDataBytes = msgParser.marshalZip(nodeEvtData.get2());
 
             Long dupDataNode = null;
 
@@ -2251,7 +2250,7 @@ public class ZookeeperDiscoveryImpl {
 
         exchange.collect(collectBag);
 
-        Map<Integer, Serializable> commonData = collectBag.commonData();
+        Map<Integer, Message> commonData = collectBag.commonData();
 
         Object old = curTop.put(joinedNode.order(), joinedNode);
 
@@ -3021,12 +3020,11 @@ public class ZookeeperDiscoveryImpl {
 
             byte[] discoDataBytes = dataForJoined.discoveryDataForNode(locNode.order());
 
-            Map<Integer, Serializable> commonDiscoData =
-                marsh.unmarshal(discoDataBytes, U.resolveClassLoader(spi.ignite().configuration()));
+            ZkDiscoDataBagWrapper zkDataBagWrapper = msgParser.unmarshalZip(discoDataBytes);
 
             DiscoveryDataBag dataBag = new DiscoveryDataBag(locNode.id(), locNode.isClient());
 
-            dataBag.commonData(commonDiscoData);
+            dataBag.commonData(zkDataBagWrapper.unmarshalledData());
 
             exchange.onExchange(dataBag);
 

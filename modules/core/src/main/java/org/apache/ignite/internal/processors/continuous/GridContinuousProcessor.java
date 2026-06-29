@@ -528,8 +528,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     @Override public void onGridDataReceived(GridDiscoveryData data) {
         if (immutableDiscoCustomMsg) {
             if (data.commonData() != null) {
-                ContinuousRoutinesCommonDiscoveryData commonData =
-                    (ContinuousRoutinesCommonDiscoveryData)data.commonData();
+                ContinuousRoutinesCommonDiscoveryData commonData = data.commonData();
 
                 for (ContinuousRoutineInfo routineInfo : commonData.startedRoutines) {
                     if (routinesInfo.routineExists(routineInfo.routineId))
@@ -542,11 +541,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             }
         }
         else {
-            Map<UUID, Serializable> nodeSpecData = data.nodeSpecificData();
+            Map<UUID, DiscoveryData> nodeSpecData = data.nodeSpecificData();
 
             if (nodeSpecData != null) {
-                for (Map.Entry<UUID, Serializable> e : nodeSpecData.entrySet())
-                    onDiscoveryDataReceivedMutable((DiscoveryData)e.getValue());
+                for (DiscoveryData val : nodeSpecData.values())
+                    onDiscoveryDataReceivedMutable(val);
             }
         }
     }

@@ -765,7 +765,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param req Request on snapshot creation.
      * @return Future which will be completed when a snapshot has been started.
      */
-    private IgniteInternalFuture<SnapshotOperationResponse> initLocalSnapshotStartStage(SnapshotOperationRequest req) {
+    private IgniteInternalFuture<SnapshotOperationResponse> initLocalSnapshotStartStage(UUID ignored, SnapshotOperationRequest req) {
         // Executed inside discovery notifier thread, prior to firing discovery custom event,
         // so it is safe to set new snapshot task inside this method without synchronization.
         if (curSnpOp != null) {
@@ -1260,7 +1260,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param endReq Snapshot creation end request.
      * @return Future which will be completed when the snapshot will be finalized.
      */
-    private IgniteInternalFuture<SnapshotOperationResponse> initLocalSnapshotEndStage(SnapshotOperationEndRequest endReq) {
+    private IgniteInternalFuture<SnapshotOperationResponse> initLocalSnapshotEndStage(UUID ignored, SnapshotOperationEndRequest endReq) {
         SnapshotOperation snpOp = curSnpOp;
 
         if (snpOp == null || !Objects.equals(endReq.requestId(), snpOp.request().requestId()))

@@ -223,10 +223,9 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public boolean skipStore();
 
     /**
-     * @param skipStore Skip store flag.
      * @return New internal cache instance based on this one, but with skip store flag enabled.
      */
-    public IgniteInternalCache<K, V> setSkipStore(boolean skipStore);
+    public IgniteInternalCache<K, V> withSkipStore();
 
     /** @return New internal cache instance based on this one, but with skip read-through cache store flag enabled. */
     public IgniteInternalCache<K, V> withSkipReadThrough();

@@ -74,7 +74,7 @@
         <curator.version>5.9.0</curator.version>
         <guava.version>33.5.0-jre</guava.version>
         <failureaccess.version>1.0.1</failureaccess.version>
-        <grpc-context.version>1.62.2</grpc-context.version>
+        <grpc-context.version>1.81.0</grpc-context.version>
         <h2.version>1.4.197</h2.version>
         <hamcrest.version>2.2</hamcrest.version>
         <jackson.version>2.21.3</jackson.version>
@@ -101,7 +101,7 @@
         <maven.flatten.plugin.version>1.7.3</maven.flatten.plugin.version>
         <maven.flatten.file.name>pom-installed.xml</maven.flatten.file.name>
         <maven.model.version>3.8.9</maven.model.version>
-        <checkstyle.puppycrawl.version>8.45</checkstyle.puppycrawl.version>
+        <checkstyle.puppycrawl.version>12.3.1</checkstyle.puppycrawl.version>
         <mockito.version>5.21.0</mockito.version>
         <mysql.connector.version>8.0.30</mysql.connector.version>
         <postgres.connector.version>42.7.3</postgres.connector.version>

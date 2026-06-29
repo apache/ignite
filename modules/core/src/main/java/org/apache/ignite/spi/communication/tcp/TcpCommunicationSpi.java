@@ -616,7 +616,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             ctxInitLatch,
             client,
             igniteExSupplier,
-            new CommunicationListener<Message>() {
+            new CommunicationListener<>() {
                 @Override public void onMessage(UUID nodeId, Message msg, IgniteRunnable msgC) {
                     notifyListener(nodeId, msg, msgC);
                 }
@@ -651,7 +651,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             getWorkersRegistry(ignite),
             ignite instanceof IgniteEx ? ((IgniteEx)ignite).context().metric() : null,
             this::createTcpClient,
-            new CommunicationListenerEx<Message>() {
+            new CommunicationListenerEx<>() {
                 @Override public void onMessage(UUID nodeId, Message msg, IgniteRunnable msgC) {
                     notifyListener(nodeId, msg, msgC);
                 }

@@ -133,7 +133,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
         final boolean skipStore = opCtx != null && opCtx.skipStore();
         final boolean skipReadThrough = opCtx != null && opCtx.skipReadThrough();
-        boolean keepBinaryInInterceptor = opCtx != null && opCtx.isKeepBinaryInInterceptor();
+        boolean keepBinaryInInterceptor = opCtx != null && opCtx.keepBinaryInInterceptor();
 
         if (tx != null && !tx.implicit() && !skipTx) {
             return asyncOp(tx, new AsyncOp<Map<K, V>>(keys) {
@@ -309,7 +309,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             accessTtl,
             opCtx != null && opCtx.skipStore(),
             opCtx != null && opCtx.skipReadThrough(),
-            opCtx != null && opCtx.isKeepBinaryInInterceptor(),
+            opCtx != null && opCtx.keepBinaryInInterceptor(),
             opCtx != null && opCtx.isKeepBinary(),
             opCtx != null && opCtx.recovery());
 
