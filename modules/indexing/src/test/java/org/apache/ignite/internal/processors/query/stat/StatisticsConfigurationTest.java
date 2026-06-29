@@ -153,6 +153,15 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
     protected void stopGridAndChangeBaseline(int nodeIdx) {
         stopGrid(nodeIdx);
 
+        // Wait for topology to stabilize before setting new baseline to avoid race condition
+        // where baseline is set while discovery messages about the stopped node are still propagating.
+        try {
+            awaitPartitionMapExchange();
+        }
+        catch (InterruptedException e) {
+            // No-op.
+        }
+
         if (persist)
             F.first(G.allGrids()).cluster().setBaselineTopology(F.first(G.allGrids()).cluster().topologyVersion());
 
