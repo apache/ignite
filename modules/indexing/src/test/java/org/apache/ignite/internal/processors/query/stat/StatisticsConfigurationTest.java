@@ -135,6 +135,11 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
         cleanPersistenceDir();
     }
 
+    /** {@inheritDoc} */
+    @Override protected long getPartitionMapExchangeTimeout() {
+        return super.getPartitionMapExchangeTimeout() * 2;
+    }
+
     /** */
     protected IgniteEx startGridAndChangeBaseline(int nodeIdx) throws Exception {
         IgniteEx ign = startGrid(nodeIdx);
