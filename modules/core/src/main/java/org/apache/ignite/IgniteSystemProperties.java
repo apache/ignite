@@ -807,31 +807,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
     @SystemProperty("Enables local store keeps primary only. Backward compatibility flag")
     public static final String IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY = "IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY";
 
-    /** Defines path to the file that contains list of classes allowed to safe deserialization.*/
-    @SystemProperty(value = "Path to the file that contains list of classes allowed to safe deserialization",
-        type = String.class)
-    public static final String IGNITE_MARSHALLER_WHITELIST = "IGNITE_MARSHALLER_WHITELIST";
-
-    /** Defines path to the file that contains list of classes disallowed to safe deserialization.*/
-    @SystemProperty(value = "Path to the file that contains list of classes disallowed to safe deserialization",
-        type = String.class)
-    public static final String IGNITE_MARSHALLER_BLACKLIST = "IGNITE_MARSHALLER_BLACKLIST";
-
-    /**
-     * If this parameter is set to true, Ignite will automatically configure an ObjectInputFilter instance for the
-     * current JVM it is running in.
-     * Default value is {@code true}.
-     */
-    @SystemProperty(
-        value = "If this parameter is set to true, Ignite will automatically configure an ObjectInputFilter" +
-            " instance for the current JVM it is running in. Filtering is based on class lists defined by the" +
-            " `IGNITE_MARSHALLER_WHITELIST` and `IGNITE_MARSHALLER_BLACKLIST` system properties or their default values." +
-            " Disabling it is not recommended because the Ignite host may be vulnerable to RCE attacks based on Java" +
-            " serialization mechanisms",
-        defaults = "true"
-    )
-    public static final String IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION = "IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION";
-
     /**
      * If set to {@code true}, then default selected keys set is used inside
      * {@code GridNioServer} which lead to some extra garbage generation when

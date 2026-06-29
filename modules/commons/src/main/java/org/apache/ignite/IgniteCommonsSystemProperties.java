@@ -160,6 +160,31 @@ public class IgniteCommonsSystemProperties {
         type = String.class)
     public static final String IGNITE_DATA_CENTER_ID = "IGNITE_DATA_CENTER_ID";
 
+    /** Defines path to the file that contains list of classes allowed to safe deserialization.*/
+    @SystemProperty(value = "Path to the file that contains list of classes allowed to safe deserialization",
+        type = String.class)
+    public static final String IGNITE_MARSHALLER_WHITELIST = "IGNITE_MARSHALLER_WHITELIST";
+
+    /** Defines path to the file that contains list of classes disallowed to safe deserialization.*/
+    @SystemProperty(value = "Path to the file that contains list of classes disallowed to safe deserialization",
+        type = String.class)
+    public static final String IGNITE_MARSHALLER_BLACKLIST = "IGNITE_MARSHALLER_BLACKLIST";
+
+    /**
+     * If this parameter is set to true, Ignite will automatically configure an ObjectInputFilter instance for the
+     * current JVM it is running in.
+     * Default value is {@code true}.
+     */
+    @SystemProperty(
+        value = "If this parameter is set to true, Ignite will automatically configure an ObjectInputFilter" +
+            " instance for the current JVM it is running in. Filtering is based on class lists defined by the" +
+            " `IGNITE_MARSHALLER_WHITELIST` and `IGNITE_MARSHALLER_BLACKLIST` system properties or their default values." +
+            " Disabling it is not recommended because the Ignite host may be vulnerable to RCE attacks based on Java" +
+            " serialization mechanisms",
+        defaults = "true"
+    )
+    public static final String IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION = "IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION";
+
     /**
      * @param enumCls Enum type.
      * @param name Name of the system property or environment variable.
