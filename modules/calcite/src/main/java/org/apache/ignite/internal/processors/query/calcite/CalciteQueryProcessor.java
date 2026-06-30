@@ -82,7 +82,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecuto
 import org.apache.ignite.internal.processors.query.calcite.exec.TimeoutService;
 import org.apache.ignite.internal.processors.query.calcite.exec.TimeoutServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RexExecutorImpl;
-import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.PluginAccumulatorRegistry;
 import org.apache.ignite.internal.processors.query.calcite.exec.task.QueryBlockingTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.exec.task.StripedQueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintsConfig;
@@ -273,9 +272,6 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     private final InjectResourcesService injectSvc;
 
     /** */
-    private final PluginAccumulatorRegistry pluginAccRegistry;
-
-    /** */
     private volatile boolean started;
 
     /**
@@ -284,8 +280,9 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     public CalciteQueryProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        pluginAccRegistry = new PluginAccumulatorRegistry(ctx);
-        frameworkCfg = frameworkCfg(ctx);
+        FrameworkConfig customFrameworkCfg = ctx.plugins().createComponent(FrameworkConfig.class);
+        frameworkCfg = customFrameworkCfg != null ? customFrameworkCfg : FRAMEWORK_CONFIG;
+
         failureProcessor = ctx.failure();
         schemaHolder = new SchemaHolderImpl(ctx, frameworkCfg);
         qryPlanCache = new QueryPlanCacheImpl(ctx);
@@ -717,7 +714,8 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         if (timeout <= 0)
             timeout = distrCfg.defaultQueryTimeout();
 
-        qryCtx = QueryContext.of(frameworkCfg(qryCtx), qryCtx);
+        if (frameworkCfg != FRAMEWORK_CONFIG)
+            qryCtx = QueryContext.of(frameworkCfg, qryCtx);
 
         RootQuery<Object[]> qry = new RootQuery<>(
             sql,
@@ -854,36 +852,5 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     /** */
     public InjectResourcesService injectService() {
         return injectSvc;
-    }
-
-    /** */
-    private FrameworkConfig frameworkCfg(GridKernalContext ctx) {
-        FrameworkConfig customFrameworkCfg = ctx.plugins().createComponent(FrameworkConfig.class);
-        customFrameworkCfg = customFrameworkCfg != null ? customFrameworkCfg : FRAMEWORK_CONFIG;
-
-        return withPluginAccumulatorRegistry(customFrameworkCfg, pluginAccRegistry);
-    }
-
-    /** */
-    private FrameworkConfig frameworkCfg(@Nullable QueryContext ctx) {
-        FrameworkConfig customFrameworkCfg = ctx != null ? ctx.unwrap(FrameworkConfig.class) : null;
-
-        if (customFrameworkCfg == null || customFrameworkCfg == frameworkCfg)
-            return frameworkCfg;
-
-        if (customFrameworkCfg.getContext().unwrap(PluginAccumulatorRegistry.class) != null)
-            return customFrameworkCfg;
-
-        return withPluginAccumulatorRegistry(customFrameworkCfg, pluginAccRegistry);
-    }
-
-    /** */
-    private static FrameworkConfig withPluginAccumulatorRegistry(
-        FrameworkConfig cfg,
-        PluginAccumulatorRegistry registry
-    ) {
-        return Frameworks.newConfigBuilder(cfg)
-            .context(Contexts.chain(cfg.getContext(), Contexts.of(registry)))
-            .build();
     }
 }

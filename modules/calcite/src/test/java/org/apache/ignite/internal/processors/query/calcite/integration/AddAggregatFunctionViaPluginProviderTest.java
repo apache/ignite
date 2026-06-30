@@ -18,7 +18,8 @@
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.List;
-import java.util.Map;
+import java.util.function.Supplier;
+import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.SqlAggFunction;
@@ -34,13 +35,13 @@ import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.util.Optionality;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
+import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumulator;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorFactoryProvider;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumulators.AbstractAccumulator;
-import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.PluginAccumulatorRegistry.AccumulatorFactoryProvider;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
-import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.PluginProvider;
 import org.jspecify.annotations.Nullable;
@@ -88,15 +89,8 @@ public class AddAggregatFunctionViaPluginProviderTest extends AbstractBasicInteg
                 .operatorTable(SqlOperatorTables.chain(
                     new TestSqlOperatorTable().init(), cfg.getOperatorTable()
                 ))
+                .context(Contexts.chain(cfg.getContext(), Contexts.of(new TestSumAccumulatorFactoryProvider())))
                 .build();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
-            registry.registerExtension(
-                AccumulatorFactoryProvider.class,
-                () -> Map.of(TEST_SUM_FUN_NAME, (call, ctx1) -> () -> new TestSum<>(call, ctx1.rowHandler()))
-            );
         }
     }
 
@@ -162,6 +156,17 @@ public class AddAggregatFunctionViaPluginProviderTest extends AbstractBasicInteg
         /** {@inheritDoc} */
         @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
             return typeFactory.createSqlType(org.apache.calcite.sql.type.SqlTypeName.BIGINT);
+        }
+    }
+
+    /** */
+    private static class TestSumAccumulatorFactoryProvider implements AccumulatorFactoryProvider {
+        /** {@inheritDoc} */
+        @Override public @Nullable <Row> Supplier<Accumulator<Row>> factory(AggregateCall call, ExecutionContext<Row> ctx) {
+            if (call.getAggregation().getName().equals(TEST_SUM_FUN_NAME))
+                return () -> new TestSum<>(call, ctx.rowHandler());
+
+            return null;
         }
     }
 }

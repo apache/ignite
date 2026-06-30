@@ -18,11 +18,22 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.exp.agg;
 
 import java.util.function.Supplier;
+import org.apache.calcite.plan.Context;
 import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.plugin.PluginProvider;
+import org.jetbrains.annotations.Nullable;
 
-/** Factory that selects and creates an accumulator supplier for an aggregate call. */
-@FunctionalInterface public interface AccumulatorSupplierFactory<Row> {
-    /** @return Accumulator supplier. */
-    Supplier<Accumulator<Row>> create(AggregateCall call, ExecutionContext<Row> ctx);
+/**
+ * Factory that selects and creates an accumulator supplier for an aggregate call. Allows overriding standard aggregate
+ * functions.
+ *
+ * <p>It can be set via {@link PluginProvider} when creating a configuration using
+ * {@link PluginProvider#createComponent} via {@link Frameworks.ConfigBuilder#context(Context)}.</p>
+ */
+@FunctionalInterface
+public interface AccumulatorFactoryProvider {
+    /** @return Accumulator supplier, {@code null} if no accumulator is required for this aggregate call. */
+    @Nullable <Row> Supplier<Accumulator<Row>> factory(AggregateCall call, ExecutionContext<Row> ctx);
 }

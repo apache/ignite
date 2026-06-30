@@ -55,27 +55,6 @@ import static org.apache.calcite.sql.type.SqlTypeName.VARCHAR;
  */
 public class Accumulators {
     /** */
-    private static final Map<String, AccumulatorSupplierFactory<?>> BUILT_IN_FACTORY_BY_NAME = Map.ofEntries(
-        Map.entry("COUNT", (call, ctx) -> () -> new LongCount<>(call, ctx.rowHandler())),
-        Map.entry("AVG", (call, ctx) -> avgFactory(call, ctx.rowHandler())),
-        Map.entry("SUM", (call, ctx) -> sumFactory(call, ctx.rowHandler())),
-        Map.entry("$SUM0", (call, ctx) -> sumEmptyIsZeroFactory(call, ctx.rowHandler())),
-        Map.entry("MIN", (call, ctx) -> minFactory(call, ctx.rowHandler())),
-        Map.entry("EVERY", (call, ctx) -> minFactory(call, ctx.rowHandler())),
-        Map.entry("MAX", (call, ctx) -> maxFactory(call, ctx.rowHandler())),
-        Map.entry("SOME", (call, ctx) -> maxFactory(call, ctx.rowHandler())),
-        Map.entry("SINGLE_VALUE", (call, ctx) -> () -> new SingleVal<>(call, ctx.rowHandler())),
-        Map.entry("LITERAL_AGG", (call, ctx) -> () -> new LiteralVal<>(call, ctx.rowHandler())),
-        Map.entry("ANY_VALUE", (call, ctx) -> () -> new AnyVal<>(call, ctx.rowHandler())),
-        Map.entry("LISTAGG", Accumulators::listAggregateSupplier),
-        Map.entry("ARRAY_AGG", Accumulators::listAggregateSupplier),
-        Map.entry("ARRAY_CONCAT_AGG", Accumulators::listAggregateSupplier),
-        Map.entry("BIT_AND", (call, ctx) -> bitWiseFactory(call, ctx.rowHandler())),
-        Map.entry("BIT_OR", (call, ctx) -> bitWiseFactory(call, ctx.rowHandler())),
-        Map.entry("BIT_XOR", (call, ctx) -> bitWiseFactory(call, ctx.rowHandler()))
-    );
-
-    /** */
     public static <Row> Supplier<Accumulator<Row>> accumulatorFactory(AggregateCall call, ExecutionContext<Row> ctx) {
         Supplier<Accumulator<Row>> supplier = accumulatorFunctionFactory(call, ctx);
 
@@ -90,21 +69,49 @@ public class Accumulators {
         AggregateCall call,
         ExecutionContext<Row> ctx
     ) {
-        String aggFunName = call.getAggregation().getName();
+        RowHandler<Row> hnd = ctx.rowHandler();
 
-        AccumulatorSupplierFactory<Row> builtInFactory =
-            (AccumulatorSupplierFactory<Row>)BUILT_IN_FACTORY_BY_NAME.get(aggFunName);
+        AccumulatorFactoryProvider prov = ctx.unwrap(AccumulatorFactoryProvider.class);
 
-        if (builtInFactory != null)
-            return builtInFactory.create(call, ctx);
+        if (prov != null) {
+            Supplier<Accumulator<Row>> fac = prov.factory(call, ctx);
 
-        AccumulatorSupplierFactory<Row> pluginFactory =
-            ctx.unwrap(PluginAccumulatorRegistry.class).factory(aggFunName);
+            if (fac != null)
+                return fac;
+        }
 
-        if (pluginFactory == null)
-            throw new AssertionError("Accumulator factory not found for: " + aggFunName);
-
-        return pluginFactory.create(call, ctx);
+        switch (call.getAggregation().getName()) {
+            case "COUNT":
+                return () -> new LongCount<>(call, hnd);
+            case "AVG":
+                return avgFactory(call, hnd);
+            case "SUM":
+                return sumFactory(call, hnd);
+            case "$SUM0":
+                return sumEmptyIsZeroFactory(call, hnd);
+            case "MIN":
+            case "EVERY":
+                return minFactory(call, hnd);
+            case "MAX":
+            case "SOME":
+                return maxFactory(call, hnd);
+            case "SINGLE_VALUE":
+                return () -> new SingleVal<>(call, hnd);
+            case "LITERAL_AGG":
+                return () -> new LiteralVal<>(call, hnd);
+            case "ANY_VALUE":
+                return () -> new AnyVal<>(call, hnd);
+            case "LISTAGG":
+            case "ARRAY_AGG":
+            case "ARRAY_CONCAT_AGG":
+                return listAggregateSupplier(call, ctx);
+            case "BIT_AND":
+            case "BIT_OR":
+            case "BIT_XOR":
+                return bitWiseFactory(call, hnd);
+            default:
+                throw new AssertionError(call.getAggregation().getName());
+        }
     }
 
     /** */
@@ -1512,10 +1519,5 @@ public class Accumulators {
         @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
             return acc.returnType(typeFactory);
         }
-    }
-
-    /** */
-    static boolean isBuiltInAggregate(String name) {
-        return BUILT_IN_FACTORY_BY_NAME.containsKey(name);
     }
 }
