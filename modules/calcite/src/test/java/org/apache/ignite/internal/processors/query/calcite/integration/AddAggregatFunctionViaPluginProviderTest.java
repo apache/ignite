@@ -47,14 +47,14 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.jspecify.annotations.Nullable;
 import org.junit.Test;
 
-/** Test for adding aggregat function via {@link PluginProvider}. */
+/** Test for adding aggregate function via {@link PluginProvider}. */
 public class AddAggregatFunctionViaPluginProviderTest extends AbstractBasicIntegrationTest {
     /** */
     private static final String TEST_SUM_FUN_NAME = "TEST_SUM";
 
     /** {@inheritDoc} */
     @Override protected int nodeCount() {
-        return 1;
+        return 2;
     }
 
     /** {@inheritDoc} */
