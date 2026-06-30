@@ -32,19 +32,25 @@ public interface Message {
     /** Registry of message class to direct type mappings, populated during factory initialization. */
     Map<Class<?>, Short> REGISTRATIONS = new ConcurrentHashMap<>();
 
+    /** Per-class cache over {@link #REGISTRATIONS}; keeps {@link #directType()} off the hash lookup on the hot path. */
+    ClassValue<Short> DIRECT_TYPES = new ClassValue<>() {
+        @Override protected Short computeValue(Class<?> type) {
+            Short directType = REGISTRATIONS.get(type);
+
+            if (directType == null)
+                throw new UnknownMessageException(type.asSubclass(Message.class));
+
+            return directType;
+        }
+    };
+
     /**
      * Gets message type.
      *
      * @return Message type.
      */
     default short directType() {
-        var clazz = getClass();
-        Short type = REGISTRATIONS.get(clazz);
-
-        if (type == null)
-            throw new UnknownMessageException(clazz);
-
-        return type;
+        return DIRECT_TYPES.get(getClass());
     }
 
     /**
