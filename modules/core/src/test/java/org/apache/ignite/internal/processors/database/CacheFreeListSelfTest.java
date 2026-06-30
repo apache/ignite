@@ -294,7 +294,7 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
 
                 Random rnd = ThreadLocalRandom.current();
 
-                for (int i = 0; i < 200_000; i++) {
+                for (int i = 0; i < GridTestUtils.SF.applyLB(200_000, 50_000); i++) {
                     boolean grow0 = grow.get();
 
                     if (grow0) {
