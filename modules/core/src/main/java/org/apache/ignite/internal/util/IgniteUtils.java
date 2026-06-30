@@ -294,9 +294,6 @@ public abstract class IgniteUtils extends CommonUtils {
     /** Empty integers array. */
     public static final int[] EMPTY_INTS = new int[0];
 
-    /** Empty longs array. */
-    public static final long[] EMPTY_LONGS = new long[0];
-
     /** Empty strings array. */
     public static final String[] EMPTY_STRS = new String[0];
 
