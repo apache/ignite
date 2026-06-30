@@ -24,6 +24,21 @@ import org.apache.ignite.internal.managers.communication.UnknownMessageException
 
 /**
  * Base class for all communication messages.
+ * <p>
+ * Wire fields are declared by annotating instance fields; {@link org.apache.ignite.internal.MessageProcessor} then
+ * generates the serializer, so implementations should not hand-write {@code writeTo}/{@code readFrom}. Available
+ * field annotations (see each annotation's javadoc for details):
+ * <ul>
+ *     <li>{@link org.apache.ignite.internal.Order @Order} — an ordered wire field (the basic building block);</li>
+ *     <li>{@link org.apache.ignite.internal.Compress @Compress} — compress the field's wire form;</li>
+ *     <li>{@link org.apache.ignite.internal.NioField @NioField} — a low-level NIO field;</li>
+ *     <li>{@link org.apache.ignite.internal.CustomMapper @CustomMapper} — map the field via a custom mapper;</li>
+ *     <li>{@link org.apache.ignite.internal.Marshalled @Marshalled} /
+ *         {@link org.apache.ignite.internal.MarshalledMap @MarshalledMap} /
+ *         {@link org.apache.ignite.internal.MarshalledCollection @MarshalledCollection} /
+ *         {@link org.apache.ignite.internal.MarshalledObjects @MarshalledObjects} — for {@link MarshallableMessage}
+ *         payloads serialized via a {@link org.apache.ignite.marshaller.Marshaller}.</li>
+ * </ul>
  */
 public interface Message {
     /** Direct type size in bytes. */
