@@ -17,28 +17,30 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
-import java.util.function.Supplier;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.util.IgniteMath;
 import org.apache.ignite.internal.util.typedef.F;
-import org.jetbrains.annotations.Nullable;
 
 /** Offset, fetch|limit support node. */
 public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
-    /** Offset if its present, otherwise 0. */
-    private final int offset;
+    /** Offset param. */
+    private final long offset;
 
-    /** Fetch if its present, otherwise 0. */
-    private final int fetch;
+    /** Fetch param. */
+    private final long fetch;
+
+    /** Fetch can be unset. */
+    private final boolean fetchUndefined;
 
     /** Already processed (pushed to upstream) rows count. */
     private int rowsProcessed;
 
-    /** Fetch can be unset, in this case we need all rows. */
-    private @Nullable Supplier<Integer> fetchNode;
-
     /** Waiting results counter. */
     private int waiting;
+
+    /** Upper requested rows. */
+    private int requested;
 
     /**
      * Constructor.
@@ -49,14 +51,14 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
     public LimitNode(
         ExecutionContext<Row> ctx,
         RelDataType rowType,
-        Supplier<Integer> offsetNode,
-        Supplier<Integer> fetchNode
+        long offset,
+        long fetch
     ) {
         super(ctx, rowType);
 
-        offset = offsetNode == null ? 0 : offsetNode.get();
-        fetch = fetchNode == null ? 0 : fetchNode.get();
-        this.fetchNode = fetchNode;
+        this.offset = offset;
+        fetchUndefined = fetch == -1;
+        this.fetch = fetch == -1 ? 0 : fetch;
     }
 
     /** {@inheritDoc} */
@@ -64,19 +66,22 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
         assert !F.isEmpty(sources()) && sources().size() == 1;
         assert rowsCnt > 0;
 
-        if (fetchNone()) {
+        if (!hasMoreData()) {
             end();
 
             return;
         }
 
-        if (offset > 0 && rowsProcessed == 0)
-            rowsCnt = offset + rowsCnt;
+        assert requested == 0 : requested;
+        requested = rowsCnt;
+
+        if (fetch > 0) {
+            long remain = IgniteMath.addExact(fetch, offset) - rowsProcessed;
+
+            rowsCnt = remain > rowsCnt ? rowsCnt : (int)remain;
+        }
 
         waiting = rowsCnt;
-
-        if (fetch > 0)
-            rowsCnt = Math.min(rowsCnt, (fetch + offset) - rowsProcessed);
 
         checkState();
 
@@ -85,38 +90,46 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
 
     /** {@inheritDoc} */
     @Override public void push(Row row) throws Exception {
-        if (waiting == -1)
+        if (waiting == NOT_WAITING)
             return;
-
-        ++rowsProcessed;
 
         --waiting;
 
-        checkState();
-
-        if (rowsProcessed > offset) {
-            if (fetchNode == null || (fetchNode != null && rowsProcessed <= fetch + offset))
-                downstream().push(row);
+        if (rowsProcessed >= offset && hasMoreData()) {
+            // this two rows can`t be swapped, cause if all requested rows have been pushed it will trigger further request call.
+            --requested;
+            downstream().push(row);
         }
 
-        if (fetch > 0 && rowsProcessed == fetch + offset && waiting > 0)
+        ++rowsProcessed;
+
+        // There several cases are possible:
+        //  1) requested = 512, limit = 1, offset = not defined: need to pass 1 row and call end()
+        //  2) requested = 512, limit = 512, offset = not defined: just need to pass all rows without end() call
+        //  3) requested = 512, limit = 512, offset = 1: need to request initially 512 and further 1 row
+        if (!hasMoreData() && requested > 0)
             end();
+
+        if (waiting == 0 && requested > 0)
+            source().request(waiting = requested);
     }
 
     /** {@inheritDoc} */
     @Override public void end() throws Exception {
-        if (waiting == -1)
+        if (waiting == NOT_WAITING)
             return;
 
         assert downstream() != null;
 
-        waiting = -1;
+        waiting = NOT_WAITING;
 
         downstream().end();
     }
 
     /** {@inheritDoc} */
     @Override protected void rewindInternal() {
+        waiting = 0;
+        requested = 0;
         rowsProcessed = 0;
     }
 
@@ -128,8 +141,8 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
         return this;
     }
 
-    /** {@code True} if requested 0 results, or all already processed. */
-    private boolean fetchNone() {
-        return (fetchNode != null && fetch == 0) || (fetch > 0 && rowsProcessed == fetch + offset);
+    /** {@code True} if fetch is undefined, or current rows processed is less than required. */
+    private boolean hasMoreData() {
+        return fetchUndefined || rowsProcessed < IgniteMath.addExact(fetch, offset);
     }
 }

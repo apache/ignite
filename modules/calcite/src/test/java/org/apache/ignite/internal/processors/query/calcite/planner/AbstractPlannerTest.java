@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableSet;
@@ -76,6 +77,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -220,7 +222,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         @Nullable RelOptListener planLsnr,
         String... disabledRules
     ) {
-        return plannerCtx(sql, Collections.singleton(publicSchema), planLsnr, disabledRules);
+        return plannerCtx(sql, Collections.singleton(publicSchema), planLsnr, null, disabledRules);
     }
 
     /** */
@@ -228,12 +230,17 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         String sql,
         Collection<IgniteSchema> schemas,
         @Nullable RelOptListener planLsnr,
+        @Nullable List<Object> params,
         String... disabledRules
     ) {
-        PlanningContext ctx = PlanningContext.builder()
+        PlanningContext.Builder ctxBuilder = PlanningContext.builder()
             .parentContext(Contexts.of(baseQueryContext(schemas), planLsnr))
-            .query(sql)
-            .build();
+            .query(sql);
+
+        if (params != null)
+            ctxBuilder.parameters(params.toArray(Object[]::new));
+
+        PlanningContext ctx = ctxBuilder.build();
 
         IgnitePlanner planner = ctx.planner();
 
@@ -466,7 +473,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         Predicate<T> predicate,
         String... disabledRules
     ) throws Exception {
-        IgniteRel plan = physicalPlan(plannerCtx(sql, schemas, planLsnr, disabledRules));
+        IgniteRel plan = physicalPlan(plannerCtx(sql, schemas, planLsnr, null, disabledRules));
 
         checkSplitAndSerialization(plan, schemas);
 
@@ -694,7 +701,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
      *               E.g. {@code createTable("MY_TABLE", distribution, "ID", Integer.class, "VAL", String.class)}.
      * @return Instance of the {@link TestTable}.
      */
-    protected static TestTable createTable(String name, IgniteDistribution distr, Object... fields) {
+    static TestTable createTable(String name, IgniteDistribution distr, Object... fields) {
         return createTable(name, DEFAULT_TBL_SIZE, distr, fields);
     }
 
@@ -803,6 +810,51 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
             lastE = ex;
 
             return true;
+        }
+    }
+
+    /**
+     * Creates an instance of {@link StatementChecker statement checker} to test plans.
+     * <pre>
+     *     checkStatement().sql("SELECT 1").ok()
+     * </pre>
+     */
+    public StatementChecker checkStatement() {
+        return new PlanChecker();
+    }
+
+    /**
+     * Creates an instance of {@link PlanChecker statement checker} with the given setup.
+     * A shorthand for {@code checkStatement().setup(func)}.
+     */
+    public StatementChecker checkStatement(Consumer<StatementChecker> setup) {
+        return new PlanChecker().setup(setup);
+    }
+
+    /**
+     * An implementation of {@link PlanChecker} with initialized {@link SqlPrepare} to test plans.
+     */
+    public class PlanChecker extends StatementChecker {
+        /** */
+        PlanChecker() {
+            super((schema, sql, params, rulesToDisable) -> {
+                PlanningContext planningCtx = plannerCtx(sql, List.of(schema), null, params, rulesToDisable);
+
+                IgnitePlanner planner = planningCtx.planner();
+                try {
+                    IgniteRel igniteRel = physicalPlan(planner, sql);
+                    return new T2<>(igniteRel, planner);
+                }
+                catch (Throwable t) {
+                    planner.close();
+                    throw t;
+                }
+            });
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void checkRel(IgniteRel igniteRel, IgnitePlanner planner, IgniteSchema schema) {
+            checkSplitAndSerialization(igniteRel, schema);
         }
     }
 }
