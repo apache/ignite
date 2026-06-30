@@ -260,7 +260,7 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
     /** */
     private static class AccumulatorFactoryProviderImpl implements AccumulatorFactoryProvider {
         /** {@inheritDoc} */
-        @Override public @org.jspecify.annotations.Nullable <Row> Supplier<Accumulator<Row>> factory(AggregateCall call, ExecutionContext<Row> ctx) {
+        @Override public @Nullable <Row> Supplier<Accumulator<Row>> factory(AggregateCall call, ExecutionContext<Row> ctx) {
             if (call.getAggregation().getName().equals(OperatorTable.TEST_SUM.getName()))
                 return () -> new TestSum<>(call, ctx.rowHandler());
 
