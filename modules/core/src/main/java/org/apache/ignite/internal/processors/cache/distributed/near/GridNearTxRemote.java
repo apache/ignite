@@ -209,9 +209,14 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
      */
     public void addEntries(ClassLoader ldr, Iterable<IgniteTxEntry> entries) throws IgniteCheckedException {
         for (IgniteTxEntry entry : entries) {
-            entry.initializeContext(cctx, topVer, true);
+            try {
+                entry.initializeContext(cctx, topVer, true);
 
-            addEntry(entry);
+                addEntry(entry);
+            }
+            catch (CacheInvalidStateException e) {
+                // Cache was destroyed.
+            }
         }
     }
 
