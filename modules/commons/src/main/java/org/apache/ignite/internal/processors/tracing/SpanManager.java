@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.tracing;
 
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -70,4 +71,10 @@ public interface SpanManager {
      * @param span Span.
      */
     byte[] serialize(@NotNull Span span);
+
+    /**
+     * @param msg Message to resolve a trace name for.
+     * @return Trace name of the message, or {@code null} if tracing is disabled.
+     */
+    @Nullable String traceName(Message msg);
 }
