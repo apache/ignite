@@ -167,19 +167,10 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
     /** {@inheritDoc} */
     @Override public CacheWriteSynchronizationMode syncMode(GridCacheSharedContext cctx) {
-        return deriveSyncMode(cctx, activeCacheIds);
-    }
-
-    /**
-     * @param cctx Context.
-     * @param cacheIds Processed caches.
-     * @return Write synchronization mode.
-     */
-    public static CacheWriteSynchronizationMode deriveSyncMode(GridCacheSharedContext<?, ?> cctx, GridIntList cacheIds) {
         CacheWriteSynchronizationMode syncMode = CacheWriteSynchronizationMode.FULL_ASYNC;
 
-        for (int i = 0; i < cacheIds.size(); i++) {
-            int cacheId = cacheIds.get(i);
+        for (int i = 0; i < activeCacheIds.size(); i++) {
+            int cacheId = activeCacheIds.get(i);
 
             CacheWriteSynchronizationMode cacheSyncMode =
                 cctx.cacheContext(cacheId).config().getWriteSynchronizationMode();
