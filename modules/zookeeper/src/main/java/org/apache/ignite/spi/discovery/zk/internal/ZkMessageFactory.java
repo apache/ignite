@@ -24,10 +24,10 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 public class ZkMessageFactory extends AbstractMarshallableMessageFactoryProvider {
     /** {@inheritDoc} */
     @Override public void registerAll(MessageFactory factory) {
-        register(factory, ZkCommunicationErrorResolveFinishMessage.class, (short)400, dfltMarsh);
-        register(factory, ZkCommunicationErrorResolveStartMessage.class, (short)401, dfltMarsh);
-        register(factory, ZkForceNodeFailMessage.class, (short)402, dfltMarsh);
-        register(factory, ZkNoServersMessage.class, (short)403, dfltMarsh);
-        register(factory, ZkDiscoDataBagWrapper.class, (short)404, dfltMarsh);
+        register(factory, ZkCommunicationErrorResolveFinishMessage.class, (short)400, ZkCommunicationErrorResolveFinishMessage::new, dfltMarsh);
+        register(factory, ZkCommunicationErrorResolveStartMessage.class, (short)401, ZkCommunicationErrorResolveStartMessage::new, dfltMarsh);
+        register(factory, ZkForceNodeFailMessage.class, (short)402, ZkForceNodeFailMessage::new, dfltMarsh);
+        register(factory, ZkNoServersMessage.class, (short)403, ZkNoServersMessage::new, dfltMarsh);
+        register(factory, ZkDiscoDataBagWrapper.class, (short)404, ZkDiscoDataBagWrapper::new, dfltMarsh);
     }
 }

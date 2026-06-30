@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.plugin;
 
 import java.lang.reflect.Constructor;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -65,6 +66,23 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
             throw new IgniteException("Failed to register message of type " + cls.getSimpleName(), e);
         }
 
+        register(factory, cls, id, () -> {
+            try {
+                return ctor.newInstance();
+            }
+            catch (Exception e) {
+                throw new IgniteException("Failed to create message of type " + cls.getSimpleName(), e);
+            }
+        }, marsh);
+    }
+
+    /**
+     * Registers a message with a caller-provided {@code supplier} and its generated serializer, marshaller (if
+     * marshallable), and deployer (if any). Use this overload when {@code cls} is package-private and so cannot be
+     * instantiated by reflection from this package — pass an in-package {@code ::new} reference as {@code supplier}.
+     */
+    protected static <T extends Message> void register(MessageFactory factory, Class<T> cls, short id,
+        Supplier<Message> supplier, Marshaller marsh) {
         MessageSerializer<T> serializer = loadGenerated(cls, "Serializer", marsh);
 
         MessageMarshaller<T> marshaller = NonMarshallableMessage.class.isAssignableFrom(cls)
@@ -73,20 +91,7 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
 
         GridCacheMessageDeployer deployer = loadGenerated(cls, "Deployer", marsh);
 
-        factory.register(
-            id,
-            () -> {
-                try {
-                    return ctor.newInstance();
-                }
-                catch (Exception e) {
-                    throw new IgniteException("Failed to create message of type " + cls.getSimpleName(), e);
-                }
-            },
-            serializer,
-            marshaller,
-            deployer
-        );
+        factory.register(id, supplier, serializer, marshaller, deployer);
     }
 
     /**
