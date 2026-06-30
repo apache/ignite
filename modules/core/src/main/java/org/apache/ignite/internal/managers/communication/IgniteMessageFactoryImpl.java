@@ -149,11 +149,7 @@ public class IgniteMessageFactoryImpl implements MessageFactory {
         return supplier.get();
     }
 
-    /**
-     * @param directType Message direct type.
-     * @return Message serializer.
-     * @throws IgniteException If there are no any message factory for given {@code directType}.
-     */
+    /** {@inheritDoc} */
     @Override public MessageSerializer serializer(short directType) {
         MessageSerializer serializer = msgSerializers[directTypeToIndex(directType)];
 
