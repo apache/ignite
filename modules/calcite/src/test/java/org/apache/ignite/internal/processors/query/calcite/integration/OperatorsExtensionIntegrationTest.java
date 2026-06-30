@@ -18,12 +18,18 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.util.List;
+import java.util.function.Supplier;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.adapter.enumerable.NullPolicy;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.plan.Contexts;
+import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlFunctionCategory;
@@ -43,12 +49,19 @@ import org.apache.calcite.sql2rel.SqlRexConvertlet;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.util.BuiltInMethod;
+import org.apache.calcite.util.Optionality;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
+import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RexImpTable;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumulator;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorFactoryProvider;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumulators;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteConvertletTable;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteSqlNodeRewriter;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteSqlValidator;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginContext;
 import org.jetbrains.annotations.Nullable;
@@ -75,6 +88,9 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
                             .sqlValidatorConfig(
                                 ((IgniteSqlValidator.Config)CalciteQueryProcessor.FRAMEWORK_CONFIG.getSqlValidatorConfig())
                                     .withSqlNodeRewriter(new SqlRewriter()))
+                            .context(Contexts.chain(
+                                CalciteQueryProcessor.FRAMEWORK_CONFIG.getContext(),
+                                Contexts.of(new AccumulatorFactoryProviderImpl())))
                             .build();
 
                         return (T)cfg;
@@ -132,6 +148,14 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
         sql("create or replace view my_view as select to_number(val_str) val_str from my_table");
 
         assertQuery("SELECT val_str from my_view").returns(new BigDecimal("0")).check();
+    }
+
+    /** */
+    @Test
+    public void testCustomAggregateFunction() {
+        assertQuery("SELECT TEST_SUM(x) FROM (VALUES (1), (2), (3)) t(x)")
+            .returns(6L)
+            .check();
     }
 
     /** Rewrites LTRIM with 2 parameters. */
@@ -193,6 +217,9 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
             OperandTypes.STRING_STRING,
             SqlFunctionCategory.STRING
         );
+
+        /** */
+        public static final SqlAggFunction TEST_SUM = new SqlTestSumAggFunction();
     }
 
     /** Extended convertlet table. */
@@ -227,6 +254,75 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
                 node = rewriteLtrim(validator, (SqlCall)node);
 
             return node;
+        }
+    }
+
+    /** */
+    private static class AccumulatorFactoryProviderImpl implements AccumulatorFactoryProvider {
+        /** {@inheritDoc} */
+        @Override public @org.jspecify.annotations.Nullable <Row> Supplier<Accumulator<Row>> factory(AggregateCall call, ExecutionContext<Row> ctx) {
+            if (call.getAggregation().getName().equals(OperatorTable.TEST_SUM.getName()))
+                return () -> new TestSum<>(call, ctx.rowHandler());
+
+            return null;
+        }
+    }
+
+    /** */
+    public static class SqlTestSumAggFunction extends SqlAggFunction {
+        /** */
+        public SqlTestSumAggFunction() {
+            super(
+                "TEST_SUM",
+                null,
+                SqlKind.SUM,
+                ReturnTypes.AGG_SUM,
+                null,
+                OperandTypes.NUMERIC,
+                SqlFunctionCategory.NUMERIC,
+                false,
+                false,
+                Optionality.FORBIDDEN
+            );
+        }
+    }
+
+    /** */
+    private static class TestSum<Row> extends Accumulators.AbstractAccumulator<Row> {
+        /** */
+        private long sum;
+
+        /** */
+        protected TestSum(AggregateCall aggCall, RowHandler<Row> hnd) {
+            super(aggCall, hnd);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void add(Row row) {
+            Number val = get(0, row);
+
+            if (val != null)
+                sum += val.longValue();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void apply(Accumulator<Row> other) {
+            sum += ((TestSum<Row>)other).sum;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object end() {
+            return sum;
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory) {
+            return List.of(typeFactory.createTypeWithNullability(typeFactory.createSqlType(SqlTypeName.BIGINT), true));
+        }
+
+        /** {@inheritDoc} */
+        @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
+            return typeFactory.createSqlType(org.apache.calcite.sql.type.SqlTypeName.BIGINT);
         }
     }
 }
