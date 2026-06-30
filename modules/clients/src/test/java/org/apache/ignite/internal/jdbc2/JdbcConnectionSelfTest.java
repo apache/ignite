@@ -307,13 +307,11 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /**
-     * Test that JDBC cfg:// URL with remote HTTP, HTTPS, and FTP location is blocked.
-     */
     @Test
     public void testRemoteCfgUrlsAreBlocked() {
         for (String scheme : Arrays.asList("http", "https", "ftp", "ftps")) {
             final String url = CFG_URL_PREFIX + scheme + "://attacker.example.com/evil.xml";
+            final String expMsg = scheme.startsWith("ftp") ? "always blocked" : "Remote Spring configuration URLs";
 
             GridTestUtils.assertThrows(
                 log,
@@ -325,7 +323,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
                     }
                 },
                 SQLException.class,
-                null
+                expMsg
             );
         }
     }

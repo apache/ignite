@@ -38,6 +38,7 @@ import java.lang.annotation.Target;
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1668,18 +1669,11 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      */
     @Test
     @WithSystemProperty(key = "ignite.spring.cfg.allowRemoteUrl", value = "true")
-    public void testResolveSpringUrlAllowsHttpWhenPropertySet() {
-        // Should not throw — validation passes when flag is true.
-        // Will throw MalformedURLException or connection error, not our security check.
-        try {
-            IgniteUtils.resolveSpringUrl("http://127.0.0.1:1/nonexistent.xml");
-        }
-        catch (IgniteCheckedException e) {
-            assertFalse(
-                "Should not throw security exception when flag is enabled",
-                e.getMessage().contains("Remote Spring configuration URLs")
-            );
-        }
+    public void testResolveSpringUrlAllowsHttpWhenPropertySet() throws IgniteCheckedException {
+        URL url = IgniteUtils.resolveSpringUrl("http://127.0.0.1:1/nonexistent.xml");
+
+        assertNotNull(url);
+        assertEquals("http", url.getProtocol());
     }
 
     /**
