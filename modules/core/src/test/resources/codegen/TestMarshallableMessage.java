@@ -34,12 +34,10 @@ public class TestMarshallableMessage implements MarshallableMessage {
     @Order(2)
     byte[] cstDataBytes;
 
-    /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
         cstDataBytes = U.marshal(marsh, cstData);
     }
 
-    /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         cstData = U.unmarshal(marsh, cstDataBytes, clsLdr);
     }

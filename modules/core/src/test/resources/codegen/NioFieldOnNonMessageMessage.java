@@ -19,14 +19,11 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-/** */
 public class NioFieldOnNonMessageMessage implements Message {
-    /** */
     @NioField
     @Order(0)
     int id;
 
-    /** */
     public short directType() {
         return 0;
     }
