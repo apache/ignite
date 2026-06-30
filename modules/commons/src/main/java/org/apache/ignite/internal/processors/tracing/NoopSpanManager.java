@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.tracing;
 
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -48,5 +49,10 @@ public class NoopSpanManager implements SpanManager {
     /** {@inheritDoc} */
     @Override public byte[] serialize(@NotNull Span span) {
         return NOOP_SERIALIZED_SPAN;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String traceName(Message msg) {
+        return null;
     }
 }
