@@ -1508,10 +1508,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @return {@code True} if transaction read entries should be unlocked.
      */
     private boolean unlockReadEntries(IgniteInternalTx tx) {
-        if (tx.pessimistic())
-            return !tx.readCommitted();
-        else
-            return tx.serializable();
+        return tx.pessimistic() || tx.serializable();
     }
 
     /**
