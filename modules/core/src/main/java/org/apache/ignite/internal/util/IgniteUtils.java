@@ -222,7 +222,6 @@ import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionHeuristicException;
 import org.apache.ignite.transactions.TransactionOptimisticException;
@@ -3235,69 +3234,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * Cancels given runnable.
-     *
-     * @param w Worker to cancel - it's no-op if runnable is {@code null}.
-     */
-    public static void cancel(@Nullable GridWorker w) {
-        if (w != null)
-            w.cancel();
-    }
-
-    /**
-     * Cancels collection of runnables.
-     *
-     * @param ws Collection of workers - it's no-op if collection is {@code null}.
-     */
-    public static void cancel(Iterable<? extends GridWorker> ws) {
-        if (ws != null)
-            for (GridWorker w : ws)
-                w.cancel();
-    }
-
-    /**
-     * Joins runnable.
-     *
-     * @param w Worker to join.
-     * @param log The logger to possible exception.
-     * @return {@code true} if worker has not been interrupted, {@code false} if it was interrupted.
-     */
-    public static boolean join(@Nullable GridWorker w, @Nullable IgniteLogger log) {
-        if (w != null)
-            try {
-                w.join();
-            }
-            catch (InterruptedException ignore) {
-                warn(log, "Got interrupted while waiting for completion of runnable: " + w);
-
-                Thread.currentThread().interrupt();
-
-                return false;
-            }
-
-        return true;
-    }
-
-    /**
-     * Joins given collection of runnables.
-     *
-     * @param ws Collection of workers to join.
-     * @param log The logger to possible exceptions.
-     * @return {@code true} if none of the worker have been interrupted,
-     *      {@code false} if at least one was interrupted.
-     */
-    public static boolean join(Iterable<? extends GridWorker> ws, IgniteLogger log) {
-        boolean retval = true;
-
-        if (ws != null)
-            for (GridWorker w : ws)
-                if (!join(w, log))
-                    retval = false;
-
-        return retval;
-    }
-
-    /**
      * Shutdowns given {@code ExecutorService} and wait for executor service to stop.
      *
      * @param owner The ExecutorService owner.
@@ -5054,23 +4990,6 @@ public abstract class IgniteUtils extends CommonUtils {
 
         if (interrupted)
             Thread.currentThread().interrupt();
-    }
-
-    /**
-     * Sleeps for given number of milliseconds.
-     *
-     * @param ms Time to sleep.
-     * @throws IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
-     */
-    public static void sleep(long ms) throws IgniteInterruptedCheckedException {
-        try {
-            Thread.sleep(ms);
-        }
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-
-            throw new IgniteInterruptedCheckedException(e);
-        }
     }
 
     /**
@@ -7833,15 +7752,6 @@ public abstract class IgniteUtils extends CommonUtils {
 
             builder0.affinityFieldName(fieldName);
         }
-    }
-
-    /**
-     * Creates thread with given worker.
-     *
-     * @param worker Runnable to create thread with.
-     */
-    public static IgniteThread newThread(GridWorker worker) {
-        return new IgniteThread(worker.igniteInstanceName(), worker.name(), worker);
     }
 
     /** */
