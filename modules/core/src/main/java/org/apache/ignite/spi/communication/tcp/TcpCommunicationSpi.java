@@ -411,9 +411,10 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
 
     /** {@inheritDoc} */
     @Override public int getOutboundMessagesQueueSize() {
-        GridNioServer<Message> srv = nioSrvWrapper.nio();
+        if (metricsLsnr == null)
+            return 0;
 
-        return srv != null ? srv.outboundMessagesQueueSize() : 0;
+        return metricsLsnr.outboundMessagesQueueSize();
     }
 
     /** {@inheritDoc} */
