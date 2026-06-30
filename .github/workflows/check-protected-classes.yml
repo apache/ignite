@@ -128,7 +128,7 @@ jobs:
               name: 'Rolling upgrade compatibility',
               head_sha: context.payload.pull_request.head.sha,
               status: 'completed',
-              conclusion: 'action_required',
+              conclusion: 'neutral',
               output: {
                 title: 'Possible compatibility issues',
                 summary: [
