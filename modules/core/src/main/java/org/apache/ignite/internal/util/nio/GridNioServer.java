@@ -97,7 +97,6 @@ import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.SOCKET_WRITE_BYTES;
 import static org.apache.ignite.internal.processors.tracing.SpanType.COMMUNICATION_SOCKET_WRITE;
-import static org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesTable.traceName;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MSG_WRITER;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.NIO_OPERATION;
 
@@ -1636,7 +1635,7 @@ public class GridNioServer<T> {
             Span span = tracing.create(SpanType.COMMUNICATION_SOCKET_WRITE, req.span());
 
             try (TraceSurroundings ignore = span.equals(NoopSpan.INSTANCE) ? null : MTC.support(span)) {
-                span.addTag(SpanTags.MESSAGE, () -> traceName(msg));
+                span.addTag(SpanTags.MESSAGE, () -> tracing.traceName(msg));
 
                 assert msg != null;
 
@@ -1839,7 +1838,7 @@ public class GridNioServer<T> {
             Span span = tracing.create(SpanType.COMMUNICATION_SOCKET_WRITE, req.span());
 
             try (TraceSurroundings ignore = span.equals(NoopSpan.INSTANCE) ? null : MTC.support(span)) {
-                span.addTag(SpanTags.MESSAGE, () -> traceName(msg));
+                span.addTag(SpanTags.MESSAGE, () -> tracing.traceName(msg));
 
                 int startPos = buf.position();
 
