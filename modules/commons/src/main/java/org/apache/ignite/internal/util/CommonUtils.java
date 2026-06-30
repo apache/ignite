@@ -102,6 +102,9 @@ import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_HOME;
  * Collection of utility methods used in 'ignite-commons' and throughout the system.
  */
 public abstract class CommonUtils {
+    /** Empty longs array. */
+    public static final long[] EMPTY_LONGS = new long[0];
+
     /** */
     public static final long KB = 1024L;
 
