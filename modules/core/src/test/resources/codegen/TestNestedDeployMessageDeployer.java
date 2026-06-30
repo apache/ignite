@@ -29,7 +29,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
  */
 public class TestNestedDeployMessageDeployer implements GridCacheMessageDeployer<TestNestedDeployMessage> {
     /** */
-    @Override public void prepareDeployment(TestNestedDeployMessage msg, GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        GridCacheMessageDeployer.prepareDeployment(ctx.kernalContext().messageFactory(), msg.nested, ctx);
+    @Override public void deploy(TestNestedDeployMessage msg, GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        GridCacheMessageDeployer.deploy(ctx.kernalContext().messageFactory(), msg.nested, ctx);
     }
 }

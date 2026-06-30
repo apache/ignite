@@ -35,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface MessageMarshaller<M extends Message> {
     /**
-     * Pre-marshals the message on the user thread before sending.
+     * Marshals the message on the user thread before sending.
      *
      * @param msg Message to marshal.
      * @param kctx Kernal context.
@@ -45,7 +45,7 @@ public interface MessageMarshaller<M extends Message> {
         throws IgniteCheckedException;
 
     /**
-     * Post-unmarshals the message with full cache context and class loader.
+     * Unmarshals the message with full cache context and class loader.
      *
      * @param msg Message to unmarshal.
      * @param kctx Kernal context.
@@ -56,7 +56,7 @@ public interface MessageMarshaller<M extends Message> {
         throws IgniteCheckedException;
 
     /**
-     * Post-unmarshals message fields that do not require a cache context.
+     * Unmarshals message fields that do not require a cache context.
      *
      * @param msg Message to unmarshal.
      * @param kctx Kernal context.

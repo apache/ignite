@@ -184,18 +184,18 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+    @Override public void deploy(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
         GridCacheMessageDeployer.forceDeploymentInfo(this, ctx);
 
         if (entryProc != null && entryProcBytes == null) {
             if (addDepInfo)
-                GridCacheMessageDeployer.prepareObject(this, entryProc, cctx);
+                GridCacheMessageDeployer.deployObject(this, entryProc, cctx);
         }
 
         if (!F.isEmpty(invokeArgs) && invokeArgsBytes == null)
-            GridCacheMessageDeployer.prepareInvokeArguments(this, invokeArgs, cctx);
+            GridCacheMessageDeployer.deployInvokeArguments(this, invokeArgs, cctx);
     }
 
     /** {@inheritDoc} */

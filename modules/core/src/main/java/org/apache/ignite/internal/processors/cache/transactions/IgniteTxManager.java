@@ -2434,7 +2434,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         try {
             if (!cctx.localNodeId().equals(nodeId))
-                GridCacheMessageDeployer.prepareDeployment(cctx.kernalContext().messageFactory(), req, cctx);
+                GridCacheMessageDeployer.deploy(cctx.kernalContext().messageFactory(), req, cctx);
 
             cctx.gridIO().sendToGridTopic(node, TOPIC_TX, req, SYSTEM_POOL);
         }
@@ -3419,7 +3419,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                     try {
                         if (!cctx.localNodeId().equals(nodeId))
-                            GridCacheMessageDeployer.prepareDeployment(cctx.kernalContext().messageFactory(), res, cctx);
+                            GridCacheMessageDeployer.deploy(cctx.kernalContext().messageFactory(), res, cctx);
 
                         cctx.gridIO().sendToGridTopic(nodeId, TOPIC_TX, res, SYSTEM_POOL);
                     }

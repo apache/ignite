@@ -24,11 +24,11 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
  */
 public interface GridCacheDeployable {
     /**
-     * Prepare deployment information.
+     * Applies the given deployment information.
      *
      * @param depInfo Deployment information.
      */
-    public void prepareDeployment(GridDeploymentInfo depInfo);
+    public void deploy(GridDeploymentInfo depInfo);
 
     /**
      * @return Deployment bean.

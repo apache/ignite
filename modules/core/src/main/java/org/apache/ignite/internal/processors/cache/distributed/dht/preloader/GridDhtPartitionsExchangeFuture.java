@@ -3877,7 +3877,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             else if (forceAffReassignment)
                 msg.idealAffinityDiff(idealAffDiff);
 
-            GridCacheMessageDeployer.prepareDeployment(cctx.kernalContext().messageFactory(), msg, cctx);
+            GridCacheMessageDeployer.deploy(cctx.kernalContext().messageFactory(), msg, cctx);
 
             timeBag.finishGlobalStage("Full message preparing");
 

@@ -126,11 +126,11 @@ public class GridDhtLockResponse extends GridDistributedLockResponse implements 
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+    @Override public void deploy(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         if (preloadEntries != null) {
             GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
-            GridCacheMessageDeployer.prepareInfos(this, preloadEntries, cctx);
+            GridCacheMessageDeployer.deployInfos(this, preloadEntries, cctx);
         }
     }
 

@@ -49,7 +49,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
  *         org.apache.ignite.plugin.extensions.communication.MessageReader)}</li>
  *     <li>{@link MessageMarshaller#marshal}</li>
  *     <li>{@link MessageMarshaller#unmarshal}</li>
- *     <li>static {@code GridCacheMessageDeployer.prepareDeployment(factory, msg, ctx)}</li>
+ *     <li>static {@code GridCacheMessageDeployer.deploy(factory, msg, ctx)}</li>
  * </ul>
  *
  * <p>The rules key on whether the called method is {@code static}, not on its name — so any instance method added
@@ -131,10 +131,10 @@ public class MessageSerializationArchitectureTest {
     }
 
     /**
-     * Instance method of {@link GridCacheMessageDeployer} ({@code prepareDeployment}) must only be called from
+     * Instance method of {@link GridCacheMessageDeployer} ({@code deploy}) must only be called from
      * within classes that themselves implement {@link GridCacheMessageDeployer} — i.e. generated deployers.
      *
-     * Everyone else must use the static {@code GridCacheMessageDeployer.prepareDeployment(factory, msg, ctx)} facade.
+     * Everyone else must use the static {@code GridCacheMessageDeployer.deploy(factory, msg, ctx)} facade.
      */
     @Test
     public void deployerInstanceMethodOnlyCalledFromImplementations() {
@@ -146,7 +146,7 @@ public class MessageSerializationArchitectureTest {
                 .callMethodWhere(TO_INSTANCE_METHOD
                         .and(target(HasOwner.Predicates.With.owner(assignableTo(GridCacheMessageDeployer.class))))
                 )
-            .because("Use static GridCacheMessageDeployer.prepareDeployment(factory, msg, ctx) instead of " +
+            .because("Use static GridCacheMessageDeployer.deploy(factory, msg, ctx) instead of " +
                 "calling the instance method directly.");
 
         rule.check(classes);

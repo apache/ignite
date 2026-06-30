@@ -307,13 +307,13 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest imp
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+    @Override public void deploy(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         if (owned != null && ownedKeys == null) {
             for (IgniteTxKey key : owned.keySet()) {
                 GridCacheContext<?, ?> cctx = ctx.cacheContext(key.cacheId());
 
                 if (addDepInfo)
-                    GridCacheMessageDeployer.prepareObject(this, key, cctx);
+                    GridCacheMessageDeployer.deployObject(this, key, cctx);
             }
         }
     }

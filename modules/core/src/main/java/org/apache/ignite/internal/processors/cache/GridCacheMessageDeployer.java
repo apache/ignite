@@ -24,67 +24,67 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Per-message deployer. A generated {@code <Msg>Deployer} implements {@link #prepareDeployment} to deploy the message's
- * fields. The {@code static} methods are the facade through which all non-generated code (custom {@code prepareDeployment}
+ * Per-message deployer. A generated {@code <Msg>Deployer} implements {@link #deploy} to deploy the message's
+ * fields. The {@code static} methods are the facade through which all non-generated code (custom {@code deploy}
  * in messages, message-building code) reaches {@link GridCacheMessage}'s package-private deployment helpers — so that, as
  * with marshalling, deployment internals are never touched directly from outside the {@code cache} package.
  */
 public interface GridCacheMessageDeployer<M extends GridCacheMessage> {
     /** Prepares deployment info for all deployable fields of {@code msg}. */
-    void prepareDeployment(M msg, GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException;
+    void deploy(M msg, GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException;
 
-    /** Bridge to {@link GridCacheMessage#prepareObjectDeployment}; no-op when the cache context is absent. */
-    static void prepareObject(GridCacheMessage msg, @Nullable Object o, @Nullable GridCacheContext<?, ?> cctx)
+    /** Bridge to {@link GridCacheMessage#deployObject}; no-op when the cache context is absent. */
+    static void deployObject(GridCacheMessage msg, @Nullable Object o, @Nullable GridCacheContext<?, ?> cctx)
         throws IgniteCheckedException {
         if (cctx != null)
-            msg.prepareObjectDeployment(o, cctx);
+            msg.deployObject(o, cctx);
     }
 
-    /** Bridge to {@link GridCacheMessage#prepareCacheObjectDeployment}; no-op when the cache context is absent. */
-    static void prepareCacheObject(GridCacheMessage msg, @Nullable CacheObject obj, @Nullable GridCacheContext<?, ?> cctx)
+    /** Bridge to {@link GridCacheMessage#deployCacheObject}; no-op when the cache context is absent. */
+    static void deployCacheObject(GridCacheMessage msg, @Nullable CacheObject obj, @Nullable GridCacheContext<?, ?> cctx)
         throws IgniteCheckedException {
         if (cctx != null)
-            msg.prepareCacheObjectDeployment(obj, cctx);
+            msg.deployCacheObject(obj, cctx);
     }
 
-    /** Bridge to {@link GridCacheMessage#prepareCacheObjectsDeployment}; no-op when the cache context is absent. */
-    static void prepareCacheObjects(GridCacheMessage msg, @Nullable Collection<? extends CacheObject> col,
+    /** Bridge to {@link GridCacheMessage#deployCacheObjects}; no-op when the cache context is absent. */
+    static void deployCacheObjects(GridCacheMessage msg, @Nullable Collection<? extends CacheObject> col,
         @Nullable GridCacheContext<?, ?> cctx) throws IgniteCheckedException {
         if (cctx != null)
-            msg.prepareCacheObjectsDeployment(col, cctx);
+            msg.deployCacheObjects(col, cctx);
     }
 
-    /** Bridge to {@link GridCacheMessage#prepareCollectionDeployment}; no-op when the cache context is absent. */
-    static void prepareCollection(GridCacheMessage msg, @Nullable Collection<?> col, @Nullable GridCacheContext<?, ?> cctx)
+    /** Bridge to {@link GridCacheMessage#deployCollection}; no-op when the cache context is absent. */
+    static void deployCollection(GridCacheMessage msg, @Nullable Collection<?> col, @Nullable GridCacheContext<?, ?> cctx)
         throws IgniteCheckedException {
         if (cctx != null)
-            msg.prepareCollectionDeployment(col, cctx);
+            msg.deployCollection(col, cctx);
     }
 
-    /** Bridge to {@link GridCacheMessage#prepareInvokeArgumentsDeployment}; no-op when the cache context is absent. */
-    static void prepareInvokeArguments(GridCacheMessage msg, @Nullable Object[] args, @Nullable GridCacheContext<?, ?> cctx)
+    /** Bridge to {@link GridCacheMessage#deployInvokeArguments}; no-op when the cache context is absent. */
+    static void deployInvokeArguments(GridCacheMessage msg, @Nullable Object[] args, @Nullable GridCacheContext<?, ?> cctx)
         throws IgniteCheckedException {
         if (cctx != null)
-            msg.prepareInvokeArgumentsDeployment(args, cctx);
+            msg.deployInvokeArguments(args, cctx);
     }
 
-    /** Bridge to {@link GridCacheMessage#prepareInfosDeployment}; no-op when the cache context is absent. */
-    static void prepareInfos(GridCacheMessage msg, @Nullable Iterable<? extends GridCacheEntryInfo> infos,
+    /** Bridge to {@link GridCacheMessage#deployInfos}; no-op when the cache context is absent. */
+    static void deployInfos(GridCacheMessage msg, @Nullable Iterable<? extends GridCacheEntryInfo> infos,
         @Nullable GridCacheContext<?, ?> cctx) throws IgniteCheckedException {
         if (cctx != null)
-            msg.prepareInfosDeployment(infos, cctx.shared(), cctx.cacheObjectContext());
+            msg.deployInfos(infos, cctx.shared(), cctx.cacheObjectContext());
     }
 
-    /** Bridge to {@link GridCacheMessage#prepareInfoDeployment}. */
-    static void prepareInfo(GridCacheMessage msg, GridCacheEntryInfo info, GridCacheSharedContext<?, ?> ctx,
+    /** Bridge to {@link GridCacheMessage#deployInfo}. */
+    static void deployInfo(GridCacheMessage msg, GridCacheEntryInfo info, GridCacheSharedContext<?, ?> ctx,
         CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
-        msg.prepareInfoDeployment(info, ctx, cacheObjCtx);
+        msg.deployInfo(info, ctx, cacheObjCtx);
     }
 
-    /** Bridge to {@link GridCacheMessage#prepareTxDeployment} for generated deployers. */
-    static void prepareTxEntries(GridCacheMessage msg, @Nullable Iterable<IgniteTxEntry> entries, GridCacheSharedContext<?, ?> ctx)
+    /** Bridge to {@link GridCacheMessage#deployTx} for generated deployers. */
+    static void deployTxEntries(GridCacheMessage msg, @Nullable Iterable<IgniteTxEntry> entries, GridCacheSharedContext<?, ?> ctx)
         throws IgniteCheckedException {
-        msg.prepareTxDeployment(entries, ctx);
+        msg.deployTx(entries, ctx);
     }
 
     /** Forces deployment info on {@code msg} when peer-class-loading is enabled. */
@@ -94,13 +94,13 @@ public interface GridCacheMessageDeployer<M extends GridCacheMessage> {
     }
 
     /**
-     * Prepares deployment for {@code msg} through its factory-registered deployer (a no-op when {@code msg} is
+     * Deploys {@code msg} through its factory-registered deployer (a no-op when {@code msg} is
      * {@code null} — e.g. an absent nested message — or the message has no registered deployer). Single entry point
      * for message deployment: called both by message-sending code and by a generated deployer delegating to a nested
      * message. Mirrors the static {@code MessageMarshaller#marshal}.
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
-    static void prepareDeployment(MessageFactory factory, @Nullable GridCacheMessage msg, GridCacheSharedContext<?, ?> ctx)
+    static void deploy(MessageFactory factory, @Nullable GridCacheMessage msg, GridCacheSharedContext<?, ?> ctx)
         throws IgniteCheckedException {
         if (msg == null)
             return;
@@ -108,6 +108,6 @@ public interface GridCacheMessageDeployer<M extends GridCacheMessage> {
         GridCacheMessageDeployer deployer = factory.deployer(msg.directType());
 
         if (deployer != null)
-            deployer.prepareDeployment(msg, ctx);
+            deployer.deploy(msg, ctx);
     }
 }

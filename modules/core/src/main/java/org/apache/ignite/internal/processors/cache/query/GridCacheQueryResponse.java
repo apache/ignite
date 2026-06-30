@@ -159,19 +159,19 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+    @Override public void deploy(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
         if (dataBytes == null && data != null)
-            GridCacheMessageDeployer.prepareCollection(this, data, cctx);
+            GridCacheMessageDeployer.deployCollection(this, data, cctx);
 
         if (addDepInfo && !F.isEmpty(data)) {
             for (Object o : data) {
                 if (o instanceof Map.Entry) {
                     Map.Entry<?, ?> e = (Map.Entry<?, ?>)o;
 
-                    GridCacheMessageDeployer.prepareObject(this, e.getKey(), cctx);
-                    GridCacheMessageDeployer.prepareObject(this, e.getValue(), cctx);
+                    GridCacheMessageDeployer.deployObject(this, e.getKey(), cctx);
+                    GridCacheMessageDeployer.deployObject(this, e.getValue(), cctx);
                 }
             }
         }

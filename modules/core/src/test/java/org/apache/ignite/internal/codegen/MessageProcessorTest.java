@@ -489,7 +489,7 @@ public class MessageProcessorTest {
             .hasSourceEquivalentTo(javaFile("TestCacheIdMessageDeployer.java"));
     }
 
-    /** Verifies a {@code DeployableMessage}'s generated deployer delegates to its custom {@code prepareDeployment}. */
+    /** Verifies a {@code DeployableMessage}'s generated deployer delegates to its custom {@code deploy}. */
     @Test
     public void testDeployerDelegatesToCustomDeployment() {
         Compilation compilation = compile("TestDeployableMessage.java");

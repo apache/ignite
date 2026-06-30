@@ -35,7 +35,7 @@ public class TestDeployableMessage extends GridCacheIdMessage implements Deploya
         return true;
     }
 
-    @Override public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+    @Override public void deploy(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         // Custom deployment that cannot be inferred from field types.
     }
 }

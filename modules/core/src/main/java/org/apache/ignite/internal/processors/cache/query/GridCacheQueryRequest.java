@@ -587,34 +587,34 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+    @Override public void deploy(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
         if (keyValFilter != null && keyValFilterBytes == null) {
             if (addDepInfo)
-                GridCacheMessageDeployer.prepareObject(this, keyValFilter, cctx);
+                GridCacheMessageDeployer.deployObject(this, keyValFilter, cctx);
         }
 
         if (rdc != null && rdcBytes == null) {
             if (addDepInfo)
-                GridCacheMessageDeployer.prepareObject(this, rdc, cctx);
+                GridCacheMessageDeployer.deployObject(this, rdc, cctx);
         }
 
         if (trans != null && transBytes == null) {
             if (addDepInfo)
-                GridCacheMessageDeployer.prepareObject(this, trans, cctx);
+                GridCacheMessageDeployer.deployObject(this, trans, cctx);
         }
 
         if (!F.isEmpty(args) && argsBytes == null) {
             if (addDepInfo) {
                 for (Object arg : args)
-                    GridCacheMessageDeployer.prepareObject(this, arg, cctx);
+                    GridCacheMessageDeployer.deployObject(this, arg, cctx);
             }
         }
 
         if (idxQryDesc != null && idxQryDescBytes == null) {
             if (addDepInfo)
-                GridCacheMessageDeployer.prepareObject(this, idxQryDesc, cctx);
+                GridCacheMessageDeployer.deployObject(this, idxQryDesc, cctx);
         }
     }
 

@@ -379,7 +379,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+    @Override public void deploy(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         if (filter != null && filter.length == 0)
             filter = null;
 
@@ -389,10 +389,10 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
             GridCacheMessageDeployer.forceDeploymentInfo(this, ctx);
 
             if (entryProcessorsBytes == null)
-                GridCacheMessageDeployer.prepareCollection(this, entryProcessors, cctx);
+                GridCacheMessageDeployer.deployCollection(this, entryProcessors, cctx);
 
             if (!F.isEmpty(invokeArgs) && invokeArgsBytes == null)
-                GridCacheMessageDeployer.prepareInvokeArguments(this, invokeArgs, cctx);
+                GridCacheMessageDeployer.deployInvokeArguments(this, invokeArgs, cctx);
         }
     }
 

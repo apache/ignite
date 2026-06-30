@@ -22,11 +22,11 @@ import org.apache.ignite.marshaller.Marshaller;
 
 /** A {@link Message} requiring a custom marshal/unmarshal step via {@link Marshaller}. */
 public interface MarshallableMessage extends Message {
-    /** @param marsh Marshaller for pre-marshalling. */
+    /** @param marsh Marshaller for marshalling. */
     public void marshal(Marshaller marsh) throws IgniteCheckedException;
 
     /**
-     * @param marsh Marshaller for post-unmarshalling.
+     * @param marsh Marshaller for unmarshalling.
      * @param clsLdr Class loader for unmarshalling.
      */
     public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException;

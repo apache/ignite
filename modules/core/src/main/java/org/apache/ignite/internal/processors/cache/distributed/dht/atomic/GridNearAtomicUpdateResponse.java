@@ -376,11 +376,11 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+    @Override public void deploy(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         if (nearUpdates != null) {
             GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
-            GridCacheMessageDeployer.prepareCacheObjects(this, nearUpdates.nearValues(), cctx);
+            GridCacheMessageDeployer.deployCacheObjects(this, nearUpdates.nearValues(), cctx);
         }
     }
 

@@ -503,20 +503,20 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareDeployment(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+    @Override public void deploy(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         if (forceTransformBackups) {
             GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
             GridCacheMessageDeployer.forceDeploymentInfo(this, ctx);
 
             if (!F.isEmpty(invokeArgs) && invokeArgsBytes == null)
-                GridCacheMessageDeployer.prepareInvokeArguments(this, invokeArgs, cctx);
+                GridCacheMessageDeployer.deployInvokeArguments(this, invokeArgs, cctx);
 
             if (entryProcessorsBytes == null)
-                GridCacheMessageDeployer.prepareCollection(this, entryProcessors, cctx);
+                GridCacheMessageDeployer.deployCollection(this, entryProcessors, cctx);
 
             if (nearEntryProcessorsBytes == null)
-                GridCacheMessageDeployer.prepareCollection(this, nearEntryProcessors, cctx);
+                GridCacheMessageDeployer.deployCollection(this, nearEntryProcessors, cctx);
         }
     }
 

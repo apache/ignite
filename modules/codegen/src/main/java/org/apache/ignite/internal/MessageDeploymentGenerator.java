@@ -40,7 +40,7 @@ import static org.apache.ignite.internal.systemview.SystemViewRowAttributeWalker
  * nested {@code GridCacheMessage} (whose deployment is delegated). The strategy is inferred entirely from the field type.
  *
  * <p>A message with deployment logic that cannot be inferred from field types implements {@code DeployableMessage};
- * the generated deployer then also delegates to its {@code prepareDeployment}, mirroring {@code marshal}.
+ * the generated deployer then also delegates to its {@code deploy}, mirroring {@code marshal}.
  */
 public class MessageDeploymentGenerator extends MessageGenerator {
     /** FQN of GridCacheMessage; hierarchy scan stops here (exclusive). */
@@ -70,7 +70,7 @@ public class MessageDeploymentGenerator extends MessageGenerator {
     /** */
     private final TypeMirror iterableMirror;
 
-    /** Accumulated source lines for the generated {@code prepareDeployment} method. */
+    /** Accumulated source lines for the generated {@code deploy} method. */
     private final List<String> deploy = new ArrayList<>();
 
     /** */
@@ -113,7 +113,7 @@ public class MessageDeploymentGenerator extends MessageGenerator {
         return true;
     }
 
-    /** @return {@code true} if {@code type} implements {@code DeployableMessage} (has hand-written {@code prepareDeployment}). */
+    /** @return {@code true} if {@code type} implements {@code DeployableMessage} (has hand-written {@code deploy}). */
     private boolean hasCustomDeployment(TypeElement type) {
         return deployableMessageMirror != null && assignableFrom(type.asType(), deployableMessageMirror);
     }
@@ -124,7 +124,7 @@ public class MessageDeploymentGenerator extends MessageGenerator {
 
         deploy.add(indentedLine(METHOD_JAVADOC));
         deploy.add(indentedLine(
-            "@Override public void prepareDeployment(%s msg, GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {",
+            "@Override public void deploy(%s msg, GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {",
             simpleNameWithGeneric(type)));
 
         indent++;
@@ -142,23 +142,23 @@ public class MessageDeploymentGenerator extends MessageGenerator {
             switch (kind) {
                 case CACHE_OBJECT:
                     needsCctx = true;
-                    stmt = "GridCacheMessageDeployer.prepareCacheObject(msg, %s, cctx);";
+                    stmt = "GridCacheMessageDeployer.deployCacheObject(msg, %s, cctx);";
 
                     break;
 
                 case CACHE_OBJECTS:
                     needsCctx = true;
-                    stmt = "GridCacheMessageDeployer.prepareCacheObjects(msg, %s, cctx);";
+                    stmt = "GridCacheMessageDeployer.deployCacheObjects(msg, %s, cctx);";
 
                     break;
 
                 case TX_ENTRIES:
-                    stmt = "GridCacheMessageDeployer.prepareTxEntries(msg, %s, ctx);";
+                    stmt = "GridCacheMessageDeployer.deployTxEntries(msg, %s, ctx);";
 
                     break;
 
                 case NESTED:
-                    stmt = "GridCacheMessageDeployer.prepareDeployment(ctx.kernalContext().messageFactory(), %s, ctx);";
+                    stmt = "GridCacheMessageDeployer.deploy(ctx.kernalContext().messageFactory(), %s, ctx);";
 
                     break;
 
@@ -176,12 +176,12 @@ public class MessageDeploymentGenerator extends MessageGenerator {
 
         deploy.addAll(body);
 
-        // Delegate the non-inferable part to the message's own prepareDeployment, mirroring msg.marshal().
+        // Delegate the non-inferable part to the message's own deploy, mirroring msg.marshal().
         if (hasCustomDeployment(type)) {
             if (!body.isEmpty())
                 deploy.add(EMPTY);
 
-            deploy.add(indentedLine("msg.prepareDeployment(ctx);"));
+            deploy.add(indentedLine("msg.deploy(ctx);"));
         }
 
         indent--;

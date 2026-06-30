@@ -411,7 +411,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                 checkDeploymentIsCorrect(dep, deployable, true);
 
             if (dep != null)
-                deployable.prepareDeployment(dep);
+                deployable.deploy(dep);
 
             if (log.isDebugEnabled())
                 log.debug("Prepared grid cache deployable [dep=" + dep + ", deployable=" + deployable + ']');
@@ -449,7 +449,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         assert depEnabled;
 
         // Do not return info if mode is CONTINUOUS.
-        // In this case deployment info will be set by GridCacheMessage.prepareObject().
+        // In this case deployment info will be set by GridCacheMessage.deployObject().
         if (cctx.gridConfig().getDeploymentMode() == CONTINUOUS)
             return null;
 

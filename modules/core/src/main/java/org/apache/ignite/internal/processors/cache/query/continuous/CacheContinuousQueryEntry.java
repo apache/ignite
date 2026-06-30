@@ -307,7 +307,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message, 
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareDeployment(GridDeploymentInfo depInfo) {
+    @Override public void deploy(GridDeploymentInfo depInfo) {
         this.depInfo = depInfo;
     }
 

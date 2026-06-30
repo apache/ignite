@@ -30,15 +30,15 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
  */
 public class TestCacheIdMessageDeployer implements GridCacheMessageDeployer<TestCacheIdMessage> {
     /** */
-    @Override public void prepareDeployment(TestCacheIdMessage msg, GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+    @Override public void deploy(TestCacheIdMessage msg, GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         GridCacheContext<?, ?> cctx = ctx.cacheContext(msg.cacheId());
 
-        GridCacheMessageDeployer.prepareCacheObject(msg, msg.key, cctx);
+        GridCacheMessageDeployer.deployCacheObject(msg, msg.key, cctx);
 
-        GridCacheMessageDeployer.prepareCacheObject(msg, msg.val, cctx);
+        GridCacheMessageDeployer.deployCacheObject(msg, msg.val, cctx);
 
-        GridCacheMessageDeployer.prepareCacheObjects(msg, msg.keys, cctx);
+        GridCacheMessageDeployer.deployCacheObjects(msg, msg.keys, cctx);
 
-        GridCacheMessageDeployer.prepareTxEntries(msg, msg.writes, ctx);
+        GridCacheMessageDeployer.deployTxEntries(msg, msg.writes, ctx);
     }
 }
