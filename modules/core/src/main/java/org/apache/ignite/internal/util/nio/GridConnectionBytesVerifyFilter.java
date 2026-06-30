@@ -22,15 +22,15 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.typedef.internal.LT;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 
 /**
  * Verifies that first bytes received in accepted (incoming)
  * NIO session are equal to {@link U#IGNITE_HEADER}.
  * <p>
- * First {@code U.IGNITE_HEADER.length} bytes are consumed by this filter
+ * First {@code CommonUtils.IGNITE_HEADER.length} bytes are consumed by this filter
  * and all other bytes are forwarded through chain without any modification.
  */
 public class GridConnectionBytesVerifyFilter extends GridNioFilterAdapter {
@@ -99,27 +99,27 @@ public class GridConnectionBytesVerifyFilter extends GridNioFilterAdapter {
 
         Integer magic = ses.meta(MAGIC_META_KEY);
 
-        if (magic == null || magic < U.IGNITE_HEADER.length) {
+        if (magic == null || magic < CommonUtils.IGNITE_HEADER.length) {
             byte[] magicBuf = ses.meta(MAGIC_BUF_KEY);
 
             if (magicBuf == null)
-                magicBuf = new byte[U.IGNITE_HEADER.length];
+                magicBuf = new byte[CommonUtils.IGNITE_HEADER.length];
 
             int magicRead = magic == null ? 0 : magic;
 
             int cnt = buf.remaining();
 
-            buf.get(magicBuf, magicRead, Math.min(U.IGNITE_HEADER.length - magicRead, cnt));
+            buf.get(magicBuf, magicRead, Math.min(CommonUtils.IGNITE_HEADER.length - magicRead, cnt));
 
-            if (cnt + magicRead < U.IGNITE_HEADER.length) {
+            if (cnt + magicRead < CommonUtils.IGNITE_HEADER.length) {
                 // Magic bytes are not fully read.
                 ses.addMeta(MAGIC_META_KEY, cnt + magicRead);
                 ses.addMeta(MAGIC_BUF_KEY, magicBuf);
             }
-            else if (U.bytesEqual(magicBuf, 0, U.IGNITE_HEADER, 0, U.IGNITE_HEADER.length)) {
+            else if (CommonUtils.bytesEqual(magicBuf, 0, CommonUtils.IGNITE_HEADER, 0, CommonUtils.IGNITE_HEADER.length)) {
                 // Magic bytes read and equal to IGNITE_HEADER.
                 ses.removeMeta(MAGIC_BUF_KEY);
-                ses.addMeta(MAGIC_META_KEY, U.IGNITE_HEADER.length);
+                ses.addMeta(MAGIC_META_KEY, CommonUtils.IGNITE_HEADER.length);
 
                 proceedMessageReceived(ses, buf);
             }

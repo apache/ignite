@@ -25,9 +25,9 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
@@ -135,7 +135,7 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
 
     /** {@inheritDoc} */
     @Override public long getIdleTime() {
-        long now = U.currentTimeMillis();
+        long now = CommonUtils.currentTimeMillis();
 
         // Session can be used for receiving and sending.
         return Math.min(Math.min(now - ses.lastReceiveTime(), now - ses.lastSendScheduleTime()),

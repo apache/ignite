@@ -65,7 +65,6 @@ import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileLock;
-import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -340,9 +339,6 @@ public abstract class IgniteUtils extends CommonUtils {
     /** JMX domain as 'xxx.apache.ignite'. */
     public static final String JMX_DOMAIN = IgniteUtils.class.getName().substring(0, IgniteUtils.class.getName().
         indexOf('.', IgniteUtils.class.getName().indexOf('.') + 1));
-
-    /** Network packet header. */
-    public static final byte[] IGNITE_HEADER = intToBytes(0x0149474E);
 
     /** Default buffer size = 4K. */
     private static final int BUF_SIZE = 4096;
@@ -2115,28 +2111,6 @@ public abstract class IgniteUtils extends CommonUtils {
         }
 
         return res;
-    }
-
-    /**
-     * Compares fragments of byte arrays.
-     *
-     * @param a First array.
-     * @param aOff First array offset.
-     * @param b Second array.
-     * @param bOff Second array offset.
-     * @param len Length of fragments.
-     * @return {@code true} if fragments are equal, {@code false} otherwise.
-     */
-    public static boolean bytesEqual(byte[] a, int aOff, byte[] b, int bOff, int len) {
-        if (aOff + len > a.length || bOff + len > b.length)
-            return false;
-        else {
-            for (int i = 0; i < len; i++)
-                if (a[aOff + i] != b[bOff + i])
-                    return false;
-
-            return true;
-        }
     }
 
     /**
@@ -7222,30 +7196,6 @@ public abstract class IgniteUtils extends CommonUtils {
                 throw e;
             }
         };
-    }
-
-    /**
-     *  Safely write buffer fully to blocking socket channel.
-     *  Will throw assert if non blocking channel passed.
-     *
-     * @param sockCh WritableByteChannel.
-     * @param buf Buffer.
-     * @throws IOException IOException.
-     */
-    public static void writeFully(SocketChannel sockCh, ByteBuffer buf) throws IOException {
-        int totalWritten = 0;
-
-        assert sockCh.isBlocking() : "SocketChannel should be in blocking mode " + sockCh;
-
-        while (buf.hasRemaining()) {
-            int written = sockCh.write(buf);
-
-            if (written < 0)
-                throw new IOException("Error writing buffer to channel " +
-                    "[written = " + written + ", buf " + buf + ", totalWritten = " + totalWritten + "]");
-
-            totalWritten += written;
-        }
     }
 
     /**

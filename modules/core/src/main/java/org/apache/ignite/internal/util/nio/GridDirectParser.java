@@ -23,7 +23,7 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.direct.DirectMessageReader;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
@@ -105,7 +105,7 @@ public class GridDirectParser implements GridNioParser {
             }
         }
         catch (Throwable e) {
-            U.error(log, "Failed to read message [msg=" + msg +
+            CommonUtils.error(log, "Failed to read message [msg=" + msg +
                     ", buf=" + buf +
                     ", reader=" + reader +
                     ", ses=" + ses + "]",
