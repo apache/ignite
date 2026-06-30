@@ -1189,15 +1189,20 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
             byte plc = initMsg.policy();
 
-            // Restore the @NioField topic (as onMessage0 does); otherwise GridIoMessage.topic() is null here.
             MessageMarshaller.finishUnmarshalNio(ctx.messageFactory(), initMsg, ctx);
-
-            MessageMarshaller.finishUnmarshal(ctx.messageFactory(), initMsg, ctx);
 
             pools.poolForPolicy(plc).execute(new Runnable() {
                 @Override public void run() {
-                    processOpenedChannel(initMsg.topic(), rmtNodeId, (SessionChannelMessage)initMsg.message(),
-                        (SocketChannel)channel);
+                    try {
+                        MessageMarshaller.finishUnmarshal(ctx.messageFactory(), initMsg, ctx);
+
+                        processOpenedChannel(initMsg.topic(), rmtNodeId, (SessionChannelMessage)initMsg.message(),
+                            (SocketChannel)channel);
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to process channel creation event due to exception " +
+                            "[rmtNodeId=" + rmtNodeId + ", initMsg=" + initMsg + ']', e);
+                    }
                 }
             });
         }
