@@ -2783,7 +2783,10 @@ public class GridNioServer<T> {
                     (InetSocketAddress)sockCh.getRemoteAddress(),
                     fut.accepted(),
                     sndQueueLimit,
-                    mreg,
+                    mreg == null ? null : mreg.longAdderMetric(
+                        OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME, OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_DESC)::add,
+                    mreg == null ? null : mreg.maxValueMetric(
+                        MAX_MESSAGES_QUEUE_SIZE_METRIC_NAME, MAX_MESSAGES_QUEUE_SIZE_METRIC_DESC, 60_000, 5)::update,
                     writeBuf,
                     readBuf);
 
