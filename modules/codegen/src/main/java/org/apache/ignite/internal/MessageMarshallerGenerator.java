@@ -83,7 +83,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     /** Enclosed fields of the currently processed type. Computed once per {@link #generateBody} call. */
     private Map<String, VariableElement> enclosed;
 
-    /** @param env Annotation processing environment. */
+    /** */
     MessageMarshallerGenerator(ProcessingEnvironment env) {
         super(env);
 

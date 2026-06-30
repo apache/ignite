@@ -87,7 +87,7 @@ public class DiscoveryMessageParser {
         }
     }
 
-    /** Serializes {@code m} (type prefix + payload) into {@code out}. */
+    /** */
     private void serializeMessage(Message m, OutputStream out) throws IOException {
         DirectMessageWriter msgWriter = new DirectMessageWriter(msgFactory);
         ByteBuffer msgBuf = ByteBuffer.allocate(MSG_BUFFER_SIZE);
@@ -113,7 +113,7 @@ public class DiscoveryMessageParser {
         while (!finished);
     }
 
-    /** Deserializes a message (type prefix + payload) from {@code in}. */
+    /** */
     private <T extends Message> T deserializeMessage(InputStream in) throws IOException {
         DirectMessageReader msgReader = new DirectMessageReader(msgFactory, null);
         ByteBuffer msgBuf = ByteBuffer.allocate(MSG_BUFFER_SIZE);

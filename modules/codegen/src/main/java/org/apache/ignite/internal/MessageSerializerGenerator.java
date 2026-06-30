@@ -50,7 +50,7 @@ public class MessageSerializerGenerator extends MessageGenerator {
     /** */
     private static final String RETURN_FALSE_STMT = "return false;";
 
-    /** FQN of the default enum mapper used when no custom mapper is specified. */
+    /** */
     static final String DLFT_ENUM_MAPPER_CLS = "org.apache.ignite.plugin.extensions.communication.mappers.DefaultEnumMapper";
 
     /** */
@@ -66,7 +66,7 @@ public class MessageSerializerGenerator extends MessageGenerator {
     /** Enum-mapper field declarations emitted at the top of the generated {@code *Serializer} class. */
     private final Set<String> fields = new java.util.TreeSet<>();
 
-    /** @param env Annotation processing environment. */
+    /** */
     MessageSerializerGenerator(ProcessingEnvironment env) {
         super(env);
     }
@@ -116,7 +116,7 @@ public class MessageSerializerGenerator extends MessageGenerator {
         }
     }
 
-    /** Writes a no-arg constructor stub to the generated serializer class. */
+    /** */
     private void writeConstructor(Writer writer, String serClsName) throws IOException {
         ++indent;
 
@@ -584,7 +584,7 @@ public class MessageSerializerGenerator extends MessageGenerator {
         throw new IllegalArgumentException("Unsupported type kind: " + type.getKind());
     }
 
-    /** @return the field name of the item-type descriptor constant for {@code field}'s collection element type. */
+    /** */
     private String messageCollectionItemTypes(VariableElement field, TypeMirror type) throws Exception {
         String desc = messageCollectionItemTypeDescriptor(type);
         String descName = field.getSimpleName() + "CollDesc";
@@ -595,7 +595,7 @@ public class MessageSerializerGenerator extends MessageGenerator {
         return descName;
     }
 
-    /** @return constructor expression for the {@code MessageCollectionItemType} descriptor of {@code type}. */
+    /** */
     private String messageCollectionItemTypeDescriptor(TypeMirror type) throws Exception {
         imports.add("org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType");
 
@@ -827,7 +827,7 @@ public class MessageSerializerGenerator extends MessageGenerator {
         indent = 0;
     }
 
-    /** @return {@code true} if {@code type} corresponds to the class named {@code typeStr}. */
+    /** */
     private boolean sameType(TypeMirror type, String typeStr) {
         return env.getTypeUtils().isSameType(type, type(typeStr));
     }
@@ -844,7 +844,7 @@ public class MessageSerializerGenerator extends MessageGenerator {
         return element != null && element.getKind() == ElementKind.ENUM;
     }
 
-    /** Converts e.g. {@code "BYTE"} to {@code "Byte"}: uppercases first char, lowercases the rest. */
+    /** Converts string "BYTE" to string "Byte", with first capital latter. */
     private String capitalizeOnlyFirst(String input) {
         return input.substring(0, 1).toUpperCase() + input.substring(1).toLowerCase();
     }

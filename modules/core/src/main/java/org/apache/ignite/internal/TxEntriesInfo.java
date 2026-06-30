@@ -32,7 +32,7 @@ public final class TxEntriesInfo extends IgniteDiagnosticRequest.DiagnosticBaseI
     @Order(0)
     int cacheId;
 
-    /** Keys to look up lock/entry diagnostic information for. */
+    /** */
     @Order(1)
     Collection<KeyCacheObject> keys;
 

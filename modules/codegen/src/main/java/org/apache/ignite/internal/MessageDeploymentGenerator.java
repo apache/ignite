@@ -76,7 +76,7 @@ public class MessageDeploymentGenerator extends MessageGenerator {
     /** */
     private boolean needsCctx;
 
-    /** @param env Annotation processing environment. */
+    /** */
     MessageDeploymentGenerator(ProcessingEnvironment env) {
         super(env);
 

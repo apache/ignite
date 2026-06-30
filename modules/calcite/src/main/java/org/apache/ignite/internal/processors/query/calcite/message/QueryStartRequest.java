@@ -39,7 +39,7 @@ public class QueryStartRequest implements MarshallableMessage, ExecutionContextA
     @Order(1)
     UUID qryId;
 
-    /** Sequential local counter; see {@link #qryId} for the cluster-wide UUID. */
+    /** */
     @Order(2)
     long originatingQryId;
 
@@ -70,7 +70,7 @@ public class QueryStartRequest implements MarshallableMessage, ExecutionContextA
     @Order(8)
     long timeout;
 
-    /** Transaction entries to mix in during query processing, or {@code null} if not inside a tx. */
+    /** */
     @Order(9)
     @Nullable Collection<QueryTxEntry> qryTxEntries;
 

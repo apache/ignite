@@ -101,7 +101,7 @@ public class MessageProcessor extends AbstractProcessor {
         "org.apache.ignite.spi.communication.tcp.TestDelayMessage"
     };
 
-    /** Tracks enum-to-mapper bindings to detect inconsistent mapper usage across messages. */
+    /** */
     private final Map<String, IgniteBiTuple<String, String>> enumMappersInUse = new HashMap<>();
 
     /** Processes all classes implementing the {@code Message} interface and generates corresponding serializer code. */
@@ -232,7 +232,7 @@ public class MessageProcessor extends AbstractProcessor {
         return result;
     }
 
-    /** Recursively collects ordered fields from {@code type} and all its superclasses, one list per level. */
+    /** */
     private List<List<VariableElement>> hierarchicalOrderedFields(TypeElement type) {
         Element superType = processingEnv.getTypeUtils().asElement(type.getSuperclass());
 
