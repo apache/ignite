@@ -191,7 +191,7 @@ public abstract class MessageGenerator {
 
     /** */
     boolean assignableFrom(TypeMirror type, TypeMirror superType) {
-        return env.getTypeUtils().isAssignable(type, superType);
+        return superType != null && env.getTypeUtils().isAssignable(type, superType);
     }
 
     /** @return the {@link TypeMirror} for the fully-qualified {@code clazz}, or {@code null} if not on classpath. */

@@ -215,10 +215,10 @@ public class MessageDeploymentGenerator extends MessageGenerator {
 
     /** Returns the line that resolves {@code cctx} from {@code ctx} based on the message type hierarchy. */
     private String cctxResolutionLine() {
-        if (cacheGroupIdMsgMirror != null && assignableFrom(type.asType(), cacheGroupIdMsgMirror))
+        if (assignableFrom(type.asType(), cacheGroupIdMsgMirror))
             return "GridCacheContext<?, ?> cctx = ctx.cacheContext(msg.groupId());";
 
-        if (cacheIdMsgMirror != null && assignableFrom(type.asType(), cacheIdMsgMirror))
+        if (assignableFrom(type.asType(), cacheIdMsgMirror))
             return "GridCacheContext<?, ?> cctx = ctx.cacheContext(msg.cacheId());";
 
         throw new IllegalStateException("Cannot resolve cache context for " + type.getQualifiedName()
@@ -245,7 +245,7 @@ public class MessageDeploymentGenerator extends MessageGenerator {
         if (fieldType.getKind() == TypeKind.ARRAY || fieldType.getKind().isPrimitive())
             return null;
 
-        if (cacheObjectMirror != null && assignableFrom(fieldType, cacheObjectMirror))
+        if (assignableFrom(fieldType, cacheObjectMirror))
             return DeployKind.CACHE_OBJECT;
 
         if (!(fieldType instanceof DeclaredType))
@@ -257,8 +257,7 @@ public class MessageDeploymentGenerator extends MessageGenerator {
         if (!args.isEmpty()) {
             TypeMirror elemType = erasedType(elementBound(args.get(0)));
 
-            if (cacheObjectMirror != null && collectionMirror != null
-                && assignableFrom(erased, collectionMirror)
+            if (assignableFrom(erased, collectionMirror)
                 && assignableFrom(elemType, cacheObjectMirror))
                 return DeployKind.CACHE_OBJECTS;
 

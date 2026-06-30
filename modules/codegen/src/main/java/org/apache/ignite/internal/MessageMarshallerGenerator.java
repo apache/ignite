@@ -976,37 +976,37 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
     /** */
     private boolean isMessage(TypeMirror type) {
-        return messageMirror != null && assignableFrom(type, messageMirror);
+        return assignableFrom(type, messageMirror);
     }
 
     /** */
     private boolean isCacheObject(TypeMirror type) {
-        return cacheObjectMirror != null && assignableFrom(type, cacheObjectMirror);
+        return assignableFrom(type, cacheObjectMirror);
     }
 
     /** Returns {@code true} if {@code type} (erased) is assignable to {@code java.util.Map}. */
     private boolean isMap(TypeMirror type) {
-        return mapMirror != null && assignableFrom(erasedType(type), mapMirror);
+        return assignableFrom(erasedType(type), mapMirror);
     }
 
     /** Returns {@code true} if {@code type} (erased) is assignable to {@code java.util.Collection}. */
     private boolean isCollection(TypeMirror type) {
-        return collectionMirror != null && assignableFrom(erasedType(type), collectionMirror);
+        return assignableFrom(erasedType(type), collectionMirror);
     }
 
     /** */
     private boolean isNonMarshallableMessage(TypeElement te) {
-        return nonMarshallableMirror != null && assignableFrom(te.asType(), nonMarshallableMirror);
+        return assignableFrom(te.asType(), nonMarshallableMirror);
     }
 
     /** */
     private boolean isCacheIdAwareMessage(TypeElement te) {
-        return cacheIdAwareMirror != null && assignableFrom(te.asType(), cacheIdAwareMirror);
+        return assignableFrom(te.asType(), cacheIdAwareMirror);
     }
 
     /** */
     private boolean isCacheGroupIdMessage(TypeElement te) {
-        return cacheGroupIdMsgMirror != null && assignableFrom(te.asType(), cacheGroupIdMsgMirror);
+        return assignableFrom(te.asType(), cacheGroupIdMsgMirror);
     }
 
     /** */
