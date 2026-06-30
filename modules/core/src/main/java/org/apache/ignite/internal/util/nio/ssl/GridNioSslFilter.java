@@ -30,13 +30,13 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.nio.GridNioException;
 import org.apache.ignite.internal.util.nio.GridNioFilterAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
@@ -253,7 +253,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
 
                 long startTime = System.nanoTime();
 
-                fut.listen(() -> handshakeDuration.value(U.nanosToMillis(System.nanoTime() - startTime)));
+                fut.listen(() -> handshakeDuration.value(CommonUtils.nanosToMillis(System.nanoTime() - startTime)));
             }
 
             hnd.handshake();
@@ -262,7 +262,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
         }
         catch (SSLException e) {
             onSessionOpenedException = e;
-            U.error(log, "Failed to start SSL handshake (will close inbound connection): " + ses, e);
+            CommonUtils.error(log, "Failed to start SSL handshake (will close inbound connection): " + ses, e);
 
             ses.close();
         }
@@ -455,7 +455,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
             hnd.writeNetBuffer(null);
         }
         catch (SSLException e) {
-            U.warn(log, "Failed to shutdown SSL session gracefully (will force close) [ex=" + e + ", ses=" + ses + ']');
+            CommonUtils.warn(log, "Failed to shutdown SSL session gracefully (will force close) [ex=" + e + ", ses=" + ses + ']');
         }
 
         return proceedSessionClose(ses);

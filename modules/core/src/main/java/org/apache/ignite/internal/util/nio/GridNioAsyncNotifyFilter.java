@@ -22,7 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerPool;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -144,7 +144,7 @@ public class GridNioAsyncNotifyFilter extends GridNioFilterAdapter {
             proceedExceptionCaught(ses, ex);
         }
         catch (IgniteCheckedException e) {
-            U.warn(log, "Failed to forward exception to the underlying filter (will ignore) [ses=" + ses + ", " +
+            CommonUtils.warn(log, "Failed to forward exception to the underlying filter (will ignore) [ses=" + ses + ", " +
                 "originalEx=" + ex + ", ex=" + e + ']');
         }
     }

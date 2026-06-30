@@ -37,9 +37,11 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+import java.nio.channels.SocketChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.AccessController;
@@ -104,6 +106,9 @@ import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_HOME;
 public abstract class CommonUtils {
     /** Empty longs array. */
     public static final long[] EMPTY_LONGS = new long[0];
+
+    /** Network packet header (corresponds to {@code 0x0149474E}). */
+    public static final byte[] IGNITE_HEADER = new byte[] {0x01, 0x49, 0x47, 0x4E};
 
     /** */
     public static final long KB = 1024L;
@@ -2671,6 +2676,50 @@ public abstract class CommonUtils {
             Thread.currentThread().interrupt();
 
             throw new IgniteInterruptedCheckedException(e);
+        }
+    }
+
+    /**
+     * Safely write buffer fully to blocking socket channel.
+     * Will throw assert if non blocking channel passed.
+     *
+     * @param sockCh WritableByteChannel.
+     * @param buf Buffer.
+     * @throws IOException IOException.
+     */
+    public static void writeFully(SocketChannel sockCh, ByteBuffer buf) throws IOException {
+        int totalWritten = 0;
+
+        assert sockCh.isBlocking() : "SocketChannel should be in blocking mode " + sockCh;
+
+        while (buf.hasRemaining()) {
+            int written = sockCh.write(buf);
+
+            if (written < 0)
+                throw new IOException("Error writing buffer to channel " +
+                    "[written = " + written + ", buf " + buf + ", totalWritten = " + totalWritten + "]");
+
+            totalWritten += written;
+        }
+    }
+
+    /**
+     * @param a First byte array.
+     * @param aOff First byte array offset.
+     * @param b Second byte array.
+     * @param bOff Second byte array offset.
+     * @param len Number of bytes to compare.
+     * @return {@code True} if the specified sub-arrays are equal.
+     */
+    public static boolean bytesEqual(byte[] a, int aOff, byte[] b, int bOff, int len) {
+        if (aOff + len > a.length || bOff + len > b.length)
+            return false;
+        else {
+            for (int i = 0; i < len; i++)
+                if (a[aOff + i] != b[bOff + i])
+                    return false;
+
+            return true;
         }
     }
 }
