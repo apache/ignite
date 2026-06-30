@@ -204,6 +204,17 @@ public class IgniteCommonsSystemProperties {
         defaults = "" + DFLT_IO_BALANCE_PERIOD)
     public static final String IGNITE_IO_BALANCE_PERIOD = "IGNITE_IO_BALANCE_PERIOD";
 
+    /** Default timeout for TCP client recovery descriptor reservation. */
+    public static final int DFLT_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT = 5_000;
+
+    /**
+     * Sets timeout for TCP client recovery descriptor reservation.
+     */
+    @SystemProperty(value = "Timeout for TCP client recovery descriptor reservation in milliseconds",
+        type = Long.class, defaults = "" + DFLT_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT)
+    public static final String IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT =
+            "IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT";
+
     /**
      * @param enumCls Enum type.
      * @param name Name of the system property or environment variable.
