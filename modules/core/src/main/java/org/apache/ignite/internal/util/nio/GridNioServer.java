@@ -61,11 +61,11 @@ import org.apache.ignite.internal.processors.odbc.ClientMessage;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.NoopSpan;
-import org.apache.ignite.internal.processors.tracing.NoopTracing;
+import org.apache.ignite.internal.processors.tracing.NoopSpanManager;
 import org.apache.ignite.internal.processors.tracing.Span;
+import org.apache.ignite.internal.processors.tracing.SpanManager;
 import org.apache.ignite.internal.processors.tracing.SpanTags;
 import org.apache.ignite.internal.processors.tracing.SpanType;
-import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -295,8 +295,8 @@ public class GridNioServer<T> {
      */
     private final boolean readWriteSelectorsAssign;
 
-    /** Tracing processor. */
-    private Tracing tracing;
+    /** Span manager. */
+    private SpanManager tracing;
 
     /** Message factory. */
     private final MessageFactory msgFactory;
@@ -352,7 +352,7 @@ public class GridNioServer<T> {
         boolean readWriteSelectorsAssign,
         @Nullable GridWorkerListener workerLsnr,
         @Nullable MetricRegistryImpl mreg,
-        Tracing tracing,
+        SpanManager tracing,
         MessageFactory msgFactory,
         GridNioFilter... filters
     ) throws IgniteCheckedException {
@@ -380,7 +380,7 @@ public class GridNioServer<T> {
         this.selectorSpins = selectorSpins;
         this.readWriteSelectorsAssign = readWriteSelectorsAssign;
         this.lsnr = lsnr;
-        this.tracing = tracing == null ? new NoopTracing() : tracing;
+        this.tracing = tracing == null ? new NoopSpanManager() : tracing;
         this.msgFactory = msgFactory;
 
         filterChain = new GridNioFilterChain<>(log, lsnr, new HeadFilter(), filters);
@@ -3949,8 +3949,8 @@ public class GridNioServer<T> {
         /** Metrics registry. */
         private MetricRegistryImpl mreg;
 
-        /** Tracing processor */
-        private Tracing tracing;
+        /** Span manager */
+        private SpanManager tracing;
 
         /** Message factory. */
         private MessageFactory msgFactory;
@@ -4010,10 +4010,10 @@ public class GridNioServer<T> {
         }
 
         /**
-         * @param tracing Tracing processor.
+         * @param tracing Span manager.
          * @return This for chaining.
          */
-        public Builder<T> tracing(Tracing tracing) {
+        public Builder<T> tracing(SpanManager tracing) {
             this.tracing = tracing;
 
             return this;
