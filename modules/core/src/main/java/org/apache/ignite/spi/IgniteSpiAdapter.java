@@ -40,6 +40,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.internal.processors.timeout.GridSpiTimeoutObject;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -756,12 +757,8 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
 
             if (msgFactory0 == null) {
                 msgFactory0 = new MessageFactory() {
-                    @Override public void register(short directType, Supplier<Message> supplier) throws IgniteException {
-                        throw new IgniteException("Failed to register message, node is not started.");
-                    }
-
-                    @Override public void register(short directType, Supplier<Message> supplier,
-                        MessageSerializer serializer) throws IgniteException {
+                    @Override public void register(short directType, Supplier<Message> supplier, MessageSerializer serializer,
+                        @Nullable MessageMarshaller marshaller, @Nullable GridCacheMessageDeployer deployer) throws IgniteException {
                         throw new IgniteException("Failed to register message, node is not started.");
                     }
 

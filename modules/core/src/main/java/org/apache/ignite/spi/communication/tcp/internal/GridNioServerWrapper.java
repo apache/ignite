@@ -55,6 +55,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.GridManager;
 import org.apache.ignite.internal.managers.tracing.GridTracingManager;
+import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
@@ -815,9 +816,9 @@ public class GridNioServerWrapper {
                 MessageFactory msgFactory = new MessageFactory() {
                     private MessageFactory impl;
 
-                    @Override public void register(short directType, Supplier<Message> supplier,
-                        MessageSerializer serializer) throws IgniteException {
-                        get().register(directType, supplier, serializer);
+                    @Override public void register(short directType, Supplier<Message> supplier, MessageSerializer serializer,
+                        @Nullable MessageMarshaller marshaller, @Nullable GridCacheMessageDeployer deployer) throws IgniteException {
+                        get().register(directType, supplier, serializer, marshaller, deployer);
                     }
 
                     @Nullable @Override public Message create(short type) {

@@ -38,7 +38,9 @@ public interface MessageFactory {
      * @throws IllegalStateException On any invocation of this method when class which implements this interface
      * is alredy constructed.
      */
-    public void register(short directType, Supplier<Message> supplier, MessageSerializer serializer) throws IgniteException;
+    default void register(short directType, Supplier<Message> supplier, MessageSerializer serializer) throws IgniteException {
+        register(directType, supplier, serializer, null, null);
+    }
 
     /**
      * Register message factory with given direct type and serializer. The direct type is also registered
@@ -80,7 +82,7 @@ public interface MessageFactory {
      */
     default void register(short directType, Supplier<Message> supplier, MessageSerializer serializer,
         @Nullable MessageMarshaller marshaller) throws IgniteException {
-        register(directType, supplier, serializer);
+        register(directType, supplier, serializer, marshaller, null);
     }
 
     /**
@@ -94,10 +96,8 @@ public interface MessageFactory {
      * @param deployer Message deployer, or {@code null} for messages without deployable fields.
      * @throws IgniteException In case of attempt to register message with direct type which is already registered.
      */
-    default void register(short directType, Supplier<Message> supplier, MessageSerializer serializer,
-        @Nullable MessageMarshaller marshaller, @Nullable GridCacheMessageDeployer deployer) throws IgniteException {
-        register(directType, supplier, serializer, marshaller);
-    }
+    public void register(short directType, Supplier<Message> supplier, MessageSerializer serializer,
+        @Nullable MessageMarshaller marshaller, @Nullable GridCacheMessageDeployer deployer) throws IgniteException;
 
     /**
      * Returns {@code MessageSerializer} for provided type.

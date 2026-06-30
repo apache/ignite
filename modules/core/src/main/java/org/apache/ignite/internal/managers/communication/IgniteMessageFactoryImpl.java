@@ -78,17 +78,6 @@ public class IgniteMessageFactoryImpl implements MessageFactory {
         initialized = true;
     }
 
-    /** {@inheritDoc} */
-    @Override public void register(short directType, Supplier<Message> supplier, MessageSerializer serializer) throws IgniteException {
-        register(directType, supplier, serializer, null);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void register(short directType, Supplier<Message> supplier, MessageSerializer serializer,
-        @Nullable MessageMarshaller marshaller) throws IgniteException {
-        register(directType, supplier, serializer, marshaller, null);
-    }
-
     /**
      * Registers a message type with a serializer, an optional marshaller, and an optional deployer.
      *

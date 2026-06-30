@@ -25,6 +25,7 @@ import java.util.Random;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -88,12 +89,8 @@ public class DirectByteBufferStreamImplByteOrderSelfTest {
      */
     private static DirectByteBufferStream createStream(ByteBuffer buff) {
         DirectByteBufferStream stream = new DirectByteBufferStream(new MessageFactory() {
-            @Override public void register(short directType, Supplier<Message> supplier) throws IgniteException {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override public void register(short directType, Supplier<Message> supplier,
-                MessageSerializer serializer) throws IgniteException {
+            @Override public void register(short directType, Supplier<Message> supplier, MessageSerializer serializer,
+                @Nullable MessageMarshaller marshaller, @Nullable GridCacheMessageDeployer deployer) throws IgniteException {
                 throw new UnsupportedOperationException();
             }
 
