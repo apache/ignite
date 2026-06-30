@@ -17,33 +17,36 @@
 
 package org.apache.ignite.internal.processors.tracing;
 
-import org.apache.ignite.internal.processors.tracing.configuration.NoopTracingConfigurationManager;
-import org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesHandler;
-import org.apache.ignite.logger.NullLogger;
-import org.apache.ignite.spi.tracing.TracingConfigurationManager;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Noop implementation of {@link Tracing}.
+ * Noop implementation of {@link SpanManager}.
  */
-public class NoopTracing extends NoopSpanManager implements Tracing {
-    /** Traceable messages handler. */
-    private final TraceableMessagesHandler msgHnd;
+public class NoopSpanManager implements SpanManager {
+    /** Noop serialized span. */
+    public static final byte[] NOOP_SERIALIZED_SPAN = new byte[0];
 
-    /**
-     * Constructor.
-     */
-    public NoopTracing() {
-        msgHnd = new TraceableMessagesHandler(this, new NullLogger());
+    /** {@inheritDoc} */
+    @Override public Span create(@NotNull SpanType spanType, @Nullable Span parentSpan) {
+        return NoopSpan.INSTANCE;
     }
 
     /** {@inheritDoc} */
-    @Override public TraceableMessagesHandler messages() {
-        return msgHnd;
+    @Override public Span create(@NotNull SpanType spanType, @Nullable byte[] serializedParentSpan) {
+        return NoopSpan.INSTANCE;
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull TracingConfigurationManager configuration() {
-        return NoopTracingConfigurationManager.INSTANCE;
+    @Override public @NotNull Span create(
+        @NotNull SpanType spanType,
+        @Nullable Span parentSpan,
+        @Nullable String lb) {
+        return NoopSpan.INSTANCE;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte[] serialize(@NotNull Span span) {
+        return NOOP_SERIALIZED_SPAN;
     }
 }
