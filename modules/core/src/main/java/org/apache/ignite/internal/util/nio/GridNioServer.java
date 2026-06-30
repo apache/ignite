@@ -48,9 +48,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCommonsSystemProperties;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -144,10 +144,7 @@ public class GridNioServer<T> {
 
     /** */
     private static final boolean DISABLE_KEYSET_OPTIMIZATION =
-        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_NO_SELECTOR_OPTS);
-
-    /** @see IgniteSystemProperties#IGNITE_IO_BALANCE_PERIOD */
-    public static final int DFLT_IO_BALANCE_PERIOD = 5000;
+        IgniteCommonsSystemProperties.getBoolean(IgniteCommonsSystemProperties.IGNITE_NO_SELECTOR_OPTS);
 
     /** */
     public static final String OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME = "outboundMessagesQueueSize";
@@ -442,13 +439,14 @@ public class GridNioServer<T> {
 
         this.skipRecoveryPred = skipRecoveryPred != null ? skipRecoveryPred : F.<Message>alwaysFalse();
 
-        long balancePeriod = IgniteSystemProperties.getLong(
-            IgniteSystemProperties.IGNITE_IO_BALANCE_PERIOD, DFLT_IO_BALANCE_PERIOD);
+        long balancePeriod = IgniteCommonsSystemProperties.getLong(
+            IgniteCommonsSystemProperties.IGNITE_IO_BALANCE_PERIOD,
+            IgniteCommonsSystemProperties.DFLT_IO_BALANCE_PERIOD);
 
         IgniteRunnable balancer0 = null;
 
         if (balancePeriod > 0) {
-            boolean rndBalance = IgniteSystemProperties.getBoolean(IGNITE_IO_BALANCE_RANDOM_BALANCE, false);
+            boolean rndBalance = IgniteCommonsSystemProperties.getBoolean(IGNITE_IO_BALANCE_RANDOM_BALANCE, false);
 
             if (rndBalance)
                 balancer0 = new RandomBalancer();
@@ -780,7 +778,8 @@ public class GridNioServer<T> {
                 ses0.offerStateChange((GridNioServer.SessionChangeRequest)fut0);
             }
             catch (IgniteCheckedException e) {
-                CommonUtils.error(log, "Failed to notify NIO Server while resending messages [rmtNode=" + recoveryDesc.node().id() + ']', e);
+                CommonUtils.error(log,
+                    "Failed to notify NIO Server while resending messages [rmtNode=" + recoveryDesc.node().id() + ']', e);
             }
         }
     }
