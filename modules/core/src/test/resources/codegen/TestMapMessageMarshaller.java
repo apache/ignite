@@ -59,24 +59,24 @@ public class TestMapMessageMarshaller implements MessageMarshaller<TestMapMessag
         CacheObjectContext ctx = nested;
 
         if (msg.messageBoxedDoubleMap != null) {
-            for (GridCacheVersion e4 : ((Collection<? extends GridCacheVersion>)msg.messageBoxedDoubleMap.keySet())) {
-                if (e4 != null)
-                    MessageMarshaller.prepareMarshal(kctx.messageFactory(), e4, kctx, ctx);
+            for (GridCacheVersion e : ((Collection<? extends GridCacheVersion>)msg.messageBoxedDoubleMap.keySet())) {
+                if (e != null)
+                    MessageMarshaller.prepareMarshal(kctx.messageFactory(), e, kctx, ctx);
             }
         }
 
         if (msg.gridCacheObjectMap != null) {
-            for (KeyCacheObject e4 : ((Collection<? extends KeyCacheObject>)msg.gridCacheObjectMap.keySet())) {
-                if (e4 != null && ctx != null)
-                    e4.prepareMarshal(ctx);
+            for (KeyCacheObject e : ((Collection<? extends KeyCacheObject>)msg.gridCacheObjectMap.keySet())) {
+                if (e != null && ctx != null)
+                    e.prepareMarshal(ctx);
             }
-            for (Map e4 : ((Collection<? extends Map>)msg.gridCacheObjectMap.values())) {
-                if (e4 != null) {
-                    for (List e6 : ((Collection<? extends List>)e4.values())) {
-                        if (e6 != null) {
-                            for (CacheObject e8 : (Collection<? extends CacheObject>)e6) {
-                                if (e8 != null && ctx != null)
-                                    e8.prepareMarshal(ctx);
+            for (Map e : ((Collection<? extends Map>)msg.gridCacheObjectMap.values())) {
+                if (e != null) {
+                    for (List e1 : ((Collection<? extends List>)e.values())) {
+                        if (e1 != null) {
+                            for (CacheObject e2 : (Collection<? extends CacheObject>)e1) {
+                                if (e2 != null && ctx != null)
+                                    e2.prepareMarshal(ctx);
                             }
                         }
                     }
@@ -90,24 +90,24 @@ public class TestMapMessageMarshaller implements MessageMarshaller<TestMapMessag
         CacheObjectContext ctx = nested;
 
         if (msg.messageBoxedDoubleMap != null) {
-            for (GridCacheVersion e4 : ((Collection<? extends GridCacheVersion>)msg.messageBoxedDoubleMap.keySet())) {
-                if (e4 != null)
-                    MessageMarshaller.finishUnmarshal(kctx.messageFactory(), e4, kctx, ctx, clsLdr);
+            for (GridCacheVersion e : ((Collection<? extends GridCacheVersion>)msg.messageBoxedDoubleMap.keySet())) {
+                if (e != null)
+                    MessageMarshaller.finishUnmarshal(kctx.messageFactory(), e, kctx, ctx, clsLdr);
             }
         }
 
         if (msg.gridCacheObjectMap != null) {
-            for (KeyCacheObject e4 : ((Collection<? extends KeyCacheObject>)msg.gridCacheObjectMap.keySet())) {
-                if (e4 != null && ctx != null)
-                    e4.finishUnmarshal(ctx, clsLdr);
+            for (KeyCacheObject e : ((Collection<? extends KeyCacheObject>)msg.gridCacheObjectMap.keySet())) {
+                if (e != null && ctx != null)
+                    e.finishUnmarshal(ctx, clsLdr);
             }
-            for (Map e4 : ((Collection<? extends Map>)msg.gridCacheObjectMap.values())) {
-                if (e4 != null) {
-                    for (List e6 : ((Collection<? extends List>)e4.values())) {
-                        if (e6 != null) {
-                            for (CacheObject e8 : (Collection<? extends CacheObject>)e6) {
-                                if (e8 != null && ctx != null)
-                                    e8.finishUnmarshal(ctx, clsLdr);
+            for (Map e : ((Collection<? extends Map>)msg.gridCacheObjectMap.values())) {
+                if (e != null) {
+                    for (List e1 : ((Collection<? extends List>)e.values())) {
+                        if (e1 != null) {
+                            for (CacheObject e2 : (Collection<? extends CacheObject>)e1) {
+                                if (e2 != null && ctx != null)
+                                    e2.finishUnmarshal(ctx, clsLdr);
                             }
                         }
                     }
@@ -119,9 +119,9 @@ public class TestMapMessageMarshaller implements MessageMarshaller<TestMapMessag
     /** */
     @Override public void finishUnmarshal(TestMapMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
         if (msg.messageBoxedDoubleMap != null) {
-            for (GridCacheVersion e4 : ((Collection<? extends GridCacheVersion>)msg.messageBoxedDoubleMap.keySet())) {
-                if (e4 != null)
-                    MessageMarshaller.finishUnmarshal(kctx.messageFactory(), e4, kctx);
+            for (GridCacheVersion e : ((Collection<? extends GridCacheVersion>)msg.messageBoxedDoubleMap.keySet())) {
+                if (e != null)
+                    MessageMarshaller.finishUnmarshal(kctx.messageFactory(), e, kctx);
             }
         }
     }

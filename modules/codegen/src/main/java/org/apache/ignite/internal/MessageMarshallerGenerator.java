@@ -83,6 +83,9 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     /** Enclosed fields of the currently processed type. Computed once per {@link #generateBody} call. */
     private Map<String, VariableElement> enclosed;
 
+    /** Nesting depth of the current marshal for-loop; names loop variables {@code e}, {@code e1}, {@code e2}… */
+    private int loopDepth;
+
     /** */
     MessageMarshallerGenerator(ProcessingEnvironment env) {
         super(env);
@@ -890,13 +893,15 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
     /** Returns empty if {@code elemType} requires no marshalling; otherwise returns a for-each loop over {@code iterable}. */
     private List<String> forLoop(String typeName, TypeMirror elemType, String iterable, MarshalMode mode) {
-        String el = "e" + (indent + 1);
+        String el = loopDepth == 0 ? "e" : "e" + loopDepth;
 
+        loopDepth++;
         indent++;
 
         List<String> inner = codeFor(elemType, el, mode);
 
         indent--;
+        loopDepth--;
 
         if (inner.isEmpty())
             return List.of();

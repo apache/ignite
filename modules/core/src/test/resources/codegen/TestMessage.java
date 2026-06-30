@@ -44,14 +44,14 @@ public class TestMessage implements Message {
     @Order(4)
     int[][] intMatrix;
 
-    @NioField // test-only: exercises multi-field finishUnmarshalNio generation
+    @NioField
     @Order(5)
     GridCacheVersion ver;
 
     @Order(6)
     GridCacheVersion[] verArr;
 
-    @NioField // test-only: second NioField to verify both appear in finishUnmarshalNio
+    @NioField
     @Order(15)
     GridCacheVersion ver2;
 

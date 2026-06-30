@@ -47,16 +47,16 @@ public class TestMarshalledMapMessageMarshaller implements MessageMarshaller<Tes
         }
 
         if (msg.mapKeys != null) {
-            for (GridCacheVersion e4 : (Collection<? extends GridCacheVersion>)msg.mapKeys) {
-                if (e4 != null)
-                    MessageMarshaller.prepareMarshal(kctx.messageFactory(), e4, kctx, ctx);
+            for (GridCacheVersion e : (Collection<? extends GridCacheVersion>)msg.mapKeys) {
+                if (e != null)
+                    MessageMarshaller.prepareMarshal(kctx.messageFactory(), e, kctx, ctx);
             }
         }
 
         if (msg.mapVals != null) {
-            for (GridCacheVersion e4 : (Collection<? extends GridCacheVersion>)msg.mapVals) {
-                if (e4 != null)
-                    MessageMarshaller.prepareMarshal(kctx.messageFactory(), e4, kctx, ctx);
+            for (GridCacheVersion e : (Collection<? extends GridCacheVersion>)msg.mapVals) {
+                if (e != null)
+                    MessageMarshaller.prepareMarshal(kctx.messageFactory(), e, kctx, ctx);
             }
         }
     }
@@ -92,16 +92,16 @@ public class TestMarshalledMapMessageMarshaller implements MessageMarshaller<Tes
     /** */
     @Override public void finishUnmarshal(TestMarshalledMapMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
         if (msg.mapKeys != null) {
-            for (GridCacheVersion e4 : (Collection<? extends GridCacheVersion>)msg.mapKeys) {
-                if (e4 != null)
-                    MessageMarshaller.finishUnmarshal(kctx.messageFactory(), e4, kctx);
+            for (GridCacheVersion e : (Collection<? extends GridCacheVersion>)msg.mapKeys) {
+                if (e != null)
+                    MessageMarshaller.finishUnmarshal(kctx.messageFactory(), e, kctx);
             }
         }
 
         if (msg.mapVals != null) {
-            for (GridCacheVersion e4 : (Collection<? extends GridCacheVersion>)msg.mapVals) {
-                if (e4 != null)
-                    MessageMarshaller.finishUnmarshal(kctx.messageFactory(), e4, kctx);
+            for (GridCacheVersion e : (Collection<? extends GridCacheVersion>)msg.mapVals) {
+                if (e != null)
+                    MessageMarshaller.finishUnmarshal(kctx.messageFactory(), e, kctx);
             }
         }
     }

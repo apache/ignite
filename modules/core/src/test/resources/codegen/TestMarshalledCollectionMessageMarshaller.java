@@ -43,9 +43,9 @@ public class TestMarshalledCollectionMessageMarshaller implements MessageMarshal
             msg.keysArr = msg.keys.toArray(new GridCacheVersion[0]);
 
         if (msg.keysArr != null) {
-            for (GridCacheVersion e4 : msg.keysArr) {
-                if (e4 != null)
-                    MessageMarshaller.prepareMarshal(kctx.messageFactory(), e4, kctx, ctx);
+            for (GridCacheVersion e : msg.keysArr) {
+                if (e != null)
+                    MessageMarshaller.prepareMarshal(kctx.messageFactory(), e, kctx, ctx);
             }
         }
     }
@@ -71,9 +71,9 @@ public class TestMarshalledCollectionMessageMarshaller implements MessageMarshal
     /** */
     @Override public void finishUnmarshal(TestMarshalledCollectionMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
         if (msg.keysArr != null) {
-            for (GridCacheVersion e4 : msg.keysArr) {
-                if (e4 != null)
-                    MessageMarshaller.finishUnmarshal(kctx.messageFactory(), e4, kctx);
+            for (GridCacheVersion e : msg.keysArr) {
+                if (e != null)
+                    MessageMarshaller.finishUnmarshal(kctx.messageFactory(), e, kctx);
             }
         }
     }

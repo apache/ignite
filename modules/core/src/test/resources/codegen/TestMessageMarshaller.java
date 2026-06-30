@@ -44,9 +44,9 @@ public class TestMessageMarshaller implements MessageMarshaller<TestMessage> {
             MessageMarshaller.prepareMarshal(kctx.messageFactory(), msg.ver, kctx, ctx);
 
         if (msg.verArr != null) {
-            for (GridCacheVersion e4 : msg.verArr) {
-                if (e4 != null)
-                    MessageMarshaller.prepareMarshal(kctx.messageFactory(), e4, kctx, ctx);
+            for (GridCacheVersion e : msg.verArr) {
+                if (e != null)
+                    MessageMarshaller.prepareMarshal(kctx.messageFactory(), e, kctx, ctx);
             }
         }
 
@@ -65,9 +65,9 @@ public class TestMessageMarshaller implements MessageMarshaller<TestMessage> {
         CacheObjectContext ctx = nested;
 
         if (msg.verArr != null) {
-            for (GridCacheVersion e4 : msg.verArr) {
-                if (e4 != null)
-                    MessageMarshaller.finishUnmarshal(kctx.messageFactory(), e4, kctx, ctx, clsLdr);
+            for (GridCacheVersion e : msg.verArr) {
+                if (e != null)
+                    MessageMarshaller.finishUnmarshal(kctx.messageFactory(), e, kctx, ctx, clsLdr);
             }
         }
 
@@ -81,9 +81,9 @@ public class TestMessageMarshaller implements MessageMarshaller<TestMessage> {
     /** */
     @Override public void finishUnmarshal(TestMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
         if (msg.verArr != null) {
-            for (GridCacheVersion e4 : msg.verArr) {
-                if (e4 != null)
-                    MessageMarshaller.finishUnmarshal(kctx.messageFactory(), e4, kctx);
+            for (GridCacheVersion e : msg.verArr) {
+                if (e != null)
+                    MessageMarshaller.finishUnmarshal(kctx.messageFactory(), e, kctx);
             }
         }
     }

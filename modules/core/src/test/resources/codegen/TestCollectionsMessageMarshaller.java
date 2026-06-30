@@ -56,16 +56,16 @@ public class TestCollectionsMessageMarshaller implements MessageMarshaller<TestC
         CacheObjectContext ctx = nested;
 
         if (msg.messageList != null) {
-            for (GridCacheVersion e4 : (Collection<? extends GridCacheVersion>)msg.messageList) {
-                if (e4 != null)
-                    MessageMarshaller.prepareMarshal(kctx.messageFactory(), e4, kctx, ctx);
+            for (GridCacheVersion e : (Collection<? extends GridCacheVersion>)msg.messageList) {
+                if (e != null)
+                    MessageMarshaller.prepareMarshal(kctx.messageFactory(), e, kctx, ctx);
             }
         }
 
         if (msg.cacheObjectSet != null) {
-            for (CacheObject e4 : (Collection<? extends CacheObject>)msg.cacheObjectSet) {
-                if (e4 != null && ctx != null)
-                    e4.prepareMarshal(ctx);
+            for (CacheObject e : (Collection<? extends CacheObject>)msg.cacheObjectSet) {
+                if (e != null && ctx != null)
+                    e.prepareMarshal(ctx);
             }
         }
     }
@@ -75,16 +75,16 @@ public class TestCollectionsMessageMarshaller implements MessageMarshaller<TestC
         CacheObjectContext ctx = nested;
 
         if (msg.messageList != null) {
-            for (GridCacheVersion e4 : (Collection<? extends GridCacheVersion>)msg.messageList) {
-                if (e4 != null)
-                    MessageMarshaller.finishUnmarshal(kctx.messageFactory(), e4, kctx, ctx, clsLdr);
+            for (GridCacheVersion e : (Collection<? extends GridCacheVersion>)msg.messageList) {
+                if (e != null)
+                    MessageMarshaller.finishUnmarshal(kctx.messageFactory(), e, kctx, ctx, clsLdr);
             }
         }
 
         if (msg.cacheObjectSet != null) {
-            for (CacheObject e4 : (Collection<? extends CacheObject>)msg.cacheObjectSet) {
-                if (e4 != null && ctx != null)
-                    e4.finishUnmarshal(ctx, clsLdr);
+            for (CacheObject e : (Collection<? extends CacheObject>)msg.cacheObjectSet) {
+                if (e != null && ctx != null)
+                    e.finishUnmarshal(ctx, clsLdr);
             }
         }
     }
@@ -92,9 +92,9 @@ public class TestCollectionsMessageMarshaller implements MessageMarshaller<TestC
     /** */
     @Override public void finishUnmarshal(TestCollectionsMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
         if (msg.messageList != null) {
-            for (GridCacheVersion e4 : (Collection<? extends GridCacheVersion>)msg.messageList) {
-                if (e4 != null)
-                    MessageMarshaller.finishUnmarshal(kctx.messageFactory(), e4, kctx);
+            for (GridCacheVersion e : (Collection<? extends GridCacheVersion>)msg.messageList) {
+                if (e != null)
+                    MessageMarshaller.finishUnmarshal(kctx.messageFactory(), e, kctx);
             }
         }
     }
