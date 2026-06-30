@@ -113,6 +113,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 import java.util.jar.JarFile;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
@@ -133,6 +134,7 @@ import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -7775,5 +7777,34 @@ public abstract class IgniteUtils extends CommonUtils {
 
         mreg.register(GridNioServer.SSL_ENABLED_METRIC_NAME, () -> sslEnabled, "Whether SSL is enabled");
         mreg.register(GridNioServer.SESSIONS_CNT_METRIC_NAME, srv::activeTcpSessionsCount, "Active TCP sessions count.");
+    }
+
+    /**
+     * Creates an SSL NIO filter, wiring its metrics from the given registry.
+     *
+     * @param sslCtx SSL context.
+     * @param directBuf Direct buffer flag.
+     * @param order Byte order.
+     * @param log Logger to use.
+     * @param mreg Optional metric registry; if {@code null}, the filter is created without metrics.
+     * @return SSL NIO filter.
+     */
+    public static GridNioSslFilter sslFilter(
+        SSLContext sslCtx,
+        boolean directBuf,
+        ByteOrder order,
+        IgniteLogger log,
+        @Nullable MetricRegistryImpl mreg
+    ) {
+        LongConsumer handshakeDuration = mreg == null ? null : mreg.histogram(
+            GridNioSslFilter.SSL_HANDSHAKE_DURATION_HISTOGRAM_METRIC_NAME,
+            new long[] {250, 500, 1000},
+            "SSL handshake duration in milliseconds.")::value;
+
+        Runnable rejectedSesCnt = mreg == null ? null : mreg.intMetric(
+            GridNioSslFilter.SSL_REJECTED_SESSIONS_CNT_METRIC_NAME,
+            "TCP sessions count that were rejected due to SSL errors.")::increment;
+
+        return new GridNioSslFilter(sslCtx, directBuf, order, log, handshakeDuration, rejectedSesCnt);
     }
 }

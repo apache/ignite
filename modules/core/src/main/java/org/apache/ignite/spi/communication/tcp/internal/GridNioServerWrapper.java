@@ -910,7 +910,7 @@ public class GridNioServerWrapper {
                 filters.add(new GridConnectionBytesVerifyFilter(log));
 
                 if (stateProvider.isSslEnabled()) {
-                    GridNioSslFilter sslFilter = new GridNioSslFilter(
+                    GridNioSslFilter sslFilter = U.sslFilter(
                         igniteCfg.getSslContextFactory().create(),
                         true,
                         ByteOrder.LITTLE_ENDIAN,
