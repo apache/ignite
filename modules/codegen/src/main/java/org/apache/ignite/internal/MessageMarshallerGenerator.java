@@ -660,15 +660,15 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
         code.add(indentedLine("%s = U.newHashMap(%s.size());", mapField, keysField));
         code.add(EMPTY);
-        code.add(indentedLine("Iterator keyIter = %s.iterator();", keysField));
-        code.add(indentedLine("Iterator valIter = %s.iterator();", valsField));
+        code.add(indentedLine("Iterator<%s> keyIter = %s.iterator();", keyCompName, keysField));
+        code.add(indentedLine("Iterator<%s> valIter = %s.iterator();", valCompName, valsField));
         code.add(EMPTY);
         code.add(indentedLine("while (keyIter.hasNext()) {"));
 
         indent++;
 
-        code.add(indentedLine("%s k = (%s)keyIter.next();", keyCompName, keyCompName));
-        code.add(indentedLine("%s v = (%s)valIter.next();", valCompName, valCompName));
+        code.add(indentedLine("%s k = keyIter.next();", keyCompName));
+        code.add(indentedLine("%s v = valIter.next();", valCompName));
 
         List<String> keyUnmarshal = codeFor(keyCompType, "k", MarshalMode.FINISH_CACHE);
         List<String> valUnmarshal = codeFor(valCompType, "v", MarshalMode.FINISH_CACHE);

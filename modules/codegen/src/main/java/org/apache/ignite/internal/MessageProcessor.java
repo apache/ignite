@@ -106,7 +106,16 @@ public class MessageProcessor extends AbstractProcessor {
 
     /** Processes all classes implementing the {@code Message} interface and generates corresponding serializer code. */
     @Override public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        TypeMirror msgType = processingEnv.getElementUtils().getTypeElement(MESSAGE_INTERFACE).asType();
+        TypeElement msgEl = processingEnv.getElementUtils().getTypeElement(MESSAGE_INTERFACE);
+
+        if (msgEl == null) {
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                "Cannot resolve " + MESSAGE_INTERFACE + " on the annotation-processing classpath.");
+
+            return false;
+        }
+
+        TypeMirror msgType = msgEl.asType();
 
         List<TypeMirror> emptyMsgs = typesToTypeMirrors(EMPTY_MESSAGES);
         List<TypeMirror> skipMsgs = typesToTypeMirrors(SKIP_MESSAGES);

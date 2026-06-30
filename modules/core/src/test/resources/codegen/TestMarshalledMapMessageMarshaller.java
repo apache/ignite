@@ -68,12 +68,12 @@ public class TestMarshalledMapMessageMarshaller implements MessageMarshaller<Tes
         if (msg.mapKeys != null) {
             msg.theMap = U.newHashMap(msg.mapKeys.size());
 
-            Iterator keyIter = msg.mapKeys.iterator();
-            Iterator valIter = msg.mapVals.iterator();
+            Iterator<GridCacheVersion> keyIter = msg.mapKeys.iterator();
+            Iterator<GridCacheVersion> valIter = msg.mapVals.iterator();
 
             while (keyIter.hasNext()) {
-                GridCacheVersion k = (GridCacheVersion)keyIter.next();
-                GridCacheVersion v = (GridCacheVersion)valIter.next();
+                GridCacheVersion k = keyIter.next();
+                GridCacheVersion v = valIter.next();
 
                 if (k != null)
                     MessageMarshaller.finishUnmarshal(kctx.messageFactory(), k, kctx, ctx, clsLdr);
