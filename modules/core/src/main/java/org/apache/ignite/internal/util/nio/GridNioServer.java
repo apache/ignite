@@ -55,7 +55,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.odbc.ClientMessage;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
@@ -323,7 +322,10 @@ public class GridNioServer<T> {
      * @param msgQueueLsnr Message queue size listener.
      * @param readWriteSelectorsAssign If {@code true} then in/out connections are assigned to even/odd workers.
      * @param workerLsnr Worker lifecycle listener.
-     * @param mreg Metrics registry.
+     * @param rcvdBytesCntMetric Received bytes count metric, or {@code null} if metrics disabled.
+     * @param sentBytesCntMetric Sent bytes count metric, or {@code null} if metrics disabled.
+     * @param outboundMessagesQueueSizeMetric Per-session outbound messages queue size metric, or {@code null} if metrics disabled.
+     * @param maxMessagesQueueSizeMetric Per-session maximum outbound messages queue size metric, or {@code null} if metrics disabled.
      * @param filters Filters for this server.
      * @throws IgniteCheckedException If failed.
      */
@@ -349,7 +351,10 @@ public class GridNioServer<T> {
         IgniteBiInClosure<GridNioSession, Integer> msgQueueLsnr,
         boolean readWriteSelectorsAssign,
         @Nullable GridWorkerListener workerLsnr,
-        @Nullable MetricRegistryImpl mreg,
+        @Nullable LongConsumer rcvdBytesCntMetric,
+        @Nullable LongConsumer sentBytesCntMetric,
+        @Nullable LongConsumer outboundMessagesQueueSizeMetric,
+        @Nullable LongConsumer maxMessagesQueueSizeMetric,
         SpanManager tracing,
         MessageFactory msgFactory,
         GridNioFilter... filters
@@ -378,6 +383,10 @@ public class GridNioServer<T> {
         this.selectorSpins = selectorSpins;
         this.readWriteSelectorsAssign = readWriteSelectorsAssign;
         this.lsnr = lsnr;
+        this.rcvdBytesCntMetric = rcvdBytesCntMetric;
+        this.sentBytesCntMetric = sentBytesCntMetric;
+        this.outboundMessagesQueueSizeMetric = outboundMessagesQueueSizeMetric;
+        this.maxMessagesQueueSizeMetric = maxMessagesQueueSizeMetric;
         this.tracing = tracing == null ? new NoopSpanManager() : tracing;
         this.msgFactory = msgFactory;
 
@@ -460,26 +469,13 @@ public class GridNioServer<T> {
         }
 
         this.balancer = balancer0;
+    }
 
-        rcvdBytesCntMetric = mreg == null ?
-            null : mreg.longAdderMetric(RECEIVED_BYTES_METRIC_NAME, RECEIVED_BYTES_METRIC_DESC)::add;
-
-        sentBytesCntMetric = mreg == null ?
-            null : mreg.longAdderMetric(SENT_BYTES_METRIC_NAME, SENT_BYTES_METRIC_DESC)::add;
-
-        outboundMessagesQueueSizeMetric = mreg == null ? null : mreg.longAdderMetric(
-            OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME, OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_DESC)::add;
-
-        maxMessagesQueueSizeMetric = mreg == null ? null : mreg.maxValueMetric(
-            MAX_MESSAGES_QUEUE_SIZE_METRIC_NAME, MAX_MESSAGES_QUEUE_SIZE_METRIC_DESC, 60_000, 5)::update;
-
-        if (mreg != null) {
-            mreg.register(SESSIONS_CNT_METRIC_NAME, sessions::size, "Active TCP sessions count.");
-
-            boolean sslEnabled = Arrays.stream(filters).anyMatch(filter -> filter instanceof GridNioSslFilter);
-
-            mreg.register(SSL_ENABLED_METRIC_NAME, () -> sslEnabled, "Whether SSL is enabled");
-        }
+    /**
+     * @return Number of active TCP sessions.
+     */
+    public int activeTcpSessionsCount() {
+        return sessions.size();
     }
 
     /**
@@ -3934,8 +3930,17 @@ public class GridNioServer<T> {
         /** Worker lifecycle listener to be used by server's worker threads. */
         private GridWorkerListener workerLsnr;
 
-        /** Metrics registry. */
-        private MetricRegistryImpl mreg;
+        /** Received bytes count metric. */
+        private LongConsumer rcvdBytesCntMetric;
+
+        /** Sent bytes count metric. */
+        private LongConsumer sentBytesCntMetric;
+
+        /** Per-session outbound messages queue size metric. */
+        private LongConsumer outboundMessagesQueueSizeMetric;
+
+        /** Per-session maximum outbound messages queue size metric. */
+        private LongConsumer maxMessagesQueueSizeMetric;
 
         /** Span manager */
         private SpanManager tracing;
@@ -3972,7 +3977,10 @@ public class GridNioServer<T> {
                 msgQueueLsnr,
                 readWriteSelectorsAssign,
                 workerLsnr,
-                mreg,
+                rcvdBytesCntMetric,
+                sentBytesCntMetric,
+                outboundMessagesQueueSizeMetric,
+                maxMessagesQueueSizeMetric,
                 tracing,
                 msgFactory,
                 filters != null ? Arrays.copyOf(filters, filters.length) : EMPTY_FILTERS
@@ -4241,11 +4249,41 @@ public class GridNioServer<T> {
         }
 
         /**
-         * @param mreg Metrics registry.
+         * @param rcvdBytesCntMetric Received bytes count metric.
          * @return This for chaining.
          */
-        public Builder<T> metricRegistry(MetricRegistryImpl mreg) {
-            this.mreg = mreg;
+        public Builder<T> receivedBytesMetric(LongConsumer rcvdBytesCntMetric) {
+            this.rcvdBytesCntMetric = rcvdBytesCntMetric;
+
+            return this;
+        }
+
+        /**
+         * @param sentBytesCntMetric Sent bytes count metric.
+         * @return This for chaining.
+         */
+        public Builder<T> sentBytesMetric(LongConsumer sentBytesCntMetric) {
+            this.sentBytesCntMetric = sentBytesCntMetric;
+
+            return this;
+        }
+
+        /**
+         * @param outboundMessagesQueueSizeMetric Per-session outbound messages queue size metric.
+         * @return This for chaining.
+         */
+        public Builder<T> outboundMessagesQueueSizeMetric(LongConsumer outboundMessagesQueueSizeMetric) {
+            this.outboundMessagesQueueSizeMetric = outboundMessagesQueueSizeMetric;
+
+            return this;
+        }
+
+        /**
+         * @param maxMessagesQueueSizeMetric Per-session maximum outbound messages queue size metric.
+         * @return This for chaining.
+         */
+        public Builder<T> maxMessagesQueueSizeMetric(LongConsumer maxMessagesQueueSizeMetric) {
+            this.maxMessagesQueueSizeMetric = maxMessagesQueueSizeMetric;
 
             return this;
         }
