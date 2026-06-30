@@ -594,6 +594,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @Override protected IgniteInternalFuture<Boolean> lockAllAsync(Collection<KeyCacheObject> keys,
         long timeout,
+        long waitTimeout,
         @Nullable IgniteTxLocalEx tx,
         boolean isInvalidate,
         boolean isRead,
