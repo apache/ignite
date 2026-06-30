@@ -31,13 +31,13 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.tracing.MTC;
+import org.apache.ignite.internal.processors.tracing.SpanManager;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.util.deque.FastSizeDeque;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesTable.traceName;
 
 /**
  * Session implementation bound to selector API and socket API.
@@ -92,6 +92,9 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
     /** Maximum outbound messages queue size metric. */
     @Nullable private final LongConsumer maxMessagesQueueSizeMetric;
 
+    /** Span manager used to resolve trace names for logging. */
+    private final SpanManager tracer;
+
     /**
      * Creates session instance.
      *
@@ -104,6 +107,7 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
      * @param sndQueueLimit Send queue limit.
      * @param outboundMessagesQueueSizeMetric Outbound messages queue size metric, or {@code null} if metrics disabled.
      * @param maxMessagesQueueSizeMetric Maximum outbound messages queue size metric, or {@code null} if metrics disabled.
+     * @param tracer Span manager used to resolve trace names for logging.
      * @param writeBuf Write buffer.
      * @param readBuf Read buffer.
      */
@@ -117,6 +121,7 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
         int sndQueueLimit,
         @Nullable LongConsumer outboundMessagesQueueSizeMetric,
         @Nullable LongConsumer maxMessagesQueueSizeMetric,
+        SpanManager tracer,
         @Nullable ByteBuffer writeBuf,
         @Nullable ByteBuffer readBuf
     ) {
@@ -151,6 +156,8 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
         this.outboundMessagesQueueSizeMetric = outboundMessagesQueueSizeMetric;
 
         this.maxMessagesQueueSizeMetric = maxMessagesQueueSizeMetric;
+
+        this.tracer = tracer;
     }
 
     /** {@inheritDoc} */
@@ -312,7 +319,7 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
 
         boolean res = queue.offerFirst(writeFut);
 
-        MTC.span().addLog(() -> "Added to system queue - " + traceName(writeFut.message()));
+        MTC.span().addLog(() -> "Added to system queue - " + tracer.traceName((Message)writeFut.message()));
 
         assert res : "Future was not added to queue";
 
@@ -350,7 +357,7 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
 
         boolean res = queue.offer(writeFut);
 
-        MTC.span().addLog(() -> "Added to queue - " + traceName(writeFut.message()));
+        MTC.span().addLog(() -> "Added to queue - " + tracer.traceName((Message)writeFut.message()));
 
         assert res : "Future was not added to queue";
 

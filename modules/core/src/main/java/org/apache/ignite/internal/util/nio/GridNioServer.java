@@ -2779,6 +2779,7 @@ public class GridNioServer<T> {
                     sndQueueLimit,
                     outboundMessagesQueueSizeMetric,
                     maxMessagesQueueSizeMetric,
+                    tracing,
                     writeBuf,
                     readBuf);
 
