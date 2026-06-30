@@ -37,7 +37,6 @@ public class TestMarshalledMessageMarshaller implements MessageMarshaller<TestMa
     /** */
     public TestMarshalledMessageMarshaller(Marshaller marshaller) {
         this.marshaller = marshaller;
-
     }
 
     /** */

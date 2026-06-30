@@ -38,7 +38,6 @@ public class TestMarshalledMapMessageSerializer implements MessageSerializer<Tes
 
     /** */
     public TestMarshalledMapMessageSerializer() {
-
     }
 
     /** */

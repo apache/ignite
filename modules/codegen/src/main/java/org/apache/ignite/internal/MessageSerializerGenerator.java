@@ -123,7 +123,7 @@ public class MessageSerializerGenerator extends MessageGenerator {
         writer.write(indentedLine(METHOD_JAVADOC));
         writer.write(NL);
         writer.write(indentedLine("public " + serClsName + "() {"));
-        writer.write(NL + NL);
+        writer.write(NL);
         writer.write(indentedLine("}"));
         writer.write(NL);
         writer.write(NL);

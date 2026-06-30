@@ -17,9 +17,10 @@
 
 package org.apache.ignite.internal;
 
+import java.util.ArrayList;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.TestMarshallableMessage;
+import org.apache.ignite.internal.TestMarshalledObjectsMessage;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -30,27 +31,40 @@ import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public class TestMarshallableMessageMarshaller implements MessageMarshaller<TestMarshallableMessage> {
+public class TestMarshalledObjectsMessageMarshaller implements MessageMarshaller<TestMarshalledObjectsMessage> {
     /** */
     private final Marshaller marshaller;
 
     /** */
-    public TestMarshallableMessageMarshaller(Marshaller marshaller) {
+    public TestMarshalledObjectsMessageMarshaller(Marshaller marshaller) {
         this.marshaller = marshaller;
     }
 
     /** */
-    @Override public void prepareMarshal(TestMarshallableMessage msg, GridKernalContext kctx, CacheObjectContext nested) throws IgniteCheckedException {
-        msg.prepareMarshal(marshaller);
+    @Override public void prepareMarshal(TestMarshalledObjectsMessage msg, GridKernalContext kctx, CacheObjectContext nested) throws IgniteCheckedException {
+        if (msg.data != null && msg.dataBytes == null) {
+            msg.dataBytes = new ArrayList<>(msg.data.size());
+
+            for (Object e : msg.data)
+                msg.dataBytes.add(U.marshal(marshaller, e));
+        }
     }
 
     /** */
-    @Override public void finishUnmarshal(TestMarshallableMessage msg, GridKernalContext kctx, CacheObjectContext nested, ClassLoader clsLdr) throws IgniteCheckedException {
-        msg.finishUnmarshal(marshaller, clsLdr);
+    @Override public void finishUnmarshal(TestMarshalledObjectsMessage msg, GridKernalContext kctx, CacheObjectContext nested, ClassLoader clsLdr) throws IgniteCheckedException {
+        CacheObjectContext ctx = nested;
+
+        if (msg.dataBytes != null) {
+            msg.data = new ArrayList<>(msg.dataBytes.size());
+
+            for (byte[] e : msg.dataBytes)
+                msg.data.add(U.unmarshal(marshaller, e, clsLdr));
+
+            msg.dataBytes = null;
+        }
     }
 
     /** */
-    @Override public void finishUnmarshal(TestMarshallableMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
-        msg.finishUnmarshal(marshaller, U.resolveClassLoader(kctx.config()));
+    @Override public void finishUnmarshal(TestMarshalledObjectsMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
     }
 }

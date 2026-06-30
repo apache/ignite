@@ -31,7 +31,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 public class ChildMessageSerializer implements MessageSerializer<ChildMessage> {
     /** */
     public ChildMessageSerializer() {
-
     }
 
     /** */
@@ -110,5 +109,4 @@ public class ChildMessageSerializer implements MessageSerializer<ChildMessage> {
 
         return true;
     }
-
 }

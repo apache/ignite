@@ -36,7 +36,6 @@ public class CustomMapperEnumFieldsMessageSerializer implements MessageSerialize
 
     /** */
     public CustomMapperEnumFieldsMessageSerializer() {
-
     }
     
     /** */
@@ -73,5 +72,4 @@ public class CustomMapperEnumFieldsMessageSerializer implements MessageSerialize
 
         return true;
     }
-
 }

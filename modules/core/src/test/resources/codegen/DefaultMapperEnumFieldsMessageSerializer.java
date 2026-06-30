@@ -38,7 +38,6 @@ public class DefaultMapperEnumFieldsMessageSerializer implements MessageSerializ
 
     /** */
     public DefaultMapperEnumFieldsMessageSerializer() {
-
     }
     
     /** */
@@ -89,5 +88,4 @@ public class DefaultMapperEnumFieldsMessageSerializer implements MessageSerializ
 
         return true;
     }
-
 }

@@ -34,7 +34,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 public class TestMessageMarshaller implements MessageMarshaller<TestMessage> {
     /** */
     public TestMessageMarshaller() {
-
     }
 
     /** */

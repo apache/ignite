@@ -170,7 +170,6 @@ public class MessageMarshallerGenerator extends MessageGenerator {
             writer.write(NL);
         }
 
-        writer.write(NL);
         writer.write(indentedLine("}"));
         writer.write(NL + NL);
     }

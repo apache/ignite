@@ -32,7 +32,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 public class CustomMapperEnumFieldsMessageMarshaller implements MessageMarshaller<CustomMapperEnumFieldsMessage> {
     /** */
     public CustomMapperEnumFieldsMessageMarshaller() {
-
     }
 
     /** */

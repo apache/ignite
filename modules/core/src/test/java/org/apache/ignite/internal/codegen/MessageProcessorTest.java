@@ -52,6 +52,24 @@ import static org.junit.Assert.assertTrue;
 public class MessageProcessorTest {
     /** */
     @Test
+    public void testMarshalledObjectsMessage() {
+        Compilation compilation = compile("TestMarshalledObjectsMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertEquals(2, compilation.generatedSourceFiles().size());
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestMarshalledObjectsMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("TestMarshalledObjectsMessageSerializer.java"));
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestMarshalledObjectsMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("TestMarshalledObjectsMessageMarshaller.java"));
+    }
+
+    /** */
+    @Test
     public void testProcessorGeneratesSerializer() {
         Compilation compilation = compile("TestMessage.java");
 

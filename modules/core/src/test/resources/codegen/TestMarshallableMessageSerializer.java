@@ -30,7 +30,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 public class TestMarshallableMessageSerializer implements MessageSerializer<TestMarshallableMessage> {
     /** */
     public TestMarshallableMessageSerializer() {
-
     }
 
     /** */
@@ -95,5 +94,4 @@ public class TestMarshallableMessageSerializer implements MessageSerializer<Test
 
         return true;
     }
-
 }

@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.internal.TestMarshalledCollectionMessage;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.plugin.extensions.communication.MessageArrayType;
+import org.apache.ignite.internal.TestMarshalledObjectsMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionType;
 import org.apache.ignite.plugin.extensions.communication.MessageItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
@@ -31,16 +30,16 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public class TestMarshalledCollectionMessageSerializer implements MessageSerializer<TestMarshalledCollectionMessage> {
+public class TestMarshalledObjectsMessageSerializer implements MessageSerializer<TestMarshalledObjectsMessage> {
     /** */
-    private static final MessageArrayType keysArrCollDesc = new MessageArrayType(new MessageItemType(MessageCollectionItemType.MSG), GridCacheVersion.class);
+    private static final MessageCollectionType dataBytesCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.BYTE_ARR), false);
 
     /** */
-    public TestMarshalledCollectionMessageSerializer() {
+    public TestMarshalledObjectsMessageSerializer() {
     }
 
     /** */
-    @Override public boolean writeTo(TestMarshalledCollectionMessage msg, MessageWriter writer) {
+    @Override public boolean writeTo(TestMarshalledObjectsMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
                 return false;
@@ -50,7 +49,7 @@ public class TestMarshalledCollectionMessageSerializer implements MessageSeriali
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeObjectArray(msg.keysArr, keysArrCollDesc))
+                if (!writer.writeCollection(msg.dataBytes, dataBytesCollDesc))
                     return false;
 
                 writer.incrementState();
@@ -60,10 +59,10 @@ public class TestMarshalledCollectionMessageSerializer implements MessageSeriali
     }
 
     /** */
-    @Override public boolean readFrom(TestMarshalledCollectionMessage msg, MessageReader reader) {
+    @Override public boolean readFrom(TestMarshalledObjectsMessage msg, MessageReader reader) {
         switch (reader.state()) {
             case 0:
-                msg.keysArr = reader.readObjectArray(keysArrCollDesc);
+                msg.dataBytes = reader.readCollection(dataBytesCollDesc);
 
                 if (!reader.isLastRead())
                     return false;

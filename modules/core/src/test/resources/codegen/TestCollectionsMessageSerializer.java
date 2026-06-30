@@ -86,7 +86,6 @@ public class TestCollectionsMessageSerializer implements MessageSerializer<TestC
 
     /** */
     public TestCollectionsMessageSerializer() {
-
     }
     
     /** */
@@ -473,5 +472,4 @@ public class TestCollectionsMessageSerializer implements MessageSerializer<TestC
 
         return true;
     }
-
 }

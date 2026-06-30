@@ -35,7 +35,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 public class TestMarshalledMapMessageMarshaller implements MessageMarshaller<TestMarshalledMapMessage> {
     /** */
     public TestMarshalledMapMessageMarshaller() {
-
     }
 
     /** */

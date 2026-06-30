@@ -17,15 +17,17 @@
 
 package org.apache.ignite.internal;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.util.Collection;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
-/** Marks a {@code Set} or {@code Collection} field whose wire form is a companion {@code @Order} array field named by {@link #value()}. */
-@Retention(RetentionPolicy.CLASS)
-@Target(ElementType.FIELD)
-public @interface MarshalledSet {
-    /** Name of the {@code @Order} array field that holds the elements. */
-    String value();
+public class TestMarshalledObjectsMessage implements Message {
+    @Order(0)
+    Collection<byte[]> dataBytes;
+
+    @MarshalledObjects("dataBytes")
+    Collection<Object> data;
+
+    public short directType() {
+        return 0;
+    }
 }

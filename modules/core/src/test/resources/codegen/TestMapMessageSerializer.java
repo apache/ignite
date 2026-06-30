@@ -87,7 +87,6 @@ public class TestMapMessageSerializer implements MessageSerializer<TestMapMessag
 
     /** */
     public TestMapMessageSerializer() {
-
     }
     
     /** */
@@ -474,5 +473,4 @@ public class TestMapMessageSerializer implements MessageSerializer<TestMapMessag
 
         return true;
     }
-
 }

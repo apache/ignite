@@ -41,7 +41,6 @@ public class TestMessageSerializer implements MessageSerializer<TestMessage> {
 
     /** */
     public TestMessageSerializer() {
-
     }
 
     /** */

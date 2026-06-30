@@ -32,7 +32,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 public class ChildMessageMarshaller implements MessageMarshaller<ChildMessage> {
     /** */
     public ChildMessageMarshaller() {
-
     }
 
     /** */
