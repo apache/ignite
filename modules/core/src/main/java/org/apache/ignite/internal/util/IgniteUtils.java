@@ -2609,26 +2609,42 @@ public abstract class IgniteUtils extends CommonUtils {
         try {
             url = new URL(springCfgPath);
 
-            String scheme = url.getProtocol().toLowerCase();
+            URL cfgUrl = url;
+
+            String scheme = cfgUrl.getProtocol().toLowerCase(Locale.ROOT);
+
+            // Handle jar:<nested_url>!/path to avoid bypassing remote-scheme checks.
+            if ("jar".equals(scheme)) {
+                String file = cfgUrl.getFile();
+
+                int sep = file.indexOf("!/");
+
+                if (sep > 0) {
+                    try {
+                        cfgUrl = new URL(file.substring(0, sep));
+                        scheme = cfgUrl.getProtocol().toLowerCase(Locale.ROOT);
+                    }
+                    catch (MalformedURLException ignored) {
+                        // No-op.
+                    }
+                }
+            }
 
             if (REMOTE_CFG_SCHEMES.contains(scheme)) {
-                // FTP is always blocked — unencrypted, susceptible to MITM
                 if (ALWAYS_BLOCKED_CFG_SCHEMES.contains(scheme))
                     throw new IgniteCheckedException(
                         "Spring configuration URLs with scheme '" + scheme + "' are always blocked " +
-                        "due to security risk (unencrypted transfer, MITM vulnerability). " +
-                        "Use HTTPS or a local file/classpath reference instead. " +
-                        "Provided host: " + url.getHost()
+                        "due to security risk. Use HTTPS or a local file/classpath reference instead. " +
+                        "Provided host: " + cfgUrl.getHost()
                     );
 
-                // HTTP/HTTPS blocked by default, allowed via system property
                 boolean allowRemote = Boolean.getBoolean(IgniteSystemProperties.IGNITE_ALLOW_REMOTE_SPRING_CFG_URL);
 
                 if (!allowRemote)
                     throw new IgniteCheckedException(
                         "Remote Spring configuration URLs (http/https) are not allowed by default " +
                         "to prevent remote code execution via attacker-controlled Spring XML. " +
-                        "Provided host: " + url.getHost() + ". " +
+                        "Provided host: " + cfgUrl.getHost() + ". " +
                         "To allow remote URLs set system property: -D" +
                         IgniteSystemProperties.IGNITE_ALLOW_REMOTE_SPRING_CFG_URL + "=true"
                     );
