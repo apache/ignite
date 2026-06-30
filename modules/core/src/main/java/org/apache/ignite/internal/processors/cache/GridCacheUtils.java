@@ -178,6 +178,17 @@ public class GridCacheUtils {
         return cheatCacheId != 0 && id == cheatCacheId;
     }
 
+    /**
+     * Checks whether the separate lock wait timeout expires before the transaction timeout.
+     *
+     * @param waitTimeout Lock wait timeout. {@code 0} means that there is no separate lock wait timeout.
+     * @param timeout Transaction timeout. {@code 0} means that the transaction timeout is infinite.
+     * @return {@code True} if the separate lock wait timeout expires before the transaction timeout.
+     */
+    public static boolean isWaitTimeoutExpiresFirst(long waitTimeout, long timeout) {
+        return timeout >= 0 && waitTimeout != 0 && (timeout == 0 || timeout > waitTimeout);
+    }
+
     /** System cache name. */
     public static final String UTILITY_CACHE_NAME = "ignite-sys-cache";
 
