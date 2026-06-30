@@ -15,19 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near.consistency;
-
-import java.util.Set;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.ExpectedFailure;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+package org.apache.ignite.internal;
 
 /**
- * Consistency violation exception.
+ * Marker for checked exceptions that represent an expected (benign) failure.
+ * <p>
+ * Such failures are part of normal operation (e.g. topology changes, optimistic transaction conflicts,
+ * read-repair consistency violations) and must not be logged as errors when handled generically,
+ * for example by {@link org.apache.ignite.internal.util.future.GridCompoundFuture}.
  */
-public abstract class IgniteConsistencyViolationException extends IgniteCheckedException implements ExpectedFailure {
-    /**
-     * Inconsistent entries keys.
-     */
-    public abstract Set<KeyCacheObject> keys();
+public interface ExpectedFailure {
+    // No-op marker interface.
 }
