@@ -26,16 +26,13 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
+import org.apache.ignite.internal.ExpectedFailure;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.processors.cache.distributed.near.consistency.IgniteConsistencyViolationException;
-import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteReducer;
 import org.jetbrains.annotations.Nullable;
@@ -117,17 +114,14 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
                 throw e;
             }
         }
-        catch (IgniteTxOptimisticCheckedException | IgniteFutureCancelledCheckedException |
-            ClusterTopologyCheckedException | IgniteConsistencyViolationException e) {
-            if (!processFailure(e, fut))
-                onDone(e);
-        }
         catch (IgniteCheckedException e) {
             if (!processFailure(e, fut)) {
-                if (e instanceof NodeStoppingException)
-                    logDebug(logger(), "Failed to execute compound future reducer, node stopped.");
-                else
-                    logError(null, "Failed to execute compound future reducer: " + this, e);
+                if (!(e instanceof ExpectedFailure)) {
+                    if (e instanceof NodeStoppingException)
+                        logDebug(logger(), "Failed to execute compound future reducer, node stopped.");
+                    else
+                        logError(null, "Failed to execute compound future reducer: " + this, e);
+                }
 
                 onDone(e);
             }
@@ -370,7 +364,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
      * @param e Exception.
      */
     protected void logError(IgniteLogger log, String msg, Throwable e) {
-        U.error(log, msg, e);
+        CommonUtils.error(log, msg, e);
     }
 
     /**

@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.transactions;
 
+import org.apache.ignite.internal.ExpectedFailure;
+
 /**
  * Exception thrown whenever grid transactions fail optimistically.
  */
-public class IgniteTxOptimisticCheckedException extends TransactionCheckedException {
+public class IgniteTxOptimisticCheckedException extends TransactionCheckedException implements ExpectedFailure {
     /** */
     private static final long serialVersionUID = 0L;
 

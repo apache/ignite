@@ -23,7 +23,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Future computation cannot be retrieved because it was cancelled.
  */
-public class IgniteFutureCancelledCheckedException extends IgniteCheckedException {
+public class IgniteFutureCancelledCheckedException extends IgniteCheckedException implements ExpectedFailure {
     /** */
     private static final long serialVersionUID = 0L;
 
