@@ -1,0 +1,69 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.internal.processors.rollingupgrade;
+
+import java.util.UUID;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.jetbrains.annotations.Nullable;
+
+/** */
+abstract class AbstractProcess {
+    /** */
+    @Nullable private UUID locInitOpId;
+
+    /** */
+    @Nullable private GridFutureAdapter<Void> locInitOpFut;
+
+    /** */
+    protected abstract UUID startInternal();
+
+    /** */
+    protected synchronized IgniteInternalFuture<Void> start() {
+        if (locInitOpFut != null)
+            return locInitOpFut;
+
+        locInitOpId = startInternal();
+        locInitOpFut = new GridFutureAdapter<>();
+
+        return locInitOpFut;
+    }
+
+    /** */
+    protected synchronized void finishProcess(UUID reqId, @Nullable Throwable err) {
+        if (!reqId.equals(locInitOpId))
+            return;
+
+        locInitOpFut.onDone(err);
+
+        locInitOpId = null;
+        locInitOpFut = null;
+    }
+
+    /** */
+    protected synchronized void abort(String reasonMsg) {
+        locInitOpId = null;
+
+        if (locInitOpFut != null) {
+            locInitOpFut.onDone(new IgniteException("Operation was aborted [reason=" + reasonMsg + ']'));
+
+            locInitOpFut = null;
+        }
+    }
+}
