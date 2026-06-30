@@ -197,7 +197,7 @@ public class TcpDiscoveryIoSession {
             }
             while (!finished);
 
-            MessageMarshaller.finishUnmarshal(spi.messageFactory(), msg, ((IgniteEx)spi.ignite()).context());
+            MessageMarshaller.unmarshal(spi.messageFactory(), msg, ((IgniteEx)spi.ignite()).context());
 
             return (T)msg;
         }
@@ -241,7 +241,7 @@ public class TcpDiscoveryIoSession {
      * @throws IOException If serialization fails.
      */
     void serializeMessage(Message m, OutputStream out) throws IOException, IgniteCheckedException {
-        MessageMarshaller.prepareMarshal(spi.messageFactory(), m, ((IgniteEx)spi.ignite()).context(), null);
+        MessageMarshaller.marshal(spi.messageFactory(), m, ((IgniteEx)spi.ignite()).context(), null);
 
         msgWriter.reset();
         msgWriter.setBuffer(msgBuf);

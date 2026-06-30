@@ -29,7 +29,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Handles {@code prepareMarshal}/{@code finishUnmarshal} for a {@link Message} type that requires custom serialization.
+ * Handles {@code marshal}/{@code unmarshal} for a {@link Message} type that requires custom serialization.
  *
  * @param <M> Message type.
  */
@@ -42,7 +42,7 @@ public interface MessageMarshaller<M extends Message> {
      * @param nested Cache object context, or {@code null} if not applicable.
      * @throws IgniteCheckedException If marshalling failed.
      */
-    public void prepareMarshal(M msg, GridKernalContext kctx, @Nullable CacheObjectContext nested)
+    public void marshal(M msg, GridKernalContext kctx, @Nullable CacheObjectContext nested)
         throws IgniteCheckedException;
 
     /**
@@ -54,7 +54,7 @@ public interface MessageMarshaller<M extends Message> {
      * @param clsLdr Class loader for unmarshalling.
      * @throws IgniteCheckedException If unmarshalling failed.
      */
-    public void finishUnmarshal(M msg, GridKernalContext kctx, @Nullable CacheObjectContext nested, ClassLoader clsLdr)
+    public void unmarshal(M msg, GridKernalContext kctx, @Nullable CacheObjectContext nested, ClassLoader clsLdr)
         throws IgniteCheckedException;
 
     /**
@@ -64,7 +64,7 @@ public interface MessageMarshaller<M extends Message> {
      * @param kctx Kernal context.
      * @throws IgniteCheckedException If unmarshalling failed.
      */
-    public void finishUnmarshal(M msg, GridKernalContext kctx) throws IgniteCheckedException;
+    public void unmarshal(M msg, GridKernalContext kctx) throws IgniteCheckedException;
 
     /**
      * Unmarshals only {@code @NioField}-annotated fields in the NIO/IO thread. No-op by default.
@@ -73,11 +73,11 @@ public interface MessageMarshaller<M extends Message> {
      * @param kctx Kernal context.
      * @throws IgniteCheckedException If unmarshalling failed.
      */
-    default void finishUnmarshalNio(M msg, GridKernalContext kctx) throws IgniteCheckedException {
+    default void unmarshalNio(M msg, GridKernalContext kctx) throws IgniteCheckedException {
     }
 
     /**
-     * Null-safe {@code finishUnmarshalNio} — skips when no marshaller is registered.
+     * Null-safe {@code unmarshalNio} — skips when no marshaller is registered.
      *
      * @param <M> Message type.
      * @param factory Message factory.
@@ -85,16 +85,16 @@ public interface MessageMarshaller<M extends Message> {
      * @param kctx Kernal context.
      * @throws IgniteCheckedException If unmarshalling failed.
      */
-    static <M extends Message> void finishUnmarshalNio(MessageFactory factory, M msg, GridKernalContext kctx)
+    static <M extends Message> void unmarshalNio(MessageFactory factory, M msg, GridKernalContext kctx)
         throws IgniteCheckedException {
         MessageMarshaller<M> m = resolve(factory, msg);
 
         if (m != null)
-            m.finishUnmarshalNio(msg, kctx);
+            m.unmarshalNio(msg, kctx);
     }
 
     /**
-     * Null-safe {@code prepareMarshal} — skips when no marshaller is registered.
+     * Null-safe {@code marshal} — skips when no marshaller is registered.
      *
      * @param <M> Message type.
      * @param factory Message factory.
@@ -103,16 +103,16 @@ public interface MessageMarshaller<M extends Message> {
      * @param nested Cache object context, or {@code null} if not applicable.
      * @throws IgniteCheckedException If marshalling failed.
      */
-    static <M extends Message> void prepareMarshal(MessageFactory factory, M msg, GridKernalContext kctx,
+    static <M extends Message> void marshal(MessageFactory factory, M msg, GridKernalContext kctx,
         @Nullable CacheObjectContext nested) throws IgniteCheckedException {
         MessageMarshaller<M> m = resolve(factory, msg);
 
         if (m != null)
-            m.prepareMarshal(msg, kctx, nested);
+            m.marshal(msg, kctx, nested);
     }
 
     /**
-     * Null-safe {@code finishUnmarshal} — skips when no marshaller is registered.
+     * Null-safe {@code unmarshal} — skips when no marshaller is registered.
      *
      * @param <M> Message type.
      * @param factory Message factory.
@@ -122,18 +122,18 @@ public interface MessageMarshaller<M extends Message> {
      * @param clsLdr Class loader for unmarshalling.
      * @throws IgniteCheckedException If unmarshalling failed.
      */
-    static <M extends Message> void finishUnmarshal(MessageFactory factory, M msg, GridKernalContext kctx,
+    static <M extends Message> void unmarshal(MessageFactory factory, M msg, GridKernalContext kctx,
         @Nullable CacheObjectContext nested, ClassLoader clsLdr) throws IgniteCheckedException {
         assert !Dedup.ENABLED || Dedup.firstUnmarshal(msg, true) : "Finish-unmarshalled more than once: " + msg.getClass().getName();
 
         MessageMarshaller<M> m = resolve(factory, msg);
 
         if (m != null)
-            m.finishUnmarshal(msg, kctx, nested, clsLdr);
+            m.unmarshal(msg, kctx, nested, clsLdr);
     }
 
     /**
-     * Null-safe {@code finishUnmarshal} (cache-free) — skips when no marshaller is registered.
+     * Null-safe {@code unmarshal} (cache-free) — skips when no marshaller is registered.
      *
      * @param <M> Message type.
      * @param factory Message factory.
@@ -141,14 +141,14 @@ public interface MessageMarshaller<M extends Message> {
      * @param kctx Kernal context.
      * @throws IgniteCheckedException If unmarshalling failed.
      */
-    static <M extends Message> void finishUnmarshal(MessageFactory factory, M msg, GridKernalContext kctx)
+    static <M extends Message> void unmarshal(MessageFactory factory, M msg, GridKernalContext kctx)
         throws IgniteCheckedException {
         assert !Dedup.ENABLED || Dedup.firstUnmarshal(msg, false) : "Finish-unmarshalled more than once: " + msg.getClass().getName();
 
         MessageMarshaller<M> m = resolve(factory, msg);
 
         if (m != null)
-            m.finishUnmarshal(msg, kctx);
+            m.unmarshal(msg, kctx);
     }
 
     /** @return the marshaller registered for {@code msg}'s direct type, or {@code null} if none. */

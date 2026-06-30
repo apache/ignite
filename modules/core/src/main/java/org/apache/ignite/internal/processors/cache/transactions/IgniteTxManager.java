@@ -3504,7 +3504,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 return;
 
             try {
-                MessageMarshaller.finishUnmarshal(cctx.kernalContext().messageFactory(),
+                MessageMarshaller.unmarshal(cctx.kernalContext().messageFactory(),
                     cacheMsg, cctx.kernalContext(), null, cctx.deploy().globalLoader());
             }
             catch (IgniteCheckedException e) {

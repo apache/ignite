@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 /**
  * Thrown by {@link KeyCacheObjectImpl#hashCode()} when the object has not been deserialized yet,
- * which happens when the owning cache has been removed before {@code finishUnmarshal} could complete.
+ * which happens when the owning cache has been removed before {@code unmarshal} could complete.
  */
 public class CacheObjectNotResolvedException extends RuntimeException {
     /** */

@@ -54,7 +54,7 @@ public class ErrorMessage implements MarshallableMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+    @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
         if (err == null)
             return;
 
@@ -67,7 +67,7 @@ public class ErrorMessage implements MarshallableMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         if (errBytes == null)
             return;
 

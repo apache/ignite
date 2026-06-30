@@ -71,13 +71,13 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
     }
 
     /** */
-    public void prepareMarshal(DiscoveryMessageParser parser) {
+    public void marshal(DiscoveryMessageParser parser) {
         if (resolvedMsg != null)
             msgBytes = parser.marshalZip(resolvedMsg);
     }
 
     /** */
-    public void finishUnmarshal(DiscoveryMessageParser parser) {
+    public void unmarshal(DiscoveryMessageParser parser) {
         if (msgBytes != null)
             resolvedMsg = parser.unmarshalZip(msgBytes);
     }

@@ -199,13 +199,13 @@ public class GridEventStorageMessage implements MarshallableMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+    @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
         if (filter != null)
             filterBytes = U.marshal(marsh, filter);
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void unmarshal(Marshaller marsh, ClassLoader ldr) throws IgniteCheckedException {
         // No-op.
     }
 

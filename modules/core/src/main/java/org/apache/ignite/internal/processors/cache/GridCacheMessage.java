@@ -281,7 +281,7 @@ public abstract class GridCacheMessage implements Message {
                 CacheObject val = info.value();
 
                 if (val != null) {
-                    val.finishUnmarshal(cacheObjCtx, ctx.deploy().globalLoader());
+                    val.unmarshal(cacheObjCtx, ctx.deploy().globalLoader());
 
                     prepareObjectDeployment(val.value(cacheObjCtx, false), ctx);
                 }

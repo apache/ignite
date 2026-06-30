@@ -40,19 +40,19 @@ public class TestMarshalledMessageMarshaller implements MessageMarshaller<TestMa
     }
 
     /** */
-    @Override public void prepareMarshal(TestMarshalledMessage msg, GridKernalContext kctx, CacheObjectContext nested) throws IgniteCheckedException {
+    @Override public void marshal(TestMarshalledMessage msg, GridKernalContext kctx, CacheObjectContext nested) throws IgniteCheckedException {
         if (msg.data != null && msg.dataBytes == null)
             msg.dataBytes = U.marshal(marshaller, msg.data);
     }
 
     /** */
-    @Override public void finishUnmarshal(TestMarshalledMessage msg, GridKernalContext kctx, CacheObjectContext nested, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void unmarshal(TestMarshalledMessage msg, GridKernalContext kctx, CacheObjectContext nested, ClassLoader clsLdr) throws IgniteCheckedException {
         if (msg.dataBytes != null)
             msg.data = U.unmarshal(marshaller, msg.dataBytes, clsLdr);
     }
 
     /** */
-    @Override public void finishUnmarshal(TestMarshalledMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
+    @Override public void unmarshal(TestMarshalledMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
         if (msg.dataBytes != null)
             msg.data = U.unmarshal(marshaller, msg.dataBytes, U.resolveClassLoader(kctx.config()));
     }

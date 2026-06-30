@@ -192,7 +192,7 @@ public class GridCacheEntryInfo implements MarshallableMessage, CacheIdAware {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+    @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
         if (expireTime == 0)
             expireTime = -1;
         else {
@@ -204,7 +204,7 @@ public class GridCacheEntryInfo implements MarshallableMessage, CacheIdAware {
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         long remaining = expireTime;
 
         expireTime = remaining < 0 ? 0 : U.currentTimeMillis() + remaining;

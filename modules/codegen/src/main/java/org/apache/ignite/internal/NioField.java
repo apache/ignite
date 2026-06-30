@@ -23,7 +23,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Marks a {@link Message}-typed {@link Order @Order} field whose {@code finishUnmarshal} runs in the NIO thread
+ * Marks a {@link Message}-typed {@link Order @Order} field whose {@code unmarshalNio} runs in the NIO thread
  * rather than being deferred to the worker thread.
  */
 @Retention(RetentionPolicy.CLASS)

@@ -1072,7 +1072,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                     }
                 }
 
-                MessageMarshaller.finishUnmarshal(
+                MessageMarshaller.unmarshal(
                     cctx.kernalContext().messageFactory(), e, cctx.kernalContext(), null, cctx.deploy().globalLoader());
 
                 Collection<CacheEntryEvent<? extends K, ? extends V>> evts = handleEvent(ctx, e);

@@ -84,13 +84,13 @@ public class DistributedMetaStorageUpdateMessage extends DiscoveryCustomMessage 
     }
 
     /** @param marsh Marshaller. */
-    public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+    public void marshal(Marshaller marsh) throws IgniteCheckedException {
         if (val != null && valBytes == null)
             valBytes = U.marshal(marsh, val);
     }
 
     /** @param marsh Marshaller. */
-    public void finishUnmarshal(Marshaller marsh) throws IgniteCheckedException {
+    public void unmarshal(Marshaller marsh) throws IgniteCheckedException {
         // No-op.
     }
 

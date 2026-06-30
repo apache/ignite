@@ -38,8 +38,8 @@ import org.junit.Test;
  * Verifies the marshal-once-before-fan-out contract of the collection {@code send}: a message broadcast to N remote
  * nodes is marshalled <b>exactly once</b> (prepared before the fan-out and reused for every destination), not once per
  * destination. A counting marshaller is registered for a test message; broadcasting it to {@link #RMT_CNT} remote nodes
- * must produce {@code RMT_CNT} sends but a single {@code prepareMarshal}. Counting the sends keeps the check honest (a
- * lone send would also marshal once). The unmarshal-once counterpart lives in {@link MessageFinishUnmarshalOnceTest}.
+ * must produce {@code RMT_CNT} sends but a single {@code marshal}. Counting the sends keeps the check honest (a
+ * lone send would also marshal once). The unmarshal-once counterpart lives in {@link MessageUnmarshalOnceTest}.
  */
 public class MessageMarshalOnceTest extends GridCommonAbstractTest {
     /** Direct type for the test message, past the core range. */
@@ -48,7 +48,7 @@ public class MessageMarshalOnceTest extends GridCommonAbstractTest {
     /** Number of remote destinations to broadcast to (a single marshal must serve all of them). */
     private static final int RMT_CNT = 4;
 
-    /** Counts {@code prepareMarshal} invocations of {@link MarshalOnceCheckMessage} across the JVM. */
+    /** Counts {@code marshal} invocations of {@link MarshalOnceCheckMessage} across the JVM. */
     private static final AtomicInteger MARSHAL_CNT = new AtomicInteger();
 
     /** {@inheritDoc} */
@@ -128,21 +128,21 @@ public class MessageMarshalOnceTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Marshaller that only counts {@code prepareMarshal} calls — no idempotency guard, so it counts raw invocations. */
+    /** Marshaller that only counts {@code marshal} calls — no idempotency guard, so it counts raw invocations. */
     private static class CountingMarshaller implements MessageMarshaller<MarshalOnceCheckMessage> {
         /** {@inheritDoc} */
-        @Override public void prepareMarshal(MarshalOnceCheckMessage msg, GridKernalContext kctx, CacheObjectContext nested) {
+        @Override public void marshal(MarshalOnceCheckMessage msg, GridKernalContext kctx, CacheObjectContext nested) {
             MARSHAL_CNT.incrementAndGet();
         }
 
         /** {@inheritDoc} */
-        @Override public void finishUnmarshal(MarshalOnceCheckMessage msg, GridKernalContext kctx, CacheObjectContext nested,
+        @Override public void unmarshal(MarshalOnceCheckMessage msg, GridKernalContext kctx, CacheObjectContext nested,
             ClassLoader clsLdr) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void finishUnmarshal(MarshalOnceCheckMessage msg, GridKernalContext kctx) {
+        @Override public void unmarshal(MarshalOnceCheckMessage msg, GridKernalContext kctx) {
             // No-op.
         }
     }

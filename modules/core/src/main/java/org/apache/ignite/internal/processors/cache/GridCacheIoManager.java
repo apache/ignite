@@ -1552,7 +1552,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     log.debug("Set P2P context [senderId=" + nodeId + ", msg=" + cacheMsg + ']');
             }
 
-            MessageMarshaller.finishUnmarshal(cctx.kernalContext().messageFactory(),
+            MessageMarshaller.unmarshal(cctx.kernalContext().messageFactory(),
                 cacheMsg, cctx.kernalContext(), null, cctx.deploy().globalLoader());
         }
         catch (IgniteCheckedException e) {

@@ -1189,12 +1189,12 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
             byte plc = initMsg.policy();
 
-            MessageMarshaller.finishUnmarshalNio(ctx.messageFactory(), initMsg, ctx);
+            MessageMarshaller.unmarshalNio(ctx.messageFactory(), initMsg, ctx);
 
             pools.poolForPolicy(plc).execute(new Runnable() {
                 @Override public void run() {
                     try {
-                        MessageMarshaller.finishUnmarshal(ctx.messageFactory(), initMsg, ctx);
+                        MessageMarshaller.unmarshal(ctx.messageFactory(), initMsg, ctx);
 
                         processOpenedChannel(initMsg.topic(), rmtNodeId, (SessionChannelMessage)initMsg.message(),
                             (SocketChannel)channel);
@@ -1224,7 +1224,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         assert nodeId != null;
         assert msg != null;
 
-        MessageMarshaller.finishUnmarshalNio(ctx.messageFactory(), msg, ctx);
+        MessageMarshaller.unmarshalNio(ctx.messageFactory(), msg, ctx);
 
         Lock busyLock0 = busyLock.readLock();
 
@@ -1467,19 +1467,19 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         if (lsnr == null)
             return;
 
-        finishUnmarshalPayload(msg);
+        unmarshalPayload(msg);
 
         invokeListener(msg.policy(), lsnr, nodeId, msg.message(), secSubjId(msg));
     }
 
     /** */
-    private void finishUnmarshalPayload(GridIoMessage msg) {
+    private void unmarshalPayload(GridIoMessage msg) {
         // Unmarshalled by GridCacheIoManager with the deployment loader; the loader here can't see its peer classes.
         if (msg.message() instanceof GridCacheMessage)
             return;
 
         try {
-            MessageMarshaller.finishUnmarshal(ctx.messageFactory(), msg.message(), ctx);
+            MessageMarshaller.unmarshal(ctx.messageFactory(), msg.message(), ctx);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to unmarshal message payload", e);
@@ -1961,7 +1961,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             false
         );
 
-        MessageMarshaller.prepareMarshal(ctx.messageFactory(), ioMsg, ctx, null);
+        MessageMarshaller.marshal(ctx.messageFactory(), ioMsg, ctx, null);
 
         try {
             return ((TcpCommunicationSpi)(CommunicationSpi)getSpi()).openChannel(node, ioMsg);
@@ -2031,7 +2031,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                     ackC.apply(null);
             }
             else {
-                MessageMarshaller.prepareMarshal(ctx.messageFactory(), ioMsg, ctx, null);
+                MessageMarshaller.marshal(ctx.messageFactory(), ioMsg, ctx, null);
                 
                 sendMarshalled(node, ioMsg, topic, msg, plc, ackC);
             }
@@ -2083,7 +2083,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                         if (ioMsg == null) {
                             ioMsg = createGridIoMessage(topic, msg, plc, ordered, timeout, skipOnTimeout);
 
-                            MessageMarshaller.prepareMarshal(ctx.messageFactory(), ioMsg, ctx, null);
+                            MessageMarshaller.marshal(ctx.messageFactory(), ioMsg, ctx, null);
                         }
 
                         sendMarshalled(node, ioMsg, topic, msg, plc, null);
@@ -3860,7 +3860,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
                         MTC.span().addTag(SpanTags.MESSAGE, () -> traceName(fmc.message));
 
-                        finishUnmarshalPayload(mc.message);
+                        unmarshalPayload(mc.message);
 
                         invokeListener(mc.message.policy(), lsnr, nodeId, mc.message.message(), secSubjId(mc.message));
                     }

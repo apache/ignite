@@ -418,11 +418,11 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
                     oldVal = (CacheObject)cctx.unwrapTemporary(oldVal);
 
                     if (oldVal != null)
-                        oldVal.finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
+                        oldVal.unmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
                 }
 
                 if (newVal != null)
-                    newVal.finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
+                    newVal.unmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
 
                 initialized = true;
             }
@@ -484,7 +484,7 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
                         oldVal = (CacheObject)cctx.unwrapTemporary(oldVal);
 
                     if (oldVal != null)
-                        oldVal.finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
+                        oldVal.unmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
 
                     initialized = true;
                 }

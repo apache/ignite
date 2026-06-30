@@ -95,7 +95,7 @@ public class DiscoveryMessageParser {
         msgWriter.setBuffer(msgBuf);
 
         try {
-            MessageMarshaller.prepareMarshal(msgFactory, m, ((IgniteEx)spi.ignite()).context(), null);
+            MessageMarshaller.marshal(msgFactory, m, ((IgniteEx)spi.ignite()).context(), null);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to marshal discovery message", e);
@@ -142,7 +142,7 @@ public class DiscoveryMessageParser {
         while (!finished);
 
         try {
-            MessageMarshaller.finishUnmarshal(msgFactory, msg, ((IgniteEx)spi.ignite()).context());
+            MessageMarshaller.unmarshal(msgFactory, msg, ((IgniteEx)spi.ignite()).context());
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to unmarshal discovery message", e);

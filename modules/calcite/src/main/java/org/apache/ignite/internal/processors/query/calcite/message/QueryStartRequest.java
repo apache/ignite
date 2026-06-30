@@ -212,13 +212,13 @@ public class QueryStartRequest implements MarshallableMessage, ExecutionContextA
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+    @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
         if (paramsBytes == null && params != null)
             paramsBytes = U.marshal(marsh, params);
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         if (params == null && paramsBytes != null)
             params = U.unmarshal(marsh, paramsBytes, clsLdr);
 

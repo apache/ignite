@@ -47,8 +47,8 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
  *     <li>{@link MessageSerializer#readFrom(org.apache.ignite.plugin.extensions.communication.MessageFactory,
  *         org.apache.ignite.plugin.extensions.communication.Message,
  *         org.apache.ignite.plugin.extensions.communication.MessageReader)}</li>
- *     <li>{@link MessageMarshaller#prepareMarshal}</li>
- *     <li>{@link MessageMarshaller#finishUnmarshal}</li>
+ *     <li>{@link MessageMarshaller#marshal}</li>
+ *     <li>{@link MessageMarshaller#unmarshal}</li>
  *     <li>static {@code GridCacheMessageDeployer.prepareDeployment(factory, msg, ctx)}</li>
  * </ul>
  *
@@ -107,12 +107,12 @@ public class MessageSerializationArchitectureTest {
     }
 
     /**
-     * Instance methods of {@link MessageMarshaller} ({@code prepareMarshal}, {@code finishUnmarshal}) must
+     * Instance methods of {@link MessageMarshaller} ({@code marshal}, {@code unmarshal}) must
      * only be called from within classes that themselves implement {@link MessageMarshaller} — i.e. generated
      * marshallers and hand-written wrappers that delegate to the underlying marshaller.
      *
      * Everyone else must use the static
-     * {@link MessageMarshaller#prepareMarshal} and {@link MessageMarshaller#finishUnmarshal} methods.
+     * {@link MessageMarshaller#marshal} and {@link MessageMarshaller#unmarshal} methods.
      */
     @Test
     public void marshallerInstanceMethodsOnlyCalledFromImplementations() {
@@ -124,8 +124,8 @@ public class MessageSerializationArchitectureTest {
                 .callMethodWhere(TO_INSTANCE_METHOD
                         .and(target(HasOwner.Predicates.With.owner(assignableTo(MessageMarshaller.class))))
                 )
-            .because("Use static MessageMarshaller.prepareMarshal(factory, ...) and " +
-                "MessageMarshaller.finishUnmarshal(factory, ...) instead of calling instance methods directly.");
+            .because("Use static MessageMarshaller.marshal(factory, ...) and " +
+                "MessageMarshaller.unmarshal(factory, ...) instead of calling instance methods directly.");
 
         rule.check(classes);
     }

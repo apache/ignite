@@ -37,63 +37,63 @@ public class TestMessageMarshaller implements MessageMarshaller<TestMessage> {
     }
 
     /** */
-    @Override public void prepareMarshal(TestMessage msg, GridKernalContext kctx, CacheObjectContext nested) throws IgniteCheckedException {
+    @Override public void marshal(TestMessage msg, GridKernalContext kctx, CacheObjectContext nested) throws IgniteCheckedException {
         CacheObjectContext ctx = nested;
 
         if (msg.ver != null)
-            MessageMarshaller.prepareMarshal(kctx.messageFactory(), msg.ver, kctx, ctx);
+            MessageMarshaller.marshal(kctx.messageFactory(), msg.ver, kctx, ctx);
 
         if (msg.verArr != null) {
             for (GridCacheVersion e : msg.verArr) {
                 if (e != null)
-                    MessageMarshaller.prepareMarshal(kctx.messageFactory(), e, kctx, ctx);
+                    MessageMarshaller.marshal(kctx.messageFactory(), e, kctx, ctx);
             }
         }
 
         if (msg.keyCacheObject != null && ctx != null)
-            msg.keyCacheObject.prepareMarshal(ctx);
+            msg.keyCacheObject.marshal(ctx);
 
         if (msg.cacheObject != null && ctx != null)
-            msg.cacheObject.prepareMarshal(ctx);
+            msg.cacheObject.marshal(ctx);
 
         if (msg.ver2 != null)
-            MessageMarshaller.prepareMarshal(kctx.messageFactory(), msg.ver2, kctx, ctx);
+            MessageMarshaller.marshal(kctx.messageFactory(), msg.ver2, kctx, ctx);
     }
 
     /** */
-    @Override public void finishUnmarshal(TestMessage msg, GridKernalContext kctx, CacheObjectContext nested, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void unmarshal(TestMessage msg, GridKernalContext kctx, CacheObjectContext nested, ClassLoader clsLdr) throws IgniteCheckedException {
         CacheObjectContext ctx = nested;
 
         if (msg.verArr != null) {
             for (GridCacheVersion e : msg.verArr) {
                 if (e != null)
-                    MessageMarshaller.finishUnmarshal(kctx.messageFactory(), e, kctx, ctx, clsLdr);
+                    MessageMarshaller.unmarshal(kctx.messageFactory(), e, kctx, ctx, clsLdr);
             }
         }
 
         if (msg.keyCacheObject != null && ctx != null)
-            msg.keyCacheObject.finishUnmarshal(ctx, clsLdr);
+            msg.keyCacheObject.unmarshal(ctx, clsLdr);
 
         if (msg.cacheObject != null && ctx != null)
-            msg.cacheObject.finishUnmarshal(ctx, clsLdr);
+            msg.cacheObject.unmarshal(ctx, clsLdr);
     }
 
     /** */
-    @Override public void finishUnmarshal(TestMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
+    @Override public void unmarshal(TestMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
         if (msg.verArr != null) {
             for (GridCacheVersion e : msg.verArr) {
                 if (e != null)
-                    MessageMarshaller.finishUnmarshal(kctx.messageFactory(), e, kctx);
+                    MessageMarshaller.unmarshal(kctx.messageFactory(), e, kctx);
             }
         }
     }
 
     /** */
-    @Override public void finishUnmarshalNio(TestMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
+    @Override public void unmarshalNio(TestMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
         if (msg.ver != null)
-            MessageMarshaller.finishUnmarshal(kctx.messageFactory(), msg.ver, kctx);
+            MessageMarshaller.unmarshal(kctx.messageFactory(), msg.ver, kctx);
 
         if (msg.ver2 != null)
-            MessageMarshaller.finishUnmarshal(kctx.messageFactory(), msg.ver2, kctx);
+            MessageMarshaller.unmarshal(kctx.messageFactory(), msg.ver2, kctx);
     }
 }

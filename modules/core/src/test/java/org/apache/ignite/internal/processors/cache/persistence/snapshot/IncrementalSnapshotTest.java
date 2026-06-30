@@ -432,7 +432,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
                     ErrorMessage em = new ErrorMessage(new IgniteException("Test exception."));
 
                     try {
-                        em.prepareMarshal(jdk());
+                        em.marshal(jdk());
                     }
                     catch (IgniteCheckedException e) {
                         throw new RuntimeException(e);

@@ -108,16 +108,16 @@ public class TestMarshallableMessageMarshallableSerializer implements MessageSer
     }
 
     /** */
-    @Override public void prepareMarshal(TestMarshallableMessage msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {
+    @Override public void marshal(TestMarshallableMessage msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {
         GridCacheContext<?, ?> ctx = nested;
 
-        msg.prepareMarshal(marshaller);
+        msg.marshal(marshaller);
     }
 
     /** */
-    @Override public void finishUnmarshal(TestMarshallableMessage msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {
+    @Override public void unmarshal(TestMarshallableMessage msg, GridKernalContext kctx, GridCacheContext<?, ?> nested) throws IgniteCheckedException {
         GridCacheContext<?, ?> ctx = nested;
 
-        msg.finishUnmarshal(marshaller, clsLdr);
+        msg.unmarshal(marshaller, clsLdr);
     }
 }

@@ -22,7 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 /**
  * A {@link GridCacheMessage} with custom deployment logic that cannot be inferred from field types (conditional
  * deployment, non-standard accessors, etc.). The generated {@code *Deployer} calls {@link #prepareDeployment} after
- * its inferred field deployment, mirroring how a generated marshaller calls {@code MarshallableMessage#prepareMarshal}.
+ * its inferred field deployment, mirroring how a generated marshaller calls {@code MarshallableMessage#marshal}.
  */
 public interface DeployableMessage {
     /**

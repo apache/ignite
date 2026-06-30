@@ -54,7 +54,7 @@ public class BlockTcpDiscoverySpi extends TestTcpDiscoverySpi {
         TcpDiscoveryCustomEventMessage cm = (TcpDiscoveryCustomEventMessage)msg;
 
         try {
-            cm.finishUnmarshal(marshaller(), U.gridClassLoader());
+            cm.unmarshal(marshaller(), U.gridClassLoader());
 
             assertNotNull(cm.message());
         }

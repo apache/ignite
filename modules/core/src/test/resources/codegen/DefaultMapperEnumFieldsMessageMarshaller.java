@@ -35,14 +35,14 @@ public class DefaultMapperEnumFieldsMessageMarshaller implements MessageMarshall
     }
 
     /** */
-    @Override public void prepareMarshal(DefaultMapperEnumFieldsMessage msg, GridKernalContext kctx, CacheObjectContext nested) throws IgniteCheckedException {
+    @Override public void marshal(DefaultMapperEnumFieldsMessage msg, GridKernalContext kctx, CacheObjectContext nested) throws IgniteCheckedException {
     }
 
     /** */
-    @Override public void finishUnmarshal(DefaultMapperEnumFieldsMessage msg, GridKernalContext kctx, CacheObjectContext nested, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void unmarshal(DefaultMapperEnumFieldsMessage msg, GridKernalContext kctx, CacheObjectContext nested, ClassLoader clsLdr) throws IgniteCheckedException {
     }
 
     /** */
-    @Override public void finishUnmarshal(DefaultMapperEnumFieldsMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
+    @Override public void unmarshal(DefaultMapperEnumFieldsMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
     }
 }

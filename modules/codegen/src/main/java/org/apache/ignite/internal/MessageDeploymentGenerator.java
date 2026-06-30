@@ -40,7 +40,7 @@ import static org.apache.ignite.internal.systemview.SystemViewRowAttributeWalker
  * nested {@code GridCacheMessage} (whose deployment is delegated). The strategy is inferred entirely from the field type.
  *
  * <p>A message with deployment logic that cannot be inferred from field types implements {@code DeployableMessage};
- * the generated deployer then also delegates to its {@code prepareDeployment}, mirroring {@code prepareMarshal}.
+ * the generated deployer then also delegates to its {@code prepareDeployment}, mirroring {@code marshal}.
  */
 public class MessageDeploymentGenerator extends MessageGenerator {
     /** FQN of GridCacheMessage; hierarchy scan stops here (exclusive). */
@@ -176,7 +176,7 @@ public class MessageDeploymentGenerator extends MessageGenerator {
 
         deploy.addAll(body);
 
-        // Delegate the non-inferable part to the message's own prepareDeployment, mirroring msg.prepareMarshal().
+        // Delegate the non-inferable part to the message's own prepareDeployment, mirroring msg.marshal().
         if (hasCustomDeployment(type)) {
             if (!body.isEmpty())
                 deploy.add(EMPTY);

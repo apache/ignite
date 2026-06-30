@@ -1040,7 +1040,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, MarshallableMessage, 
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+    @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
         boolean transfer = expiryPlc != null && expiryPlc != ctx.expiry();
 
         if (transfer) {
@@ -1052,7 +1052,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, MarshallableMessage, 
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         if (filters == null)
             filters = CU.empty0();
 

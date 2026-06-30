@@ -182,7 +182,7 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     /** */
     protected void prepareUnmarshal(Message msg) throws IgniteCheckedException {
         try {
-            MessageMarshaller.finishUnmarshal(ctx.kernalContext().messageFactory(), msg, ctx.kernalContext(), null, clsLdr);
+            MessageMarshaller.unmarshal(ctx.kernalContext().messageFactory(), msg, ctx.kernalContext(), null, clsLdr);
         }
         catch (Exception e) {
             failureProcessor().process(new FailureContext(FailureType.CRITICAL_ERROR, e));

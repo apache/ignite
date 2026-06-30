@@ -351,7 +351,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+    @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
         if (expiryPlc != null && expiryPlcBytes == null)
             expiryPlcBytes = U.marshal(marsh, new IgniteExternalizableExpiryPolicy(expiryPlc));
         
@@ -365,7 +365,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         if (expiryPlcBytes != null && expiryPlc == null)
             expiryPlc = U.unmarshal(marsh, expiryPlcBytes, clsLdr);
 

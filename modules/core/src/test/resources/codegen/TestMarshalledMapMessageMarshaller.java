@@ -38,7 +38,7 @@ public class TestMarshalledMapMessageMarshaller implements MessageMarshaller<Tes
     }
 
     /** */
-    @Override public void prepareMarshal(TestMarshalledMapMessage msg, GridKernalContext kctx, CacheObjectContext nested) throws IgniteCheckedException {
+    @Override public void marshal(TestMarshalledMapMessage msg, GridKernalContext kctx, CacheObjectContext nested) throws IgniteCheckedException {
         CacheObjectContext ctx = nested;
 
         if (msg.theMap != null && msg.mapKeys == null) {
@@ -49,20 +49,20 @@ public class TestMarshalledMapMessageMarshaller implements MessageMarshaller<Tes
         if (msg.mapKeys != null) {
             for (GridCacheVersion e : (Collection<? extends GridCacheVersion>)msg.mapKeys) {
                 if (e != null)
-                    MessageMarshaller.prepareMarshal(kctx.messageFactory(), e, kctx, ctx);
+                    MessageMarshaller.marshal(kctx.messageFactory(), e, kctx, ctx);
             }
         }
 
         if (msg.mapVals != null) {
             for (GridCacheVersion e : (Collection<? extends GridCacheVersion>)msg.mapVals) {
                 if (e != null)
-                    MessageMarshaller.prepareMarshal(kctx.messageFactory(), e, kctx, ctx);
+                    MessageMarshaller.marshal(kctx.messageFactory(), e, kctx, ctx);
             }
         }
     }
 
     /** */
-    @Override public void finishUnmarshal(TestMarshalledMapMessage msg, GridKernalContext kctx, CacheObjectContext nested, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void unmarshal(TestMarshalledMapMessage msg, GridKernalContext kctx, CacheObjectContext nested, ClassLoader clsLdr) throws IgniteCheckedException {
         CacheObjectContext ctx = nested;
 
         if (msg.mapKeys != null) {
@@ -76,10 +76,10 @@ public class TestMarshalledMapMessageMarshaller implements MessageMarshaller<Tes
                 GridCacheVersion v = valIter.next();
 
                 if (k != null)
-                    MessageMarshaller.finishUnmarshal(kctx.messageFactory(), k, kctx, ctx, clsLdr);
+                    MessageMarshaller.unmarshal(kctx.messageFactory(), k, kctx, ctx, clsLdr);
 
                 if (v != null)
-                    MessageMarshaller.finishUnmarshal(kctx.messageFactory(), v, kctx, ctx, clsLdr);
+                    MessageMarshaller.unmarshal(kctx.messageFactory(), v, kctx, ctx, clsLdr);
 
                 msg.theMap.put(k, v);
             }
@@ -90,18 +90,18 @@ public class TestMarshalledMapMessageMarshaller implements MessageMarshaller<Tes
     }
 
     /** */
-    @Override public void finishUnmarshal(TestMarshalledMapMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
+    @Override public void unmarshal(TestMarshalledMapMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
         if (msg.mapKeys != null) {
             for (GridCacheVersion e : (Collection<? extends GridCacheVersion>)msg.mapKeys) {
                 if (e != null)
-                    MessageMarshaller.finishUnmarshal(kctx.messageFactory(), e, kctx);
+                    MessageMarshaller.unmarshal(kctx.messageFactory(), e, kctx);
             }
         }
 
         if (msg.mapVals != null) {
             for (GridCacheVersion e : (Collection<? extends GridCacheVersion>)msg.mapVals) {
                 if (e != null)
-                    MessageMarshaller.finishUnmarshal(kctx.messageFactory(), e, kctx);
+                    MessageMarshaller.unmarshal(kctx.messageFactory(), e, kctx);
             }
         }
     }

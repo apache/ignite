@@ -61,13 +61,13 @@ public class GridTopicMessage implements MarshallableMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+    @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
         if (ord < 0 && topic != null)
             topicBytes = U.marshal(marsh, topic);
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         if (ord < 0 && topicBytes != null) {
             topic = U.unmarshal(marsh, topicBytes, clsLdr);
 

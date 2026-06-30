@@ -28,7 +28,7 @@ import org.junit.Test;
  * silently turn off and pass every test vacuously. The actual coverage (no real receive path unmarshals an instance
  * twice in the same pass) comes from running the check across the whole suite via {@code GridAbstractTest}.
  */
-public class MessageFinishUnmarshalOnceTest extends GridCommonAbstractTest {
+public class MessageUnmarshalOnceTest extends GridCommonAbstractTest {
     /** The suite-wide guard must be on, so a silently-disabled check cannot pass every test without verifying anything. */
     @Test
     public void testCheckEnabled() {
@@ -59,12 +59,12 @@ public class MessageFinishUnmarshalOnceTest extends GridCommonAbstractTest {
     /** Minimal {@link MarshallableMessage}; only its identity matters to the check. */
     private static class NoopMarshallableMessage implements MarshallableMessage {
         /** {@inheritDoc} */
-        @Override public void prepareMarshal(Marshaller marsh) {
+        @Override public void marshal(Marshaller marsh) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) {
+        @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) {
             // No-op.
         }
     }

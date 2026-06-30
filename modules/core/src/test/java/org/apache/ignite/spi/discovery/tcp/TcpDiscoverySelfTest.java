@@ -2647,7 +2647,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                     try {
                         TcpDiscoveryCustomEventMessage evtMsg = (TcpDiscoveryCustomEventMessage)msg;
 
-                        evtMsg.finishUnmarshal(marshaller(), U.gridClassLoader());
+                        evtMsg.unmarshal(marshaller(), U.gridClassLoader());
 
                         DiscoveryCustomMessage custMsg = U.unwrapCustomMessage(evtMsg.message());
 

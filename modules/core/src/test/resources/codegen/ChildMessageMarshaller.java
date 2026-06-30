@@ -35,14 +35,14 @@ public class ChildMessageMarshaller implements MessageMarshaller<ChildMessage> {
     }
 
     /** */
-    @Override public void prepareMarshal(ChildMessage msg, GridKernalContext kctx, CacheObjectContext nested) throws IgniteCheckedException {
+    @Override public void marshal(ChildMessage msg, GridKernalContext kctx, CacheObjectContext nested) throws IgniteCheckedException {
     }
 
     /** */
-    @Override public void finishUnmarshal(ChildMessage msg, GridKernalContext kctx, CacheObjectContext nested, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void unmarshal(ChildMessage msg, GridKernalContext kctx, CacheObjectContext nested, ClassLoader clsLdr) throws IgniteCheckedException {
     }
 
     /** */
-    @Override public void finishUnmarshal(ChildMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
+    @Override public void unmarshal(ChildMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
     }
 }

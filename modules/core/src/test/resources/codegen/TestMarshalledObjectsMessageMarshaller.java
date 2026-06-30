@@ -41,7 +41,7 @@ public class TestMarshalledObjectsMessageMarshaller implements MessageMarshaller
     }
 
     /** */
-    @Override public void prepareMarshal(TestMarshalledObjectsMessage msg, GridKernalContext kctx, CacheObjectContext nested) throws IgniteCheckedException {
+    @Override public void marshal(TestMarshalledObjectsMessage msg, GridKernalContext kctx, CacheObjectContext nested) throws IgniteCheckedException {
         if (msg.data != null && msg.dataBytes == null) {
             msg.dataBytes = new ArrayList<>(msg.data.size());
 
@@ -51,7 +51,7 @@ public class TestMarshalledObjectsMessageMarshaller implements MessageMarshaller
     }
 
     /** */
-    @Override public void finishUnmarshal(TestMarshalledObjectsMessage msg, GridKernalContext kctx, CacheObjectContext nested, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void unmarshal(TestMarshalledObjectsMessage msg, GridKernalContext kctx, CacheObjectContext nested, ClassLoader clsLdr) throws IgniteCheckedException {
         CacheObjectContext ctx = nested;
 
         if (msg.dataBytes != null) {
@@ -65,6 +65,6 @@ public class TestMarshalledObjectsMessageMarshaller implements MessageMarshaller
     }
 
     /** */
-    @Override public void finishUnmarshal(TestMarshalledObjectsMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
+    @Override public void unmarshal(TestMarshalledObjectsMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
     }
 }

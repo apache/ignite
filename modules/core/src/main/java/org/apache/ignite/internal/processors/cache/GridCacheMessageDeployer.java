@@ -97,7 +97,7 @@ public interface GridCacheMessageDeployer<M extends GridCacheMessage> {
      * Prepares deployment for {@code msg} through its factory-registered deployer (a no-op when {@code msg} is
      * {@code null} — e.g. an absent nested message — or the message has no registered deployer). Single entry point
      * for message deployment: called both by message-sending code and by a generated deployer delegating to a nested
-     * message. Mirrors the static {@code MessageMarshaller#prepareMarshal}.
+     * message. Mirrors the static {@code MessageMarshaller#marshal}.
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
     static void prepareDeployment(MessageFactory factory, @Nullable GridCacheMessage msg, GridCacheSharedContext<?, ?> ctx)

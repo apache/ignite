@@ -975,7 +975,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             reqData.deploymentInfo(dep);
         }
 
-        reqData.prepareMarshal(ctx);
+        reqData.marshal(ctx);
 
         if (!immutableDiscoCustomMsg) {
             StartRoutineDiscoveryMessage msg = new StartRoutineDiscoveryMessage(routineId, reqData, Mode.MUTABLE);
@@ -1342,7 +1342,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         IgniteCheckedException err = null;
 
         try {
-            data.finishUnmarshal(ctx, node.id());
+            data.unmarshal(ctx, node.id());
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to unmarshal start request data [nodeId=" + node.id() +
@@ -1484,7 +1484,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 Exception err = null;
 
                 try {
-                    reqData.finishUnmarshal(ctx, snd.id());
+                    reqData.unmarshal(ctx, snd.id());
                 }
                 catch (IgniteCheckedException e) {
                     err = e;

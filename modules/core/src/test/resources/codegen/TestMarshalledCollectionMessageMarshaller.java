@@ -36,7 +36,7 @@ public class TestMarshalledCollectionMessageMarshaller implements MessageMarshal
     }
 
     /** */
-    @Override public void prepareMarshal(TestMarshalledCollectionMessage msg, GridKernalContext kctx, CacheObjectContext nested) throws IgniteCheckedException {
+    @Override public void marshal(TestMarshalledCollectionMessage msg, GridKernalContext kctx, CacheObjectContext nested) throws IgniteCheckedException {
         CacheObjectContext ctx = nested;
 
         if (msg.keys != null && msg.keysArr == null)
@@ -45,13 +45,13 @@ public class TestMarshalledCollectionMessageMarshaller implements MessageMarshal
         if (msg.keysArr != null) {
             for (GridCacheVersion e : msg.keysArr) {
                 if (e != null)
-                    MessageMarshaller.prepareMarshal(kctx.messageFactory(), e, kctx, ctx);
+                    MessageMarshaller.marshal(kctx.messageFactory(), e, kctx, ctx);
             }
         }
     }
 
     /** */
-    @Override public void finishUnmarshal(TestMarshalledCollectionMessage msg, GridKernalContext kctx, CacheObjectContext nested, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void unmarshal(TestMarshalledCollectionMessage msg, GridKernalContext kctx, CacheObjectContext nested, ClassLoader clsLdr) throws IgniteCheckedException {
         CacheObjectContext ctx = nested;
 
         if (msg.keysArr != null) {
@@ -59,7 +59,7 @@ public class TestMarshalledCollectionMessageMarshaller implements MessageMarshal
 
             for (GridCacheVersion e : msg.keysArr) {
                 if (e != null)
-                    MessageMarshaller.finishUnmarshal(kctx.messageFactory(), e, kctx, ctx, clsLdr);
+                    MessageMarshaller.unmarshal(kctx.messageFactory(), e, kctx, ctx, clsLdr);
 
                 msg.keys.add(e);
             }
@@ -69,11 +69,11 @@ public class TestMarshalledCollectionMessageMarshaller implements MessageMarshal
     }
 
     /** */
-    @Override public void finishUnmarshal(TestMarshalledCollectionMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
+    @Override public void unmarshal(TestMarshalledCollectionMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
         if (msg.keysArr != null) {
             for (GridCacheVersion e : msg.keysArr) {
                 if (e != null)
-                    MessageMarshaller.finishUnmarshal(kctx.messageFactory(), e, kctx);
+                    MessageMarshaller.unmarshal(kctx.messageFactory(), e, kctx);
             }
         }
     }

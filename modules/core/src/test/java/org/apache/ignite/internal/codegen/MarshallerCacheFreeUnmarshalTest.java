@@ -47,31 +47,31 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
  * mutation is the one thing that must not run in both passes, and the generator keeps it in the cache-aware pass only.
  *
  * <p>That is exactly what this rule checks — purely the mutating side effect, not the fields: the cache-free
- * {@code finishUnmarshal(msg, kctx)} overload of every generated marshaller must not call {@link Collection#add} or
+ * {@code unmarshal(msg, kctx)} overload of every generated marshaller must not call {@link Collection#add} or
  * {@link Map#put}. Assignments are left unchecked (they can't break); a generator regression that moved an append into
  * the cache-free pass — a real double-add the runtime check can't see, since it allows both passes — fails here.
  */
-public class MarshallerCacheFreeFinishTest {
+public class MarshallerCacheFreeUnmarshalTest {
     /**
-     * The two-arg, cache-free {@code finishUnmarshal} overload. The cache-aware overload takes a cache context and a
-     * class loader (four args); {@code finishUnmarshalNio} shares the two-arg shape, so the name is matched too.
+     * The two-arg, cache-free {@code unmarshal} overload. The cache-aware overload takes a cache context and a
+     * class loader (four args); {@code unmarshalNio} shares the two-arg shape, so the name is matched too.
      */
-    private static final DescribedPredicate<JavaCodeUnit> CACHE_FREE_FINISH =
-        new DescribedPredicate<>("cache-free finishUnmarshal(msg, kctx)") {
+    private static final DescribedPredicate<JavaCodeUnit> CACHE_FREE_UNMARSHAL =
+        new DescribedPredicate<>("cache-free unmarshal(msg, kctx)") {
             @Override public boolean test(JavaCodeUnit unit) {
                 List<JavaClass> params = unit.getRawParameterTypes();
 
-                return "finishUnmarshal".equals(unit.getName())
+                return "unmarshal".equals(unit.getName())
                     && params.size() == 2
                     && params.get(1).isEquivalentTo(GridKernalContext.class);
             }
         };
 
-    /** A {@link Collection#add} or {@link Map#put} append made from within the cache-free {@code finishUnmarshal}. */
-    private static final DescribedPredicate<JavaMethodCall> CACHE_FREE_FINISH_APPEND =
-        new DescribedPredicate<>("Collection.add / Map.put from the cache-free finishUnmarshal pass") {
+    /** A {@link Collection#add} or {@link Map#put} append made from within the cache-free {@code unmarshal}. */
+    private static final DescribedPredicate<JavaMethodCall> CACHE_FREE_UNMARSHAL_APPEND =
+        new DescribedPredicate<>("Collection.add / Map.put from the cache-free unmarshal pass") {
             @Override public boolean test(JavaMethodCall call) {
-                if (!CACHE_FREE_FINISH.test(call.getOrigin()))
+                if (!CACHE_FREE_UNMARSHAL.test(call.getOrigin()))
                     return false;
 
                 JavaClass owner = call.getTarget().getOwner();
@@ -93,16 +93,16 @@ public class MarshallerCacheFreeFinishTest {
             .importPackages("org.apache.ignite");
     }
 
-    /** The cache-free {@code finishUnmarshal} overload must not append to collections/maps; those are cache-pass only. */
+    /** The cache-free {@code unmarshal} overload must not append to collections/maps; those are cache-pass only. */
     @Test
     public void cacheFreeFinishDoesNotAppendToCollections() {
         ArchRule rule = noClasses()
             .that()
                 .areAssignableTo(MessageMarshaller.class)
             .should()
-                .callMethodWhere(CACHE_FREE_FINISH_APPEND)
+                .callMethodWhere(CACHE_FREE_UNMARSHAL_APPEND)
             .because("@MarshalledCollection/@MarshalledMap appends are non-idempotent and run only in the cache-aware " +
-                "finishUnmarshal pass; an append in the cache-free pass would double-add when both passes run, which " +
+                "unmarshal pass; an append in the cache-free pass would double-add when both passes run, which " +
                 "the mode-aware unmarshal-once check (MessageMarshaller.Dedup) permits and cannot catch.");
 
         rule.check(classes);
