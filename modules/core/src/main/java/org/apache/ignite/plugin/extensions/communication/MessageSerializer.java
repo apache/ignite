@@ -49,7 +49,7 @@ public interface MessageSerializer<M extends Message> {
      * @return Whether message was fully written.
      */
     static <M extends Message> boolean writeTo(MessageFactory factory, M msg, MessageWriter writer) {
-        return ((MessageSerializer<M>)factory.serializer(msg.directType())).writeTo(msg, writer);
+        return resolve(factory, msg).writeTo(msg, writer);
     }
 
     /**
@@ -62,6 +62,12 @@ public interface MessageSerializer<M extends Message> {
      * @return Whether message was fully read.
      */
     static <M extends Message> boolean readFrom(MessageFactory factory, M msg, MessageReader reader) {
-        return ((MessageSerializer<M>)factory.serializer(msg.directType())).readFrom(msg, reader);
+        return resolve(factory, msg).readFrom(msg, reader);
+    }
+
+    /** @return the serializer registered for {@code msg}'s direct type. */
+    @SuppressWarnings("unchecked")
+    private static <M extends Message> MessageSerializer<M> resolve(MessageFactory factory, M msg) {
+        return (MessageSerializer<M>)factory.serializer(msg.directType());
     }
 }

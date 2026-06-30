@@ -87,7 +87,7 @@ public interface MessageMarshaller<M extends Message> {
      */
     static <M extends Message> void finishUnmarshalNio(MessageFactory factory, M msg, GridKernalContext kctx)
         throws IgniteCheckedException {
-        MessageMarshaller<M> m = (MessageMarshaller<M>)factory.marshaller(msg.directType());
+        MessageMarshaller<M> m = resolve(factory, msg);
 
         if (m != null)
             m.finishUnmarshalNio(msg, kctx);
@@ -105,7 +105,7 @@ public interface MessageMarshaller<M extends Message> {
      */
     static <M extends Message> void prepareMarshal(MessageFactory factory, M msg, GridKernalContext kctx,
         @Nullable CacheObjectContext nested) throws IgniteCheckedException {
-        MessageMarshaller<M> m = (MessageMarshaller<M>)factory.marshaller(msg.directType());
+        MessageMarshaller<M> m = resolve(factory, msg);
 
         if (m != null)
             m.prepareMarshal(msg, kctx, nested);
@@ -126,7 +126,7 @@ public interface MessageMarshaller<M extends Message> {
         @Nullable CacheObjectContext nested, ClassLoader clsLdr) throws IgniteCheckedException {
         assert !Dedup.ENABLED || Dedup.firstUnmarshal(msg, true) : "Finish-unmarshalled more than once: " + msg.getClass().getName();
 
-        MessageMarshaller<M> m = (MessageMarshaller<M>)factory.marshaller(msg.directType());
+        MessageMarshaller<M> m = resolve(factory, msg);
 
         if (m != null)
             m.finishUnmarshal(msg, kctx, nested, clsLdr);
@@ -145,10 +145,16 @@ public interface MessageMarshaller<M extends Message> {
         throws IgniteCheckedException {
         assert !Dedup.ENABLED || Dedup.firstUnmarshal(msg, false) : "Finish-unmarshalled more than once: " + msg.getClass().getName();
 
-        MessageMarshaller<M> m = (MessageMarshaller<M>)factory.marshaller(msg.directType());
+        MessageMarshaller<M> m = resolve(factory, msg);
 
         if (m != null)
             m.finishUnmarshal(msg, kctx);
+    }
+
+    /** @return the marshaller registered for {@code msg}'s direct type, or {@code null} if none. */
+    @SuppressWarnings("unchecked")
+    private static <M extends Message> MessageMarshaller<M> resolve(MessageFactory factory, M msg) {
+        return (MessageMarshaller<M>)factory.marshaller(msg.directType());
     }
 
     /**
