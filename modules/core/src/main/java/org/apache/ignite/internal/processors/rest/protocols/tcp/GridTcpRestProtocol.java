@@ -210,7 +210,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
             GridNioFilter[] filters;
 
             if (sslCtx != null) {
-                GridNioSslFilter sslFilter = new GridNioSslFilter(
+                GridNioSslFilter sslFilter = U.sslFilter(
                     sslCtx,
                     cfg.isDirectBuffer(),
                     ByteOrder.nativeOrder(),
