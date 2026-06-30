@@ -155,25 +155,17 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
     }
 
     /** */
-    protected void stopGridAndChangeBaseline(int nodeIdx) {
+    protected void stopGridAndChangeBaseline(int nodeIdx) throws Exception {
         stopGrid(nodeIdx);
 
         if (persist) {
-            // Wait for topology to stabilize before setting new baseline to avoid race condition
-            // where baseline is set while discovery messages about the stopped node are still propagating.
-            try {
-                awaitPartitionMapExchange();
-            }
-            catch (InterruptedException ignored) {
-                // No-op.
-            }
+            // Wait for exchange to complete and all local partitions to reach OWNING state
+            // BEFORE changing baseline. If baseline is changed while partitions are still MOVING,
+            // the new exchange will detect them as lost (no owners yet) and trigger recovery scan.
+            awaitPartitionMapExchange(true, false, null);
 
+            // Now safe to update baseline without triggering lost partition detection.
             F.first(G.allGrids()).cluster().setBaselineTopology(F.first(G.allGrids()).cluster().topologyVersion());
-
-            // setBaselineTopology detects lost partitions but does NOT reset them.
-            // Reset them so owners are restored to OWNING state (awaitPartitionMapExchange relies on this).
-            for (Ignite grid : G.allGrids())
-                grid.resetLostPartitions(((IgniteEx)grid).context().cache().cacheNames());
         }
 
         try {
