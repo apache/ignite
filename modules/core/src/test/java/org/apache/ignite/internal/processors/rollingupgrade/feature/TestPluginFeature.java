@@ -17,24 +17,16 @@
 
 package org.apache.ignite.internal.processors.rollingupgrade.feature;
 
-import java.util.Objects;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.S;
-
-/** Represents an implementation of {@link IgniteFeature} used to define incompatible changes in Ignite core functionality. */
-public class IgniteCoreFeature implements IgniteFeature {
+/** */
+public class TestPluginFeature implements IgniteFeature {
     /** */
-    public static final String COMPONENT_NAME = "core";
+    public static final String COMPONENT_NAME = "plugin";
 
     /** */
-    @GridToStringInclude
     private final int id;
 
     /** */
-    public IgniteCoreFeature(int id) {
-        A.ensure(id >= 0, "Feature ID must be non-negative");
-
+    public TestPluginFeature(int id) {
         this.id = id;
     }
 
@@ -46,28 +38,5 @@ public class IgniteCoreFeature implements IgniteFeature {
     /** {@inheritDoc} */
     @Override public String componentName() {
         return COMPONENT_NAME;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
-            return true;
-
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        IgniteCoreFeature that = (IgniteCoreFeature)o;
-
-        return id == that.id;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return Objects.hash(id);
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(IgniteCoreFeature.class, this);
     }
 }

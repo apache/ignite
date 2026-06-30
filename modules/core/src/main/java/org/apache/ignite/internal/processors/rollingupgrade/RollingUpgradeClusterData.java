@@ -17,13 +17,14 @@
 
 package org.apache.ignite.internal.processors.rollingupgrade;
 
+import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteProductFeatures;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteComponentFeatures;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
-public class RollingUpgradeNodeData implements Message {
+public class RollingUpgradeClusterData implements Message {
     /** */
     @Order(0)
     boolean isVersionUpgradeEnabled;
@@ -38,19 +39,19 @@ public class RollingUpgradeNodeData implements Message {
 
     /** */
     @Order(3)
-    IgniteProductFeatures activeFeatures;
+    Collection<IgniteComponentFeatures> activeFeatures;
 
     /** */
-    public RollingUpgradeNodeData() {
+    public RollingUpgradeClusterData() {
         // No-op.
     }
 
     /** */
-    public RollingUpgradeNodeData(
+    public RollingUpgradeClusterData(
         boolean isVersionUpgradeEnabled,
         UUID curFinalizeProcId,
         boolean isNodeFenceActive,
-        IgniteProductFeatures activeFeatures
+        Collection<IgniteComponentFeatures> activeFeatures
     ) {
         this.isVersionUpgradeEnabled = isVersionUpgradeEnabled;
         this.curFinalizeProcId = curFinalizeProcId;
