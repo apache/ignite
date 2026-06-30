@@ -2033,7 +2033,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
     }
 
     /** @return A {@link GridIoMessage} wrapper for {@code msg}. */
-    private GridIoMessage createGridIoMessage(
+    public GridIoMessage createGridIoMessage(
         Object topic,
         Message msg,
         byte plc,

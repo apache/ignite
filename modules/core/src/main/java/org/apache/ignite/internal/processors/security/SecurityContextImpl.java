@@ -27,7 +27,12 @@ import org.apache.ignite.plugin.security.SecuritySubject;
 import org.apache.ignite.plugin.security.SecuritySubjectType;
 import org.jetbrains.annotations.Nullable;
 
-/** Represents {@link SecurityContext} implementation that ignores any security permission checks. */
+/**
+ * Represents {@link SecurityContext} implementation that ignores any security permission checks and is able to transfer
+ * id of {@link SecuritySubject} as a {@link Message}.
+ *
+ * @see #SecurityContextImpl(UUID)
+ */
 public class SecurityContextImpl implements SecurityContext, Message, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -44,7 +49,7 @@ public class SecurityContextImpl implements SecurityContext, Message, Serializab
         // No-op.
     }
 
-    /** Constructor to be a {@link Message} only. */
+    /** Constructor to be a {@link Message} only. Doesn't suppose working with {@link #subject()}. */
     public SecurityContextImpl(UUID subjId) {
         this.subjId = subjId;
     }
