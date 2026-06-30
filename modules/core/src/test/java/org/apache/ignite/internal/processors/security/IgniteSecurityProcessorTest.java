@@ -23,11 +23,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteDiagnosticRequest;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
-import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.security.impl.TestSecuritySubject;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.Scope;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -70,8 +68,6 @@ public class IgniteSecurityProcessorTest extends AbstractSecurityTest {
 
         getSpiMethod.setAccessible(true);
 
-        TcpCommunicationSpi spi = (TcpCommunicationSpi)getSpiMethod.invoke(cli.context().io());
-
         LogListener logPattern = LogListener
             .matches(s -> s.contains("Failed to obtain a security context."))
             .times(1)
@@ -82,9 +78,7 @@ public class IgniteSecurityProcessorTest extends AbstractSecurityTest {
         SecurityContextImpl testSecCtx = new SecurityContextImpl(new TestSecuritySubject().setId(UUID.randomUUID()));
 
         try (Scope ignored = OperationContext.set(IgniteSecurityProcessor.SEC_CTX_ATTR, testSecCtx)) {
-            GridIoMessage msg = cli.context().io().createGridIoMessage(TOPIC_CACHE, new IgniteDiagnosticRequest(), PUBLIC_POOL, false, 0, false);
-
-            spi.sendMessage(srv.localNode(), msg);
+            cli.context().io().sendToGridTopic(srv.localNode(), TOPIC_CACHE, new IgniteDiagnosticRequest(), PUBLIC_POOL);
         }
 
         GridTestUtils.waitForCondition(logPattern::check, getTestTimeout());
