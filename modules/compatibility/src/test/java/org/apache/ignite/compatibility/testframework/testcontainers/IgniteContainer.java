@@ -192,7 +192,7 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
     }
 
     /** In-place upgrade inside Docker: graceful stop → swap libs → restart. */
-    public void upgradeAndRestart(int nodeCnt) throws Exception {
+    public void upgradeAndRestart() throws Exception {
         stopGraceful();
 
         restartWithTargetLibs(TARGET_LIBS_DIR);

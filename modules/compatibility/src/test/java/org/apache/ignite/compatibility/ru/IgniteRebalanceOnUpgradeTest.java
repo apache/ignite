@@ -180,7 +180,7 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
             log.info(">>> Upgrade node=" + con.consistentId() + " (mode=" + UPGRADE_MODE + ")");
 
             if (UPGRADE_MODE == UpgradeMode.DOCKER)
-                con.upgradeAndRestart(srcContainers.size());
+                con.upgradeAndRestart();
             else
                 upgradeLocally(con, i);
         }
