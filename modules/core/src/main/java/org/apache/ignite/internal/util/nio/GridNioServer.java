@@ -47,6 +47,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.LongConsumer;
+import java.util.function.LongSupplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCommonsSystemProperties;
 import org.apache.ignite.IgniteException;
@@ -55,7 +57,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.odbc.ClientMessage;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
@@ -253,13 +254,13 @@ public class GridNioServer<T> {
     @Nullable private final MetricRegistryImpl mreg;
 
     /** Received bytes count metric. */
-    @Nullable private final LongAdderMetric rcvdBytesCntMetric;
+    @Nullable private final LongConsumer rcvdBytesCntMetric;
 
     /** Sent bytes count metric. */
-    @Nullable private final LongAdderMetric sentBytesCntMetric;
+    @Nullable private final LongConsumer sentBytesCntMetric;
 
     /** Outbound messages queue size. */
-    @Nullable private final LongAdderMetric outboundMessagesQueueSizeMetric;
+    @Nullable private final LongSupplier outboundMessagesQueueSizeMetric;
 
     /** Sessions. */
     private final GridConcurrentHashSet<GridSelectorNioSessionImpl> sessions = new GridConcurrentHashSet<>();
@@ -464,15 +465,15 @@ public class GridNioServer<T> {
         this.mreg = mreg;
 
         rcvdBytesCntMetric = mreg == null ?
-            null : mreg.longAdderMetric(RECEIVED_BYTES_METRIC_NAME, RECEIVED_BYTES_METRIC_DESC);
+            null : mreg.longAdderMetric(RECEIVED_BYTES_METRIC_NAME, RECEIVED_BYTES_METRIC_DESC)::add;
 
         sentBytesCntMetric = mreg == null ?
-            null : mreg.longAdderMetric(SENT_BYTES_METRIC_NAME, SENT_BYTES_METRIC_DESC);
+            null : mreg.longAdderMetric(SENT_BYTES_METRIC_NAME, SENT_BYTES_METRIC_DESC)::add;
 
         outboundMessagesQueueSizeMetric = mreg == null ? null : mreg.longAdderMetric(
             OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME,
             OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_DESC
-        );
+        )::value;
 
         if (mreg != null) {
             mreg.register(SESSIONS_CNT_METRIC_NAME, sessions::size, "Active TCP sessions count.");
@@ -1249,7 +1250,7 @@ public class GridNioServer<T> {
                 log.trace("Bytes received [sockCh=" + sockCh + ", cnt=" + cnt + ']');
 
             if (rcvdBytesCntMetric != null)
-                rcvdBytesCntMetric.add(cnt);
+                rcvdBytesCntMetric.accept(cnt);
 
             ses.bytesReceived(cnt);
 
@@ -1316,7 +1317,7 @@ public class GridNioServer<T> {
                         span.addTag(SOCKET_WRITE_BYTES, () -> Integer.toString(cnt));
 
                         if (sentBytesCntMetric != null)
-                            sentBytesCntMetric.add(cnt);
+                            sentBytesCntMetric.accept(cnt);
 
                         ses.bytesSent(cnt);
                     }
@@ -1418,7 +1419,7 @@ public class GridNioServer<T> {
                 return;
 
             if (rcvdBytesCntMetric != null)
-                rcvdBytesCntMetric.add(cnt);
+                rcvdBytesCntMetric.accept(cnt);
 
             ses.bytesReceived(cnt);
             onRead(cnt);
@@ -1491,7 +1492,7 @@ public class GridNioServer<T> {
                     int cnt = sockCh.write(sslNetBuf);
 
                     if (sentBytesCntMetric != null)
-                        sentBytesCntMetric.add(cnt);
+                        sentBytesCntMetric.accept(cnt);
 
                     ses.bytesSent(cnt);
 
@@ -1578,7 +1579,7 @@ public class GridNioServer<T> {
                             log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
 
                         if (sentBytesCntMetric != null)
-                            sentBytesCntMetric.add(cnt);
+                            sentBytesCntMetric.accept(cnt);
 
                         ses.bytesSent(cnt);
                     }
@@ -1687,7 +1688,7 @@ public class GridNioServer<T> {
                 int cnt = sockCh.write(buf);
 
                 if (sentBytesCntMetric != null)
-                    sentBytesCntMetric.add(cnt);
+                    sentBytesCntMetric.accept(cnt);
 
                 ses.bytesSent(cnt);
 
@@ -1778,7 +1779,7 @@ public class GridNioServer<T> {
                     log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
 
                 if (sentBytesCntMetric != null)
-                    sentBytesCntMetric.add(cnt);
+                    sentBytesCntMetric.accept(cnt);
 
                 ses.bytesSent(cnt);
                 onWrite(cnt);
@@ -3066,7 +3067,7 @@ public class GridNioServer<T> {
         if (outboundMessagesQueueSizeMetric == null)
             return -1;
 
-        return (int)outboundMessagesQueueSizeMetric.value();
+        return (int)outboundMessagesQueueSizeMetric.getAsLong();
     }
 
     /**
