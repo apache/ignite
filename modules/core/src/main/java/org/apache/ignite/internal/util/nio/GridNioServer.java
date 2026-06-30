@@ -249,14 +249,17 @@ public class GridNioServer<T> {
     /** Whether direct mode is used. */
     private final boolean directMode;
 
-    /** */
-    @Nullable private final MetricRegistryImpl mreg;
-
     /** Received bytes count metric. */
     @Nullable private final LongConsumer rcvdBytesCntMetric;
 
     /** Sent bytes count metric. */
     @Nullable private final LongConsumer sentBytesCntMetric;
+
+    /** Per-session outbound messages queue size metric. */
+    @Nullable private final LongConsumer outboundMessagesQueueSizeMetric;
+
+    /** Per-session maximum outbound messages queue size metric. */
+    @Nullable private final LongConsumer maxMessagesQueueSizeMetric;
 
     /** Sessions. */
     private final GridConcurrentHashSet<GridSelectorNioSessionImpl> sessions = new GridConcurrentHashSet<>();
@@ -458,13 +461,17 @@ public class GridNioServer<T> {
 
         this.balancer = balancer0;
 
-        this.mreg = mreg;
-
         rcvdBytesCntMetric = mreg == null ?
             null : mreg.longAdderMetric(RECEIVED_BYTES_METRIC_NAME, RECEIVED_BYTES_METRIC_DESC)::add;
 
         sentBytesCntMetric = mreg == null ?
             null : mreg.longAdderMetric(SENT_BYTES_METRIC_NAME, SENT_BYTES_METRIC_DESC)::add;
+
+        outboundMessagesQueueSizeMetric = mreg == null ? null : mreg.longAdderMetric(
+            OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME, OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_DESC)::add;
+
+        maxMessagesQueueSizeMetric = mreg == null ? null : mreg.maxValueMetric(
+            MAX_MESSAGES_QUEUE_SIZE_METRIC_NAME, MAX_MESSAGES_QUEUE_SIZE_METRIC_DESC, 60_000, 5)::update;
 
         if (mreg != null) {
             mreg.register(SESSIONS_CNT_METRIC_NAME, sessions::size, "Active TCP sessions count.");
@@ -2774,10 +2781,8 @@ public class GridNioServer<T> {
                     (InetSocketAddress)sockCh.getRemoteAddress(),
                     fut.accepted(),
                     sndQueueLimit,
-                    mreg == null ? null : mreg.longAdderMetric(
-                        OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME, OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_DESC)::add,
-                    mreg == null ? null : mreg.maxValueMetric(
-                        MAX_MESSAGES_QUEUE_SIZE_METRIC_NAME, MAX_MESSAGES_QUEUE_SIZE_METRIC_DESC, 60_000, 5)::update,
+                    outboundMessagesQueueSizeMetric,
+                    maxMessagesQueueSizeMetric,
                     writeBuf,
                     readBuf);
 
