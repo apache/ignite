@@ -33,40 +33,6 @@ public interface MessageFactory {
      *
      * @param directType Direct type.
      * @param supplier Message factory.
-     * @throws IgniteException In case of attempt to register message with direct type which is already registered.
-     * @throws IllegalStateException On any invocation of this method when class which implements this interface
-     * is alredy constructed.
-     * @deprecated Use {@link #register(short, Supplier, MessageSerializer)} instead.
-     */
-    @Deprecated(forRemoval = true)
-    default void register(short directType, Supplier<Message> supplier) throws IgniteException {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Register message factory with given direct type. All messages must be registered during construction
-     * of class which implements this interface. Any invocation of this method after initialization is done must
-     * throw {@link IllegalStateException} exception.
-     *
-     * @param directType Direct type.
-     * @param supplier Message factory.
-     * @throws IgniteException In case of attempt to register message with direct type which is already registered.
-     * @throws IllegalStateException On any invocation of this method when class which implements this interface
-     * is alredy constructed.
-     * @deprecated Use {@link #register(int, Supplier, MessageSerializer)} instead.
-     */
-    @Deprecated(forRemoval = true)
-    default void register(int directType, Supplier<Message> supplier) throws IgniteException {
-        register((short)directType, supplier);
-    }
-
-    /**
-     * Register message factory with given direct type. All messages must be registered during construction
-     * of class which implements this interface. Any invocation of this method after initialization is done must
-     * throw {@link IllegalStateException} exception.
-     *
-     * @param directType Direct type.
-     * @param supplier Message factory.
      * @param serializer Message serializer.
      * @throws IgniteException In case of attempt to register message with direct type which is already registered.
      * @throws IllegalStateException On any invocation of this method when class which implements this interface
