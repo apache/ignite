@@ -17,13 +17,13 @@
 
 package org.apache.ignite.compatibility.testframework.testcontainers;
 
-import com.github.dockerjava.api.model.ContainerNetwork;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.util.Arrays;
@@ -32,11 +32,15 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import com.github.dockerjava.api.model.ContainerNetwork;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.compatibility.testframework.plugins.DisabledRollingUpgradeProcessor;
+import org.apache.ignite.compatibility.testframework.plugins.DisabledValidationProcessor;
 import org.apache.ignite.compatibility.testframework.plugins.TestCompatibilityPluginProvider;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.slf4j.Logger;
@@ -48,22 +52,17 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 
 import static org.apache.ignite.compatibility.testframework.testcontainers.ContainerAddressResolver.EXT_ADDR_PROP_PREFIX;
+import static org.apache.ignite.testframework.GridTestUtils.DFLT_TEST_TIMEOUT;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
-import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
+import static org.junit.Assert.assertTrue;
 import static org.testcontainers.utility.MountableFile.forClasspathResource;
 import static org.testcontainers.utility.MountableFile.forHostPath;
 
 /** Ignite container. */
 public class IgniteContainer extends GenericContainer<IgniteContainer> {
-    /** Property for local work directory. */
-    private static final String LOCAL_WORK_DIR_PROP = "local.work.dir";
-
     /** Local work directory. */
-    public static final String LOCAL_WORK_DIR_PATH = System.getProperty(LOCAL_WORK_DIR_PROP,
-        System.getProperty("user.dir") + "/target/test-ignite-work");
-
-    /** Logger. */
-    private static final Logger LOGGER = LoggerFactory.getLogger(IgniteContainer.class);
+    public static final String LOCAL_WORK_DIR_PATH = System.getProperty("ru.local.work.dir",
+        U.getIgniteHome() + "/target/test-ignite-work");
 
     /**
      * {@code true} on Linux, where the host shares the Docker bridge and reaches containers directly. Elsewhere
@@ -72,17 +71,24 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
      */
     public static final boolean LINUX = System.getProperty("os.name", "").toLowerCase().contains("linux");
 
+    /** Host directory with target-version jars for DOCKER upgrade mode, overridable via {@code -Dru.target.libs.dir}. */
+    private static final Path TARGET_LIBS_DIR = Path.of(System.getProperty("ru.target.libs.dir",
+        U.getIgniteHome() + "/target/ignite-target-libs"));
+
+    /** Logger. */
+    private static final Logger LOGGER = LoggerFactory.getLogger(IgniteContainer.class);
+
     /** Ignite root directory in container. */
     private static final String ROOT_DIR_PATH = "/opt/ignite/apache-ignite/";
+
+    /** Ignite libs directory in container. */
+    private static final String LIBS_DIR_PATH = ROOT_DIR_PATH + "libs/";
 
     /** Ignite work directory in container. */
     private static final String WORK_DIR_PATH = ROOT_DIR_PATH + "work";
 
     /** Config path in container. */
     private static final String CFG_PATH = ROOT_DIR_PATH + "config/test-config.xml";
-
-    /** */
-    private static final String ENABLE_EXPERIMENTAL_FLAG = "--enable-experimental";
 
     /** */
     private static final Pattern CLUSTER_STATE_PATTERN = Pattern.compile("Cluster state: (ACTIVE|INACTIVE)");
@@ -100,8 +106,8 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
     private static final List<String> TEST_CLASSES = List.of(
         ContainerAddressResolver.class.getName(),
         TestCompatibilityPluginProvider.class.getName(),
-        "org.apache.ignite.compatibility.testframework.plugins.DisabledRollingUpgradeProcessor",
-        "org.apache.ignite.compatibility.testframework.plugins.DisabledValidationProcessor"
+        DisabledRollingUpgradeProcessor.class.getName(),
+        DisabledValidationProcessor.class.getName()
     );
 
     /** Jar holding {@link #TEST_CLASSES}, injected so the old image can load it. */
@@ -116,7 +122,10 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
     /** Path to work directory. */
     private final String workDirPath;
 
-    /** Constructor. */
+    /**
+     * Constructor with a commit hash (image tag).
+     * Uses {@code apacheignite/ignite:<commitHash>} as the Docker image.
+     */
     public IgniteContainer(String commitHash, Network net, String hostname, String consistentId, int idx) throws IOException {
         super(DockerImageName.parse("apacheignite/ignite:" + commitHash));
 
@@ -149,12 +158,11 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
 
         withFileSystemBind(LOCAL_WORK_DIR_PATH, WORK_DIR_PATH, BindMode.READ_WRITE);
         withCopyFileToContainer(forClasspathResource("docker/test-config.xml"), CFG_PATH);
-        withCopyFileToContainer(forHostPath(testClassesJar().getAbsolutePath()), ROOT_DIR_PATH + "libs/test-classes.jar");
+        withCopyFileToContainer(forHostPath(testClassesJar().getAbsolutePath()), LIBS_DIR_PATH + "test-classes.jar");
 
         withNetwork(net);
         withNetworkAliases(hostname);
 
-        // Stream container logs to stdout so they appear in the IDE test runner.
         withLogConsumer(frame -> System.out.println("[" + consistentId + "] " + frame.getUtf8String().trim()));
 
         // Proxy-networking hosts only: publish fixed host ports so the host JVM node can target each container at
@@ -173,16 +181,7 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
     @Override public void stop() {
         if (isRunning()) {
             try {
-                LOGGER.info("Sending SIGTERM to Ignite node {} for graceful shutdown...", hostname);
-
-                getDockerClient().killContainerCmd(getContainerId())
-                    .withSignal("TERM")
-                    .exec();
-
-                await()
-                    .atMost(Duration.ofSeconds(10))
-                    .pollInterval(Duration.ofMillis(500))
-                    .until(() -> !isRunning());
+                stopGraceful();
             }
             catch (Exception e) {
                 LOGGER.warn("Graceful shutdown failed for node {}. Proceeding with forceful stop.", hostname, e);
@@ -190,6 +189,71 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
         }
 
         super.stop();
+    }
+
+    /** In-place upgrade inside Docker: graceful stop → swap libs → restart. */
+    public void upgradeAndRestart(int nodeCnt) throws Exception {
+        stopGraceful();
+
+        restartWithTargetLibs(TARGET_LIBS_DIR);
+
+        assertTrue("Upgraded Docker node is not running", isRunning());
+    }
+
+    /**
+     * Stop the container gracefully <b>without removing it</b> (container stays in "Exited" state).
+     * Call this before {@link #restartWithTargetLibs(Path)}.
+     *
+     * <p>Uses {@code docker stop} (SIGTERM + wait + SIGKILL after timeout) via the Docker API.
+     * This gives Ignite time to flush persistence data, and falls back to SIGKILL if needed.</p>
+     */
+    private void stopGraceful() {
+        if (!isRunning())
+            return;
+
+        LOGGER.info("Graceful stop of node {}", hostname);
+
+        getDockerClient().stopContainerCmd(getContainerId())
+            .withTimeout(30)
+            .exec();
+
+        LOGGER.info("Node {} stopped", hostname);
+    }
+
+    /**
+     * Restart the stopped container after swapping its {@code libs/} directory.
+     * <p>
+     * Copies all jars from the provided host directory into the container's {@code /opt/ignite/apache-ignite/libs/},
+     * then re-injects the test-classes jar and starts the container.
+     * </p>
+     *
+     * @param targetLibsHostDir Host directory containing target-version jars.
+     */
+    private void restartWithTargetLibs(Path targetLibsHostDir) throws Exception {
+        LOGGER.info("Replacing libs in container {} with jars from {}", hostname, targetLibsHostDir);
+
+        for (Path file : Files.list(targetLibsHostDir).toArray(Path[]::new))
+            if (Files.isRegularFile(file))
+                copyFileToContainer(forHostPath(file.toAbsolutePath().toString()), LIBS_DIR_PATH + file.getFileName().toString());
+
+        // Re-inject the test-classes jar.
+        copyFileToContainer(forHostPath(testClassesJar().getAbsolutePath()), LIBS_DIR_PATH + "test-classes.jar");
+
+        LOGGER.info("Starting container {} with target libraries...", hostname);
+
+        getDockerClient().startContainerCmd(getContainerId()).exec();
+
+        // isRunning() may cache stale state — inspect directly.
+        assertTrue(waitForCondition(() -> {
+            try {
+                return "running".equals(getDockerClient().inspectContainerCmd(getContainerId()).exec().getState().getStatus());
+            }
+            catch (Exception e) {
+                return false;
+            }
+        }, DFLT_TEST_TIMEOUT));
+
+        LOGGER.info("Restarted node {} with target libraries", hostname);
     }
 
     /** @return Consistent ID. */
@@ -221,10 +285,20 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
             if (!success)
                 throw new IllegalStateException("Failed to set state ACTIVE");
 
-            success = waitForCondition(() -> {
+            checkNodeCount(nodeCnt);
+        }
+        catch (IgniteInterruptedCheckedException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /** Check node count in cluster.*/
+    public void checkNodeCount(int nodeCnt) {
+        try {
+            boolean success = waitForCondition(() -> {
                 String out = execControl("--baseline");
 
-                System.out.println(">>> Out=" + out);
+                LOGGER.debug(">>> Baseline output={}", out);
 
                 return out.contains("Number of baseline nodes: " + nodeCnt);
             }, 30_000, 5_000);
@@ -233,7 +307,7 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
                 throw new IllegalStateException("Check cluster count failed");
         }
         catch (IgniteInterruptedCheckedException e) {
-            throw new IgniteException(e);
+            throw new RuntimeException(e);
         }
     }
 
@@ -269,12 +343,11 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
 
     /** */
     private String execControl(String... cmd) {
-        String[] fullCmd = new String[cmd.length + 2];
+        String[] fullCmd = new String[cmd.length + 1];
 
         fullCmd[0] = ROOT_DIR_PATH + "bin/control.sh";
-        fullCmd[1] = ENABLE_EXPERIMENTAL_FLAG;
 
-        System.arraycopy(cmd, 0, fullCmd, 2, cmd.length);
+        System.arraycopy(cmd, 0, fullCmd, 1, cmd.length);
 
         ExecResult result;
 

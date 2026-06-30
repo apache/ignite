@@ -61,8 +61,12 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
     );
 
     /** Source version image tag, overridable via {@code -Dru.source.commit.hash}. */
-    private static final String SOURCE_COMMIT_HASH =
-        System.getProperty("ru.source.commit.hash", "0ad4656eef09acda288cbad96f80f0138732d94a");
+    private static final String SOURCE_COMMIT_HASH = System.getProperty("ru.source.commit.hash",
+        "0ad4656eef09acda288cbad96f80f0138732d94a");
+
+    /** Upgrade mode. */
+    private static final UpgradeMode UPGRADE_MODE = UpgradeMode.valueOf(System.getProperty("ru.upgrade.mode",
+        UpgradeMode.DOCKER.name()));
 
     /** Cache name. */
     private static final String CACHE_NAME = "ru-test-cache";
@@ -70,7 +74,7 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
     /** Local work directory. */
     private static final File LOCAL_WORK_DIR = new File(LOCAL_WORK_DIR_PATH);
 
-    /** Local nodes. */
+    /** Local host-JVM nodes (LOCAL mode only). */
     private final List<IgniteEx> nodes = new ArrayList<>();
 
     /** Consistent ID -> discovery address. */
@@ -107,9 +111,6 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
         try (IgniteClusterContainer cluster = new IgniteClusterContainer(SOURCE_COMMIT_HASH, CONSISTENT_IDS)) {
             cluster.start();
 
-            for (IgniteContainer container : cluster.containers())
-                addrs.put(container.consistentId(), container.discoveryAddress());
-
             ClientCacheConfiguration cfg = new ClientCacheConfiguration()
                 .setName(CACHE_NAME)
                 .setBackups(1)
@@ -124,50 +125,92 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
 
             upgradeCluster(cluster);
 
-            IgniteCache<Integer, Integer> targetCache = nodes.get(0).cache(CACHE_NAME);
-
-            for (int i = 0; i < 1000; i++)
-                assertEquals("Data mismatch after upgrade at key: " + i, (Integer)i, targetCache.get(i));
-
-            targetCache.put(1001, 1001);
-
-            assertEquals((Integer)1001, targetCache.get(1001));
+            if (UPGRADE_MODE == UpgradeMode.DOCKER)
+                verifyViaDockerNodes(cluster);
+            else
+                verifyViaLocalNodes();
         }
         finally {
             closeClient();
+
+            if (UPGRADE_MODE == UpgradeMode.LOCAL)
+                stopLocalNodes();
         }
+    }
+
+    /** Verify data via local host-JVM nodes. */
+    private void verifyViaLocalNodes() {
+        IgniteCache<Integer, Integer> targetCache = nodes.get(0).cache(CACHE_NAME);
+
+        for (int i = 0; i < 1000; i++)
+            assertEquals("Data mismatch after upgrade at key: " + i, (Integer)i, targetCache.get(i));
+
+        targetCache.put(1001, 1001);
+
+        assertEquals((Integer)1001, targetCache.get(1001));
+    }
+
+    /** Verify data via thin client connected to upgraded Docker nodes. */
+    private void verifyViaDockerNodes(IgniteClusterContainer cluster) {
+        IgniteContainer con = cluster.containers().get(0);
+
+        con.checkNodeCount(cluster.containers().size());
+
+        ClientCache<Integer, Integer> targetCache = client(con.clientAddress()).getOrCreateCache(CACHE_NAME);
+
+        for (int i = 0; i < 1000; i++)
+            assertEquals("Data mismatch after upgrade at key: " + i, (Integer)i, targetCache.get(i));
+
+        targetCache.put(1001, 1001);
+
+        assertEquals((Integer)1001, targetCache.get(1001));
     }
 
     /** */
     private void upgradeCluster(IgniteClusterContainer srcCluster) throws Exception {
-        for (IgniteContainer container : srcCluster.containers()) {
-            log.info(">>> Upgrade node=" + container.consistentId());
+        List<IgniteContainer> srcContainers = srcCluster.containers();
 
-            // Address containers use to reach this (host JVM) node: the Docker bridge gateway on Linux, the
-            // host.docker.internal alias on macOS.
-            String hostIp = IgniteContainer.LINUX
-                ? container.gatewayIp()
-                : container.execInContainer("sh", "-c",
-                    "getent ahostsv4 host.docker.internal | awk '{print $1}' | head -1").getStdout().trim();
+        if (UPGRADE_MODE == UpgradeMode.LOCAL)
+            for (IgniteContainer con : srcContainers)
+                addrs.put(con.consistentId(), con.discoveryAddress());
 
-            container.stop();
+        for (int i = 0; i < srcContainers.size(); i++) {
+            IgniteContainer con = srcContainers.get(i);
 
-            addrs.remove(container.consistentId());
+            log.info(">>> Upgrade node=" + con.consistentId() + " (mode=" + UPGRADE_MODE + ")");
 
-            IgniteEx ignite = startGrid(configuration(container.consistentId(), container.localWorkDirectory(), addrs.values(), hostIp));
-
-            assertTrue("Upgraded node did not rejoin the full topology in time",
-                waitForCondition(() -> CONSISTENT_IDS.size() == ignite.cluster().nodes().size(), DFLT_TEST_TIMEOUT));
-
-            // Already-upgraded host nodes live in this JVM on localhost within the discovery port range.
-            addrs.put(container.consistentId(), "127.0.0.1:48500..48599");
-
-            nodes.add(ignite);
+            if (UPGRADE_MODE == UpgradeMode.DOCKER)
+                con.upgradeAndRestart(srcContainers.size());
+            else
+                upgradeLocally(con, i);
         }
     }
 
+    /** Stop container, start a local host-JVM node with the same consistent ID. */
+    private void upgradeLocally(IgniteContainer con, int idx) throws Exception {
+        // Address containers use to reach this (host JVM) node: the Docker bridge gateway on Linux, the
+        // host.docker.internal alias on macOS.
+        String hostIp = IgniteContainer.LINUX
+            ? con.gatewayIp()
+            : con.execInContainer("sh", "-c",
+                "getent ahostsv4 host.docker.internal | awk '{print $1}' | head -1").getStdout().trim();
+
+        con.stop();
+
+        addrs.remove(con.consistentId());
+
+        IgniteEx ignite = startGrid(configuration(con.consistentId(), con.localWorkDirectory(), addrs.values(), hostIp, idx));
+
+        assertTrue("Upgraded node did not rejoin the full topology in time",
+            waitForCondition(() -> CONSISTENT_IDS.size() == ignite.cluster().nodes().size(), DFLT_TEST_TIMEOUT));
+
+        addrs.put(con.consistentId(), "127.0.0.1:" + (48500 + idx));
+
+        nodes.add(ignite);
+    }
+
     /** */
-    private IgniteConfiguration configuration(String nodeId, String workDir, Collection<String> addrs0, String ip) {
+    private IgniteConfiguration configuration(String nodeId, String workDir, Collection<String> addrs0, String ip, int idx) {
         DataRegionConfiguration dataRegionCfg = new DataRegionConfiguration()
             .setName("testRegion")
             .setInitialSize(1024L * 1024 * 1024)
@@ -182,7 +225,7 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
             .setSocketTimeout(1000)
             .setNetworkTimeout(20000)
             .setJoinTimeout(30000)
-            .setLocalPort(48500);
+            .setLocalPort(48500 + idx);
 
         // On macOS communication binds to loopback (discovery stays on 0.0.0.0 to satisfy Ignite's non-loopback
         // join check) so the node advertises only 127.0.0.1 + the resolver-mapped Docker host address -- no
@@ -193,7 +236,7 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
             // macOS: bind comm to loopback (advertised to containers via the resolver as the Docker-host address).
             // Linux: bind to all interfaces so containers reach this host node at the Docker bridge gateway IP.
             .setLocalAddress(IgniteContainer.LINUX ? "0.0.0.0" : "127.0.0.1")
-            .setLocalPort(49100)
+            .setLocalPort(49100 + idx)
             .setConnectTimeout(1000)
             .setMaxConnectTimeout(10000)
             // The NIO connect to a blackholed container-internal (172.x) address is not aborted by
@@ -236,5 +279,29 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
 
             client = null;
         }
+    }
+
+    /** */
+    private void stopLocalNodes() {
+        for (IgniteEx node : nodes)
+            if (node != null)
+                Ignition.stop(node.name(), false);
+
+        nodes.clear();
+    }
+
+    /**
+     * Upgrade mode, overridable via {@code -Dru.upgrade.mode} (DOCKER|LOCAL).
+     * <ul>
+     *   <li>DOCKER — all nodes stay in Docker; in-place upgrade by swapping libs inside containers (default)</li>
+     *   <li>LOCAL  — source cluster in Docker, upgraded to local host-JVM nodes</li>
+     * </ul>
+     */
+    private enum UpgradeMode {
+        /** */
+        DOCKER,
+
+        /** */
+        LOCAL
     }
 }
