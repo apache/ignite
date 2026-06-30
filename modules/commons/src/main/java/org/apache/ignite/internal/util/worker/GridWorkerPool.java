@@ -23,8 +23,8 @@ import java.util.concurrent.RejectedExecutionException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeExecutionRejectedException;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Pool of runnable workers. This class automatically takes care of
@@ -102,9 +102,9 @@ public class GridWorkerPool {
         for (GridWorker worker : workers) {
             try {
                 if (cancel)
-                    U.cancel(worker);
+                    CommonUtils.cancel(worker);
 
-                U.join(worker, log);
+                CommonUtils.join(worker, log);
             }
             catch (Exception e) {
                 if (log != null)
