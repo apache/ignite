@@ -66,6 +66,7 @@ import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.processors.tracing.SpanManager;
 import org.apache.ignite.internal.processors.tracing.SpanTags;
 import org.apache.ignite.internal.processors.tracing.SpanType;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -77,7 +78,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerListener;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -432,7 +432,7 @@ public class GridNioServer<T> {
 
             clientWorkers.add(worker);
 
-            clientThreads[i] = U.newThread(worker);
+            clientThreads[i] = CommonUtils.newThread(worker);
 
             clientThreads[i].setDaemon(daemon);
         }
@@ -520,7 +520,7 @@ public class GridNioServer<T> {
         filterChain.start();
 
         if (acceptWorker != null)
-            U.newThread(acceptWorker).start();
+            CommonUtils.newThread(acceptWorker).start();
 
         for (IgniteThread thread : clientThreads)
             thread.start();
@@ -534,11 +534,11 @@ public class GridNioServer<T> {
             closed = true;
 
             // Make sure to entirely stop acceptor if any.
-            U.cancel(acceptWorker);
-            U.join(acceptWorker, log);
+            CommonUtils.cancel(acceptWorker);
+            CommonUtils.join(acceptWorker, log);
 
-            U.cancel(clientWorkers);
-            U.join(clientWorkers, log);
+            CommonUtils.cancel(clientWorkers);
+            CommonUtils.join(clientWorkers, log);
 
             filterChain.stop();
 
@@ -780,7 +780,7 @@ public class GridNioServer<T> {
                 ses0.offerStateChange((GridNioServer.SessionChangeRequest)fut0);
             }
             catch (IgniteCheckedException e) {
-                U.error(log, "Failed to notify NIO Server while resending messages [rmtNode=" + recoveryDesc.node().id() + ']', e);
+                CommonUtils.error(log, "Failed to notify NIO Server while resending messages [rmtNode=" + recoveryDesc.node().id() + ']', e);
             }
         }
     }
@@ -867,7 +867,7 @@ public class GridNioServer<T> {
                 if (!F.isEmpty(msg)) {
                     synchronized (sb) {
                         if (sb.length() > 0)
-                            sb.append(U.nl());
+                            sb.append(CommonUtils.nl());
 
                         sb.append(msg);
                     }
@@ -917,7 +917,7 @@ public class GridNioServer<T> {
                 if (!F.isEmpty(msg)) {
                     synchronized (sb) {
                         if (sb.length() > 0)
-                            sb.append(U.nl());
+                            sb.append(CommonUtils.nl());
 
                         sb.append(msg);
                     }
@@ -1096,8 +1096,8 @@ public class GridNioServer<T> {
             return selector;
         }
         catch (Throwable e) {
-            U.close(srvrCh, log);
-            U.close(selector, log);
+            CommonUtils.close(srvrCh, log);
+            CommonUtils.close(selector, log);
 
             if (e instanceof Error)
                 throw (Error)e;
@@ -1214,10 +1214,10 @@ public class GridNioServer<T> {
         @Override protected void processRead(SelectionKey key) throws IOException {
             if (skipRead) {
                 try {
-                    U.sleep(50);
+                    CommonUtils.sleep(50);
                 }
                 catch (IgniteInterruptedCheckedException ignored) {
-                    U.warn(log, "Sleep has been interrupted.");
+                    CommonUtils.warn(log, "Sleep has been interrupted.");
                 }
 
                 return;
@@ -1323,7 +1323,7 @@ public class GridNioServer<T> {
                 else {
                     // For test purposes only (skipWrite is set to true in tests only).
                     try {
-                        U.sleep(50);
+                        CommonUtils.sleep(50);
                     }
                     catch (IgniteInterruptedCheckedException e) {
                         throw new IOException("Thread has been interrupted.", e);
@@ -1383,10 +1383,10 @@ public class GridNioServer<T> {
         @Override protected void processRead(SelectionKey key) throws IOException {
             if (skipRead) {
                 try {
-                    U.sleep(50);
+                    CommonUtils.sleep(50);
                 }
                 catch (IgniteInterruptedCheckedException ignored) {
-                    U.warn(log, "Sleep has been interrupted.");
+                    CommonUtils.warn(log, "Sleep has been interrupted.");
                 }
 
                 return;
@@ -1584,7 +1584,7 @@ public class GridNioServer<T> {
                     else {
                         // For test purposes only (skipWrite is set to true in tests only).
                         try {
-                            U.sleep(50);
+                            CommonUtils.sleep(50);
                         }
                         catch (IgniteInterruptedCheckedException e) {
                             throw new IOException("Thread has been interrupted.", e);
@@ -1785,7 +1785,7 @@ public class GridNioServer<T> {
             else {
                 // For test purposes only (skipWrite is set to true in tests only).
                 try {
-                    U.sleep(50);
+                    CommonUtils.sleep(50);
                 }
                 catch (IgniteInterruptedCheckedException e) {
                     throw new IOException("Thread has been interrupted.", e);
@@ -1980,10 +1980,10 @@ public class GridNioServer<T> {
                     }
                     catch (IgniteCheckedException e) {
                         if (!Thread.currentThread().isInterrupted()) {
-                            U.error(log, "Failed to read data from remote connection (will wait for " +
+                            CommonUtils.error(log, "Failed to read data from remote connection (will wait for " +
                                 ERR_WAIT_TIME + "ms).", e);
 
-                            U.sleep(ERR_WAIT_TIME);
+                            CommonUtils.sleep(ERR_WAIT_TIME);
 
                             reset = true;
                         }
@@ -1991,7 +1991,7 @@ public class GridNioServer<T> {
                 }
             }
             catch (Throwable e) {
-                U.error(log, "Caught unhandled exception in NIO worker thread (restart the node).", e);
+                CommonUtils.error(log, "Caught unhandled exception in NIO worker thread (restart the node).", e);
 
                 err = e;
 
@@ -2031,7 +2031,7 @@ public class GridNioServer<T> {
                 SelectedSelectionKeySet selectedKeySet = new SelectedSelectionKeySet();
 
                 Class<?> selectorImplCls =
-                    Class.forName("sun.nio.ch.SelectorImpl", false, U.gridClassLoader());
+                    Class.forName("sun.nio.ch.SelectorImpl", false, CommonUtils.gridClassLoader());
 
                 // Ensure the current selector implementation is what we can instrument.
                 if (!selectorImplCls.isAssignableFrom(selector.getClass()))
@@ -2113,7 +2113,7 @@ public class GridNioServer<T> {
          */
         private void bodyInternal() throws IgniteCheckedException, InterruptedException {
             try {
-                long lastIdleCheck = U.currentTimeMillis();
+                long lastIdleCheck = CommonUtils.currentTimeMillis();
 
                 while (selector.isOpen() && !(isCancelled() && changeReqs.isEmpty())) {
                     SessionChangeRequest req;
@@ -2147,7 +2147,7 @@ public class GridNioServer<T> {
                             break;
 
                         // Just in case we do busy selects.
-                        long now = U.currentTimeMillis();
+                        long now = CommonUtils.currentTimeMillis();
 
                         if (now - lastIdleCheck > 2000) {
                             lastIdleCheck = now;
@@ -2196,7 +2196,7 @@ public class GridNioServer<T> {
                         select = false;
                     }
 
-                    long now = U.currentTimeMillis();
+                    long now = CommonUtils.currentTimeMillis();
 
                     if (now - lastIdleCheck > 2000) {
                         lastIdleCheck = now;
@@ -2232,7 +2232,7 @@ public class GridNioServer<T> {
                     if (log.isDebugEnabled())
                         log.debug("Closing NIO selector.");
 
-                    U.close(selector, log);
+                    CommonUtils.close(selector, log);
                 }
             }
         }
@@ -2265,7 +2265,7 @@ public class GridNioServer<T> {
                     if (key != null)
                         key.cancel();
 
-                    U.closeQuiet(ch);
+                    CommonUtils.closeQuiet(ch);
 
                     req.onDone();
 
@@ -2447,7 +2447,7 @@ public class GridNioServer<T> {
                 .append(", bytesRcvd0=").append(bytesRcvd0)
                 .append(", bytesSent=").append(bytesSent)
                 .append(", bytesSent0=").append(bytesSent0)
-                .append("]").append(U.nl());
+                .append("]").append(CommonUtils.nl());
         }
 
         /**
@@ -2613,7 +2613,7 @@ public class GridNioServer<T> {
                 }
                 catch (Exception | Error e) { // TODO IGNITE-2659.
                     try {
-                        U.sleep(1000);
+                        CommonUtils.sleep(1000);
                     }
                     catch (IgniteInterruptedCheckedException ignore) {
                         // No-op.
@@ -2622,7 +2622,7 @@ public class GridNioServer<T> {
                     GridSelectorNioSessionImpl ses = attach.session();
 
                     if (!closed)
-                        U.error(log, "Failed to process selector key [ses=" + ses + ']', e);
+                        CommonUtils.error(log, "Failed to process selector key [ses=" + ses + ']', e);
                     else if (log.isDebugEnabled())
                         log.debug("Failed to process selector key [ses=" + ses + ", err=" + e + ']');
 
@@ -2680,7 +2680,7 @@ public class GridNioServer<T> {
                 }
                 catch (Exception | Error e) { // TODO IGNITE-2659.
                     try {
-                        U.sleep(1000);
+                        CommonUtils.sleep(1000);
                     }
                     catch (IgniteInterruptedCheckedException ignore) {
                         // No-op.
@@ -2689,7 +2689,7 @@ public class GridNioServer<T> {
                     GridSelectorNioSessionImpl ses = attach.session();
 
                     if (!closed)
-                        U.error(log, "Failed to process selector key [ses=" + ses + ']', e);
+                        CommonUtils.error(log, "Failed to process selector key [ses=" + ses + ']', e);
                     else if (log.isDebugEnabled())
                         log.debug("Failed to process selector key [ses=" + ses + ", err=" + e + ']');
                 }
@@ -2702,7 +2702,7 @@ public class GridNioServer<T> {
          * @param keys Keys registered to selector.
          */
         private void checkIdle(Iterable<SelectionKey> keys) {
-            long now = U.currentTimeMillis();
+            long now = CommonUtils.currentTimeMillis();
 
             for (SelectionKey key : keys) {
                 GridNioKeyAttachment attach = (GridNioKeyAttachment)key.attachment();
@@ -2846,11 +2846,11 @@ public class GridNioServer<T> {
                     ses.onServerStopped();
             }
             catch (ClosedChannelException e) {
-                U.warn(log, "Failed to register accepted socket channel to selector (channel was closed): "
+                CommonUtils.warn(log, "Failed to register accepted socket channel to selector (channel was closed): "
                     + sock.getRemoteSocketAddress(), e);
             }
             catch (IOException e) {
-                U.error(log, "Failed to get socket addresses.", e);
+                CommonUtils.error(log, "Failed to get socket addresses.", e);
             }
         }
 
@@ -2877,8 +2877,8 @@ public class GridNioServer<T> {
                 }
             }
             finally {
-                U.close(key, log);
-                U.close(sock, log);
+                CommonUtils.close(key, log);
+                CommonUtils.close(sock, log);
             }
         }
 
@@ -2907,11 +2907,11 @@ public class GridNioServer<T> {
             if (e != null) {
                 // Print stack trace only if has runtime exception in it's cause.
                 if (e.hasCause(IOException.class))
-                    U.warn(log, "Client disconnected abruptly due to network connection loss or because " +
+                    CommonUtils.warn(log, "Client disconnected abruptly due to network connection loss or because " +
                         "the connection was left open on application shutdown. [cls=" + e.getClass() +
                         ", msg=" + e.getMessage() + ']');
                 else
-                    U.error(log, "Closing NIO session because of unhandled exception.", e);
+                    CommonUtils.error(log, "Closing NIO session because of unhandled exception.", e);
             }
 
             sessions.remove(ses);
@@ -2999,7 +2999,7 @@ public class GridNioServer<T> {
                     register(sesFut);
             }
             catch (IOException e) {
-                U.closeQuiet(ch);
+                CommonUtils.closeQuiet(ch);
 
                 sesFut.onDone(new GridNioException("Failed to connect to node", e));
 
@@ -3120,10 +3120,10 @@ public class GridNioServer<T> {
                     }
                     catch (IgniteCheckedException e) {
                         if (!Thread.currentThread().isInterrupted()) {
-                            U.error(log, "Failed to accept remote connection (will wait for " + ERR_WAIT_TIME + "ms).",
+                            CommonUtils.error(log, "Failed to accept remote connection (will wait for " + ERR_WAIT_TIME + "ms).",
                                 e);
 
-                            U.sleep(ERR_WAIT_TIME);
+                            CommonUtils.sleep(ERR_WAIT_TIME);
 
                             reset = true;
                         }
@@ -3212,12 +3212,12 @@ public class GridNioServer<T> {
 
                 // Close all channels registered with selector.
                 for (SelectionKey key : selector.keys())
-                    U.close(key.channel(), log);
+                    CommonUtils.close(key.channel(), log);
 
                 if (log.isDebugEnabled())
                     log.debug("Closing NIO selector.");
 
-                U.close(selector, log);
+                CommonUtils.close(selector, log);
             }
         }
 
@@ -3276,9 +3276,9 @@ public class GridNioServer<T> {
                 offerBalanced(new NioOperationFuture<>(sockCh, true, null), null);
             }
             catch (IgniteCheckedException e) {
-                U.warn(log, "Incoming connection was rejected [addr=" + sockCh.socket().getRemoteSocketAddress() + ']', e);
+                CommonUtils.warn(log, "Incoming connection was rejected [addr=" + sockCh.socket().getRemoteSocketAddress() + ']', e);
 
-                U.close(sockCh, log);
+                CommonUtils.close(sockCh, log);
             }
         }
     }
@@ -4294,7 +4294,7 @@ public class GridNioServer<T> {
 
         /** {@inheritDoc} */
         @Override public void run() {
-            long now = U.currentTimeMillis();
+            long now = CommonUtils.currentTimeMillis();
 
             if (lastBalance + balancePeriod < now) {
                 lastBalance = now;
@@ -4357,9 +4357,9 @@ public class GridNioServer<T> {
                         long bytesSent0 = ses0.bytesSent0();
 
                         if (bytesSent0 < threshold &&
-                            (ses == null || delta > U.safeAbs(bytesSent0 - sentDiff / 2))) {
+                            (ses == null || delta > CommonUtils.safeAbs(bytesSent0 - sentDiff / 2))) {
                             ses = ses0;
-                            delta = U.safeAbs(bytesSent0 - sentDiff / 2);
+                            delta = CommonUtils.safeAbs(bytesSent0 - sentDiff / 2);
                         }
                     }
 
@@ -4390,9 +4390,9 @@ public class GridNioServer<T> {
                         long bytesRcvd0 = ses0.bytesReceived0();
 
                         if (bytesRcvd0 < threshold &&
-                            (ses == null || delta > U.safeAbs(bytesRcvd0 - rcvdDiff / 2))) {
+                            (ses == null || delta > CommonUtils.safeAbs(bytesRcvd0 - rcvdDiff / 2))) {
                             ses = ses0;
-                            delta = U.safeAbs(bytesRcvd0 - rcvdDiff / 2);
+                            delta = CommonUtils.safeAbs(bytesRcvd0 - rcvdDiff / 2);
                         }
                     }
 
@@ -4440,7 +4440,7 @@ public class GridNioServer<T> {
 
         /** {@inheritDoc} */
         @Override public void run() {
-            long now = U.currentTimeMillis();
+            long now = CommonUtils.currentTimeMillis();
 
             if (lastBalance + balancePeriod < now) {
                 lastBalance = now;
@@ -4484,9 +4484,9 @@ public class GridNioServer<T> {
                         long bytesSent0 = ses0.bytesSent0();
 
                         if (bytesSent0 < threshold &&
-                            (ses == null || delta > U.safeAbs(bytesSent0 - bytesDiff / 2))) {
+                            (ses == null || delta > CommonUtils.safeAbs(bytesSent0 - bytesDiff / 2))) {
                             ses = ses0;
-                            delta = U.safeAbs(bytesSent0 - bytesDiff / 2);
+                            delta = CommonUtils.safeAbs(bytesSent0 - bytesDiff / 2);
                         }
                     }
 
