@@ -740,7 +740,7 @@ public class IDTOSerializerGenerator {
     }
 
     /** @return FQN of {@code comp}. */
-    private String className(TypeMirror comp) {
+    private static String className(TypeMirror comp) {
         String n = comp.toString();
 
         int spaceIdx = n.indexOf(' ');
@@ -750,22 +750,7 @@ public class IDTOSerializerGenerator {
 
         int genIdx = n.indexOf('<');
 
-        n = genIdx == -1 ? n : n.substring(0, genIdx);
-
-        // In some JDK versions, annotated types may yield simple names (no package).
-        // Resolve to FQN via the TypeElement to ensure COLL_IMPL / TYPE_SERDES lookups work.
-        if (!n.contains(".") && comp instanceof DeclaredType) {
-            TypeElement elem = (TypeElement)((DeclaredType)comp).asElement();
-
-            if (elem != null) {
-                String fqn = elem.getQualifiedName().toString();
-
-                if (!fqn.isEmpty())
-                    n = fqn;
-            }
-        }
-
-        return n;
+        return genIdx == -1 ? n : n.substring(0, genIdx);
     }
 
     /** @return Serializer class name. */
