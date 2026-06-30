@@ -40,7 +40,6 @@ public interface MessageMarshaller<M extends Message> {
      * @param msg Message to marshal.
      * @param kctx Kernal context.
      * @param nested Cache object context, or {@code null} if not applicable.
-     * @throws IgniteCheckedException If marshalling failed.
      */
     public void marshal(M msg, GridKernalContext kctx, @Nullable CacheObjectContext nested)
         throws IgniteCheckedException;
@@ -52,7 +51,6 @@ public interface MessageMarshaller<M extends Message> {
      * @param kctx Kernal context.
      * @param nested Cache object context, or {@code null} if not applicable.
      * @param clsLdr Class loader for unmarshalling.
-     * @throws IgniteCheckedException If unmarshalling failed.
      */
     public void unmarshal(M msg, GridKernalContext kctx, @Nullable CacheObjectContext nested, ClassLoader clsLdr)
         throws IgniteCheckedException;
@@ -62,7 +60,6 @@ public interface MessageMarshaller<M extends Message> {
      *
      * @param msg Message to unmarshal.
      * @param kctx Kernal context.
-     * @throws IgniteCheckedException If unmarshalling failed.
      */
     public void unmarshal(M msg, GridKernalContext kctx) throws IgniteCheckedException;
 
@@ -71,7 +68,6 @@ public interface MessageMarshaller<M extends Message> {
      *
      * @param msg Message to unmarshal.
      * @param kctx Kernal context.
-     * @throws IgniteCheckedException If unmarshalling failed.
      */
     default void unmarshalNio(M msg, GridKernalContext kctx) throws IgniteCheckedException {
     }
@@ -83,7 +79,6 @@ public interface MessageMarshaller<M extends Message> {
      * @param factory Message factory.
      * @param msg Message to unmarshal.
      * @param kctx Kernal context.
-     * @throws IgniteCheckedException If unmarshalling failed.
      */
     static <M extends Message> void unmarshalNio(MessageFactory factory, M msg, GridKernalContext kctx)
         throws IgniteCheckedException {
@@ -101,7 +96,6 @@ public interface MessageMarshaller<M extends Message> {
      * @param msg Message to marshal.
      * @param kctx Kernal context.
      * @param nested Cache object context, or {@code null} if not applicable.
-     * @throws IgniteCheckedException If marshalling failed.
      */
     static <M extends Message> void marshal(MessageFactory factory, M msg, GridKernalContext kctx,
         @Nullable CacheObjectContext nested) throws IgniteCheckedException {
@@ -120,7 +114,6 @@ public interface MessageMarshaller<M extends Message> {
      * @param kctx Kernal context.
      * @param nested Cache object context, or {@code null} if not applicable.
      * @param clsLdr Class loader for unmarshalling.
-     * @throws IgniteCheckedException If unmarshalling failed.
      */
     static <M extends Message> void unmarshal(MessageFactory factory, M msg, GridKernalContext kctx,
         @Nullable CacheObjectContext nested, ClassLoader clsLdr) throws IgniteCheckedException {
@@ -139,7 +132,6 @@ public interface MessageMarshaller<M extends Message> {
      * @param factory Message factory.
      * @param msg Message to unmarshal.
      * @param kctx Kernal context.
-     * @throws IgniteCheckedException If unmarshalling failed.
      */
     static <M extends Message> void unmarshal(MessageFactory factory, M msg, GridKernalContext kctx)
         throws IgniteCheckedException {
