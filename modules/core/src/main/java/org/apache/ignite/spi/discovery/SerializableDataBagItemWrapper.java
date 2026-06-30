@@ -29,8 +29,8 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
-/** Wrapper message for serializable data. */
-public class ObjectData implements MarshallableMessage {
+/** Wrapper message for serializable data in a {@link DiscoveryDataBag}. */
+public class SerializableDataBagItemWrapper implements MarshallableMessage {
     /** */
     @GridToStringInclude
     private Serializable data;
@@ -40,14 +40,39 @@ public class ObjectData implements MarshallableMessage {
     @Order(0)
     byte[] dataBytes;
 
+    /** Unmarshalling error. */
+    IgniteCheckedException unmarshallError;
+
     /** */
-    public ObjectData() {}
+    public SerializableDataBagItemWrapper() {}
 
     /**
      * @param data Original data.
      */
-    public ObjectData(Serializable data) {
+    public SerializableDataBagItemWrapper(Serializable data) {
         this.data = data;
+    }
+
+    /**
+     * @param msg Message.
+     * @param <T> Type of data.
+     *
+     * @return Original message or data unwrapped from an SerializableDataBagItemWrapper wrapper.
+     */
+    static @Nullable <T> T unwrapIfNecessary(@Nullable Message msg) {
+        if (msg == null)
+            return null;
+
+        return msg instanceof SerializableDataBagItemWrapper ? ((SerializableDataBagItemWrapper)msg).unwrap() : (T)msg;
+    }
+
+    /**
+     * @param <T> Type of data.
+     *
+     * @return Original data unwrapped from a message.
+     */
+    private <T> T unwrap() {
+        return (T)(data);
     }
 
     /** {@inheritDoc} */
@@ -59,24 +84,24 @@ public class ObjectData implements MarshallableMessage {
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         if (dataBytes != null) {
-            data = U.unmarshal(marsh, dataBytes, clsLdr);
+            try {
+                data = U.unmarshal(marsh, dataBytes, clsLdr);
 
-            dataBytes = null;
+                dataBytes = null;
+            }
+            catch (IgniteCheckedException e) {
+                unmarshallError = e;
+            }
         }
     }
 
-    /**
-     * @param msg Message.
-     * @param <T> Type of data.
-     *
-     * @return Original data unwrapped from a message.
-     */
-    public static <T> T unwrap(@Nullable Message msg) {
-        return msg != null ? (T)(((ObjectData)msg).data) : null;
+    /** @return Unmarshalling error. */
+    public IgniteCheckedException unmarshallError() {
+        return unmarshallError;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(ObjectData.class, this);
+        return S.toString(SerializableDataBagItemWrapper.class, this);
     }
 }

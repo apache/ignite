@@ -15,26 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.marshaller;
-
-import java.util.List;
-import java.util.Map;
-import org.apache.ignite.internal.Order;
-import org.apache.ignite.plugin.extensions.communication.Message;
+package org.apache.ignite.internal.processors.rollingupgrade.feature;
 
 /** */
-public class MarshallerMappingsData implements Message {
+public class TestIgniteReleaseFeatures_2_19_1 {
     /** */
-    @Order(0)
-    List<Map<Integer, MappedName>> mappings;
+    public static final IgniteFeature ROLLING_UPGRADE_FEATURE = TestIgniteReleaseFeatures_2_19_0.ROLLING_UPGRADE_FEATURE;
 
     /** */
-    public MarshallerMappingsData() {}
-
-    /**
-     * @param mappings Mappings.
-     */
-    public MarshallerMappingsData(List<Map<Integer, MappedName>> mappings) {
-        this.mappings = mappings;
-    }
+    public static final IgniteFeature VER_2_19_1_ID_1_FEATURE = new IgniteCoreFeature(1);
 }
