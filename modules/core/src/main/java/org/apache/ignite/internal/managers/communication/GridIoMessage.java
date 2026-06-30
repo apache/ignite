@@ -27,12 +27,13 @@ import org.apache.ignite.internal.processors.tracing.messages.SpanTransport;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageContainer;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Wrapper for all grid messages.
  */
-public class GridIoMessage implements Message, SpanTransport {
+public class GridIoMessage implements Message, SpanTransport, MessageContainer {
     /** */
     public static final Integer STRIPE_DISABLED_PART = Integer.MIN_VALUE;
 
@@ -125,10 +126,8 @@ public class GridIoMessage implements Message, SpanTransport {
         return GridTopicMessage.ordinal(topicMsg);
     }
 
-    /**
-     * @return Message.
-     */
-    public Message message() {
+    /** {@inheritDoc} */
+    @Override public Message message() {
         return msg;
     }
 

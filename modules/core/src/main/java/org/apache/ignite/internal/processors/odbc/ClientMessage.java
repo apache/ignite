@@ -24,10 +24,10 @@ import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.SelfSerializingMessage;
 
 /** */
-public class ClientMessage implements Message, Externalizable {
+public class ClientMessage implements SelfSerializingMessage, Externalizable {
     /** */
     private static final long serialVersionUID = -4609408156037304495L;
 
@@ -81,13 +81,8 @@ public class ClientMessage implements Message, Externalizable {
         isFirstMessage = false;
     }
 
-    /**
-     * Writes this message to provided byte buffer.
-     *
-     * @param buf Byte buffer.
-     * @return Whether message was fully written.
-     */
-    public boolean writeTo(ByteBuffer buf) {
+    /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf) {
         assert stream != null || data != null;
 
         byte[] data = stream != null ? stream.array() : this.data;
