@@ -29,7 +29,6 @@ import org.apache.ignite.internal.processors.cache.DeployableMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -380,7 +379,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
         if (nearUpdates != null) {
             GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
-            GridCacheMessageDeployer.deployCacheObjects(this, nearUpdates.nearValues(), cctx);
+            deployCacheObjects(nearUpdates.nearValues(), cctx);
         }
     }
 

@@ -142,18 +142,18 @@ public class MessageDeploymentGenerator extends MessageGenerator {
             switch (kind) {
                 case CACHE_OBJECT:
                     needsCctx = true;
-                    stmt = "GridCacheMessageDeployer.deployCacheObject(msg, %s, cctx);";
+                    stmt = "msg.deployCacheObject(%s, cctx);";
 
                     break;
 
                 case CACHE_OBJECTS:
                     needsCctx = true;
-                    stmt = "GridCacheMessageDeployer.deployCacheObjects(msg, %s, cctx);";
+                    stmt = "msg.deployCacheObjects(%s, cctx);";
 
                     break;
 
                 case TX_ENTRIES:
-                    stmt = "GridCacheMessageDeployer.deployTxEntries(msg, %s, ctx);";
+                    stmt = "msg.deployTx(%s, ctx);";
 
                     break;
 

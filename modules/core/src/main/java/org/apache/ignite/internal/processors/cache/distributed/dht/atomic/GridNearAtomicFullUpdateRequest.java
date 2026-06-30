@@ -31,7 +31,6 @@ import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.DeployableMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -386,13 +385,13 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         if (operation() == TRANSFORM) {
             GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
-            GridCacheMessageDeployer.forceDeploymentInfo(this, ctx);
+            forceDeploymentInfo(ctx);
 
             if (entryProcessorsBytes == null)
-                GridCacheMessageDeployer.deployCollection(this, entryProcessors, cctx);
+                deployCollection(entryProcessors, cctx);
 
             if (!F.isEmpty(invokeArgs) && invokeArgsBytes == null)
-                GridCacheMessageDeployer.deployInvokeArguments(this, invokeArgs, cctx);
+                deployInvokeArguments(invokeArgs, cctx);
         }
     }
 

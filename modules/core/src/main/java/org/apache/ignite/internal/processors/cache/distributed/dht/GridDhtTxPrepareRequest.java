@@ -28,7 +28,6 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.DeployableMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -313,7 +312,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest imp
                 GridCacheContext<?, ?> cctx = ctx.cacheContext(key.cacheId());
 
                 if (addDepInfo)
-                    GridCacheMessageDeployer.deployObject(this, key, cctx);
+                    deployObject(key, cctx);
             }
         }
     }

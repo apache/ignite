@@ -26,7 +26,6 @@ import org.apache.ignite.internal.processors.cache.DeployableMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -150,7 +149,7 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
         if (res instanceof CacheObject) {
             GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
-            GridCacheMessageDeployer.deployCacheObject(this, (CacheObject)res, cctx);
+            deployCacheObject((CacheObject)res, cctx);
         }
     }
 

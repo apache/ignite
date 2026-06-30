@@ -203,8 +203,9 @@ public abstract class GridCacheMessage implements Message {
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    final void deployObject(@Nullable Object o, GridCacheContext ctx) throws IgniteCheckedException {
-        deployObject(o, ctx.shared());
+    public final void deployObject(@Nullable Object o, @Nullable GridCacheContext ctx) throws IgniteCheckedException {
+        if (ctx != null)
+            deployObject(o, ctx.shared());
     }
 
     /**
@@ -237,6 +238,12 @@ public abstract class GridCacheMessage implements Message {
         }
     }
 
+    /** Forces deployment info to be added when peer-class-loading is enabled. */
+    public final void forceDeploymentInfo(GridCacheSharedContext<?, ?> ctx) {
+        if (!addDepInfo && ctx.deploymentEnabled())
+            addDepInfo = true;
+    }
+
     /**
      * @param depInfo Deployment to set.
      * @see GridCacheDeployable#deploy(GridDeploymentInfo)
@@ -267,7 +274,7 @@ public abstract class GridCacheMessage implements Message {
      * @param cacheObjCtx Cache object context.
      * @throws IgniteCheckedException If failed.
      */
-    final void deployInfo(GridCacheEntryInfo info,
+    public final void deployInfo(GridCacheEntryInfo info,
         GridCacheSharedContext ctx,
         CacheObjectContext cacheObjCtx
     ) throws IgniteCheckedException {
@@ -289,6 +296,13 @@ public abstract class GridCacheMessage implements Message {
         }
     }
 
+    /** Deploys all {@code infos}, resolving shared and cache-object contexts from {@code cctx}; no-op when {@code cctx} is absent. */
+    public final void deployInfos(@Nullable Iterable<? extends GridCacheEntryInfo> infos, @Nullable GridCacheContext cctx)
+        throws IgniteCheckedException {
+        if (cctx != null)
+            deployInfos(infos, cctx.shared(), cctx.cacheObjectContext());
+    }
+
     /**
      * @param infos Entries to marshal.
      * @param ctx Context.
@@ -308,7 +322,7 @@ public abstract class GridCacheMessage implements Message {
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    final void deployTx(Iterable<IgniteTxEntry> txEntries, GridCacheSharedContext ctx)
+    public final void deployTx(Iterable<IgniteTxEntry> txEntries, GridCacheSharedContext ctx)
         throws IgniteCheckedException {
         assert ctx != null;
 
@@ -369,11 +383,9 @@ public abstract class GridCacheMessage implements Message {
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    final void deployInvokeArguments(@Nullable Object[] args, GridCacheContext ctx)
+    public final void deployInvokeArguments(@Nullable Object[] args, @Nullable GridCacheContext ctx)
         throws IgniteCheckedException {
-        assert ctx != null;
-
-        if (args == null)
+        if (ctx == null || args == null)
             return;
 
         for (int i = 0; i < args.length; i++) {
@@ -430,9 +442,10 @@ public abstract class GridCacheMessage implements Message {
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    final void deployCollection(@Nullable Collection<?> col,
-        GridCacheContext ctx) throws IgniteCheckedException {
-        assert ctx != null;
+    public final void deployCollection(@Nullable Collection<?> col,
+        @Nullable GridCacheContext ctx) throws IgniteCheckedException {
+        if (ctx == null || col == null)
+            return;
 
         for (Object o : col) {
             if (addDepInfo)
@@ -445,11 +458,9 @@ public abstract class GridCacheMessage implements Message {
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    final void deployCacheObject(CacheObject obj, GridCacheContext ctx) throws IgniteCheckedException {
-        if (obj != null) {
-            if (addDepInfo)
-                deployObject(obj.value(ctx.cacheObjectContext(), false), ctx.shared());
-        }
+    public final void deployCacheObject(@Nullable CacheObject obj, @Nullable GridCacheContext ctx) throws IgniteCheckedException {
+        if (ctx != null && obj != null && addDepInfo)
+            deployObject(obj.value(ctx.cacheObjectContext(), false), ctx.shared());
     }
 
     /**
@@ -457,9 +468,9 @@ public abstract class GridCacheMessage implements Message {
      * @param ctx Cache context.
      * @throws IgniteCheckedException If failed.
      */
-    final void deployCacheObjects(@Nullable Collection<? extends CacheObject> col,
-        GridCacheContext ctx) throws IgniteCheckedException {
-        if (col == null)
+    public final void deployCacheObjects(@Nullable Collection<? extends CacheObject> col,
+        @Nullable GridCacheContext ctx) throws IgniteCheckedException {
+        if (col == null || ctx == null)
             return;
 
         for (CacheObject obj : col) {

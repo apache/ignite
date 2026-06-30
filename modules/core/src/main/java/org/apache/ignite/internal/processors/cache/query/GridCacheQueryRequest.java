@@ -26,7 +26,6 @@ import org.apache.ignite.internal.processors.cache.DeployableMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -592,29 +591,29 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
         if (keyValFilter != null && keyValFilterBytes == null) {
             if (addDepInfo)
-                GridCacheMessageDeployer.deployObject(this, keyValFilter, cctx);
+                deployObject(keyValFilter, cctx);
         }
 
         if (rdc != null && rdcBytes == null) {
             if (addDepInfo)
-                GridCacheMessageDeployer.deployObject(this, rdc, cctx);
+                deployObject(rdc, cctx);
         }
 
         if (trans != null && transBytes == null) {
             if (addDepInfo)
-                GridCacheMessageDeployer.deployObject(this, trans, cctx);
+                deployObject(trans, cctx);
         }
 
         if (!F.isEmpty(args) && argsBytes == null) {
             if (addDepInfo) {
                 for (Object arg : args)
-                    GridCacheMessageDeployer.deployObject(this, arg, cctx);
+                    deployObject(arg, cctx);
             }
         }
 
         if (idxQryDesc != null && idxQryDescBytes == null) {
             if (addDepInfo)
-                GridCacheMessageDeployer.deployObject(this, idxQryDesc, cctx);
+                deployObject(idxQryDesc, cctx);
         }
     }
 

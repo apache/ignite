@@ -28,7 +28,6 @@ import org.apache.ignite.internal.processors.cache.DeployableMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -163,15 +162,15 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
         GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
         if (dataBytes == null && data != null)
-            GridCacheMessageDeployer.deployCollection(this, data, cctx);
+            deployCollection(data, cctx);
 
         if (addDepInfo && !F.isEmpty(data)) {
             for (Object o : data) {
                 if (o instanceof Map.Entry) {
                     Map.Entry<?, ?> e = (Map.Entry<?, ?>)o;
 
-                    GridCacheMessageDeployer.deployObject(this, e.getKey(), cctx);
-                    GridCacheMessageDeployer.deployObject(this, e.getValue(), cctx);
+                    deployObject(e.getKey(), cctx);
+                    deployObject(e.getValue(), cctx);
                 }
             }
         }

@@ -31,7 +31,6 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -215,7 +214,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
         assert info.value() != null || historical : info;
 
         // Need to call this method to initialize info properly.
-        GridCacheMessageDeployer.deployInfo(this, info, ctx, cacheObjCtx);
+        deployInfo(info, ctx, cacheObjCtx);
 
         msgSize += info.marshalledSize(cacheObjCtx);
 

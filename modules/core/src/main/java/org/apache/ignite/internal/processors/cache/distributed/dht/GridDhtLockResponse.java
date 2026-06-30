@@ -26,7 +26,6 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.DeployableMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
-import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -130,7 +129,7 @@ public class GridDhtLockResponse extends GridDistributedLockResponse implements 
         if (preloadEntries != null) {
             GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
-            GridCacheMessageDeployer.deployInfos(this, preloadEntries, cctx);
+            deployInfos(preloadEntries, cctx);
         }
     }
 

@@ -33,12 +33,12 @@ public class TestCacheIdMessageDeployer implements GridCacheMessageDeployer<Test
     @Override public void deploy(TestCacheIdMessage msg, GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         GridCacheContext<?, ?> cctx = ctx.cacheContext(msg.cacheId());
 
-        GridCacheMessageDeployer.deployCacheObject(msg, msg.key, cctx);
+        msg.deployCacheObject(msg.key, cctx);
 
-        GridCacheMessageDeployer.deployCacheObject(msg, msg.val, cctx);
+        msg.deployCacheObject(msg.val, cctx);
 
-        GridCacheMessageDeployer.deployCacheObjects(msg, msg.keys, cctx);
+        msg.deployCacheObjects(msg.keys, cctx);
 
-        GridCacheMessageDeployer.deployTxEntries(msg, msg.writes, ctx);
+        msg.deployTx(msg.writes, ctx);
     }
 }

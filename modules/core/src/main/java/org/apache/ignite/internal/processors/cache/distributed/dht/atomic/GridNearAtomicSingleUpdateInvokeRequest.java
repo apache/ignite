@@ -30,7 +30,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.DeployableMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -187,15 +186,15 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
     @Override public void deploy(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
-        GridCacheMessageDeployer.forceDeploymentInfo(this, ctx);
+        forceDeploymentInfo(ctx);
 
         if (entryProc != null && entryProcBytes == null) {
             if (addDepInfo)
-                GridCacheMessageDeployer.deployObject(this, entryProc, cctx);
+                deployObject(entryProc, cctx);
         }
 
         if (!F.isEmpty(invokeArgs) && invokeArgsBytes == null)
-            GridCacheMessageDeployer.deployInvokeArguments(this, invokeArgs, cctx);
+            deployInvokeArguments(invokeArgs, cctx);
     }
 
     /** {@inheritDoc} */
