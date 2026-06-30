@@ -51,7 +51,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCommonsSystemProperties;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
@@ -117,6 +116,9 @@ public class GridNioServer<T> {
 
     /** Default session write timeout. */
     public static final int DFLT_SES_WRITE_TIMEOUT = 5000;
+
+    /** Default value for {@code idleTimeout} (in milliseconds). */
+    public static final int DFLT_IDLE_TIMEOUT = 7000;
 
     /** Default send queue limit. */
     public static final int DFLT_SEND_QUEUE_LIMIT = 0;
@@ -227,7 +229,7 @@ public class GridNioServer<T> {
     private volatile long writeTimeout = DFLT_SES_WRITE_TIMEOUT;
 
     /** Idle timeout. */
-    private volatile long idleTimeout = ConnectorConfiguration.DFLT_IDLE_TIMEOUT;
+    private volatile long idleTimeout = DFLT_IDLE_TIMEOUT;
 
     /** For test purposes only. */
     private boolean skipWrite;
@@ -1041,7 +1043,7 @@ public class GridNioServer<T> {
 
     /**
      * Gets configurable idle timeout for this session. If not set, default value is
-     * {@link ConnectorConfiguration#DFLT_IDLE_TIMEOUT}.
+     * {@link #DFLT_IDLE_TIMEOUT}.
      *
      * @return Idle timeout in milliseconds.
      */
