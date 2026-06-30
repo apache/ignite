@@ -186,6 +186,7 @@ import org.apache.ignite.internal.processors.cache.CacheDefaultBinaryAffinityKey
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgnitePeerToPeerClassLoadingException;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -194,6 +195,9 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
+import org.apache.ignite.internal.util.nio.GridNioFilter;
+import org.apache.ignite.internal.util.nio.GridNioServer;
+import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -7789,5 +7793,40 @@ public abstract class IgniteUtils extends CommonUtils {
     public static DiscoveryCustomMessage unwrapCustomMessage(DiscoverySpiCustomMessage msg) {
         return msg instanceof SecurityAwareCustomMessageWrapper ?
             ((SecurityAwareCustomMessageWrapper)msg).delegate() : (DiscoveryCustomMessage)msg;
+    }
+
+    /**
+     * Sets the received/sent bytes and per-session queue-size metric consumers on the given NIO server builder,
+     * creating the underlying metrics in the provided registry.
+     *
+     * @param builder NIO server builder.
+     * @param mreg Metric registry.
+     * @return The given builder for chaining.
+     */
+    public static <T> GridNioServer.Builder<T> setNioServerMetrics(GridNioServer.Builder<T> builder, MetricRegistryImpl mreg) {
+        return builder
+            .receivedBytesMetric(mreg.longAdderMetric(
+                GridNioServer.RECEIVED_BYTES_METRIC_NAME, GridNioServer.RECEIVED_BYTES_METRIC_DESC)::add)
+            .sentBytesMetric(mreg.longAdderMetric(
+                GridNioServer.SENT_BYTES_METRIC_NAME, GridNioServer.SENT_BYTES_METRIC_DESC)::add)
+            .outboundMessagesQueueSizeMetric(mreg.longAdderMetric(
+                GridNioServer.OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME,
+                GridNioServer.OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_DESC)::add)
+            .maxMessagesQueueSizeMetric(mreg.maxValueMetric(
+                GridNioServer.MAX_MESSAGES_QUEUE_SIZE_METRIC_NAME,
+                GridNioServer.MAX_MESSAGES_QUEUE_SIZE_METRIC_DESC, 60_000, 5)::update);
+    }
+
+    /**
+     * Registers the active TCP sessions count metric in the given registry, backed by the NIO server.
+     *
+     * @param srv NIO server.
+     * @param mreg Metric registry.
+     */
+    public static void registerNioServerMetrics(GridNioServer<?> srv, GridNioFilter[] filters, MetricRegistryImpl mreg) {
+        boolean sslEnabled = Arrays.stream(filters).anyMatch(filter -> filter instanceof GridNioSslFilter);
+
+        mreg.register(GridNioServer.SSL_ENABLED_METRIC_NAME, () -> sslEnabled, "Whether SSL is enabled");
+        mreg.register(GridNioServer.SESSIONS_CNT_METRIC_NAME, srv::activeTcpSessionsCount, "Active TCP sessions count.");
     }
 }

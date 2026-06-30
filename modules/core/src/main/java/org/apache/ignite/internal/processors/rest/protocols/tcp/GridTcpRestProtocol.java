@@ -36,6 +36,7 @@ import org.apache.ignite.internal.client.marshaller.GridClientMarshaller;
 import org.apache.ignite.internal.client.marshaller.jdk.GridClientJdkMarshaller;
 import org.apache.ignite.internal.client.marshaller.optimized.GridClientOptimizedMarshaller;
 import org.apache.ignite.internal.client.marshaller.optimized.GridClientZipOptimizedMarshaller;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
 import org.apache.ignite.internal.processors.rest.protocols.GridRestProtocolAdapter;
@@ -232,7 +233,9 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
             else
                 filters = new GridNioFilter[] { codec };
 
-            srv = GridNioServer.<GridClientMessage>builder()
+            MetricRegistryImpl mreg = ctx.metric().registry(REST_CONNECTOR_METRIC_REGISTRY_NAME);
+
+            GridNioServer.Builder<GridClientMessage> builder = GridNioServer.<GridClientMessage>builder()
                 .address(hostAddr)
                 .port(port)
                 .listener(lsnr)
@@ -247,9 +250,11 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
                 .socketReceiveBufferSize(cfg.getReceiveBufferSize())
                 .sendQueueLimit(cfg.getSendQueueLimit())
                 .filters(filters)
-                .directMode(false)
-                .metricRegistry(ctx.metric().registry(REST_CONNECTOR_METRIC_REGISTRY_NAME))
-                .build();
+                .directMode(false);
+
+            srv = U.setNioServerMetrics(builder, mreg).build();
+
+            U.registerNioServerMetrics(srv, filters, mreg);
 
             srv.idleTimeout(cfg.getIdleTimeout());
 
