@@ -256,6 +256,8 @@ public class IgniteExchangeLatchManagerDiscoHistoryTest extends GridCommonAbstra
                     log.error("TEST | additional node " + i0.get() + " stopped");
                 }
                 catch (Throwable e) {
+                    log.error("TEST | error stopoing additional node " + i0.get(), e);
+
                     addNodesStopErr.set(e);
                 }
             });
