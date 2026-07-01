@@ -151,7 +151,6 @@ public class IgniteExchangeLatchManagerDiscoHistoryTest extends GridCommonAbstra
         final IgniteEx crd = startGrid(0);
 
         log.error("TEST | nodes cnt 0: " + crd.cluster().nodes().size());
-        System.err.println("TEST | nodes cnt 0: " + crd.cluster().nodes().size());
 
         final CountDownLatch victimStartDelayLatch = new CountDownLatch(1);
         final CountDownLatch victimStartingLatch = new CountDownLatch(1);
@@ -223,13 +222,11 @@ public class IgniteExchangeLatchManagerDiscoHistoryTest extends GridCommonAbstra
                         () -> disco.totalJoinedNodes() >= (joinedNodesCnt + 1), DEFAULT_TIMEOUT));
 
                 log.error("TEST | nodes cnt 1: " + crd.cluster().nodes().size() + ", i = " + i);
-                System.err.println("TEST | nodes cnt 1: " + crd.cluster().nodes().size() + ", i = " + i);
             }
 
             assertTrue(waitForCondition(() -> disco.isEmptyTopologyHistory(topVer), getTestTimeout(), 50));
 
             log.error("TEST | nodes cnt 2: " + crd.cluster().nodes().size());
-            System.err.println("TEST | nodes cnt 2: " + crd.cluster().nodes().size());
 
             // Let's continue the ongoing exchange.
             victimStartDelayLatch.countDown();
@@ -241,12 +238,10 @@ public class IgniteExchangeLatchManagerDiscoHistoryTest extends GridCommonAbstra
         }
         finally {
             log.error("TEST | nodes cnt 4: " + crd.cluster().nodes().size());
-            System.err.println("TEST | nodes cnt 4: " + crd.cluster().nodes().size());
 
             IgnitionEx.stop(getTestIgniteInstanceName(1), true, ShutdownPolicy.IMMEDIATE, true);
 
             log.error("TEST | nodes cnt 5: " + crd.cluster().nodes().size());
-            System.err.println("TEST | nodes cnt 5: " + crd.cluster().nodes().size());
 
             AtomicInteger i0 = new AtomicInteger(1);
 
@@ -254,13 +249,11 @@ public class IgniteExchangeLatchManagerDiscoHistoryTest extends GridCommonAbstra
 
             srvFuts.forEach(f -> {
                 log.error("TEST | stopping additional node " + i0.getAndIncrement());
-                System.err.println("TEST | stopping additional node " + i0.getAndIncrement());
 
                 try {
                     f.get(DEFAULT_TIMEOUT);
 
-                    log.error("TEST | additional node " + i0.getAndIncrement() + " stopped");
-                    System.err.println("TEST | additional node " + i0.getAndIncrement() + " stopped");
+                    log.error("TEST | additional node " + i0.get() + " stopped");
                 }
                 catch (Throwable e) {
                     addNodesStopErr.set(e);
@@ -271,7 +264,6 @@ public class IgniteExchangeLatchManagerDiscoHistoryTest extends GridCommonAbstra
         }
 
         log.error("TEST | nodes cnt 6: " + crd.cluster().nodes().size());
-        System.err.println("TEST | nodes cnt 6: " + crd.cluster().nodes().size());
     }
 
     /**
