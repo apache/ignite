@@ -264,6 +264,8 @@ public class MdcCacheMetricsTest extends GridCommonAbstractTest {
             true,
             "mdcFilterCacheGroup"));
 
+        awaitPartitionMapExchange();
+
         BooleanMetric cache0DistributionSafeMetric = findMetricForCache(
             grid(1),
             CACHE_WITH_MDC_FILTER + "_0",
@@ -360,6 +362,8 @@ public class MdcCacheMetricsTest extends GridCommonAbstractTest {
             new ClusterNodeAttributeColocatedBackupFilter(STRETCHED_CELL_ATTR_NAME), true));
         client.getOrCreateCache(prepareCacheCfg(CACHE_WITH_MDC_SAFE_ATTRIBUTE_FILTER,
             new ClusterNodeAttributeAffinityBackupFilter(ATTR_DATA_CENTER_ID), true));
+
+        awaitPartitionMapExchange();
 
         BooleanMetric cacheWithMdcFilterDistributionSafeMetric = findMetricForCache(
             grid(1),
