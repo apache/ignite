@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.DistributedOperationContextMessage;
+import org.apache.ignite.internal.OperationContextMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
@@ -37,71 +37,62 @@ import org.jetbrains.annotations.Nullable;
  * {@link OperationContextAttribute} instance that is consistent across all cluster nodes.</p>
  *
  * <p>To enable propagation of an {@link OperationContextAttribute} value across cluster nodes, the
- * attribute must be created using the {@link #createDistributedAttribute(byte, Message)} method.
+ * attribute must be registered with the {@link #registerDistributedAttribute(int, OperationContextAttribute)} method.
  *
- * <p> Note, that the maximum number of distributed attribute instances that can be created is currently limited to
- * {@link #MAX_DISTRIBUTED_ATTR_CNT} for implementation reasons.</p>
+ * <p> Note, that the maximum number of distributed attributes to register is currently limited to
+ * {@link #MAX_ATTRS_CNT} for implementation reasons.</p>
  *
  * @see OperationContext
- * @see DistributedOperationContextMessage
+ * @see OperationContextMessage
  */
-public class DistributedOperationContextManager {
-    /** */
-    private static final DistributedOperationContextManager INSTANCE = new DistributedOperationContextManager();
-
+public class OperationContextDispatcher {
     /** Maximal number of supported distributed attributes. */
-    static final byte MAX_DISTRIBUTED_ATTR_CNT = Byte.SIZE;
+    static final byte MAX_ATTRS_CNT = Byte.SIZE;
 
     /** Registered distributed attributes by their cluster-wide id. */
-    private final Map<Byte, OperationContextAttribute<Message>> attrs = new ConcurrentSkipListMap<>();
+    private final Map<Byte, OperationContextAttribute<? extends Message>> attrs = new ConcurrentSkipListMap<>();
 
-    /** */
-    public static DistributedOperationContextManager instance() {
-        return INSTANCE;
-    }
+    /** Whether the registration of new distributed attributes is allowed. */
+    private volatile boolean regFinished;
 
     /**
-     * Creates a new {@link OperationContext} attribute with the specified distributed ID and initial value.
+     * Registers an attribute of {@link OperationContext} with the specified distributed ID.
      *
      * <p>The distributed ID is used to consistently identify the attribute across all nodes in the cluster.
-     * It must be unique, and its value must be in the range from {@code 0} (inclusive) to {@code Byte.SIZE} (exclusive).</p>
+     * It must be unique, and its value must be in the range [{@code 0} : {@code Byte.SIZE}).</p>
      *
-     * <p>The value of the created attribute is automatically captured and propagated between cluster nodes
-     * during message transmission.</p>
-     *
-     * @see OperationContextAttribute#newInstance(Object)
+     * <p>Registered attribute value is automatically captured and propagated between cluster nodes
+     * during the messages transmission.</p>
      */
-    public <T extends Message> OperationContextAttribute<T> createDistributedAttribute(byte id, @Nullable T initVal) {
-        assert id >= 0 && id < MAX_DISTRIBUTED_ATTR_CNT : "Invalid distributed attributed id [id=" + id + ']';
+    public <T extends Message> void registerDistributedAttribute(int id, OperationContextAttribute<T> attr) {
+        if (regFinished)
+            throw new IgniteException("Initialization of distributed operation context attributes has already finished.");
 
-        return (OperationContextAttribute<T>)attrs.compute(id, (id0, attr0) -> {
-            if (attr0 != null)
-                throw new IgniteException("Duplicated distributed attribute id [id=" + id + ']');
+        assert id >= 0 && id < MAX_ATTRS_CNT : "Invalid distributed attributed id [id=" + id + ']';
 
-            return OperationContextAttribute.newInstance(initVal);
-        });
+        if (attrs.putIfAbsent((byte)id, attr) != null)
+            throw new IgniteException("Duplicated distributed attribute id [id=" + id + ']');
     }
 
     /**
-     * Collects the values of all distributed {@link OperationContextAttribute}s registered by this manager in a format
-     * suitable for transmission between cluster nodes.
+     * Collects the values of all distributed {@link OperationContextAttribute}s registered by this dispatcher.
      *
      * @see OperationContext#get(OperationContextAttribute)
      */
-    public @Nullable DistributedOperationContextMessage collectDistributedAttributes() {
-        DistributedOperationContextMessage res = null;
+    public @Nullable OperationContextMessage collectDistributedAttributes() {
+        OperationContextMessage res = null;
         List<Message> vals = null;
 
-        for (Map.Entry<Byte, OperationContextAttribute<Message>> e : attrs.entrySet()) {
+        for (Map.Entry<Byte, OperationContextAttribute<? extends Message>> e : attrs.entrySet()) {
             OperationContextAttribute<? extends Message> attr = e.getValue();
 
             Message curVal = OperationContext.get(attr);
 
             if (curVal != attr.initialValue()) {
                 if (res == null) {
-                    res = new DistributedOperationContextMessage();
+                    res = new OperationContextMessage();
 
-                    vals = new ArrayList<>(MAX_DISTRIBUTED_ATTR_CNT / 2);
+                    vals = new ArrayList<>(MAX_ATTRS_CNT / 2);
                 }
 
                 byte mask = (byte)(1 << e.getKey());
@@ -120,13 +111,13 @@ public class DistributedOperationContextManager {
     }
 
     /** Restores distributed {@link OperationContextAttribute} values received from a remote node. */
-    public Scope restoreDistributedAttributes(@Nullable DistributedOperationContextMessage msg) {
+    public Scope restoreDistributedAttributes(@Nullable OperationContextMessage msg) {
         if (msg == null)
             return Scope.NOOP_SCOPE;
 
         assert msg.idBitmap != 0;
         assert !F.isEmpty(msg.vals);
-        assert msg.vals.length <= MAX_DISTRIBUTED_ATTR_CNT;
+        assert msg.vals.length <= MAX_ATTRS_CNT;
 
         OperationContext.ContextUpdater updater = OperationContext.ContextUpdater.create();
 
@@ -136,7 +127,7 @@ public class DistributedOperationContextManager {
             while ((msg.idBitmap & (1 << maskIdx)) == 0)
                 ++maskIdx;
 
-            OperationContextAttribute<Message> attr = attrs.get(maskIdx++);
+            OperationContextAttribute<Message> attr = (OperationContextAttribute<Message>)attrs.get(maskIdx++);
 
             assert attr != null;
 
@@ -146,8 +137,8 @@ public class DistributedOperationContextManager {
         return updater.apply();
     }
 
-    /** For testing purposes mostly. */
-    void clear() {
-        attrs.clear();
+    /** Restricts further registration of distributed attributes. */
+    public void finishRegistration() {
+        regFinished = true;
     }
 }

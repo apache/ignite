@@ -101,6 +101,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFini
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxOnePhaseCommitAckRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxSalvageMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnlockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.TransactionAttributesAwareRequest;
@@ -585,6 +586,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(StatisticsRequest.class);
         withNoSchema(StatisticsResponse.class);
         withNoSchema(CacheContinuousQueryBatchAck.class);
+        withNoSchema(GridDhtTxSalvageMessage.class);
         withSchema(CacheContinuousQueryEntry.class);
         withNoSchema(QueryInlineSizesDataBagItem.class);
         withSchema(QueryProposalsDataBagItem.class);
@@ -687,7 +689,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
 
         // [13400 - 13500]: Operation context messages.
         msgIdx = 13400;
-        withNoSchema(DistributedOperationContextMessage.class);
+        withNoSchema(OperationContextMessage.class);
 
         // [13500 - 13600]: Rolling Upgrade messages.
         msgIdx = 13500;
