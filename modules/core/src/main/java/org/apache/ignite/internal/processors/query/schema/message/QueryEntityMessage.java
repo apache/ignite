@@ -74,7 +74,7 @@ public class QueryEntityMessage implements MarshallableMessage {
 
     /**
      * Fields that must have non-null value.
-     * NB: Used in serde of both QueryEntity and QueryEntityEx in orther to avoid duplication.
+     * NB: Used in serde of both QueryEntity and QueryEntityEx in order to avoid duplication.
      */
     @Order(9)
     Set<String> notNullFields;

@@ -26,13 +26,14 @@ import org.apache.ignite.internal.processors.query.schema.message.QueryEntityExM
 import org.apache.ignite.internal.processors.query.schema.message.QueryEntityMessage;
 import org.apache.ignite.internal.util.typedef.F;
 
-/**
- * Enabling indexing on cache operation.
- */
+/** Operation, which enables indexing on cache operation. */
 public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation {
-    /** Query entities. */
+    /** Query entities messages. */
     @Order(0)
-    Collection<QueryEntityMessage> entities;
+    Collection<QueryEntityMessage> entitiesMsgs;
+
+    /** Original query entities. We keep them to avoid unneccessary conversions from messages. */
+    private Collection<QueryEntity> entities;
 
     /** */
     @Order(1)
@@ -62,28 +63,27 @@ public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation {
         boolean sqlEscape
     ) {
         super(opId, cacheName, schemaName);
-        this.entities = F.viewReadOnly(entities, this::makeEntityMessage);
+        this.entities = entities;
         this.qryParallelism = qryParallelism;
         this.sqlEscape = sqlEscape;
+
+        entitiesMsgs = F.viewReadOnly(entities, this::makeEntityMessage);
     }
 
-    /**
-     * @return Collection of query entities.
-     */
+    /** @return Collection of query entities. */
     public Collection<QueryEntity> entities() {
-        return F.viewReadOnly(entities, QueryEntityMessage::toEntity);
+        if (entities == null)
+            entities = F.viewReadOnly(entitiesMsgs, QueryEntityMessage::toEntity);
+
+        return entities;
     }
 
-    /**
-     * @return Query parallelism.
-     */
+    /** @return Query parallelism. */
     public int queryParallelism() {
         return qryParallelism;
     }
 
-    /**
-     * @return Sql escape flag.
-     */
+    /** @return Sql escape flag. */
     public boolean isSqlEscape() {
         return sqlEscape;
     }
