@@ -19,16 +19,20 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMetrics;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore;
+import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
@@ -246,11 +250,14 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** Conflict resolver merged entries count. */
     private LongAdderMetric rslvrMergedCnt;
 
-    /** */
-    private Boolean affCfgMdcSafe;
+    /** Affinity configuration MDC safe metric. */
+    private volatile Boolean affCfgMdcSafe;
 
-    /** */
-    private Boolean mdcSafePartDistrib;
+    /** Current partition distribution MDC safe metric. */
+    private volatile Boolean mdcSafePartDistrib;
+
+    /** Last affinity version when MdcSafe Partition Distribution metric was recalculated. */
+    private final AtomicReference<AffinityTopologyVersion> mdcSafeMetricLastVer = new AtomicReference<>();
 
     /**
      * Creates cache metrics.
@@ -1686,8 +1693,8 @@ public class CacheMetricsImpl implements CacheMetrics {
     }
 
     /**
-     * Returns {@code true} if affinity configuration is aware of multiple data centers and
-     * it able to spread partitions' copies across data centers.
+     * Returns {@code true} if affinity configuration is aware of multiple data centers, and
+     * it is able to spread partitions' copies across data centers.
      */
     private boolean isAffinityCfgMdcSafe() {
         return affCfgMdcSafe != null && affCfgMdcSafe;
@@ -1697,7 +1704,57 @@ public class CacheMetricsImpl implements CacheMetrics {
      * Returns {@code true} if current cache partition distribution maintains guarantee 'at least one partition copy in each datacenter'.
      */
     private boolean isMdcSafePartitionDistribution() {
+        return updateMdcSafeDistributionMetricIfNeeded();
+    }
+
+    /**
+     * Updates calculated value of Partition Distribution MDC safe metric if affinity has changed
+     * since last affinity change.
+     *
+     * @return Updated value of Partition Distribution MDC safe metric or cached value if affinity has not changed.
+     */
+    private boolean updateMdcSafeDistributionMetricIfNeeded() {
+        GridCacheAffinityManager aff = cctx.affinity();
+
+        try {
+            AffinityTopologyVersion currVer = aff.affinityTopologyVersion();
+            AffinityTopologyVersion lastVer = mdcSafeMetricLastVer.get();
+
+            // Skip expensive recalculation if the aff topology has not changed.
+            if (!currVer.equals(lastVer)) {
+                if (mdcSafeMetricLastVer.compareAndSet(lastVer, currVer))
+                    mdcSafePartDistrib = recalculateMdcSafeMetric(aff.assignment(currVer));
+            }
+        }
+        catch (Exception ignored) {
+            // Affinity manager could throw an exception if aff not found for the cache.
+            // This should not break any code calling this method, so we just ignore it.
+        }
+
         return mdcSafePartDistrib == null || mdcSafePartDistrib;
+    }
+
+    /**
+     * Recalcalculates Partition Distribution MDC safe metric based on provided assignment.
+     *
+     * @param assignment New assignment for the cache.
+     */
+    private Boolean recalculateMdcSafeMetric(AffinityAssignment assignment) {
+        BaselineTopology top = cctx.discovery().discoCache().state().baselineTopology();
+        if (top != null && top.numberOfDatacenters() > 1) {
+            int numberOfDataCenters = top.numberOfDatacenters();
+
+            for (List<ClusterNode> nodes : assignment.assignment()) {
+                int dcsCnt = (int)nodes.stream().map(ClusterNode::dataCenterId).distinct().count();
+
+                if (dcsCnt < numberOfDataCenters)
+                    return false;
+            }
+
+            return true;
+        }
+
+        return mdcSafePartDistrib;
     }
 
     /** {@inheritDoc} */
@@ -1778,11 +1835,6 @@ public class CacheMetricsImpl implements CacheMetrics {
             "True if cache affinity guarantees having a copy of each partition in each data center.");
 
         this.affCfgMdcSafe = affCfgMdcSafe;
-    }
-
-    /** Updates current partition distribution safety metric. */
-    public void setMdcSafePartitionDistribution(boolean safeDistribution) {
-        mdcSafePartDistrib = safeDistribution;
     }
 
     /** {@inheritDoc} */

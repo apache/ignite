@@ -1137,7 +1137,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         cache.onKernalStart();
 
-        registerMdcMetrics(cache);
+        registerMdcMetricsIfNeeded(cache);
 
         if (ctx.events().isRecordable(EventType.EVT_CACHE_STARTED))
             ctx.events().addEvent(EventType.EVT_CACHE_STARTED);
@@ -1148,7 +1148,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /** */
-    private void registerMdcMetrics(GridCacheAdapter<?, ?> cache) {
+    private void registerMdcMetricsIfNeeded(GridCacheAdapter<?, ?> cache) {
         if (ctx.clientNode())
             return;
 

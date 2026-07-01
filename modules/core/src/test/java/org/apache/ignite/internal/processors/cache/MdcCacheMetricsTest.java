@@ -377,7 +377,7 @@ public class MdcCacheMetricsTest extends GridCommonAbstractTest {
 
         assertNotNull(cacheWithMdcFilterDistributionSafeMetric);
         assertNotNull(cacheWithColocatedFilterDistributionSafeMetric);
-        assertNotNull(cacheWithColocatedFilterDistributionSafeMetric);
+        assertNotNull(cacheWithMdcSafeAttrFilterDistributionSafeMetric);
         assertTrue(cacheWithMdcFilterDistributionSafeMetric.value());
         assertTrue(cacheWithColocatedFilterDistributionSafeMetric.value());
         assertTrue(cacheWithMdcSafeAttrFilterDistributionSafeMetric.value());
@@ -414,6 +414,8 @@ public class MdcCacheMetricsTest extends GridCommonAbstractTest {
             new ClusterNodeAttributeColocatedBackupFilter(STRETCHED_CELL_ATTR_NAME), true));
         client.getOrCreateCache(prepareCacheCfg(CACHE_WITH_MDC_SAFE_ATTRIBUTE_FILTER,
             new ClusterNodeAttributeAffinityBackupFilter(ATTR_DATA_CENTER_ID), true));
+
+        awaitPartitionMapExchange();
 
         BooleanMetric cacheWithMdcFilterDistributionSafeMetric = findMetricForCache(
             grid(1),
@@ -483,6 +485,94 @@ public class MdcCacheMetricsTest extends GridCommonAbstractTest {
 
                 assertEquals(mdcSafeCaches.contains(cacheName), cacheMdcSafe);
             }
+        }
+    }
+
+    /**
+     * Test verifies that IsCacheAffinityConfigurationMdcSafe metric is NOT registered
+     * when MDC attribute (data center ID) is not configured in the cluster.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testAffinityCfgMdcSafeMetricNotRegisteredOnNonMdcCluster() throws Exception {
+        startGrids(2);
+
+        IgniteEx client = startClientGrid();
+
+        client.cluster().state(ClusterState.ACTIVE);
+
+        client.getOrCreateCache(
+            prepareCacheCfg(CACHE_WITH_MDC_FILTER, new MdcAffinityBackupFilter(2, 1), true));
+
+        client.getOrCreateCache(
+            prepareCacheCfg(MDC_UNSAFE_CACHE, null, false));
+
+        awaitPartitionMapExchange();
+
+        // Verify that IsCacheAffinityConfigurationMdcSafe metric is NOT registered on server nodes
+        for (int i = 0; i < 2; i++) {
+            IgniteEx srv = grid(i);
+
+            for (String cacheName : allCaches) {
+                BooleanMetric cacheMdcSafeMetric = findMetricForCache(srv, cacheName, AFFINITY_CFG_MDC_SAFE_METRIC_NAME);
+
+                assertNull("Metric " + AFFINITY_CFG_MDC_SAFE_METRIC_NAME +
+                    " should not be registered when MDC attribute is not configured [grid=" + i +
+                    ", cache=" + cacheName + ']', cacheMdcSafeMetric);
+            }
+        }
+
+        // Verify that the metric is also NOT registered on client nodes
+        for (String cacheName : allCaches) {
+            BooleanMetric cacheMdcSafeMetric = findMetricForCache(client, cacheName, AFFINITY_CFG_MDC_SAFE_METRIC_NAME);
+
+            assertNull("Metric " + AFFINITY_CFG_MDC_SAFE_METRIC_NAME +
+                " should not be registered on client node [cache=" + cacheName + ']', cacheMdcSafeMetric);
+        }
+    }
+
+    /**
+     * Test verifies that IsCachePartitionDistributionSafe metric is NOT registered
+     * when MDC attribute (data center ID) is not configured in the cluster.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPartitionDistributionMetricNotRegisteredOnNonMdcCluster() throws Exception {
+        startGrids(2);
+
+        IgniteEx client = startClientGrid();
+
+        client.cluster().state(ClusterState.ACTIVE);
+
+        client.getOrCreateCache(
+            prepareCacheCfg(CACHE_WITH_MDC_FILTER, new MdcAffinityBackupFilter(2, 1), true));
+
+        client.getOrCreateCache(
+            prepareCacheCfg(MDC_UNSAFE_CACHE, null, false));
+
+        awaitPartitionMapExchange();
+
+        // Verify that IsCachePartitionDistributionSafe metric is NOT registered on server nodes
+        for (int i = 0; i < 2; i++) {
+            IgniteEx srv = grid(i);
+
+            for (String cacheName : allCaches) {
+                BooleanMetric partDistMetric = findMetricForCache(srv, cacheName, PARTITION_DISTRIBUTION_SAFE_METRIC_NAME);
+
+                assertNull("Metric " + PARTITION_DISTRIBUTION_SAFE_METRIC_NAME +
+                    " should not be registered when MDC attribute is not configured [grid=" + i +
+                    ", cache=" + cacheName + ']', partDistMetric);
+            }
+        }
+
+        // Verify that the metric is also NOT registered on client nodes
+        for (String cacheName : allCaches) {
+            BooleanMetric partDistMetric = findMetricForCache(client, cacheName, PARTITION_DISTRIBUTION_SAFE_METRIC_NAME);
+
+            assertNull("Metric " + PARTITION_DISTRIBUTION_SAFE_METRIC_NAME +
+                " should not be registered on client node [cache=" + cacheName + ']', partDistMetric);
         }
     }
 

@@ -69,7 +69,6 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.pagemem.wal.record.ExchangeRecord;
-import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
@@ -2459,14 +2458,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 cleanIdxRebuildFutures = false;
 
-                for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-                    AffinityAssignment assignment = grp.affinity().readyAffinity(res);
-
-                    grp.topology().onExchangeDone(this, assignment, false);
-
-                    if (!grp.isReplicated())
-                        updateMdcMetrics(grp, assignment);
-                }
+                for (CacheGroupContext grp : cctx.cache().cacheGroups())
+                    grp.topology().onExchangeDone(this, grp.affinity().readyAffinity(res), false);
 
                 if (changedAffinity())
                     cctx.walState().disableGroupDurabilityForPreloading(this);
@@ -2600,35 +2593,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         if (changedAffinity())
             cctx.exchange().blockingDurationHistogram().value(duration);
-    }
-
-    /**
-     * Updates metric for a partition distribution across data centers for a given cache group.
-     *
-     * @param grp Cache group the metric should be recalculated for.
-     * @param assignment New assignment for the cache group.
-     */
-    private void updateMdcMetrics(CacheGroupContext grp, AffinityAssignment assignment) {
-        BaselineTopology top = cctx.discovery().discoCache().state().baselineTopology();
-        if (top != null) {
-            int numberOfDataCenters = top.numberOfDatacenters();
-            boolean mdcSafeDistribution = true;
-
-            for (List<ClusterNode> nodes : assignment.assignment()) {
-                int dcsCnt = (int)nodes.stream().map(ClusterNode::dataCenterId).distinct().count();
-
-                if (dcsCnt < numberOfDataCenters) {
-                    mdcSafeDistribution = false;
-
-                    break;
-                }
-            }
-
-            boolean finalMdcSafeDistribution = mdcSafeDistribution;
-
-            grp.caches().forEach(
-                cache -> cache.cache().metrics0().setMdcSafePartitionDistribution(finalMdcSafeDistribution));
-        }
     }
 
     /**

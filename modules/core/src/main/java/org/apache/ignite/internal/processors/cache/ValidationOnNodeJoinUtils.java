@@ -657,8 +657,9 @@ public class ValidationOnNodeJoinUtils {
                     return false;
             }
 
-            if (!(filter instanceof MdcAffinityBackupFilter) && !(filter instanceof ClusterNodeAttributeColocatedBackupFilter))
-                return false;
+            return filter instanceof MdcAffinityBackupFilter
+                    || filter instanceof ClusterNodeAttributeColocatedBackupFilter
+                    || filter instanceof ClusterNodeAttributeAffinityBackupFilter;
         }
 
         return true;
