@@ -32,6 +32,7 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import com.github.dockerjava.api.model.ContainerNetwork;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterState;
@@ -191,8 +192,12 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
         super.stop();
     }
 
-    /** In-place upgrade inside Docker: graceful stop → swap libs → restart. */
+    /** In-place upgrade inside Docker: clean libs → graceful stop → swap libs → restart. */
     public void upgradeAndRestart() throws Exception {
+        LOGGER.info("Cleaning up old libs in container {}", hostname);
+
+        execInContainer("rm", "-f", LIBS_DIR_PATH + "*");
+
         stopGraceful();
 
         restartWithTargetLibs(TARGET_LIBS_DIR);
@@ -232,9 +237,11 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
     private void restartWithTargetLibs(Path targetLibsHostDir) throws Exception {
         LOGGER.info("Replacing libs in container {} with jars from {}", hostname, targetLibsHostDir);
 
-        for (Path file : Files.list(targetLibsHostDir).toArray(Path[]::new))
-            if (Files.isRegularFile(file))
-                copyFileToContainer(forHostPath(file.toAbsolutePath().toString()), LIBS_DIR_PATH + file.getFileName().toString());
+        try (Stream<Path> files = Files.list(targetLibsHostDir)) {
+            for (Path file : files.toArray(Path[]::new))
+                if (Files.isRegularFile(file))
+                    copyFileToContainer(forHostPath(file.toAbsolutePath().toString()), LIBS_DIR_PATH + file.getFileName().toString());
+        }
 
         // Re-inject the test-classes jar.
         copyFileToContainer(forHostPath(testClassesJar().getAbsolutePath()), LIBS_DIR_PATH + "test-classes.jar");

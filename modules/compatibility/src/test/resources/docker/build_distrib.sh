@@ -15,6 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
 # Prepares target libs for DOCKER upgrade mode:
 #   1. Builds the distribution ZIP if missing.
 #   2. Extracts the ZIP into target/bin/.

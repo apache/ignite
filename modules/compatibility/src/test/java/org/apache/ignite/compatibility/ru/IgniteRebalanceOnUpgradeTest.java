@@ -44,8 +44,10 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.testcontainers.DockerClientFactory;
 
 import static org.apache.ignite.compatibility.testframework.testcontainers.IgniteContainer.LOCAL_WORK_DIR_PATH;
 import static org.apache.ignite.testframework.GridTestUtils.DFLT_TEST_TIMEOUT;
@@ -61,8 +63,7 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
     );
 
     /** Source version image tag, overridable via {@code -Dru.source.commit.hash}. */
-    private static final String SOURCE_COMMIT_HASH = System.getProperty("ru.source.commit.hash",
-        "0ad4656eef09acda288cbad96f80f0138732d94a");
+    private static final String SOURCE_COMMIT_HASH = System.getProperty("ru.source.commit.hash");
 
     /** Upgrade mode. */
     private static final UpgradeMode UPGRADE_MODE = UpgradeMode.valueOf(System.getProperty("ru.upgrade.mode",
@@ -86,6 +87,11 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
     /** */
     @BeforeClass
     public static void beforeClass() {
+        Assume.assumeTrue("Docker is required for this test", DockerClientFactory.instance().isDockerAvailable());
+
+        if (SOURCE_COMMIT_HASH == null)
+            throw new RuntimeException("Source version image tag must be specified via `-Dru.source.commit.hash`");
+
         U.delete(LOCAL_WORK_DIR);
     }
 
@@ -254,7 +260,7 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
                 int port = addr.getPort();
 
                 // Each sequentially started host node binds the next port in the discovery (48500+) and
-                // communication (47100+) ranges; map them all to the Docker host address so the containers
+                // communication (49100+) ranges; map them all to the Docker host address so the containers
                 // can reach every host JVM node.
                 if ((port >= 48500 && port < 48600) || (port >= 49100 && port < 49200))
                     return Set.of(new InetSocketAddress(ip, port));
