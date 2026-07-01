@@ -196,7 +196,10 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
     public void upgradeAndRestart() throws Exception {
         LOGGER.info("Cleaning up old libs in container {}", hostname);
 
-        execInContainer("rm", "-f", LIBS_DIR_PATH + "*");
+        ExecResult result = execInContainer("sh", "-c", "rm -f " + LIBS_DIR_PATH + "*");
+
+        if (result.getExitCode() != 0)
+            throw new IllegalStateException("Failed to clean libs: " + result.getStderr());
 
         stopGraceful();
 
@@ -368,7 +371,7 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
         }
 
         if (result.getExitCode() != 0)
-            throw new IllegalStateException(result.toString());
+            throw new IllegalStateException(result.getStderr());
 
         return result.getStdout();
     }
