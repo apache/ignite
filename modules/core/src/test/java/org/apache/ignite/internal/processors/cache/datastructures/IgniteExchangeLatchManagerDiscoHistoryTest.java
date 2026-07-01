@@ -52,7 +52,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_HISTORY_SIZE;
-import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Test {@link ExchangeLatchManager} throws {@link IgniteException} with appropriate message when topology history
@@ -205,7 +204,7 @@ public class IgniteExchangeLatchManagerDiscoHistoryTest extends GridCommonAbstra
             final long topVer = 2;
 
             // Starting server nodes to exhaust the topology history.
-            for (int i = 2; i < 2 + TOPOLOGY_HISTORY_SIZE; ++i) {
+            for (int i = 2; i < 3 * TOPOLOGY_HISTORY_SIZE && !disco.isEmptyTopologyHistory(topVer); ++i) {
                 final int currNodeIdx = i;
 
                 final int joinedNodesCnt = disco.totalJoinedNodes();
@@ -213,16 +212,18 @@ public class IgniteExchangeLatchManagerDiscoHistoryTest extends GridCommonAbstra
                 srvFuts.add(GridTestUtils.runAsync(() -> startGrid(currNodeIdx)));
 
                 assertTrue("Failed to wait for a new server node [joinedNodesCnt=" + joinedNodesCnt + "]",
-                    waitForCondition(
+                    GridTestUtils.waitForCondition(
                         () -> disco.totalJoinedNodes() >= (joinedNodesCnt + 1), DEFAULT_TIMEOUT));
             }
 
-            assertTrue(waitForCondition(() -> disco.isEmptyTopologyHistory(topVer), getTestTimeout(), 50));
+            assertTrue(
+                "Disco cache history is not empty for the topology [majorTopVer=" + topVer + ']',
+                disco.isEmptyTopologyHistory(topVer));
 
             // Let's continue the ongoing exchange.
             exchangeLatch.countDown();
 
-            boolean failureHnd = waitForCondition(() -> cpFailureCtx.get() != null, DEFAULT_TIMEOUT);
+            boolean failureHnd = GridTestUtils.waitForCondition(() -> cpFailureCtx.get() != null, DEFAULT_TIMEOUT);
 
             assertNull(
                 "Unexpected exception (probably, the topology history still exists [err=" + err + ']',

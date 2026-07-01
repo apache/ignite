@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.net.InetSocketAddress;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.security.SecuritySubject;
@@ -28,10 +29,13 @@ import org.apache.ignite.plugin.security.SecuritySubjectType;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Represents {@link SecurityContext} implementation that ignores any security permission checks and is able to transfer
- * id of {@link SecuritySubject} as a {@link Message}.
+ * <p>Represents {@link SecurityContext} implementation that ignores any security permission checks.</p
+ * <p>Transfers {@link SecuritySubject#id()} operation context attribute as a {@link Message}.</p>
  *
- * @see #SecurityContextImpl(UUID)
+ * @see SecurityContextImpl(UUID)
+ * @see SecuritySubjectImpl#id()
+ * @see IgniteSecurityProcessor#SEC_CTX_ATTR
+ * @see OperationContextDispatcher
  */
 public class SecurityContextImpl implements SecurityContext, Message, Serializable {
     /** */
@@ -66,7 +70,7 @@ public class SecurityContextImpl implements SecurityContext, Message, Serializab
         subj = new SecuritySubjectImpl(login, type, addr);
     }
 
-    /**  */
+    /** Casts to or wraps with {@link SecurityContextImpl} passed {@ctx}. */
     public static @Nullable SecurityContextImpl of(@Nullable SecurityContext ctx) {
         if (ctx == null || ctx instanceof SecurityContextImpl)
             return (SecurityContextImpl)ctx;
@@ -79,7 +83,10 @@ public class SecurityContextImpl implements SecurityContext, Message, Serializab
         return subj;
     }
 
-    /** Represents {@link SecuritySubject} implementation. */
+    /**
+     * Implementation of {@link SecuritySubject} linked to parent {@link SecurityContextImpl}.
+     * Follows {@link SecurityContextImpl#subjId}.
+     */
     private class SecuritySubjectImpl implements SecuritySubject {
         /** */
         private static final long serialVersionUID = 0L;
@@ -100,7 +107,7 @@ public class SecurityContextImpl implements SecurityContext, Message, Serializab
             this.addr = addr;
         }
 
-        /** {@inheritDoc} */
+        /** @return {@link SecurityContextImpl#subjId}. */
         @Override public UUID id() {
             return subjId;
         }
