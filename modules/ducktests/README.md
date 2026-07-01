@@ -46,6 +46,14 @@ pip install -r docker/requirements-dev.txt
 pip install -e .
 ```
 
+> If your environment is configured to look only at internal or restricted artifact registries, `pip install` may fail to find specific package versions.
+>
+> To resolve this, append the public PyPI mirror to your installation command:
+
+```bash
+pip install -r docker/requirements-dev.txt --extra-index-url https://pypi.org/simple
+```
+
 ### 4. Run a Smoke Test
 Run the test runner script by pointing it directly to a specific smoke test target. The script will automatically build the required container images, bring up the necessary nodes, and run the test scenario:
 
