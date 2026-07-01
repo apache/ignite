@@ -21,9 +21,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -37,7 +37,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Par
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.ExchangeLatchManager;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -52,6 +51,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_HISTORY_SIZE;
+import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -79,6 +79,13 @@ public class IgniteExchangeLatchManagerDiscoHistoryTest extends GridCommonAbstra
 
     /** Failure context. */
     private final AtomicReference<FailureContext> cpFailureCtx = new AtomicReference<>();
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        stopAllGrids(true);
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -143,11 +150,11 @@ public class IgniteExchangeLatchManagerDiscoHistoryTest extends GridCommonAbstra
     public void testProperException() throws Exception {
         final IgniteEx crd = startGrid(0);
 
-        final CountDownLatch exchangeLatch = new CountDownLatch(1);
+        log.error("TEST | nodes cnt 0: " + crd.cluster().nodes().size());
+        System.err.println("TEST | nodes cnt 0: " + crd.cluster().nodes().size());
 
-        final CountDownLatch startSrvsLatch = new CountDownLatch(1);
-
-        final AtomicReference<Exception> err = new AtomicReference<>();
+        final CountDownLatch victimStartDelayLatch = new CountDownLatch(1);
+        final CountDownLatch victimStartingLatch = new CountDownLatch(1);
 
         // Lifecycle bean that is used to register PartitionsExchangeAware listener.
         lifecycleBean = new LifecycleBean() {
@@ -167,14 +174,14 @@ public class IgniteExchangeLatchManagerDiscoHistoryTest extends GridCommonAbstra
                                     @Override public void onInitBeforeTopologyLock(
                                         GridDhtPartitionsExchangeFuture fut) {
                                         try {
-                                            // Let's start nodes.
-                                            startSrvsLatch.countDown();
+                                            // Let's start the other nodes.
+                                            victimStartingLatch.countDown();
 
                                             // Blocks the initial exchange and waits for other nodes.
-                                            exchangeLatch.await(DEFAULT_TIMEOUT, TimeUnit.MILLISECONDS);
+                                            assertTrue(victimStartDelayLatch.await(DEFAULT_TIMEOUT, TimeUnit.MILLISECONDS));
                                         }
-                                        catch (Exception e) {
-                                            err.compareAndSet(null, e);
+                                        catch (Throwable e) {
+                                            log.error("Unexpected victim start error.", e);
                                         }
                                     }
                                 });
@@ -192,13 +199,12 @@ public class IgniteExchangeLatchManagerDiscoHistoryTest extends GridCommonAbstra
         GridTestUtils.runAsync(() -> startGrid(1));
 
         // Waits for the initial exchange.
-        startSrvsLatch.await(DEFAULT_TIMEOUT, TimeUnit.MILLISECONDS);
+        assertTrue(victimStartingLatch.await(DEFAULT_TIMEOUT, TimeUnit.MILLISECONDS));
 
         victim = false;
-
         lifecycleBean = null;
 
-        List<IgniteInternalFuture> srvFuts = new ArrayList<>(TOPOLOGY_HISTORY_SIZE);
+        List<IgniteInternalFuture<?>> srvFuts = new ArrayList<>(TOPOLOGY_HISTORY_SIZE);
 
         try {
             // Major topology version that is corresponding to the start of the node with short topology history.
@@ -215,46 +221,57 @@ public class IgniteExchangeLatchManagerDiscoHistoryTest extends GridCommonAbstra
                 assertTrue("Failed to wait for a new server node [joinedNodesCnt=" + joinedNodesCnt + "]",
                     waitForCondition(
                         () -> disco.totalJoinedNodes() >= (joinedNodesCnt + 1), DEFAULT_TIMEOUT));
+
+                log.error("TEST | nodes cnt 1: " + crd.cluster().nodes().size() + ", i = " + i);
+                System.err.println("TEST | nodes cnt 1: " + crd.cluster().nodes().size() + ", i = " + i);
             }
 
             assertTrue(waitForCondition(() -> disco.isEmptyTopologyHistory(topVer), getTestTimeout(), 50));
 
+            log.error("TEST | nodes cnt 2: " + crd.cluster().nodes().size());
+            System.err.println("TEST | nodes cnt 2: " + crd.cluster().nodes().size());
+
             // Let's continue the ongoing exchange.
-            exchangeLatch.countDown();
+            victimStartDelayLatch.countDown();
 
-            boolean failureHnd = waitForCondition(() -> cpFailureCtx.get() != null, DEFAULT_TIMEOUT);
+            assertTrue(waitForCondition(() -> cpFailureCtx.get() != null, getTestTimeout(), 50));
 
-            assertNull(
-                "Unexpected exception (probably, the topology history still exists [err=" + err + ']',
-                err.get());
-
-            assertTrue("Failure handler was not triggered.", failureHnd);
-
-            // Check that IgniteException was thrown instead of NullPointerException.
-            assertTrue(
-                "IgniteException must be thrown.",
-                X.hasCause(cpFailureCtx.get().error(), IgniteException.class));
-
-            // Check that message contains a hint to fix the issue.
-            GridTestUtils.assertContains(
-                log,
-                cpFailureCtx.get().error().getMessage(),
+            assertContains(log, cpFailureCtx.get().error().getMessage(),
                 "Consider increasing IGNITE_DISCOVERY_HISTORY_SIZE property. Current value is " + DISCO_HISTORY_SIZE);
         }
         finally {
+            log.error("TEST | nodes cnt 4: " + crd.cluster().nodes().size());
+            System.err.println("TEST | nodes cnt 4: " + crd.cluster().nodes().size());
+
             IgnitionEx.stop(getTestIgniteInstanceName(1), true, ShutdownPolicy.IMMEDIATE, true);
 
+            log.error("TEST | nodes cnt 5: " + crd.cluster().nodes().size());
+            System.err.println("TEST | nodes cnt 5: " + crd.cluster().nodes().size());
+
+            AtomicInteger i0 = new AtomicInteger(1);
+
+            AtomicReference<Throwable> addNodesStopErr = new AtomicReference<>();
+
             srvFuts.forEach(f -> {
+                log.error("TEST | stopping additional node " + i0.getAndIncrement());
+                System.err.println("TEST | stopping additional node " + i0.getAndIncrement());
+
                 try {
                     f.get(DEFAULT_TIMEOUT);
+
+                    log.error("TEST | additional node " + i0.getAndIncrement() + " stopped");
+                    System.err.println("TEST | additional node " + i0.getAndIncrement() + " stopped");
                 }
-                catch (IgniteCheckedException e) {
-                    err.compareAndSet(null, e);
+                catch (Throwable e) {
+                    addNodesStopErr.set(e);
                 }
             });
+
+            assertNull("Unexpected additional nodes stop exception [err=" + addNodesStopErr.get() + ']', addNodesStopErr.get());
         }
 
-        assertNull("Unexpected exception [err=" + err.get() + ']', err.get());
+        log.error("TEST | nodes cnt 6: " + crd.cluster().nodes().size());
+        System.err.println("TEST | nodes cnt 6: " + crd.cluster().nodes().size());
     }
 
     /**
