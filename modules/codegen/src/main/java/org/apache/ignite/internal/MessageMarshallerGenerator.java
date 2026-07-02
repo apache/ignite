@@ -424,13 +424,20 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         forEachMarshalled((bytesAcc, objAcc) -> {
             List<String> code = new ArrayList<>();
 
-            code.add(indentedLine("if (%s != null)", bytesAcc));
+            code.add(indentedLine("if (%s != null) {", bytesAcc));
 
             indent++;
 
             code.add(indentedLine("%s = U.unmarshal(marshaller, %s, %s);", objAcc, bytesAcc, clsLdr));
+            code.add(EMPTY);
+
+            // Drop the serialized cache once the object is restored: keeping both the deserialized value and its bytes
+            // on every received message doubles retained memory (e.g. topology history nodes) and can exhaust the heap.
+            code.add(indentedLine("%s = null;", bytesAcc));
 
             indent--;
+
+            code.add(indentedLine("}"));
 
             return code;
         }, body);
