@@ -239,7 +239,7 @@ import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultRe
 import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeNodeData;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureSet;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteProductFeatures;
-import org.apache.ignite.internal.processors.security.SecurityContextImpl;
+import org.apache.ignite.internal.processors.security.SecurityContextMessage;
 import org.apache.ignite.internal.processors.service.ServiceChangeBatchRequest;
 import org.apache.ignite.internal.processors.service.ServiceClusterDeploymentResult;
 import org.apache.ignite.internal.processors.service.ServiceClusterDeploymentResultBatch;
@@ -692,7 +692,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         // [13400 - 13500]: Operation context messages.
         msgIdx = 13400;
         withNoSchema(OperationContextMessage.class);
-        withNoSchema(SecurityContextImpl.class);
+        withNoSchema(SecurityContextMessage.class);
 
         // [13600 - 13700]: Rolling Upgrade messages.
         msgIdx = 13600;

@@ -97,14 +97,12 @@ import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccess
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
-import org.apache.ignite.internal.processors.security.IgniteSecurityProcessor;
-import org.apache.ignite.internal.processors.security.SecurityContextImpl;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.processors.tracing.SpanTags;
-import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -1832,9 +1830,15 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         if (change)
             CUR_PLC.set(plc);
 
-        SecurityContextImpl secCtxMsg = OperationContext.get(IgniteSecurityProcessor.SEC_CTX_ATTR);
+        UUID newSecSubjId;
 
-        UUID newSecSubjId = secCtxMsg == null ? nodeId : secCtxMsg.subjId;
+        if (ctx.security().isDefaultContext())
+            newSecSubjId = ctx.security().securityContext().subject().id();
+        else {
+            SecurityContext secCtx = ctx.security().securityContext();
+
+            newSecSubjId = secCtx == null ? nodeId : secCtx.subject().id();
+        }
 
         try (Scope ignored = ctx.security().withContext(newSecSubjId)) {
             lsnr.onMessage(nodeId, msg, plc);
@@ -2033,7 +2037,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
     }
 
     /** @return A {@link GridIoMessage} wrapper for {@code msg}. */
-    private GridIoMessage createGridIoMessage(
+    public GridIoMessage createGridIoMessage(
         Object topic,
         Message msg,
         byte plc,
@@ -2043,16 +2047,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
     ) {
         GridIoMessage res;
 
-        UUID secSubjId = ctx.security().enabled() && !ctx.security().isDefaultContext()
-            ? ctx.security().securityContext().subject().id()
-            : null;
-
         res = new GridIoMessage(plc, topic, msg, ordered, timeout, skipOnTimeout);
 
-        try (Scope ignored = secSubjId == null ? Scope.NOOP_SCOPE
-            : OperationContext.set(IgniteSecurityProcessor.SEC_CTX_ATTR, new SecurityContextImpl(secSubjId))) {
-            res.opCtxMsg = ctx.operationContextDispatcher().collectDistributedAttributes();
-        }
+        res.opCtxMsg = ctx.operationContextDispatcher().collectDistributedAttributes();
 
         return res;
     }

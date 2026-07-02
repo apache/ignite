@@ -72,6 +72,9 @@ import static org.apache.ignite.plugin.security.SecurityPermission.JOIN_AS_SERVE
  * </ul>
  */
 public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
+    /** */
+    static final byte SECURITY_CONTEXT_ATTRIBUTE_ID = 0;
+
     /**  */
     private static final String FAILED_OBTAIN_SEC_CTX_MSG = "Failed to obtain a security context.";
 
@@ -89,7 +92,7 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
     }
 
     /** Attribute that holds local and distributed Security Context. */
-    public static final OperationContextAttribute<SecurityContextImpl> SEC_CTX_ATTR = OperationContextAttribute.newInstance();
+    private static final OperationContextAttribute<SecurityContextMessage> SEC_CTX_ATTR = OperationContextAttribute.newInstance();
 
     /** Security processor. */
     private final GridSecurityProcessor secPrc;
@@ -126,7 +129,7 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
 
     /** {@inheritDoc} */
     @Override public Scope withContext(SecurityContext secCtx) {
-        return OperationContext.set(SEC_CTX_ATTR, secCtx == dfltSecCtx ? null : SecurityContextImpl.of(secCtx));
+        return OperationContext.set(SEC_CTX_ATTR, secCtx == dfltSecCtx ? null : new SecurityContextMessage(secCtx));
     }
 
     /** {@inheritDoc} */
@@ -177,9 +180,19 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
 
     /** {@inheritDoc} */
     @Override public SecurityContext securityContext() {
-        SecurityContext res = OperationContext.get(SEC_CTX_ATTR);
+        SecurityContextMessage secCtxMsg = OperationContext.get(SEC_CTX_ATTR);
 
-        return res == null ? dfltSecCtx : res;
+        if (secCtxMsg != null) {
+            if (secCtxMsg.delegate() == null) {
+                try (Scope ignored = withContext(secCtxMsg.subjId)) {
+                    return securityContext();
+                }
+            }
+
+            return secCtxMsg.delegate();
+        }
+
+        return dfltSecCtx;
     }
 
     /** {@inheritDoc} */
@@ -236,7 +249,7 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
     @Override public void start() throws IgniteCheckedException {
         super.start();
 
-        ctx.operationContextDispatcher().registerDistributedAttribute(0, SEC_CTX_ATTR);
+        ctx.operationContextDispatcher().registerDistributedAttribute(SECURITY_CONTEXT_ATTRIBUTE_ID, SEC_CTX_ATTR);
 
         ctx.addNodeAttribute(ATTR_GRID_SEC_PROC_CLASS, secPrc.getClass().getName());
 

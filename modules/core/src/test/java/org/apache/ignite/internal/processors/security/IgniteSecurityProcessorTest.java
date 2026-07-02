@@ -22,10 +22,13 @@ import java.util.UUID;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteDiagnosticRequest;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.OperationContextMessage;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.security.impl.TestSecurityContext;
 import org.apache.ignite.internal.processors.security.impl.TestSecuritySubject;
-import org.apache.ignite.internal.thread.context.OperationContext;
-import org.apache.ignite.internal.thread.context.Scope;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -68,6 +71,8 @@ public class IgniteSecurityProcessorTest extends AbstractSecurityTest {
 
         getSpiMethod.setAccessible(true);
 
+        TcpCommunicationSpi spi = (TcpCommunicationSpi)getSpiMethod.invoke(cli.context().io());
+
         LogListener logPattern = LogListener
             .matches(s -> s.contains("Failed to obtain a security context."))
             .times(1)
@@ -75,11 +80,17 @@ public class IgniteSecurityProcessorTest extends AbstractSecurityTest {
 
         listeningLog.registerListener(logPattern);
 
-        SecurityContextImpl testSecCtx = new SecurityContextImpl(new TestSecuritySubject().setId(UUID.randomUUID()));
+        GridIoMessage msg = cli.context().io().createGridIoMessage(TOPIC_CACHE, new IgniteDiagnosticRequest(), PUBLIC_POOL,
+            false, 0, false);
 
-        try (Scope ignored = OperationContext.set(IgniteSecurityProcessor.SEC_CTX_ATTR, testSecCtx)) {
-            cli.context().io().sendToGridTopic(srv.localNode(), TOPIC_CACHE, new IgniteDiagnosticRequest(), PUBLIC_POOL);
-        }
+        msg.opCtxMsg = new OperationContextMessage();
+
+        msg.opCtxMsg.vals = new Message[]{new SecurityContextMessage(new TestSecurityContext(new TestSecuritySubject()
+            .setId(UUID.randomUUID())))};
+
+        msg.opCtxMsg.idBitmap = 1 << IgniteSecurityProcessor.SECURITY_CONTEXT_ATTRIBUTE_ID;
+
+        spi.sendMessage(srv.localNode(), msg);
 
         GridTestUtils.waitForCondition(logPattern::check, getTestTimeout());
     }
