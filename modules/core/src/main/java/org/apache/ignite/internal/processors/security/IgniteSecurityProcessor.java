@@ -141,7 +141,7 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
             SecurityContext res = secPrc.securityContext(subjId);
 
             if (res == null) {
-                res = findNodeSecurityContext(subjId);
+                res = resolveSecurityContext(subjId);
 
                 if (res == null)
                     throw new IllegalStateException("Failed to find security context for subject with given ID : " + subjId);
