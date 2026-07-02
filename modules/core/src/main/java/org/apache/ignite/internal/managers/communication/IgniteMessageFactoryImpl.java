@@ -20,6 +20,7 @@ package org.apache.ignite.internal.managers.communication;
 import java.lang.reflect.Array;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.cache.DeployableMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -101,6 +102,12 @@ public class IgniteMessageFactoryImpl implements MessageFactory {
             if (marshaller == null && msg instanceof MarshallableMessage) {
                 throw new IgniteException("Message implements MarshallableMessage but is registered without" +
                     " a marshaller, so it would be sent unmarshalled [directType=" + directType +
+                    ", cls=" + msg.getClass().getName() + ']');
+            }
+
+            if (deployer == null && msg instanceof DeployableMessage) {
+                throw new IgniteException("Message implements DeployableMessage but is registered without" +
+                    " a deployer, so its custom deployment logic would never run [directType=" + directType +
                     ", cls=" + msg.getClass().getName() + ']');
             }
 

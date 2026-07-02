@@ -213,7 +213,7 @@ public class GridCacheEntryInfo implements MarshallableMessage, CacheIdAware {
         if (expireTime < 0)
             expireTime = 0;
     }
-    
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheEntryInfo.class, this);

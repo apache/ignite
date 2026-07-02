@@ -39,6 +39,7 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
@@ -1137,11 +1138,13 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         if (log.isDebugEnabled())
             log.debug("Sending cache message [msg=" + msg + ", node=" + U.toShortString(node) + ']');
 
+        GridIoMessage ioMsg = cctx.gridIO().prepare(TOPIC_CACHE, msg, plc, false, 0, false);
+
         int cnt = 0;
 
         while (true) {
             try {
-                cctx.gridIO().sendToGridTopic(node, TOPIC_CACHE, msg, plc);
+                cctx.gridIO().sendPrepared(node, ioMsg);
 
                 if (log.isDebugEnabled())
                     log.debug("Sent cache message [msg=" + msg + ", node=" + U.toShortString(node) + ']');
@@ -1198,11 +1201,19 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
         msg.lastAffinityChangedTopologyVersion(cctx.exchange().lastAffinityChangedTopologyVersion(msg.topologyVersion()));
 
+        if (node.isLocal()) {
+            cctx.gridIO().sendOrderedMessage(node, topic, msg, plc, timeout, false);
+
+            return;
+        }
+
+        GridIoMessage ioMsg = cctx.gridIO().prepare(topic, msg, plc, true, timeout, false);
+
         int cnt = 0;
 
         while (true) {
             try {
-                cctx.gridIO().sendOrderedMessage(node, topic, msg, plc, timeout, false);
+                cctx.gridIO().sendPrepared(node, ioMsg);
 
                 if (log.isDebugEnabled())
                     log.debug("Sent ordered cache message [topic=" + topic + ", msg=" + msg +
@@ -1558,7 +1569,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         catch (IgniteCheckedException e) {
             cacheMsg.onClassError(e);
         }
-        catch (BinaryObjectException e) {
+        catch (BinaryObjectException | CacheObjectNotResolvedException e) {
             cacheMsg.onClassError(new IgniteCheckedException(e));
         }
         catch (Error e) {

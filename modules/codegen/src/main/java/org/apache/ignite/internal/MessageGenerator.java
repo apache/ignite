@@ -44,6 +44,7 @@ import javax.tools.Diagnostic;
 import javax.tools.FileObject;
 import javax.tools.JavaFileObject;
 import javax.tools.StandardLocation;
+import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor;
 
 /**
  * Base class for message code generators ({@link MessageSerializerGenerator}, {@link MessageMarshallerGenerator},
@@ -200,12 +201,14 @@ public abstract class MessageGenerator {
         return "msg." + field.getSimpleName().toString();
     }
 
-    /** Returns all fields declared directly on {@link #type}, in declaration order. */
+    /** Returns fields of {@link #type} and all its superclasses, subclass-first; a subclass field shadows an inherited one. */
     protected Map<String, VariableElement> enclosedFields() {
         Map<String, VariableElement> result = new LinkedHashMap<>();
 
-        for (VariableElement f : ElementFilter.fieldsIn(type.getEnclosedElements()))
-            result.put(f.getSimpleName().toString(), f);
+        SystemViewRowAttributeWalkerProcessor.superclasses(env, type).forEach(c -> {
+            for (VariableElement f : ElementFilter.fieldsIn(c.getEnclosedElements()))
+                result.putIfAbsent(f.getSimpleName().toString(), f);
+        });
 
         return result;
     }

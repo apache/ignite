@@ -100,7 +100,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     /** DHT versions to verify. */
     @GridToStringInclude
     @MarshalledMap(keys = "dhtVerKeys", values = "dhtVerVals")
-    Map<IgniteTxKey, GridCacheVersion> dhtVers;
+    public Map<IgniteTxKey, GridCacheVersion> dhtVers;
 
     /** */
     @Order(7)

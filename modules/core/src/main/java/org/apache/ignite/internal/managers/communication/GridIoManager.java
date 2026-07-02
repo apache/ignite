@@ -1224,8 +1224,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         assert nodeId != null;
         assert msg != null;
 
-        MessageMarshaller.unmarshalNio(ctx.messageFactory(), msg, ctx);
-
         Lock busyLock0 = busyLock.readLock();
 
         busyLock0.lock();
@@ -1266,6 +1264,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                     lock.readLock().unlock();
                 }
             }
+
+            // Deliberately below the waitMap gate: replayed delayed messages pass through this method twice,
+            // and the NIO-thread unmarshal must run exactly once per message.
+            MessageMarshaller.unmarshalNio(ctx.messageFactory(), msg, ctx);
 
             // If message is P2P, then process in P2P service.
             // This is done to avoid extra waiting and potential deadlocks
@@ -2032,9 +2034,37 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             }
             else {
                 MessageMarshaller.marshal(ctx.messageFactory(), ioMsg, ctx, null);
-                
+
                 sendMarshalled(node, ioMsg, topic, msg, plc, ackC);
             }
+        }
+    }
+
+    /**
+     * Wraps {@code msg} into a marshalled {@link GridIoMessage} without sending it. Message marshalling is not
+     * idempotent (see {@code MessageMarshalOnceTest}), so a caller that retries transmission must prepare the
+     * message once and re-send it via {@link #sendPrepared} on each attempt.
+     */
+    public GridIoMessage prepare(Object topic, Message msg, byte plc, boolean ordered, long timeout,
+        boolean skipOnTimeout) throws IgniteCheckedException {
+        assert !ordered || timeout > 0 || skipOnTimeout;
+
+        GridIoMessage ioMsg = createGridIoMessage(topic, msg, plc, ordered, timeout, skipOnTimeout);
+
+        MessageMarshaller.marshal(ctx.messageFactory(), ioMsg, ctx, null);
+
+        return ioMsg;
+    }
+
+    /**
+     * Transmits a message created by {@link #prepare} to a remote node. Transmission does not mutate the message,
+     * so it can be safely retried.
+     */
+    public void sendPrepared(ClusterNode node, GridIoMessage ioMsg) throws IgniteCheckedException {
+        assert !locNodeId.equals(node.id()) : node;
+
+        try (TraceSurroundings ignored = support(null)) {
+            sendMarshalled(node, ioMsg, ioMsg.topic(), ioMsg.message(), ioMsg.policy(), null);
         }
     }
 

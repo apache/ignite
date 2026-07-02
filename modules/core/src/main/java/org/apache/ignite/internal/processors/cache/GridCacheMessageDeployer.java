@@ -43,6 +43,10 @@ public interface GridCacheMessageDeployer<M extends GridCacheMessage> {
         if (msg == null)
             return;
 
+        // Deployment info is collected only when peer class loading may need it; skip the field scans otherwise.
+        if (!msg.addDeploymentInfo() && !ctx.deploymentEnabled())
+            return;
+
         GridCacheMessageDeployer deployer = factory.deployer(msg.directType());
 
         if (deployer != null)

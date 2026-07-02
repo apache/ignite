@@ -22,6 +22,7 @@ import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -89,7 +90,11 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
             ? null
             : requireGenerated(cls, "Marshaller", marsh);
 
-        GridCacheMessageDeployer deployer = loadGenerated(cls, "Deployer", marsh);
+        // Deployers are generated for GridCacheMessage subclasses only, so the class lookup is skipped for the rest;
+        // a DeployableMessage left without a deployer is then rejected at registration.
+        GridCacheMessageDeployer deployer = GridCacheMessage.class.isAssignableFrom(cls)
+            ? loadGenerated(cls, "Deployer", marsh)
+            : null;
 
         factory.register(id, supplier, serializer, marshaller, deployer);
     }
@@ -116,7 +121,8 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
         Class<?> generated;
 
         try {
-            generated = Class.forName(cls.getName() + suffix);
+            // The companion lives next to the message class, so it must be looked up in the same class loader.
+            generated = Class.forName(cls.getName() + suffix, true, cls.getClassLoader());
         }
         catch (ClassNotFoundException ignored) {
             return null;
