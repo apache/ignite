@@ -272,7 +272,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public IgniteCacheProxy<K, V> cacheNoGate() {
-        return new GatewayProtectedCacheProxy<>(this, new CacheOperationContext(), false);
+        return new GatewayProtectedCacheProxy<>(this, CacheOperationContext.instance(), false);
     }
 
     /**
@@ -282,7 +282,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         if (cachedProxy != null)
             return cachedProxy;
 
-        cachedProxy = new GatewayProtectedCacheProxy<>(this, new CacheOperationContext(), true);
+        cachedProxy = new GatewayProtectedCacheProxy<>(this, CacheOperationContext.instance(), true);
 
         return cachedProxy;
     }

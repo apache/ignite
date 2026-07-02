@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxSalvageMessage;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.tracing.MTC;
@@ -983,6 +984,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                             });
 
                             GridDhtTxFinishRequest req = checkCommittedRequest(mini.futureId(), true);
+                            GridDhtTxSalvageMessage salvageReq = null;
 
                             for (UUID backupId : backups) {
                                 ClusterNode backup = cctx.discovery().node(backupId);
@@ -996,6 +998,13 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                                     else {
                                         try {
                                             cctx.io().send(backup, req, tx.ioPolicy());
+
+                                            if (tx.storeWriteThrough()) {
+                                                if (salvageReq == null)
+                                                    salvageReq = new GridDhtTxSalvageMessage(tx.xidVersion());
+
+                                                cctx.io().send(backup, salvageReq, tx.ioPolicy());
+                                            }
                                         }
                                         catch (ClusterTopologyCheckedException ignored) {
                                             mini.onNodeLeft(backupId, discoThread);

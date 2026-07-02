@@ -234,10 +234,13 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
 
                 /** */
                 private Callable<String> c = new Callable<String>() {
+                    /** */
                     @TestAnnotation
                     private String cStr;
 
+                    /** */
                     private Runnable r = new Runnable() {
+                        /** */
                         @TestAnnotation
                         private String rStr;
 
