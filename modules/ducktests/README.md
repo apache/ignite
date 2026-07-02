@@ -127,6 +127,7 @@ To locally simulate validation matrices across distinct target runtimes (e.g., P
    ```bash
    pip install tox
    tox
+   tox -r -e codestyle,py3
    ```
 
 ---
