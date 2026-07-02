@@ -32,8 +32,10 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.security.sandbox.AccessControllerSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.NoOpSandbox;
+import org.apache.ignite.internal.thread.context.DistributedOperationContextAttributes;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.OperationContextAttribute;
+import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -88,8 +90,12 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
         return SANDBOXED_NODES_COUNTER.get() > 0;
     }
 
-    /** Attribute that holds local and distributed Security Context. */
-    public static final OperationContextAttribute<SecurityContextImpl> SEC_CTX_ATTR = OperationContextAttribute.newInstance();
+    /**
+     * Attribute that holds local and distributed Security Context.
+     *
+     * @see OperationContextDispatcher
+     */
+    private static final OperationContextAttribute<SecurityContextWrapper> SEC_CTX_ATTR = OperationContextAttribute.newInstance();
 
     /** Security processor. */
     private final GridSecurityProcessor secPrc;
@@ -126,28 +132,12 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
 
     /** {@inheritDoc} */
     @Override public Scope withContext(SecurityContext secCtx) {
-        return OperationContext.set(SEC_CTX_ATTR, secCtx == dfltSecCtx ? null : SecurityContextImpl.of(secCtx));
+        return OperationContext.set(SEC_CTX_ATTR, secCtx == dfltSecCtx ? null : new SecurityContextWrapper(secCtx));
     }
 
     /** {@inheritDoc} */
     @Override public Scope withContext(UUID subjId) {
-        try {
-            SecurityContext res = secPrc.securityContext(subjId);
-
-            if (res == null) {
-                res = findNodeSecurityContext(subjId);
-
-                if (res == null)
-                    throw new IllegalStateException("Failed to find security context for subject with given ID : " + subjId);
-            }
-
-            return withContext(res);
-        }
-        catch (Throwable e) {
-            log.error(FAILED_OBTAIN_SEC_CTX_MSG, e);
-
-            throw e;
-        }
+        return withContext(securityContext(subjId));
     }
 
     /**
@@ -177,9 +167,36 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
 
     /** {@inheritDoc} */
     @Override public SecurityContext securityContext() {
-        SecurityContext res = OperationContext.get(SEC_CTX_ATTR);
+        SecurityContextWrapper secCtx = OperationContext.get(SEC_CTX_ATTR);
 
-        return res == null ? dfltSecCtx : res;
+        if (secCtx == null)
+            return dfltSecCtx;
+
+        if (secCtx.delegate() == null)
+            secCtx.delegate(securityContext(secCtx.subjId));
+
+        return secCtx.delegate();
+    }
+
+    /** */
+    private SecurityContext securityContext(UUID subjId) {
+        try {
+            SecurityContext res = secPrc.securityContext(subjId);
+
+            if (res == null) {
+                res = findNodeSecurityContext(subjId);
+
+                if (res == null)
+                    throw new IllegalStateException("Failed to find security context for subject with given ID : " + subjId);
+            }
+
+            return res;
+        }
+        catch (Throwable e) {
+            log.error(FAILED_OBTAIN_SEC_CTX_MSG, e);
+
+            throw e;
+        }
     }
 
     /** {@inheritDoc} */
@@ -236,7 +253,8 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
     @Override public void start() throws IgniteCheckedException {
         super.start();
 
-        ctx.operationContextDispatcher().registerDistributedAttribute(0, SEC_CTX_ATTR);
+        ctx.operationContextDispatcher().registerDistributedAttribute(DistributedOperationContextAttributes.SECURITY.id(),
+            SEC_CTX_ATTR);
 
         ctx.addNodeAttribute(ATTR_GRID_SEC_PROC_CLASS, secPrc.getClass().getName());
 

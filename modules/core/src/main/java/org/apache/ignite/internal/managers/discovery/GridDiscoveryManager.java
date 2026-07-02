@@ -88,9 +88,7 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMess
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IGridClusterStateProcessor;
-import org.apache.ignite.internal.processors.security.IgniteSecurityProcessor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
-import org.apache.ignite.internal.processors.security.SecurityContextImpl;
 import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
 import org.apache.ignite.internal.systemview.ClusterNodeViewWalker;
 import org.apache.ignite.internal.systemview.NodeAttributeViewWalker;
@@ -226,7 +224,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     };
 
     /** Discovery cached history size. */
-    private final int discHistSz = getInteger(IGNITE_DISCOVERY_HISTORY_SIZE, DFLT_DISCOVERY_HISTORY_SIZE);
+    private final int discoHistSz = getInteger(IGNITE_DISCOVERY_HISTORY_SIZE, DFLT_DISCOVERY_HISTORY_SIZE);
 
     /** */
     private final Object discoEvtMux = new Object();
@@ -254,7 +252,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
     /** Topology cache history. */
     private final GridBoundedConcurrentLinkedHashMap<AffinityTopologyVersion, DiscoCache> discoCacheHist =
-        new GridBoundedConcurrentLinkedHashMap<>(discHistSz);
+        new GridBoundedConcurrentLinkedHashMap<>(discoHistSz);
 
     /** Topology snapshots history. */
     private volatile NavigableMap<Long, Collection<ClusterNode>> topHist = Collections.emptyNavigableMap();
@@ -929,10 +927,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 /** */
                 @Override public void run() {
-                    SecurityContextImpl secCtxMsg = OperationContext.get(IgniteSecurityProcessor.SEC_CTX_ATTR);
-
-                    if (secCtxMsg != null) {
-                        try (Scope ignored = ctx.security().withContext(secCtxMsg.subjId)) {
+                    if (!ctx.security().isDefaultContext()) {
+                        try (Scope ignored = ctx.security().withContext(ctx.security().securityContext().subject().id())) {
                             super.run();
                         }
                     }
@@ -1105,7 +1101,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             rcvdCustomMsgs.addLast(customMsg.id());
 
-            while (rcvdCustomMsgs.size() > discHistSz)
+            while (rcvdCustomMsgs.size() > discoHistSz)
                 rcvdCustomMsgs.pollFirst();
         }
 
@@ -2337,12 +2333,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @throws IgniteCheckedException If failed.
      */
     public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteCheckedException {
-        UUID secSubjId = ctx.security().enabled() ? ctx.security().securityContext().subject().id() : null;
-
-        try (Scope ignored = secSubjId == null
-            ? Scope.NOOP_SCOPE
-            : OperationContext.set(IgniteSecurityProcessor.SEC_CTX_ATTR, new SecurityContextImpl(secSubjId))
-        ) {
+        try {
             getSpi().sendCustomEvent(msg);
         }
         catch (IgniteClientDisconnectedException e) {
