@@ -754,6 +754,7 @@ public class IDTOSerializerGenerator {
 
     /** Type-use annotation with an optional trailing whitespace, e.g. {@code @NotNull} in {@code java.util.@NotNull List}. */
     private static final Pattern TYPE_ANNOTATION = Pattern.compile("@[\\w.]+\\s*");
+
     /**
      * @param type Type string.
      * @return Type string without type-use annotations. {@link TypeMirror#toString()} renders them at a JDK-dependent
