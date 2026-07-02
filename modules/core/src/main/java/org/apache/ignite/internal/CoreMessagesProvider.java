@@ -465,12 +465,12 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(CacheStatisticsClearMessage.class);
         withNoSchema(ClientCacheChangeDummyDiscoveryMessage.class);
         withNoSchema(DynamicCacheChangeBatch.class);
-        withNoSchema(CacheClientReconnectDiscoveryData.class);
-        withNoSchema(CacheGroupRecoveryState.class);
-        withNoSchema(CacheJoinInfo.class);
-        withNoSchema(CacheJoinNodeDiscoveryData.class);
-        withNoSchema(CacheReconnectInfo.class);
-        withNoSchema(ClusterCacheGroupRecoveryData.class);
+        withNoSchemaResolvedClassLoader(CacheClientReconnectDiscoveryData.class);
+        withNoSchemaResolvedClassLoader(CacheGroupRecoveryState.class);
+        withNoSchemaResolvedClassLoader(CacheJoinInfo.class);
+        withNoSchemaResolvedClassLoader(CacheJoinNodeDiscoveryData.class);
+        withNoSchemaResolvedClassLoader(CacheReconnectInfo.class);
+        withNoSchemaResolvedClassLoader(ClusterCacheGroupRecoveryData.class);
 
         // [10000 - 10200]: Transaction and lock related messages. Most of them originally comes from Communication.
         msgIdx = 10000;
