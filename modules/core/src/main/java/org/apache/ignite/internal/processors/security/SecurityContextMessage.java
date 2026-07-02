@@ -19,9 +19,15 @@ package org.apache.ignite.internal.processors.security;
 
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.security.SecuritySubject;
 
-/** */
+/**
+ * Transfer for {@link SecurityContext}, id of {@link SecuritySubject}.
+ *
+ * @see OperationContextDispatcher#collectDistributedAttributes()
+ */
 public class SecurityContextMessage implements Message {
     /** Security subject id. */
     @Order(0)

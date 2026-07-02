@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.NoOpSandbox;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.OperationContextAttribute;
+import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -91,7 +92,11 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
         return SANDBOXED_NODES_COUNTER.get() > 0;
     }
 
-    /** Attribute that holds local and distributed Security Context. */
+    /**
+     * Attribute that holds local and distributed Security Context.
+     *
+     * @see OperationContextDispatcher
+     */
     private static final OperationContextAttribute<SecurityContextMessage> SEC_CTX_ATTR = OperationContextAttribute.newInstance();
 
     /** Security processor. */

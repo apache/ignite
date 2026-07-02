@@ -226,7 +226,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     };
 
     /** Discovery cached history size. */
-    private final int discHistSz = getInteger(IGNITE_DISCOVERY_HISTORY_SIZE, DFLT_DISCOVERY_HISTORY_SIZE);
+    private final int discoHistSz = getInteger(IGNITE_DISCOVERY_HISTORY_SIZE, DFLT_DISCOVERY_HISTORY_SIZE);
 
     /** */
     private final Object discoEvtMux = new Object();
@@ -254,7 +254,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
     /** Topology cache history. */
     private final GridBoundedConcurrentLinkedHashMap<AffinityTopologyVersion, DiscoCache> discoCacheHist =
-        new GridBoundedConcurrentLinkedHashMap<>(discHistSz);
+        new GridBoundedConcurrentLinkedHashMap<>(discoHistSz);
 
     /** Topology snapshots history. */
     private volatile NavigableMap<Long, Collection<ClusterNode>> topHist = Collections.emptyNavigableMap();
@@ -1107,7 +1107,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             rcvdCustomMsgs.addLast(customMsg.id());
 
-            while (rcvdCustomMsgs.size() > discHistSz)
+            while (rcvdCustomMsgs.size() > discoHistSz)
                 rcvdCustomMsgs.pollFirst();
         }
 
