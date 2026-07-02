@@ -193,7 +193,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
             if (marshallable)
                 appendBlock(body, List.of(indentedLine("msg.marshal(marshaller);")));
 
-            appendFields(body, orderedFields, MarshalMode.PREPARE);
+            appendFields(body, orderedFields, MarshalMode.MARSHAL);
         });
     }
 
@@ -239,7 +239,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
             if (needsCtx(fields) || !wireFieldSkip.isEmpty())
                 appendBlock(body, List.of(ctxResolutionLine()));
 
-            appendFields(body, fields, MarshalMode.FINISH_CACHE, wireFieldSkip);
+            appendFields(body, fields, MarshalMode.UNMARSHAL, wireFieldSkip);
 
             if (marshallable)
                 appendBlock(body, List.of(indentedLine("msg.unmarshal(marshaller, clsLdr);")));
@@ -254,8 +254,25 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
     /** Generates the {@code unmarshalNio} method for NIO-eligible {@code @Message} fields. */
     private void generateUnmarshalNioMethod(String params, List<VariableElement> nioFields) {
-        emitMethod(marshall, "unmarshalNio(" + params + ")", body ->
-            appendFields(body, nioFields, MarshalMode.FINISH));
+        emitMethod(marshall, "unmarshalNio(" + params + ")", body -> {
+            for (VariableElement f : nioFields)
+                appendBlock(body, unmarshalNioField(fieldAccessor(f)));
+        });
+    }
+
+    /** Cache-free unmarshal of a {@code @NioField} message field on the NIO thread (no cache context available). */
+    private List<String> unmarshalNioField(String accessor) {
+        List<String> code = new ArrayList<>();
+
+        code.add(indentedLine("if (%s != null)", accessor));
+
+        indent++;
+
+        code.add(indentedLine("MessageMarshaller.unmarshal(kctx.messageFactory(), %s, kctx);", accessor));
+
+        indent--;
+
+        return code;
     }
 
     /** Generates logical→wire conversions for all {@code @MarshalledCollection} and {@code @MarshalledMap} fields. */
@@ -478,7 +495,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
         indent++;
 
-        code.addAll(codeFor(compType, "e", MarshalMode.FINISH_CACHE));
+        code.addAll(codeFor(compType, "e", MarshalMode.UNMARSHAL));
         code.add(EMPTY);
         code.add(indentedLine("%s.add(e);", colField));
 
@@ -489,7 +506,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         return code;
     }
 
-    /** Returns names of wire fields skipped by {@link #appendFields} in FINISH_CACHE mode. */
+    /** Returns names of wire fields skipped by {@link #appendFields} in UNMARSHAL mode. */
     private Set<String> marshalledWireFieldsToSkip() {
         Set<String> names = new HashSet<>();
 
@@ -562,8 +579,8 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         code.add(indentedLine("%s k = %s[i];", keyCompName, keysField));
         code.add(indentedLine("%s v = %s[i];", valCompName, valsField));
 
-        List<String> keyUnmarshal = codeFor(keyCompType, "k", MarshalMode.FINISH_CACHE);
-        List<String> valUnmarshal = codeFor(valCompType, "v", MarshalMode.FINISH_CACHE);
+        List<String> keyUnmarshal = codeFor(keyCompType, "k", MarshalMode.UNMARSHAL);
+        List<String> valUnmarshal = codeFor(valCompType, "v", MarshalMode.UNMARSHAL);
 
         if (!keyUnmarshal.isEmpty()) {
             code.add(EMPTY);
@@ -629,8 +646,8 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         code.add(indentedLine("%s k = keyIter.next();", keyCompName));
         code.add(indentedLine("%s v = valIter.next();", valCompName));
 
-        List<String> keyUnmarshal = codeFor(keyCompType, "k", MarshalMode.FINISH_CACHE);
-        List<String> valUnmarshal = codeFor(valCompType, "v", MarshalMode.FINISH_CACHE);
+        List<String> keyUnmarshal = codeFor(keyCompType, "k", MarshalMode.UNMARSHAL);
+        List<String> valUnmarshal = codeFor(valCompType, "v", MarshalMode.UNMARSHAL);
 
         if (!keyUnmarshal.isEmpty()) {
             code.add(EMPTY);
@@ -744,17 +761,9 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
         indent++;
 
-        switch (mode) {
-            case PREPARE:
-                code.add(indentedLine("MessageMarshaller.marshal(kctx.messageFactory(), %s, kctx, ctx);", accessor));
-                break;
-            case FINISH:
-                code.add(indentedLine("MessageMarshaller.unmarshal(kctx.messageFactory(), %s, kctx);", accessor));
-                break;
-            case FINISH_CACHE:
-                code.add(indentedLine("MessageMarshaller.unmarshal(kctx.messageFactory(), %s, kctx, ctx, clsLdr);", accessor));
-                break;
-        }
+        code.add(mode == MarshalMode.MARSHAL
+            ? indentedLine("MessageMarshaller.marshal(kctx.messageFactory(), %s, kctx, ctx);", accessor)
+            : indentedLine("MessageMarshaller.unmarshal(kctx.messageFactory(), %s, kctx, ctx, clsLdr);", accessor));
 
         indent--;
 
@@ -769,7 +778,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
         indent++;
 
-        code.add(mode == MarshalMode.PREPARE
+        code.add(mode == MarshalMode.MARSHAL
             ? indentedLine("%s.marshal(ctx);", accessor)
             : indentedLine("%s.unmarshal(ctx, clsLdr);", accessor));
 
@@ -1009,14 +1018,12 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     }
 
     /** Marshal mode controls which overload is being generated. */
+    /** Direction of the field code a generator pass emits: object→wire ({@link #MARSHAL}) or wire→object ({@link #UNMARSHAL}). */
     private enum MarshalMode {
-        /** */
-        PREPARE,
+        /** Marshal: object → wire bytes, on the sending side. */
+        MARSHAL,
 
-        /** Lightweight unmarshal. Messages only, CacheObject fields are skipped (no cache context available). */
-        FINISH,
-
-        /** Unmarshal with full cache context and class loader. */
-        FINISH_CACHE
+        /** Unmarshal: wire bytes → object, with full cache context and class loader. */
+        UNMARSHAL
     }
 }
