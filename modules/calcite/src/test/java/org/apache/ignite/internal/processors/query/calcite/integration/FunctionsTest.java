@@ -529,11 +529,11 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
             sql("CREATE TABLE t(val INT)");
             sql("INSERT INTO t VALUES (1)");
 
-            assertQuery("SELECT LEAD(val) OVER() FROM t").returns(new Object[] {null}).check();
-            assertQuery("SELECT LEAD(val, 2) OVER() FROM t").returns(new Object[] {null}).check();
+            assertQuery("SELECT LEAD(val) OVER() FROM t").returns(NULL_RESULT).check();
+            assertQuery("SELECT LEAD(val, 2) OVER() FROM t").returns(NULL_RESULT).check();
             assertQuery("SELECT LEAD(val, 3, 0) OVER() FROM t").returns(0).check();
-            assertQuery("SELECT LAG(val) OVER() FROM t").returns(new Object[] {null}).check();
-            assertQuery("SELECT LAG(val, 2) OVER() FROM t").returns(new Object[] {null}).check();
+            assertQuery("SELECT LAG(val) OVER() FROM t").returns(NULL_RESULT).check();
+            assertQuery("SELECT LAG(val, 2) OVER() FROM t").returns(NULL_RESULT).check();
             assertQuery("SELECT LAG(val, 3, 0) OVER() FROM t").returns(0).check();
         }
         finally {

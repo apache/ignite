@@ -105,10 +105,8 @@ public class WindowNode<Row> extends MemoryTrackingNode<Row> implements SingleNo
 
         part.add(row);
 
-        if (part.isStreaming()) {
+        if (part.isStreaming())
             part.evalTo(rowFactory, this::appendToOutBuf);
-            flush();
-        }
 
         prevRow = row;
 
