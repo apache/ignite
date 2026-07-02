@@ -95,7 +95,7 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
      *
      * @see OperationContextDispatcher
      */
-    private static final OperationContextAttribute<SecurityContextMessage> SEC_CTX_ATTR = OperationContextAttribute.newInstance();
+    private static final OperationContextAttribute<SecurityContextWrapper> SEC_CTX_ATTR = OperationContextAttribute.newInstance();
 
     /** Security processor. */
     private final GridSecurityProcessor secPrc;
@@ -132,7 +132,7 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
 
     /** {@inheritDoc} */
     @Override public Scope withContext(SecurityContext secCtx) {
-        return OperationContext.set(SEC_CTX_ATTR, secCtx == dfltSecCtx ? null : new SecurityContextMessage(secCtx));
+        return OperationContext.set(SEC_CTX_ATTR, secCtx == dfltSecCtx ? null : new SecurityContextWrapper(secCtx));
     }
 
     /** {@inheritDoc} */
@@ -167,7 +167,7 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
 
     /** {@inheritDoc} */
     @Override public SecurityContext securityContext() {
-        SecurityContextMessage secCtxMsg = OperationContext.get(SEC_CTX_ATTR);
+        SecurityContextWrapper secCtxMsg = OperationContext.get(SEC_CTX_ATTR);
 
         if (secCtxMsg == null)
             return dfltSecCtx;

@@ -24,11 +24,11 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.security.SecuritySubject;
 
 /**
- * Transfer for {@link SecurityContext}, id of {@link SecuritySubject}.
+ * Hollder and message for {@link SecurityContext}, id of {@link SecuritySubject}.
  *
  * @see OperationContextDispatcher#collectDistributedAttributes()
  */
-public class SecurityContextMessage implements Message {
+public class SecurityContextWrapper implements Message {
     /** A value of {@link SecuritySubject#id()} */
     @Order(0)
     UUID subjId;
@@ -37,12 +37,12 @@ public class SecurityContextMessage implements Message {
     private SecurityContext delegate;
 
     /** Empty constructor for serialization purposes. */
-    public SecurityContextMessage() {
+    public SecurityContextWrapper() {
         // No-op.
     }
 
     /** */
-    public SecurityContextMessage(SecurityContext delegate) {
+    public SecurityContextWrapper(SecurityContext delegate) {
         this.delegate = delegate;
         this.subjId = delegate.subject().id();
     }
