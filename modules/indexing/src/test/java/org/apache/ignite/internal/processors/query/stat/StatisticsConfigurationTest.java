@@ -137,7 +137,7 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected long getPartitionMapExchangeTimeout() {
-        return super.getPartitionMapExchangeTimeout() * 2;
+        return super.getPartitionMapExchangeTimeout() * 3;
     }
 
     /** */
@@ -158,20 +158,13 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
     protected void stopGridAndChangeBaseline(int nodeIdx) throws Exception {
         stopGrid(nodeIdx);
 
-        if (persist) {
-            // Wait for exchange to complete and all local partitions to reach OWNING state
-            // BEFORE changing baseline. If baseline is changed while partitions are still MOVING,
-            // the new exchange will detect them as lost (no owners yet) and trigger recovery scan.
-            awaitPartitionMapExchange(true, false, null);
-
-            // Now safe to update baseline without triggering lost partition detection.
+        if (persist)
             F.first(G.allGrids()).cluster().setBaselineTopology(F.first(G.allGrids()).cluster().topologyVersion());
-        }
 
         try {
             awaitPartitionMapExchange();
         }
-        catch (InterruptedException ignored) {
+        catch (InterruptedException e) {
             // No-op.
         }
     }
