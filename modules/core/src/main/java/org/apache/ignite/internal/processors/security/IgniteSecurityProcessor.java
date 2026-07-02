@@ -32,6 +32,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.security.sandbox.AccessControllerSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.NoOpSandbox;
+import org.apache.ignite.internal.thread.context.DistributedOperationContextAttributes;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.OperationContextAttribute;
 import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
@@ -73,9 +74,6 @@ import static org.apache.ignite.plugin.security.SecurityPermission.JOIN_AS_SERVE
  * </ul>
  */
 public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
-    /** */
-    static final byte SECURITY_CONTEXT_ATTRIBUTE_ID = 0;
-
     /**  */
     private static final String FAILED_OBTAIN_SEC_CTX_MSG = "Failed to obtain a security context.";
 
@@ -187,17 +185,34 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
     @Override public SecurityContext securityContext() {
         SecurityContextMessage secCtxMsg = OperationContext.get(SEC_CTX_ATTR);
 
-        if (secCtxMsg != null) {
-            if (secCtxMsg.delegate() == null) {
-                try (Scope ignored = withContext(secCtxMsg.subjId)) {
-                    return securityContext();
-                }
+        if (secCtxMsg == null)
+            return dfltSecCtx;
+
+        if (secCtxMsg.delegate() == null)
+            secCtxMsg.delegate(resolveSecurityContext(secCtxMsg.subjId));
+
+        return secCtxMsg.delegate();
+    }
+
+    /** */
+    private SecurityContext resolveSecurityContext(UUID subjId) {
+        try {
+            SecurityContext res = secPrc.securityContext(subjId);
+
+            if (res == null) {
+                res = findNodeSecurityContext(subjId);
+
+                if (res == null)
+                    throw new IllegalStateException("Failed to find security context for subject with given ID : " + subjId);
             }
 
-            return secCtxMsg.delegate();
+            return res;
         }
+        catch (Throwable e) {
+            log.error(FAILED_OBTAIN_SEC_CTX_MSG, e);
 
-        return dfltSecCtx;
+            throw e;
+        }
     }
 
     /** {@inheritDoc} */
@@ -254,7 +269,8 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
     @Override public void start() throws IgniteCheckedException {
         super.start();
 
-        ctx.operationContextDispatcher().registerDistributedAttribute(SECURITY_CONTEXT_ATTRIBUTE_ID, SEC_CTX_ATTR);
+        ctx.operationContextDispatcher().registerDistributedAttribute(DistributedOperationContextAttributes.SECURITY.id(),
+            SEC_CTX_ATTR);
 
         ctx.addNodeAttribute(ATTR_GRID_SEC_PROC_CLASS, secPrc.getClass().getName());
 

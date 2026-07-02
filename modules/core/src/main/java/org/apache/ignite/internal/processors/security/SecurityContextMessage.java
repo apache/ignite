@@ -51,4 +51,9 @@ public class SecurityContextMessage implements Message {
     public SecurityContext delegate() {
         return delegate;
     }
+
+    /** */
+    public void delegate(SecurityContext delegate) {
+        this.delegate = delegate;
+    }
 }

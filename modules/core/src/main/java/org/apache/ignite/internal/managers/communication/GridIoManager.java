@@ -97,7 +97,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccess
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
-import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
@@ -1830,23 +1829,24 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         if (change)
             CUR_PLC.set(plc);
 
-        UUID newSecSubjId;
-
-        if (ctx.security().isDefaultContext())
-            newSecSubjId = ctx.security().securityContext().subject().id();
-        else {
-            SecurityContext secCtx = ctx.security().securityContext();
-
-            newSecSubjId = secCtx == null ? nodeId : secCtx.subject().id();
-        }
-
-        try (Scope ignored = ctx.security().withContext(newSecSubjId)) {
+        try (Scope ignored = attachNodeSecurityContextIfRequired(nodeId)) {
             lsnr.onMessage(nodeId, msg, plc);
         }
         finally {
             if (change)
                 CUR_PLC.set(oldPlc);
         }
+    }
+
+    /** */
+    private Scope attachNodeSecurityContextIfRequired(UUID nodeId) {
+        if (ctx.security().isDefaultContext())
+            return ctx.security().withContext(nodeId);
+
+        // Check that security context is valid.
+        ctx.security().securityContext();
+
+        return Scope.NOOP_SCOPE;
     }
 
     /**
