@@ -33,7 +33,7 @@ public class SecurityContextMessage implements Message {
     @Order(0)
     UUID subjId;
 
-    /** */
+    /** Transient, effective {@link SecurityContext}. */
     private SecurityContext delegate;
 
     /** Empty constructor for serialization purposes. */
