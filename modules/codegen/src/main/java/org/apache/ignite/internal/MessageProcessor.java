@@ -25,8 +25,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.processing.AbstractProcessor;
+import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.annotation.processing.SupportedSourceVersion;
@@ -37,13 +39,13 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
-import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 import static org.apache.ignite.internal.MessageSerializerGenerator.DLFT_ENUM_MAPPER_CLS;
+import static org.apache.ignite.internal.MessageSerializerGenerator.enumType;
 
 /**
  * Annotation processor that generates serialization and deserialization code for classes implementing the {@code Message} interface.
@@ -153,31 +155,20 @@ public class MessageProcessor extends AbstractProcessor {
             msgFields.put(clazz, fields);
         }
 
+        List<Function<ProcessingEnvironment, MessageGenerator>> generators = List.of(
+            MessageSerializerGenerator::new, MessageMarshallerGenerator::new, MessageDeploymentGenerator::new);
+
         for (Map.Entry<TypeElement, List<VariableElement>> type: msgFields.entrySet()) {
-            try {
-                new MessageSerializerGenerator(processingEnv).generate(type.getKey(), type.getValue());
-            }
-            catch (Exception e) {
-                processingEnv.getMessager().printMessage(
-                    Diagnostic.Kind.ERROR,
-                    "Failed to generate a message serializer:" + e.getMessage(),
-                    type.getKey());
-            }
+            for (Function<ProcessingEnvironment, MessageGenerator> factory : generators) {
+                MessageGenerator gen = factory.apply(processingEnv);
 
-            try {
-                new MessageMarshallerGenerator(processingEnv).generate(type.getKey(), type.getValue());
-            }
-            catch (Exception e) {
-                processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
-                    "Failed to generate a message marshaller:" + e.getMessage(), type.getKey());
-            }
-
-            try {
-                new MessageDeploymentGenerator(processingEnv).generate(type.getKey(), type.getValue());
-            }
-            catch (Exception e) {
-                processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
-                    "Failed to generate a message deployer:" + e.getMessage(), type.getKey());
+                try {
+                    gen.generate(type.getKey(), type.getValue());
+                }
+                catch (Exception e) {
+                    processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                        "Failed to generate a message " + gen.typeSuffix().toLowerCase() + ":" + e.getMessage(), type.getKey());
+                }
             }
         }
 
@@ -278,7 +269,7 @@ public class MessageProcessor extends AbstractProcessor {
      */
     private void validateEnumFieldMapping(TypeElement type, Element el) {
         CustomMapper custMappAnn = el.getAnnotation(CustomMapper.class);
-        if (isEnumField(el)) {
+        if (enumType(processingEnv, el.asType())) {
             String enumClsFullName = el.asType().toString();
             String enumMapperClsName = custMappAnn != null ? custMappAnn.value() : DLFT_ENUM_MAPPER_CLS;
             String msgClsName = type.toString();
@@ -307,16 +298,6 @@ public class MessageProcessor extends AbstractProcessor {
                 "Annotation @CustomMapper must only be used for enum fields.",
                 el);
         }
-    }
-
-    /** */
-    private boolean isEnumField(Element el) {
-        TypeMirror elType = el.asType();
-
-        if (elType.getKind() != TypeKind.DECLARED)
-            return false;
-
-        return processingEnv.getTypeUtils().asElement(elType).getKind() == ElementKind.ENUM;
     }
 
     /** Map class names to {@link TypeMirror} objects. */

@@ -120,8 +120,6 @@ public class MessageDeploymentGenerator extends MessageGenerator {
 
     /** {@inheritDoc} */
     @Override void generateBody(List<VariableElement> fields) {
-        indent = 1;
-
         emitMethod(deploy, "deploy(" + simpleNameWithGeneric(type) + " msg, GridCacheSharedContext<?, ?> ctx)", body -> {
             List<String> fieldStmts = new ArrayList<>();
 
@@ -131,36 +129,9 @@ public class MessageDeploymentGenerator extends MessageGenerator {
                 if (kind == null)
                     continue;
 
-                String stmt;
+                needsCctx |= kind.needsCctx;
 
-                switch (kind) {
-                    case CACHE_OBJECT:
-                        needsCctx = true;
-                        stmt = "msg.deployCacheObject(%s, cctx);";
-
-                        break;
-
-                    case CACHE_OBJECTS:
-                        needsCctx = true;
-                        stmt = "msg.deployCacheObjects(%s, cctx);";
-
-                        break;
-
-                    case TX_ENTRIES:
-                        stmt = "msg.deployTx(%s, ctx);";
-
-                        break;
-
-                    case NESTED:
-                        stmt = "GridCacheMessageDeployer.deploy(ctx.kernalContext().messageFactory(), %s, ctx);";
-
-                        break;
-
-                    default:
-                        throw new IllegalStateException("Unexpected deploy kind: " + kind);
-                }
-
-                appendBlock(fieldStmts, List.of(indentedLine(stmt, fieldAccessor(field))));
+                appendBlock(fieldStmts, List.of(indentedLine(kind.stmt, fieldAccessor(field))));
             }
 
             if (needsCctx) {
@@ -277,16 +248,28 @@ public class MessageDeploymentGenerator extends MessageGenerator {
 
     /** Deployment strategy inferred from a field's type. */
     private enum DeployKind {
-        /** */
-        CACHE_OBJECT,
+        /** Single {@code CacheObject} field. */
+        CACHE_OBJECT("msg.deployCacheObject(%s, cctx);", true),
+
+        /** {@code Collection} of {@code CacheObject}s. */
+        CACHE_OBJECTS("msg.deployCacheObjects(%s, cctx);", true),
+
+        /** {@code Iterable<IgniteTxEntry>}. */
+        TX_ENTRIES("msg.deployTx(%s, ctx);", false),
+
+        /** Nested {@code GridCacheMessage} delegating its own deployment. */
+        NESTED("GridCacheMessageDeployer.deploy(ctx.kernalContext().messageFactory(), %s, ctx);", false);
+
+        /** Statement template with {@code %s} placeholder for the field accessor. */
+        private final String stmt;
+
+        /** Whether the statement requires the resolved {@code cctx}. */
+        private final boolean needsCctx;
 
         /** */
-        CACHE_OBJECTS,
-
-        /** */
-        TX_ENTRIES,
-
-        /** */
-        NESTED
+        DeployKind(String stmt, boolean needsCctx) {
+            this.stmt = stmt;
+            this.needsCctx = needsCctx;
+        }
     }
 }

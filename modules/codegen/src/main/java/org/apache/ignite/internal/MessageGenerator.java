@@ -25,11 +25,14 @@ import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.Writer;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import javax.annotation.processing.FilerException;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.TypeElement;
@@ -41,8 +44,6 @@ import javax.tools.Diagnostic;
 import javax.tools.FileObject;
 import javax.tools.JavaFileObject;
 import javax.tools.StandardLocation;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.SB;
 
 /**
  * Base class for message code generators ({@link MessageSerializerGenerator}, {@link MessageMarshallerGenerator},
@@ -72,12 +73,12 @@ public abstract class MessageGenerator {
     final ProcessingEnvironment env;
 
     /** */
-    final java.util.Set<String> imports = new TreeSet<>();
+    final Set<String> imports = new TreeSet<>();
 
     /** */
     TypeElement type;
 
-    /** */
+    /** Current indentation level. Set to the class-member level once in {@link #generate}; adjusted only by balanced shifts. */
     int indent;
 
     /** */
@@ -85,8 +86,7 @@ public abstract class MessageGenerator {
         this.env = env;
     }
 
-    /** Generates and writes the source file for {@code type}; skipped when {@link #shouldSkip} returns {@code true}.
-     */
+    /** Generates and writes the source file for {@code type}; skipped when {@link #shouldSkip} returns {@code true}. */
     final void generate(TypeElement type, List<VariableElement> fields) throws Exception {
         assert this.type == null : "Message" + typeSuffix() + " generator isn't stateless and is supposed to be single-use.";
 
@@ -94,6 +94,8 @@ public abstract class MessageGenerator {
             return;
 
         this.type = type;
+
+        indent = 1;
 
         generateBody(fields);
 
@@ -127,8 +129,7 @@ public abstract class MessageGenerator {
         return false;
     }
 
-    /** Populates internal state (method body lines etc.) from {@code fields}; called before {@link #buildClassCode}.
-     */
+    /** Populates internal state (method body lines etc.) from {@code fields}; called before {@link #buildClassCode}. */
     abstract void generateBody(List<VariableElement> fields) throws Exception;
 
     /** Generates and returns the complete source code for the generated class. */
@@ -165,33 +166,16 @@ public abstract class MessageGenerator {
 
     /** @return {@code format} formatted with {@code args}, prefixed with {@link #indent} tabs. */
     String indentedLine(String format, Object... args) {
-        SB sb = new SB();
-
-        for (int i = 0; i < indent; i++)
-            sb.a(TAB);
-
-        sb.a(String.format(format, args));
-
-        return sb.toString();
+        return TAB.repeat(indent) + String.format(format, args);
     }
 
     /** @return simple name of {@code te} with {@code <?, ?>} wildcard type arguments appended when parameterised. */
     String simpleNameWithGeneric(TypeElement te) {
-        if (F.size(te.getTypeParameters()) == 0)
-            return te.getSimpleName().toString();
+        int paramsCnt = te.getTypeParameters().size();
 
-        StringBuilder generic = new StringBuilder(te.getSimpleName() + "<");
-
-        for (int i = 0; i < F.size(te.getTypeParameters()); i++) {
-            if (i > 0)
-                generic.append(", ");
-
-            generic.append("?");
-        }
-
-        generic.append(">");
-
-        return generic.toString();
+        return paramsCnt == 0
+            ? te.getSimpleName().toString()
+            : te.getSimpleName() + "<" + String.join(", ", Collections.nCopies(paramsCnt, "?")) + ">";
     }
 
     /** */
@@ -279,16 +263,7 @@ public abstract class MessageGenerator {
     }
 
     /** */
-    static String content(Reader reader) throws IOException {
-        BufferedReader br = new BufferedReader(reader);
-        StringBuilder sb = new StringBuilder();
-        String line;
-
-        while ((line = br.readLine()) != null)
-            sb.append(line).append(NL);
-
-        sb.deleteCharAt(sb.length() - 1);
-
-        return sb.toString();
+    static String content(Reader reader) {
+        return new BufferedReader(reader).lines().collect(Collectors.joining(NL));
     }
 }

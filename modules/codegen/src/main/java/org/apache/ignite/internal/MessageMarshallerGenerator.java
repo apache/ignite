@@ -117,8 +117,6 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         hasMarshalled = enclosed.values().stream().anyMatch(f ->
             f.getAnnotation(Marshalled.class) != null || f.getAnnotation(MarshalledObjects.class) != null);
 
-        indent = 1;
-
         generateMarshalMethod(fields);
         generateUnmarshalMethods(fields);
     }
@@ -183,7 +181,9 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         imports.add("org.apache.ignite.internal.GridKernalContext");
         imports.add("org.apache.ignite.internal.processors.cache.CacheObjectContext");
 
-        emitMethod(marshall, "marshal(" + simpleNameWithGeneric(type) + " msg, GridKernalContext kctx, CacheObjectContext nested)", body -> {
+        String signature = "marshal(" + simpleNameWithGeneric(type) + " msg, GridKernalContext kctx, CacheObjectContext nested)";
+
+        emitMethod(marshall, signature, body -> {
             if (needsCtx(orderedFields))
                 appendBlock(body, List.of(ctxResolutionLine()));
 
@@ -546,7 +546,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
             List<String> code = keysEl.asType().getKind() == TypeKind.ARRAY
                 ? mapFinishArrayBlock(field, keysEl, valsEl, mapField, keysField, valsField)
-                : mapFinishCollectionBlock(field, keysEl, valsEl, mapField, keysField, valsField);
+                : mapFinishCollectionBlock(keysEl, valsEl, mapField, keysField, valsField);
 
             appendBlock(body, code);
         }
@@ -555,19 +555,13 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     /** Generates indexed-loop Map reconstruction for array-backed {@code @MarshalledMap} fields. */
     private List<String> mapFinishArrayBlock(VariableElement field, VariableElement keysEl, VariableElement valsEl, String mapField,
         String keysField, String valsField) {
-        boolean isFinal = field.getModifiers().contains(Modifier.FINAL);
-        String keyCompName = arrayComponentName(keysEl);
-        String valCompName = arrayComponentName(valsEl);
-        TypeMirror keyCompType = ((ArrayType)keysEl.asType()).getComponentType();
-        TypeMirror valCompType = ((ArrayType)valsEl.asType()).getComponentType();
-
         List<String> code = new ArrayList<>();
 
         code.add(indentedLine("if (%s != null) {", keysField));
 
         indent++;
 
-        if (!isFinal) {
+        if (!field.getModifiers().contains(Modifier.FINAL)) {
             code.add(indentedLine("%s = U.newHashMap(%s.length);", mapField, keysField));
             code.add(EMPTY);
         }
@@ -576,24 +570,12 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
         indent++;
 
-        code.add(indentedLine("%s k = %s[i];", keyCompName, keysField));
-        code.add(indentedLine("%s v = %s[i];", valCompName, valsField));
-
-        List<String> keyUnmarshal = codeFor(keyCompType, "k", MarshalMode.UNMARSHAL);
-        List<String> valUnmarshal = codeFor(valCompType, "v", MarshalMode.UNMARSHAL);
-
-        if (!keyUnmarshal.isEmpty()) {
-            code.add(EMPTY);
-            code.addAll(keyUnmarshal);
-        }
-
-        if (!valUnmarshal.isEmpty()) {
-            code.add(EMPTY);
-            code.addAll(valUnmarshal);
-        }
-
-        code.add(EMPTY);
-        code.add(indentedLine("%s.put(k, v);", mapField));
+        code.addAll(mapPutBlock(
+            ((ArrayType)keysEl.asType()).getComponentType(),
+            ((ArrayType)valsEl.asType()).getComponentType(),
+            arrayComponentName(keysEl) + " k = " + keysField + "[i];",
+            arrayComponentName(valsEl) + " v = " + valsField + "[i];",
+            mapField));
 
         indent--;
 
@@ -610,13 +592,10 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     }
 
     /** Generates iterator-based Map reconstruction for collection-backed {@code @MarshalledMap} fields. */
-    private List<String> mapFinishCollectionBlock(VariableElement field, VariableElement keysEl, VariableElement valsEl, String mapField,
+    private List<String> mapFinishCollectionBlock(VariableElement keysEl, VariableElement valsEl, String mapField,
         String keysField, String valsField) {
-        List<? extends TypeMirror> keyArgs = ((DeclaredType)keysEl.asType()).getTypeArguments();
-        List<? extends TypeMirror> valArgs = ((DeclaredType)valsEl.asType()).getTypeArguments();
-
-        TypeMirror keyCompType = keyArgs.get(0);
-        TypeMirror valCompType = valArgs.get(0);
+        TypeMirror keyCompType = ((DeclaredType)keysEl.asType()).getTypeArguments().get(0);
+        TypeMirror valCompType = ((DeclaredType)valsEl.asType()).getTypeArguments().get(0);
 
         Element keyElem = element(keyCompType);
         Element valElem = element(valCompType);
@@ -643,8 +622,34 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
         indent++;
 
-        code.add(indentedLine("%s k = keyIter.next();", keyCompName));
-        code.add(indentedLine("%s v = valIter.next();", valCompName));
+        code.addAll(mapPutBlock(keyCompType, valCompType,
+            keyCompName + " k = keyIter.next();",
+            valCompName + " v = valIter.next();",
+            mapField));
+
+        indent--;
+
+        code.add(indentedLine("}"));
+        code.add(EMPTY);
+        code.add(indentedLine("%s = null;", keysField));
+        code.add(indentedLine("%s = null;", valsField));
+
+        indent--;
+
+        code.add(indentedLine("}"));
+
+        return code;
+    }
+
+    /**
+     * Generates the reconstruction-loop body shared by both {@code @MarshalledMap} layouts: k/v declarations,
+     * element unmarshal and {@code map.put}.
+     */
+    private List<String> mapPutBlock(TypeMirror keyCompType, TypeMirror valCompType, String kDecl, String vDecl, String mapField) {
+        List<String> code = new ArrayList<>();
+
+        code.add(indentedLine("%s", kDecl));
+        code.add(indentedLine("%s", vDecl));
 
         List<String> keyUnmarshal = codeFor(keyCompType, "k", MarshalMode.UNMARSHAL);
         List<String> valUnmarshal = codeFor(valCompType, "v", MarshalMode.UNMARSHAL);
@@ -661,17 +666,6 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
         code.add(EMPTY);
         code.add(indentedLine("%s.put(k, v);", mapField));
-
-        indent--;
-
-        code.add(indentedLine("}"));
-        code.add(EMPTY);
-        code.add(indentedLine("%s = null;", keysField));
-        code.add(indentedLine("%s = null;", valsField));
-
-        indent--;
-
-        code.add(indentedLine("}"));
 
         return code;
     }
@@ -1017,7 +1011,6 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         return ((DeclaredType)((ArrayType)field.asType()).getComponentType()).asElement().getSimpleName().toString();
     }
 
-    /** Marshal mode controls which overload is being generated. */
     /** Direction of the field code a generator pass emits: object→wire ({@link #MARSHAL}) or wire→object ({@link #UNMARSHAL}). */
     private enum MarshalMode {
         /** Marshal: object → wire bytes, on the sending side. */
