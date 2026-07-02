@@ -17,7 +17,9 @@
 
 package org.apache.ignite.spi.discovery.zk.internal;
 
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,7 +41,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.DataFormatException;
-import java.util.zip.Deflater;
+import java.util.zip.DeflaterOutputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 import org.apache.ignite.Ignite;
@@ -4064,33 +4066,20 @@ public class ZookeeperDiscoveryImpl {
 
     /**
      * @param obj Object.
-     * @return Bytes.
+     * @return Zip-compressed marshalled bytes.
      * @throws IgniteCheckedException If failed.
      */
     byte[] marshalZip(Object obj) throws IgniteCheckedException {
         assert obj != null;
 
-        return zip(U.marshal(marsh, obj));
-    }
+        GridByteArrayOutputStream out = new GridByteArrayOutputStream();
 
-    /**
-     * @param bytes Bytes to compress.
-     * @return Zip-compressed bytes.
-     */
-    private static byte[] zip(byte[] bytes) {
-        Deflater deflater = new Deflater();
-
-        deflater.setInput(bytes);
-        deflater.finish();
-
-        GridByteArrayOutputStream out = new GridByteArrayOutputStream(bytes.length);
-
-        final byte[] buf = new byte[bytes.length];
-
-        while (!deflater.finished()) {
-            int cnt = deflater.deflate(buf);
-
-            out.write(buf, 0, cnt);
+        // Buffer coalesces ~1KB ObjectOutputStream blocks into fewer JNI deflate calls.
+        try (BufferedOutputStream zipOut = new BufferedOutputStream(new DeflaterOutputStream(out))) {
+            U.marshal(marsh, obj, zipOut);
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException("Failed to marshal object: " + obj, e);
         }
 
         return out.toByteArray();
