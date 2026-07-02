@@ -1829,7 +1829,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         if (change)
             CUR_PLC.set(plc);
 
-        try (Scope ignored = actualSecurityContext(nodeId)) {
+        try (Scope ignored = withRemoteSecurityContext(nodeId)) {
             lsnr.onMessage(nodeId, msg, plc);
         }
         finally {
@@ -1839,11 +1839,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
     }
 
     /** */
-    private Scope actualSecurityContext(UUID nodeId) {
+    private Scope withRemoteSecurityContext(UUID nodeId) {
+        // No remote Security Context has been attached to the message processing thread so far.
+        // This means that the message was sent as part of an operation initiated by the sender node.
         if (ctx.security().isDefaultContext())
             return ctx.security().withContext(nodeId);
 
-        // Check that security context is valid.
+        // Verify that the Security Context currently attached to the thread is valid.
         ctx.security().securityContext();
 
         return Scope.NOOP_SCOPE;
