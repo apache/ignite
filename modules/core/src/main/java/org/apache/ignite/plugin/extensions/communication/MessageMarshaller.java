@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -56,12 +57,16 @@ public interface MessageMarshaller<M extends Message> {
         throws IgniteCheckedException;
 
     /**
-     * Unmarshals message fields that do not require a cache context.
+     * Unmarshals the message without a cache context, using the configuration class loader — the cache-free receive
+     * path (e.g. the generic {@code GridIoManager} pass). Delegates to the cache-aware overload with a {@code null}
+     * context, so per-message marshallers need only implement the cache-aware method.
      *
      * @param msg Message to unmarshal.
      * @param kctx Kernal context.
      */
-    public void unmarshal(M msg, GridKernalContext kctx) throws IgniteCheckedException;
+    default void unmarshal(M msg, GridKernalContext kctx) throws IgniteCheckedException {
+        unmarshal(msg, kctx, null, U.resolveClassLoader(kctx.config()));
+    }
 
     /**
      * Unmarshals only {@code @NioField}-annotated fields in the NIO/IO thread. No-op by default.

@@ -229,52 +229,48 @@ public class MessageMarshallerGenerator extends MessageGenerator {
             }
         }
 
-        imports.add("org.apache.ignite.internal.util.typedef.internal.U");
+        // U is referenced only by @Marshalled/@MarshalledObjects/@MarshalledCollection/@MarshalledMap handling.
+        boolean usesU = hasMarshalled || enclosed.values().stream().anyMatch(f ->
+            f.getAnnotation(MarshalledCollection.class) != null || f.getAnnotation(MarshalledMap.class) != null);
+
+        if (usesU)
+            imports.add("org.apache.ignite.internal.util.typedef.internal.U");
 
         String msgParam = simpleNameWithGeneric(type) + " msg, GridKernalContext kctx";
 
-        generateUnmarshalMethod("unmarshal", msgParam + ", CacheObjectContext nested, ClassLoader clsLdr",
-            workerFields, MarshalMode.FINISH_CACHE);
-
-        generateUnmarshalMethod("unmarshal", msgParam, workerFields, MarshalMode.FINISH);
+        generateUnmarshalMethod(msgParam + ", CacheObjectContext nested, ClassLoader clsLdr", workerFields);
 
         if (!nioFields.isEmpty())
             generateUnmarshalNioMethod(msgParam, nioFields);
     }
 
-    /** Generates a single {@code unmarshal} overload for the given {@code mode}. */
-    private void generateUnmarshalMethod(String methodName, String params, List<VariableElement> fields, MarshalMode mode) {
+    /** Generates the cache-aware {@code unmarshal} overload: the full field set, with cache context and deployment class loader. */
+    private void generateUnmarshalMethod(String params, List<VariableElement> fields) {
         marshall.add(EMPTY);
 
         marshall.add(indentedLine(METHOD_JAVADOC));
 
-        marshall.add(indentedLine("@Override public void " + methodName + "(" + params + ") throws IgniteCheckedException {"));
+        marshall.add(indentedLine("@Override public void unmarshal(" + params + ") throws IgniteCheckedException {"));
 
         indent++;
 
         List<String> body = new ArrayList<>();
 
-        Set<String> wireFieldSkip = mode == MarshalMode.FINISH_CACHE ? marshalledWireFieldsToSkip() : Set.of();
+        Set<String> wireFieldSkip = marshalledWireFieldsToSkip();
 
-        if (mode == MarshalMode.FINISH_CACHE && (needsCtx(fields) || !wireFieldSkip.isEmpty()))
+        if (needsCtx(fields) || !wireFieldSkip.isEmpty())
             appendBlock(body, List.of(ctxResolutionLine()));
 
-        appendFields(body, fields, mode, wireFieldSkip);
+        appendFields(body, fields, MarshalMode.FINISH_CACHE, wireFieldSkip);
 
-        if (marshallable) {
-            if (mode == MarshalMode.FINISH_CACHE)
-                appendBlock(body, List.of(indentedLine("msg.unmarshal(marshaller, clsLdr);")));
-            else
-                appendBlock(body, List.of(indentedLine("msg.unmarshal(marshaller, U.resolveClassLoader(kctx.config()));")));
-        }
+        if (marshallable)
+            appendBlock(body, List.of(indentedLine("msg.unmarshal(marshaller, clsLdr);")));
 
-        appendMarshalledFinish(body, mode);
+        appendMarshalledFinish(body);
 
-        if (mode == MarshalMode.FINISH_CACHE) {
-            appendMarshalledCollectionFinish(body);
-            appendMarshalledMapFinish(body);
-            appendMarshalledObjectsFinish(body);
-        }
+        appendMarshalledCollectionFinish(body);
+        appendMarshalledMapFinish(body);
+        appendMarshalledObjectsFinish(body);
 
         marshall.addAll(body);
 
@@ -417,10 +413,8 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         }, body);
     }
 
-    /** Generates {@code U.unmarshal} calls for all {@code @Marshalled} fields in unmarshal. */
-    private void appendMarshalledFinish(List<String> body, MarshalMode mode) {
-        String clsLdr = mode == MarshalMode.FINISH_CACHE ? "clsLdr" : "U.resolveClassLoader(kctx.config())";
-
+    /** Generates {@code U.unmarshal} calls for all {@code @Marshalled} fields in the cache-aware unmarshal. */
+    private void appendMarshalledFinish(List<String> body) {
         forEachMarshalled((bytesAcc, objAcc) -> {
             List<String> code = new ArrayList<>();
 
@@ -428,7 +422,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
             indent++;
 
-            code.add(indentedLine("%s = U.unmarshal(marshaller, %s, %s);", objAcc, bytesAcc, clsLdr));
+            code.add(indentedLine("%s = U.unmarshal(marshaller, %s, clsLdr);", objAcc, bytesAcc));
             code.add(EMPTY);
 
             // Drop the serialized cache once the object is restored: keeping both the deserialized value and its bytes
@@ -809,11 +803,8 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         return code;
     }
 
-    /** Generates a null-and-ctx-guarded {@code marshal/unmarshal} call on a {@code CacheObject}. */
+    /** Generates a null-and-ctx-guarded {@code marshal/unmarshal} call on a {@code CacheObject} (marshal or cache-aware unmarshal only). */
     private List<String> marshallCacheObject(String accessor, MarshalMode mode) {
-        if (mode == MarshalMode.FINISH)
-            return List.of();
-
         List<String> code = new ArrayList<>();
 
         code.add(indentedLine("if (%s != null && ctx != null)", accessor));

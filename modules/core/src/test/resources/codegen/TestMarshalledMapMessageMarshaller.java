@@ -88,21 +88,4 @@ public class TestMarshalledMapMessageMarshaller implements MessageMarshaller<Tes
             msg.mapVals = null;
         }
     }
-
-    /** */
-    @Override public void unmarshal(TestMarshalledMapMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
-        if (msg.mapKeys != null) {
-            for (GridCacheVersion e : (Collection<? extends GridCacheVersion>)msg.mapKeys) {
-                if (e != null)
-                    MessageMarshaller.unmarshal(kctx.messageFactory(), e, kctx);
-            }
-        }
-
-        if (msg.mapVals != null) {
-            for (GridCacheVersion e : (Collection<? extends GridCacheVersion>)msg.mapVals) {
-                if (e != null)
-                    MessageMarshaller.unmarshal(kctx.messageFactory(), e, kctx);
-            }
-        }
-    }
 }

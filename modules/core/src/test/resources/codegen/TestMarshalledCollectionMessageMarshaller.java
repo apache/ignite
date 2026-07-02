@@ -67,14 +67,4 @@ public class TestMarshalledCollectionMessageMarshaller implements MessageMarshal
             msg.keysArr = null;
         }
     }
-
-    /** */
-    @Override public void unmarshal(TestMarshalledCollectionMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
-        if (msg.keysArr != null) {
-            for (GridCacheVersion e : msg.keysArr) {
-                if (e != null)
-                    MessageMarshaller.unmarshal(kctx.messageFactory(), e, kctx);
-            }
-        }
-    }
 }

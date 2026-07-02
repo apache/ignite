@@ -21,7 +21,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.DefaultMapperEnumFieldsMessage;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 
 /**
@@ -40,9 +39,5 @@ public class DefaultMapperEnumFieldsMessageMarshaller implements MessageMarshall
 
     /** */
     @Override public void unmarshal(DefaultMapperEnumFieldsMessage msg, GridKernalContext kctx, CacheObjectContext nested, ClassLoader clsLdr) throws IgniteCheckedException {
-    }
-
-    /** */
-    @Override public void unmarshal(DefaultMapperEnumFieldsMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
     }
 }

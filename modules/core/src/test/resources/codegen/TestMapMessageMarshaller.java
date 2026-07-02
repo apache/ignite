@@ -40,7 +40,6 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 
@@ -112,16 +111,6 @@ public class TestMapMessageMarshaller implements MessageMarshaller<TestMapMessag
                         }
                     }
                 }
-            }
-        }
-    }
-
-    /** */
-    @Override public void unmarshal(TestMapMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
-        if (msg.messageBoxedDoubleMap != null) {
-            for (GridCacheVersion e : ((Collection<? extends GridCacheVersion>)msg.messageBoxedDoubleMap.keySet())) {
-                if (e != null)
-                    MessageMarshaller.unmarshal(kctx.messageFactory(), e, kctx);
             }
         }
     }

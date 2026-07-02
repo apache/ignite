@@ -23,7 +23,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.TestMessage;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 
 /**
@@ -76,16 +75,6 @@ public class TestMessageMarshaller implements MessageMarshaller<TestMessage> {
 
         if (msg.cacheObject != null && ctx != null)
             msg.cacheObject.unmarshal(ctx, clsLdr);
-    }
-
-    /** */
-    @Override public void unmarshal(TestMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
-        if (msg.verArr != null) {
-            for (GridCacheVersion e : msg.verArr) {
-                if (e != null)
-                    MessageMarshaller.unmarshal(kctx.messageFactory(), e, kctx);
-            }
-        }
     }
 
     /** */

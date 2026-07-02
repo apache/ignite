@@ -21,7 +21,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.ChildMessage;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 
 /**
@@ -40,9 +39,5 @@ public class ChildMessageMarshaller implements MessageMarshaller<ChildMessage> {
 
     /** */
     @Override public void unmarshal(ChildMessage msg, GridKernalContext kctx, CacheObjectContext nested, ClassLoader clsLdr) throws IgniteCheckedException {
-    }
-
-    /** */
-    @Override public void unmarshal(ChildMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
     }
 }

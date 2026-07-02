@@ -37,7 +37,6 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 
@@ -85,16 +84,6 @@ public class TestCollectionsMessageMarshaller implements MessageMarshaller<TestC
             for (CacheObject e : (Collection<? extends CacheObject>)msg.cacheObjectSet) {
                 if (e != null && ctx != null)
                     e.unmarshal(ctx, clsLdr);
-            }
-        }
-    }
-
-    /** */
-    @Override public void unmarshal(TestCollectionsMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
-        if (msg.messageList != null) {
-            for (GridCacheVersion e : (Collection<? extends GridCacheVersion>)msg.messageList) {
-                if (e != null)
-                    MessageMarshaller.unmarshal(kctx.messageFactory(), e, kctx);
             }
         }
     }

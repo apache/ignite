@@ -63,8 +63,4 @@ public class TestMarshalledObjectsMessageMarshaller implements MessageMarshaller
             msg.dataBytes = null;
         }
     }
-
-    /** */
-    @Override public void unmarshal(TestMarshalledObjectsMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
-    }
 }
