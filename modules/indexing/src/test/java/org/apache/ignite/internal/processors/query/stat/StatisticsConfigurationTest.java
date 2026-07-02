@@ -155,7 +155,7 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
     }
 
     /** */
-    protected void stopGridAndChangeBaseline(int nodeIdx) throws Exception {
+    protected void stopGridAndChangeBaseline(int nodeIdx) {
         stopGrid(nodeIdx);
 
         if (persist)
