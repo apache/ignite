@@ -17,12 +17,13 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
+import org.apache.ignite.internal.managers.communication.MessageUnmarshalDedup;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
- * Verifies the no-double-unmarshal check itself, not its coverage: {@link MessageMarshaller.Dedup#firstUnmarshal} must
+ * Verifies the no-double-unmarshal check itself, not its coverage: {@link MessageUnmarshalDedup#firstUnmarshal} must
  * detect a second finish-unmarshal of the same instance within one pass, while allowing the two legitimate passes
  * (cache-free and cache-aware), and the check must be enabled for every test — otherwise the suite-wide guard would
  * silently turn off and pass every test vacuously. The actual coverage (no real receive path unmarshals an instance
@@ -33,7 +34,7 @@ public class MessageUnmarshalOnceTest extends GridCommonAbstractTest {
     @Test
     public void testCheckEnabled() {
         assertTrue("IGNITE_MESSAGE_UNMARSHAL_ONCE_CHECK must be set for every test by GridAbstractTest",
-            MessageMarshaller.Dedup.ENABLED);
+            MessageUnmarshalDedup.ENABLED);
     }
 
     /** A second finish-unmarshal of the same instance within one pass must be detected; the first must be allowed. */
@@ -41,9 +42,9 @@ public class MessageUnmarshalOnceTest extends GridCommonAbstractTest {
     public void testSecondUnmarshalDetected() {
         MarshallableMessage msg = new NoopMarshallableMessage();
 
-        assertTrue("First finish-unmarshal must be allowed", MessageMarshaller.Dedup.firstUnmarshal(msg, false));
+        assertTrue("First finish-unmarshal must be allowed", MessageUnmarshalDedup.firstUnmarshal(msg, false));
         assertFalse("Second finish-unmarshal of the same instance in the same pass must be detected",
-            MessageMarshaller.Dedup.firstUnmarshal(msg, false));
+            MessageUnmarshalDedup.firstUnmarshal(msg, false));
     }
 
     /** The two legitimate passes (cache-free and cache-aware) over one instance must both be allowed. */
@@ -51,9 +52,9 @@ public class MessageUnmarshalOnceTest extends GridCommonAbstractTest {
     public void testBothPassesAllowed() {
         MarshallableMessage msg = new NoopMarshallableMessage();
 
-        assertTrue("Cache-free pass must be allowed", MessageMarshaller.Dedup.firstUnmarshal(msg, false));
+        assertTrue("Cache-free pass must be allowed", MessageUnmarshalDedup.firstUnmarshal(msg, false));
         assertTrue("Cache-aware pass over the same instance must also be allowed",
-            MessageMarshaller.Dedup.firstUnmarshal(msg, true));
+            MessageUnmarshalDedup.firstUnmarshal(msg, true));
     }
 
     /** Minimal {@link MarshallableMessage}; only its identity matters to the check. */

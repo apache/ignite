@@ -21,6 +21,7 @@ import java.lang.reflect.Array;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
+import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -95,7 +96,15 @@ public class IgniteMessageFactoryImpl implements MessageFactory {
         }
 
         try {
-            supplier.get().registerAsDirectType(directType);
+            Message msg = supplier.get();
+
+            if (marshaller == null && msg instanceof MarshallableMessage) {
+                throw new IgniteException("Message implements MarshallableMessage but is registered without" +
+                    " a marshaller, so it would be sent unmarshalled [directType=" + directType +
+                    ", cls=" + msg.getClass().getName() + ']');
+            }
+
+            msg.registerAsDirectType(directType);
         }
         catch (NoClassDefFoundError | ExceptionInInitializerError e) {
             // Optional dependency not available (e.g. JTS for GridH2Geometry).

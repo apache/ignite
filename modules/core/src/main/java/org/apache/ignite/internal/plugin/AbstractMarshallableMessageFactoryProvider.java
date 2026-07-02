@@ -83,15 +83,28 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
      */
     protected static <T extends Message> void register(MessageFactory factory, Class<T> cls, short id,
         Supplier<Message> supplier, Marshaller marsh) {
-        MessageSerializer<T> serializer = loadGenerated(cls, "Serializer", marsh);
+        MessageSerializer<T> serializer = requireGenerated(cls, "Serializer", marsh);
 
         MessageMarshaller<T> marshaller = NonMarshallableMessage.class.isAssignableFrom(cls)
             ? null
-            : loadGenerated(cls, "Marshaller", marsh);
+            : requireGenerated(cls, "Marshaller", marsh);
 
         GridCacheMessageDeployer deployer = loadGenerated(cls, "Deployer", marsh);
 
         factory.register(id, supplier, serializer, marshaller, deployer);
+    }
+
+    /** Loads the generated companion like {@link #loadGenerated}, failing fast when it is missing. */
+    private static <T> T requireGenerated(Class<?> cls, String suffix, Marshaller marsh) {
+        T res = loadGenerated(cls, suffix, marsh);
+
+        if (res == null) {
+            throw new IgniteException("No " + cls.getSimpleName() + suffix + " found for " + cls.getName() +
+                ". Either the class is not processed by codegen or the generated sources are stale," +
+                " try 'mvn clean install'.");
+        }
+
+        return res;
     }
 
     /**
