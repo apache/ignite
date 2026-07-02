@@ -44,7 +44,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * @see OperationContext
  * @see OperationContextMessage
- * @see DistributedOperationContextAttributes
+ * @see DistributedOperationContextAttribute
  */
 public class OperationContextDispatcher {
     /** Maximal number of supported distributed attributes. */

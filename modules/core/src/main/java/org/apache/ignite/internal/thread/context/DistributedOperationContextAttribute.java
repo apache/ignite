@@ -21,7 +21,7 @@ import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContextWrapper;
 
 /** Ids of Ignite's known distributed operation context attributes. */
-public enum DistributedOperationContextAttributes {
+public enum DistributedOperationContextAttribute {
     /**
      * Distributed {@link SecurityContext}.
      *
