@@ -167,15 +167,15 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
 
     /** {@inheritDoc} */
     @Override public SecurityContext securityContext() {
-        SecurityContextWrapper secCtxMsg = OperationContext.get(SEC_CTX_ATTR);
+        SecurityContextWrapper secCtx = OperationContext.get(SEC_CTX_ATTR);
 
-        if (secCtxMsg == null)
+        if (secCtx == null)
             return dfltSecCtx;
 
-        if (secCtxMsg.delegate() == null)
-            secCtxMsg.delegate(securityContext(secCtxMsg.subjId));
+        if (secCtx.delegate() == null)
+            secCtx.delegate(securityContext(secCtx.subjId));
 
-        return secCtxMsg.delegate();
+        return secCtx.delegate();
     }
 
     /** */
