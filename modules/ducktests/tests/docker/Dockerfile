@@ -13,11 +13,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG jdk_version=eclipse-temurin:17
+# =====================================================================
+# GLOBAL ARGS (Must be declared at the very top, before any FROM)
+# =====================================================================
+ARG python_version="3.13"
+ARG jdk_version="eclipse-temurin:17"
+
+# ---------------------------------------------------------------------
+# Stage 1: Pull official pre-compiled Python binaries
+# ---------------------------------------------------------------------
+FROM python:${python_version}-slim AS python_source
+
+# ---------------------------------------------------------------------
+# Stage 2: Main Image Build
+# ---------------------------------------------------------------------
 FROM $jdk_version
 
-MAINTAINER Apache Ignite dev@ignite.apache.org
-VOLUME ["/opt/ignite-dev"]
+# Re-declare global args here to make them accessible inside this specific stage
+ARG python_version
+ARG jdk_version
 
 # ---------------------------------------------------------------------
 # 1. Environment & Global System Configurations
@@ -35,11 +49,9 @@ LABEL ducker.creator=$ducker_creator
 RUN cat /etc/apt/sources.list | sed 's/http:\/\/deb.debian.org/https:\/\/deb.debian.org/g' > /etc/apt/sources.list.2 && mv /etc/apt/sources.list.2 /etc/apt/sources.list
 
 # ---------------------------------------------------------------------
-# 2. System Utilities & Python 3.9 Installation
+# 2. System Utilities Installation
 # ---------------------------------------------------------------------
-RUN apt update && apt install -y software-properties-common gpg \
-    && add-apt-repository -y ppa:deadsnakes/ppa \
-    && apt update && apt install -y \
+RUN apt-get update && apt-get install -y \
     sudo \
     netcat-traditional \
     iptables \
@@ -52,10 +64,6 @@ RUN apt update && apt install -y software-properties-common gpg \
     openssh-server \
     net-tools \
     vim \
-    python3.9 \
-    python3.9-dev \
-    python3.9-venv \
-    python3-pip \
     libffi-dev \
     libssl-dev \
     cmake \
@@ -65,23 +73,41 @@ RUN apt update && apt install -y software-properties-common gpg \
     traceroute \
     mc \
     git \
-    && apt-get -y clean
+    build-essential \
+    && apt-get -y clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # ---------------------------------------------------------------------
 # 3. Python Virtual Environment Setup & Requirements
 # ---------------------------------------------------------------------
-# Enforce Python 3.9 for our internal virtual environment
-RUN python3.9 -m venv /opt/venv
+# Copy the official prepared Python binaries directly into the image
+COPY --from=python_source /usr/local/ /usr/local/
+
+# Standardize path routing via the virtual environment block
+RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Upgrade pip to suppress the notice warning and ensure faster dependency checks
-RUN pip install --no-cache-dir --upgrade pip
+# Upgrade pip
+RUN pip install \
+    --no-cache-dir \
+    --trusted-host pypi.org \
+    --trusted-host files.pythonhosted.org \
+    --trusted-host pypi.python.org \
+    --upgrade pip
 
-# Print the active python version to the build terminal to confirm 3.9 is loaded
+# Print the active python version to the build terminal to confirm selection
 RUN python3 --version
 
 COPY ./requirements.txt /root/requirements.txt
-RUN pip3 install --no-cache-dir -r /root/requirements.txt
+
+# Install requirements
+RUN pip3 install \
+    --default-timeout=100 \
+    --no-cache-dir \
+    --trusted-host pypi.org \
+    --trusted-host files.pythonhosted.org \
+    --trusted-host pypi.python.org \
+    -r /root/requirements.txt
 
 # ---------------------------------------------------------------------
 # 4. SSH & Security Settings
@@ -136,8 +162,11 @@ RUN cd /opt && curl -OL https://github.com/jiaqi/jmxterm/releases/download/v$JMX
 ARG USER_UID=1000
 ARG USER_GID=1000
 
-RUN userdel -r ubuntu \
-    && groupadd -g $USER_GID ducker \
+# Remove conflicting default user if it exists
+RUN getent passwd ubuntu &>/dev/null && userdel -r ubuntu || true
+
+# Provision ducker system environment and security configurations
+RUN groupadd -g $USER_GID ducker \
     && useradd -u $USER_UID -g $USER_GID -ms /bin/bash ducker \
     && mkdir -p /home/ducker/ \
     && rsync -aiq /root/.ssh/ /home/ducker/.ssh \
