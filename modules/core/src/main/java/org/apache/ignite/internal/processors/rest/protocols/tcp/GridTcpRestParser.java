@@ -37,6 +37,7 @@ import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.nio.GridNioParser;
 import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -659,40 +660,38 @@ public class GridTcpRestParser implements GridNioParser {
      * @throws IgniteCheckedException If serialization failed.
      */
     private ByteBuffer encodeMemcache(GridMemcachedMessage msg) throws IgniteCheckedException {
-        GridByteArrayList res = new GridByteArrayList(HDR_LEN);
-
-        int keyLen = 0;
+        byte[] key = null;
 
         int keyFlags = 0;
 
         if (msg.key() != null) {
-            ByteArrayOutputStream rawKey = new ByteArrayOutputStream();
+            T2<byte[], Integer> encKey = encodeObj(msg.key());
 
-            keyFlags = encodeObj(msg.key(), rawKey);
-
-            msg.key(rawKey.toByteArray());
-
-            keyLen = rawKey.size();
+            key = encKey.get1();
+            keyFlags = encKey.get2();
         }
 
-        int dataLen = 0;
+        byte[] val = null;
 
         int valFlags = 0;
 
         if (msg.value() != null) {
-            ByteArrayOutputStream rawVal = new ByteArrayOutputStream();
+            T2<byte[], Integer> encVal = encodeObj(msg.value());
 
-            valFlags = encodeObj(msg.value(), rawVal);
-
-            msg.value(rawVal.toByteArray());
-
-            dataLen = rawVal.size();
+            val = encVal.get1();
+            valFlags = encVal.get2();
         }
+
+        int keyLen = key != null ? key.length : 0;
+
+        int dataLen = val != null ? val.length : 0;
 
         int flagsLen = 0;
 
         if (msg.addFlags())// || keyFlags > 0 || valFlags > 0)
             flagsLen = FLAGS_LENGTH;
+
+        GridByteArrayList res = new GridByteArrayList(HDR_LEN + flagsLen + keyLen + dataLen);
 
         res.add(MEMCACHE_RES_FLAG);
 
@@ -723,14 +722,11 @@ public class GridTcpRestParser implements GridNioParser {
             res.add((short)valFlags);
         }
 
-        assert msg.key() == null || msg.key() instanceof byte[];
-        assert msg.value() == null || msg.value() instanceof byte[];
-
         if (keyLen > 0)
-            res.add((byte[])msg.key(), 0, ((byte[])msg.key()).length);
+            res.add(key, 0, keyLen);
 
         if (dataLen > 0)
-            res.add((byte[])msg.value(), 0, ((byte[])msg.value()).length);
+            res.add(val, 0, dataLen);
 
         return ByteBuffer.wrap(res.entireArray());
     }
@@ -871,67 +867,30 @@ public class GridTcpRestParser implements GridNioParser {
      * Encodes given object to a byte array and returns flags that describe the type of serialized object.
      *
      * @param obj Object to serialize.
-     * @param out Output stream to which object should be written.
-     * @return Serialization flags.
+     * @return Tuple of encoded object bytes and serialization flags.
      * @throws IgniteCheckedException If JDK serialization failed.
      */
-    private int encodeObj(Object obj, ByteArrayOutputStream out) throws IgniteCheckedException {
-        int flags = 0;
-
-        byte[] data = null;
-
+    private T2<byte[], Integer> encodeObj(Object obj) throws IgniteCheckedException {
         if (obj instanceof String)
-            data = ((String)obj).getBytes(UTF_8);
-        else if (obj instanceof Boolean) {
-            data = new byte[] {(byte)((Boolean)obj ? '1' : '0')};
-
-            flags |= BOOLEAN_FLAG;
-        }
-        else if (obj instanceof Integer) {
-            data = U.intToBytes((Integer)obj);
-
-            flags |= INT_FLAG;
-        }
-        else if (obj instanceof Long) {
-            data = U.longToBytes((Long)obj);
-
-            flags |= LONG_FLAG;
-        }
-        else if (obj instanceof Date) {
-            data = U.longToBytes(((Date)obj).getTime());
-
-            flags |= DATE_FLAG;
-        }
-        else if (obj instanceof Byte) {
-            data = new byte[] {(Byte)obj};
-
-            flags |= BYTE_FLAG;
-        }
-        else if (obj instanceof Float) {
-            data = U.intToBytes(Float.floatToIntBits((Float)obj));
-
-            flags |= FLOAT_FLAG;
-        }
-        else if (obj instanceof Double) {
-            data = U.longToBytes(Double.doubleToLongBits((Double)obj));
-
-            flags |= DOUBLE_FLAG;
-        }
-        else if (obj instanceof byte[]) {
-            data = (byte[])obj;
-
-            flags |= BYTE_ARR_FLAG;
-        }
-        else {
-            U.marshal(marsh, obj, out);
-
-            flags |= SERIALIZED_FLAG;
-        }
-
-        if (data != null)
-            out.write(data, 0, data.length);
-
-        return flags;
+            return new T2<>(((String)obj).getBytes(UTF_8), 0);
+        else if (obj instanceof Boolean)
+            return new T2<>(new byte[] {(byte)((Boolean)obj ? '1' : '0')}, BOOLEAN_FLAG);
+        else if (obj instanceof Integer)
+            return new T2<>(U.intToBytes((Integer)obj), INT_FLAG);
+        else if (obj instanceof Long)
+            return new T2<>(U.longToBytes((Long)obj), LONG_FLAG);
+        else if (obj instanceof Date)
+            return new T2<>(U.longToBytes(((Date)obj).getTime()), DATE_FLAG);
+        else if (obj instanceof Byte)
+            return new T2<>(new byte[] {(Byte)obj}, BYTE_FLAG);
+        else if (obj instanceof Float)
+            return new T2<>(U.intToBytes(Float.floatToIntBits((Float)obj)), FLOAT_FLAG);
+        else if (obj instanceof Double)
+            return new T2<>(U.longToBytes(Double.doubleToLongBits((Double)obj)), DOUBLE_FLAG);
+        else if (obj instanceof byte[])
+            return new T2<>((byte[])obj, BYTE_ARR_FLAG);
+        else
+            return new T2<>(U.marshal(marsh, obj), SERIALIZED_FLAG);
     }
 
     /**
