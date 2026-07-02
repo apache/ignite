@@ -183,31 +183,18 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         imports.add("org.apache.ignite.internal.GridKernalContext");
         imports.add("org.apache.ignite.internal.processors.cache.CacheObjectContext");
 
-        marshall.add(indentedLine(METHOD_JAVADOC));
+        emitMethod(marshall, "marshal(" + simpleNameWithGeneric(type) + " msg, GridKernalContext kctx, CacheObjectContext nested)", body -> {
+            if (needsCtx(orderedFields))
+                appendBlock(body, List.of(ctxResolutionLine()));
 
-        marshall.add(indentedLine("@Override public void marshal(" + simpleNameWithGeneric(type) +
-            " msg, GridKernalContext kctx, CacheObjectContext nested) throws IgniteCheckedException {"));
+            appendMarshalledFieldsPrepare(body);
+            appendMarshalledPrepare(body);
 
-        indent++;
+            if (marshallable)
+                appendBlock(body, List.of(indentedLine("msg.marshal(marshaller);")));
 
-        List<String> body = new ArrayList<>();
-
-        if (needsCtx(orderedFields))
-            appendBlock(body, List.of(ctxResolutionLine()));
-
-        appendMarshalledFieldsPrepare(body);
-        appendMarshalledPrepare(body);
-
-        if (marshallable)
-            appendBlock(body, List.of(indentedLine("msg.marshal(marshaller);")));
-
-        appendFields(body, orderedFields, MarshalMode.PREPARE);
-
-        marshall.addAll(body);
-
-        indent--;
-
-        marshall.add(indentedLine("}"));
+            appendFields(body, orderedFields, MarshalMode.PREPARE);
+        });
     }
 
     /** Generates all {@code unmarshal} overloads and appends them to {@link #marshall}. */
@@ -246,58 +233,29 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
     /** Generates the cache-aware {@code unmarshal} overload: the full field set, with cache context and deployment class loader. */
     private void generateUnmarshalMethod(String params, List<VariableElement> fields) {
-        marshall.add(EMPTY);
+        emitMethod(marshall, "unmarshal(" + params + ")", body -> {
+            Set<String> wireFieldSkip = marshalledWireFieldsToSkip();
 
-        marshall.add(indentedLine(METHOD_JAVADOC));
+            if (needsCtx(fields) || !wireFieldSkip.isEmpty())
+                appendBlock(body, List.of(ctxResolutionLine()));
 
-        marshall.add(indentedLine("@Override public void unmarshal(" + params + ") throws IgniteCheckedException {"));
+            appendFields(body, fields, MarshalMode.FINISH_CACHE, wireFieldSkip);
 
-        indent++;
+            if (marshallable)
+                appendBlock(body, List.of(indentedLine("msg.unmarshal(marshaller, clsLdr);")));
 
-        List<String> body = new ArrayList<>();
+            appendMarshalledFinish(body);
 
-        Set<String> wireFieldSkip = marshalledWireFieldsToSkip();
-
-        if (needsCtx(fields) || !wireFieldSkip.isEmpty())
-            appendBlock(body, List.of(ctxResolutionLine()));
-
-        appendFields(body, fields, MarshalMode.FINISH_CACHE, wireFieldSkip);
-
-        if (marshallable)
-            appendBlock(body, List.of(indentedLine("msg.unmarshal(marshaller, clsLdr);")));
-
-        appendMarshalledFinish(body);
-
-        appendMarshalledCollectionFinish(body);
-        appendMarshalledMapFinish(body);
-        appendMarshalledObjectsFinish(body);
-
-        marshall.addAll(body);
-
-        indent--;
-
-        marshall.add(indentedLine("}"));
+            appendMarshalledCollectionFinish(body);
+            appendMarshalledMapFinish(body);
+            appendMarshalledObjectsFinish(body);
+        });
     }
 
     /** Generates the {@code unmarshalNio} method for NIO-eligible {@code @Message} fields. */
     private void generateUnmarshalNioMethod(String params, List<VariableElement> nioFields) {
-        marshall.add(EMPTY);
-
-        marshall.add(indentedLine(METHOD_JAVADOC));
-
-        marshall.add(indentedLine("@Override public void unmarshalNio(" + params + ") throws IgniteCheckedException {"));
-
-        indent++;
-
-        List<String> body = new ArrayList<>();
-
-        appendFields(body, nioFields, MarshalMode.FINISH);
-
-        marshall.addAll(body);
-
-        indent--;
-
-        marshall.add(indentedLine("}"));
+        emitMethod(marshall, "unmarshalNio(" + params + ")", body ->
+            appendFields(body, nioFields, MarshalMode.FINISH));
     }
 
     /** Generates logical→wire conversions for all {@code @MarshalledCollection} and {@code @MarshalledMap} fields. */

@@ -122,71 +122,62 @@ public class MessageDeploymentGenerator extends MessageGenerator {
     @Override void generateBody(List<VariableElement> fields) {
         indent = 1;
 
-        deploy.add(indentedLine(METHOD_JAVADOC));
-        deploy.add(indentedLine(
-            "@Override public void deploy(%s msg, GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {",
-            simpleNameWithGeneric(type)));
+        emitMethod(deploy, "deploy(" + simpleNameWithGeneric(type) + " msg, GridCacheSharedContext<?, ?> ctx)", body -> {
+            List<String> fieldStmts = new ArrayList<>();
 
-        indent++;
+            for (VariableElement field : allHierarchyFields(type)) {
+                DeployKind kind = deployKind(field);
 
-        List<String> body = new ArrayList<>();
+                if (kind == null)
+                    continue;
 
-        for (VariableElement field : allHierarchyFields(type)) {
-            DeployKind kind = deployKind(field);
+                String stmt;
 
-            if (kind == null)
-                continue;
+                switch (kind) {
+                    case CACHE_OBJECT:
+                        needsCctx = true;
+                        stmt = "msg.deployCacheObject(%s, cctx);";
 
-            String stmt;
+                        break;
 
-            switch (kind) {
-                case CACHE_OBJECT:
-                    needsCctx = true;
-                    stmt = "msg.deployCacheObject(%s, cctx);";
+                    case CACHE_OBJECTS:
+                        needsCctx = true;
+                        stmt = "msg.deployCacheObjects(%s, cctx);";
 
-                    break;
+                        break;
 
-                case CACHE_OBJECTS:
-                    needsCctx = true;
-                    stmt = "msg.deployCacheObjects(%s, cctx);";
+                    case TX_ENTRIES:
+                        stmt = "msg.deployTx(%s, ctx);";
 
-                    break;
+                        break;
 
-                case TX_ENTRIES:
-                    stmt = "msg.deployTx(%s, ctx);";
+                    case NESTED:
+                        stmt = "GridCacheMessageDeployer.deploy(ctx.kernalContext().messageFactory(), %s, ctx);";
 
-                    break;
+                        break;
 
-                case NESTED:
-                    stmt = "GridCacheMessageDeployer.deploy(ctx.kernalContext().messageFactory(), %s, ctx);";
+                    default:
+                        throw new IllegalStateException("Unexpected deploy kind: " + kind);
+                }
 
-                    break;
-
-                default:
-                    throw new IllegalStateException("Unexpected deploy kind: " + kind);
+                appendBlock(fieldStmts, List.of(indentedLine(stmt, fieldAccessor(field))));
             }
 
-            appendBlock(body, List.of(indentedLine(stmt, fieldAccessor(field))));
-        }
+            if (needsCctx) {
+                body.add(indentedLine(cctxResolutionLine()));
+                body.add(EMPTY);
+            }
 
-        if (needsCctx) {
-            deploy.add(indentedLine(cctxResolutionLine()));
-            deploy.add(EMPTY);
-        }
+            body.addAll(fieldStmts);
 
-        deploy.addAll(body);
+            // Delegate the non-inferable part to the message's own deploy, mirroring msg.marshal().
+            if (hasCustomDeployment(type)) {
+                if (!fieldStmts.isEmpty())
+                    body.add(EMPTY);
 
-        // Delegate the non-inferable part to the message's own deploy, mirroring msg.marshal().
-        if (hasCustomDeployment(type)) {
-            if (!body.isEmpty())
-                deploy.add(EMPTY);
-
-            deploy.add(indentedLine("msg.deploy(ctx);"));
-        }
-
-        indent--;
-
-        deploy.add(indentedLine("}"));
+                body.add(indentedLine("msg.deploy(ctx);"));
+            }
+        });
     }
 
     /** {@inheritDoc} */

@@ -24,10 +24,12 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.Writer;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
+import java.util.function.Consumer;
 import javax.annotation.processing.FilerException;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.TypeElement;
@@ -42,7 +44,10 @@ import javax.tools.StandardLocation;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 
-/** Base class for message code generators ({@link MessageSerializerGenerator}, {@link MessageMarshallerGenerator}). */
+/**
+ * Base class for message code generators ({@link MessageSerializerGenerator}, {@link MessageMarshallerGenerator},
+ * {@link MessageDeploymentGenerator}).
+ */
 public abstract class MessageGenerator {
     /** Blank separator line in generated code. */
     public static final String EMPTY = "";
@@ -227,6 +232,29 @@ public abstract class MessageGenerator {
             body.add(EMPTY);
 
         body.addAll(block);
+    }
+
+    /**
+     * Emits an {@code @Override public void <signature> throws IgniteCheckedException} method into {@code target}: a
+     * leading blank separator, the {@link #METHOD_JAVADOC} stub, the signature line, and the indented body produced by
+     * {@code bodyBuilder}.
+     */
+    protected void emitMethod(List<String> target, String signature, Consumer<List<String>> bodyBuilder) {
+        if (!target.isEmpty())
+            target.add(EMPTY);
+
+        target.add(indentedLine(METHOD_JAVADOC));
+        target.add(indentedLine("@Override public void " + signature + " throws IgniteCheckedException {"));
+
+        indent++;
+
+        List<String> body = new ArrayList<>();
+        bodyBuilder.accept(body);
+        target.addAll(body);
+
+        indent--;
+
+        target.add(indentedLine("}"));
     }
 
     /** @return {@code true} if a file with identical content is already generated (e.g. during incremental build). */
