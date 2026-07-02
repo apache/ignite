@@ -18,10 +18,15 @@
 package org.apache.ignite.internal.thread.context;
 
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.processors.security.SecurityContextWrapper;
 
-/** */
+/** Ids of Ignite's known distributed operation context attributes. */
 public enum DistributedOperationContextAttributes {
-    /** Distributed {@link SecurityContext}. */
+    /**
+     * Distributed {@link SecurityContext}.
+     *
+     * @see SecurityContextWrapper
+     */
     SECURITY;
 
     /** Cluster-wide id of distributed attribute. */
