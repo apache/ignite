@@ -29,7 +29,7 @@ import org.apache.ignite.plugin.security.SecuritySubject;
  * @see OperationContextDispatcher#collectDistributedAttributes()
  */
 public class SecurityContextMessage implements Message {
-    /** Security subject id. */
+    /** A value of {@link SecuritySubject#id()} */
     @Order(0)
     UUID subjId;
 
