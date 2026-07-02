@@ -201,7 +201,7 @@ namespace Apache.Ignite.Core.Tests
             // Copy jars.
             var home = IgniteHome.Resolve();
 
-            var jarNames = new[] {@"\ignite-core-", @"\cache-api-1.0.0.jar", @"\modules\spring\"};
+            var jarNames = new[] {@"\ignite-core-", @"\cache-api-1.0.0.jar", @"\ignite-spring-"};
 
             var jars = Directory.GetFiles(home, "*.jar", SearchOption.AllDirectories)
                 .Where(jarPath => jarNames.Any(jarPath.Contains)).ToArray();
@@ -239,13 +239,12 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private static void VerifyNodeStarted(string exePath)
         {
-            // Use code-based config (no Spring) to get discoStartupDelay=0 from GetStaticDiscovery().
-            // The external grid2 node uses discoStartupDelay=60000 (default Java), so we connect quickly
-            // and wait for grid2 to join.
-            using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
+            using (var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                // Wait for grid2 to finish its discoStartupDelay (60s) and join.
-                Assert.IsTrue(ignite.WaitTopology(2, 120000));
+                SpringConfigUrl = "Config/Compute/compute-grid1.xml",
+            }))
+            {
+                Assert.IsTrue(ignite.WaitTopology(2));
 
                 var remoteProcPath = ignite.GetCluster().ForRemotes().GetCompute().Call(new ProcessPathFunc());
 
