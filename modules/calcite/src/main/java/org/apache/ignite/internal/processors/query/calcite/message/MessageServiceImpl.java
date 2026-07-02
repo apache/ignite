@@ -29,11 +29,9 @@ import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
@@ -52,9 +50,6 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
 
     /** */
     private QueryTaskExecutor taskExecutor;
-
-    /** */
-    private FailureProcessor failureProc;
 
     /** */
     private Map<Class<? extends Message>, MessageListener> lsnrs;
@@ -102,20 +97,6 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
         return taskExecutor;
     }
 
-    /**
-     * @param failureProc Failure processor.
-     */
-    public void failureProcessor(FailureProcessor failureProc) {
-        this.failureProc = failureProc;
-    }
-
-    /**
-     * @return Failure processor.
-     */
-    public FailureProcessor failureProcessor() {
-        return failureProc;
-    }
-
     /** {@inheritDoc} */
     @Override public void onStart(GridKernalContext ctx) {
         localNodeId(ctx.localNodeId());
@@ -123,7 +104,6 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
         CalciteQueryProcessor proc = queryProcessor(ctx);
 
         taskExecutor(proc.taskExecutor());
-        failureProcessor(proc.failureProcessor());
 
         init();
     }
