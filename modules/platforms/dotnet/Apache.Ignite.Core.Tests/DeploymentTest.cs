@@ -165,10 +165,20 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.IsNotNull(proc);
 
-            if (proc.WaitForExit(300))
+            // Wait longer for the node to start (discoStartupDelay=60000 is the default in Spring config).
+            // Check that the process hasn't exited.
+            const int startWaitTime = 70000;
+
+            if (proc.WaitForExit(startWaitTime))
             {
-                Assert.Fail("Node failed to start: " + string.Join("\n", reader.GetOutput()));
+                Assert.Fail(
+                    $"Node exited after {startWaitTime}ms. Output:\n" +
+                    string.Join("\n", reader.GetOutput()));
             }
+
+            Assert.IsFalse(proc.HasExited,
+                $"Node process died. Output so far:\n" +
+                string.Join("\n", reader.GetOutput()));
 
             VerifyNodeStarted(exePath);
         }
@@ -229,12 +239,13 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private static void VerifyNodeStarted(string exePath)
         {
-            using (var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            // Use code-based config (no Spring) to get discoStartupDelay=0 from GetStaticDiscovery().
+            // The external grid2 node uses discoStartupDelay=60000 (default Java), so we connect quickly
+            // and wait for grid2 to join.
+            using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
             {
-                SpringConfigUrl = "Config/Compute/compute-grid1.xml",
-            }))
-            {
-                Assert.IsTrue(ignite.WaitTopology(2, 60000));
+                // Wait for grid2 to finish its discoStartupDelay (60s) and join.
+                Assert.IsTrue(ignite.WaitTopology(2, 120000));
 
                 var remoteProcPath = ignite.GetCluster().ForRemotes().GetCompute().Call(new ProcessPathFunc());
 
