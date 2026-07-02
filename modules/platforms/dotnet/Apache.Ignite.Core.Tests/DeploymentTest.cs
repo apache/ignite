@@ -234,7 +234,7 @@ namespace Apache.Ignite.Core.Tests
                 SpringConfigUrl = "Config/Compute/compute-grid1.xml",
             }))
             {
-                Assert.IsTrue(ignite.WaitTopology(2));
+                Assert.IsTrue(ignite.WaitTopology(2, 60000));
 
                 var remoteProcPath = ignite.GetCluster().ForRemotes().GetCompute().Call(new ProcessPathFunc());
 
