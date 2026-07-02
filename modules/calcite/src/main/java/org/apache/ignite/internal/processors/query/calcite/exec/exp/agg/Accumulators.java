@@ -71,6 +71,15 @@ public class Accumulators {
     ) {
         RowHandler<Row> hnd = ctx.rowHandler();
 
+        AccumulatorFactoryProvider prov = ctx.unwrap(AccumulatorFactoryProvider.class);
+
+        if (prov != null) {
+            Supplier<Accumulator<Row>> fac = prov.factory(call, ctx);
+
+            if (fac != null)
+                return fac;
+        }
+
         switch (call.getAggregation().getName()) {
             case "COUNT":
                 return () -> new LongCount<>(call, hnd);
@@ -280,7 +289,7 @@ public class Accumulators {
     }
 
     /** */
-    private abstract static class AbstractAccumulator<Row> implements Accumulator<Row> {
+    public abstract static class AbstractAccumulator<Row> implements Accumulator<Row> {
         /** */
         private final RowHandler<Row> hnd;
 
@@ -288,13 +297,13 @@ public class Accumulators {
         private final transient AggregateCall aggCall;
 
         /** */
-        AbstractAccumulator(AggregateCall aggCall, RowHandler<Row> hnd) {
+        protected AbstractAccumulator(AggregateCall aggCall, RowHandler<Row> hnd) {
             this.aggCall = aggCall;
             this.hnd = hnd;
         }
 
         /** */
-        <T> T get(int idx, Row row) {
+        protected <T> T get(int idx, Row row) {
             assert idx < arguments().size() : "idx=" + idx + "; arguments=" + arguments();
 
             return (T)hnd.get(arguments().get(idx), row);
@@ -311,7 +320,7 @@ public class Accumulators {
         }
 
         /** */
-        int columnCount(Row row) {
+        protected int columnCount(Row row) {
             return hnd.columnCount(row);
         }
     }
@@ -1344,8 +1353,9 @@ public class Accumulators {
                 if (builder == null)
                     builder = new StringBuilder();
 
-                if (builder.length() != 0)
+                if (!builder.isEmpty())
                     builder.append(extractSeparator(row));
+
                 builder.append(val);
             }
 
