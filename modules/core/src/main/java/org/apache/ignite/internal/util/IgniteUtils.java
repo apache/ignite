@@ -6262,17 +6262,31 @@ public abstract class IgniteUtils extends CommonUtils {
      *      the same name already exists.
      */
     public static void ensureDirectory(File dir, String msg, IgniteLogger log) throws IgniteCheckedException {
-        if (!dir.exists()) {
-            if (!dir.mkdirs())
-                throw new IgniteCheckedException("Failed to create " + msg + ": " +
-                    dir.getAbsolutePath());
-        }
-        else if (!dir.isDirectory())
+        if (dir.exists() && !dir.isDirectory())
             throw new IgniteCheckedException("Failed to initialize " + msg +
                 " (a file with the same name already exists): " + dir.getAbsolutePath());
 
+        try {
+            Files.createDirectories(dir.toPath());
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException("Failed to create " + msg + ": " + dir.getAbsolutePath() +
+                ' ' + ioFailureDetails(e), e);
+        }
+
         if (log != null && log.isInfoEnabled())
             log.info("Resolved " + msg + ": " + dir.getAbsolutePath());
+    }
+
+    /**
+     * Renders the OS-level reason of an I/O failure so that a caller can append it to its own error message.
+     * The reason survives logging that prints only {@link Throwable#toString()} (without the cause chain).
+     *
+     * @param e I/O failure.
+     * @return Reason suffix, e.g. {@code [reason=AccessDeniedException, detail=/path: Permission denied]}.
+     */
+    public static String ioFailureDetails(IOException e) {
+        return "[reason=" + e.getClass().getSimpleName() + ", detail=" + e.getMessage() + ']';
     }
 
     /**

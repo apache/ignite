@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -633,8 +634,13 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
 
                 File cfgTmpRoot = sft.tempFileTree().cacheConfigurationFile(ccfg).getParentFile();
 
-                if (!U.mkdirs(cfgTmpRoot))
-                    throw new IOException("Unable to create temp directory to copy original configuration file: " + cfgTmpRoot);
+                try {
+                    Files.createDirectories(cfgTmpRoot.toPath());
+                }
+                catch (IOException e) {
+                    throw new IOException("Unable to create temp directory to copy original configuration file: " +
+                        cfgTmpRoot + ' ' + U.ioFailureDetails(e), e);
+                }
 
                 File newCcfgFile = new File(cfgTmpRoot, ccfgFile.getName());
                 newCcfgFile.createNewFile();

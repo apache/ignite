@@ -224,10 +224,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         for (Map.Entry<Integer, Set<Integer>> e : processed.entrySet()) {
             int grp = e.getKey();
 
-            for (File grpDumpDir : sft.cacheStorages(cctx.cache().cacheGroup(grp).config())) {
-                if (!grpDumpDir.mkdirs())
-                    throw new IgniteCheckedException("Dump directory can't be created: " + grpDumpDir);
-            }
+            for (File grpDumpDir : sft.cacheStorages(cctx.cache().cacheGroup(grp).config()))
+                IgniteUtils.ensureDirectory(grpDumpDir, "dump directory", null);
 
             CacheGroupContext gctx = cctx.cache().cacheGroup(grp);
 

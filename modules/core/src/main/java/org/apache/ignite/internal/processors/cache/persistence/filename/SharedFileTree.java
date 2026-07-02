@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -195,8 +197,13 @@ public class SharedFileTree {
      * @param dir Directory to create.
      */
     public static File mkdir(File dir, String name) {
-        if (!U.mkdirs(dir))
-            throw new IgniteException("Could not create directory for " + name + ": " + dir);
+        try {
+            Files.createDirectories(dir.toPath());
+        }
+        catch (IOException e) {
+            throw new IgniteException("Could not create directory for " + name + ": " + dir +
+                ' ' + U.ioFailureDetails(e), e);
+        }
 
         if (!dir.canRead())
             throw new IgniteException("Cannot read from directory: " + dir);
