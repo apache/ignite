@@ -23,15 +23,12 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.failure.FailureContext;
-import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutor;
@@ -39,7 +36,6 @@ import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 
 /**
  *
@@ -47,12 +43,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 public class MessageServiceImpl extends AbstractService implements MessageService {
     /** */
     private final GridMessageListener msgLsnr;
-
-    /** */
-    private final GridCacheSharedContext<?, ?> ctx;
-
-    /** */
-    private final ClassLoader clsLdr;
 
     /** */
     private UUID locNodeId;
@@ -73,8 +63,6 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     public MessageServiceImpl(GridKernalContext ctx) {
         super(ctx);
 
-        this.ctx = ctx.cache().context();
-        clsLdr = U.resolveClassLoader(ctx.config());
         ioMgr = ctx.io();
         msgLsnr = this::onMessage;
     }
@@ -180,18 +168,6 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     }
 
     /** */
-    protected void prepareUnmarshal(Message msg) throws IgniteCheckedException {
-        try {
-            MessageMarshaller.unmarshal(ctx.kernalContext().messageFactory(), msg, ctx.kernalContext(), null, clsLdr);
-        }
-        catch (Exception e) {
-            failureProcessor().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
-
-            throw e;
-        }
-    }
-
-    /** */
     protected void onMessage(UUID nodeId, Message msg) {
         if (msg instanceof ExecutionContextAware) {
             ExecutionContextAware msg0 = (ExecutionContextAware)msg;
@@ -205,18 +181,10 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
             );
     }
 
-    /** Listener for messages arriving from remote nodes; they are marshalled and must be finish-unmarshalled here. */
+    /** Listener for messages arriving from remote nodes; unmarshalled by the generic {@code GridIoManager} payload pass. */
     private void onMessage(UUID nodeId, Object msg, byte plc) {
-        if (msg instanceof Message && CalciteMessageFactory.isCalciteMessage((Message)msg)) {
-            try {
-                prepareUnmarshal((Message)msg);
-            }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
-
+        if (msg instanceof Message && CalciteMessageFactory.isCalciteMessage((Message)msg))
             onMessage(nodeId, (Message)msg);
-        }
     }
 
     /** */
