@@ -52,6 +52,7 @@ public class IgniteCacheDumpSeveralDiskTest extends GridCommonAbstractTest {
         super.beforeTestsStarted();
 
         cleanPersistenceDir();
+
         U.delete(new File(U.defaultWorkDirectory()));
 
         assertTrue(U.mkdirs(new File(path(NVME_5))));
@@ -93,6 +94,7 @@ public class IgniteCacheDumpSeveralDiskTest extends GridCommonAbstractTest {
         createSnapshot(false);
     }
 
+    /** */
     private void createSnapshot(boolean dump) throws Exception {
         String name = dump ? "dump" : "snapshot";
         String snpPath = path("nvme5/snapshot");
