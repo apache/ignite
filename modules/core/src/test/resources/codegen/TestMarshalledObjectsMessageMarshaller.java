@@ -18,10 +18,12 @@
 package org.apache.ignite.internal;
 
 import java.util.ArrayList;
+import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.TestMarshalledObjectsMessage;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
@@ -57,8 +59,18 @@ public class TestMarshalledObjectsMessageMarshaller implements MessageMarshaller
         if (msg.dataBytes != null) {
             msg.data = new ArrayList<>(msg.dataBytes.size());
 
-            for (byte[] e : msg.dataBytes)
-                msg.data.add(U.unmarshal(marshaller, e, clsLdr));
+            for (byte[] e : msg.dataBytes) {
+                Object o = U.unmarshal(marshaller, e, clsLdr);
+
+                if (o instanceof Map.Entry) {
+                    Object key = ((Map.Entry<?, ?>)o).getKey();
+
+                    if (key instanceof KeyCacheObject)
+                        ((KeyCacheObject)key).unmarshal(ctx, clsLdr);
+                }
+
+                msg.data.add(o);
+            }
 
             msg.dataBytes = null;
         }

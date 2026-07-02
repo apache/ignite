@@ -456,6 +456,8 @@ public class MessageMarshallerGenerator extends MessageGenerator {
             String bytesField = "msg." + ann.value();
 
             imports.add("java.util.ArrayList");
+            imports.add("java.util.Map");
+            imports.add("org.apache.ignite.internal.processors.cache.KeyCacheObject");
 
             List<String> code = new ArrayList<>();
 
@@ -465,14 +467,34 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
             code.add(indentedLine("%s = new ArrayList<>(%s.size());", objField, bytesField));
             code.add(EMPTY);
-            code.add(indentedLine("for (byte[] e : %s)", bytesField));
+            code.add(indentedLine("for (byte[] e : %s) {", bytesField));
 
             indent++;
 
-            code.add(indentedLine("%s.add(U.unmarshal(marshaller, e, clsLdr));", objField));
+            code.add(indentedLine("Object o = U.unmarshal(marshaller, e, clsLdr);"));
+            code.add(EMPTY);
+            code.add(indentedLine("if (o instanceof Map.Entry) {"));
+
+            indent++;
+
+            code.add(indentedLine("Object key = ((Map.Entry<?, ?>)o).getKey();"));
+            code.add(EMPTY);
+            code.add(indentedLine("if (key instanceof KeyCacheObject)"));
+
+            indent++;
+
+            code.add(indentedLine("((KeyCacheObject)key).unmarshal(ctx, clsLdr);"));
+
+            indent--;
+            indent--;
+
+            code.add(indentedLine("}"));
+            code.add(EMPTY);
+            code.add(indentedLine("%s.add(o);", objField));
 
             indent--;
 
+            code.add(indentedLine("}"));
             code.add(EMPTY);
             code.add(indentedLine("%s = null;", bytesField));
 

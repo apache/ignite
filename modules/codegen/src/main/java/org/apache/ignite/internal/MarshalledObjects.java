@@ -27,6 +27,10 @@ import java.lang.annotation.Target;
  * {@code @Order Collection<byte[]>} field named by {@link #value()}: each element is marshalled to its own
  * {@code byte[]}, so elements that need different deployment class loaders survive. Use {@code @MarshalledCollection}
  * instead when the elements are {@code Message}s.
+ *
+ * <p>An unmarshalled {@code Map.Entry} element (a query result row) gets its {@code KeyCacheObject} key unmarshalled
+ * with the message's cache object context: the key's own serialized form carries bytes only, so it is unusable until
+ * resolved against the context.
  */
 @Retention(RetentionPolicy.CLASS)
 @Target(ElementType.FIELD)
