@@ -1829,7 +1829,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         if (change)
             CUR_PLC.set(plc);
 
-        try (Scope ignored = attachNodeSecurityContextIfRequired(nodeId)) {
+        try (Scope ignored = actualSecurityContext(nodeId)) {
             lsnr.onMessage(nodeId, msg, plc);
         }
         finally {
@@ -1839,7 +1839,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
     }
 
     /** */
-    private Scope attachNodeSecurityContextIfRequired(UUID nodeId) {
+    private Scope actualSecurityContext(UUID nodeId) {
         if (ctx.security().isDefaultContext())
             return ctx.security().withContext(nodeId);
 
