@@ -57,13 +57,6 @@ public class TestMapMessageMarshaller implements MessageMarshaller<TestMapMessag
     @Override public void marshal(TestMapMessage msg, GridKernalContext kctx, CacheObjectContext nested) throws IgniteCheckedException {
         CacheObjectContext ctx = nested;
 
-        if (msg.messageBoxedDoubleMap != null) {
-            for (GridCacheVersion e : ((Collection<? extends GridCacheVersion>)msg.messageBoxedDoubleMap.keySet())) {
-                if (e != null)
-                    MessageMarshaller.marshal(kctx.messageFactory(), e, kctx, ctx);
-            }
-        }
-
         if (msg.gridCacheObjectMap != null) {
             for (KeyCacheObject e : ((Collection<? extends KeyCacheObject>)msg.gridCacheObjectMap.keySet())) {
                 if (e != null && ctx != null)
@@ -87,13 +80,6 @@ public class TestMapMessageMarshaller implements MessageMarshaller<TestMapMessag
     /** */
     @Override public void unmarshal(TestMapMessage msg, GridKernalContext kctx, CacheObjectContext nested, ClassLoader clsLdr) throws IgniteCheckedException {
         CacheObjectContext ctx = nested;
-
-        if (msg.messageBoxedDoubleMap != null) {
-            for (GridCacheVersion e : ((Collection<? extends GridCacheVersion>)msg.messageBoxedDoubleMap.keySet())) {
-                if (e != null)
-                    MessageMarshaller.unmarshal(kctx.messageFactory(), e, kctx, ctx, clsLdr);
-            }
-        }
 
         if (msg.gridCacheObjectMap != null) {
             for (KeyCacheObject e : ((Collection<? extends KeyCacheObject>)msg.gridCacheObjectMap.keySet())) {

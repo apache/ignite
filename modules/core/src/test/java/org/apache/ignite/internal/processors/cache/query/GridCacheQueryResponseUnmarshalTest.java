@@ -28,10 +28,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
- * Verifies that a query result row key arrives resolved from {@code GridCacheQueryResponse} unmarshalling. A row
- * travels as a JDK-marshalled {@code Map.Entry} whose {@code KeyCacheObject} key serializes bytes only, and the key
- * contract forbids lazy resolution ({@code value()}/{@code hashCode()} fail on an unresolved instance), so the
- * response unmarshalling must resolve it with the cache object context (see {@code @MarshalledObjects}).
+ * Verifies that a query result row key arrives resolved from {@code GridCacheQueryResponse} unmarshalling: a
+ * {@code KeyCacheObject} travels bytes-only and forbids lazy resolution (see {@code @MarshalledObjects}).
  */
 public class GridCacheQueryResponseUnmarshalTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
@@ -69,7 +67,7 @@ public class GridCacheQueryResponseUnmarshalTest extends GridCommonAbstractTest 
 
         Map.Entry<?, ?> row = (Map.Entry<?, ?>)rcvd.data().iterator().next();
 
-        // An unresolved KeyCacheObject throws CacheObjectNotResolvedException here.
+        // Throws CacheObjectNotResolvedException on an unresolved key.
         assertEquals(key.hashCode(), row.getKey().hashCode());
     }
 }

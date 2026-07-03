@@ -39,25 +39,9 @@ public class TestMarshalledMapMessageMarshaller implements MessageMarshaller<Tes
 
     /** */
     @Override public void marshal(TestMarshalledMapMessage msg, GridKernalContext kctx, CacheObjectContext nested) throws IgniteCheckedException {
-        CacheObjectContext ctx = nested;
-
         if (msg.theMap != null && msg.mapKeys == null) {
             msg.mapKeys = msg.theMap.keySet();
             msg.mapVals = msg.theMap.values();
-        }
-
-        if (msg.mapKeys != null) {
-            for (GridCacheVersion e : (Collection<? extends GridCacheVersion>)msg.mapKeys) {
-                if (e != null)
-                    MessageMarshaller.marshal(kctx.messageFactory(), e, kctx, ctx);
-            }
-        }
-
-        if (msg.mapVals != null) {
-            for (GridCacheVersion e : (Collection<? extends GridCacheVersion>)msg.mapVals) {
-                if (e != null)
-                    MessageMarshaller.marshal(kctx.messageFactory(), e, kctx, ctx);
-            }
         }
     }
 
@@ -74,12 +58,6 @@ public class TestMarshalledMapMessageMarshaller implements MessageMarshaller<Tes
             while (keyIter.hasNext()) {
                 GridCacheVersion k = keyIter.next();
                 GridCacheVersion v = valIter.next();
-
-                if (k != null)
-                    MessageMarshaller.unmarshal(kctx.messageFactory(), k, kctx, ctx, clsLdr);
-
-                if (v != null)
-                    MessageMarshaller.unmarshal(kctx.messageFactory(), v, kctx, ctx, clsLdr);
 
                 msg.theMap.put(k, v);
             }

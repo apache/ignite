@@ -37,17 +37,8 @@ public class TestMarshalledCollectionMessageMarshaller implements MessageMarshal
 
     /** */
     @Override public void marshal(TestMarshalledCollectionMessage msg, GridKernalContext kctx, CacheObjectContext nested) throws IgniteCheckedException {
-        CacheObjectContext ctx = nested;
-
         if (msg.keys != null && msg.keysArr == null)
             msg.keysArr = msg.keys.toArray(new GridCacheVersion[0]);
-
-        if (msg.keysArr != null) {
-            for (GridCacheVersion e : msg.keysArr) {
-                if (e != null)
-                    MessageMarshaller.marshal(kctx.messageFactory(), e, kctx, ctx);
-            }
-        }
     }
 
     /** */
@@ -58,8 +49,6 @@ public class TestMarshalledCollectionMessageMarshaller implements MessageMarshal
             msg.keys = U.newHashSet(msg.keysArr.length);
 
             for (GridCacheVersion e : msg.keysArr) {
-                if (e != null)
-                    MessageMarshaller.unmarshal(kctx.messageFactory(), e, kctx, ctx, clsLdr);
 
                 msg.keys.add(e);
             }

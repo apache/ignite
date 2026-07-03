@@ -28,9 +28,8 @@ import java.lang.annotation.Target;
  * {@code byte[]}, so elements that need different deployment class loaders survive. Use {@code @MarshalledCollection}
  * instead when the elements are {@code Message}s.
  *
- * <p>An unmarshalled {@code Map.Entry} element (a query result row) gets its {@code KeyCacheObject} key unmarshalled
- * with the message's cache object context: the key's own serialized form carries bytes only, so it is unusable until
- * resolved against the context.
+ * <p>An unmarshalled {@code Map.Entry} element (a query result row) gets its {@code KeyCacheObject} key resolved with
+ * the message's cache object context: such a key arrives bytes-only and forbids lazy resolution.
  */
 @Retention(RetentionPolicy.CLASS)
 @Target(ElementType.FIELD)

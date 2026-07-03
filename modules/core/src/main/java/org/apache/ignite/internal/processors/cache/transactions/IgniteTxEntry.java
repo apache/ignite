@@ -198,6 +198,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, MarshallableMessage, 
     /** Expiry policy. */
     private ExpiryPolicy expiryPlc;
 
+    /** Sender-side flag: the entry travels with its expiry policy (near prepare requests only). */
+    private boolean transferExpiryPlc;
+
     /** Expiry policy bytes. */
     @Order(10)
     byte[] expiryPlcBytes;
@@ -415,6 +418,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, MarshallableMessage, 
         cp.nodeId = nodeId;
         cp.locMapped = locMapped;
         cp.expiryPlc = expiryPlc;
+        cp.transferExpiryPlc = transferExpiryPlc;
         cp.expiryPlcBytes = expiryPlcBytes;
         cp.flags = flags;
         cp.partUpdateCntr = partUpdateCntr;
@@ -1041,7 +1045,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, MarshallableMessage, 
 
     /** {@inheritDoc} */
     @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
-        boolean transfer = expiryPlc != null && expiryPlc != ctx.expiry();
+        boolean transfer = transferExpiryPlc && expiryPlc != null && expiryPlc != ctx.expiry();
 
         if (transfer) {
             if (expiryPlcBytes == null)
@@ -1099,6 +1103,13 @@ public class IgniteTxEntry implements GridPeerDeployAware, MarshallableMessage, 
      */
     @Nullable public ExpiryPolicy expiry() {
         return expiryPlc;
+    }
+
+    /**
+     * @param transferExpiryPlc {@code True} if this entry travels with its expiry policy.
+     */
+    public void transferExpiryPolicy(boolean transferExpiryPlc) {
+        this.transferExpiryPlc = transferExpiryPlc;
     }
 
     /**

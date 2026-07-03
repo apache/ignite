@@ -757,7 +757,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
         if (t.getKind() == TypeKind.DECLARED || t.getKind() == TypeKind.TYPEVAR) {
             if (isMessage(t))
-                return marshallMessage(accessor, mode);
+                return isNonMarshallable(t) ? List.of() : marshallMessage(accessor, mode);
             if (isCacheObject(t))
                 return marshallCacheObject(accessor, mode);
             if (isMap(t))
@@ -942,7 +942,10 @@ public class MessageMarshallerGenerator extends MessageGenerator {
             return needsCtxType(((ArrayType)t).getComponentType());
 
         if (t.getKind() == TypeKind.DECLARED || t.getKind() == TypeKind.TYPEVAR) {
-            if (isMessage(t) || isCacheObject(t))
+            if (isMessage(t))
+                return !isNonMarshallable(t);
+
+            if (isCacheObject(t))
                 return true;
 
             if (isMap(t)) {
@@ -981,7 +984,12 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
     /** */
     private boolean isNonMarshallableMessage(TypeElement te) {
-        return assignableFrom(te.asType(), nonMarshallableMirror);
+        return isNonMarshallable(te.asType());
+    }
+
+    /** Recursion skip for such fields is subtype-safe: subclasses inherit the {@code NonMarshallableMessage} marker. */
+    private boolean isNonMarshallable(TypeMirror t) {
+        return assignableFrom(t, nonMarshallableMirror);
     }
 
     /** */

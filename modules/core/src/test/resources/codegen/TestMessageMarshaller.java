@@ -39,36 +39,16 @@ public class TestMessageMarshaller implements MessageMarshaller<TestMessage> {
     @Override public void marshal(TestMessage msg, GridKernalContext kctx, CacheObjectContext nested) throws IgniteCheckedException {
         CacheObjectContext ctx = nested;
 
-        if (msg.ver != null)
-            MessageMarshaller.marshal(kctx.messageFactory(), msg.ver, kctx, ctx);
-
-        if (msg.verArr != null) {
-            for (GridCacheVersion e : msg.verArr) {
-                if (e != null)
-                    MessageMarshaller.marshal(kctx.messageFactory(), e, kctx, ctx);
-            }
-        }
-
         if (msg.keyCacheObject != null && ctx != null)
             msg.keyCacheObject.marshal(ctx);
 
         if (msg.cacheObject != null && ctx != null)
             msg.cacheObject.marshal(ctx);
-
-        if (msg.ver2 != null)
-            MessageMarshaller.marshal(kctx.messageFactory(), msg.ver2, kctx, ctx);
     }
 
     /** */
     @Override public void unmarshal(TestMessage msg, GridKernalContext kctx, CacheObjectContext nested, ClassLoader clsLdr) throws IgniteCheckedException {
         CacheObjectContext ctx = nested;
-
-        if (msg.verArr != null) {
-            for (GridCacheVersion e : msg.verArr) {
-                if (e != null)
-                    MessageMarshaller.unmarshal(kctx.messageFactory(), e, kctx, ctx, clsLdr);
-            }
-        }
 
         if (msg.keyCacheObject != null && ctx != null)
             msg.keyCacheObject.unmarshal(ctx, clsLdr);

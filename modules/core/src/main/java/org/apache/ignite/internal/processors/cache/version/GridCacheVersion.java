@@ -25,12 +25,12 @@ import java.util.UUID;
 import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage;
 
 /**
  * Grid unique version.
  */
-public class GridCacheVersion implements Message, Externalizable, CacheEntryVersion {
+public class GridCacheVersion implements NonMarshallableMessage, Externalizable, CacheEntryVersion {
     /** */
     private static final long serialVersionUID = 0L;
 
