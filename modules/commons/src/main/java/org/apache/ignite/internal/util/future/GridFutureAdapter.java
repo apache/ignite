@@ -29,11 +29,11 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.thread.context.function.OperationContextAwareInClosure;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
@@ -263,7 +263,7 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
         if (state == null || state.getClass() != ErrorWrapper.class)
             return (R)state;
 
-        throw U.cast(((ErrorWrapper)state).error);
+        throw CommonUtils.cast(((ErrorWrapper)state).error);
     }
 
     /**
@@ -477,11 +477,11 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
             lsnr.apply(this);
         }
         catch (IllegalStateException e) {
-            U.error(logger(), "Failed to notify listener (is grid stopped?) [fut=" + this +
+            CommonUtils.error(logger(), "Failed to notify listener (is grid stopped?) [fut=" + this +
                 ", lsnr=" + lsnr + ", err=" + e.getMessage() + ']', e);
         }
         catch (RuntimeException | Error e) {
-            U.error(logger(), "Failed to notify listener: " + lsnr, e);
+            CommonUtils.error(logger(), "Failed to notify listener: " + lsnr, e);
 
             throw e;
         }

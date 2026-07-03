@@ -40,9 +40,9 @@ import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.service.ServiceCallContextImpl;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.platform.PlatformServiceMethod;
 import org.apache.ignite.platform.PlatformType;
 import org.apache.ignite.services.ServiceCallContext;
@@ -218,7 +218,7 @@ class ClientServicesImpl implements ClientServices {
          */
         private boolean isUpdateRequired(AffinityTopologyVersion curAffTop) {
             return lastAffTop == null || curAffTop.topologyVersion() > lastAffTop.topologyVersion()
-                || U.nanosToMillis(System.nanoTime() - lastUpdateRequestTime) >= SRV_TOP_UPDATE_PERIOD;
+                || CommonUtils.nanosToMillis(System.nanoTime() - lastUpdateRequestTime) >= SRV_TOP_UPDATE_PERIOD;
         }
 
         /**
