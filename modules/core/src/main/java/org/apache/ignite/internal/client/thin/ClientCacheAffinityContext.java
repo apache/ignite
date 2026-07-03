@@ -250,7 +250,7 @@ public class ClientCacheAffinityContext {
      * @param ch Payload output channel.
      */
     public void writeDataCenterNodesRequest(PayloadOutputChannel ch) {
-        try (BinaryWriterEx w = BinaryUtils.writer(null, ch.out(), null)) {
+        try (BinaryWriterEx w = BinaryUtils.writerWithoutSchemaHolder(null, ch.out())) {
             w.writeString(dataCenterId);
         }
     }

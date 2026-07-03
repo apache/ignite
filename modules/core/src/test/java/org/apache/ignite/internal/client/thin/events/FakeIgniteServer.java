@@ -224,7 +224,7 @@ public class FakeIgniteServer extends JUnitAssertAware implements GridNioServerL
 
     /** */
     private ByteBuffer createMessage(Consumer<BinaryRawWriter> writerAction) {
-        try (BinaryWriterEx writer = BinaryUtils.writer(null, BinaryStreams.outputStream(32), null)) {
+        try (BinaryWriterEx writer = BinaryUtils.writerWithoutSchemaHolder(null, BinaryStreams.outputStream(32))) {
             writer.writeInt(0);
 
             writerAction.accept(writer);
