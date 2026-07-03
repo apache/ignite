@@ -30,7 +30,7 @@ public class RollingUpgradeNodeData implements Message {
 
     /** */
     @Order(1)
-    UUID activeFinalizeProcId;
+    UUID curFinalizeProcId;
 
     /** */
     @Order(2)
@@ -48,12 +48,12 @@ public class RollingUpgradeNodeData implements Message {
     /** */
     public RollingUpgradeNodeData(
         boolean isVersionUpgradeEnabled,
-        UUID activeFinalizeProcId,
+        UUID curFinalizeProcId,
         boolean isNodeFenceActive,
         IgniteProductFeatures activeFeatures
     ) {
         this.isVersionUpgradeEnabled = isVersionUpgradeEnabled;
-        this.activeFinalizeProcId = activeFinalizeProcId;
+        this.curFinalizeProcId = curFinalizeProcId;
         this.isNodeFenceActive = isNodeFenceActive;
         this.activeFeatures = activeFeatures;
     }

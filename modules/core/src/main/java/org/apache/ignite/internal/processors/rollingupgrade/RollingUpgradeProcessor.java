@@ -222,7 +222,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
         RollingUpgradeNodeData gridData = data.commonData();
 
         isVerUpgradeEnabled = gridData.isVersionUpgradeEnabled;
-        curFinalizeProcId = gridData.activeFinalizeProcId;
+        curFinalizeProcId = gridData.curFinalizeProcId;
         isNodeFenceActive = gridData.isNodeFenceActive;
 
         featureMgr.onGridDataReceived(gridData.activeFeatures);
