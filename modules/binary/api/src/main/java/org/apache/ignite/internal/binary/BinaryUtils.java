@@ -3284,4 +3284,14 @@ public class BinaryUtils {
                 listeners.clear();
         }
     }
+
+    /**
+     * Represents the given cache version as an {@link IgniteUuid}.
+     *
+     * @param ver Cache version.
+     * @return Version represented as {@code IgniteUuid}.
+     */
+    public static IgniteUuid asIgniteUuid(GridCacheVersion ver) {
+        return new IgniteUuid(new UUID(ver.topologyVersion(), ver.nodeOrderAndDrIdRaw()), ver.order());
+    }
 }

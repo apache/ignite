@@ -64,7 +64,6 @@ import org.apache.ignite.internal.client.thin.io.ClientConnectionStateHandler;
 import org.apache.ignite.internal.client.thin.io.ClientMessageHandler;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.odbc.ClientConnectionNodeRecoveryException;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProtocol;
 import org.apache.ignite.internal.processors.platform.client.ClientFlag;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.util.CommonUtils;
