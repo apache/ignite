@@ -57,6 +57,7 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.IGNIT
 import static org.apache.ignite.internal.processors.security.SecurityUtils.MSG_SEC_PROC_CLS_IS_INVALID;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.hasSecurityManager;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
+import static org.apache.ignite.internal.thread.context.DistributedOperationContextAttribute.SECURITY;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_USER_ACCESS;
 import static org.apache.ignite.plugin.security.SecurityPermission.JOIN_AS_SERVER;
 
@@ -253,8 +254,7 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
     @Override public void start() throws IgniteCheckedException {
         super.start();
 
-        ctx.operationContextDispatcher().registerDistributedAttribute(DistributedOperationContextAttributes.SECURITY.id(),
-            SEC_CTX_ATTR);
+        ctx.operationContextDispatcher().registerDistributedAttribute(SECURITY.id(), SEC_CTX_ATTR);
 
         ctx.addNodeAttribute(ATTR_GRID_SEC_PROC_CLASS, secPrc.getClass().getName());
 
