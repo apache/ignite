@@ -124,6 +124,11 @@ public class QueryEntityMessage implements MarshallableMessage {
 
     /** @return Original {@link QueryEntity}. */
     public QueryEntity toEntity() {
+        return entityBase().setNotNullFields(notNullFields);
+    }
+
+    /** @return Entity without 'notNullFields.' */
+    protected QueryEntity entityBase() {
         return new QueryEntity()
             .setKeyType(keyType)
             .setValueType(valType)
@@ -132,9 +137,8 @@ public class QueryEntityMessage implements MarshallableMessage {
             .setFields(fields)
             .setKeyFields(!F.isEmpty(keyFields) ? new LinkedHashSet<>(List.of(keyFields)) : null)
             .setAliases(aliases)
-            .setIndexes(!F.isEmpty(idxs) ? F.viewReadOnly(idxs, QueryIndexMessage::queryIndex) : null)
+            .setIndexes(!F.isEmpty(idxs) ? F.transform(idxs, QueryIndexMessage::queryIndex) : null)
             .setTableName(tableName)
-            .setNotNullFields(notNullFields)
             .setDefaultFieldValues(dfltFieldValues)
             .setFieldsPrecision(fieldsPrecision)
             .setFieldsScale(fieldsScale);

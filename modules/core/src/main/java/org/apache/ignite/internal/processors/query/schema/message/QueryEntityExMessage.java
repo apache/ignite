@@ -69,13 +69,7 @@ public class QueryEntityExMessage extends QueryEntityMessage {
 
     /** {@inheritDoc} */
     @Override public QueryEntity toEntity() {
-        QueryEntity baseEntity = super.toEntity();
-
-        // We should nullify '_notNullFields' field of base entity,
-        // because 'QueryEntityEx' uses extra 'notNullFields' field for storing of not null fields.
-        baseEntity.setNotNullFields(null);
-
-        QueryEntityEx qryEntity = new QueryEntityEx(baseEntity);
+        QueryEntityEx qryEntity = new QueryEntityEx(entityBase());
 
         qryEntity.setNotNullFields(notNullFields);
         qryEntity.setPreserveKeysOrder(preserveKeysOrder);

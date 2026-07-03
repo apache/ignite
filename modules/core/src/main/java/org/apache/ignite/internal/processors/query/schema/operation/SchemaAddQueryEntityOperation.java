@@ -73,7 +73,7 @@ public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation {
     /** @return Collection of query entities. */
     public Collection<QueryEntity> entities() {
         if (entities == null)
-            entities = F.viewReadOnly(entitiesMsgs, QueryEntityMessage::toEntity);
+            entities = F.transform(entitiesMsgs, QueryEntityMessage::toEntity);
 
         return entities;
     }
