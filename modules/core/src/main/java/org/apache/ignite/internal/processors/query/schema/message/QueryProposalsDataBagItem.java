@@ -15,25 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query;
+package org.apache.ignite.internal.processors.query.schema.message;
 
-import java.util.Map;
+import java.util.LinkedHashMap;
+import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-/** */
-public class InlineSizesData implements Message {
-    /** */
+/** Wrapper for active schema change propose discovery messages. */
+public class QueryProposalsDataBagItem implements Message {
+    /** Active proposals. */
     @Order(0)
-    Map<String, Integer> sizes;
+    LinkedHashMap<UUID, SchemaProposeDiscoveryMessage> activeProposals;
 
     /** */
-    public InlineSizesData() {}
+    public QueryProposalsDataBagItem() {
+        // No-op.
+    }
 
-    /**
-     * @param sizes Inline sizes.
-     */
-    public InlineSizesData(Map<String, Integer> sizes) {
-        this.sizes = sizes;
+    /** @param activeProposals Active proposals. */
+    public QueryProposalsDataBagItem(LinkedHashMap<UUID, SchemaProposeDiscoveryMessage> activeProposals) {
+        this.activeProposals = activeProposals;
+    }
+
+    /** @return Active proposals. */
+    public LinkedHashMap<UUID, SchemaProposeDiscoveryMessage> activeProposals() {
+        return activeProposals;
     }
 }

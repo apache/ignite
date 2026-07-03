@@ -95,7 +95,6 @@ import org.apache.ignite.internal.processors.tracing.SpanTags;
 import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessage;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesTable;
-import org.apache.ignite.internal.thread.context.DistributedOperationContextManager;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.GridBoundedLinkedHashSet;
@@ -2583,36 +2582,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (addedMsg.gridDiscoveryData() != null)
                     addedMsg.clearDiscoveryData();
             }
-            else if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
-                TcpDiscoveryNodeAddFinishedMessage addFinishMsg = (TcpDiscoveryNodeAddFinishedMessage)msg;
-
-                if (addFinishMsg.clientDiscoData() != null) {
-                    addFinishMsg = new TcpDiscoveryNodeAddFinishedMessage(addFinishMsg);
-
-                    msg = addFinishMsg;
-
-                    DiscoveryDataPacket discoData = addFinishMsg.clientDiscoData();
-
-                    Set<Integer> mrgdCmnData = new HashSet<>();
-                    Set<UUID> mrgdSpecData = new HashSet<>();
-
-                    boolean allMerged = false;
-
-                    for (TcpDiscoveryAbstractMessage msg0 : msgs) {
-
-                        if (msg0 instanceof TcpDiscoveryNodeAddFinishedMessage) {
-                            DiscoveryDataPacket existingDiscoData =
-                                ((TcpDiscoveryNodeAddFinishedMessage)msg0).clientDiscoData();
-
-                            if (existingDiscoData != null)
-                                allMerged = discoData.mergeDataFrom(existingDiscoData, mrgdCmnData, mrgdSpecData);
-                        }
-
-                        if (allMerged)
-                            break;
-                    }
-                }
-            }
             else if (msg instanceof TcpDiscoveryNodeLeftMessage)
                 clearClientAddFinished(msg.creatorNodeId());
             else if (msg instanceof TcpDiscoveryNodeFailedMessage)
@@ -3049,7 +3018,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (!fromSocket)
-                msg.opCtxMsg = DistributedOperationContextManager.instance().collectDistributedAttributes();
+                msg.opCtxMsg = operationCtxDispatcher.collectDistributedAttributes();
 
             if (msg instanceof TraceableMessage tMsg) {
 
@@ -3321,7 +3290,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (msg == WAKEUP)
                 return;
 
-            try (Scope ignored = DistributedOperationContextManager.instance().restoreDistributedAttributes(msg.opCtxMsg)) {
+            try (Scope ignored = operationCtxDispatcher.restoreDistributedAttributes(msg.opCtxMsg)) {
                 processMessage0(msg);
             }
         }
@@ -4779,9 +4748,17 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** */
         private IgniteNodeValidationResult validateByIgniteComponentsWithJoiningNodeData(TcpDiscoveryJoinRequestMessage req) {
-            DiscoveryDataBag data = req.gridDiscoveryData().bagWithJoiningNodeData();
+            DiscoveryDataPacket packet = req.gridDiscoveryData();
 
-            return spi.getSpiContext().validateNode(req.node(), data);
+            try {
+                DiscoveryDataBag dataBag = packet.bagWithJoiningNodeData(spi.ignite().log(),
+                    spi.ignite().configuration().isClientMode());
+
+                return spi.getSpiContext().validateNode(req.node(), dataBag);
+            }
+            catch (IgniteCheckedException e) {
+                return new IgniteNodeValidationResult(req.node().id(), e.getMessage());
+            }
         }
 
         /** */

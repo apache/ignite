@@ -1206,7 +1206,6 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
             return classLoader().registeredClassLoaderIds();
         }
 
-
         /**
          * @return {@code True} if deployment has any node participants.
          */

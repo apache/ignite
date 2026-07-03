@@ -15,28 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.internal.processors.rollingupgrade.feature;
 
-import org.apache.ignite.internal.thread.context.DistributedOperationContextManager;
-import org.apache.ignite.internal.thread.context.OperationContext;
-import org.apache.ignite.plugin.extensions.communication.Message;
-
-/**
- * Transport for {@link OperationContext} distributed attributes.
- *
- * @see DistributedOperationContextManager
- */
-public class DistributedOperationContextMessage implements Message {
-    /** Values of operation context attributes. */
-    @Order(0)
-    public Message[] vals;
-
-    /** Bitmap of effective attributes ids. */
-    @Order(1)
-    public byte idBitmap;
-
-    /** Empty constructor for serialization purposes. */
-    public DistributedOperationContextMessage() {
-        // No-op.
-    }
+/** */
+public class TestIgniteReleaseFeatures_2_19_0 {
+    /** */
+    public static final IgniteFeature ROLLING_UPGRADE_FEATURE = new IgniteCoreFeature(0);
 }
