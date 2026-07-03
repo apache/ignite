@@ -773,6 +773,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 "Another snapshot operation in progress [req=" + req + ", curr=" + curSnpOp + ']'));
         }
 
+        // Keeps the metrics on each server node.
+        if (!cctx.localNode().isClient()) {
+            if (clusterSnpFut == null)
+                clusterSnpFut = new ClusterSnapshotFuture(req.reqId, req.snpName, req.incremental() ? req.incrementIndex() : null);
+
+            lastFuture(req.incremental(), clusterSnpFut);
+        }
+
         SnapshotOperation snpOp = new SnapshotOperation(req,
             new SnapshotFileTree(cctx.kernalContext(), req.snapshotName(), req.snapshotPath()));
 
@@ -2050,11 +2058,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 snpFut0 = new ClusterSnapshotFuture(UUID.randomUUID(), name, incIdx);
 
                 clusterSnpFut = snpFut0;
-
-                if (incremental)
-                    lastSeenIncSnpFut = snpFut0;
-                else
-                    lastSeenSnpFut = snpFut0;
             }
 
             Set<String> cacheGrpNames0 = cacheGrpNames == null ? null : new HashSet<>(cacheGrpNames);
@@ -2131,15 +2134,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             U.error(log, SNAPSHOT_FAILED_MSG, e);
 
-            ClusterSnapshotFuture errSnpFut = new ClusterSnapshotFuture(name, e);
-
-            if (incremental)
-                lastSeenIncSnpFut = errSnpFut;
-            else
-                lastSeenSnpFut = errSnpFut;
-
             return new IgniteFinishedFutureImpl<>(e);
         }
+    }
+
+    /** Sets last seen snapshot future. */
+    private void lastFuture(boolean incremental, ClusterSnapshotFuture futToSet) {
+        if (incremental)
+            lastSeenIncSnpFut = futToSet;
+        else
+            lastSeenSnpFut = futToSet;
     }
 
     /** Writes a warning message if an incremental snapshot contains atomic caches. */
