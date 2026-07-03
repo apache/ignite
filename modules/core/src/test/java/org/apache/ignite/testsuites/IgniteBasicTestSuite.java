@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.SetTxTimeoutOnPartitionMapExc
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.EvictPartitionInLogTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.LogEvictionResultsTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionEvictionOrderTest;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponseUnmarshalTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.DiscoveryDataDeserializationFailureHanderTest;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessorRemoteTest;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessorSelfTest;
@@ -157,6 +158,7 @@ import org.junit.runners.Suite;
     MessageProcessorTest.class,
     MessageMarshalOnceTest.class,
     MessageUnmarshalOnceTest.class,
+    GridCacheQueryResponseUnmarshalTest.class,
     MarshallerCacheFreeUnmarshalTest.class,
     MessageSerializationArchitectureTest.class,
     ErrorMessageSelfTest.class,
