@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
-import static org.apache.ignite.internal.managers.communication.CompressedMessage.BUFFER_CAPACITY;
 import static org.apache.ignite.internal.managers.communication.CompressedMessage.CHUNK_SIZE;
 
 /** Message serializer for compressed message. */
@@ -37,7 +36,7 @@ public class CompressedMessageSerializer implements MessageSerializer<Compressed
         }
 
         while (true) {
-            if (msg.chunk == null && msg.chunkedReader != null) {
+            if (msg.chunk == null && msg.chunks != null) {
                 msg.chunk = msg.nextChunk();
 
                 msg.finalChunk = (msg.chunk == null);
@@ -75,9 +74,6 @@ public class CompressedMessageSerializer implements MessageSerializer<Compressed
 
     /** {@inheritDoc} */
     @Override public boolean readFrom(CompressedMessage msg, MessageReader reader) {
-        if (msg.tmpBuf == null)
-            msg.tmpBuf = ByteBuffer.allocateDirect(BUFFER_CAPACITY);
-
         assert msg.chunk == null : msg.chunk;
 
         while (true) {
@@ -111,17 +107,10 @@ public class CompressedMessageSerializer implements MessageSerializer<Compressed
                         return false;
 
                     if (msg.chunk != null) {
-                        if (msg.tmpBuf.remaining() <= CHUNK_SIZE) {
-                            ByteBuffer newTmpBuf = ByteBuffer.allocateDirect(msg.tmpBuf.capacity() * 2);
+                        if (msg.chunks == null)
+                            msg.chunks = new ArrayList<>(msg.dataSize / CHUNK_SIZE + 1);
 
-                            msg.tmpBuf.flip();
-
-                            newTmpBuf.put(msg.tmpBuf);
-
-                            msg.tmpBuf = newTmpBuf;
-                        }
-
-                        msg.tmpBuf.put(msg.chunk);
+                        msg.chunks.add(msg.chunk);
 
                         reader.decrementState();
 

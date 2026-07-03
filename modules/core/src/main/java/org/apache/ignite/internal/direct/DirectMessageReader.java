@@ -493,14 +493,9 @@ public class DirectMessageReader implements MessageReader {
 
         byte[] uncompressed = msg0.uncompressed();
 
-        ByteBuffer tmpBuf = ByteBuffer.allocateDirect(uncompressed.length);
-
-        tmpBuf.put(uncompressed);
-        tmpBuf.flip();
-
         DirectMessageReader tmpReader = new DirectMessageReader(msgFactory, cacheObjProc);
 
-        tmpReader.setBuffer(tmpBuf);
+        tmpReader.setBuffer(ByteBuffer.wrap(uncompressed));
 
         T res = fun.apply(tmpReader);
 

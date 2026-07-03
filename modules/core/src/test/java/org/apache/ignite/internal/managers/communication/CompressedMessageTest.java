@@ -19,6 +19,7 @@ package org.apache.ignite.internal.managers.communication;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -74,9 +75,9 @@ public class CompressedMessageTest {
 
                 assertTrue(compressedMsg.dataSize() > 0);
 
-                byte[] compressedData = U.field((Object)U.field(compressedMsg, "chunkedReader"), "inputData");
+                List<byte[]> chunks = U.field(compressedMsg, "chunks");
 
-                assertTrue(compressedData.length > CompressedMessage.CHUNK_SIZE * 2);
+                assertTrue(chunks.size() > 2);
 
                 checkChunkCnt = false;
             }
