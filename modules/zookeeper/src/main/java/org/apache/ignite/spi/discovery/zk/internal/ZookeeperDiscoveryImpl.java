@@ -2707,7 +2707,7 @@ public class ZookeeperDiscoveryImpl {
                         (ZkDiscoveryCustomEventData)newEvts.evts.get(evtData.eventId());
 
                     if (evtData0 != null)
-                        evtData0.cstMsgHldr = ((ZkDiscoveryCustomEventData)evtData).cstMsgHldr;
+                        evtData0.cstEvtHldr = ((ZkDiscoveryCustomEventData)evtData).cstEvtHldr;
                 }
             }
         }
@@ -2766,13 +2766,13 @@ public class ZookeeperDiscoveryImpl {
                         evtData0.finishUnmarshal(msgParser);
 
                         if (rtState.crd)
-                            assert evtData0.cstMsgHldr != null : evtData0;
+                            assert evtData0.cstEvtHldr != null : evtData0;
                         else {
-                            if (evtData0.cstMsgHldr == null) {
+                            if (evtData0.cstEvtHldr == null) {
                                 if (evtData0.ackEvent()) {
                                     String path = zkPaths.ackEventDataPath(evtData0.origEvtId);
 
-                                    evtData0.cstMsgHldr = ZkCustomEventMessage.of(msgParser.unmarshalZip(zkClient.getData(path)));
+                                    evtData0.cstEvtHldr = ZkCustomEventMessage.of(msgParser.unmarshalZip(zkClient.getData(path)));
                                 }
                                 else {
                                     assert evtData0.evtPath != null : evtData0;
@@ -2785,7 +2785,7 @@ public class ZookeeperDiscoveryImpl {
 
                                     assert msg instanceof ZkCustomEventMessage;
 
-                                    evtData0.cstMsgHldr = (ZkCustomEventMessage)msg;
+                                    evtData0.cstEvtHldr = (ZkCustomEventMessage)msg;
                                 }
                             }
                         }

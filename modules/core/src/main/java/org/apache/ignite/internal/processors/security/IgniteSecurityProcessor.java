@@ -32,7 +32,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.security.sandbox.AccessControllerSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.NoOpSandbox;
-import org.apache.ignite.internal.thread.context.DistributedOperationContextAttributes;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.OperationContextAttribute;
 import org.apache.ignite.internal.thread.context.OperationContextDispatcher;

@@ -45,7 +45,7 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
     byte[] msgBytes;
 
     /** Unmarshalled message. */
-    transient ZkCustomEventMessage cstMsgHldr;
+    transient ZkCustomEventMessage cstEvtHldr;
 
     /**
      * @param evtId Event ID.
@@ -69,31 +69,31 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
         assert msg != null || origEvtId != 0 || !F.isEmpty(evtPath);
 
         this.origEvtId = origEvtId;
-        this.cstMsgHldr = ZkCustomEventMessage.of(msg);
+        this.cstEvtHldr = ZkCustomEventMessage.of(msg);
         this.sndNodeId = sndNodeId;
         this.evtPath = evtPath;
     }
 
     /** @return Original {@link DiscoveryCustomMessage}. */
     public DiscoverySpiCustomMessage resolvedCustomMessage() {
-        return cstMsgHldr.originalMsg;
+        return cstEvtHldr.originalMsg;
     }
 
     /** @return Received {@link OperationContext}. */
     public @Nullable OperationContextMessage operationContext() {
-        return cstMsgHldr.opCtxMsg;
+        return cstEvtHldr.opCtxMsg;
     }
 
     /** */
     public void prepareMarshal(DiscoveryMessageParser parser) {
-        if (cstMsgHldr != null)
-            msgBytes = parser.marshalZip(cstMsgHldr);
+        if (cstEvtHldr != null)
+            msgBytes = parser.marshalZip(cstEvtHldr);
     }
 
     /** */
     public void finishUnmarshal(DiscoveryMessageParser parser) {
         if (msgBytes != null)
-            cstMsgHldr = parser.unmarshalZip(msgBytes);
+            cstEvtHldr = parser.unmarshalZip(msgBytes);
     }
 
     /**
