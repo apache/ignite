@@ -1963,7 +1963,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     if (log.isDebugEnabled()) {
                         log.debug("Skip coordinator affinity initialization for cache group started after" +
                             " current exchange [grp=" + desc.cacheOrGroupName() +
-                            ", grpId=" + desc.groupId() + ", curTopVer=" + topVer +
+                            ", grpId=" + grpId + ", curTopVer=" + topVer +
                             ", grpStartTopVer=" + desc.startTopologyVersion() + ']');
                     }
 
@@ -2090,7 +2090,16 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         return null;
     }
 
-    /** */
+    /**
+     * Checks whether the given cache group has not started at this exchange. If so, it is safe to skip it here as
+     * its affinity and local group context will be initialized later by its own exchange.
+     *
+     * @param fut Current exchange future.
+     * @param desc Cache group descriptor.
+     * @param grp Local cache group context.
+     * @param newAff {@code True} if there are no older nodes with affinity info available.
+     * @return {@code True} if the group must be skipped by the current exchange.
+     */
     private boolean skipNotStartedDynamicGroup(
         GridDhtPartitionsExchangeFuture fut,
         CacheGroupDescriptor desc,
