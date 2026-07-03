@@ -29,8 +29,8 @@ import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
 import org.apache.ignite.internal.processors.platform.client.ClientBitmaskFeature;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientProtocolContext;
+import org.apache.ignite.internal.processors.platform.client.ClientRequestHandler;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxAwareRequest;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.X;
@@ -174,7 +174,7 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheQueryRequest im
             SecurityException securityEx = X.cause(e, SecurityException.class);
 
             if (securityEx != null)
-                throw IgniteClientException.wrapAuthorizationExeption(securityEx);
+                throw ClientRequestHandler.wrapAuthorizationExeption(securityEx);
 
             throw e;
         }

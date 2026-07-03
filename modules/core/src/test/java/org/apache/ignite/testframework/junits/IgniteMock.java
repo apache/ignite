@@ -480,7 +480,7 @@ public class IgniteMock implements IgniteEx {
                 bcfg.getTypeConfigurations(),
                 CU.affinityFields(configuration()),
                 bcfg.isCompactFooter(),
-                CU::affinityFieldName,
+                BinaryUtils::affinityFieldName,
                 NullLogger.INSTANCE
             ) {
                 @Override public int typeId(String typeName) {
