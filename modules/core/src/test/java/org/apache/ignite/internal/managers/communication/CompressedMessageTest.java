@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
@@ -34,6 +35,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.apache.ignite.marshaller.Marshallers.jdk;
@@ -103,6 +105,36 @@ public class CompressedMessageTest {
         assertTrue(readMsg instanceof GridDhtPartitionsFullMessage);
 
         assertEqualsFullMsg(fullMsg, (GridDhtPartitionsFullMessage)readMsg);
+    }
+
+    /** Read must fail with an exception on a null chunk from the wire instead of looping forever. */
+    @Test
+    public void testReadFailsOnNullChunk() {
+        MessageFactory msgFactory = new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{
+            new CoreMessagesProvider(jdk(), jdk(), U.gridClassLoader())});
+
+        DirectMessageWriter writer = new DirectMessageWriter(msgFactory);
+
+        ByteBuffer buf = ByteBuffer.allocate(16);
+
+        writer.setBuffer(buf);
+
+        // Emulate a corrupted stream or an incompatible peer: dataSize > 0, non-final chunk, then the null-array
+        // marker (-1), which CompressedMessageSerializer.writeTo() never produces at the chunk position.
+        writer.writeInt(100);
+        writer.writeBoolean(false);
+        writer.writeByteArray(null);
+
+        buf.flip();
+
+        DirectMessageReader reader = new DirectMessageReader(msgFactory, null);
+
+        reader.setBuffer(buf);
+
+        GridTestUtils.assertThrows(null,
+            () -> new CompressedMessageSerializer().readFrom(new CompressedMessage(), reader),
+            IgniteException.class,
+            "unexpected null chunk");
     }
 
     /** */

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.managers.communication;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -110,23 +111,26 @@ public class CompressedMessageSerializer implements MessageSerializer<Compressed
                     if (!reader.isLastRead())
                         return false;
 
-                    if (msg.chunk != null) {
-                        if (msg.tmpBuf.remaining() <= CHUNK_SIZE) {
-                            ByteBuffer newTmpBuf = ByteBuffer.allocateDirect(msg.tmpBuf.capacity() * 2);
-
-                            msg.tmpBuf.flip();
-
-                            newTmpBuf.put(msg.tmpBuf);
-
-                            msg.tmpBuf = newTmpBuf;
-                        }
-
-                        msg.tmpBuf.put(msg.chunk);
-
-                        reader.decrementState();
-
-                        msg.chunk = null;
+                    if (msg.chunk == null) {
+                        throw new IgniteException("Failed to read compressed message: unexpected null chunk " +
+                            "(stream is corrupted or the sender is incompatible).");
                     }
+
+                    if (msg.tmpBuf.remaining() <= CHUNK_SIZE) {
+                        ByteBuffer newTmpBuf = ByteBuffer.allocateDirect(msg.tmpBuf.capacity() * 2);
+
+                        msg.tmpBuf.flip();
+
+                        newTmpBuf.put(msg.tmpBuf);
+
+                        msg.tmpBuf = newTmpBuf;
+                    }
+
+                    msg.tmpBuf.put(msg.chunk);
+
+                    reader.decrementState();
+
+                    msg.chunk = null;
             }
         }
     }
