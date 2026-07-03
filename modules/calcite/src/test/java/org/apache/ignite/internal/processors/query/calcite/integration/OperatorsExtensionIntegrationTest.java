@@ -19,9 +19,11 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Supplier;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.adapter.enumerable.NullPolicy;
+import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.plan.Contexts;
@@ -30,17 +32,24 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlAggFunction;
+import org.apache.calcite.sql.SqlBinaryOperator;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlFunctionCategory;
+import org.apache.calcite.sql.SqlIntervalQualifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.fun.SqlTrimFunction;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
+import org.apache.calcite.sql.type.SqlOperandTypeChecker;
+import org.apache.calcite.sql.type.SqlReturnTypeInference;
+import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.util.ReflectiveSqlOperatorTable;
 import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.validate.SqlValidator;
@@ -158,6 +167,56 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
             .check();
     }
 
+    /** */
+    @Test
+    public void testOverriveBinaryOperator() {
+        sql("create table person(id int primary key, val_ts timestamp)");
+        sql("insert into person values (?, ?)", 1, Timestamp.valueOf("2024-01-01 00:00:00"));
+
+        // Check SELECT.
+        assertQuery("SELECT val_ts - 1 FROM person")
+            .returns(Timestamp.valueOf("2023-12-31 00:00:00"))
+            .check();
+        assertQuery("SELECT id FROM person WHERE val_ts - 1 = ?")
+            .withParams(Timestamp.valueOf("2023-12-31 00:00:00"))
+            .returns(1)
+            .check();
+        assertQuery("SELECT id FROM person WHERE val_ts = ? - 1")
+            .withParams(Timestamp.valueOf("2024-01-02 00:00:00"))
+            .returns(1)
+            .check();
+
+        // Check INSERT.
+        assertQuery("INSERT INTO person(id, val_ts) VALUES (?, ? - 1)")
+            .withParams(2, Timestamp.valueOf("2024-01-01 00:00:00"))
+            .returns(1L)
+            .check();
+
+        // Check UPDATE.
+        assertQuery("UPDATE person SET val_ts = val_ts - 1 WHERE id = ?")
+            .withParams(1)
+            .returns(1L)
+            .check();
+        assertQuery("UPDATE person SET val_ts = ? - 1 WHERE id = ?")
+            .withParams(Timestamp.valueOf("2024-01-01 00:00:00"), 2)
+            .returns(1L)
+            .check();
+        assertQuery("UPDATE person SET val_ts = ? - 2 WHERE val_ts - 1 = ?")
+            .withParams(Timestamp.valueOf("2024-01-01 00:00:00"), Timestamp.valueOf("2023-12-30 00:00:00"))
+            .returns(2L)
+            .check();
+        assertQuery("UPDATE person SET val_ts = ? - 3 WHERE val_ts = ? - 2")
+            .withParams(Timestamp.valueOf("2024-01-01 00:00:00"), Timestamp.valueOf("2024-01-01 00:00:00"))
+            .returns(2L)
+            .check();
+
+        // Check DELETE.
+        assertQuery("DELETE FROM person WHERE val_ts - 1 = ?")
+            .withParams(Timestamp.valueOf("2023-12-28 00:00:00"))
+            .returns(2L)
+            .check();
+    }
+
     /** Rewrites LTRIM with 2 parameters. */
     public static SqlCall rewriteLtrim(SqlValidator validator, SqlCall call) {
         if (call.operandCount() != 2)
@@ -220,6 +279,9 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
 
         /** */
         public static final SqlAggFunction TEST_SUM = new SqlTestSumAggFunction();
+
+        /** */
+        public static final SqlBinaryOperator TIMESTAMP_MINUS_NUMERIC = new SqlTimestampMinusNumericOperator();
     }
 
     /** Extended convertlet table. */
@@ -230,6 +292,8 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
             addAlias(OperatorTable.SUBSTR, SqlStdOperatorTable.SUBSTRING);
             // Tests operator extension via covnertlet.
             registerOp(OperatorTable.TRUNC, new TruncConvertlet());
+            // Tests perator extension via covnertlet for binary operator.
+            registerOp(OperatorTable.TIMESTAMP_MINUS_NUMERIC, new SqlTimestampMinusNumericConvertlet());
         }
 
         /**
@@ -323,6 +387,90 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
         /** {@inheritDoc} */
         @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
             return typeFactory.createSqlType(org.apache.calcite.sql.type.SqlTypeName.BIGINT);
+        }
+    }
+
+    /** */
+    public static class SqlTimestampMinusNumericOperator extends SqlBinaryOperator {
+        /** */
+        private static final SqlOperandTypeChecker TYPE_CHECKER = OperandTypes.or(
+            OperandTypes.family(SqlTypeFamily.TIMESTAMP, SqlTypeFamily.NUMERIC)
+        );
+
+        /** */
+        private static final SqlReturnTypeInference RETURN_TYPE_INFERENCE = opBinding -> {
+            List<RelDataType> operandTypes = opBinding.collectOperandTypes();
+
+            if (operandTypes.size() == 2 && isTimestampAndNumeric(operandTypes.get(0), operandTypes.get(1))) {
+                return operandTypes.get(0);
+            }
+
+            return null;
+        };
+
+        /** */
+        final SqlOperator origin;
+
+        /** */
+        public SqlTimestampMinusNumericOperator() {
+            this(SqlStdOperatorTable.MINUS);
+        }
+
+        /** */
+        private SqlTimestampMinusNumericOperator(SqlOperator origin) {
+            super(
+                origin.getName(),
+                origin.getKind(),
+                origin.getLeftPrec(),
+                origin.getLeftPrec() > origin.getRightPrec(),
+                ReturnTypes.chain(RETURN_TYPE_INFERENCE, origin.getReturnTypeInference()),
+                origin.getOperandTypeInference(),
+                Objects.requireNonNull(origin.getOperandTypeChecker()).or(TYPE_CHECKER)
+            );
+
+            this.origin = origin;
+        }
+
+        public static boolean isTimestampAndNumeric(RelDataType leftType, RelDataType rightType) {
+            return leftType.getSqlTypeName() == SqlTypeName.TIMESTAMP && SqlTypeUtil.isNumeric(rightType);
+        }
+    }
+
+    /** */
+    public static class SqlTimestampMinusNumericConvertlet implements SqlRexConvertlet {
+        /** {@inheritDoc} */
+        @Override public RexNode convertCall(SqlRexContext cx, SqlCall call) {
+            RelDataType callType = cx.getValidator().getValidatedNodeType(call);
+            SqlNode left = call.operand(0);
+            SqlNode right = call.operand(1);
+            RelDataType leftType = cx.getValidator().getValidatedNodeType(left);
+            RelDataType rightType = cx.getValidator().getValidatedNodeType(right);
+
+            if (SqlTimestampMinusNumericOperator.isTimestampAndNumeric(leftType, rightType)) {
+                SqlIntervalQualifier intervalQualifier = new SqlIntervalQualifier(TimeUnit.DAY, null, SqlParserPos.ZERO);
+                RelDataType intervalType = cx.getTypeFactory().createTypeWithNullability(
+                    cx.getTypeFactory().createSqlIntervalType(intervalQualifier),
+                    leftType.isNullable() || rightType.isNullable()
+                );
+                SqlCall intervalCall = SqlStdOperatorTable.CAST.createCall(right.getParserPosition(), right, intervalQualifier);
+
+                cx.getValidator().setValidatedNodeType(intervalCall, intervalType);
+
+                return cx.getRexBuilder().makeCall(
+                    callType,
+                    SqlStdOperatorTable.MINUS_DATE,
+                    ImmutableList.of(cx.convertExpression(left), cx.convertExpression(intervalCall))
+                );
+            }
+
+            RexNode leftRex = cx.convertExpression(left);
+            RexNode rightRex = cx.convertExpression(right);
+
+            return cx.getRexBuilder().makeCall(
+                callType,
+                SqlStdOperatorTable.MINUS,
+                ImmutableList.of(leftRex, rightRex)
+            );
         }
     }
 }
