@@ -217,6 +217,24 @@ public abstract class CommonUtils {
     /** Ignite package. */
     public static final String IGNITE_PKG = "org.apache.ignite.";
 
+    /** Default data structures group name. */
+    public static final String DEFAULT_DS_GROUP_NAME = "default-ds-group";
+
+    /** Atomics system cache name. */
+    public static final String ATOMICS_CACHE_NAME = "ignite-sys-atomic-cache";
+
+    /** Thin client handshake (connection type) code. */
+    public static final byte THIN_CLIENT = 2;
+
+    /** Handshake request command code. */
+    public static final int HANDSHAKE = 1;
+
+    /** Default client connector port. */
+    public static final int DFLT_PORT = 10800;
+
+    /** Default client connector port range. */
+    public static final int DFLT_PORT_RANGE = 100;
+
     /**
      * Short date format pattern for log messages in "quiet" mode.
      * Only time is included since we don't expect "quiet" mode to be used
@@ -2431,12 +2449,6 @@ public abstract class CommonUtils {
         return root;
     }
 
-    /** Default client connector port. */
-    public static final int DFLT_PORT = 10800;
-
-    /** Default client connector port range. */
-    public static final int DFLT_PORT_RANGE = 100;
-
     /**
      * Gets absolute value for integer. If integer is {@link Integer#MIN_VALUE}, then {@code 0} is returned.
      *
@@ -2530,196 +2542,5 @@ public abstract class CommonUtils {
         return t instanceof IgniteCheckedException
             ? (IgniteCheckedException)t
             : new IgniteCheckedException(t);
-    }
-
-    /**
-     * Gets type name by class name.
-     *
-     * @param clsName Class name.
-     * @return Type name.
-     */
-    public static String typeName(String clsName) {
-        int genericStart = clsName.indexOf('`');  // .NET generic, not valid for Java class name.
-
-        if (genericStart >= 0)
-            clsName = clsName.substring(0, genericStart);
-
-        int pkgEnd = clsName.lastIndexOf('.');
-
-        if (pkgEnd >= 0 && pkgEnd < clsName.length() - 1)
-            clsName = clsName.substring(pkgEnd + 1);
-
-        if (clsName.endsWith("[]"))
-            clsName = clsName.substring(0, clsName.length() - 2) + "_array";
-
-        int parentEnd = clsName.lastIndexOf('$');
-
-        if (parentEnd >= 0)
-            clsName = clsName.substring(parentEnd + 1);
-
-        parentEnd = clsName.lastIndexOf('+');   // .NET parent
-
-        if (parentEnd >= 0)
-            clsName = clsName.substring(parentEnd + 1);
-
-        return clsName;
-    }
-
-    /**
-     * Gets type name by class.
-     *
-     * @param cls Class.
-     * @return Type name.
-     */
-    public static String typeName(Class<?> cls) {
-        String typeName = cls.getSimpleName();
-
-        // To protect from failure on anonymous classes.
-        if (typeName.isEmpty()) {
-            String pkg = cls.getPackage().getName();
-
-            typeName = cls.getName().substring(pkg.length() + (pkg.isEmpty() ? 0 : 1));
-        }
-
-        if (cls.isArray()) {
-            assert typeName.endsWith("[]");
-
-            typeName = typeName.substring(0, typeName.length() - 2) + "_array";
-        }
-
-        return typeName;
-    }
-
-    /**
-     * Cancels given runnable.
-     *
-     * @param w Worker to cancel - it's no-op if runnable is {@code null}.
-     */
-    public static void cancel(@Nullable GridWorker w) {
-        if (w != null)
-            w.cancel();
-    }
-
-    /**
-     * Cancels collection of runnables.
-     *
-     * @param ws Collection of workers - it's no-op if collection is {@code null}.
-     */
-    public static void cancel(Iterable<? extends GridWorker> ws) {
-        if (ws != null)
-            for (GridWorker w : ws)
-                w.cancel();
-    }
-
-    /**
-     * Joins runnable.
-     *
-     * @param w Worker to join.
-     * @param log The logger to possible exception.
-     * @return {@code true} if worker has not been interrupted, {@code false} if it was interrupted.
-     */
-    public static boolean join(@Nullable GridWorker w, @Nullable IgniteLogger log) {
-        if (w != null)
-            try {
-                w.join();
-            }
-            catch (InterruptedException ignore) {
-                warn(log, "Got interrupted while waiting for completion of runnable: " + w);
-
-                Thread.currentThread().interrupt();
-
-                return false;
-            }
-
-        return true;
-    }
-
-    /**
-     * Joins given collection of runnables.
-     *
-     * @param ws Collection of workers to join.
-     * @param log The logger to possible exceptions.
-     * @return {@code true} if none of the worker have been interrupted,
-     *      {@code false} if at least one was interrupted.
-     */
-    public static boolean join(Iterable<? extends GridWorker> ws, IgniteLogger log) {
-        boolean retval = true;
-
-        if (ws != null)
-            for (GridWorker w : ws)
-                if (!join(w, log))
-                    retval = false;
-
-        return retval;
-    }
-
-    /**
-     * Creates thread with given worker.
-     *
-     * @param worker Runnable to create thread with.
-     */
-    public static IgniteThread newThread(GridWorker worker) {
-        return new IgniteThread(worker.igniteInstanceName(), worker.name(), worker);
-    }
-
-    /**
-     * Sleeps for given number of milliseconds.
-     *
-     * @param ms Time to sleep.
-     * @throws IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
-     */
-    public static void sleep(long ms) throws IgniteInterruptedCheckedException {
-        try {
-            Thread.sleep(ms);
-        }
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-
-            throw new IgniteInterruptedCheckedException(e);
-        }
-    }
-
-    /**
-     * Safely write buffer fully to blocking socket channel.
-     * Will throw assert if non blocking channel passed.
-     *
-     * @param sockCh WritableByteChannel.
-     * @param buf Buffer.
-     * @throws IOException IOException.
-     */
-    public static void writeFully(SocketChannel sockCh, ByteBuffer buf) throws IOException {
-        int totalWritten = 0;
-
-        assert sockCh.isBlocking() : "SocketChannel should be in blocking mode " + sockCh;
-
-        while (buf.hasRemaining()) {
-            int written = sockCh.write(buf);
-
-            if (written < 0)
-                throw new IOException("Error writing buffer to channel " +
-                    "[written = " + written + ", buf " + buf + ", totalWritten = " + totalWritten + "]");
-
-            totalWritten += written;
-        }
-    }
-
-    /**
-     * @param a First byte array.
-     * @param aOff First byte array offset.
-     * @param b Second byte array.
-     * @param bOff Second byte array offset.
-     * @param len Number of bytes to compare.
-     * @return {@code True} if the specified sub-arrays are equal.
-     */
-    public static boolean bytesEqual(byte[] a, int aOff, byte[] b, int bOff, int len) {
-        if (aOff + len > a.length || bOff + len > b.length)
-            return false;
-        else {
-            for (int i = 0; i < len; i++)
-                if (a[aOff + i] != b[bOff + i])
-                    return false;
-
-            return true;
-        }
     }
 }

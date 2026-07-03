@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.thread.context.Scope;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
@@ -63,7 +64,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
     public static final byte JDBC_CLIENT = 1;
 
     /** Thin client handshake code. */
-    public static final byte THIN_CLIENT = ClientListenerProtocol.THIN_CLIENT;
+    public static final byte THIN_CLIENT = CommonUtils.THIN_CLIENT;
 
     /** Client types. */
     public static final byte[] CLI_TYPES = {ODBC_CLIENT, JDBC_CLIENT, THIN_CLIENT};

@@ -3163,11 +3163,14 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         MetricRegistry metrics = ig.context().metric().registry(SNAPSHOT_METRICS);
 
-        LongMetric opEndTimeMetric = metrics.findMetric("LastSnapshotEndTime");
-        BooleanSupplier endTimeMetricPredicate = () -> opEndTimeMetric.value() > 0;
+        assertTrue(waitForCondition(() -> metrics.findMetric("LastRequestId") != null, getTestTimeout(), 50));
 
         String reqId = metrics.findMetric("LastRequestId").getAsString();
-        assertFalse(F.isEmpty(reqId));
+
+        assert reqId != null;
+
+        LongMetric opEndTimeMetric = metrics.findMetric("LastSnapshotEndTime");
+        BooleanSupplier endTimeMetricPredicate = () -> opEndTimeMetric.value() > 0;
 
         // Make sure the operation ID has been shown to the user.
         assertContains(log, testOut.toString(), reqId);
