@@ -26,9 +26,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
@@ -193,15 +193,13 @@ public class GridCacheIoManagerRetryTest extends GridCommonAbstractTest {
      */
     private void configureGridIoManager(GridTestKernalContext ctx, AtomicInteger sendCnt) {
         ctx.add(new GridIoManager(ctx) {
-            @Override public void sendToGridTopic(ClusterNode node, GridTopic topic, Message msg, byte plc)
-                throws IgniteCheckedException {
-                sendCnt.incrementAndGet();
-
-                throw new IgniteCheckedException("Test cause");
+            @Override public GridIoMessage prepare(Object topic, Message msg, byte plc, boolean ordered,
+                long timeout, boolean skipOnTimeout) {
+                // Transmission is mocked below, so the prepared message is not needed.
+                return null;
             }
 
-            @Override public void sendOrderedMessage(ClusterNode node, Object topic, Message msg, byte plc,
-                long timeout, boolean skipOnTimeout) throws IgniteCheckedException {
+            @Override public void sendPrepared(ClusterNode node, GridIoMessage ioMsg) throws IgniteCheckedException {
                 sendCnt.incrementAndGet();
 
                 throw new IgniteCheckedException("Test cause");
