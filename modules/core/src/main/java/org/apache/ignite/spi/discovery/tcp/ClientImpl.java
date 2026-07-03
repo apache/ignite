@@ -809,7 +809,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     log.debug("Message has been sent to address [msg=" + msg + ", addr=" + addr +
                         ", rmtNodeId=" + rmtNodeId + ']');
 
-                return new T2<>(new SocketStream(sock), spi.readReceipt(sock, timeoutHelper.nextTimeoutChunk(ackTimeout0)));
+                return new T2<>(new SocketStream(sock, ses), spi.readReceipt(sock, timeoutHelper.nextTimeoutChunk(ackTimeout0)));
             }
             catch (IOException | IgniteCheckedException e) {
                 U.closeQuiet(sock);
@@ -1195,7 +1195,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     + ":" + sockStream.sock.getPort());
 
                 try {
-                    TcpDiscoveryIoSession ses = createSession(sock);
+                    TcpDiscoveryIoSession ses = sockStream.session();
 
                     assert sock.getKeepAlive() && sock.getTcpNoDelay() : "Socket wasn't configured properly:" +
                         " KeepAlive " + sock.getKeepAlive() +
@@ -1606,7 +1606,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     sockStream = joinRes;
 
                     Socket sock = sockStream.socket();
-                    TcpDiscoveryIoSession ses = createSession(sock);
+                    TcpDiscoveryIoSession ses = sockStream.session();
 
                     if (isInterrupted())
                         throw new InterruptedException();
@@ -2775,13 +2775,22 @@ class ClientImpl extends TcpDiscoveryImpl {
         private final Socket sock;
 
         /**
-         * @param sock Socket.
-         * @throws IOException If failed to create stream.
+         * The only session ever used to read messages from the socket. Shared by all socket users
+         * ({@link Reconnector}, {@link SocketReader}), otherwise messages buffered by one session's
+         * read-ahead would be lost when another session takes the socket over.
          */
-        public SocketStream(Socket sock) throws IOException {
+        private final TcpDiscoveryIoSession ses;
+
+        /**
+         * @param sock Socket.
+         * @param ses Session bound to the socket.
+         */
+        SocketStream(Socket sock, TcpDiscoveryIoSession ses) {
             assert sock != null;
+            assert ses != null;
 
             this.sock = sock;
+            this.ses = ses;
         }
 
         /**
@@ -2789,7 +2798,13 @@ class ClientImpl extends TcpDiscoveryImpl {
          */
         Socket socket() {
             return sock;
+        }
 
+        /**
+         * @return Session bound to the socket.
+         */
+        TcpDiscoveryIoSession session() {
+            return ses;
         }
 
         /** {@inheritDoc} */
