@@ -79,6 +79,7 @@ import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheClassLoaderMarker;
+import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -206,6 +207,24 @@ public abstract class CommonUtils {
 
     /** Ignite package. */
     public static final String IGNITE_PKG = "org.apache.ignite.";
+
+    /** Default data structures group name. */
+    public static final String DEFAULT_DS_GROUP_NAME = "default-ds-group";
+
+    /** Atomics system cache name. */
+    public static final String ATOMICS_CACHE_NAME = "ignite-sys-atomic-cache";
+
+    /** Thin client handshake (connection type) code. */
+    public static final byte THIN_CLIENT = 2;
+
+    /** Handshake request command code. */
+    public static final int HANDSHAKE = 1;
+
+    /** Default client connector port. */
+    public static final int DFLT_PORT = 10800;
+
+    /** Default client connector port range. */
+    public static final int DFLT_PORT_RANGE = 100;
 
     /**
      * Short date format pattern for log messages in "quiet" mode.
@@ -2353,5 +2372,166 @@ public abstract class CommonUtils {
         ));
 
         return sqlClasses;
+    }
+
+    /**
+     * Quietly closes given resource ignoring possible checked exception.
+     *
+     * @param rsrc Resource to close. If it's {@code null} - it's no-op.
+     */
+    public static void closeQuiet(@Nullable AutoCloseable rsrc) {
+        if (rsrc != null)
+            try {
+                rsrc.close();
+            }
+            catch (Exception ignored) {
+                // No-op.
+            }
+    }
+
+    /**
+     * Quietly closes given {@link Socket} ignoring possible checked exception.
+     *
+     * @param sock Socket to close. If it's {@code null} - it's no-op.
+     */
+    public static void closeQuiet(@Nullable Socket sock) {
+        if (sock == null)
+            return;
+
+        try {
+            // Avoid tls 1.3 incompatibility https://bugs.openjdk.java.net/browse/JDK-8208526
+            sock.shutdownOutput();
+            sock.shutdownInput();
+        }
+        catch (Exception ignored) {
+            // No-op.
+        }
+
+        try {
+            sock.close();
+        }
+        catch (Exception ignored) {
+            // No-op.
+        }
+    }
+
+    /**
+     * Utility method to add the given throwable error to the given throwable root error. If the given
+     * suppressed throwable is an {@code Error}, but the root error is not, will change the root to the {@code Error}.
+     *
+     * @param root Root error to add suppressed error to.
+     * @param err Error to add.
+     * @return New root error.
+     */
+    public static <T extends Throwable> T addSuppressed(T root, T err) {
+        assert err != null;
+
+        if (root == null)
+            return err;
+
+        if (err instanceof Error && !(root instanceof Error)) {
+            err.addSuppressed(root);
+
+            root = err;
+        }
+        else
+            root.addSuppressed(err);
+
+        return root;
+    }
+
+    /**
+     * Gets absolute value for integer. If integer is {@link Integer#MIN_VALUE}, then {@code 0} is returned.
+     *
+     * @param i Integer.
+     * @return Absolute value.
+     */
+    public static int safeAbs(int i) {
+        i = Math.abs(i);
+
+        return i < 0 ? 0 : i;
+    }
+
+    /**
+     * Gets absolute value for long. If argument is {@link Long#MIN_VALUE}, then {@code 0} is returned.
+     *
+     * @param i Argument.
+     * @return Absolute value.
+     */
+    public static long safeAbs(long i) {
+        i = Math.abs(i);
+
+        return i < 0 ? 0 : i;
+    }
+
+    /**
+     * Helper method to calculates mask.
+     *
+     * @param parts Number of partitions.
+     * @return Mask to use in calculation when partitions count is power of 2.
+     */
+    public static int calculateMask(int parts) {
+        return (parts & (parts - 1)) == 0 ? parts - 1 : -1;
+    }
+
+    /**
+     * Helper method to calculate partition.
+     *
+     * @param key Key to get partition for.
+     * @param mask Mask to use in calculation when partitions count is power of 2.
+     * @param parts Number of partitions.
+     * @return Partition number for a given key.
+     */
+    public static int calculatePartition(Object key, int mask, int parts) {
+        if (mask >= 0) {
+            int h;
+
+            return ((h = key.hashCode()) ^ (h >>> 16)) & mask;
+        }
+
+        return safeAbs(key.hashCode() % parts);
+    }
+
+    /**
+     * Unwraps closure exceptions.
+     *
+     * @param t Exception.
+     * @return Unwrapped exception.
+     */
+    public static Exception unwrap(Throwable t) {
+        assert t != null;
+
+        while (true) {
+            if (t instanceof Error)
+                throw (Error)t;
+
+            if (t instanceof GridClosureException) {
+                t = ((GridClosureException)t).unwrap();
+
+                continue;
+            }
+
+            return (Exception)t;
+        }
+    }
+
+    /**
+     * Casts the passed {@code Throwable t} to {@link IgniteCheckedException}.<br>
+     * If {@code t} is a {@link GridClosureException}, it is unwrapped and then cast to {@link IgniteCheckedException}.
+     * If {@code t} is an {@link IgniteCheckedException}, it is returned.
+     * If {@code t} is not a {@link IgniteCheckedException}, a new {@link IgniteCheckedException} caused by {@code t}
+     * is returned.
+     *
+     * @param t Throwable to cast.
+     * @return {@code t} cast to {@link IgniteCheckedException}.
+     */
+    public static IgniteCheckedException cast(Throwable t) {
+        assert t != null;
+
+        t = unwrap(t);
+
+        return t instanceof IgniteCheckedException
+            ? (IgniteCheckedException)t
+            : new IgniteCheckedException(t);
     }
 }

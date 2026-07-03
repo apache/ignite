@@ -21,7 +21,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -50,8 +50,8 @@ class ClientContinuousQueryCursor<T> implements QueryCursor<T> {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        U.closeQuiet(initQryCursor);
-        U.closeQuiet(lsnrHnd);
+        CommonUtils.closeQuiet(initQryCursor);
+        CommonUtils.closeQuiet(lsnrHnd);
     }
 
     /** {@inheritDoc} */

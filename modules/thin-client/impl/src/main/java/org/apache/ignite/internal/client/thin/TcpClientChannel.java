@@ -64,16 +64,14 @@ import org.apache.ignite.internal.client.thin.io.ClientConnectionStateHandler;
 import org.apache.ignite.internal.client.thin.io.ClientMessageHandler;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.odbc.ClientConnectionNodeRecoveryException;
-import org.apache.ignite.internal.processors.odbc.ClientListenerNioListener;
-import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientFlag;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.NullLogger;
 import org.jetbrains.annotations.Nullable;
 
@@ -217,7 +215,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             catch (ClientConnectionException e) {
                 log.info("Can't establish connection with " + addr);
 
-                connectionEx = U.addSuppressed(connectionEx, e);
+                connectionEx = CommonUtils.addSuppressed(connectionEx, e);
 
                 continue;
             }
@@ -231,9 +229,9 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
                 log.info("Can't establish connection with " + addr + ". Node in recovery mode.");
 
-                connectionEx = U.addSuppressed(connectionEx, e);
+                connectionEx = CommonUtils.addSuppressed(connectionEx, e);
 
-                U.closeQuiet(sock);
+                CommonUtils.closeQuiet(sock);
                 sock = null;
 
                 continue;
@@ -290,7 +288,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             if (heartbeatTimer != null)
                 heartbeatTimer.cancel();
 
-            U.closeQuiet(sock);
+            CommonUtils.closeQuiet(sock);
 
             pendingReqsLock.writeLock().lock();
 
@@ -842,17 +840,17 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     /** Send handshake request. */
     private void handshakeReq(ProtocolVersion proposedVer, String user, String pwd,
         Map<String, String> userAttrs) throws ClientConnectionException {
-        try (BinaryWriterEx writer = BinaryUtils.writer(U.binaryContext(null), BinaryStreams.outputStream(32), null)) {
+        try (BinaryWriterEx writer = BinaryUtils.writer(BinaryUtils.binaryContext(null), BinaryStreams.outputStream(32), null)) {
             ProtocolContext protocolCtx = protocolContextFromVersion(proposedVer);
 
             writer.writeInt(0); // reserve an integer for the request size
-            writer.writeByte((byte)ClientListenerRequest.HANDSHAKE);
+            writer.writeByte((byte)CommonUtils.HANDSHAKE);
 
             writer.writeShort(proposedVer.major());
             writer.writeShort(proposedVer.minor());
             writer.writeShort(proposedVer.patch());
 
-            writer.writeByte(ClientListenerNioListener.THIN_CLIENT);
+            writer.writeByte(CommonUtils.THIN_CLIENT);
 
             if (protocolCtx.isFeatureSupported(BITMAP_FEATURES)) {
                 byte[] features = ProtocolBitmaskFeature.featuresAsBytes(protocolCtx.features());

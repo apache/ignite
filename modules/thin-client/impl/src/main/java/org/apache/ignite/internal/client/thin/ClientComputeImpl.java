@@ -37,9 +37,9 @@ import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.client.thin.ClientNotificationType.COMPUTE_TASK_FINISHED;
@@ -266,7 +266,7 @@ class ClientComputeImpl implements ClientCompute {
             return mayInterruptIfRunning ? fut.cancel() : fut.onCancelled();
         }
         catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+            throw CommonUtils.convertException(e);
         }
     }
 
