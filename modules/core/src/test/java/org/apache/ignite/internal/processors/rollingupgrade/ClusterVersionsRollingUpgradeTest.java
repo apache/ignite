@@ -41,6 +41,7 @@ import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.lang.ConsumerX;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
@@ -935,12 +936,12 @@ public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTes
 
         finalizeFut.get(getTestTimeout(), MILLISECONDS);
 
-        GridTestUtils.assertThrowsAnyCause(
-            log,
-            () -> startFut.get(getTestTimeout(), MILLISECONDS),
-            IgniteSpiException.class,
-            "Node joins are not allowed during cluster version finalization"
-        );
+        try {
+            startFut.get(getTestTimeout(), MILLISECONDS);
+        }
+        catch (IgniteCheckedException e) {
+            assertTrue(X.hasCause(e, "Node joins are not allowed during cluster version finalization", IgniteSpiException.class));
+        }
     }
 
     /** */
