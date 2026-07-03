@@ -361,19 +361,16 @@ public abstract class GridCacheMessage implements Message {
      * @return Marshalled collection.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable protected final byte[][] marshallInvokeArguments(@Nullable Object[] args, Marshaller marsh)
+    @Nullable protected final List<byte[]> marshallInvokeArguments(@Nullable Object[] args, Marshaller marsh)
         throws IgniteCheckedException {
 
         if (args == null || args.length == 0)
             return null;
 
-        byte[][] argsBytes = new byte[args.length][];
+        List<byte[]> argsBytes = new ArrayList<>(args.length);
 
-        for (int i = 0; i < args.length; i++) {
-            Object arg = args[i];
-
-            argsBytes[i] = arg == null ? null : U.marshal(marsh, arg);
-        }
+        for (Object arg : args)
+            argsBytes.add(arg == null ? null : U.marshal(marsh, arg));
 
         return argsBytes;
     }
@@ -403,16 +400,18 @@ public abstract class GridCacheMessage implements Message {
      * @return Unmarshalled collection.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable protected final Object[] unmarshalInvokeArguments(@Nullable byte[][] byteCol,
+    @Nullable protected final Object[] unmarshalInvokeArguments(@Nullable List<byte[]> byteCol,
         Marshaller marsh,
         ClassLoader ldr) throws IgniteCheckedException {
         if (byteCol == null)
             return null;
 
-        Object[] args = new Object[byteCol.length];
+        Object[] args = new Object[byteCol.size()];
 
-        for (int i = 0; i < byteCol.length; i++)
-            args[i] = byteCol[i] == null ? null : U.unmarshal(marsh, byteCol[i], ldr);
+        int i = 0;
+
+        for (byte[] bytes : byteCol)
+            args[i++] = bytes == null ? null : U.unmarshal(marsh, bytes, ldr);
 
         return args;
     }

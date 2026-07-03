@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
@@ -477,7 +476,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
         if (forceTransformBackups) {
             if (!F.isEmpty(invokeArgs) && invokeArgsBytes == null)
-                invokeArgsBytes = Arrays.asList(marshallInvokeArguments(invokeArgs, marsh));
+                invokeArgsBytes = marshallInvokeArguments(invokeArgs, marsh);
 
             if (entryProcessorsBytes == null)
                 entryProcessorsBytes = marshallCollection(entryProcessors, marsh);
@@ -494,7 +493,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
                 entryProcessors = unmarshalCollection(entryProcessorsBytes, marsh, clsLdr);
 
             if (invokeArgsBytes != null && invokeArgs == null)
-                invokeArgs = unmarshalInvokeArguments(invokeArgsBytes.toArray(new byte[invokeArgsBytes.size()][]), marsh, clsLdr);
+                invokeArgs = unmarshalInvokeArguments(invokeArgsBytes, marsh, clsLdr);
 
             if (nearEntryProcessors == null)
                 nearEntryProcessors = unmarshalCollection(nearEntryProcessorsBytes, marsh, clsLdr);

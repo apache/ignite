@@ -29,10 +29,7 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.WildcardType;
-import javax.lang.model.util.ElementFilter;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor.superclasses;
 
 /**
  * Generates a {@code *Deployer} class for messages whose {@code @Order} fields have a type that indicates deployment
@@ -48,9 +45,6 @@ public class MessageDeploymentGenerator extends MessageGenerator {
 
     /** */
     private final TypeMirror cacheIdMsgMirror;
-
-    /** */
-    private final TypeMirror cacheGroupIdMsgMirror;
 
     /** */
     private final TypeMirror gridCacheMessageMirror;
@@ -81,7 +75,6 @@ public class MessageDeploymentGenerator extends MessageGenerator {
         super(env);
 
         cacheIdMsgMirror = type("org.apache.ignite.internal.processors.cache.GridCacheIdMessage");
-        cacheGroupIdMsgMirror = type("org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage");
         gridCacheMessageMirror = type(GRID_CACHE_MESSAGE);
         deployableMessageMirror = type("org.apache.ignite.internal.processors.cache.DeployableMessage");
         cacheObjectMirror = type("org.apache.ignite.internal.processors.cache.CacheObject");
@@ -96,7 +89,7 @@ public class MessageDeploymentGenerator extends MessageGenerator {
     }
 
     /** {@inheritDoc} */
-    @Override boolean shouldSkip(TypeElement type) {
+    @Override boolean shouldSkip(TypeElement type, List<VariableElement> fields) {
         if (gridCacheMessageMirror == null || !assignableFrom(type.asType(), gridCacheMessageMirror))
             return true;
 
@@ -105,7 +98,7 @@ public class MessageDeploymentGenerator extends MessageGenerator {
             return false;
 
         // ...or has any field whose deployment can be inferred from its type.
-        for (VariableElement f : allHierarchyFields(type)) {
+        for (VariableElement f : fields) {
             if (deployKind(f) != null)
                 return false;
         }
@@ -123,7 +116,7 @@ public class MessageDeploymentGenerator extends MessageGenerator {
         emitMethod(deploy, "deploy(" + simpleNameWithGeneric(type) + " msg, GridCacheSharedContext<?, ?> ctx)", body -> {
             List<String> fieldStmts = new ArrayList<>();
 
-            for (VariableElement field : allHierarchyFields(type)) {
+            for (VariableElement field : fields) {
                 DeployKind kind = deployKind(field);
 
                 if (kind == null)
@@ -177,31 +170,15 @@ public class MessageDeploymentGenerator extends MessageGenerator {
 
     /** Returns the line that resolves {@code cctx} from {@code ctx} based on the message type hierarchy. */
     private String cctxResolutionLine() {
-        if (assignableFrom(type.asType(), cacheGroupIdMsgMirror))
-            return "GridCacheContext<?, ?> cctx = ctx.cacheContext(msg.groupId());";
-
         if (assignableFrom(type.asType(), cacheIdMsgMirror))
             return "GridCacheContext<?, ?> cctx = ctx.cacheContext(msg.cacheId());";
 
         throw new IllegalStateException("Cannot resolve cache context for " + type.getQualifiedName()
-            + ": message has CacheObject field(s) but is neither GridCacheIdMessage nor GridCacheGroupIdMessage.");
-    }
-
-    /** All fields declared across the class hierarchy of {@code te}, up to but excluding {@code Object}. */
-    private List<VariableElement> allHierarchyFields(TypeElement te) {
-        List<VariableElement> result = new ArrayList<>();
-
-        superclasses(env, te).forEach(c -> result.addAll(ElementFilter.fieldsIn(c.getEnclosedElements())));
-
-        return result;
+            + ": CacheObject deployment fields are supported for GridCacheIdMessage subclasses only.");
     }
 
     /** Returns the deployment strategy for {@code field} based on its Java type, or {@code null} if not deployable. */
     private @Nullable DeployKind deployKind(VariableElement field) {
-        // Only serialized fields are sent over the wire and thus need deployment; transient fields are skipped.
-        if (field.getAnnotation(Order.class) == null)
-            return null;
-
         TypeMirror fieldType = field.asType();
 
         if (fieldType.getKind() == TypeKind.ARRAY || fieldType.getKind().isPrimitive())

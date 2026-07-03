@@ -57,6 +57,7 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.managers.deployment.P2PClassLoadingIssues;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -1052,11 +1053,11 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
         final Collection<CacheEntryEvent<? extends K, ? extends V>> entries0 = new ArrayList<>(entries.size());
 
+        GridCacheDeploymentManager depMgr = cctx.deploy();
+
+        CacheObjectContext coctx = cctx.cacheObjectContext();
+
         for (CacheContinuousQueryEntry e : entries) {
-            GridCacheDeploymentManager depMgr = cctx.deploy();
-
-            ClassLoader ldr = depMgr.globalLoader();
-
             try {
                 if (ctx.config().isPeerClassLoadingEnabled()) {
                     GridDeploymentInfo depInfo = e.deployInfo();
@@ -1072,8 +1073,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                     }
                 }
 
-                MessageMarshaller.unmarshal(
-                    cctx.kernalContext().messageFactory(), e, cctx.kernalContext(), null, cctx.deploy().globalLoader());
+                MessageMarshaller.unmarshal(ctx.messageFactory(), e, ctx, coctx, depMgr.globalLoader());
 
                 Collection<CacheEntryEvent<? extends K, ? extends V>> evts = handleEvent(ctx, e);
 

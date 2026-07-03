@@ -359,7 +359,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
                 entryProcessorsBytes = marshallCollection(entryProcessors, marsh);
 
             if (!F.isEmpty(invokeArgs) && invokeArgsBytes == null)
-                invokeArgsBytes = Arrays.asList(marshallInvokeArguments(invokeArgs, marsh));
+                invokeArgsBytes = marshallInvokeArguments(invokeArgs, marsh);
         }
     }
 
@@ -373,7 +373,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
                 entryProcessors = unmarshalCollection(entryProcessorsBytes, marsh, clsLdr);
 
             if (invokeArgsBytes != null && invokeArgs == null)
-                invokeArgs = unmarshalInvokeArguments(invokeArgsBytes.toArray(new byte[invokeArgsBytes.size()][]), marsh, clsLdr);
+                invokeArgs = unmarshalInvokeArguments(invokeArgsBytes, marsh, clsLdr);
         }
     }
 

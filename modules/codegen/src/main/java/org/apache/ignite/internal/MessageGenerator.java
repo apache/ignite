@@ -91,7 +91,7 @@ public abstract class MessageGenerator {
     final void generate(TypeElement type, List<VariableElement> fields) throws Exception {
         assert this.type == null : "Message" + typeSuffix() + " generator isn't stateless and is supposed to be single-use.";
 
-        if (shouldSkip(type))
+        if (shouldSkip(type, fields))
             return;
 
         this.type = type;
@@ -126,7 +126,7 @@ public abstract class MessageGenerator {
     abstract String typeSuffix();
 
     /** @return {@code true} if no file should be generated for this type; default is {@code false}. */
-    boolean shouldSkip(TypeElement type) {
+    boolean shouldSkip(TypeElement type, List<VariableElement> fields) {
         return false;
     }
 
@@ -137,8 +137,8 @@ public abstract class MessageGenerator {
     abstract String buildClassCode(String clsName) throws IOException;
 
     /** */
-    void writeLicense(Writer writer) throws IOException {
-        try (InputStream in = getClass().getClassLoader().getResourceAsStream("license.txt");
+    public static void writeLicense(Writer writer) throws IOException {
+        try (InputStream in = MessageGenerator.class.getClassLoader().getResourceAsStream("license.txt");
              BufferedReader reader = new BufferedReader(new InputStreamReader(in))) {
 
             PrintWriter out = new PrintWriter(writer);
@@ -147,6 +147,16 @@ public abstract class MessageGenerator {
             while ((line = reader.readLine()) != null)
                 out.println(line);
         }
+    }
+
+    /** Writes the no-arg constructor with a javadoc stub. */
+    void writeDefaultConstructor(Writer writer, String clsName) throws IOException {
+        writer.write(indentedLine(METHOD_JAVADOC));
+        writer.write(NL);
+        writer.write(indentedLine("public " + clsName + "() {"));
+        writer.write(NL);
+        writer.write(indentedLine("}"));
+        writer.write(NL + NL);
     }
 
     /** Writes license, package, imports, javadoc, and class declaration; {@link #imports} must be populated before calling. */

@@ -522,6 +522,17 @@ public class MessageProcessorTest {
         assertThat(compilation).hadErrorContaining("Cannot resolve cache context");
     }
 
+    /** Verifies the processor rejects a {@code NonMarshallableMessage} with declared marshalling logic. */
+    @Test
+    public void testNonMarshallableWithMarshalledFieldFailed() {
+        Compilation compilation = compile("WrongNonMarshallableMessage.java");
+
+        assertThat(compilation).failed();
+
+        assertThat(compilation)
+            .hadErrorContaining("NonMarshallableMessage must not implement MarshallableMessage or declare @Marshalled* fields");
+    }
+
     /** */
     private Compilation compile(String... srcFiles) {
         return compile(new MessageProcessor(), srcFiles);

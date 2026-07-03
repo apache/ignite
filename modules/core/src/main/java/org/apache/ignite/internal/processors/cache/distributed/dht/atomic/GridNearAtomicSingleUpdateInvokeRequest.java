@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -173,13 +172,13 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
     /** {@inheritDoc} */
     @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
         if (!F.isEmpty(invokeArgs) && invokeArgsBytes == null)
-            invokeArgsBytes = Arrays.asList(marshallInvokeArguments(invokeArgs, marsh));
+            invokeArgsBytes = marshallInvokeArguments(invokeArgs, marsh);
     }
 
     /** {@inheritDoc} */
     @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         if (invokeArgsBytes != null && invokeArgs == null)
-            invokeArgs = unmarshalInvokeArguments(invokeArgsBytes.toArray(new byte[invokeArgsBytes.size()][]), marsh, clsLdr);
+            invokeArgs = unmarshalInvokeArguments(invokeArgsBytes, marsh, clsLdr);
     }
 
     /** {@inheritDoc} */

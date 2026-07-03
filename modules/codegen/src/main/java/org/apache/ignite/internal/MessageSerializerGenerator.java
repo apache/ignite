@@ -98,7 +98,7 @@ public class MessageSerializerGenerator extends MessageGenerator {
 
             writeClassFields(writer);
 
-            writeConstructor(writer, serClsName);
+            writeDefaultConstructor(writer, serClsName);
 
             for (String w: write)
                 writer.write(w + NL);
@@ -112,17 +112,6 @@ public class MessageSerializerGenerator extends MessageGenerator {
 
             return writer.toString();
         }
-    }
-
-    /** */
-    private void writeConstructor(Writer writer, String serClsName) throws IOException {
-        writer.write(indentedLine(METHOD_JAVADOC));
-        writer.write(NL);
-        writer.write(indentedLine("public " + serClsName + "() {"));
-        writer.write(NL);
-        writer.write(indentedLine("}"));
-        writer.write(NL);
-        writer.write(NL);
     }
 
     /** Generates code for {@code writeTo} and {@code readFrom}. */

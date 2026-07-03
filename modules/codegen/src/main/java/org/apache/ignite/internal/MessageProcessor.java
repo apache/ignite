@@ -40,7 +40,9 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.ElementFilter;
 import javax.tools.Diagnostic;
+import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 
@@ -78,6 +80,9 @@ public class MessageProcessor extends AbstractProcessor {
 
     /** Externalizable message. */
     static final String MARSHALLABLE_MESSAGE_INTERFACE = "org.apache.ignite.plugin.extensions.communication.MarshallableMessage";
+
+    /** Marker of messages with no marshaller. */
+    static final String NON_MARSHALLABLE_MESSAGE_INTERFACE = "org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage";
 
     /** */
     public static final String GRID_H2_NULL = "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Null";
@@ -122,6 +127,9 @@ public class MessageProcessor extends AbstractProcessor {
         List<TypeMirror> emptyMsgs = typesToTypeMirrors(EMPTY_MESSAGES);
         List<TypeMirror> skipMsgs = typesToTypeMirrors(SKIP_MESSAGES);
 
+        TypeElement marshallableEl = processingEnv.getElementUtils().getTypeElement(MARSHALLABLE_MESSAGE_INTERFACE);
+        TypeElement nonMarshallableEl = processingEnv.getElementUtils().getTypeElement(NON_MARSHALLABLE_MESSAGE_INTERFACE);
+
         Map<TypeElement, List<VariableElement>> msgFields = new HashMap<>();
 
         for (Element el: roundEnv.getRootElements()) {
@@ -132,6 +140,13 @@ public class MessageProcessor extends AbstractProcessor {
 
             if (!isAssignable(msgType, clazz))
                 continue;
+
+            // No marshaller is generated for a NonMarshallableMessage, so declared marshalling logic would silently never run.
+            if (nonMarshallableEl != null && isAssignable(nonMarshallableEl.asType(), clazz)
+                && ((marshallableEl != null && isAssignable(marshallableEl.asType(), clazz)) || hasMarshalledFields(clazz))) {
+                processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                    "NonMarshallableMessage must not implement MarshallableMessage or declare @Marshalled* fields", clazz);
+            }
 
             if (clazz.getModifiers().contains(Modifier.ABSTRACT))
                 continue;
@@ -312,5 +327,15 @@ public class MessageProcessor extends AbstractProcessor {
     /** */
     private boolean isAssignable(TypeMirror t, TypeElement clazz) {
         return processingEnv.getTypeUtils().isAssignable(clazz.asType(), t);
+    }
+
+    /** @return {@code true} if {@code clazz} or any of its superclasses declares a {@code @Marshalled*} field. */
+    private boolean hasMarshalledFields(TypeElement clazz) {
+        return SystemViewRowAttributeWalkerProcessor.superclasses(processingEnv, clazz)
+            .flatMap(c -> ElementFilter.fieldsIn(c.getEnclosedElements()).stream())
+            .anyMatch(f -> f.getAnnotation(Marshalled.class) != null
+                || f.getAnnotation(MarshalledCollection.class) != null
+                || f.getAnnotation(MarshalledMap.class) != null
+                || f.getAnnotation(MarshalledObjects.class) != null);
     }
 }

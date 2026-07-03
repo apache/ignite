@@ -41,6 +41,7 @@ import javax.tools.Diagnostic;
 
 import static org.apache.ignite.internal.MessageProcessor.MARSHALLABLE_MESSAGE_INTERFACE;
 import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
+import static org.apache.ignite.internal.MessageProcessor.NON_MARSHALLABLE_MESSAGE_INTERFACE;
 
 /**
  * Generates {@code *Marshaller} classes for {@link org.apache.ignite.plugin.extensions.communication.Message}
@@ -93,7 +94,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         marshallableMsgType = type(MARSHALLABLE_MESSAGE_INTERFACE);
         messageMirror = type(MESSAGE_INTERFACE);
         cacheObjectMirror = type("org.apache.ignite.internal.processors.cache.CacheObject");
-        nonMarshallableMirror = type("org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage");
+        nonMarshallableMirror = type(NON_MARSHALLABLE_MESSAGE_INTERFACE);
         cacheIdAwareMirror = type("org.apache.ignite.plugin.extensions.communication.CacheIdAware");
         cacheGroupIdMsgMirror = type("org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage");
         mapMirror = type("java.util.Map");
@@ -106,7 +107,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     }
 
     /** {@inheritDoc} */
-    @Override boolean shouldSkip(TypeElement type) {
+    @Override boolean shouldSkip(TypeElement type, List<VariableElement> fields) {
         return isNonMarshallableMessage(type);
     }
 
@@ -147,29 +148,28 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
     /** Writes the constructor, including the {@code marshaller} field when needed. */
     private void writeConstructor(Writer writer, String marshallerClsName) throws IOException {
+        if (!marshallable && !hasMarshalled) {
+            writeDefaultConstructor(writer, marshallerClsName);
+
+            return;
+        }
+
         writer.write(indentedLine(METHOD_JAVADOC));
         writer.write(NL);
+        writer.write(indentedLine("private final Marshaller marshaller;"));
+        writer.write(NL + NL);
 
-        if (marshallable || hasMarshalled) {
-            writer.write(indentedLine("private final Marshaller marshaller;"));
-            writer.write(NL + NL);
+        writer.write(indentedLine(METHOD_JAVADOC));
+        writer.write(NL);
+        writer.write(indentedLine("public " + marshallerClsName + "(Marshaller marshaller) {"));
+        writer.write(NL);
 
-            writer.write(indentedLine(METHOD_JAVADOC));
-            writer.write(NL);
-            writer.write(indentedLine("public " + marshallerClsName + "(Marshaller marshaller) {"));
-            writer.write(NL);
+        indent++;
 
-            indent++;
+        writer.write(indentedLine("this.marshaller = marshaller;"));
+        writer.write(NL);
 
-            writer.write(indentedLine("this.marshaller = marshaller;"));
-            writer.write(NL);
-
-            indent--;
-        }
-        else {
-            writer.write(indentedLine("public " + marshallerClsName + "() {"));
-            writer.write(NL);
-        }
+        indent--;
 
         writer.write(indentedLine("}"));
         writer.write(NL + NL);
