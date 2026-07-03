@@ -939,8 +939,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
                 continue;
             }
 
-            waitForCondition(() -> endTime.value() != 0L && startTime.value() != 0 && endTime.value() > startTime.value(),
-                getTestTimeout());
+            assertTrue(waitForCondition(() -> endTime.value() != 0L && startTime.value() != 0 && endTime.value() > startTime.value(),
+                getTestTimeout()));
         }
     }
 
