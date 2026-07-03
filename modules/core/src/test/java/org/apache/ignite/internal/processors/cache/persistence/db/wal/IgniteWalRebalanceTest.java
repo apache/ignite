@@ -496,10 +496,15 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         forceCheckpoint();
 
-        stopAllGrids();
+        // Stop only non-supplier nodes to preserve topology version continuity.
+        // Stopping all grids and restarting only node(0) can cause a new discovery cycle
+        // with a smaller topology version than the one stored in persistent entries
+        // (especially on CI where topVer accumulates across many test runs),
+        // which leads to "Invalid version for inner update" / CorruptedTreeException.
+        stopGrid(1, false);
+        stopGrid(2, false);
 
-        // Rewrite data to trigger further rebalance.
-        IgniteEx supplierNode = startGrid(0);
+        IgniteEx supplierNode = grid(0);
 
         supplierNode.cluster().state(ACTIVE);
 
@@ -522,6 +527,8 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         IgniteEx demanderNode = startGrid(2);
 
+        TestRecordingCommunicationSpi spi = (TestRecordingCommunicationSpi)demanderNode.configuration().getCommunicationSpi();
+
         AffinityTopologyVersion curTopVer = demanderNode.context().discovery().topologyVersionEx();
 
         // Wait for rebalance process start on demander node.
@@ -532,12 +539,15 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
             getTestTimeout()
         );
 
+        // Wait until demand message is blocked in SPI to ensure it goes through sendMessage()
+        // and gets recorded in WalRebalanceCheckingCommunicationSpi.topVers before stopBlock()
+        // sends it via super.sendMessage() which bypasses the subclass.
+        spi.waitForBlocked();
+
         // Inject I/O factory which can throw exception during WAL read on supplier node.
         FailingIOFactory ioFactory = injectFailingIOFactory(supplierNode);
 
         // Resume rebalance process.
-        TestRecordingCommunicationSpi spi = (TestRecordingCommunicationSpi)demanderNode.configuration().getCommunicationSpi();
-
         spi.stopBlock();
 
         // Wait till rebalance will be failed and cancelled.
