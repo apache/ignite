@@ -431,6 +431,7 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
             this.origin = origin;
         }
 
+        /** */
         public static boolean isTimestampAndNumeric(RelDataType leftType, RelDataType rightType) {
             return leftType.getSqlTypeName() == SqlTypeName.TIMESTAMP && SqlTypeUtil.isNumeric(rightType);
         }

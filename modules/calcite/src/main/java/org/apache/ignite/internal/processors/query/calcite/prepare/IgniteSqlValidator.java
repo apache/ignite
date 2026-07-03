@@ -153,8 +153,8 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
         super.validateUpdate(call);
 
-        SqlSelect sourceSelect = call.getSourceSelect();
-        SqlValidatorScope scope = getWhereScope(sourceSelect);
+        SqlSelect srcSelect = call.getSourceSelect();
+        SqlValidatorScope scope = getWhereScope(srcSelect);
 
         for (SqlNode expr : call.getSourceExpressionList()) {
             deriveType(scope, expr);
