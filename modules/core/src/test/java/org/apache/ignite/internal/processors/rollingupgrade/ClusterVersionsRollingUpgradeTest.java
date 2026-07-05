@@ -41,6 +41,7 @@ import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.lang.ConsumerX;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
@@ -547,13 +548,13 @@ public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTes
 
             waitForBlockedDiscoveryMessages(grid(0), 2, InitMessage.class);
 
-            UUID activeFinalizeProcId = extractActiveFinalizeProcessId(1);
+            UUID startedFinalizeProcId = extractFinalizeProcessId(1);
 
             spi(grid(2)).blockMessages((node, msg) -> {
                 if (!(msg instanceof SingleNodeMessage<?> singleNodeMsg))
                     return false;
 
-                return singleNodeMsg.processId().equals(activeFinalizeProcId);
+                return singleNodeMsg.processId().equals(startedFinalizeProcId);
             });
 
             discoveryRingMessageWorkerQueue(grid(0)).unblock();
@@ -763,7 +764,7 @@ public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTes
 
         spi(grid(1)).waitForBlocked();
 
-        UUID activeFinalizeProcId = extractActiveFinalizeProcessId(1);
+        UUID startedFinalizeProcId = extractFinalizeProcessId(1);
 
         CountDownLatch finalizeCompleteStartedLatch = new CountDownLatch(1);
         AtomicReference<TcpDiscoveryAbstractMessage> finalizeCompleteStartMsg = new AtomicReference<>();
@@ -771,7 +772,7 @@ public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTes
         discoveryRingMessageWorkerQueue(grid(0)).startMessageIntercepting(m -> {
             if ((m instanceof TcpDiscoveryCustomEventMessage customMsg)
                 && (customMsg.message() instanceof InitMessage<?> initMsg)
-                && initMsg.processId().equals(activeFinalizeProcId)
+                && initMsg.processId().equals(startedFinalizeProcId)
             ) {
                 finalizeCompleteStartMsg.set(m);
                 finalizeCompleteStartedLatch.countDown();
@@ -935,12 +936,12 @@ public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTes
 
         finalizeFut.get(getTestTimeout(), MILLISECONDS);
 
-        GridTestUtils.assertThrowsAnyCause(
-            log,
-            () -> startFut.get(getTestTimeout(), MILLISECONDS),
-            IgniteSpiException.class,
-            "Node joins are not allowed during cluster version finalization"
-        );
+        try {
+            startFut.get(getTestTimeout(), MILLISECONDS);
+        }
+        catch (IgniteCheckedException e) {
+            assertTrue(X.hasCause(e, "Node joins are not allowed during cluster version finalization", IgniteSpiException.class));
+        }
     }
 
     /** */
@@ -981,10 +982,10 @@ public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTes
     }
 
     /** */
-    private UUID extractActiveFinalizeProcessId(int nodeIdx) {
-        Object enable = U.field(grid(nodeIdx).context().rollingUpgrade(), "finalizeProc");
+    private UUID extractFinalizeProcessId(int nodeIdx) {
+        Object proc = U.field(grid(nodeIdx).context().rollingUpgrade(), "finalizeProc");
 
-        return U.field(enable, "locInitOpId");
+        return U.field(proc, "locInitOpId");
     }
 
     /** */
