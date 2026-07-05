@@ -174,8 +174,13 @@ public class PerformingTransactions {
         // Create a Transaction configuration
         TransactionConfiguration txCfg = new TransactionConfiguration();
 
+        // tag::pme[]
         // Set the timeout to 20 seconds
         txCfg.setTxTimeoutOnPartitionMapExchange(20000);
+        // end::pme[]
+
+        // Set the timeout to 5 minutes
+        txCfg.setDefaultTxTimeout(300000);
 
         cfg.setTransactionConfiguration(txCfg);
 

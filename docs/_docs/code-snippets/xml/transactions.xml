@@ -31,8 +31,16 @@
         <!-- tag::configuration[] -->
         <property name="transactionConfiguration">
             <bean class="org.apache.ignite.configuration.TransactionConfiguration">
+                <!-- tag::timeout[] -->
+                <!--Set isolation level to READ_COMMITTED-->
+                <property  name="defaultTxIsolation"  value="READ_COMMITTED" />
+                <!--Set the timeout to 5 minutes-->
+                <property  name="defaultTxTimeout"  value="300000" />
                 <!--Set the timeout to 20 seconds-->
+                <!-- end::timeout[] -->
+                <!-- tag::pme[] -->
                 <property name="TxTimeoutOnPartitionMapExchange" value="20000"/>
+                <!-- end::pme[] -->
             </bean>
         </property>
 
