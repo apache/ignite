@@ -44,9 +44,6 @@ public class MessageDeploymentGenerator extends MessageGenerator {
     private static final String GRID_CACHE_MESSAGE = "org.apache.ignite.internal.processors.cache.GridCacheMessage";
 
     /** */
-    private final TypeMirror cacheIdMsgMirror;
-
-    /** */
     private final TypeMirror gridCacheMessageMirror;
 
     /** */
@@ -74,7 +71,6 @@ public class MessageDeploymentGenerator extends MessageGenerator {
     MessageDeploymentGenerator(ProcessingEnvironment env) {
         super(env);
 
-        cacheIdMsgMirror = type("org.apache.ignite.internal.processors.cache.GridCacheIdMessage");
         gridCacheMessageMirror = type(GRID_CACHE_MESSAGE);
         deployableMessageMirror = type("org.apache.ignite.internal.processors.cache.DeployableMessage");
         cacheObjectMirror = type("org.apache.ignite.internal.processors.cache.CacheObject");
@@ -170,11 +166,11 @@ public class MessageDeploymentGenerator extends MessageGenerator {
 
     /** Returns the line that resolves {@code cctx} from {@code ctx} based on the message type hierarchy. */
     private String cctxResolutionLine() {
-        if (assignableFrom(type.asType(), cacheIdMsgMirror))
+        if (isCacheIdAwareMessage(type))
             return "GridCacheContext<?, ?> cctx = ctx.cacheContext(msg.cacheId());";
 
         throw new IllegalStateException("Cannot resolve cache context for " + type.getQualifiedName()
-            + ": CacheObject deployment fields are supported for GridCacheIdMessage subclasses only.");
+            + ": CacheObject deployment fields are supported for CacheIdAware messages only.");
     }
 
     /** Returns the deployment strategy for {@code field} based on its Java type, or {@code null} if not deployable. */

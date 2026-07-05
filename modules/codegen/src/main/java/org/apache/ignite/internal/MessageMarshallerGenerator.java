@@ -64,9 +64,6 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     private final TypeMirror nonMarshallableMirror;
 
     /** */
-    private final TypeMirror cacheIdAwareMirror;
-
-    /** */
     private final TypeMirror cacheGroupIdMsgMirror;
 
     /** */
@@ -95,7 +92,6 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         messageMirror = type(MESSAGE_INTERFACE);
         cacheObjectMirror = type("org.apache.ignite.internal.processors.cache.CacheObject");
         nonMarshallableMirror = type(NON_MARSHALLABLE_MESSAGE_INTERFACE);
-        cacheIdAwareMirror = type("org.apache.ignite.plugin.extensions.communication.CacheIdAware");
         cacheGroupIdMsgMirror = type("org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage");
         mapMirror = type("java.util.Map");
         collectionMirror = type("java.util.Collection");
@@ -990,11 +986,6 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     /** Recursion skip for such fields is subtype-safe: subclasses inherit the {@code NonMarshallableMessage} marker. */
     private boolean isNonMarshallable(TypeMirror t) {
         return assignableFrom(t, nonMarshallableMirror);
-    }
-
-    /** */
-    private boolean isCacheIdAwareMessage(TypeElement te) {
-        return assignableFrom(te.asType(), cacheIdAwareMirror);
     }
 
     /** */

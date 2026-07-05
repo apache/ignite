@@ -2044,7 +2044,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             else {
                 MessageMarshaller.marshal(ctx.messageFactory(), ioMsg, ctx, null);
 
-                sendMarshalled(node, ioMsg, topic, msg, plc, ackC);
+                sendMarshalled(node, ioMsg, ackC);
             }
         }
     }
@@ -2073,7 +2073,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         assert !locNodeId.equals(node.id()) : node;
 
         try (TraceSurroundings ignored = support(null)) {
-            sendMarshalled(node, ioMsg, ioMsg.topic(), ioMsg.message(), ioMsg.policy(), null);
+            sendMarshalled(node, ioMsg, null);
         }
     }
 
@@ -2081,8 +2081,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
      * Sends an already-marshalled message to a remote node. Marshalling is the caller's job, so one {@code ioMsg} can
      * be prepared once and delivered to many nodes (see {@link #sendToMany}).
      */
-    private void sendMarshalled(ClusterNode node, GridIoMessage ioMsg, Object topic, Message msg, byte plc,
-        IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException {
+    private void sendMarshalled(ClusterNode node, GridIoMessage ioMsg, IgniteInClosure<IgniteException> ackC)
+        throws IgniteCheckedException {
         try {
             if ((CommunicationSpi<?>)getSpi() instanceof TcpCommunicationSpi)
                 getTcpCommunicationSpi().sendMessage(node, ioMsg, ackC);
@@ -2098,8 +2098,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
             throw new IgniteCheckedException("Failed to send message (node may have left the grid or " +
                 "TCP connection cannot be established due to firewall issues) " +
-                "[node=" + node + ", topic=" + topic +
-                ", msg=" + msg + ", policy=" + plc + ']', e);
+                "[node=" + node + ", topic=" + ioMsg.topic() +
+                ", msg=" + ioMsg.message() + ", policy=" + ioMsg.policy() + ']', e);
         }
     }
 
@@ -2125,7 +2125,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                             MessageMarshaller.marshal(ctx.messageFactory(), ioMsg, ctx, null);
                         }
 
-                        sendMarshalled(node, ioMsg, topic, msg, plc, null);
+                        sendMarshalled(node, ioMsg, null);
                     }
                 }
                 catch (IgniteCheckedException e) {

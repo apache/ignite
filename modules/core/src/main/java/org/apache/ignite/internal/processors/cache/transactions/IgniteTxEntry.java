@@ -463,6 +463,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, MarshallableMessage, 
         nodeId = snapshot.nodeId;
         locMapped = snapshot.locMapped;
         expiryPlc = snapshot.expiryPlc;
+        transferExpiryPlc = snapshot.transferExpiryPlc;
         expiryPlcBytes = snapshot.expiryPlcBytes;
         flags = snapshot.flags;
         partUpdateCntr = snapshot.partUpdateCntr;
