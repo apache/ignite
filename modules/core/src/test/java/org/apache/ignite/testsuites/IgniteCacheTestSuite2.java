@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheIncrementTxTest;
 import org.apache.ignite.internal.processors.cache.IgniteCachePartitionMapUpdateSafeLossPolicyTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheAndNodeStop;
 import org.apache.ignite.internal.processors.cache.IgniteOnePhaseCommitNearReadersTest;
+import org.apache.ignite.internal.processors.cache.MdcCacheMetricsTest;
 import org.apache.ignite.internal.processors.cache.NonAffinityCoordinatorDynamicStartStopTest;
 import org.apache.ignite.internal.processors.cache.RebalanceIteratorLargeEntriesOOMTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLoadingConcurrentGridStartSelfTestAllowOverwrite;
@@ -208,6 +209,7 @@ public class IgniteCacheTestSuite2 {
         GridTestUtils.addTestIfNeeded(suite, RendezvousAffinityFunctionBackupFilterSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, ClusterNodeAttributeColocatedBackupFilterSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, MdcAffinityBackupFilterSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, MdcCacheMetricsTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, CachePartitionStateTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheComparatorTest.class, ignoredTests);
