@@ -1495,8 +1495,9 @@ public class ZookeeperDiscoveryImpl {
             0L,
             evtsData.topVer,
             locNode.id(),
-            new ZkNoServersMessage(),
-            null);
+            new ZkCustomEventMessage(new ZkNoServersMessage(), null),
+            null
+        );
 
         evtData.prepareMarshal(msgParser);
 
@@ -2576,7 +2577,7 @@ public class ZookeeperDiscoveryImpl {
             0L,
             evtsData.topVer,
             sndNode.id(),
-            msg,
+            new ZkCustomEventMessage(msg, cstEvtHldr.opCtxMsg),
             evtPath
         );
 
@@ -2588,8 +2589,6 @@ public class ZookeeperDiscoveryImpl {
         if (msg instanceof ZkInternalMessage)
             processInternalMessage(evtData, (ZkInternalMessage)msg);
         else {
-            evtData.cstEvtHldr = cstEvtHldr;
-
             notifyCustomEvent(evtData, msg);
 
             if (msg.stopProcess()) {
@@ -2704,11 +2703,14 @@ public class ZookeeperDiscoveryImpl {
                 ZkDiscoveryEventData evtData = e.getValue();
 
                 if (evtData.eventType() == ZkDiscoveryEventData.ZK_EVT_CUSTOM_EVT) {
-                    ZkDiscoveryCustomEventData evtData0 =
-                        (ZkDiscoveryCustomEventData)newEvts.evts.get(evtData.eventId());
+                    ZkDiscoveryCustomEventData ed = (ZkDiscoveryCustomEventData)newEvts.evts.get(evtData.eventId());
 
-                    if (evtData0 != null)
-                        evtData0.cstEvtHldr = ((ZkDiscoveryCustomEventData)evtData).cstEvtHldr;
+                    if (ed != null) {
+                        ed = new ZkDiscoveryCustomEventData(ed.eventId(), ed.origEvtId, ed.topologyVersion(), ed.sndNodeId,
+                            ((ZkDiscoveryCustomEventData)evtData).cstEvtHldr, ed.evtPath);
+
+                        newEvts.evts.put(e.getKey(), ed);
+                    }
                 }
             }
         }
@@ -2770,10 +2772,12 @@ public class ZookeeperDiscoveryImpl {
                             assert evtData0.cstEvtHldr != null : evtData0;
                         else {
                             if (evtData0.cstEvtHldr == null) {
+                                Message msg;
+
                                 if (evtData0.ackEvent()) {
                                     String path = zkPaths.ackEventDataPath(evtData0.origEvtId);
 
-                                    evtData0.cstEvtHldr = ZkCustomEventMessage.of(msgParser.unmarshalZip(zkClient.getData(path)));
+                                    msg = msgParser.unmarshalZip(zkClient.getData(path));
                                 }
                                 else {
                                     assert evtData0.evtPath != null : evtData0;
@@ -2782,12 +2786,11 @@ public class ZookeeperDiscoveryImpl {
                                         evtData0.evtPath,
                                         evtData0.sndNodeId);
 
-                                    Message msg = msgParser.unmarshalZip(msgBytes);
-
-                                    assert msg instanceof ZkCustomEventMessage;
-
-                                    evtData0.cstEvtHldr = (ZkCustomEventMessage)msg;
+                                    msg = msgParser.unmarshalZip(msgBytes);
                                 }
+
+                                evtData0 = new ZkDiscoveryCustomEventData(evtData0.eventId(), evtData0.origEvtId,
+                                    evtData0.topologyVersion(), evtData0.sndNodeId, ZkCustomEventMessage.of(msg), evtData0.evtPath);
                             }
                         }
 
@@ -3459,8 +3462,9 @@ public class ZookeeperDiscoveryImpl {
             0L,
             topVer,
             locNode.id(),
-            msg,
-            null);
+            new ZkCustomEventMessage(msg, null),
+            null
+        );
 
         evtData.prepareMarshal(msgParser);
 
@@ -3799,7 +3803,7 @@ public class ZookeeperDiscoveryImpl {
             origEvt.eventId(),
             rtState.evtsData.topVer, // Use actual topology version because topology version must be growing.
             locNode.id(),
-            ack,
+            new ZkCustomEventMessage(ack, null),
             null);
 
         if (log.isDebugEnabled()) {

@@ -97,7 +97,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccess
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
-import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
@@ -1830,13 +1829,26 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         if (change)
             CUR_PLC.set(plc);
 
-        try (Scope ignored = SecurityUtils.withRemoteSecurityContext(ctx.security(), nodeId)) {
+        try (Scope ignored = withRemoteSecurityContext(nodeId)) {
             lsnr.onMessage(nodeId, msg, plc);
         }
         finally {
             if (change)
                 CUR_PLC.set(oldPlc);
         }
+    }
+
+    /** */
+    private Scope withRemoteSecurityContext(UUID nodeId) {
+        // No remote Security Context has been attached to the message processing thread so far.
+        // This means that the message was sent as part of an operation initiated by the sender node.
+        if (ctx.security().isDefaultContext())
+            return ctx.security().withContext(nodeId);
+
+        // Verify that the Security Context currently attached to the thread is valid.
+        ctx.security().securityContext();
+
+        return Scope.NOOP_SCOPE;
     }
 
     /**

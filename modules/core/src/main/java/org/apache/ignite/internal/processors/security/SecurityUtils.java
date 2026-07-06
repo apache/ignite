@@ -47,7 +47,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteDomainCombiner;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
-import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -207,19 +206,6 @@ public class SecurityUtils {
      */
     public static boolean hasSecurityManager() {
         return System.getSecurityManager() != null;
-    }
-
-    /** */
-    public static Scope withRemoteSecurityContext(IgniteSecurity security, UUID nodeId) {
-        // No remote Security Context has been attached to the message processing thread so far.
-        // This means that the message was sent as part of an operation initiated by the sender node.
-        if (security.isDefaultContext())
-            return security.withContext(nodeId);
-
-        // Verify that the Security Context currently attached to the thread is valid.
-        security.securityContext();
-
-        return Scope.NOOP_SCOPE;
     }
 
     /** @return True if class of {@code target} is a system type. */
