@@ -521,23 +521,4 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
         assertQuery("select minute((select max(t) from tbl))").returns(40L).check();
         assertQuery("select second((select max(t) from tbl))").returns(15L).check();
     }
-
-    /** Test Ignite custom lead/lag functions. */
-    @Test
-    public void testLeadLagFunctions() {
-        try {
-            sql("CREATE TABLE t(val INT)");
-            sql("INSERT INTO t VALUES (1)");
-
-            assertQuery("SELECT LEAD(val) OVER() FROM t").returns(NULL_RESULT).check();
-            assertQuery("SELECT LEAD(val, 2) OVER() FROM t").returns(NULL_RESULT).check();
-            assertQuery("SELECT LEAD(val, 3, 0) OVER() FROM t").returns(0).check();
-            assertQuery("SELECT LAG(val) OVER() FROM t").returns(NULL_RESULT).check();
-            assertQuery("SELECT LAG(val, 2) OVER() FROM t").returns(NULL_RESULT).check();
-            assertQuery("SELECT LAG(val, 3, 0) OVER() FROM t").returns(0).check();
-        }
-        finally {
-            sql("DROP TABLE T");
-        }
-    }
 }

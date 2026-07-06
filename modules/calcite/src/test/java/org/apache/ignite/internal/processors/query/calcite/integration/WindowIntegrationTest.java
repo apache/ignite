@@ -199,4 +199,15 @@ public class WindowIntegrationTest extends AbstractBasicIntegrationTransactional
             .returns("sales", 3L, BigDecimal.valueOf(14700))
             .check();
     }
+
+    /** Test Ignite custom lead/lag functions. */
+    @Test
+    public void testLeadLagFunctions() {
+        assertQuery("SELECT LEAD(empno) OVER() FROM empsalary WHERE empno = 1").returns(NULL_RESULT).check();
+        assertQuery("SELECT LEAD(empno, 2) OVER() FROM empsalary WHERE empno = 1").returns(NULL_RESULT).check();
+        assertQuery("SELECT LEAD(empno, 3, 0) OVER() FROM empsalary WHERE empno = 1").returns(0L).check();
+        assertQuery("SELECT LAG(empno) OVER() FROM empsalary WHERE empno = 1").returns(NULL_RESULT).check();
+        assertQuery("SELECT LAG(empno, 2) OVER() FROM empsalary WHERE empno = 1").returns(NULL_RESULT).check();
+        assertQuery("SELECT LAG(empno, 3, 0) OVER() FROM empsalary WHERE empno = 1").returns(0L).check();
+    }
 }
