@@ -556,9 +556,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             @Override public IgniteFuture<?> onDiscovery(DiscoveryNotification notification) {
                 GridFutureAdapter<?> notificationFut = new GridFutureAdapter<>();
 
-                try (Scope ignored = withRemoteSecurityContext(notification.getNode())) {
-                    discoMsgNotifier.submit(notificationFut, new NotificationTask(notification));
-                }
+                discoMsgNotifier.submit(notificationFut, new NotificationTask(notification));
 
                 IgniteFuture<?> fut = new IgniteFutureImpl<>(notificationFut);
 
@@ -581,16 +579,17 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             /** */
             private Scope withRemoteSecurityContext(ClusterNode node) {
-                if (!ctx.security().isDefaultContext())
-                    return ctx.security().withContext(ctx.security().securityContext().subject().id());
+                if (ctx.security().isDefaultContext()) {
+                    SecurityContext initiatorNodeSecCtx = nodeSecurityContext(
+                        marshaller,
+                        U.resolveClassLoader(ctx.config()),
+                        node
+                    );
 
-                SecurityContext initiatorNodeSecCtx = nodeSecurityContext(
-                    marshaller,
-                    U.resolveClassLoader(ctx.config()),
-                    node
-                );
+                    return ctx.security().withContext(initiatorNodeSecCtx);
+                }
 
-                return ctx.security().withContext(initiatorNodeSecCtx);
+                return Scope.NOOP_SCOPE;
             }
 
             /**
@@ -942,7 +941,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 /** {@inheritDoc} */
                 @Override public void run() {
                     synchronized (discoEvtMux) {
-                        onDiscovery0(notification);
+                        try (Scope ignored = withRemoteSecurityContext(notification.getNode())) {
+                            onDiscovery0(notification);
+                        }
                     }
                 }
             }
