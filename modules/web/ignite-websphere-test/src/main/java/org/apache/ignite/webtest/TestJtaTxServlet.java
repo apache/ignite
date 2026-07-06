@@ -24,8 +24,8 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.RollbackException;
-import jakarta.transaction.TransactionManager;
-import com.ibm.tx.jta.TransactionManagerFactory;
+import jakarta.transaction.UserTransaction;
+import javax.naming.InitialContext;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -56,7 +56,7 @@ public class TestJtaTxServlet extends HttpServlet {
 
             final IgniteCache<Integer, String> cache = ignite.cache("tx");
 
-            TransactionManager tmMgr = TransactionManagerFactory.getTransactionManager();
+            UserTransaction tmMgr = (UserTransaction)new InitialContext().lookup("java:comp/UserTransaction");
 
             tmMgr.begin();
 
