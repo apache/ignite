@@ -62,6 +62,9 @@ public final class PlanningContext implements Context {
     /** */
     private final long plannerTimeout;
 
+    /** Whether technical column access is allowed (for internal queries). */
+    private final boolean allowTechnicalColumns;
+
     /**
      * Private constructor, used by a builder.
      */
@@ -69,7 +72,8 @@ public final class PlanningContext implements Context {
         Context parentCtx,
         String qry,
         @Nullable Object[] parameters,
-        long plannerTimeout
+        long plannerTimeout,
+        boolean allowTechnicalColumns
     ) {
         this.qry = qry;
         this.parameters = parameters;
@@ -77,6 +81,7 @@ public final class PlanningContext implements Context {
         this.parentCtx = parentCtx;
         startTs = U.currentTimeMillis();
         this.plannerTimeout = plannerTimeout;
+        this.allowTechnicalColumns = allowTechnicalColumns;
     }
 
     /**
@@ -113,6 +118,13 @@ public final class PlanningContext implements Context {
      */
     public long plannerTimeout() {
         return plannerTimeout;
+    }
+
+    /**
+     * @return {@code true} if technical column access is allowed during query planning.
+     */
+    public boolean allowTechnicalColumns() {
+        return allowTechnicalColumns;
     }
 
     /**
@@ -221,6 +233,9 @@ public final class PlanningContext implements Context {
         /** */
         private long plannerTimeout;
 
+        /** */
+        private boolean allowTechnicalColumns;
+
         /**
          * @param parentCtx Parent context.
          * @return Builder for chaining.
@@ -260,12 +275,24 @@ public final class PlanningContext implements Context {
         }
 
         /**
+         * Allows technical column access ({@code _ver}, {@code _src}) during query planning.
+         * Must only be used for internal Ignite queries, never for user-facing SQL.
+         *
+         * @param allow {@code true} to allow technical column access.
+         * @return Builder for chaining.
+         */
+        public Builder allowTechnicalColumns(boolean allow) {
+            this.allowTechnicalColumns = allow;
+            return this;
+        }
+
+        /**
          * Builds planner context.
          *
          * @return Planner context.
          */
         public PlanningContext build() {
-            return new PlanningContext(parentCtx, qry, parameters, plannerTimeout);
+            return new PlanningContext(parentCtx, qry, parameters, plannerTimeout, allowTechnicalColumns);
         }
     }
 }
