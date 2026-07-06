@@ -577,24 +577,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 return fut;
             }
 
-            /** */
-            private Scope withRemoteSecurityContext(ClusterNode node) {
-                if (ctx.security().isDefaultContext()) {
-                    SecurityContext initiatorNodeSecCtx = nodeSecurityContext(
-                        marshaller,
-                        U.resolveClassLoader(ctx.config()),
-                        node
-                    );
-
-                    return ctx.security().withContext(initiatorNodeSecCtx);
-                }
-
-                // Verify that the Security Context currently attached to the thread is valid.
-                ctx.security().securityContext();
-
-                return Scope.NOOP_SCOPE;
-            }
-
             /**
              * @param notification Notification.
              */
@@ -949,6 +931,25 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         }
                     }
                 }
+
+                /** */
+                private Scope withRemoteSecurityContext(ClusterNode node) {
+                    if (ctx.security().isDefaultContext()) {
+                        SecurityContext initiatorNodeSecCtx = nodeSecurityContext(
+                            marshaller,
+                            U.resolveClassLoader(ctx.config()),
+                            node
+                        );
+
+                        return ctx.security().withContext(initiatorNodeSecCtx);
+                    }
+
+                    // Verify that the Security Context currently attached to the thread is valid.
+                    ctx.security().securityContext();
+
+                    return Scope.NOOP_SCOPE;
+                }
+
             }
         });
 
