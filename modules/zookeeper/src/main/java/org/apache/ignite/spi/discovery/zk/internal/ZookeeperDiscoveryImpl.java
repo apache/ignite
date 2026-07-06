@@ -1530,22 +1530,20 @@ public class ZookeeperDiscoveryImpl {
 
                 evtData0.finishUnmarshal(msgParser);
 
-                try (Scope ignored = opCtxDispatcher.restoreDistributedAttributes(evtData0.operationContext())) {
-                    // It is possible previous coordinator failed before finished cleanup.
-                    if (evtData0.resolvedCustomMessage() instanceof ZkCommunicationErrorResolveFinishMessage msg) {
-                        try {
-                            ZkCommunicationErrorResolveResult res = unmarshalZip(
-                                ZkDistributedCollectDataFuture.readResult(rtState.zkClient, zkPaths, msg.futId));
+                // It is possible previous coordinator failed before finished cleanup.
+                if (evtData0.resolvedCustomMessage() instanceof ZkCommunicationErrorResolveFinishMessage msg) {
+                    try {
+                        ZkCommunicationErrorResolveResult res = unmarshalZip(
+                            ZkDistributedCollectDataFuture.readResult(rtState.zkClient, zkPaths, msg.futId));
 
-                            deleteAliveNodes(res.killedNodes);
-                        }
-                        catch (KeeperException.NoNodeException ignore) {
-                            // No-op.
-                        }
+                        deleteAliveNodes(res.killedNodes);
                     }
-                    else if (evtData0.resolvedCustomMessage() instanceof ZkForceNodeFailMessage)
-                        deleteAliveNode(((ZkForceNodeFailMessage)evtData0.resolvedCustomMessage()).nodeInternalId);
+                    catch (KeeperException.NoNodeException ignore) {
+                        // No-op.
+                    }
                 }
+                else if (evtData0.resolvedCustomMessage() instanceof ZkForceNodeFailMessage)
+                    deleteAliveNode(((ZkForceNodeFailMessage)evtData0.resolvedCustomMessage()).nodeInternalId);
             }
         }
     }
@@ -2499,7 +2497,7 @@ public class ZookeeperDiscoveryImpl {
 
                 ZkCustomEventMessage cstEvtHldr = (ZkCustomEventMessage)msg;
 
-                generateAndProcessCustomEventOnCoordinator(evtPath, sndNode, cstEvtHldr.originalMsg);
+                generateAndProcessCustomEventOnCoordinator(evtPath, sndNode, cstEvtHldr);
             }
             else {
                 U.warn(log, "Ignore custom event from unknown node: " + sndNodeId);
@@ -2512,15 +2510,17 @@ public class ZookeeperDiscoveryImpl {
     /**
      * @param evtPath Event data path.
      * @param sndNode Sender node.
-     * @param msg Message instance.
+     * @param cstEvtHldr Custom event holder.
      * @throws Exception If failed.
      */
-    private void generateAndProcessCustomEventOnCoordinator(String evtPath,
+    private void generateAndProcessCustomEventOnCoordinator(
+        String evtPath,
         ZookeeperClusterNode sndNode,
-        DiscoverySpiCustomMessage msg
+        ZkCustomEventMessage cstEvtHldr
     ) throws Exception {
         ZookeeperClient zkClient = rtState.zkClient;
         ZkDiscoveryEventsData evtsData = rtState.evtsData;
+        DiscoverySpiCustomMessage msg = cstEvtHldr.originalMsg;
 
         ZookeeperClusterNode failedNode = null;
 
@@ -2577,7 +2577,8 @@ public class ZookeeperDiscoveryImpl {
             evtsData.topVer,
             sndNode.id(),
             msg,
-            evtPath);
+            evtPath
+        );
 
         if (log.isDebugEnabled())
             log.debug("Generated CUSTOM event [evt=" + evtData + ", msg=" + msg + ']');
@@ -2587,6 +2588,8 @@ public class ZookeeperDiscoveryImpl {
         if (msg instanceof ZkInternalMessage)
             processInternalMessage(evtData, (ZkInternalMessage)msg);
         else {
+            evtData.cstEvtHldr = cstEvtHldr;
+
             notifyCustomEvent(evtData, msg);
 
             if (msg.stopProcess()) {
