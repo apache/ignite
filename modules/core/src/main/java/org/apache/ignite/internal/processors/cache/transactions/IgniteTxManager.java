@@ -38,7 +38,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
@@ -3133,16 +3132,23 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                         sendTxSalvage(tx, evtNodeId);
                     }
 
-                    Supplier<Boolean> fullSyncedOp = () -> tx.writeEntries().stream().map(e ->
-                        cctx.cacheContext(e.cacheId())).allMatch(GridCacheContext::syncCommit);
-
                     if (tx.storeWriteThrough() && tx.masterNodeIds().contains(evtNodeId) && tx.eventNodeId().equals(evtNodeId))
                         salvageTx(tx, RECOVERY_FINISH);
                     else if (tx.storeWriteThrough() && !tx.masterNodeIds().contains(cctx.localNodeId())
                         && tx.nodeId().equals(evtNodeId) && tx.state() == PREPARED) {
                         // Delay a commit, on backup. It will be raised further after near or coord. node will confirm it.
-                        // In different from FULL_SYNC modes, appropriate recovery message can never be raized.
-                        if (!fullSyncedOp.get())
+                        // In modes different from FULL_SYNC, appropriate recovery message can never be raized.
+                        // Approach with {@code IgniteTxImplicitSingleStateImpl.syncMode} can`t be used here because
+                        // {@code IgniteTxRemoteStateAdapter#cacheIds} can be empty.
+                        boolean fullSyncedOp = false;
+                        for (IgniteTxEntry ent : tx.writeEntries()) {
+                            if (cctx.cacheContext(ent.cacheId()).syncCommit()) {
+                                fullSyncedOp = true;
+                                break;
+                            }
+                        }
+
+                        if (!fullSyncedOp)
                             cctx.time().schedule(() -> salvageTx(tx, RECOVERY_FINISH), 1000, -1);
                     }
                     else if ((tx.near() && !tx.local() && tx.originatingNodeId().equals(evtNodeId))
