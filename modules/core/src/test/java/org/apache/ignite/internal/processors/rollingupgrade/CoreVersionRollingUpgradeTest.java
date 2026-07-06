@@ -48,15 +48,7 @@ import static org.apache.ignite.internal.processors.security.NodeSecurityContext
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
-public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTest {
-    /** */
-    private static final String NODE_IS_INCOMPATIBLE_WIH_RU_ERR =
-        "The joining node is incompatible with the current state of the version Rolling Upgrade being in progress";
-
-    /** */
-    private static final String MULTIPLE_VER_IN_TOP_ERR =
-        "Cluster version finalization failed. The cluster contains nodes running different versions of one or more components";
-
+public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
     /** */
     @Test
     public void testVersionUpgradeDisabledSingleServer() throws Exception {
@@ -72,7 +64,7 @@ public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTes
 
         checkVersionUpgradeInactive(TEST_DEFAULT_VER);
 
-        String msg = "One or more component versions on the joining node differ from the corresponding versions active in the cluster";
+        String msg = VER_NOT_EQUAL_ERR;
 
         checkJoinFailed(3, "2.18.0", msg);
         checkJoinFailed(3, "2.19.1", msg);
@@ -138,14 +130,14 @@ public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTes
 
         checkVersionUpgradeInProgress(TEST_DEFAULT_VER, null);
 
-        checkJoinFailed(5, "2.18.0", NODE_IS_INCOMPATIBLE_WIH_RU_ERR);
+        checkJoinFailed(5, "2.18.0", VER_INCOMPATIBLE_ERR);
 
         upgradeNodeVersion(0, "2.19.1");
         upgradeNodeVersion(2, "2.19.1");
 
         checkVersionUpgradeInProgress(TEST_DEFAULT_VER, "2.19.1");
 
-        checkJoinFailed(5, "2.19.2", NODE_IS_INCOMPATIBLE_WIH_RU_ERR);
+        checkJoinFailed(5, "2.19.2", VER_INCOMPATIBLE_ERR);
 
         restartNode(3);
         restartNode(4);
@@ -234,15 +226,15 @@ public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTes
         checkJoinSuccess(3, TEST_DEFAULT_VER, false);
         checkJoinSuccess(4, TEST_DEFAULT_VER, true);
 
-        checkUpgradeFailed(2, "2.19.3", NODE_IS_INCOMPATIBLE_WIH_RU_ERR);
-        checkUpgradeFailed(1, "2.19.3", NODE_IS_INCOMPATIBLE_WIH_RU_ERR);
+        checkUpgradeFailed(2, "2.19.3", VER_INCOMPATIBLE_ERR);
+        checkUpgradeFailed(1, "2.19.3", VER_INCOMPATIBLE_ERR);
 
         upgradeNodeVersion(3, "2.19.2");
         upgradeNodeVersion(4, "2.19.2");
         checkJoinSuccess(0, "2.19.3", false);
 
-        checkUpgradeFailed(2, TEST_DEFAULT_VER, NODE_IS_INCOMPATIBLE_WIH_RU_ERR);
-        checkUpgradeFailed(1, TEST_DEFAULT_VER, NODE_IS_INCOMPATIBLE_WIH_RU_ERR);
+        checkUpgradeFailed(2, TEST_DEFAULT_VER, VER_INCOMPATIBLE_ERR);
+        checkUpgradeFailed(1, TEST_DEFAULT_VER, VER_INCOMPATIBLE_ERR);
 
         restartNode(1);
         restartNode(2);
@@ -292,8 +284,8 @@ public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTes
 
         upgradeNodeVersion(0, "2.19.3");
 
-        checkUpgradeFailed(1, "2.19.2", NODE_IS_INCOMPATIBLE_WIH_RU_ERR);
-        checkUpgradeFailed(2, "2.19.2", NODE_IS_INCOMPATIBLE_WIH_RU_ERR);
+        checkUpgradeFailed(1, "2.19.2", VER_INCOMPATIBLE_ERR);
+        checkUpgradeFailed(2, "2.19.2", VER_INCOMPATIBLE_ERR);
 
         upgradeNodeVersion(1, "2.19.3");
         upgradeNodeVersion(2, "2.19.3");
@@ -308,10 +300,7 @@ public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTes
 
         ru(1).enableVersionUpgrade();
 
-        checkJoinFailed(3, "2.20.0",
-            "Ignite component Rolling Upgrade is not supported between the component version active in the cluster and " +
-                "the version running on the joining node"
-        );
+        checkJoinFailed(3, "2.20.0", RU_UNAVAILABLE_BETWEEN_VER_ERR);
 
         forAllNodes(nodeIdx -> upgradeNodeVersion(nodeIdx, "2.19.3", "2.20.1"));
 

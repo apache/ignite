@@ -44,13 +44,13 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.managers.eventstorage.HighPriorityListener;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
-import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteComponentFeatures;
-import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteComponentFeaturesProvider;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteComponentFeatureSet;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteComponentFeatureSetProvider;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFeature;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeature;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureSet;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.TestIgniteReleaseFeatures_2_18_0;
-import org.apache.ignite.internal.processors.rollingupgrade.feature.TestPluginComponentFeaturesProvider;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.TestPluginComponentFeatureSetProvider;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.TestPluginFeature;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.TestPluginReleaseFeatures_1_0_0;
 import org.apache.ignite.internal.util.lang.ConsumerX;
@@ -128,6 +128,22 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
     /** */
     protected static final String TEST_DEFAULT_VER = "2.19.0";
 
+    /** */
+    protected static final String VER_INCOMPATIBLE_ERR =
+        "Joining node is not allowed to join the cluster because it is running a component with an incompatible version";
+
+    /** */
+    protected static final String MULTIPLE_VER_IN_TOP_ERR =
+        "Cluster version finalization failed. The cluster contains nodes running different versions of one or more components";
+
+    /** */
+    protected static final String VER_NOT_EQUAL_ERR =
+        "One or more component versions on the joining node differ from the corresponding versions active in the cluster";
+
+    /** */
+    protected static final String RU_UNAVAILABLE_BETWEEN_VER_ERR = "Ignite component Rolling Upgrade is not supported" +
+        " between the component version active in the cluster and the version running on the joining node";
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return getConfiguration(igniteInstanceName, TEST_DEFAULT_VER);
@@ -162,7 +178,7 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
 
         TestVersions testVersions = TestVersions.parse(ver);
 
-        IgniteComponentFeatures testCoreFeatures = new IgniteComponentFeatures(
+        IgniteComponentFeatureSet testCoreFeatures = new IgniteComponentFeatureSet(
             COMPONENT_NAME,
             IgniteProductVersion.fromString(testVersions.coreVersion()),
             IgniteFeatureSet.buildFrom(readDeclaredCoreFeatures(testVersions.coreVersion()))
@@ -177,8 +193,8 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
             @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
                 if (testVersions.containsPlugin()) {
                     registry.registerExtension(
-                        IgniteComponentFeaturesProvider.class,
-                        new TestPluginComponentFeaturesProvider(testVersions.pluginVersion()));
+                        IgniteComponentFeatureSetProvider.class,
+                        new TestPluginComponentFeatureSetProvider(testVersions.pluginVersion()));
                 }
             }
 
@@ -478,7 +494,7 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
     /** */
     String resolveNodeCompoundVersion(int nodeIdx) {
         return ru(nodeIdx).features().localVersionFeatures().values().stream()
-            .sorted(Comparator.comparing(IgniteComponentFeatures::componentName))
+            .sorted(Comparator.comparing(IgniteComponentFeatureSet::componentName))
             .map(f -> semanticVersion(f.version()))
             .collect(Collectors.joining("|"));
     }
@@ -493,7 +509,7 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
             assertTrue(ru(ignite).isVersionUpgradeEnabled());
 
             expLogicalVersions.cmpVersions.forEach((cmp, ver) -> {
-                IgniteComponentFeatures cmpFeatures = ru(ignite).features().activeComponentFeatures(cmp);
+                IgniteComponentFeatureSet cmpFeatures = ru(ignite).features().activeComponentFeatures(cmp);
 
                 assertEquals(ver, cmpFeatures == null ? null : semanticVersion(cmpFeatures.version()));
             });
@@ -588,7 +604,7 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
         public static CountDownLatch nodeJoinValidationCompletedLatch;
 
         /** */
-        public TestRollingUpgradeProcessor(GridKernalContext ctx, IgniteComponentFeatures testCoreFeatures) {
+        public TestRollingUpgradeProcessor(GridKernalContext ctx, IgniteComponentFeatureSet testCoreFeatures) {
             super(ctx, testCoreFeatures);
 
             ctx.event().addLocalEventListener(new TestNodeValidationFailedEventListener(), EVT_NODE_VALIDATION_FAILED);

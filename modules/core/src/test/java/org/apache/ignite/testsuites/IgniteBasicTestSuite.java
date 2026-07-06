@@ -63,7 +63,7 @@ import org.apache.ignite.internal.processors.odbc.ClientSessionOutboundQueueLimi
 import org.apache.ignite.internal.processors.odbc.OdbcConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.odbc.OdbcEscapeSequenceSelfTest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtilsTest;
-import org.apache.ignite.internal.processors.rollingupgrade.ClusterVersionsRollingUpgradeTest;
+import org.apache.ignite.internal.processors.rollingupgrade.CoreVersionRollingUpgradeTest;
 import org.apache.ignite.internal.processors.rollingupgrade.PluginVersionRollingUpgradeTest;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureSetTest;
 import org.apache.ignite.internal.product.GridProductVersionSelfTest;
@@ -106,7 +106,7 @@ import org.junit.runners.Suite;
     GridMessagingSelfTest.class,
     GridMessagingNoPeerClassLoadingSelfTest.class,
 
-    ClusterVersionsRollingUpgradeTest.class,
+    CoreVersionRollingUpgradeTest.class,
     PluginVersionRollingUpgradeTest.class,
     GridProductVersionSelfTest.class,
     GridAffinityAssignmentV2Test.class,

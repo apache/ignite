@@ -25,9 +25,6 @@ import static org.apache.ignite.internal.IgniteVersionUtils.semanticVersion;
 /** */
 class IgniteComponentUpgradeState {
     /** */
-    final String cmpName;
-
-    /** */
     @Nullable final IgniteProductVersion srcVer;
 
     /** */
@@ -38,12 +35,10 @@ class IgniteComponentUpgradeState {
 
     /** */
     IgniteComponentUpgradeState(
-        String cmpName,
         @Nullable IgniteProductVersion srcVer,
         @Nullable IgniteProductVersion targetVer,
         boolean isClusterVerHomogenous
     ) {
-        this.cmpName = cmpName;
         this.srcVer = srcVer;
         this.targetVer = targetVer;
         this.isClusterVerHomogenous = isClusterVerHomogenous;
@@ -59,11 +54,7 @@ class IgniteComponentUpgradeState {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        StringBuilder sb = new StringBuilder("[componentName=");
-
-        sb.append(cmpName);
-
-        sb.append(", compatibleComponentVersions=");
+        StringBuilder sb = new StringBuilder();
 
         if (isClusterVerHomogenous)
             if (srcVer == null)

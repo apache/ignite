@@ -237,7 +237,7 @@ import org.apache.ignite.internal.processors.query.stat.messages.StatisticsRespo
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultRequest;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultResponse;
 import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeClusterData;
-import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteComponentFeatures;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteComponentFeatureSet;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureSet;
 import org.apache.ignite.internal.processors.security.SecurityContextWrapper;
 import org.apache.ignite.internal.processors.service.ServiceChangeBatchRequest;
@@ -696,7 +696,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         // [13600 - 13700]: Rolling Upgrade messages.
         msgIdx = 13600;
         withNoSchema(IgniteFeatureSet.class);
-        withNoSchema(IgniteComponentFeatures.class);
+        withNoSchema(IgniteComponentFeatureSet.class);
         withNoSchema(RollingUpgradeClusterData.class);
 
         assert msgIdx <= MAX_MESSAGE_ID;

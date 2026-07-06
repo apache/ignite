@@ -29,16 +29,16 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Represents a set of {@link IgniteFeature}s supported by an Ignite instance. Ignite is divided into independent components.
+ * Represents a set of {@link IgniteFeature}s supported by an Ignite node. Ignite is divided into independent components.
  * Each component is associated with its version and a set of {@link IgniteFeature}s.
  */
-public class IgniteFeatures {
+public class IgniteNodeFeatureSet {
     /** */
     @GridToStringExclude
-    private final Map<String, IgniteComponentFeatures> features;
+    private final Map<String, IgniteComponentFeatureSet> features;
 
     /** */
-    public IgniteFeatures(Collection<IgniteComponentFeatures> features) {
+    public IgniteNodeFeatureSet(Collection<IgniteComponentFeatureSet> features) {
         this.features = indexByComponentName(features);
     }
 
@@ -48,21 +48,21 @@ public class IgniteFeatures {
     }
 
     /** */
-    public Collection<IgniteComponentFeatures> values() {
+    public Collection<IgniteComponentFeatureSet> values() {
         return Collections.unmodifiableCollection(features.values());
     }
 
     /** */
-    @Nullable public IgniteComponentFeatures componentFeatures(String cmpName) {
+    @Nullable public IgniteComponentFeatureSet componentFeatures(String cmpName) {
         return features.get(cmpName);
     }
 
     /** */
-    public boolean containsAll(IgniteFeatures other) {
+    public boolean containsAll(IgniteNodeFeatureSet other) {
         if (!components().containsAll(other.components()))
             return false;
 
-        for (IgniteComponentFeatures otherCmpFeatures : other.features.values()) {
+        for (IgniteComponentFeatureSet otherCmpFeatures : other.features.values()) {
             if (!otherCmpFeatures.equals(features.get(otherCmpFeatures.componentName())))
                 return false;
         }
@@ -72,7 +72,7 @@ public class IgniteFeatures {
 
     /** */
     public boolean contains(IgniteFeature feature) {
-        IgniteComponentFeatures cmpFeatures = features.get(feature.componentName());
+        IgniteComponentFeatureSet cmpFeatures = features.get(feature.componentName());
 
         return cmpFeatures != null && cmpFeatures.contains(feature.id());
     }
@@ -82,7 +82,7 @@ public class IgniteFeatures {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        IgniteFeatures other = (IgniteFeatures)o;
+        IgniteNodeFeatureSet other = (IgniteNodeFeatureSet)o;
 
         return Objects.equals(features, other.features);
     }
@@ -94,14 +94,14 @@ public class IgniteFeatures {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return features.values().stream().map(IgniteComponentFeatures::toString).collect(Collectors.joining(", ", "[", "]"));
+        return features.values().stream().map(IgniteComponentFeatureSet::toString).collect(Collectors.joining(", ", "[", "]"));
     }
 
     /** */
-    private static Map<String, IgniteComponentFeatures> indexByComponentName(Collection<IgniteComponentFeatures> features) {
-        Map<String, IgniteComponentFeatures> res = new HashMap<>();
+    private static Map<String, IgniteComponentFeatureSet> indexByComponentName(Collection<IgniteComponentFeatureSet> features) {
+        Map<String, IgniteComponentFeatureSet> res = new HashMap<>();
 
-        for (IgniteComponentFeatures compFeatures : features) {
+        for (IgniteComponentFeatureSet compFeatures : features) {
             if (res.put(compFeatures.componentName(), compFeatures) != null)
                 throw new IgniteException("Duplicated component name [cmpName=" + compFeatures.componentName() + ']');
         }

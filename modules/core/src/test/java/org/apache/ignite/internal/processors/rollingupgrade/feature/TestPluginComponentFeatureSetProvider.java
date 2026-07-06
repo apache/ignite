@@ -23,12 +23,12 @@ import org.apache.ignite.internal.processors.rollingupgrade.AbstractRollingUpgra
 import org.apache.ignite.lang.IgniteProductVersion;
 
 /** */
-public class TestPluginComponentFeaturesProvider implements IgniteComponentFeaturesProvider {
+public class TestPluginComponentFeatureSetProvider implements IgniteComponentFeatureSetProvider {
     /** */
     private final String pluginVer;
 
     /** */
-    public TestPluginComponentFeaturesProvider(String pluginVer) {
+    public TestPluginComponentFeatureSetProvider(String pluginVer) {
         this.pluginVer = pluginVer;
     }
 

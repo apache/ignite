@@ -30,7 +30,7 @@ package org.apache.ignite.internal.processors.rollingupgrade.feature;
  * they are handled consistently throughout the Rolling Upgrade process.
  *
  * @see IgniteFeatureSet
- * @see IgniteComponentFeaturesProvider
+ * @see IgniteComponentFeatureSetProvider
  */
 public interface IgniteFeature {
     /**

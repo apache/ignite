@@ -28,7 +28,7 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** Represents a set of {@link IgniteFeature}s available for the specific Ignite component version. */
-public class IgniteComponentFeatures implements Message, Externalizable {
+public class IgniteComponentFeatureSet implements Message, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -45,12 +45,12 @@ public class IgniteComponentFeatures implements Message, Externalizable {
     IgniteFeatureSet features;
 
     /** */
-    public IgniteComponentFeatures() {
+    public IgniteComponentFeatureSet() {
         // No-op.
     }
 
     /** */
-    public IgniteComponentFeatures(String compName, IgniteProductVersion compVer, IgniteFeatureSet features) {
+    public IgniteComponentFeatureSet(String compName, IgniteProductVersion compVer, IgniteFeatureSet features) {
         A.notNull(compName, "component name");
         A.notNull(compVer, "component version");
         A.notNull(features, "component features");
@@ -76,7 +76,7 @@ public class IgniteComponentFeatures implements Message, Externalizable {
     }
 
     /** */
-    public boolean isUpgradableTo(IgniteComponentFeatures target) {
+    public boolean isUpgradableTo(IgniteComponentFeatureSet target) {
         return Objects.equals(compName, target.compName) && features.isUpgradableTo(target.features);
     }
 
@@ -99,7 +99,7 @@ public class IgniteComponentFeatures implements Message, Externalizable {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        IgniteComponentFeatures other = (IgniteComponentFeatures)o;
+        IgniteComponentFeatureSet other = (IgniteComponentFeatureSet)o;
 
         return Objects.equals(compName, other.compName)
             && Objects.equals(features, other.features)

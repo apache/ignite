@@ -27,7 +27,7 @@ import org.apache.ignite.plugin.Extension;
  *
  * @see IgniteFeature
  */
-public interface IgniteComponentFeaturesProvider extends Extension {
+public interface IgniteComponentFeatureSetProvider extends Extension {
     /** The name of the Ignite component that provides its own set of {@link IgniteFeature}s. */
     public String componentName();
 

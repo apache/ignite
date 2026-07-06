@@ -26,9 +26,7 @@ public class PluginVersionRollingUpgradeTest extends AbstractRollingUpgradeTest 
     public void testUpgradeDisabledJoinWithExtraComponent() throws Exception {
         startGrid(0, "2.19.0");
 
-        String errMsg = "One or more component versions on the joining node differ from the corresponding versions active in the cluster";
-
-        checkJoinFailed(1, "2.19.0 | 1.0.0", errMsg);
+        checkJoinFailed(1, "2.19.0 | 1.0.0", VER_NOT_EQUAL_ERR);
     }
 
     /** */
@@ -36,11 +34,9 @@ public class PluginVersionRollingUpgradeTest extends AbstractRollingUpgradeTest 
     public void testUpgradeDisabledJoinWithMissingComponent() throws Exception {
         startGrid(0, "2.19.0 | 1.0.0");
 
-        checkJoinFailed(1, "2.19.0", false,
-            "One or more component versions on the joining node differ from the corresponding versions active in the cluster");
+        checkJoinFailed(1, "2.19.0", false, VER_NOT_EQUAL_ERR);
 
-        checkJoinFailed(1, "2.19.0 | 2.0.0",
-            "One or more component versions on the joining node differ from the corresponding versions active in the cluster");
+        checkJoinFailed(1, "2.19.0 | 2.0.0", VER_NOT_EQUAL_ERR);
 
         checkJoinSuccess(1, "2.19.0", true);
     }
@@ -103,13 +99,11 @@ public class PluginVersionRollingUpgradeTest extends AbstractRollingUpgradeTest 
         ru(1).enableVersionUpgrade();
 
         startClientGrid(3, "2.19.0 | 2.0.0");
-        checkVersionFinalizationFailed(0, "Cluster version finalization failed. The cluster contains nodes running " +
-            "different versions of one or more components");
+        checkVersionFinalizationFailed(0, MULTIPLE_VER_IN_TOP_ERR);
         stopGrid(3);
 
         startGrid(4, "2.19.0 | 2.0.0");
-        checkVersionFinalizationFailed(0, "Cluster version finalization failed. The cluster contains nodes running " +
-            "different versions of one or more components");
+        checkVersionFinalizationFailed(0, MULTIPLE_VER_IN_TOP_ERR);
         stopGrid(4);
 
         startClientGrid(3, "2.19.0 | 1.0.0");
@@ -128,17 +122,11 @@ public class PluginVersionRollingUpgradeTest extends AbstractRollingUpgradeTest 
         checkJoinFailed(3, "2.20.0", false, "Some components active in the cluster are not configured on the joining server node");
         checkJoinSuccess(3, "2.20.0", true);
 
-        checkJoinFailed(4, "2.20.0 | 3.0.0",
-            "Ignite component Rolling Upgrade is not supported between the component version active in the cluster and " +
-                "the version running on the joining node"
-        );
+        checkJoinFailed(4, "2.20.0 | 3.0.0", RU_UNAVAILABLE_BETWEEN_VER_ERR);
 
         checkJoinSuccess(4, "2.20.0 | 2.0.0", true);
 
-        checkJoinFailed(5, "2.20.0 | 3.0.0",
-            "The joining node is incompatible with the current state of the version Rolling Upgrade being " +
-                "in progress."
-        );
+        checkJoinFailed(5, "2.20.0 | 3.0.0", VER_INCOMPATIBLE_ERR);
 
         upgradeNodeVersion(0, "2.19.0 | 1.0.0", "2.20.0 | 2.0.0");
         upgradeNodeVersion(1, "2.19.0 | 1.0.0", "2.20.0 | 2.0.0");
