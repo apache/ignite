@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
@@ -48,6 +49,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTab
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.TechnicalColumns;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
@@ -108,6 +110,35 @@ public class TechnicalColumnsScanTest extends GridCommonAbstractTest {
         assertTechnicalColumns(idx.scan(scanCtx.ectx, scanCtx.grp, null, requiredColumns(tbl)), tbl);
     }
 
+    /** */
+    @Test
+    public void testTechnicalColumnsAreHiddenFromSql() throws Exception {
+        createAndPopulatePersonTable();
+
+        List<List<?>> rows = sql("SELECT * FROM Person");
+
+        assertEquals(30, rows.size());
+        assertEquals(3, rows.get(0).size());
+
+        assertTechnicalColumnAccessForbidden("SELECT _ver FROM Person");
+        assertTechnicalColumnAccessForbidden("SELECT _src FROM Person");
+        assertTechnicalColumnAccessForbidden("SELECT p._ver FROM Person p");
+        assertTechnicalColumnAccessForbidden("SELECT id FROM Person WHERE _src IS NOT NULL");
+        assertTechnicalColumnAccessForbidden("SELECT id FROM Person ORDER BY _ver");
+        assertTechnicalColumnAccessForbidden("SELECT id FROM Person ORDER BY _ver DESC");
+        assertTechnicalColumnAccessForbidden("SELECT id FROM Person ORDER BY _src NULLS FIRST");
+        assertTechnicalColumnAccessForbidden("SELECT id FROM Person GROUP BY _ver");
+        assertTechnicalColumnAccessForbidden("SELECT p1.id FROM Person p1 JOIN Person p2 ON p1._ver = p2._ver");
+        assertTechnicalColumnAccessForbidden("SELECT CASE WHEN _ver IS NOT NULL THEN 1 ELSE 0 END FROM Person");
+        assertTechnicalColumnAccessForbidden("SELECT CAST(_ver AS VARCHAR) FROM Person");
+        assertTechnicalColumnAccessForbidden("SELECT id FROM Person WHERE (SELECT _ver FROM Person WHERE id = 1) IS NOT NULL");
+    }
+
+    /** */
+    private void assertTechnicalColumnAccessForbidden(String qry) {
+        GridTestUtils.assertThrowsAnyCause(log, () -> sql(qry), IgniteSQLException.class,
+            "Cannot access technical column");
+    }
 
     /** */
     private void createAndPopulatePersonTable() throws Exception {

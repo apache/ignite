@@ -248,6 +248,29 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     }
 
     /** {@inheritDoc} */
+    @Override protected void validateOrderList(SqlSelect select) {
+        super.validateOrderList(select);
+
+        SqlNodeList orderList = select.getOrderList();
+
+        if (orderList == null)
+            return;
+
+        for (SqlNode orderItem : orderList) {
+            SqlNode node = orderItem;
+
+            // Unwrap DESC / NULLS FIRST / NULLS LAST wrappers to get the actual expression.
+            while (node.getKind() == SqlKind.DESCENDING
+                || node.getKind() == SqlKind.NULLS_FIRST
+                || node.getKind() == SqlKind.NULLS_LAST) {
+                node = ((SqlCall)node).operand(0);
+            }
+
+            validateTechnicalColumnAccess(node);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override protected void validateNamespace(SqlValidatorNamespace namespace, RelDataType targetRowType) {
         SqlValidatorTable table = namespace.getTable();
 
@@ -561,6 +584,8 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** {@inheritDoc} */
     @Override public RelDataType deriveType(SqlValidatorScope scope, SqlNode expr) {
+        validateTechnicalColumnAccess(expr);
+
         if (expr instanceof SqlDynamicParam) {
             RelDataType type = deriveDynamicParameterType((SqlDynamicParam)expr, nullType);
 
@@ -569,6 +594,21 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         }
 
         return super.deriveType(scope, expr);
+    }
+
+    /** */
+    private void validateTechnicalColumnAccess(SqlNode expr) {
+        if (!(expr instanceof SqlIdentifier))
+            return;
+
+        SqlIdentifier id = (SqlIdentifier)expr;
+
+        String fieldName = id.names.get(id.names.size() - 1);
+
+        if (id.isStar() || !TechnicalColumns.isTechnicalFieldNameIgnoreCase(fieldName))
+            return;
+
+        throw newValidationError(id, IgniteResource.INSTANCE.cannotAccessTechnicalColumn(id.toString()));
     }
 
     /** @return A derived type or {@code null} if unable to determine. */
