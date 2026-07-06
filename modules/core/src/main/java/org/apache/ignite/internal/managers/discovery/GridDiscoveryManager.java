@@ -89,6 +89,7 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IGridClusterStateProcessor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
 import org.apache.ignite.internal.systemview.ClusterNodeViewWalker;
 import org.apache.ignite.internal.systemview.NodeAttributeViewWalker;
@@ -122,7 +123,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -180,7 +180,6 @@ import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.isSecurityCompatibilityMode;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeConsistentIds;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.NOOP;
@@ -537,8 +536,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         spi.setListener(new DiscoverySpiListener() {
             private long gridStartTime;
 
-            private final Marshaller marshaller = ctx.marshallerContext().jdkMarshaller();
-
             /** {@inheritDoc} */
             @Override public void onLocalNodeInitialized(ClusterNode locNode) {
                 for (IgniteInClosure<ClusterNode> lsnr : locNodeInitLsnrs)
@@ -556,9 +553,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             @Override public IgniteFuture<?> onDiscovery(DiscoveryNotification notification) {
                 GridFutureAdapter<?> notificationFut = new GridFutureAdapter<>();
 
-                discoMsgNotifier.submit(notificationFut, ctx.security().enabled()
-                    ? new SecurityAwareNotificationTask(notification)
-                    : new NotificationTask(notification));
+                try (Scope ignored = SecurityUtils.withRemoteSecurityContext(ctx.security(), notification.getNode().id())) {
+                    discoMsgNotifier.submit(notificationFut, new NotificationTask(notification));
+                }
 
                 IgniteFuture<?> fut = new IgniteFutureImpl<>(notificationFut);
 
@@ -915,39 +912,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     discoEvtHnd.awaitDisconnectEvent();
             }
 
-            /**
-             * Extends {@link NotificationTask} to run in a security context owned by the initiator of the
-             * discovery event.
-             */
-            class SecurityAwareNotificationTask extends NotificationTask {
-                /** */
-                public SecurityAwareNotificationTask(DiscoveryNotification notification) {
-                    super(notification);
-                }
-
-                /** */
-                @Override public void run() {
-                    if (!ctx.security().isDefaultContext()) {
-                        try (Scope ignored = ctx.security().withContext(ctx.security().securityContext().subject().id())) {
-                            super.run();
-                        }
-                    }
-                    else {
-                        SecurityContext initiatorNodeSecCtx = nodeSecurityContext(
-                            marshaller,
-                            U.resolveClassLoader(ctx.config()),
-                            notification.getNode()
-                        );
-
-                        try (Scope ignored = ctx.security().withContext(initiatorNodeSecCtx)) {
-                            super.run();
-                        }
-                    }
-                }
-            }
-
             /** Represents task to handle discovery notification asynchronously. */
-            class NotificationTask implements Runnable {
+            private class NotificationTask implements Runnable {
                 /** */
                 protected final DiscoveryNotification notification;
 

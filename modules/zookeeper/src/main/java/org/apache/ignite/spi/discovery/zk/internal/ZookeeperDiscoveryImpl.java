@@ -2499,9 +2499,7 @@ public class ZookeeperDiscoveryImpl {
 
                 ZkCustomEventMessage cstEvtHldr = (ZkCustomEventMessage)msg;
 
-                try (Scope ignored = opCtxDispatcher.restoreDistributedAttributes(cstEvtHldr.opCtxMsg)) {
-                    generateAndProcessCustomEventOnCoordinator(evtPath, sndNode, cstEvtHldr.originalMsg);
-                }
+                generateAndProcessCustomEventOnCoordinator(evtPath, sndNode, cstEvtHldr.originalMsg);
             }
             else {
                 U.warn(log, "Ignore custom event from unknown node: " + sndNodeId);
@@ -2790,15 +2788,13 @@ public class ZookeeperDiscoveryImpl {
                             }
                         }
 
-                        try (Scope ignored = opCtxDispatcher.restoreDistributedAttributes(evtData0.operationContext())) {
-                            if (evtData0.resolvedCustomMessage() instanceof ZkInternalMessage)
-                                processInternalMessage(evtData0, (ZkInternalMessage)evtData0.resolvedCustomMessage());
-                            else {
-                                notifyCustomEvent(evtData0, evtData0.resolvedCustomMessage());
+                        if (evtData0.resolvedCustomMessage() instanceof ZkInternalMessage)
+                            processInternalMessage(evtData0, (ZkInternalMessage)evtData0.resolvedCustomMessage());
+                        else {
+                            notifyCustomEvent(evtData0, evtData0.resolvedCustomMessage());
 
-                                if (!evtData0.ackEvent())
-                                    updateNodeInfo = true;
-                            }
+                            if (!evtData0.ackEvent())
+                                updateNodeInfo = true;
                         }
 
                         break;
@@ -3117,19 +3113,12 @@ public class ZookeeperDiscoveryImpl {
             processCommunicationErrorResolveFinishMessage(
                 (ZkCommunicationErrorResolveFinishMessage)msg);
         }
-        else if (msg instanceof ZkNoServersMessage)
-            processNoServersMessage((ZkNoServersMessage)msg);
-    }
+        else if (msg instanceof ZkNoServersMessage) {
+            assert locNode.isClient() : locNode;
 
-    /**
-     * @param msg Message.
-     * @throws Exception If failed.
-     */
-    private void processNoServersMessage(ZkNoServersMessage msg) throws Exception {
-        assert locNode.isClient() : locNode;
-
-        throw localNodeFail("All server nodes failed, client node disconnected " +
-            "(received 'no-servers' message) [locId=" + locNode.id() + ']', true);
+            throw localNodeFail("All server nodes failed, client node disconnected " +
+                "(received 'no-servers' message) [locId=" + locNode.id() + ']', true);
+        }
     }
 
     /**
@@ -3529,23 +3518,27 @@ public class ZookeeperDiscoveryImpl {
         if (log.isDebugEnabled())
             log.debug(" [topVer=" + evtData.topologyVersion() + ", msg=" + msg + ']');
 
-        final ZookeeperClusterNode sndNode = rtState.top.nodesById.get(evtData.sndNodeId);
+        ZookeeperClusterNode sndNode = rtState.top.nodesById.get(evtData.sndNodeId);
 
         assert sndNode != null : evtData;
 
-        final List<ClusterNode> topSnapshot = rtState.top.topologySnapshot();
+        List<ClusterNode> topSnapshot = rtState.top.topologySnapshot();
 
-        IgniteFuture<?> fut = lsnr.onDiscovery(
-            new DiscoveryNotification(
-                DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
-                evtData.topologyVersion(),
-                sndNode,
-                topSnapshot,
-                Collections.emptyNavigableMap(),
-                msg,
-                null
-            )
-        );
+        IgniteFuture<?> fut;
+
+        try (Scope ignored = opCtxDispatcher.restoreDistributedAttributes(evtData.operationContext())) {
+            fut = lsnr.onDiscovery(
+                new DiscoveryNotification(
+                    DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
+                    evtData.topologyVersion(),
+                    sndNode,
+                    topSnapshot,
+                    Collections.emptyNavigableMap(),
+                    msg,
+                    null
+                )
+            );
+        }
 
         if (msg != null && msg.isMutable())
             fut.get();
