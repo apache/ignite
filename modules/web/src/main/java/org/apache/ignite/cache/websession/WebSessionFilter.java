@@ -862,7 +862,6 @@ public class WebSessionFilter implements Filter {
         }
     }
 
-
     /**
      * Handles cache operation exception.
      * @param e Exception
