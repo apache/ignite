@@ -873,6 +873,7 @@
                                         <!-- RAT 0.17 bug: creates temp dir NameSet* in basedir for case-sensitivity check -->
                                         <inputExclude>NameSet*</inputExclude>
                                         <inputExclude>**/.gitignore</inputExclude>
+                                        <inputExclude>**/.git</inputExclude>
                                         <inputExclude>**/.asf.yaml</inputExclude>
                                         <inputExclude>.travis.yml</inputExclude>
                                         <inputExclude>.github/PULL_REQUEST_TEMPLATE.md</inputExclude>

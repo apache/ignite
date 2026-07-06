@@ -38,8 +38,8 @@ import org.apache.ignite.client.ClientPartitionAwarenessMapperFactory;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
@@ -365,7 +365,7 @@ public class ClientCacheAffinityContext {
             ClientPartitionAwarenessMapperHolder hld = cacheKeyMapperFactoryMap.computeIfAbsent(ClientUtils.cacheId(cacheName),
                 id -> new ClientPartitionAwarenessMapperHolder(cacheName));
 
-            hld.ts = U.currentTimeMillis();
+            hld.ts = CommonUtils.currentTimeMillis();
         }
     }
 

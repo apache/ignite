@@ -52,8 +52,8 @@ import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
 import org.apache.ignite.internal.client.thin.io.gridnioserver.GridNioClientConnectionMultiplexer;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.NullLogger;
 import org.jetbrains.annotations.Nullable;
 
@@ -1133,7 +1133,7 @@ final class ReliableChannelImpl implements ReliableChannelEx {
          */
         private synchronized void closeChannel() {
             if (ch != null) {
-                U.closeQuiet(ch);
+                CommonUtils.closeQuiet(ch);
 
                 ch = null;
 
