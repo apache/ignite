@@ -738,7 +738,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 }
 
                 if (type == EVT_DISCOVERY_CUSTOM_EVT) {
-                    for (Class cls = customMsg.getClass(); cls != null; cls = cls.getSuperclass()) {
+                    for (Class<?> cls = customMsg.getClass(); cls != null; cls = cls.getSuperclass()) {
                         List<CustomEventListener<DiscoveryCustomMessage>> list = customEvtLsnrs.get(cls);
 
                         if (list != null) {
