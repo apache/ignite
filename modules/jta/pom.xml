@@ -34,12 +34,6 @@
 
     <url>http://ignite.apache.org</url>
 
-    <!--    // TODO: fix to IGNITE-28807-->
-
-    <properties>
-        <maven.test.skip>true</maven.test.skip>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
@@ -59,16 +53,16 @@
         </dependency>
 
         <dependency>
-            <groupId>org.ow2.jotm</groupId>
-            <artifactId>jotm-core</artifactId>
-            <version>${jotm.version}</version>
+            <groupId>org.jboss.narayana.jta</groupId>
+            <artifactId>narayana-jta</artifactId>
+            <version>${narayana.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
-            <groupId>javax.resource</groupId>
-            <artifactId>connector-api</artifactId>
-            <version>1.5</version>
+            <groupId>org.jboss.logging</groupId>
+            <artifactId>jboss-logging</artifactId>
+            <version>${jboss.logging.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -103,15 +97,6 @@
             <groupId>org.apache.tomcat</groupId>
             <artifactId>catalina</artifactId>
             <version>6.0.43</version>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- JDK9+ -->
-
-        <dependency>
-            <groupId>org.jboss.spec.javax.rmi</groupId>
-            <artifactId>jboss-rmi-api_1.0_spec</artifactId>
-            <version>${jboss.rmi.version}</version>
             <scope>test</scope>
         </dependency>
 
