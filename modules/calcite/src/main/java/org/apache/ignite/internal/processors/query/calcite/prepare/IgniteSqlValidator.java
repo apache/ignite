@@ -70,6 +70,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
+import org.apache.ignite.internal.processors.query.calcite.schema.TechnicalColumns;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlDecimalLiteral;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.OtherType;
@@ -554,7 +555,8 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     /** */
     private boolean isSystemFieldName(String alias) {
         return QueryUtils.KEY_FIELD_NAME.equalsIgnoreCase(alias)
-            || QueryUtils.VAL_FIELD_NAME.equalsIgnoreCase(alias);
+            || QueryUtils.VAL_FIELD_NAME.equalsIgnoreCase(alias)
+            || TechnicalColumns.isTechnicalFieldNameIgnoreCase(alias);
     }
 
     /** {@inheritDoc} */
