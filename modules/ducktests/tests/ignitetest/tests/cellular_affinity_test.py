@@ -69,10 +69,10 @@ class CellularAffinity(IgniteTest):
     Tests Cellular Affinity scenarios.
     """
     NODES_PER_CELL = 3
-    ZOOKEPER_CLUSTER_SIZE = 3
+    ZOOKEEPER_CLUSTER_SIZE = 3
 
     FAILURE_DETECTION_TIMEOUT = 2000
-    ZOOKEPER_SESSION_TIMEOUT = FAILURE_DETECTION_TIMEOUT
+    ZOOKEEPER_SESSION_TIMEOUT = FAILURE_DETECTION_TIMEOUT
 
     ATTRIBUTE = "CELL"
 
@@ -141,7 +141,7 @@ class CellularAffinity(IgniteTest):
 
         checker.run()
 
-    @cluster(num_nodes=2 * (NODES_PER_CELL + 1) + 3)  # cell_cnt * (srv_per_cell + cell_streamer) + zookeper_cluster
+    @cluster(num_nodes=2 * (NODES_PER_CELL + 1) + 3)  # cell_cnt * (srv_per_cell + cell_streamer) + zookeeper_cluster
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @matrix(stop_type=[StopType.DROP_NETWORK, StopType.SIGKILL, StopType.SIGTERM],
             discovery_type=[DiscoreryType.ZooKeeper, DiscoreryType.TCP],
@@ -152,7 +152,7 @@ class CellularAffinity(IgniteTest):
         """
         cluster_size = self.available_cluster_size
 
-        cells_amount = math.floor((cluster_size - self.ZOOKEPER_CLUSTER_SIZE) / (self.NODES_PER_CELL + 1))
+        cells_amount = math.floor((cluster_size - self.ZOOKEEPER_CLUSTER_SIZE) / (self.NODES_PER_CELL + 1))
 
         assert cells_amount >= 2
 
@@ -168,8 +168,8 @@ class CellularAffinity(IgniteTest):
         d_type = DiscoreryType.construct_from(discovery_type)
 
         if d_type is DiscoreryType.ZooKeeper:
-            zk_settings = ZookeeperSettings(min_session_timeout=self.ZOOKEPER_SESSION_TIMEOUT)
-            zk_quorum = ZookeeperService(self.test_context, self.ZOOKEPER_CLUSTER_SIZE, settings=zk_settings)
+            zk_settings = ZookeeperSettings(min_session_timeout=self.ZOOKEEPER_SESSION_TIMEOUT)
+            zk_quorum = ZookeeperService(self.test_context, self.ZOOKEEPER_CLUSTER_SIZE, settings=zk_settings)
             zk_quorum.start()
 
             modules.append('zookeeper')

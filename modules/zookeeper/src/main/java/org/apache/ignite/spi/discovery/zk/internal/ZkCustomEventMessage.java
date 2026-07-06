@@ -32,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * <p>A holder for effective attributes of distributed {@link OperationContext}. Analogue of
- * {@link TcpDiscoveryAbstractMessage#opCtxMsg} while we do not use a base class for all the Zookeper messages.</p>
+ * {@link TcpDiscoveryAbstractMessage#opCtxMsg} while we do not use a base class for all the Zookeeper messages.</p>
  *
  * <p>NOTE: The difference is also the limitation on message type. In {@link TcpDiscoverySpi} we transfer distributed
  * {@link OperationContext} with all the messages. In {@link ZookeeperDiscoveryImpl} with custom events only.</p>
