@@ -21,9 +21,9 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
@@ -100,7 +100,7 @@ public class GridFinishedFuture<T> implements IgniteInternalFuture<T> {
     /** {@inheritDoc} */
     @Override public T get() throws IgniteCheckedException {
         if (resFlag == ERR)
-            throw U.cast((Throwable)res);
+            throw CommonUtils.cast((Throwable)res);
 
         return (T)res;
     }

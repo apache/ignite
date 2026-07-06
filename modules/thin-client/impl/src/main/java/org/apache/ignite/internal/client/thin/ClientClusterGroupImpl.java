@@ -42,10 +42,10 @@ import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.lang.ClusterNodeFunc;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
 
@@ -121,7 +121,7 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
     @Override public ClientClusterGroup forOthers(ClusterNode node, ClusterNode... nodes) {
         A.notNull(node, "node");
 
-        Collection<ClusterNode> nodes0 = collection(U::newHashSet, node, nodes);
+        Collection<ClusterNode> nodes0 = collection(CommonUtils::newHashSet, node, nodes);
 
         return forPredicate(n -> !nodes0.contains(n));
     }
@@ -221,7 +221,7 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
     @Override public ClientClusterGroup forHost(String host, String... hosts) {
         A.notNull(host, "host");
 
-        Collection<String> hosts0 = collection(U::newHashSet, host, hosts);
+        Collection<String> hosts0 = collection(CommonUtils::newHashSet, host, hosts);
 
         return forPredicate(n -> {
             for (String hostName : n.hostNames()) {
