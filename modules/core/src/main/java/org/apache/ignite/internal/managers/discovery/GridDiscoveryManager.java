@@ -589,6 +589,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     return ctx.security().withContext(initiatorNodeSecCtx);
                 }
 
+                // Verify that the Security Context currently attached to the thread is valid.
+                ctx.security().securityContext();
+
                 return Scope.NOOP_SCOPE;
             }
 
