@@ -253,9 +253,14 @@
 
                                 <sleep seconds="2" />
 
-                                <touch file="${basedir}/target/classes/org/apache/ignite/spi/deployment/uri/tasks/GridUriDeploymentTestWithNameTask11.class" />
-
-                                <zip destfile="${basedir}/target/file/${bad-signed.jar}" basedir="${basedir}/target/classes/" includes="org/apache/ignite/spi/deployment/uri/tasks/GridUriDeploymentTestWithNameTask11.class" update="yes" />
+                                <!-- Unpack, replace corrupted entry with correct class, repack to break signature -->
+                                <unzip src="${basedir}/target/file/${bad-signed.jar}" dest="${basedir}/target/file_tmp/zipfix" />
+                                <copy file="${basedir}/target/classes/org/apache/ignite/spi/deployment/uri/tasks/GridUriDeploymentTestWithNameTask11.class"
+                                      todir="${basedir}/target/file_tmp/zipfix/org/apache/ignite/spi/deployment/uri/tasks/"
+                                      overwrite="yes" />
+                                <delete file="${basedir}/target/file/${bad-signed.jar}" />
+                                <zip destfile="${basedir}/target/file/${bad-signed.jar}" basedir="${basedir}/target/file_tmp/zipfix" />
+                                <delete dir="${basedir}/target/file_tmp/zipfix" />
 
                                 <delete dir="${basedir}/target/file_tmp/"/>
                             </target>
@@ -412,9 +417,14 @@
 
                                 <sleep seconds="2" />
 
-                                <touch file="${basedir}/target/classes/org/apache/ignite/spi/deployment/uri/tasks/GridUriDeploymentTestWithNameTask6.class" />
-
-                                <zip destfile="${basedir}/target/file/bad-signed-deployfile.gar" basedir="${basedir}/target/classes/" includes="org/apache/ignite/spi/deployment/uri/tasks/GridUriDeploymentTestWithNameTask6.class" update="yes" />
+                                <!-- Unpack, replace corrupted entry with correct class, repack to break signature -->
+                                <unzip src="${basedir}/target/file/bad-signed-deployfile.gar" dest="${basedir}/target/file_tmp/zipfix" />
+                                <copy file="${basedir}/target/classes/org/apache/ignite/spi/deployment/uri/tasks/GridUriDeploymentTestWithNameTask6.class"
+                                      todir="${basedir}/target/file_tmp/zipfix/org/apache/ignite/spi/deployment/uri/tasks/"
+                                      overwrite="yes" />
+                                <delete file="${basedir}/target/file/bad-signed-deployfile.gar" />
+                                <zip destfile="${basedir}/target/file/bad-signed-deployfile.gar" basedir="${basedir}/target/file_tmp/zipfix" />
+                                <delete dir="${basedir}/target/file_tmp/zipfix" />
 
                                 <delete dir="${basedir}/target/file_tmp/" />
                             </target>
