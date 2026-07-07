@@ -496,9 +496,6 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         forceCheckpoint();
 
-        // Keep the supplier (node 0) running: a full restart resets the topology version, so entries
-        // recovered from persistence would outrank new writes and trip the "Invalid version for inner
-        // update" assertion in GridCacheMapEntry (see GridCacheVersionManager#offset).
         stopGrid(1);
         stopGrid(2);
 
@@ -534,8 +531,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
             getTestTimeout()
         );
 
-        // Block the demand message before failing the WAL read so the supplier reliably hits the
-        // injected error mid-rebalance (a live supplier can otherwise finish before the failure).
+        // Hold the demand until the WAL read is armed to fail, so the error fires mid-rebalance.
         TestRecordingCommunicationSpi spi = (TestRecordingCommunicationSpi)demanderNode.configuration().getCommunicationSpi();
 
         spi.waitForBlocked();
