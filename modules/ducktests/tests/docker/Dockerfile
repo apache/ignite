@@ -87,14 +87,6 @@ COPY --from=python_source /usr/local/ /usr/local/
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Upgrade pip
-RUN pip install \
-    --no-cache-dir \
-    --trusted-host pypi.org \
-    --trusted-host files.pythonhosted.org \
-    --trusted-host pypi.python.org \
-    --upgrade pip
-
 # Print the active python version to the build terminal to confirm selection
 RUN python3 --version
 
