@@ -934,22 +934,23 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 /** */
                 private Scope withRemoteSecurityContext(ClusterNode node) {
-                    if (ctx.security().isDefaultContext()) {
-                        SecurityContext initiatorNodeSecCtx = nodeSecurityContext(
-                            marshaller,
-                            U.resolveClassLoader(ctx.config()),
-                            node
-                        );
+                    if (ctx.security().enabled()) {
+                        if (ctx.security().isDefaultContext()) {
+                            SecurityContext initiatorNodeSecCtx = nodeSecurityContext(
+                                marshaller,
+                                U.resolveClassLoader(ctx.config()),
+                                node
+                            );
 
-                        return ctx.security().withContext(initiatorNodeSecCtx);
+                            return ctx.security().withContext(initiatorNodeSecCtx);
+                        }
+
+                        // Verify that the Security Context currently attached to the thread is valid.
+                        ctx.security().securityContext();
                     }
-
-                    // Verify that the Security Context currently attached to the thread is valid.
-                    ctx.security().securityContext();
 
                     return Scope.NOOP_SCOPE;
                 }
-
             }
         });
 
