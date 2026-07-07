@@ -816,3 +816,52 @@ SqlDrop SqlDropView(Span s, boolean replace) :
         return SqlDdlNodes.dropView(s.end(this), ifExists, id);
     }
 }
+
+/**
+ * Parses a query optionally followed by FOR UPDATE [OF col [, col ...]] [WAIT n | NOWAIT].
+ *
+ * When FOR UPDATE is absent the inner query node is returned unchanged, so this rule
+ * transparently handles all queries that reach the StatementParser.
+ */
+SqlNode SqlSelectForUpdate() :
+{
+    final Span s;
+    SqlNode qry;
+    SqlNodeList ofList = null;
+    List<SqlNode> ofCols = null;
+    SqlIdentifier col;
+    Long waitSeconds = null;
+}
+{
+    qry = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) { s = span(); }
+    [
+        LOOKAHEAD(<FOR> <UPDATE>)
+        <FOR> <UPDATE>
+        [
+            LOOKAHEAD(<OF>)
+            <OF>
+            {
+                ofCols = new ArrayList<SqlNode>();
+            }
+            col = CompoundIdentifier() { ofCols.add(col); }
+            (
+                <COMMA> col = CompoundIdentifier() { ofCols.add(col); }
+            )*
+            { ofList = new SqlNodeList(ofCols, s.pos()); }
+        ]
+        [
+            LOOKAHEAD(<WAIT>)
+            <WAIT> <UNSIGNED_INTEGER_LITERAL>
+            {
+                waitSeconds = Long.parseLong(token.image);
+            }
+        |
+            <NOWAIT>
+            {
+                waitSeconds = 0L;
+            }
+        ]
+        { return new IgniteSqlSelectForUpdate(s.end(this), qry, ofList, waitSeconds); }
+    ]
+    { return qry; }
+}
