@@ -16,8 +16,6 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
-//CHECKSTYLE:OFF
-
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
@@ -54,7 +52,6 @@ import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.runtime.FlatLists;
 import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.schema.QueryableTable;
 import org.apache.calcite.schema.SchemaPlus;
@@ -1288,10 +1285,6 @@ public class RexImpTable {
                     argValueList);
             }
 
-            // For checked arithmetic call the method.
-            //if (CHECKED_OPERATORS.contains(op))
-            //    return Expressions.call(SqlFunctions.class, backupMethodName, argValueList);
-
             return IgniteExpressions.makeBinary(expressionType,
                 argValueList.get(0), argValueList.get(1));
         }
@@ -1349,26 +1342,25 @@ public class RexImpTable {
         /** {@inheritDoc} */
         @Override Expression implementSafe(RexToLixTranslator translator,
             RexCall call, List<Expression> argValueList) {
-            final Expression argValue = argValueList.get(0);
+            final Expression argVal = argValueList.get(0);
 
             final Expression e;
             //Special case for implementing unary minus with BigDecimal type
             //for other data type(except BigDecimal) '-' operator is OK, but for
             //BigDecimal, we should call negate method of BigDecimal
-            if (expressionType == ExpressionType.Negate && argValue.type == BigDecimal.class
-                && null != backupMethodName) {
-                e = Expressions.call(argValue, backupMethodName);
-            } else if (expressionType == NegateChecked && null != backupMethodName) {
+            if (expressionType == ExpressionType.Negate && argVal.type == BigDecimal.class
+                && null != backupMethodName)
+                e = Expressions.call(argVal, backupMethodName);
+            else if (expressionType == NegateChecked && null != backupMethodName)
                 e = Expressions.call(SqlFunctions.class, backupMethodName, argValueList);
-            } else {
-                e = IgniteExpressions.makeUnary(expressionType, argValue);
-            }
+            else
+                e = IgniteExpressions.makeUnary(expressionType, argVal);
 
-            if (e.type.equals(argValue.type))
+            if (e.type.equals(argVal.type))
                 return e;
             // Certain unary operators do not preserve type. For example, the "-"
             // operator applied to a "byte" expression returns an "int".
-            return Expressions.convert_(e, argValue.type);
+            return Expressions.convert_(e, argVal.type);
         }
     }
 
@@ -1581,25 +1573,14 @@ public class RexImpTable {
         @Override Expression implementSafe(final RexToLixTranslator translator,
             final RexCall call, final List<Expression> argValueList) {
             assert call.operandCount() <= 2;
-            final RelDataType sourceType = call.getOperands().get(0).getType();
+            final RelDataType srcType = call.getOperands().get(0).getType();
 
             RexNode arg = call.getOperands().get(0);
-            ConstantExpression formatExpr;
-
-            // Check for FORMAT clause if second operand is available in RexCall.
-            if (call.operandCount() == 2) {
-                RexLiteral format = (RexLiteral) translator.deref(call.getOperands().get(1));
-                formatExpr =
-                    (ConstantExpression) RexToLixTranslator.translateLiteral(format, format.getType(),
-                        translator.typeFactory, RexImpTable.NullAs.NULL);
-            } else {
-                formatExpr = NULL_EXPR;
-            }
 
             // Short-circuit if no cast is required
-            if (call.getType().equals(sourceType)
+            if (call.getType().equals(srcType)
                 // However, do not elide casts to decimal types, they perform bounds checking
-                && sourceType.getSqlTypeName() != SqlTypeName.DECIMAL) {
+                && srcType.getSqlTypeName() != SqlTypeName.DECIMAL) {
                 // No cast required, omit cast
                 return argValueList.get(0);
             }
@@ -1607,23 +1588,22 @@ public class RexImpTable {
                 call.getType(), arg.getType())
                 && translator.deref(arg) instanceof RexLiteral) {
                 return RexToLixTranslator.translateLiteral(
-                    (RexLiteral) translator.deref(arg), call.getType(),
-                    translator.typeFactory, RexImpTable.NullAs.NULL);
+                    (RexLiteral)translator.deref(arg), call.getType(),
+                    translator.typeFactory, NullAs.NULL);
             }
             final RelDataType targetType =
                 nullifyType(translator.typeFactory, call.getType(), false);
-            boolean safe = call.getKind() == SqlKind.SAFE_CAST;
-            return translator.translateCast(sourceType,
-                targetType, argValueList.get(0), safe, formatExpr);
+            return translator.translateCast(srcType,
+                targetType, argValueList.get(0));
         }
 
         /** */
         private RelDataType nullifyType(JavaTypeFactory typeFactory,
             final RelDataType type, final boolean nullable) {
             if (type instanceof RelDataTypeFactoryImpl.JavaType) {
-                Class<?> javaClass = ((RelDataTypeFactoryImpl.JavaType) type).getJavaClass();
-                final Class<?> primitive = Primitive.unbox(javaClass);
-                if (primitive != javaClass) {
+                Class<?> javaCls = ((RelDataTypeFactoryImpl.JavaType)type).getJavaClass();
+                final Class<?> primitive = Primitive.unbox(javaCls);
+                if (primitive != javaCls) {
                     return typeFactory.createJavaType(primitive);
                 }
             }
@@ -2610,4 +2590,3 @@ public class RexImpTable {
         };
     }
 }
-//CHECKSTYLE:ON

@@ -222,9 +222,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     Expression translateCast(
         RelDataType sourceType,
         RelDataType targetType,
-        Expression operand,
-        boolean safe,
-        ConstantExpression format) {
+        Expression operand) {
         Expression convert = null;
         switch (targetType.getSqlTypeName()) {
             case ANY:
@@ -1346,6 +1344,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         return new Result(isNullVariable, valVariable);
     }
 
+    /** */
     @Override public Result visitNodeAndFieldIndex(
         RexNodeAndFieldIndex nodeAndFieldIndex) {
         throw new RuntimeException("cannot translate expression " + nodeAndFieldIndex);
