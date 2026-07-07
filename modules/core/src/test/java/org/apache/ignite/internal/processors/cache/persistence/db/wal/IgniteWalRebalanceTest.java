@@ -87,7 +87,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteCallable;
@@ -497,20 +496,14 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         forceCheckpoint();
 
-        stopAllGrids();
-
-        // Wait briefly before restarting to ensure GridCacheVersionManager.offset grows enough.
-        // GridCacheVersion.topVer = readyTopologyVersion + offset, where offset = (gridStartTime - baseTime)/1000.
-        // After restart, readyTopologyVersion resets to a small value (1-3), while recovered data retains
-        // topVer from the previous session. This 5-second pause ensures the new offset exceeds the previous
-        // one by enough to compensate for the lower readyTopologyVersion, preventing
-        // "Invalid version for inner update" assertion failures.
-        U.sleep(5_000);
+        // Keep the supplier (node 0) running: a full restart resets the topology version, so entries
+        // recovered from persistence would outrank new writes and trip the "Invalid version for inner
+        // update" assertion in GridCacheMapEntry (see GridCacheVersionManager#offset).
+        stopGrid(1);
+        stopGrid(2);
 
         // Rewrite data to trigger further rebalance.
-        IgniteEx supplierNode = startGrid(0);
-
-        supplierNode.cluster().state(ACTIVE);
+        IgniteEx supplierNode = grid(0);
 
         IgniteCache<Object, Object> cache = supplierNode.cache(CACHE_NAME);
 
@@ -541,12 +534,16 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
             getTestTimeout()
         );
 
+        // Block the demand message before failing the WAL read so the supplier reliably hits the
+        // injected error mid-rebalance (a live supplier can otherwise finish before the failure).
+        TestRecordingCommunicationSpi spi = (TestRecordingCommunicationSpi)demanderNode.configuration().getCommunicationSpi();
+
+        spi.waitForBlocked();
+
         // Inject I/O factory which can throw exception during WAL read on supplier node.
         FailingIOFactory ioFactory = injectFailingIOFactory(supplierNode);
 
         // Resume rebalance process.
-        TestRecordingCommunicationSpi spi = (TestRecordingCommunicationSpi)demanderNode.configuration().getCommunicationSpi();
-
         spi.stopBlock();
 
         // Wait till rebalance will be failed and cancelled.
