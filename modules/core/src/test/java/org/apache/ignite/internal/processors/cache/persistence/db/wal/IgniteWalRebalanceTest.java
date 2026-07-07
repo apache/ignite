@@ -87,6 +87,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteCallable;
@@ -498,22 +499,18 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
+        // Wait briefly before restarting to ensure GridCacheVersionManager.offset grows enough.
+        // GridCacheVersion.topVer = readyTopologyVersion + offset, where offset = (gridStartTime - baseTime)/1000.
+        // After restart, readyTopologyVersion resets to a small value (1-3), while recovered data retains
+        // topVer from the previous session. This 5-second pause ensures the new offset exceeds the previous
+        // one by enough to compensate for the lower readyTopologyVersion, preventing
+        // "Invalid version for inner update" assertion failures.
+        U.sleep(5_000);
+
         // Rewrite data to trigger further rebalance.
         IgniteEx supplierNode = startGrid(0);
 
         supplierNode.cluster().state(ACTIVE);
-
-        // Wait for readyTopologyVersion to converge with discovery topology version.
-        // After restart, readyTopologyVersion may lag behind discovery topVer by 1-2,
-        // causing new writes to receive lower GridCacheVersion.topVer than recovered data.
-        // The formula is: GridCacheVersion.topVer = readyTopologyVersion + offset,
-        // and recovered data has higher topVer from the previous cluster session.
-        assertTrue(GridTestUtils.waitForCondition(() -> {
-            long discoveryTopVer = supplierNode.context().discovery().topologyVersion();
-            long readyTopVer = supplierNode.context().cache().context().exchange().readyAffinityVersion().topologyVersion();
-
-            return readyTopVer >= discoveryTopVer;
-        }, 10_000));
 
         IgniteCache<Object, Object> cache = supplierNode.cache(CACHE_NAME);
 
