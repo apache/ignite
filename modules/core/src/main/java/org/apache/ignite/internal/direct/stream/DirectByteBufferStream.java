@@ -2322,129 +2322,116 @@ public class DirectByteBufferStream {
             return;
         }
 
-        if (uuidState == 0) {
-            writeByte((byte)1);
+        switch (uuidState) {
+            case 0:
+                writeByte((byte)1);
 
-            if (!lastFinished)
+                if (!lastFinished)
+                    return;
+
+                uuidState++;
+            case 1:
+                writeByte(ver.major());
+
+                if (!lastFinished)
+                    return;
+
+                uuidState++;
+
+            case 2:
+                writeByte(ver.minor());
+
+                if (!lastFinished)
+                    return;
+
+                uuidState++;
+            case 3:
+                writeByte(ver.maintenance());
+
+                if (!lastFinished)
+                    return;
+
+                uuidState++;
+            case 4:
+                writeLong(ver.revisionTimestamp());
+
+                if (!lastFinished)
+                    return;
+
+                uuidState++;
+            case 5:
+                writeByteArray(ver.revisionHash());
+
+                if (!lastFinished)
+                    return;
+
+                uuidState = 0;
+
                 return;
-
-            uuidState++;
+            default:
+                throw new IllegalStateException("Unexpected state: " + uuidState);
         }
-
-        if (uuidState == 1) {
-            writeByte(ver.major());
-
-            if (!lastFinished)
-                return;
-
-            uuidState++;
-        }
-
-        if (uuidState == 2) {
-            writeByte(ver.minor());
-
-            if (!lastFinished)
-                return;
-
-            uuidState++;
-        }
-
-        if (uuidState == 3) {
-            writeByte(ver.maintenance());
-
-            if (!lastFinished)
-                return;
-
-            uuidState++;
-
-        }
-
-        if (uuidState == 4) {
-            writeLong(ver.revisionTimestamp());
-
-            if (!lastFinished)
-                return;
-
-            uuidState++;
-        }
-
-        if (uuidState == 5) {
-            writeByteArray(ver.revisionHash());
-
-            if (!lastFinished)
-                return;
-
-            uuidState = 0;
-
-            return;
-        }
-
-        throw new IllegalStateException("Unexpected state: " + uuidState);
     }
 
     /** */
     public IgniteProductVersion readIgniteProductVersion() {
-        if (uuidState == 0) {
-            byte notNull = readByte();
+        switch (uuidState) {
+            case 0:
+                byte notNull = readByte();
 
-            if (!lastFinished)
-                return null;
+                if (!lastFinished)
+                    return null;
 
-            if (notNull == 0)
-                return null;
+                if (notNull == 0)
+                    return null;
 
-            cur = new IgniteProductVersionEx();
+                cur = new IgniteProductVersionEx();
 
-            uuidState++;
+                uuidState++;
+            case 1:
+                ((IgniteProductVersionEx)cur).major(readByte());
+
+                if (!lastFinished)
+                    return null;
+
+                uuidState++;
+            case 2:
+                ((IgniteProductVersionEx)cur).minor(readByte());
+
+                if (!lastFinished)
+                    return null;
+
+                uuidState++;
+            case 3:
+                ((IgniteProductVersionEx)cur).maintenance(readByte());
+
+                if (!lastFinished)
+                    return null;
+
+                uuidState++;
+            case 4:
+                ((IgniteProductVersionEx)cur).revisionTimestamp(readLong());
+
+                if (!lastFinished)
+                    return null;
+
+                uuidState++;
+
+            case 5:
+                ((IgniteProductVersionEx)cur).revisionHash(readByteArray());
+
+                if (!lastFinished)
+                    return null;
+
+                IgniteProductVersionEx res = (IgniteProductVersionEx)cur;
+
+                cur = NULL;
+                uuidState = 0;
+
+                return res;
+            default:
+                throw new IllegalStateException("Unexpected state: " + uuidState);
         }
-
-        if (uuidState == 1) {
-            ((IgniteProductVersionEx)cur).major(readByte());
-
-            if (!lastFinished)
-                return null;
-
-            uuidState++;
-        }
-
-        if (uuidState == 2) {
-            ((IgniteProductVersionEx)cur).minor(readByte());
-
-            if (!lastFinished)
-                return null;
-
-            uuidState++;
-        }
-
-        if (uuidState == 3) {
-            ((IgniteProductVersionEx)cur).maintenance(readByte());
-
-            if (!lastFinished)
-                return null;
-
-            uuidState++;
-        }
-
-        if (uuidState == 4) {
-            ((IgniteProductVersionEx)cur).revisionTimestamp(readLong());
-
-            if (!lastFinished)
-                return null;
-
-            uuidState++;
-        }
-
-        ((IgniteProductVersionEx)cur).revisionHash(readByteArray());
-
-        if (!lastFinished)
-            return null;
-
-        IgniteProductVersionEx res = (IgniteProductVersionEx)cur;
-
-        cur = NULL;
-        uuidState = 0;
-
-        return res;
     }
 
     /** */
@@ -2455,14 +2442,8 @@ public class DirectByteBufferStream {
             return;
         }
 
-        int fldCnt = 5;
-
-        // Write of conflict version in progress, already.
-        if (uuidState >= fldCnt)
-            ver = ver.conflictVersion();
-
-        while (true) {
-            if (uuidState % fldCnt == 0) {
+        switch (uuidState) {
+            case 0:
                 byte type;
 
                 if (ver.conflictVersion() == ver)
@@ -2478,66 +2459,71 @@ public class DirectByteBufferStream {
                     return;
 
                 uuidState++;
-            }
-
-            if (uuidState % fldCnt == 1) {
+            case 1:
                 writeInt(ver.topologyVersion());
 
                 if (!lastFinished)
                     return;
 
                 uuidState++;
-            }
 
-            if (uuidState % fldCnt == 2) {
+            case 2:
                 writeInt(ver.nodeOrderAndDrIdRaw());
 
                 if (!lastFinished)
                     return;
 
                 uuidState++;
-            }
-
-            if (uuidState % fldCnt == 3) {
+            case 3:
                 writeLong(ver.order());
 
                 if (!lastFinished)
                     return;
 
                 uuidState++;
-            }
+            case 4:
+                if (ver.conflictVersion() == ver) {
+                    lastFinished = true;
 
-            if (uuidState % fldCnt == 4) {
-                if (ver.conflictVersion() == ver)
-                    break;
+                    uuidState = 0;
 
-                ver = ver.conflictVersion();
+                    return;
+                }
+
+                writeInt(ver.conflictVersion().topologyVersion());
+
+                if (!lastFinished)
+                    return;
 
                 uuidState++;
+            case 5:
+                writeInt(ver.conflictVersion().nodeOrderAndDrIdRaw());
 
-                if (uuidState >= fldCnt * 2)
-                    throw new IllegalStateException("Support one nest level, only!");
-            }
+                if (!lastFinished)
+                    return;
+
+                uuidState++;
+            case 6:
+                writeLong(ver.conflictVersion().order());
+
+                if (!lastFinished)
+                    return;
+
+                uuidState = 0;
+
+                return;
+
+            default:
+                throw new IllegalStateException("Unexpected state: " + uuidState);
         }
-
-        lastFinished = true;
-        uuidState = 0;
     }
 
     /** */
     public GridCacheVersion readGridCacheVersion() {
-        int fldCnt = 5;
+        GridCacheVersion ver =  cur != NULL ? (GridCacheVersion)cur : null;
 
-        GridCacheVersion ver = null;
-
-        if (cur != null && cur != NULL)
-            ver = (GridCacheVersion)cur;
-
-        if (uuidState >= fldCnt)
-            ver = ver.conflictVersion();
-
-        while (true) {
-            if (uuidState % fldCnt == 0) {
+        switch (uuidState) {
+            case 0:
                 byte type = readByte();
 
                 if (!lastFinished)
@@ -2558,58 +2544,65 @@ public class DirectByteBufferStream {
                 else
                     throw new IllegalArgumentException("Unknown GridCacheVersion type: " + type);
 
-                if (uuidState == 0)
-                    cur = ver;
+                cur = ver;
 
                 uuidState++;
-            }
 
-            if (uuidState % fldCnt == 1) {
+            case 1:
                 ver.topologyVersion(readInt());
 
                 if (!lastFinished)
                     return null;
 
                 uuidState++;
-            }
-
-            if (uuidState % fldCnt == 2) {
+            case 2:
                 ver.nodeOrderAndDrIdRaw(readInt());
 
                 if (!lastFinished)
                     return null;
 
                 uuidState++;
-            }
-
-            if (uuidState % fldCnt == 3) {
+            case 3:
                 ver.order(readLong());
 
                 if (!lastFinished)
                     return null;
 
                 uuidState++;
-            }
+            case 4:
+                if (ver.conflictVersion() == ver) {
+                    cur = NULL;
+                    uuidState = 0;
 
-            if (uuidState % fldCnt == 4) {
-                if (ver.conflictVersion() == ver)
-                    break;
+                    return ver;
+                }
 
-                ver = ver.conflictVersion();
+                ver.conflictVersion().topologyVersion(readInt());
+
+                if (!lastFinished)
+                    return null;
 
                 uuidState++;
+            case 5:
+                ver.conflictVersion().nodeOrderAndDrIdRaw(readInt());
 
-                if (uuidState >= fldCnt * 2)
-                    throw new IllegalStateException("Support one nest level, only!");
-            }
+                if (!lastFinished)
+                    return null;
+
+                uuidState++;
+            case 6:
+                ver.conflictVersion().order(readLong());
+
+                if (!lastFinished)
+                    return null;
+
+                cur = NULL;
+                uuidState = 0;
+
+                return ver;
+            default:
+                throw new IllegalStateException("Unexpected state: " + uuidState);
         }
-
-        ver = (GridCacheVersion)cur;
-
-        cur = NULL;
-        uuidState = 0;
-
-        return ver;
     }
 
     /** {@inheritDoc} */

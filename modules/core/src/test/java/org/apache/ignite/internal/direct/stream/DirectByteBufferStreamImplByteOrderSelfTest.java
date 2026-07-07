@@ -574,6 +574,8 @@ public class DirectByteBufferStreamImplByteOrderSelfTest {
         try {
             GridCacheVersionEx ver = new GridCacheVersionEx(1, 2, 3, new GridCacheVersion(2, 20, 8198, 4));
 
+            assertTrue(ver.conflictVersion().dataCenterId() != 0);
+
             readWriteGridCacheVersion(ver);
             readWriteGridCacheVersion(null);
 
@@ -632,6 +634,11 @@ public class DirectByteBufferStreamImplByteOrderSelfTest {
 
         assertEquals(ver, ver1);
 
+        if (ver instanceof GridCacheVersionEx) {
+            assertEquals(ver.conflictVersion(), ver1.conflictVersion());
+            assertEquals(ver.conflictVersion().dataCenterId(), ver1.conflictVersion().dataCenterId());
+        }
+
         buff.rewind();
         buff.limit(startLimit);
     }
@@ -647,14 +654,12 @@ public class DirectByteBufferStreamImplByteOrderSelfTest {
         do {
             writeStream.writeIgniteProductVersion(ver);
 
-            if (iter == 0 && buff.limit() < buff.capacity())
-                buff.limit(buff.limit() + 4);
-            else if (iter == 1 && buff.limit() < buff.capacity())
-                buff.limit(buff.limit() + 10);
+            if (buff.limit() < buff.capacity())
+                buff.limit(buff.limit() + 1);
             else
                 buff.limit(buff.capacity());
 
-            assertTrue("Must be done earlier", iter++ < 10);
+            assertTrue("Must be done earlier", iter++ < 100);
         } while (!writeStream.lastFinished());
 
         buff.rewind();
@@ -667,14 +672,12 @@ public class DirectByteBufferStreamImplByteOrderSelfTest {
         do {
             ver1 = readStream.readIgniteProductVersion();
 
-            if (iter == 0 && buff.limit() < buff.capacity())
-                buff.limit(buff.limit() + 4);
-            else if (iter == 1 && buff.limit() < buff.capacity())
-                buff.limit(buff.limit() + 10);
+            if (buff.limit() < buff.capacity())
+                buff.limit(buff.limit() + 1);
             else
                 buff.limit(buff.capacity());
 
-            assertTrue("Must be done earlier", iter++ < 10);
+            assertTrue("Must be done earlier", iter++ < 100);
         } while (!readStream.lastFinished());
 
         assertEquals(ver, ver1);
