@@ -435,18 +435,26 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         SelectScope scope,
         boolean includeSysVars
     ) {
-        if (!includeSysVars && exp.getKind() == SqlKind.IDENTIFIER && isSystemFieldName(deriveAlias(exp, 0))) {
-            SqlQualified qualified = scope.fullyQualify((SqlIdentifier)exp);
+        if (!includeSysVars && exp.getKind() == SqlKind.IDENTIFIER) {
+            String alias = deriveAlias(exp, 0);
 
-            if (qualified.namespace == null)
+            // Technical columns are never exposed via SELECT *.
+            if (TechnicalColumns.isTechnicalFieldNameIgnoreCase(alias))
                 return;
 
-            if (qualified.namespace.getTable() != null) {
-                // If child is table and has only system fields, expand star to these fields.
-                // Otherwise, expand star to non-system fields only.
-                for (RelDataTypeField fld : qualified.namespace.getRowType().getFieldList()) {
-                    if (!isSystemField(fld))
-                        return;
+            if (isSystemFieldName(alias)) {
+                SqlQualified qualified = scope.fullyQualify((SqlIdentifier)exp);
+
+                if (qualified.namespace == null)
+                    return;
+
+                if (qualified.namespace.getTable() != null) {
+                    // If child is table and has only system fields, expand star to these fields.
+                    // Otherwise, expand star to non-system fields only.
+                    for (RelDataTypeField fld : qualified.namespace.getRowType().getFieldList()) {
+                        if (!isSystemField(fld))
+                            return;
+                    }
                 }
             }
         }
