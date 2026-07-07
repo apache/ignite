@@ -23,14 +23,20 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheEntryImplEx;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -49,6 +55,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTab
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.TechnicalColumns;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -97,6 +104,72 @@ public class TechnicalColumnsScanTest extends GridCommonAbstractTest {
 
     /** */
     @Test
+    @SuppressWarnings("unchecked")
+    public void testScannedTechnicalColumnsCanLockTxEntries() throws Exception {
+        createAndPopulatePersonTable();
+
+        IgniteCacheTable tbl = personTable();
+        ScanContext scanCtx = scanContext(tbl);
+        List<Object[]> rows = materialize(tbl.scan(scanCtx.ectx, scanCtx.grp, lockRequiredColumns(tbl)));
+        List<CacheEntry<Object, Object>> entries = new ArrayList<>();
+        Integer expSrc = tbl.descriptor().cacheInfo().cacheId();
+
+        assertEquals(30, rows.size());
+
+        for (Object[] row : rows) {
+            assertEquals(4, row.length);
+            assertTrue("Unexpected _VER value [val=" + row[2] + ", cls=" +
+                (row[2] == null ? null : row[2].getClass()) + ']', row[2] instanceof GridCacheVersion);
+            assertEquals(expSrc, row[3]);
+
+            entries.add(new CacheEntryImplEx<>(row[0], row[1], (GridCacheVersion)row[2]));
+        }
+
+        try (Transaction tx = node.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+            assertTrue(node.cache(tbl.descriptor().cacheInfo().name()).unwrap(IgniteCacheProxy.class)
+                .internalProxy().lockTxEntries(entries, 5_000));
+
+            checkInaccessInOtherTx();
+
+            sql("UPDATE Person SET age = 42 WHERE id = 2");
+
+            tx.commit();
+        }
+
+        List<List<?>> rowsAfterUpdate = sql("SELECT id, name, age FROM Person WHERE id = 2");
+
+        assertEquals(1, rowsAfterUpdate.size());
+        assertEquals(personName(2), rowsAfterUpdate.get(0).get(1));
+        assertEquals(42, rowsAfterUpdate.get(0).get(2));
+    }
+
+    /**
+     * Checks that another transaction cannot access the cache.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    private void checkInaccessInOtherTx() throws IgniteCheckedException {
+        IgniteInternalFuture<Void> accessFut = GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() {
+                try (Transaction tx = node.transactions().txStart(PESSIMISTIC, READ_COMMITTED, 500, 1)) {
+                    sql("UPDATE Person SET name = 'Charley' WHERE id = 2");
+
+                    tx.commit();
+                }
+
+                return null;
+            }
+        });
+
+        GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                return accessFut.get(10_000);
+            }
+        }, IgniteTxTimeoutCheckedException.class);
+    }
+
+    /** */
+    @Test
     public void testIndexScanReturnsTechnicalColumns() throws Exception {
         createAndPopulatePersonTable();
 
@@ -132,6 +205,22 @@ public class TechnicalColumnsScanTest extends GridCommonAbstractTest {
         assertTechnicalColumnAccessForbidden("SELECT CASE WHEN _ver IS NOT NULL THEN 1 ELSE 0 END FROM Person");
         assertTechnicalColumnAccessForbidden("SELECT CAST(_ver AS VARCHAR) FROM Person");
         assertTechnicalColumnAccessForbidden("SELECT id FROM Person WHERE (SELECT _ver FROM Person WHERE id = 1) IS NOT NULL");
+
+        // MERGE: technical columns must be forbidden in all clause positions.
+        assertTechnicalColumnAccessForbidden(
+            "MERGE INTO Person " +
+            "USING (SELECT id, _ver FROM Person) AS src ON (Person.id = src.id) " +
+            "WHEN NOT MATCHED THEN INSERT (id, name, age) VALUES (src.id, 'x', 1)");
+
+        assertTechnicalColumnAccessForbidden(
+            "MERGE INTO Person " +
+            "USING (SELECT 100 AS id) AS src ON (Person._ver IS NOT NULL AND Person.id = src.id) " +
+            "WHEN NOT MATCHED THEN INSERT (id, name, age) VALUES (src.id, 'x', 1)");
+
+        assertTechnicalColumnAccessForbidden(
+            "MERGE INTO Person " +
+            "USING (SELECT 1 AS id) AS src ON (Person.id = src.id) " +
+            "WHEN MATCHED THEN UPDATE SET name = CAST(Person._ver AS VARCHAR)");
     }
 
     /** */
@@ -197,6 +286,16 @@ public class TechnicalColumnsScanTest extends GridCommonAbstractTest {
     private ImmutableBitSet requiredColumns(IgniteCacheTable tbl) {
         return ImmutableBitSet.of(
             columnIndex(tbl, "ID"),
+            columnIndex(tbl, TechnicalColumns.VER_FIELD_NAME),
+            columnIndex(tbl, TechnicalColumns.SRC_FIELD_NAME)
+        );
+    }
+
+    /** */
+    private ImmutableBitSet lockRequiredColumns(IgniteCacheTable tbl) {
+        return ImmutableBitSet.of(
+            columnIndex(tbl, QueryUtils.KEY_FIELD_NAME),
+            columnIndex(tbl, QueryUtils.VAL_FIELD_NAME),
             columnIndex(tbl, TechnicalColumns.VER_FIELD_NAME),
             columnIndex(tbl, TechnicalColumns.SRC_FIELD_NAME)
         );

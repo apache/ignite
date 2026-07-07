@@ -112,6 +112,9 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
     /** */
     private final ImmutableBitSet insertFields;
 
+    /** Count of non-technical columns used in the UPDATE source SELECT. */
+    private final int updateRowFieldCnt;
+
     /** */
     private RelDataType tableRowType;
 
@@ -235,6 +238,9 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         this.affFields = ImmutableIntList.copyOf(affFields);
         this.descriptors = descriptors.toArray(DUMMY);
         this.descriptorsMap = descriptorsMap;
+        this.updateRowFieldCnt = (int)descriptors.stream()
+            .filter(d -> !TechnicalColumns.isTechnicalFieldNameIgnoreCase(d.name()))
+            .count();
 
         virtualFields.flip(0, descriptors.size());
         insertFields = ImmutableBitSet.fromBitSet(virtualFields);
@@ -243,6 +249,18 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
     /** {@inheritDoc} */
     @Override public RelDataType insertRowType(IgniteTypeFactory factory) {
         return rowType(factory, insertFields);
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelDataType selectForUpdateRowType(IgniteTypeFactory factory) {
+        RelDataTypeFactory.Builder b = new RelDataTypeFactory.Builder(factory);
+
+        for (CacheColumnDescriptor desc : descriptors) {
+            if (!TechnicalColumns.isTechnicalFieldNameIgnoreCase(desc.name()))
+                b.add(desc.name(), desc.logicalType(factory));
+        }
+
+        return b.build();
     }
 
     /** {@inheritDoc} */
@@ -443,7 +461,8 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         Object key = Objects.requireNonNull(hnd.get(offset + QueryUtils.KEY_COL, row));
         Object val = clone(Objects.requireNonNull(hnd.get(offset + QueryUtils.VAL_COL, row)));
 
-        offset += descriptorsMap.size();
+        // New values start after the source fields; compute dynamically to handle both UPDATE and MERGE.
+        offset = hnd.columnCount(row) - updateColList.size();
 
         for (int i = 0; i < updateColList.size(); i++) {
             final CacheColumnDescriptor desc = Objects.requireNonNull(descriptorsMap.get(updateColList.get(i)));
@@ -473,14 +492,19 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
         int rowColumnsCnt = hnd.columnCount(row);
 
-        if (rowColumnsCnt == descriptors.length)
+        // An empty update column list unambiguously means there is no WHEN MATCHED clause at all (a MERGE
+        // statement always has at least one WHEN clause), so the row can only originate from the INSERT
+        // section. Note: the row width alone can't be used to detect this case, since, depending on the
+        // number of updated columns, it may coincide with the width of a WHEN MATCHED-only row.
+        if (updateColList.isEmpty())
             return insertTuple(row, ectx); // Only WHEN NOT MATCHED clause in MERGE.
-        else if (rowColumnsCnt == descriptors.length + updateColList.size())
+        else if (rowColumnsCnt == updateRowFieldCnt + updateColList.size())
             return updateTuple(row, updateColList, 0, ectx); // Only WHEN MATCHED clause in MERGE.
         else {
             // Both WHEN MATCHED and WHEN NOT MATCHED clauses in MERGE.
-            assert rowColumnsCnt == descriptors.length * 2 + updateColList.size() : "Unexpected columns count: " +
-                rowColumnsCnt;
+            // INSERT section has all fields (insertRowType); UPDATE section excludes technical columns.
+            assert rowColumnsCnt == descriptors.length + updateRowFieldCnt + updateColList.size() :
+                "Unexpected columns count: " + rowColumnsCnt;
 
             int updateOffset = descriptors.length; // Offset of fields for update statement.
 
