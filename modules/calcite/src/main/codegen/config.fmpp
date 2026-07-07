@@ -441,7 +441,6 @@ data: {
     # Return type of method implementation should be 'SqlNode'.
     # Example: "SqlShowDatabases()", "SqlShowTables()".
     statementParserMethods: [
-      "SqlSelectForUpdate()",
       "SqlAlterTable()",
       "SqlAlterUser()",
       "SqlKillScanQuery()",
@@ -453,10 +452,11 @@ data: {
       "SqlSavepoint()",
       "SqlRollbackToSavepoint()",
       "SqlCommitTransaction()",
-      "SqlRollbackTransaction()"
-      "SqlStatisticsAnalyze()"
-      "SqlStatisticsRefresh()"
-      "SqlStatisticsDrop()"
+      "SqlRollbackTransaction()",
+      "SqlStatisticsAnalyze()",
+      "SqlStatisticsRefresh()",
+      "SqlStatisticsDrop()",
+      "SqlSelectForUpdate()"
     ]
 
     # List of methods for parsing extensions to "CREATE [OR REPLACE]" calls.
