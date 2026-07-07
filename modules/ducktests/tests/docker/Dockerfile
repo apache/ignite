@@ -20,14 +20,16 @@ ARG python_version="3.13"
 ARG jdk_version="eclipse-temurin:17"
 
 # ---------------------------------------------------------------------
-# Stage 1: Pull official pre-compiled Python binaries
+# Stage 1: JDK source (Temurin JDKs are self-contained and relocatable,
+# so copying the JDK across images is safe -- unlike copying CPython,
+# whose _ssl extension is linked against the source image's OpenSSL)
 # ---------------------------------------------------------------------
-FROM python:${python_version}-slim AS python_source
+FROM $jdk_version AS jdk_source
 
 # ---------------------------------------------------------------------
 # Stage 2: Main Image Build
 # ---------------------------------------------------------------------
-FROM $jdk_version
+FROM python:${python_version}-slim
 
 # Re-declare global args here to make them accessible inside this specific stage
 ARG python_version
@@ -46,7 +48,12 @@ ARG ducker_creator=default
 LABEL ducker.creator=$ducker_creator
 
 # Fix package mirror protocol from http to https
-RUN cat /etc/apt/sources.list | sed 's/http:\/\/deb.debian.org/https:\/\/deb.debian.org/g' > /etc/apt/sources.list.2 && mv /etc/apt/sources.list.2 /etc/apt/sources.list
+# (Debian trixie uses the deb822 sources file; fall back to sources.list if present)
+RUN if [ -f /etc/apt/sources.list.d/debian.sources ]; then \
+        sed -i 's|http://deb.debian.org|https://deb.debian.org|g' /etc/apt/sources.list.d/debian.sources; \
+    elif [ -f /etc/apt/sources.list ]; then \
+        sed -i 's|http://deb.debian.org|https://deb.debian.org|g' /etc/apt/sources.list; \
+    fi
 
 # ---------------------------------------------------------------------
 # 2. System Utilities Installation
@@ -78,17 +85,24 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # ---------------------------------------------------------------------
-# 3. Python Virtual Environment Setup & Requirements
+# 3. JDK Installation (copied from the Temurin image)
 # ---------------------------------------------------------------------
-# Copy the official prepared Python binaries directly into the image
-COPY --from=python_source /usr/local/ /usr/local/
+ENV JAVA_HOME=/opt/java/openjdk
+COPY --from=jdk_source $JAVA_HOME $JAVA_HOME
+ENV PATH="$JAVA_HOME/bin:$PATH"
 
+# Confirm both runtimes are healthy
+RUN java -version
+
+# ---------------------------------------------------------------------
+# 4. Python Virtual Environment Setup & Requirements
+# ---------------------------------------------------------------------
 # Standardize path routing via the virtual environment block
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Print the active python version to the build terminal to confirm selection
-RUN python3 --version
+# Print the active python version and verify ssl is importable
+RUN python3 --version && python3 -c "import ssl; print(ssl.OPENSSL_VERSION)"
 
 COPY ./requirements.txt /root/requirements.txt
 
@@ -96,20 +110,17 @@ COPY ./requirements.txt /root/requirements.txt
 RUN pip3 install \
     --default-timeout=100 \
     --no-cache-dir \
-    --trusted-host pypi.org \
-    --trusted-host files.pythonhosted.org \
-    --trusted-host pypi.python.org \
     -r /root/requirements.txt
 
 # ---------------------------------------------------------------------
-# 4. SSH & Security Settings
+# 5. SSH & Security Settings
 # ---------------------------------------------------------------------
 COPY ./ssh-config /root/.ssh/config
 RUN ssh-keygen -m PEM -q -t rsa -N '' -f /root/.ssh/id_rsa && cp -f /root/.ssh/id_rsa.pub /root/.ssh/authorized_keys
 RUN echo 'PermitUserEnvironment yes' >> /etc/ssh/sshd_config
 
 # ---------------------------------------------------------------------
-# 5. Apache Component Stack Dependencies (Ignite, Zookeeper, Kafka, JMX)
+# 6. Apache Component Stack Dependencies (Ignite, Zookeeper, Kafka, JMX)
 # ---------------------------------------------------------------------
 ARG APACHE_MIRROR="https://apache-mirror.rbc.ru/pub/apache/"
 ARG APACHE_ARCHIVE="https://archive.apache.org/dist/"
@@ -148,7 +159,7 @@ RUN cd /opt && curl -OL https://github.com/jiaqi/jmxterm/releases/download/v$JMX
     && mv $JMXTERM_ARTIFACT $JMXTERM_NAME.jar
 
 # ---------------------------------------------------------------------
-# 6. User Isolation Permissions (Ducker Execution Account Setup)
+# 7. User Isolation Permissions (Ducker Execution Account Setup)
 # ---------------------------------------------------------------------
 # Set up the ducker user.
 ARG USER_UID=1000
