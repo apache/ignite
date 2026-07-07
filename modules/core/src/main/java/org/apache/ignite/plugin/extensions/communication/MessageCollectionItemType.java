@@ -83,6 +83,9 @@ public enum MessageCollectionItemType {
     /** Ignite UUID. */
     IGNITE_UUID,
 
+    /** GridCacheVersion */
+    GRID_CACHE_VERSION,
+
     /** Message. */
     MSG,
 
