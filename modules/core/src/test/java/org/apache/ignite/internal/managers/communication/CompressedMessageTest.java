@@ -21,8 +21,10 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.zip.Deflater;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.direct.DirectMessageReader;
@@ -134,6 +136,110 @@ public class CompressedMessageTest {
             () -> new CompressedMessageSerializer().readFrom(new CompressedMessage(), reader),
             IgniteException.class,
             "unexpected null chunk");
+    }
+
+    /** Read must fail fast on a negative data size from the wire. */
+    @Test
+    public void testReadFailsOnNegativeDataSize() {
+        DirectMessageWriter writer = new DirectMessageWriter(MSG_FACTORY);
+
+        ByteBuffer buf = ByteBuffer.allocate(16);
+
+        writer.setBuffer(buf);
+
+        writer.writeInt(-5);
+
+        buf.flip();
+
+        DirectMessageReader reader = new DirectMessageReader(MSG_FACTORY, null);
+
+        reader.setBuffer(buf);
+
+        GridTestUtils.assertThrows(null,
+            () -> new CompressedMessageSerializer().readFrom(new CompressedMessage(), reader),
+            IgniteException.class,
+            "Invalid compressed message data size");
+    }
+
+    /** Uncompress must fail when dataSize > 0 but no chunks were received. */
+    @Test
+    public void testUncompressFailsWithoutChunks() {
+        CompressedMessage rcvd = new CompressedMessage();
+
+        rcvd.dataSize = 100;
+        rcvd.finalChunk = true;
+
+        GridTestUtils.assertThrows(null, rcvd::uncompressed, IgniteException.class, "truncated");
+    }
+
+    /** Uncompress must fail when the stream inflates to more bytes than the size header claims. */
+    @Test
+    public void testUncompressFailsOnUnderstatedDataSize() {
+        byte[] data = new byte[1000];
+
+        CompressedMessage sent = new CompressedMessage(ByteBuffer.wrap(data), Deflater.BEST_SPEED);
+
+        CompressedMessage rcvd = new CompressedMessage();
+
+        rcvd.dataSize = data.length - 1;
+        rcvd.chunks = sent.chunks;
+        rcvd.finalChunk = true;
+
+        GridTestUtils.assertThrows(null, rcvd::uncompressed, IgniteException.class, "longer than expected");
+    }
+
+    /** Same as {@link #testUncompressFailsOnUnderstatedDataSize()}, but with a multi-chunk compressed stream. */
+    @Test
+    public void testUncompressFailsOnUnderstatedDataSizeMultiChunk() {
+        byte[] data = new byte[CompressedMessage.CHUNK_SIZE * 3];
+
+        new Random(42).nextBytes(data);
+
+        CompressedMessage sent = new CompressedMessage(ByteBuffer.wrap(data), Deflater.BEST_SPEED);
+
+        assertTrue(sent.chunks.size() > 1);
+
+        CompressedMessage rcvd = new CompressedMessage();
+
+        rcvd.dataSize = CompressedMessage.CHUNK_SIZE / 2;
+        rcvd.chunks = sent.chunks;
+        rcvd.finalChunk = true;
+
+        GridTestUtils.assertThrows(null, rcvd::uncompressed, IgniteException.class, "longer than expected");
+    }
+
+    /** A complete envelope whose payload doesn't deserialize fully must fail instead of hanging as a partial read. */
+    @Test
+    public void testReadFailsOnTruncatedPayload() {
+        DirectMessageWriter writer = new DirectMessageWriter(MSG_FACTORY);
+
+        ByteBuffer tmpBuf = ByteBuffer.allocate(1 << 20);
+
+        writer.setBuffer(tmpBuf);
+
+        assertTrue(writer.writeMessage(fullMessage(), false));
+
+        tmpBuf.flip();
+
+        tmpBuf.limit(tmpBuf.limit() - 5); // Truncate the serialized message.
+
+        CompressedMessage compressedMsg = new CompressedMessage(tmpBuf, Deflater.BEST_SPEED);
+
+        DirectMessageWriter wireWriter = new DirectMessageWriter(MSG_FACTORY);
+
+        ByteBuffer wire = ByteBuffer.allocate(1 << 20);
+
+        wireWriter.setBuffer(wire);
+
+        assertTrue(wireWriter.writeMessage(compressedMsg, false));
+
+        wire.flip();
+
+        DirectMessageReader reader = new DirectMessageReader(MSG_FACTORY, null);
+
+        reader.setBuffer(wire);
+
+        GridTestUtils.assertThrows(null, () -> reader.readMessage(true), IgniteException.class, "ended unexpectedly");
     }
 
     /** */

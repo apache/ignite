@@ -100,7 +100,8 @@ public class JmhDirectMessageReaderBenchmark {
 
         boolean finished = writer.writeMessage(msg, true);
 
-        assert finished;
+        if (!finished)
+            throw new IllegalStateException("Message does not fit into the buffer.");
 
         buf.flip();
     }

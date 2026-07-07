@@ -85,6 +85,9 @@ public class CompressedMessageSerializer implements MessageSerializer<Compressed
                     if (!reader.isLastRead())
                         return false;
 
+                    if (msg.dataSize < 0)
+                        throw new IgniteException("Invalid compressed message data size: " + msg.dataSize);
+
                     if (msg.dataSize == 0)
                         return true;
 
@@ -112,7 +115,7 @@ public class CompressedMessageSerializer implements MessageSerializer<Compressed
                             "(stream is corrupted or the sender is incompatible).");
 
                     if (msg.chunks == null)
-                        msg.chunks = new ArrayList<>(msg.dataSize / CHUNK_SIZE + 1);
+                        msg.chunks = new ArrayList<>(Math.min(msg.dataSize / CHUNK_SIZE + 1, 1024));
 
                     msg.chunks.add(msg.chunk);
 

@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.direct.state.DirectMessageState;
 import org.apache.ignite.internal.direct.state.DirectMessageStateItem;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
@@ -49,6 +50,9 @@ import org.jetbrains.annotations.Nullable;
  * Message reader implementation.
  */
 public class DirectMessageReader implements MessageReader {
+    /** Empty buffer to release the payload reference from {@link #tmpReader} streams between compressed reads. */
+    private static final ByteBuffer EMPTY_BUF = ByteBuffer.wrap(new byte[0]);
+
     /** State. */
     @GridToStringInclude
     private final DirectMessageState<StateItem> state;
@@ -514,11 +518,39 @@ public class DirectMessageReader implements MessageReader {
 
         tmpReader.setBuffer(ByteBuffer.wrap(msg0.uncompressed()));
 
-        T res = fun.apply(tmpReader);
+        T res;
 
-        lastRead = tmpReader.state.item().stream.lastFinished();
+        boolean ok = false;
+
+        try {
+            res = fun.apply(tmpReader);
+
+            // The payload buffer is always complete, so a partial read means a corrupted stream, not a lack of data.
+            if (!tmpReader.state.item().stream.lastFinished())
+                throw new IgniteException("Failed to deserialize compressed payload: uncompressed data ended " +
+                    "unexpectedly [dataSize=" + msg0.dataSize() + ']');
+
+            ok = true;
+        }
+        finally {
+            // Don't reuse a reader with half-read state.
+            if (!ok)
+                tmpReader = null;
+        }
+
+        // Don't pin the payload: the reader lives as long as the connection.
+        tmpReader.releasePayload();
+
+        lastRead = true;
 
         return res;
+    }
+
+    /** Releases the payload buffer reference from all streams of this reader. */
+    private void releasePayload() {
+        buf = EMPTY_BUF;
+
+        state.forEachItem(item -> item.stream.setBuffer(EMPTY_BUF));
     }
 
     /**

@@ -126,7 +126,18 @@ public class CompressedMessage implements Message {
     /** @return Uncompressed data. */
     private byte[] uncompress() {
         if (chunks == null)
-            return null;
+            throw new IgniteException("Compressed stream is truncated [expected=" + dataSize + ", inflated=0]");
+
+        long compressedTotal = 0;
+
+        for (int i = 0; i < chunks.size(); i++)
+            compressedTotal += chunks.get(i).length;
+
+        // Raw deflate cannot expand beyond ~1032:1, a larger claim means a corrupted size header; also bounds the
+        // upfront allocation by ~1032x of the actually received bytes.
+        if (dataSize > compressedTotal * 1032L + 64)
+            throw new IgniteException("Invalid compressed message data size [dataSize=" + dataSize +
+                ", compressedBytes=" + compressedTotal + ']');
 
         byte[] data = new byte[dataSize];
 
@@ -134,8 +145,9 @@ public class CompressedMessage implements Message {
 
         try {
             int off = 0;
+            int i = 0;
 
-            for (int i = 0; i < chunks.size() && off < dataSize; i++) {
+            for (; i < chunks.size() && off < dataSize; i++) {
                 inflater.setInput(chunks.get(i));
 
                 int n;
@@ -146,6 +158,19 @@ public class CompressedMessage implements Message {
 
             if (off != dataSize)
                 throw new IgniteException("Compressed stream is truncated [expected=" + dataSize + ", inflated=" + off + ']');
+
+            // Any extra inflatable byte means the size header is understated.
+            byte[] probe = new byte[1];
+
+            while (true) {
+                if (inflater.inflate(probe, 0, 1) > 0)
+                    throw new IgniteException("Compressed stream is longer than expected [expected=" + dataSize + ']');
+
+                if (inflater.finished() || i == chunks.size())
+                    break;
+
+                inflater.setInput(chunks.get(i++));
+            }
         }
         catch (DataFormatException e) {
             throw new IgniteException(e);
