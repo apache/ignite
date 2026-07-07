@@ -25,6 +25,7 @@ import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
@@ -273,6 +274,9 @@ public interface MessageReader {
 
     /** @return Ignite product version. */
     IgniteProductVersion readIgniteProductVersion();
+
+    /** @return Grid cache version. */
+    GridCacheVersion readGridCacheVersion();
 
     /**
      * Tells whether last invocation of any of {@code readXXX(...)}

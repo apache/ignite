@@ -23,14 +23,12 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.UUID;
 import org.apache.ignite.cache.CacheEntryVersion;
-import org.apache.ignite.internal.Order;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Grid unique version.
  */
-public class GridCacheVersion implements Message, Externalizable, CacheEntryVersion {
+public class GridCacheVersion implements Externalizable, CacheEntryVersion {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -44,15 +42,12 @@ public class GridCacheVersion implements Message, Externalizable, CacheEntryVers
     private static final int DR_ID_MASK = 0x1F;
 
     /** Topology version. */
-    @Order(0)
     int topVer;
 
     /** Node order (used as global order) and DR ID. */
-    @Order(1)
     int nodeOrderDrId;
 
     /** Order. */
-    @Order(2)
     long order;
 
     /**
@@ -147,6 +142,21 @@ public class GridCacheVersion implements Message, Externalizable, CacheEntryVers
      */
     public GridCacheVersion conflictVersion() {
         return this; // Use current version.
+    }
+
+    /** */
+    public void topologyVersion(int topVer) {
+        this.topVer = topVer;
+    }
+
+    /** */
+    public void nodeOrderAndDrIdRaw(int nodeOrder) {
+        this.nodeOrderDrId = nodeOrder;
+    }
+
+    /** */
+    public void order(long order) {
+        this.order = order;
     }
 
     /**

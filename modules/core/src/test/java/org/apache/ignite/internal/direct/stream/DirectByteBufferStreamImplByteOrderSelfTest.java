@@ -25,6 +25,8 @@ import java.util.Random;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -539,6 +541,99 @@ public class DirectByteBufferStreamImplByteOrderSelfTest {
         finally {
             buff.limit(buff.capacity());
         }
+    }
+
+    /** */
+    @Test
+    public void testGridCacheVersion() {
+        try {
+            GridCacheVersion ver = new GridCacheVersion(2, 20, 8198, 4);
+
+            readWriteGridCacheVersion(ver);
+            readWriteGridCacheVersion(null);
+
+            buff.limit(0);
+
+            readWriteGridCacheVersion(ver);
+            readWriteGridCacheVersion(null);
+
+            buff.limit(6);
+
+            readWriteGridCacheVersion(ver);
+            readWriteGridCacheVersion(null);
+
+        }
+        finally {
+            buff.limit(buff.capacity());
+        }
+    }
+
+    /** */
+    @Test
+    public void testGridCacheVersionEx() {
+        try {
+            GridCacheVersionEx ver = new GridCacheVersionEx(1, 2, 3, new GridCacheVersion(2, 20, 8198, 4));
+
+            readWriteGridCacheVersion(ver);
+            readWriteGridCacheVersion(null);
+
+            buff.limit(0);
+
+            readWriteGridCacheVersion(ver);
+            readWriteGridCacheVersion(null);
+
+            buff.limit(6);
+
+            readWriteGridCacheVersion(ver);
+            readWriteGridCacheVersion(null);
+
+        }
+        finally {
+            buff.limit(buff.capacity());
+        }
+    }
+
+    /** */
+    private void readWriteGridCacheVersion(GridCacheVersion ver) {
+        DirectByteBufferStream writeStream = createStream(buff);
+        DirectByteBufferStream readStream = createStream(buff);
+
+        int startLimit = buff.limit();
+        int iter = 0;
+
+        do {
+            writeStream.writeGridCacheVersion(ver);
+
+            if (buff.limit() < buff.capacity())
+                buff.limit(buff.limit() + 1);
+            else
+                buff.limit(buff.capacity());
+
+            assertTrue("Must be done earlier", iter++ < buff.capacity());
+        } while (!writeStream.lastFinished());
+
+        buff.rewind();
+        buff.limit(startLimit);
+
+        GridCacheVersion ver1;
+
+        iter = 0;
+
+        do {
+            ver1 = readStream.readGridCacheVersion();
+
+            if (buff.limit() < buff.capacity())
+                buff.limit(buff.limit() + 1);
+            else
+                buff.limit(buff.capacity());
+
+            assertTrue("Must be done earlier", iter++ < buff.capacity());
+        } while (!readStream.lastFinished());
+
+        assertEquals(ver, ver1);
+
+        buff.rewind();
+        buff.limit(startLimit);
     }
 
     /** */

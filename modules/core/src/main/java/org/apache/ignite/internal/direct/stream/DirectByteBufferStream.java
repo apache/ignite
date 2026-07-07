@@ -36,6 +36,8 @@ import org.apache.ignite.internal.managers.communication.CompressedMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -2091,6 +2093,11 @@ public class DirectByteBufferStream {
 
                 break;
 
+            case GRID_CACHE_VERSION:
+                writeGridCacheVersion((GridCacheVersion)val);
+
+                break;
+
             case AFFINITY_TOPOLOGY_VERSION:
                 writeAffinityTopologyVersion((AffinityTopologyVersion)val);
 
@@ -2215,6 +2222,9 @@ public class DirectByteBufferStream {
             case IGNITE_UUID:
                 return readIgniteUuid();
 
+            case GRID_CACHE_VERSION:
+                return readGridCacheVersion();
+
             case AFFINITY_TOPOLOGY_VERSION:
                 return readAffinityTopologyVersion();
 
@@ -2307,104 +2317,299 @@ public class DirectByteBufferStream {
     /** */
     public void writeIgniteProductVersion(IgniteProductVersion ver) {
         if (ver == null) {
-            lastFinished = buf.remaining() >= 1;
-
-            if (!lastFinished)
-                return;
-
-            buf.put((byte)0);
+            writeByte((byte)0);
 
             return;
         }
 
-        if (!msgTypeDone) {
-            if (buf.remaining() < 4) {
-                lastFinished = false;
+        if (uuidState == 0) {
+            writeByte((byte)1);
 
+            if (!lastFinished)
                 return;
-            }
 
-            buf.put((byte)1);
-            buf.put(ver.major());
-            buf.put(ver.minor());
-            buf.put(ver.maintenance());
-
-            msgTypeDone = true;
+            uuidState++;
         }
 
-        if (!keyDone) {
+        if (uuidState == 1) {
+            writeByte(ver.major());
+
+            if (!lastFinished)
+                return;
+
+            uuidState++;
+        }
+
+        if (uuidState == 2) {
+            writeByte(ver.minor());
+
+            if (!lastFinished)
+                return;
+
+            uuidState++;
+        }
+
+        if (uuidState == 3) {
+            writeByte(ver.maintenance());
+
+            if (!lastFinished)
+                return;
+
+            uuidState++;
+
+        }
+
+        if (uuidState == 4) {
             writeLong(ver.revisionTimestamp());
 
             if (!lastFinished)
                 return;
 
-            keyDone = true;
+            uuidState++;
         }
 
-        writeByteArray(ver.revisionHash());
+        if (uuidState == 5) {
+            writeByteArray(ver.revisionHash());
 
-        if (!lastFinished)
+            if (!lastFinished)
+                return;
+
+            uuidState = 0;
+
             return;
+        }
 
-        msgTypeDone = false;
-        keyDone = false;
+        throw new IllegalStateException("Unexpected state: " + uuidState);
     }
 
     /** */
     public IgniteProductVersion readIgniteProductVersion() {
-        if (buf.remaining() < 1) {
-            lastFinished = false;
-
-            return null;
-        }
-
-        if (cur == NULL || cur == null) {
-            if (buf.get() == (byte)0) {
-                lastFinished = true;
-
-                return null;
-            }
-
-            cur = new IgniteProductVersionEx();
-        }
-
-        if (!msgTypeDone) {
-            if (buf.remaining() < 3) {
-                lastFinished = false;
-
-                return null;
-            }
-
-            ((IgniteProductVersionEx)cur).version(buf.get(), buf.get(), buf.get());
-
-            msgTypeDone = true;
-        }
-
-        if (!keyDone) {
-            long revTs = readLong();
+        if (uuidState == 0) {
+            byte notNull = readByte();
 
             if (!lastFinished)
                 return null;
 
-            keyDone = true;
+            if (notNull == 0)
+                return null;
 
-            ((IgniteProductVersionEx)cur).revisionTimestamp(revTs);
+            cur = new IgniteProductVersionEx();
+
+            uuidState++;
         }
 
-        byte[] revHash = readByteArray();
+        if (uuidState == 1) {
+            ((IgniteProductVersionEx)cur).major(readByte());
+
+            if (!lastFinished)
+                return null;
+
+            uuidState++;
+        }
+
+        if (uuidState == 2) {
+            ((IgniteProductVersionEx)cur).minor(readByte());
+
+            if (!lastFinished)
+                return null;
+
+            uuidState++;
+        }
+
+        if (uuidState == 3) {
+            ((IgniteProductVersionEx)cur).maintenance(readByte());
+
+            if (!lastFinished)
+                return null;
+
+            uuidState++;
+        }
+
+        if (uuidState == 4) {
+            ((IgniteProductVersionEx)cur).revisionTimestamp(readLong());
+
+            if (!lastFinished)
+                return null;
+
+            uuidState++;
+        }
+
+        ((IgniteProductVersionEx)cur).revisionHash(readByteArray());
 
         if (!lastFinished)
             return null;
 
         IgniteProductVersionEx res = (IgniteProductVersionEx)cur;
 
-        res.revisionHash(revHash);
-
         cur = NULL;
-        msgTypeDone = false;
-        keyDone = false;
+        uuidState = 0;
 
         return res;
+    }
+
+    /** */
+    public void writeGridCacheVersion(GridCacheVersion ver) {
+        if (ver == null) {
+            writeByte((byte)0);
+
+            return;
+        }
+
+        int fldCnt = 5;
+
+        // Write of conflict version in progress, already.
+        if (uuidState >= fldCnt)
+            ver = ver.conflictVersion();
+
+        while (true) {
+            if (uuidState % fldCnt == 0) {
+                byte type;
+
+                if (ver.conflictVersion() == ver)
+                    type = (byte)1;
+                else if (ver instanceof GridCacheVersionEx)
+                    type = (byte)2;
+                else
+                    throw new IllegalArgumentException("Unknown GridCacheVersion child: " + ver);
+
+                writeByte(type);
+
+                if (!lastFinished)
+                    return;
+
+                uuidState++;
+            }
+
+            if (uuidState % fldCnt == 1) {
+                writeInt(ver.topologyVersion());
+
+                if (!lastFinished)
+                    return;
+
+                uuidState++;
+            }
+
+            if (uuidState % fldCnt == 2) {
+                writeInt(ver.nodeOrderAndDrIdRaw());
+
+                if (!lastFinished)
+                    return;
+
+                uuidState++;
+            }
+
+            if (uuidState % fldCnt == 3) {
+                writeLong(ver.order());
+
+                if (!lastFinished)
+                    return;
+
+                uuidState++;
+            }
+
+            if (uuidState % fldCnt == 4) {
+                if (ver.conflictVersion() == ver)
+                    break;
+
+                ver = ver.conflictVersion();
+
+                uuidState++;
+
+                if (uuidState >= fldCnt * 2)
+                    throw new IllegalStateException("Support one nest level, only!");
+            }
+        }
+
+        lastFinished = true;
+        uuidState = 0;
+    }
+
+    /** */
+    public GridCacheVersion readGridCacheVersion() {
+        int fldCnt = 5;
+
+        GridCacheVersion ver = null;
+
+        if (cur != null && cur != NULL)
+            ver = (GridCacheVersion)cur;
+
+        if (uuidState >= fldCnt)
+            ver = ver.conflictVersion();
+
+        while (true) {
+            if (uuidState % fldCnt == 0) {
+                byte type = readByte();
+
+                if (!lastFinished)
+                    return null;
+
+                // 0 -> NULL
+                // 1 -> GridCacheVersion
+                // 2 -> GridCacheVersionEx
+                if (type == 0)
+                    return null;
+                else if (type == 1)
+                    ver = new GridCacheVersion();
+                else if (type == 2) {
+                    ver = new GridCacheVersionEx();
+
+                    ((GridCacheVersionEx)ver).conflictVersion(new GridCacheVersion());
+                }
+                else
+                    throw new IllegalArgumentException("Unknown GridCacheVersion type: " + type);
+
+                if (uuidState == 0)
+                    cur = ver;
+
+                uuidState++;
+            }
+
+            if (uuidState % fldCnt == 1) {
+                ver.topologyVersion(readInt());
+
+                if (!lastFinished)
+                    return null;
+
+                uuidState++;
+            }
+
+            if (uuidState % fldCnt == 2) {
+                ver.nodeOrderAndDrIdRaw(readInt());
+
+                if (!lastFinished)
+                    return null;
+
+                uuidState++;
+            }
+
+            if (uuidState % fldCnt == 3) {
+                ver.order(readLong());
+
+                if (!lastFinished)
+                    return null;
+
+                uuidState++;
+            }
+
+            if (uuidState % fldCnt == 4) {
+                if (ver.conflictVersion() == ver)
+                    break;
+
+                ver = ver.conflictVersion();
+
+                uuidState++;
+
+                if (uuidState >= fldCnt * 2)
+                    throw new IllegalStateException("Support one nest level, only!");
+            }
+        }
+
+        ver = (GridCacheVersion)cur;
+
+        cur = NULL;
+        uuidState = 0;
+
+        return ver;
     }
 
     /** {@inheritDoc} */
