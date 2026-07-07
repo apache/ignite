@@ -2520,7 +2520,7 @@ public class DirectByteBufferStream {
 
     /** */
     public GridCacheVersion readGridCacheVersion() {
-        GridCacheVersion ver =  cur != NULL ? (GridCacheVersion)cur : null;
+        GridCacheVersion ver = cur != NULL ? (GridCacheVersion)cur : null;
 
         switch (uuidState) {
             case 0:
