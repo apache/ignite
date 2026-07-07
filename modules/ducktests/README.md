@@ -23,14 +23,20 @@ Docker is used to emulate a distributed multi-node cluster environment where eac
 
 ### 2. Prepare the Environment & Code
 Execute these preparation steps from the root directory of your project:
+
+> **WARNING:** Building and compiling the Apache Ignite project is strictly mandatory. You must run `mvn clean install` to generate the local Maven artifacts. Skipping this step will cause the Ignite service startup to fail with a `ClassNotFoundException`.
+
 ```bash
 # 1. Change your current directory to the Ignite root
-cd ${IGNITE_HOME}
+cd \${IGNITE_HOME}
 
-# 2. Build the Apache Ignite ducktests modules
+# 2. Build and install Apache Ignite artifacts locally
+mvn clean install -DskipTests
+
+# 3. Build the Apache Ignite ducktests modules
 ./scripts/build-module.sh ducktests
 
-# 3. Navigate into the ducktests directory
+# 4. Navigate into the ducktests directory
 cd modules/ducktests/tests
 ```
 
