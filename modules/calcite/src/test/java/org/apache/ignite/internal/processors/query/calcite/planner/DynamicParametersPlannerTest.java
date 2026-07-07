@@ -66,5 +66,7 @@ public class DynamicParametersPlannerTest extends AbstractPlannerTest {
 
         checkStatement(setup).sql("SELECT * FROM t1 OFFSET ? ROWS", (Object)null).fails(
             "Incorrect type of a dynamic parameter. Expected <BIGINT> but got <null>");
+
+        checkStatement(setup).sql("SELECT * FROM TEST_REPL OFFSET 2+? ROWS", 1).fails("Encountered \"+\"");
     }
 }

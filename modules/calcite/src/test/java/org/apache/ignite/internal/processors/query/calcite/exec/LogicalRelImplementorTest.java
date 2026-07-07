@@ -196,7 +196,7 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
         node = relImplementor.visit(idxScan);
 
         assertTrue(node instanceof SortNode);
-        assertEquals(1, (int)U.field(node, "limit"));
+        assertEquals(1L, (long)U.field(node, "limit"));
         assertTrue(node.sources() != null && node.sources().size() == 1);
         assertTrue(node.sources().get(0) instanceof ScanNode);
     }

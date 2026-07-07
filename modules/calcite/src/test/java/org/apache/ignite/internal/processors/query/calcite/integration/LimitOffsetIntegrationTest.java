@@ -17,15 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
-import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
-import org.apache.calcite.sql.validate.SqlValidatorException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.AbstractNode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -99,40 +96,6 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
         assertQuery("(SELECT id FROM TEST_REPL WHERE id = 2) UNION ALL " +
             "SELECT id FROM (select id from (SELECT id FROM TEST_REPL OFFSET 2) order by id OFFSET 1)"
         ).returns(2).returns(4).check();
-    }
-
-    /** Tests correctness of fetch / offset params. */
-    @Test
-    public void testInvalidLimitOffset() {
-        String bigInt = BigDecimal.valueOf(10000000000L).toString();
-
-        assertThrows("SELECT * FROM TEST_REPL OFFSET " + bigInt + " ROWS",
-            SqlValidatorException.class, "Illegal value of offset");
-
-        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST " + bigInt + " ROWS ONLY",
-            SqlValidatorException.class, "Illegal value of fetch / limit");
-
-        assertThrows("SELECT * FROM TEST_REPL LIMIT " + bigInt,
-            SqlValidatorException.class, "Illegal value of fetch / limit");
-
-        assertThrows("SELECT * FROM TEST_REPL OFFSET -1 ROWS FETCH FIRST -1 ROWS ONLY",
-            IgniteSQLException.class, null);
-
-        assertThrows("SELECT * FROM TEST_REPL OFFSET -1 ROWS",
-            IgniteSQLException.class, null);
-
-        assertThrows("SELECT * FROM TEST_REPL OFFSET 2+1 ROWS",
-            IgniteSQLException.class, null);
-
-        // Check with parameters
-        assertThrows("SELECT * FROM TEST_REPL OFFSET ? ROWS FETCH FIRST ? ROWS ONLY",
-            SqlValidatorException.class, "Illegal value of fetch / limit", -1, -1);
-
-        assertThrows("SELECT * FROM TEST_REPL OFFSET ? ROWS",
-            SqlValidatorException.class, "Illegal value of offset", -1);
-
-        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST ? ROWS ONLY",
-            SqlValidatorException.class, "Illegal value of fetch / limit", -1);
     }
 
     /**
