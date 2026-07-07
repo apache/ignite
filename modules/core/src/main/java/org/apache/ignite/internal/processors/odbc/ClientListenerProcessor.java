@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.configuration.distributed.Distribut
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
+import org.apache.ignite.internal.ssl.NioSslContextReloadable;
 import org.apache.ignite.internal.systemview.ClientConnectionAttributeViewWalker;
 import org.apache.ignite.internal.systemview.ClientConnectionViewWalker;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -503,6 +504,9 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
             sslFilter.wantClientAuth(auth);
             sslFilter.needClientAuth(auth);
+
+            ctx.internalSubscriptionProcessor().registerSslContextReloadable("client connector",
+                new NioSslContextReloadable(sslCtxFactory, sslFilter, false));
 
             return new GridNioFilter[] {
                 openSesFilter,

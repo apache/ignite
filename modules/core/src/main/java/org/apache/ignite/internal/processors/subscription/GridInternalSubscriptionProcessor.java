@@ -18,6 +18,8 @@ package org.apache.ignite.internal.processors.subscription;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
@@ -26,6 +28,7 @@ import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupp
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
+import org.apache.ignite.internal.ssl.SslContextReloadable;
 import org.jetbrains.annotations.NotNull;
 
 import static java.util.Objects.requireNonNull;
@@ -58,6 +61,9 @@ public class GridInternalSubscriptionProcessor extends GridProcessorAdapter {
 
     /** */
     private final List<IgniteChangeGlobalStateSupport> globalStateListeners = new ArrayList<>();
+
+    /** Components that have SSL configured, by the name reported to the operator. Read from the management pool. */
+    private final Map<String, SslContextReloadable> sslCtxReloadables = new ConcurrentHashMap<>();
 
     /**
      * @param ctx Kernal context.
@@ -135,5 +141,23 @@ public class GridInternalSubscriptionProcessor extends GridProcessorAdapter {
     /** */
     public List<IgniteChangeGlobalStateSupport> getGlobalStateListeners() {
         return globalStateListeners;
+    }
+
+    /**
+     * Registers a component that has SSL configured, so that the {@code --ssl reload} command can replace its
+     * certificates at runtime.
+     *
+     * @param name Component name to report to the operator.
+     * @param reloadable Component to register.
+     */
+    public void registerSslContextReloadable(@NotNull String name, @NotNull SslContextReloadable reloadable) {
+        requireNonNull(reloadable, "SSL context reloadable should be not-null.");
+
+        sslCtxReloadables.put(name, reloadable);
+    }
+
+    /** */
+    public Map<String, SslContextReloadable> getSslContextReloadables() {
+        return sslCtxReloadables;
     }
 }

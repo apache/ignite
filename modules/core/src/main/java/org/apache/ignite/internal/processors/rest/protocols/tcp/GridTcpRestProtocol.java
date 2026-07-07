@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
 import org.apache.ignite.internal.processors.rest.protocols.GridRestProtocolAdapter;
+import org.apache.ignite.internal.ssl.NioSslContextReloadable;
 import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
 import org.apache.ignite.internal.util.nio.GridNioFilter;
 import org.apache.ignite.internal.util.nio.GridNioParser;
@@ -61,6 +62,9 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
 public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     /** Server. */
     private GridNioServer<GridClientMessage> srv;
+
+    /** SSL context factory, {@code null} if SSL is disabled. */
+    private Factory<SSLContext> sslCtxFactory;
 
     /** NIO server listener. */
     private GridTcpRestNioListener lsnr;
@@ -104,10 +108,9 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
                     // Thrown SSL exception instead of IgniteCheckedException for writing correct warning message into log.
                     throw new SSLException("SSL is enabled, but SSL context factory is not specified.");
 
-                if (factory != null)
-                    sslCtx = factory.create();
-                else
-                    sslCtx = igniteFactory.create();
+                sslCtxFactory = factory != null ? factory : igniteFactory;
+
+                sslCtx = sslCtxFactory.create();
             }
             int startPort = cfg.getPort();
             int portRange = cfg.getPortRange();
@@ -209,10 +212,12 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
             GridNioFilter[] filters;
 
+            GridNioSslFilter sslFilter = null;
+
             MetricRegistryImpl mreg = ctx.metric().registry(REST_CONNECTOR_METRIC_REGISTRY_NAME);
 
             if (sslCtx != null) {
-                GridNioSslFilter sslFilter = U.sslFilter(
+                sslFilter = U.sslFilter(
                     sslCtx,
                     cfg.isDirectBuffer(),
                     ByteOrder.nativeOrder(),
@@ -261,6 +266,11 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
             srv.start();
 
             ctx.ports().registerPort(port, IgnitePortProtocol.TCP, getClass());
+
+            if (sslFilter != null) {
+                ctx.internalSubscriptionProcessor().registerSslContextReloadable("REST",
+                    new NioSslContextReloadable(sslCtxFactory, sslFilter, false));
+            }
 
             return true;
         }

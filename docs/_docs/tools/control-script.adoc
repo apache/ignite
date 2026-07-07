@@ -1622,3 +1622,67 @@ Examples:
 ----
 control.sh|bat --event list --enabled
 ----
+
+== TLS Certificate Hot Reload
+
+By default, TLS certificates are loaded once at node startup, so updating them requires a full node restart. The
+`--ssl reload` command replaces them at runtime on all server nodes, and `--ssl ensure` checks the certificates on
+disk without touching the ones in use.
+
+[source, shell]
+----
+control.sh|bat --ssl ensure
+control.sh|bat --ssl reload
+----
+
+Update the certificate files on disk, keeping the configured key and trust store paths. Run `--ssl ensure` to see
+whether every node can load and use them, and then `--ssl reload` to switch over. Checking first matters because a
+reload is applied node by node: without it, a bad certificate on one node is discovered only after the others have
+already switched.
+
+=== What Is Reloaded
+
+Each node rebuilds its SSL context from the configured `SslContextFactory`, so both the key store and the trust
+store are re-read. This covers the SSL-enabled transports of a server node: communication, discovery, the client
+connector and the binary (TCP) REST connector.
+
+Connections opened afterwards use the new certificates. Connections that are already established are not
+interrupted and keep the certificates they were negotiated with, so a node serves both until they are re-opened.
+
+Not covered, and still requiring a restart: the HTTP REST connector, client nodes, and the clients themselves —
+thin clients and the JDBC and ODBC drivers hold their own SSL configuration.
+
+=== Limits and Risks
+
+A reload is applied node by node and is not atomic across the cluster, so for a short time some nodes serve the new
+certificates and others the old ones. Inter-node TLS is mutual — communication and discovery both require a
+certificate from the peer — so a change of certificate authority must keep every node trusting both the old and the
+new authority for the whole transition. Run `--ssl ensure` before each step:
+
+. Add the new authority to the trust store of every node and every client, keeping the old one, and reload.
+. Replace the key stores with certificates issued by the new authority and reload again.
+. Wait until the existing connections have been re-established on the new certificates.
+. Remove the old authority from the trust stores and reload a last time.
+
+Narrowing trust before every peer presents the new certificate breaks the ring and forces nodes out of the cluster.
+
+Reloading is not a revocation mechanism: a peer that has been removed from a trust store keeps its established
+connections until they are closed.
+
+If a node cannot rebuild its context, for example because the key store on disk is unreadable, it keeps the
+previously loaded certificates and the command reports which component failed and why.
+
+Before a rebuilt context replaces the one in use on the communication and discovery transports, the node checks it
+by running a mutually authenticated TLS handshake in memory, with both ends taken from the new context. A
+certificate that the node's own trust store rejects therefore never reaches the inter-node transports: the node
+keeps its previous certificates and the command reports the failure. The check is not applied to the client and
+REST connectors, where a client legitimately presents a different key and trust store.
+
+This check assumes that all nodes run the same key and trust store configuration, which is the usual setup. A
+cluster that deliberately gives its nodes certificates from different authorities has to rotate them by restarting
+the nodes.
+
+A custom `Factory<SSLContext>` that does not extend `org.apache.ignite.ssl.AbstractSslContextFactory` is refreshed
+by calling `Factory#create()`. If such a factory caches the context internally, it keeps returning the one already
+in use and the certificates cannot be rotated at runtime. The command detects this and reports the affected
+components as `NOT reloaded`, so a failed rotation is never reported as a success.

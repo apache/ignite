@@ -665,7 +665,8 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
                         ((CommunicationListenerEx<Message>)lsnr).onChannelOpened(rmtNodeId, initMsg, channel);
                 }
             },
-            tcpHandshakeExecutor
+            tcpHandshakeExecutor,
+            ignite instanceof IgniteEx ? ((IgniteEx)ignite).context().internalSubscriptionProcessor() : null
         ));
 
         this.srvLsnr.setNioSrvWrapper(nioSrvWrapper);

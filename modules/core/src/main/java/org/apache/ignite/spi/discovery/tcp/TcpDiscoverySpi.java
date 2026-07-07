@@ -40,10 +40,10 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
+import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
-import javax.net.ssl.SSLServerSocketFactory;
-import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.SSLSocket;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAuthenticationException;
 import org.apache.ignite.IgniteCheckedException;
@@ -60,6 +60,9 @@ import org.apache.ignite.internal.managers.communication.UnknownMessageException
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.ssl.SslContextReloadable;
+import org.apache.ignite.internal.ssl.SslContextUtils;
+import org.apache.ignite.internal.ssl.SslContextValidator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -230,7 +233,7 @@ import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager
 @DiscoverySpiOrderSupport(true)
 @DiscoverySpiHistorySupport(true)
 @DiscoverySpiMutableCustomMessageSupport(true)
-public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscoverySpi {
+public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscoverySpi, SslContextReloadable {
     /** Node attribute that is mapped to node's external addresses (value is <tt>disc.tcp.ext-addrs</tt>). */
     public static final String ATTR_EXT_ADDRS = "disc.tcp.ext-addrs";
 
@@ -420,11 +423,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /** Node authenticator. */
     protected DiscoverySpiNodeAuthenticator nodeAuth;
 
-    /** SSL server socket factory. */
-    protected SSLServerSocketFactory sslSrvSockFactory;
-
-    /** SSL socket factory. */
-    protected SSLSocketFactory sslSockFactory;
+    /** SSL context, {@code null} if SSL is disabled. Volatile: replaced on certificate reload. */
+    @GridToStringExclude
+    private volatile SSLContext sslCtx;
 
     /** SSL enable/disable flag. */
     protected boolean sslEnable;
@@ -1668,7 +1669,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         try {
             if (isSslEnabled())
-                sock = sslSockFactory.createSocket();
+                sock = sslCtx.getSocketFactory().createSocket();
             else
                 sock = new Socket();
 
@@ -1684,6 +1685,28 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
             throw e;
         }
+    }
+
+    /**
+     * Wraps a socket accepted by the server into an SSL socket, if SSL is enabled. The SSL context is taken at accept
+     * time rather than captured once at bind time, so connections accepted after a certificate reload are served with
+     * the updated certificates.
+     *
+     * @param sock Accepted socket.
+     * @return Socket to serve the connection with.
+     * @throws IOException If failed.
+     */
+    Socket acceptedSocket(Socket sock) throws IOException {
+        if (!isSslEnabled())
+            return sock;
+
+        SSLSocket sslSock = (SSLSocket)sslCtx.getSocketFactory().createSocket(sock, null, sock.getPort(), true);
+
+        // Set after the factory has applied the configured SSL parameters, which carry the default client auth mode.
+        sslSock.setUseClientMode(false);
+        sslSock.setNeedClientAuth(true);
+
+        return sslSock;
     }
 
     /**
@@ -2173,14 +2196,16 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         if (isSslEnabled()) {
             try {
-                SSLContext sslCtx = ignite.configuration().getSslContextFactory().create();
-
-                sslSockFactory = sslCtx.getSocketFactory();
-                sslSrvSockFactory = sslCtx.getServerSocketFactory();
+                sslCtx = ignite.configuration().getSslContextFactory().create();
             }
             catch (IgniteException e) {
                 throw new IgniteSpiException("Failed to create SSL context. SSL factory: "
                     + ignite.configuration().getSslContextFactory(), e);
+            }
+
+            if (ignite instanceof IgniteEx) {
+                ((IgniteEx)ignite).context().internalSubscriptionProcessor()
+                    .registerSslContextReloadable("discovery", this);
             }
         }
 
@@ -2311,6 +2336,45 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      */
     boolean isSslEnabled() {
         return sslEnable;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean reloadSslContext() throws IgniteCheckedException {
+        SSLContext ctx = rebuildSslContext(true);
+
+        if (ctx == null)
+            return false;
+
+        sslCtx = ctx;
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean checkSslContext() throws IgniteCheckedException {
+        return rebuildSslContext(false) != null;
+    }
+
+    /**
+     * @param apply Whether the factory should hand the rebuilt context out afterwards.
+     * @return Rebuilt context, or {@code null} if the factory returned the one already in use.
+     * @throws IgniteCheckedException If the context could not be built or did not pass the check.
+     */
+    private @Nullable SSLContext rebuildSslContext(boolean apply) throws IgniteCheckedException {
+        Factory<SSLContext> factory = ignite.configuration().getSslContextFactory();
+
+        try {
+            SSLContext ctx = apply ? SslContextUtils.reload(factory, sslCtx) : SslContextUtils.check(factory, sslCtx);
+
+            if (ctx != null)
+                SslContextValidator.validateInterNode(ctx);
+
+            return ctx;
+        }
+        catch (SSLException e) {
+            // The component name is added by the reporting task, so only the cause is of interest here.
+            throw new IgniteCheckedException(e);
+        }
     }
 
     /** {@inheritDoc} */

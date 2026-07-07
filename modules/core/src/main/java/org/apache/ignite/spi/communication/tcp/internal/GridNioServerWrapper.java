@@ -58,6 +58,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
+import org.apache.ignite.internal.ssl.NioSslContextReloadable;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.function.ThrowableBiFunction;
@@ -216,6 +218,9 @@ public class GridNioServerWrapper {
     /** NIO server. */
     private GridNioServer<Message> nioSrv;
 
+    /** Registry the SSL filter is published to, {@code null} if the SPI runs outside of a node. */
+    private final GridInternalSubscriptionProcessor subscriptionProc;
+
     /** Stopping flag (set to {@code true} when SPI gets stopping signal). */
     private volatile boolean stopping = false;
 
@@ -265,7 +270,8 @@ public class GridNioServerWrapper {
         @Nullable GridMetricManager metricMgr,
         ThrowableBiFunction<ClusterNode, Integer, GridCommunicationClient, IgniteCheckedException> createTcpClientFun,
         CommunicationListener<Message> lsnr,
-        TcpHandshakeExecutor tcpHandshakeExecutor
+        TcpHandshakeExecutor tcpHandshakeExecutor,
+        @Nullable GridInternalSubscriptionProcessor subscriptionProc
     ) {
         this.log = log;
         this.cfg = cfg;
@@ -293,6 +299,7 @@ public class GridNioServerWrapper {
             }
         };
         this.tcpHandshakeExecutor = tcpHandshakeExecutor;
+        this.subscriptionProc = subscriptionProc;
 
         this.handshakeTimeoutExecutorService = newSingleThreadScheduledExecutor("handshake-timeout-nio", igniteInstanceName);
     }
@@ -927,6 +934,11 @@ public class GridNioServerWrapper {
                     sslFilter.needClientAuth(true);
 
                     filters.add(sslFilter);
+
+                    if (subscriptionProc != null) {
+                        subscriptionProc.registerSslContextReloadable("communication",
+                            new NioSslContextReloadable(igniteCfg.getSslContextFactory(), sslFilter, true));
+                    }
                 }
 
                 GridNioFilter[] filtersArr = filters.toArray(new GridNioFilter[filters.size()]);

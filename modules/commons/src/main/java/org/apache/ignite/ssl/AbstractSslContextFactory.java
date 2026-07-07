@@ -196,4 +196,31 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
 
         return ctx;
     }
+
+    /**
+     * Rebuilds the SSL context from the factory configuration, re-reading the key and trust stores, and replaces
+     * the instance cached by {@link #create()}.
+     *
+     * @return Newly created SSL context.
+     * @throws SSLException If the new context could not be created. The cached context is kept in this case.
+     */
+    public SSLContext reload() throws SSLException {
+        SSLContext ctx = build();
+
+        sslCtx.set(ctx);
+
+        return ctx;
+    }
+
+    /**
+     * Builds an SSL context from the current factory configuration, re-reading the key and trust stores, and leaves
+     * the instance cached by {@link #create()} in place. Useful to check the stores on disk without putting them in
+     * use.
+     *
+     * @return Newly created SSL context.
+     * @throws SSLException If the context could not be created.
+     */
+    public SSLContext build() throws SSLException {
+        return createSslContext();
+    }
 }
