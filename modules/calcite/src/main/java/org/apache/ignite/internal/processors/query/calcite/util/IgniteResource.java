@@ -88,4 +88,12 @@ public interface IgniteResource {
     /** */
     @Resources.BaseMessage("Operator ''CAST'' supports only the parameters: value and target type.")
     Resources.ExInst<SqlValidatorException> invalidCastParameters();
+
+    /** */
+    @Resources.BaseMessage("SELECT FOR UPDATE is not yet supported.")
+    Resources.ExInst<SqlValidatorException> selectForUpdateNotSupported();
+
+    /** */
+    @Resources.BaseMessage("WAIT value must be a positive integer, but was: {0}")
+    Resources.ExInst<SqlValidatorException> illegalWaitTimeout(String value);
 }
