@@ -66,8 +66,7 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
         super(evtId, ZK_EVT_CUSTOM_EVT, topVer);
 
         assert sndNodeId != null;
-        assert cstEvtHldr != null;
-        assert cstEvtHldr.originalMsg != null || origEvtId != 0 || !F.isEmpty(evtPath);
+        assert (cstEvtHldr != null && cstEvtHldr.originalMsg != null) || origEvtId != 0 || !F.isEmpty(evtPath);
 
         this.origEvtId = origEvtId;
         this.cstEvtHldr = cstEvtHldr;
