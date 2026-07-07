@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -53,7 +52,6 @@ import org.apache.ignite.cache.CachePartialUpdateException;
 import org.apache.ignite.cache.CacheServerNotFoundException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.AffinityFunction;
-import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
@@ -176,6 +174,17 @@ public class GridCacheUtils {
     @Deprecated
     public static boolean cheatCache(int id) {
         return cheatCacheId != 0 && id == cheatCacheId;
+    }
+
+    /**
+     * Checks whether the separate lock wait timeout expires before the transaction timeout.
+     *
+     * @param waitTimeout Lock wait timeout. {@code 0} means that there is no separate lock wait timeout.
+     * @param timeout Transaction timeout. {@code 0} means that the transaction timeout is infinite.
+     * @return {@code True} if the separate lock wait timeout expires before the transaction timeout.
+     */
+    public static boolean isWaitTimeoutExpiresFirst(long waitTimeout, long timeout) {
+        return timeout >= 0 && waitTimeout != 0 && (timeout == 0 || timeout > waitTimeout);
     }
 
     /** System cache name. */
@@ -2203,21 +2212,6 @@ public class GridCacheUtils {
             affFields.put(keyCfg.getTypeName(), keyCfg.getAffinityKeyFieldName());
 
         return affFields;
-    }
-
-    /**
-     * @param cls Class to get affinity field for.
-     * @return Affinity field name or {@code null} if field name was not found.
-     */
-    public static String affinityFieldName(Class cls) {
-        for (; cls != Object.class && cls != null; cls = cls.getSuperclass()) {
-            for (Field f : cls.getDeclaredFields()) {
-                if (f.getAnnotation(AffinityKeyMapped.class) != null)
-                    return f.getName();
-            }
-        }
-
-        return null;
     }
 
     /**

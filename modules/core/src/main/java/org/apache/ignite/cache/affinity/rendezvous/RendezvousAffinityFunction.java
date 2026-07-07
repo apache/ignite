@@ -37,12 +37,12 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -117,7 +117,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
      * @return Mask to use in calculation when partitions count is power of 2.
      */
     public static int calculateMask(int parts) {
-        return (parts & (parts - 1)) == 0 ? parts - 1 : -1;
+        return CommonUtils.calculateMask(parts);
     }
 
     /**
@@ -129,13 +129,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
      * @return Partition number for a given key.
      */
     public static int calculatePartition(Object key, int mask, int parts) {
-        if (mask >= 0) {
-            int h;
-
-            return ((h = key.hashCode()) ^ (h >>> 16)) & mask;
-        }
-
-        return U.safeAbs(key.hashCode() % parts);
+        return CommonUtils.calculatePartition(key, mask, parts);
     }
 
     /**

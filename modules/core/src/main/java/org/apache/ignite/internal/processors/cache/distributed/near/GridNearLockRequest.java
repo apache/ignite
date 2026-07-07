@@ -79,6 +79,10 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     @Order(7)
     String txLbl;
 
+    /** Lock wait timeout. */
+    @Order(8)
+    long waitTimeout;
+
     /**
      * Empty constructor.
      */
@@ -98,7 +102,8 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
      * @param retVal Return value flag.
      * @param isolation Transaction isolation.
      * @param isInvalidate Invalidation flag.
-     * @param timeout Lock timeout.
+     * @param timeout Transaction timeout.
+     * @param waitTimeout Lock wait timeout.
      * @param keyCnt Number of keys.
      * @param txSize Expected transaction size.
      * @param syncCommit Synchronous commit flag.
@@ -123,6 +128,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         TransactionIsolation isolation,
         boolean isInvalidate,
         long timeout,
+        long waitTimeout,
         int keyCnt,
         int txSize,
         boolean syncCommit,
@@ -162,6 +168,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         this.taskNameHash = taskNameHash;
         this.createTtl = createTtl;
         this.accessTtl = accessTtl;
+        this.waitTimeout = waitTimeout;
 
         this.txLbl = txLbl;
 
@@ -205,6 +212,13 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
      */
     public boolean firstClientRequest() {
         return isFlag(FIRST_CLIENT_REQ_FLAG_MASK);
+    }
+
+    /**
+     * @return Lock wait timeout.
+     */
+    public long waitTimeout() {
+        return waitTimeout;
     }
 
     /**

@@ -27,9 +27,6 @@ import org.jetbrains.annotations.Nullable;
  * Schema change finish discovery message.
  */
 public class SchemaFinishDiscoveryMessage extends SchemaAbstractDiscoveryMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** No-op flag. */
     @Order(0)
     boolean nop;
