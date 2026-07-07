@@ -35,7 +35,7 @@ class MultiDCPartitionResilienceTest(NetworkGroupAbstractTest):
     """
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH))
-    @matrix(cross_dc_latency_ms=[1, 5, 10], partition_time_sec=[0.5, 1, 5], is_node_count_odd=[True, False])
+    @matrix(cross_dc_latency_ms=[5, 10, 20, 50], partition_time_sec=[0.5, 1, 5], is_node_count_odd=[True, False])
     def test_mdc_cluster_partition_resilience(self, ignite_version, cross_dc_latency_ms, partition_time_sec,
                                               is_node_count_odd):
         self.configure_network_and_run(ignite_version=ignite_version, cross_dc_latency_ms=cross_dc_latency_ms,
@@ -51,10 +51,7 @@ class MultiDCPartitionResilienceTest(NetworkGroupAbstractTest):
         return store
 
     def _configure_services(self, **kwargs):
-        self.ign_cfg = IgniteConfiguration(
-            version=IgniteVersion(kwargs['ignite_version']),
-            peer_class_loading_enabled=False
-        )
+        self.ign_cfg = IgniteConfiguration(version=IgniteVersion(kwargs['ignite_version']))
 
         dc_1_nodes_num, dc_2_nodes_num = self._dc_node_counts(kwargs['is_node_count_odd'])
 
@@ -87,11 +84,9 @@ class MultiDCPartitionResilienceTest(NetworkGroupAbstractTest):
     def _verify_cluster_survived(self, is_node_count_odd: bool):
         total_alive = sum(len(svc.alive_nodes) for svc in [self.svc_dc_1, self.svc_dc_2])
 
-        # The majority side of the partition must survive.
-        min_alive_nodes = min(self._dc_node_counts(is_node_count_odd))
+        alive_nodes = sum(self._dc_node_counts(is_node_count_odd))
 
-        assert total_alive >= min_alive_nodes, (f"At least {min_alive_nodes} nodes should be alive! "
-                                                f"[actual={total_alive}]")
+        assert total_alive == alive_nodes, f"{alive_nodes} nodes should be alive! [actual={total_alive}]"
 
         coordinator_node = self.svc_dc_1.nodes[0]
 
