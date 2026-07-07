@@ -60,4 +60,15 @@ public interface GridRestProtocol {
      * Processor start callback.
      */
     void onProcessorStart();
+
+    /**
+     * Reloads the SSL context used by this protocol so that new connections use the updated certificates. Default
+     * implementation is a no-op for protocols that do not support hot reload.
+     *
+     * @return {@code true} if SSL is enabled and the context was reloaded, {@code false} otherwise.
+     * @throws IgniteCheckedException If the SSL context could not be reloaded.
+     */
+    public default boolean reloadSslContext() throws IgniteCheckedException {
+        return false;
+    }
 }

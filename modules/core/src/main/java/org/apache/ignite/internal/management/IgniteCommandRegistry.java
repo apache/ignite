@@ -37,6 +37,7 @@ import org.apache.ignite.internal.management.performancestatistics.PerformanceSt
 import org.apache.ignite.internal.management.persistence.PersistenceCommand;
 import org.apache.ignite.internal.management.property.PropertyCommand;
 import org.apache.ignite.internal.management.snapshot.SnapshotCommand;
+import org.apache.ignite.internal.management.ssl.SslCommand;
 import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand;
 import org.apache.ignite.internal.management.tx.TxCommand;
 import org.apache.ignite.internal.management.wal.WalCommand;
@@ -77,7 +78,8 @@ public class IgniteCommandRegistry extends CommandRegistryImpl<NoArg, Void> {
             new PerformanceStatisticsCommand(),
             new CdcCommand(),
             new ConsistencyCommand(),
-            new EventCommand()
+            new EventCommand(),
+            new SslCommand()
         );
 
         U.loadService(CommandsProvider.class).forEach(p -> p.commands().forEach(this::register));

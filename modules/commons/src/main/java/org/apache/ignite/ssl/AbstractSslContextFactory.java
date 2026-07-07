@@ -196,4 +196,36 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
 
         return ctx;
     }
+
+    /**
+     * Rebuilds the SSL context from the current factory configuration, re-reading the configured key and trust
+     * stores from disk, and replaces the instance cached by {@link #create()}. Used to hot-reload TLS certificates
+     * at runtime without a node restart.
+     *
+     * @return Newly created SSL context.
+     * @throws SSLException If the new context could not be created. In this case the previously cached context is
+     *      kept intact.
+     */
+    public SSLContext reload() throws SSLException {
+        SSLContext ctx = createSslContext();
+
+        sslCtx.set(ctx);
+
+        return ctx;
+    }
+
+    /**
+     * Rebuilds the SSL context produced by the given factory. If the factory supports hot reload (is an
+     * {@link AbstractSslContextFactory}) its cached context is rebuilt from the configured key and trust stores;
+     * otherwise {@link Factory#create()} is invoked.
+     *
+     * @param factory SSL context factory.
+     * @return Reloaded SSL context.
+     * @throws SSLException If the context could not be reloaded.
+     */
+    public static SSLContext reload(Factory<SSLContext> factory) throws SSLException {
+        return factory instanceof AbstractSslContextFactory
+            ? ((AbstractSslContextFactory)factory).reload()
+            : factory.create();
+    }
 }

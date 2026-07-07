@@ -506,6 +506,9 @@ If the file name isn't specified the output file name is: '<typeId>.bin':
     Parameters:
       --enabled  - Filter only enabled events.
 
+  Reload TLS certificates on all server nodes by re-reading the configured key and trust stores. New connections use the updated certificates while established sessions are not interrupted:
+    control.(sh|bat) --ssl reload
+
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.
 

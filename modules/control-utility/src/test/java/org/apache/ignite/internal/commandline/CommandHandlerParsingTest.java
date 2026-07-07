@@ -79,6 +79,7 @@ import org.apache.ignite.internal.management.performancestatistics.PerformanceSt
 import org.apache.ignite.internal.management.property.PropertyCommand;
 import org.apache.ignite.internal.management.snapshot.SnapshotCommand;
 import org.apache.ignite.internal.management.snapshot.SnapshotRestoreCommand;
+import org.apache.ignite.internal.management.ssl.SslCommand;
 import org.apache.ignite.internal.management.tx.TxCommand;
 import org.apache.ignite.internal.management.tx.TxCommandArg;
 import org.apache.ignite.internal.management.tx.TxSortOrder;
@@ -1398,6 +1399,7 @@ public class CommandHandlerParsingTest {
             cmd == PerformanceStatisticsCommand.class ||
             cmd == ConsistencyCommand.class ||
             cmd == CdcCommand.class ||
-            cmd == EventCommand.class;
+            cmd == EventCommand.class ||
+            cmd == SslCommand.class;
     }
 }

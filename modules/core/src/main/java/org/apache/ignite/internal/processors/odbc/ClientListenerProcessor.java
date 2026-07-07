@@ -34,6 +34,7 @@ import javax.cache.configuration.Factory;
 import javax.management.JMException;
 import javax.management.ObjectName;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
@@ -57,6 +58,7 @@ import org.apache.ignite.internal.util.nio.GridNioFilter;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
+import org.apache.ignite.internal.util.nio.ssl.SslContextReloadable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -68,6 +70,7 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.spi.IgnitePortProtocol;
 import org.apache.ignite.spi.systemview.view.ClientConnectionAttributeView;
 import org.apache.ignite.spi.systemview.view.ClientConnectionView;
+import org.apache.ignite.ssl.AbstractSslContextFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -84,7 +87,7 @@ import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListen
 /**
  * Client connector processor.
  */
-public class ClientListenerProcessor extends GridProcessorAdapter {
+public class ClientListenerProcessor extends GridProcessorAdapter implements SslContextReloadable {
     /** */
     public static final String CLI_CONN_VIEW = metricName("client", "connections");
 
@@ -117,6 +120,9 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
     /** TCP Server. */
     private GridNioServer<ClientMessage> srv;
+
+    /** SSL filter of the current server, {@code null} if SSL is disabled. Used to hot-reload certificates. */
+    private volatile GridNioSslFilter sslFilter;
 
     /** Metrics. */
     private ClientListenerMetrics metrics;
@@ -504,6 +510,8 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
             sslFilter.wantClientAuth(auth);
             sslFilter.needClientAuth(auth);
 
+            this.sslFilter = sslFilter;
+
             return new GridNioFilter[] {
                 openSesFilter,
                 codecFilter,
@@ -516,6 +524,32 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                 codecFilter
             };
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean reloadSslContext() throws IgniteCheckedException {
+        ClientConnectorConfiguration cliConnCfg = ctx.config().getClientConnectorConfiguration();
+
+        GridNioSslFilter filter = sslFilter;
+
+        if (cliConnCfg == null || !cliConnCfg.isSslEnabled() || filter == null)
+            return false;
+
+        Factory<SSLContext> sslCtxFactory = cliConnCfg.isUseIgniteSslContextFactory()
+            ? ctx.config().getSslContextFactory()
+            : cliConnCfg.getSslContextFactory();
+
+        if (sslCtxFactory == null)
+            return false;
+
+        try {
+            filter.updateSslContext(AbstractSslContextFactory.reload(sslCtxFactory));
+        }
+        catch (SSLException e) {
+            throw new IgniteCheckedException("Failed to reload SSL context for client connector connections.", e);
+        }
+
+        return true;
     }
 
     /** {@inheritDoc} */

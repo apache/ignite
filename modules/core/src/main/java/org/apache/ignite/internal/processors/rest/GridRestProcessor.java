@@ -72,6 +72,7 @@ import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.nio.ssl.SslContextReloadable;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -106,7 +107,7 @@ import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_CLIEN
 /**
  * Rest processor implementation.
  */
-public class GridRestProcessor extends GridProcessorAdapter implements IgniteRestProcessor {
+public class GridRestProcessor extends GridProcessorAdapter implements IgniteRestProcessor, SslContextReloadable {
     /** HTTP protocol class name. */
     private static final String HTTP_PROTO_CLS =
         "org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyRestProtocol";
@@ -607,6 +608,16 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
             if (log.isDebugEnabled())
                 log.debug("REST processor started.");
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean reloadSslContext() throws IgniteCheckedException {
+        boolean reloaded = false;
+
+        for (GridRestProtocol proto : protos)
+            reloaded |= proto.reloadSslContext();
+
+        return reloaded;
     }
 
     /** {@inheritDoc} */

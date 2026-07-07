@@ -60,6 +60,7 @@ import org.apache.ignite.internal.managers.communication.UnknownMessageException
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.util.nio.ssl.SslContextReloadable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -109,6 +110,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCheckFailedMessa
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDuplicateIdMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryEnsureDelivery;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeResponse;
+import org.apache.ignite.ssl.AbstractSslContextFactory;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
 
@@ -229,7 +231,7 @@ import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager
 @DiscoverySpiOrderSupport(true)
 @DiscoverySpiHistorySupport(true)
 @DiscoverySpiMutableCustomMessageSupport(true)
-public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscoverySpi {
+public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscoverySpi, SslContextReloadable {
     /** Node attribute that is mapped to node's external addresses (value is <tt>disc.tcp.ext-addrs</tt>). */
     public static final String ATTR_EXT_ADDRS = "disc.tcp.ext-addrs";
 
@@ -419,11 +421,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /** Node authenticator. */
     protected DiscoverySpiNodeAuthenticator nodeAuth;
 
-    /** SSL server socket factory. */
-    protected SSLServerSocketFactory sslSrvSockFactory;
+    /** SSL server socket factory. Volatile since it may be replaced at runtime by {@link #reloadSslContext()}. */
+    protected volatile SSLServerSocketFactory sslSrvSockFactory;
 
-    /** SSL socket factory. */
-    protected SSLSocketFactory sslSockFactory;
+    /** SSL socket factory. Volatile since it may be replaced at runtime by {@link #reloadSslContext()}. */
+    protected volatile SSLSocketFactory sslSockFactory;
 
     /** SSL enable/disable flag. */
     protected boolean sslEnable;
@@ -2309,6 +2311,31 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      */
     boolean isSslEnabled() {
         return sslEnable;
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * New outgoing discovery connections use the reloaded certificates immediately. The already-bound listening
+     * server socket keeps serving the previously loaded certificate to incoming connections until it is recreated
+     * (for example, on this node re-entering the ring), because {@link javax.net.ssl.SSLServerSocket} captures the
+     * SSL context at creation time.
+     */
+    @Override public boolean reloadSslContext() throws IgniteCheckedException {
+        if (!sslEnable)
+            return false;
+
+        try {
+            SSLContext sslCtx = AbstractSslContextFactory.reload(ignite.configuration().getSslContextFactory());
+
+            sslSockFactory = sslCtx.getSocketFactory();
+            sslSrvSockFactory = sslCtx.getServerSocketFactory();
+        }
+        catch (SSLException e) {
+            throw new IgniteCheckedException("Failed to reload SSL context for discovery connections.", e);
+        }
+
+        return true;
     }
 
     /** {@inheritDoc} */

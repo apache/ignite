@@ -54,6 +54,7 @@ import org.apache.ignite.internal.util.nio.GridNioRecoveryDescriptor;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
+import org.apache.ignite.internal.util.nio.ssl.SslContextReloadable;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.WorkersRegistry;
@@ -195,7 +196,7 @@ import static org.apache.ignite.spi.communication.tcp.internal.TcpConnectionInde
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = false)
 @GridToStringInclude
-public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
+public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer implements SslContextReloadable {
     /** Node attribute that is mapped to node IP addresses (value is <tt>comm.tcp.addrs</tt>). */
     public static final String ATTR_ADDRS = "comm.tcp.addrs";
 
@@ -420,6 +421,13 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
     /** {@inheritDoc} */
     @Override public void resetMetrics() {
         metricsLsnr.resetMetrics();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean reloadSslContext() throws IgniteCheckedException {
+        GridNioServerWrapper wrapper = nioSrvWrapper;
+
+        return wrapper != null && wrapper.reloadSslContext();
     }
 
     /**
