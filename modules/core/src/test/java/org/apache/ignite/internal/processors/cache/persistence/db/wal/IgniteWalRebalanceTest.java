@@ -501,9 +501,19 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         // Rewrite data to trigger further rebalance.
         IgniteEx supplierNode = startGrid(0);
 
-        awaitPartitionMapExchange();
-
         supplierNode.cluster().state(ACTIVE);
+
+        // Wait for readyTopologyVersion to converge with discovery topology version.
+        // After restart, readyTopologyVersion may lag behind discovery topVer by 1-2,
+        // causing new writes to receive lower GridCacheVersion.topVer than recovered data.
+        // The formula is: GridCacheVersion.topVer = readyTopologyVersion + offset,
+        // and recovered data has higher topVer from the previous cluster session.
+        assertTrue(GridTestUtils.waitForCondition(() -> {
+            long discoveryTopVer = supplierNode.context().discovery().topologyVersion();
+            long readyTopVer = supplierNode.context().cache().context().exchange().readyAffinityVersion().topologyVersion();
+
+            return readyTopVer >= discoveryTopVer;
+        }, 10_000));
 
         IgniteCache<Object, Object> cache = supplierNode.cache(CACHE_NAME);
 
