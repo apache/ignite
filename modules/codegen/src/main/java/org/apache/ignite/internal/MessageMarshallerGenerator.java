@@ -37,7 +37,9 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
+import javax.lang.model.util.ElementFilter;
 import javax.tools.Diagnostic;
+import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor;
 
 import static org.apache.ignite.internal.MessageProcessor.MARSHALLABLE_MESSAGE_INTERFACE;
 import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
@@ -201,12 +203,16 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         for (VariableElement f : orderedFields) {
             boolean nioField = isNioField(f);
 
-            if (nioField && isMessage(f.asType()))
+            if (nioField && isMessage(f.asType()) && !nestedNeedsCtx(f.asType()))
                 nioFields.add(f);
             else {
-                if (nioField)
+                if (nioField && !isMessage(f.asType()))
                     env.getMessager().printMessage(Diagnostic.Kind.ERROR,
                         "@NioField has no effect on non-Message field '" + f.getSimpleName() + "' of type " + f.asType(), f);
+                else if (nioField)
+                    env.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                        "@NioField field '" + f.getSimpleName() + "' of type " + f.asType() + " needs a cache object " +
+                            "context to unmarshal, but the NIO thread has none; only context-free messages may be @NioField", f);
 
                 workerFields.add(f);
             }
@@ -930,6 +936,28 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     /** Returns {@code true} if any field requires {@code ctx} in generated marshal/unmarshal code. */
     private boolean needsCtx(List<VariableElement> fields) {
         return fields.stream().anyMatch(f -> needsCtxType(f.asType()));
+    }
+
+    /**
+     * Returns whether the {@code @Order} fields of {@code msgType} need a cache object context to unmarshal. Such a
+     * message must not be a {@code @NioField}: its {@code unmarshalNio} runs on the NIO thread, which has no context.
+     */
+    private boolean nestedNeedsCtx(TypeMirror msgType) {
+        Element el = env.getTypeUtils().asElement(msgType);
+
+        if (!(el instanceof TypeElement))
+            return false;
+
+        List<VariableElement> ordered = new ArrayList<>();
+
+        SystemViewRowAttributeWalkerProcessor.superclasses(env, (TypeElement)el).forEach(c -> {
+            for (VariableElement f : ElementFilter.fieldsIn(c.getEnclosedElements())) {
+                if (f.getAnnotation(Order.class) != null)
+                    ordered.add(f);
+            }
+        });
+
+        return needsCtx(ordered);
     }
 
     /** Returns {@code true} if type {@code t} (or its element/key/value types) requires {@code ctx}. */

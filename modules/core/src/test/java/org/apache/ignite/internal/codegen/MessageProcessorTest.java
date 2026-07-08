@@ -421,6 +421,15 @@ public class MessageProcessorTest {
         assertThat(compilation).hadErrorContaining("@NioField has no effect on non-Message field");
     }
 
+    /** Verifies that {@code @NioField} on a message needing a cache object context is a compilation error. */
+    @Test
+    public void testNioFieldNeedingCacheContextFails() {
+        Compilation compilation = compile("NioFieldNeedsCtxMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("needs a cache object context to unmarshal");
+    }
+
     /** Verifies that {@code @Marshalled} generates {@code U.unmarshal} with a blank line before the null-out. */
     @Test
     public void testMarshalledMessage() {
