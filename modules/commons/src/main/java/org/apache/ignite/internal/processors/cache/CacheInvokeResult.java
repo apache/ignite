@@ -80,10 +80,7 @@ public class CacheInvokeResult<T> implements EntryProcessorResult<T>, Externaliz
     /**
      * Static constructor.
      *
-     * @param err Prepared exception to be rethrown as-is by {@link #get()}. For an error thrown by
-     *      {@link EntryProcessor#process(MutableEntry, Object...)}, prepare it at the creation site first
-     *      (e.g. via {@code GridCacheUtils.prepareEntryProcessorError}) so that it is an
-     *      {@link EntryProcessorException} or another exception that must propagate unwrapped.
+     * @param err Exception thrown by {@link EntryProcessor#process(MutableEntry, Object...)}.
      * @return New instance.
      */
     public static <T> CacheInvokeResult<T> fromError(Throwable err) {

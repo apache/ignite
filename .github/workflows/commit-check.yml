@@ -120,7 +120,7 @@ jobs:
 
       - name: Check javadocs.
         run : |
-          ./mvnw -DskipTests install -pl modules/tools,modules/commons,modules/codegen -B -V && ./mvnw initialize -Pjavadoc -B -V
+          ./mvnw -DskipTests install -pl modules/tools,modules/codegen -B -V && ./mvnw initialize -Pjavadoc -B -V
 
   check-dotnet:
     name: Сheck .NET code

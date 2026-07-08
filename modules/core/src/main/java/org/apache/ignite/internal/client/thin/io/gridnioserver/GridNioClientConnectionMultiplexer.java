@@ -43,6 +43,7 @@ import org.apache.ignite.internal.util.nio.GridNioFilter;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.NullLogger;
 
 /**
@@ -82,7 +83,7 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
         sslCtx = ClientSslUtils.getSslContext(cfg);
 
         if (sslCtx != null) {
-            GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtx, true, ByteOrder.nativeOrder(), gridLog, null, null);
+            GridNioSslFilter sslFilter = U.sslFilter(sslCtx, true, ByteOrder.nativeOrder(), gridLog, null);
             sslFilter.directMode(false);
             filters = new GridNioFilter[] {codecFilter, sslFilter};
         }
