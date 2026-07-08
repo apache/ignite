@@ -806,19 +806,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
     public static final String IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY = "IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY";
 
     /**
-     * If set to {@code true}, then default selected keys set is used inside
-     * {@code GridNioServer} which lead to some extra garbage generation when
-     * processing selected keys.
-     * <p>
-     * Default value is {@code false}. Should be switched to {@code true} if there are
-     * any problems in communication layer.
-     */
-    @SystemProperty("Enables default selected keys set to be used inside GridNioServer " +
-        "which lead to some extra garbage generation when processing selected keys. " +
-        "Should be switched to true if there are any problems in communication layer")
-    public static final String IGNITE_NO_SELECTOR_OPTS = "IGNITE_NO_SELECTOR_OPTS";
-
-    /**
      * System property to specify period in milliseconds between calls of the SQL statements cache cleanup task.
      * <p>
      * Cleanup tasks clears cache for terminated threads and for threads which did not perform SQL queries within
