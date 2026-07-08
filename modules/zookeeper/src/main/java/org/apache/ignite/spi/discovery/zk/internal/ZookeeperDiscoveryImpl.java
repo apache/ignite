@@ -1495,7 +1495,7 @@ public class ZookeeperDiscoveryImpl {
             0L,
             evtsData.topVer,
             locNode.id(),
-            new ZkCustomEventMessage(new ZkNoServersMessage(), null),
+            new ZkCustomEventMessage(new ZkNoServersMessage()),
             null
         );
 
@@ -2707,7 +2707,7 @@ public class ZookeeperDiscoveryImpl {
 
                     if (ed != null) {
                         ed = new ZkDiscoveryCustomEventData(ed.eventId(), ed.origEvtId, ed.topologyVersion(), ed.sndNodeId,
-                            ((ZkDiscoveryCustomEventData)evtData).cstEvtHldr, ed.evtPath);
+                            ((ZkDiscoveryCustomEventData)evtData).customEventMessageHolder(), ed.evtPath);
 
                         newEvts.evts.put(e.getKey(), ed);
                     }
@@ -2769,9 +2769,9 @@ public class ZookeeperDiscoveryImpl {
                         evtData0.finishUnmarshal(msgParser);
 
                         if (rtState.crd)
-                            assert evtData0.cstEvtHldr != null : evtData0;
+                            assert evtData0.customEventMessageHolder() != null : evtData0;
                         else {
-                            if (evtData0.cstEvtHldr == null) {
+                            if (evtData0.customEventMessageHolder() == null) {
                                 Message msg;
 
                                 if (evtData0.ackEvent()) {
@@ -3462,7 +3462,7 @@ public class ZookeeperDiscoveryImpl {
             0L,
             topVer,
             locNode.id(),
-            new ZkCustomEventMessage(msg, null),
+            new ZkCustomEventMessage(msg),
             null
         );
 
@@ -3803,7 +3803,7 @@ public class ZookeeperDiscoveryImpl {
             origEvt.eventId(),
             rtState.evtsData.topVer, // Use actual topology version because topology version must be growing.
             locNode.id(),
-            new ZkCustomEventMessage(ack, null),
+            new ZkCustomEventMessage(ack),
             null);
 
         if (log.isDebugEnabled()) {

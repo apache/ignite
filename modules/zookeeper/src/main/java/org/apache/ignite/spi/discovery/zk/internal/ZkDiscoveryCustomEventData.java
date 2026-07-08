@@ -41,11 +41,11 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
     /** */
     final String evtPath;
 
-    /** Message (can be marshalled as part of ZkDiscoveryCustomEventData or stored in separate znode. */
-    byte[] msgBytes;
-
     /** Unmarshalled message and holder of distributed {@link OperationContext}. */
-    transient ZkCustomEventMessage cstEvtHldr;
+    private transient ZkCustomEventMessage cstEvtHldr;
+
+    /** Mrshalled {@code cstEvtHldr}. */
+    private byte[] cstEvtHldrBytes;
 
     /**
      * @param evtId Event ID.
@@ -79,6 +79,11 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
         return cstEvtHldr == null ? null : cstEvtHldr.originalMsg;
     }
 
+    /** */
+    public ZkCustomEventMessage customEventMessageHolder() {
+        return cstEvtHldr;
+    }
+
     /** @return Received {@link OperationContext}. */
     public @Nullable OperationContextMessage operationContext() {
         return cstEvtHldr.opCtxMsg;
@@ -87,13 +92,13 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
     /** */
     public void prepareMarshal(DiscoveryMessageParser parser) {
         if (cstEvtHldr != null)
-            msgBytes = parser.marshalZip(cstEvtHldr);
+            cstEvtHldrBytes = parser.marshalZip(cstEvtHldr);
     }
 
     /** */
     public void finishUnmarshal(DiscoveryMessageParser parser) {
-        if (msgBytes != null)
-            cstEvtHldr = parser.unmarshalZip(msgBytes);
+        if (cstEvtHldrBytes != null)
+            cstEvtHldr = parser.unmarshalZip(cstEvtHldrBytes);
     }
 
     /**
