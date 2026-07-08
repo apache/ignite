@@ -64,7 +64,6 @@ import org.apache.ignite.internal.client.thin.io.ClientConnectionStateHandler;
 import org.apache.ignite.internal.client.thin.io.ClientMessageHandler;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.odbc.ClientConnectionNodeRecoveryException;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProtocol;
 import org.apache.ignite.internal.processors.platform.client.ClientFlag;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.util.CommonUtils;
@@ -845,13 +844,13 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             ProtocolContext protocolCtx = protocolContextFromVersion(proposedVer);
 
             writer.writeInt(0); // reserve an integer for the request size
-            writer.writeByte((byte)ClientListenerProtocol.HANDSHAKE);
+            writer.writeByte((byte)CommonUtils.HANDSHAKE);
 
             writer.writeShort(proposedVer.major());
             writer.writeShort(proposedVer.minor());
             writer.writeShort(proposedVer.patch());
 
-            writer.writeByte(ClientListenerProtocol.THIN_CLIENT);
+            writer.writeByte(CommonUtils.THIN_CLIENT);
 
             if (protocolCtx.isFeatureSupported(BITMAP_FEATURES)) {
                 byte[] features = ProtocolBitmaskFeature.featuresAsBytes(protocolCtx.features());

@@ -217,6 +217,24 @@ public abstract class CommonUtils {
     /** Ignite package. */
     public static final String IGNITE_PKG = "org.apache.ignite.";
 
+    /** Default data structures group name. */
+    public static final String DEFAULT_DS_GROUP_NAME = "default-ds-group";
+
+    /** Atomics system cache name. */
+    public static final String ATOMICS_CACHE_NAME = "ignite-sys-atomic-cache";
+
+    /** Thin client handshake (connection type) code. */
+    public static final byte THIN_CLIENT = 2;
+
+    /** Handshake request command code. */
+    public static final int HANDSHAKE = 1;
+
+    /** Default client connector port. */
+    public static final int DFLT_PORT = 10800;
+
+    /** Default client connector port range. */
+    public static final int DFLT_PORT_RANGE = 100;
+
     /**
      * Short date format pattern for log messages in "quiet" mode.
      * Only time is included since we don't expect "quiet" mode to be used

@@ -98,8 +98,12 @@ public class CacheInvokeResult<T> implements EntryProcessorResult<T>, Externaliz
 
     /** {@inheritDoc} */
     @Override public T get() throws EntryProcessorException {
-        if (err != null)
-            throw (RuntimeException)err;
+        if (err != null) {
+            if (err instanceof RuntimeException)
+                throw (RuntimeException)err;
+
+            throw new EntryProcessorException(err);
+        }
 
         return res;
     }

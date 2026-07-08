@@ -25,6 +25,7 @@ import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
@@ -336,6 +337,14 @@ public interface MessageWriter {
      * @return Whether value was fully written.
      */
     public boolean writeIgniteProductVersion(IgniteProductVersion ver);
+
+    /**
+     * Writes ignite cache version.
+     *
+     * @param ver Version.
+     * @return Whether value was fully written.
+     */
+    public boolean writeGridCacheVersion(GridCacheVersion ver);
 
     /**
      * @return Whether header of current message is already written.

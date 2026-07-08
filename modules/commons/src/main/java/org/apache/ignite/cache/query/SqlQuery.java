@@ -28,7 +28,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * SQL Query.
  *
- * @see IgniteCache#query(Query)
+ * {@ignitelink org.apache.ignite.IgniteCache#query(Query)}
  *
  * @deprecated Since 2.8, please use {@link SqlFieldsQuery} instead.
  */

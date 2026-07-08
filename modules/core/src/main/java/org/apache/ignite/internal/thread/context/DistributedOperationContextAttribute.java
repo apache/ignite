@@ -15,25 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.internal.thread.context;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.processors.security.SecurityContextWrapper;
 
-/**
- * Annotates iterable fields.
- * Note that for any {@link Message} implementations it is enough to set item type to {@code Message.class}.
- * Deprecated, see {@link Order} and {@link MessageProcessor} for details.
- */
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
-@Deprecated
-public @interface GridDirectCollection {
+/** Ids of Ignite's known distributed operation context attributes. */
+public enum DistributedOperationContextAttribute {
     /**
-     * @return Item type.
+     * Distributed {@link SecurityContext}.
+     *
+     * @see SecurityContextWrapper
      */
-    Class<?> value();
+    SECURITY;
+
+    /** Cluster-wide id of distributed attribute. */
+    public byte id() {
+        return (byte)ordinal();
+    }
 }

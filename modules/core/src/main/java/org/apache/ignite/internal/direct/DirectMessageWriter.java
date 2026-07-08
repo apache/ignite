@@ -30,6 +30,7 @@ import org.apache.ignite.internal.managers.communication.CompressedMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -400,6 +401,15 @@ public class DirectMessageWriter implements MessageWriter {
         DirectByteBufferStream stream = state.item().stream;
 
         stream.writeIgniteProductVersion(ver);
+
+        return stream.lastFinished();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeGridCacheVersion(GridCacheVersion ver) {
+        DirectByteBufferStream stream = state.item().stream;
+
+        stream.writeGridCacheVersion(ver);
 
         return stream.lastFinished();
     }

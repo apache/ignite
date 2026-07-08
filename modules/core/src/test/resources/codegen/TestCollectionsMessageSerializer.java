@@ -74,7 +74,7 @@ public class TestCollectionsMessageSerializer implements MessageSerializer<TestC
     /** */
     private final static MessageCollectionType longArrayListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.LONG_ARR), false);
     /** */
-    private final static MessageCollectionType messageListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.MSG), false);
+    private final static MessageCollectionType messageListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.GRID_CACHE_VERSION), false);
     /** */
     private final static MessageCollectionType shortArrayListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.SHORT_ARR), false);
     /** */
