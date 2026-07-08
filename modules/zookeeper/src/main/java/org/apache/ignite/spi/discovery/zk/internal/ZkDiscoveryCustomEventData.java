@@ -42,7 +42,7 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
     final String evtPath;
 
     /** Unmarshalled message and holder of distributed {@link OperationContext}. */
-    private transient ZkCustomEventMessage cstEvtHldr;
+    transient ZkCustomEventMessage cstEvtHldr;
 
     /** Mrshalled {@code cstEvtHldr}. */
     private byte[] cstEvtHldrBytes;
@@ -52,7 +52,7 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
      * @param origEvtId For acknowledge events ID of original event.
      * @param topVer Topology version.
      * @param sndNodeId Sender node ID.
-     * @param cstEvtHldr Unmarshalled message and holder of distributed {@link OperationContext}.
+     * @param msg Message instance.
      * @param evtPath Event path.
      */
     ZkDiscoveryCustomEventData(
@@ -60,7 +60,7 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
         long origEvtId,
         long topVer,
         UUID sndNodeId,
-        ZkCustomEventMessage cstEvtHldr,
+        DiscoverySpiCustomMessage msg,
         String evtPath
     ) {
         super(evtId, ZK_EVT_CUSTOM_EVT, topVer);
@@ -69,7 +69,7 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
         assert (cstEvtHldr != null && cstEvtHldr.originalMsg != null) || origEvtId != 0 || !F.isEmpty(evtPath);
 
         this.origEvtId = origEvtId;
-        this.cstEvtHldr = cstEvtHldr;
+        this.cstEvtHldr = ZkCustomEventMessage.of(msg);
         this.sndNodeId = sndNodeId;
         this.evtPath = evtPath;
     }

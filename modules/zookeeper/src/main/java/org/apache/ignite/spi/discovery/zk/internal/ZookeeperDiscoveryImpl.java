@@ -1495,9 +1495,8 @@ public class ZookeeperDiscoveryImpl {
             0L,
             evtsData.topVer,
             locNode.id(),
-            new ZkCustomEventMessage(new ZkNoServersMessage()),
-            null
-        );
+            new ZkNoServersMessage(),
+            null);
 
         evtData.prepareMarshal(msgParser);
 
@@ -2577,9 +2576,8 @@ public class ZookeeperDiscoveryImpl {
             0L,
             evtsData.topVer,
             sndNode.id(),
-            new ZkCustomEventMessage(msg, cstEvtHldr.opCtxMsg),
-            evtPath
-        );
+            msg,
+            evtPath);
 
         if (log.isDebugEnabled())
             log.debug("Generated CUSTOM event [evt=" + evtData + ", msg=" + msg + ']');
@@ -2589,6 +2587,8 @@ public class ZookeeperDiscoveryImpl {
         if (msg instanceof ZkInternalMessage)
             processInternalMessage(evtData, (ZkInternalMessage)msg);
         else {
+            evtData.cstEvtHldr.opCtxMsg = cstEvtHldr.opCtxMsg;
+
             notifyCustomEvent(evtData, msg);
 
             if (msg.stopProcess()) {
@@ -2703,16 +2703,11 @@ public class ZookeeperDiscoveryImpl {
                 ZkDiscoveryEventData evtData = e.getValue();
 
                 if (evtData.eventType() == ZkDiscoveryEventData.ZK_EVT_CUSTOM_EVT) {
-                    ZkDiscoveryCustomEventData ed0 = (ZkDiscoveryCustomEventData)newEvts.evts.get(evtData.eventId());
+                    ZkDiscoveryCustomEventData evtData0 =
+                        (ZkDiscoveryCustomEventData)newEvts.evts.get(evtData.eventId());
 
-                    if (ed0 != null && ((ZkDiscoveryCustomEventData)evtData).customEventMessageHolder() != null) {
-                        assert ed0.customEventMessageHolder() == null;
-
-                        ed0 = new ZkDiscoveryCustomEventData(ed0.eventId(), ed0.origEvtId, ed0.topologyVersion(), ed0.sndNodeId,
-                            ((ZkDiscoveryCustomEventData)evtData).customEventMessageHolder(), ed0.evtPath);
-
-                        newEvts.evts.replace(e.getKey(), ed0);
-                    }
+                    if (evtData0 != null)
+                        evtData0.cstEvtHldr = ((ZkDiscoveryCustomEventData)evtData).cstEvtHldr;
                 }
             }
         }
@@ -2774,12 +2769,10 @@ public class ZookeeperDiscoveryImpl {
                             assert evtData0.customEventMessageHolder() != null : evtData0;
                         else {
                             if (evtData0.customEventMessageHolder() == null) {
-                                Message msg;
-
                                 if (evtData0.ackEvent()) {
                                     String path = zkPaths.ackEventDataPath(evtData0.origEvtId);
 
-                                    msg = msgParser.unmarshalZip(zkClient.getData(path));
+                                    evtData0.cstEvtHldr = ZkCustomEventMessage.of(msgParser.unmarshalZip(zkClient.getData(path)));
                                 }
                                 else {
                                     assert evtData0.evtPath != null : evtData0;
@@ -2788,11 +2781,8 @@ public class ZookeeperDiscoveryImpl {
                                         evtData0.evtPath,
                                         evtData0.sndNodeId);
 
-                                    msg = msgParser.unmarshalZip(msgBytes);
+                                    evtData0.cstEvtHldr = ZkCustomEventMessage.of(msgParser.unmarshalZip(msgBytes));
                                 }
-
-                                evtData0 = new ZkDiscoveryCustomEventData(evtData0.eventId(), evtData0.origEvtId,
-                                    evtData0.topologyVersion(), evtData0.sndNodeId, ZkCustomEventMessage.of(msg), evtData0.evtPath);
                             }
                         }
 
@@ -3464,9 +3454,8 @@ public class ZookeeperDiscoveryImpl {
             0L,
             topVer,
             locNode.id(),
-            new ZkCustomEventMessage(msg),
-            null
-        );
+            msg,
+            null);
 
         evtData.prepareMarshal(msgParser);
 
@@ -3805,7 +3794,7 @@ public class ZookeeperDiscoveryImpl {
             origEvt.eventId(),
             rtState.evtsData.topVer, // Use actual topology version because topology version must be growing.
             locNode.id(),
-            new ZkCustomEventMessage(ack),
+            ack,
             null);
 
         if (log.isDebugEnabled()) {

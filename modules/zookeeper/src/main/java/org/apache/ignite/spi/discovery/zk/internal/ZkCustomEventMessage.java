@@ -60,11 +60,6 @@ public class ZkCustomEventMessage implements Message {
         this.opCtxMsg = opCtxMsg;
     }
 
-    /** */
-    public ZkCustomEventMessage(DiscoverySpiCustomMessage msg) {
-        this(msg, null);
-    }
-
     /**
      * Wraps {@code msg} as or casts to {@link ZkCustomEventMessage}.
      *
@@ -75,6 +70,6 @@ public class ZkCustomEventMessage implements Message {
 
         return msg instanceof ZkCustomEventMessage
             ? (ZkCustomEventMessage)msg
-            : new ZkCustomEventMessage((DiscoverySpiCustomMessage)msg);
+            : new ZkCustomEventMessage((DiscoverySpiCustomMessage)msg, null);
     }
 }
