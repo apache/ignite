@@ -29,9 +29,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * Schema index create operation.
  */
 public class SchemaIndexCreateOperation extends SchemaIndexAbstractOperation {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Table name. */
     @Order(0)
     String tblName;
