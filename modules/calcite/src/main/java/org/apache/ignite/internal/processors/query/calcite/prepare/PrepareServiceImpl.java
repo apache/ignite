@@ -22,18 +22,23 @@ import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.runtime.CalciteContextException;
+import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlDdl;
 import org.apache.calcite.sql.SqlExplain;
 import org.apache.calcite.sql.SqlExplainLevel;
+import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
+import org.apache.calcite.sql.SqlSelect;
+import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.tools.ValidationException;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.DistributedCalciteConfiguration;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DdlSqlToCommandConverter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
@@ -96,8 +101,7 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
                 ctx.addRulesFilter(new IgnitePlanner.DisabledRuleFilter(disbledRules));
 
             if (sqlNode instanceof IgniteSqlSelectForUpdate)
-                throw new IgniteSQLException(IgniteResource.INSTANCE.selectForUpdateNotSupported().str(),
-                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+                return prepareSelectForUpdate((IgniteSqlSelectForUpdate)sqlNode, ctx);
 
             if (SqlKind.DDL.contains(sqlNode.getKind()))
                 return prepareDdl(sqlNode, ctx);
@@ -140,6 +144,109 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
 
             throw ex;
         }
+    }
+
+    /**
+     * Prepares a {@code SELECT ... FOR UPDATE} statement.
+     *
+     * <p>Steps:
+     * <ol>
+     *   <li>Validate that the inner query is a plain {@link SqlSelect} (not UNION etc.).</li>
+     *   <li>Validate that the FROM clause is a single table (no JOINs, no subqueries).</li>
+     *   <li>Rewrite the SELECT list to append {@code _KEY} as the last column.</li>
+     *   <li>Prepare the modified SELECT as a normal {@link MultiStepQueryPlan}.</li>
+     *   <li>Return a {@link SelectForUpdatePlan} wrapping the inner plan.</li>
+     * </ol>
+     */
+    private SelectForUpdatePlan prepareSelectForUpdate(IgniteSqlSelectForUpdate forUpdate, PlanningContext ctx)
+        throws ValidationException {
+        SqlNode innerQuery = forUpdate.query();
+
+        if (!(innerQuery instanceof SqlSelect))
+            throw new IgniteSQLException(
+                "SELECT FOR UPDATE is only supported for plain SELECT statements",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        SqlSelect select = (SqlSelect)innerQuery;
+
+        // Unwrap optional AS alias around the table reference.
+        SqlNode from = select.getFrom();
+
+        if (from == null)
+            throw new IgniteSQLException(
+                "SELECT FOR UPDATE requires a FROM clause",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        SqlNode fromUnwrapped = from.getKind() == SqlKind.AS ? ((SqlCall)from).operand(0) : from;
+
+        // Reject JOINs.
+        if (fromUnwrapped.getKind() == SqlKind.JOIN)
+            throw new IgniteSQLException(
+                IgniteResource.INSTANCE.selectForUpdateJoinNotSupported().str(),
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        // Reject subqueries and other non-table references.
+        if (!(fromUnwrapped instanceof SqlIdentifier))
+            throw new IgniteSQLException(
+                "SELECT FOR UPDATE is only supported for simple table references",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        SqlIdentifier tableId = (SqlIdentifier)fromUnwrapped;
+
+        // Extract schema and table names.
+        String schemaName;
+        String tableName;
+
+        if (tableId.names.size() >= 2) {
+            schemaName = tableId.names.get(tableId.names.size() - 2);
+            tableName = tableId.names.get(tableId.names.size() - 1);
+        }
+        else {
+            schemaName = ctx.schemaName();
+            tableName = tableId.getSimple();
+        }
+
+        // Rewrite SELECT list: append _KEY as the last column.
+        SqlNodeList origList = select.getSelectList();
+        SqlNodeList newList = new SqlNodeList(SqlParserPos.ZERO);
+
+        for (SqlNode col : origList)
+            newList.add(col);
+
+        newList.add(new SqlIdentifier(QueryUtils.KEY_FIELD_NAME, SqlParserPos.ZERO));
+        newList.add(new SqlIdentifier(QueryUtils.VAL_FIELD_NAME, SqlParserPos.ZERO));
+        newList.add(new SqlIdentifier(QueryUtils.VER_FIELD_NAME, SqlParserPos.ZERO));
+
+        SqlSelect modifiedSelect = new SqlSelect(
+            SqlParserPos.ZERO,
+            null,
+            newList,
+            select.getFrom(),
+            select.getWhere(),
+            select.getGroup(),
+            select.getHaving(),
+            null,
+            null,
+            select.getOrderList(),
+            select.getOffset(),
+            select.getFetch(),
+            select.getHints()
+        );
+
+        // Prepare the modified SELECT as a regular query plan.
+        PlanningContext pctx = PlanningContext.builder()
+            .parentContext(ctx)
+            .query(ctx.query())
+            .parameters(ctx.parameters())
+            .plannerTimeout(ctx.plannerTimeout())
+            .allowTechnicalColumns(true)
+            .build();
+
+        MultiStepQueryPlan innerPlan = (MultiStepQueryPlan)prepareQuery(modifiedSelect, pctx);
+
+        int userColCount = innerPlan.fieldsMetadata().rowType().getFieldCount() - 3;
+
+        return new SelectForUpdatePlan(innerPlan, userColCount, forUpdate.waitSeconds(), schemaName, tableName);
     }
 
     /**
