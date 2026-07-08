@@ -2699,6 +2699,8 @@ public class ZookeeperDiscoveryImpl {
 
         // Need keep processed custom events since they contain message object which is needed to create ack.
         if (!locNode.isClient() && rtState.evtsData != null) {
+            Map<Long, ZkDiscoveryEventData> updatedEvts = Collections.emptyMap();
+
             for (Map.Entry<Long, ZkDiscoveryEventData> e : rtState.evtsData.evts.entrySet()) {
                 ZkDiscoveryEventData evtData = e.getValue();
 
@@ -2706,13 +2708,18 @@ public class ZookeeperDiscoveryImpl {
                     ZkDiscoveryCustomEventData ed = (ZkDiscoveryCustomEventData)newEvts.evts.get(evtData.eventId());
 
                     if (ed != null) {
+                        if (updatedEvts == Collections.EMPTY_MAP)
+                            updatedEvts = new HashMap<>();
+
                         ed = new ZkDiscoveryCustomEventData(ed.eventId(), ed.origEvtId, ed.topologyVersion(), ed.sndNodeId,
                             ((ZkDiscoveryCustomEventData)evtData).customEventMessageHolder(), ed.evtPath);
 
-                        newEvts.evts.put(e.getKey(), ed);
+                        updatedEvts.put(e.getKey(), ed);
                     }
                 }
             }
+
+            newEvts.evts.putAll(updatedEvts);
         }
 
         processNewEvents(newEvts);
