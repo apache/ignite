@@ -30,7 +30,9 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsObjectData;
@@ -161,21 +163,68 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
         if (persist) {
             F.first(G.allGrids()).cluster().setBaselineTopology(F.first(G.allGrids()).cluster().topologyVersion());
 
-            // Wait for all partitions to reach OWNING after baseline change.
+            // Wait for rebalancing to finish on all nodes after baseline change.
             // setBaselineTopology triggers a full exchange with async rebalancing.
-            // The regular awaitPartitionMapExchange() only waits for exchange completion,
-            // not for partitions to settle. If the next stopGrid() is called while
-            // partitions are still MOVING, a new exchange cascades on top → timeout.
-            awaitPartitionMapExchange(true, false, null);
-        }
-        else {
-            try {
-                awaitPartitionMapExchange();
+            // CacheAffinityChangeMessage may trigger a new exchange (higher minorTopVer)
+            // while rebalancing is still ongoing. awaitPartitionMapExchange checks
+            // ownerNodesCnt against the readyAffinityVersion, but partition topology
+            // (MOVING) lags behind — causing infinite loop and timeout.
+            for (Ignite grid : G.allGrids()) {
+                IgniteEx ign = (IgniteEx)grid;
+
+                if (ign.cluster().localNode().isClient())
+                    continue;
+
+                waitRebalanceFinishedNoVersionCheck(ign, "SMALLnull");
             }
-            catch (InterruptedException e) {
-                // No-op.
-            }
         }
+
+        try {
+            awaitPartitionMapExchange();
+        }
+        catch (InterruptedException e) {
+            // No-op.
+        }
+    }
+
+    /**
+     * Wait for rebalance to finish without strict topology version check.
+     * Unlike {@link #waitRebalanceFinished}, this method simply waits for the rebalance future
+     * to complete, which is more robust when topology changes frequently (e.g., after
+     * setBaselineTopology).
+     */
+    private void waitRebalanceFinishedNoVersionCheck(IgniteEx ignite, String cacheName) throws Exception {
+        long t0 = System.currentTimeMillis();
+        long timeout = 30_000;
+
+        // Poll a few times: rebalance may not have started yet (isInitial=true before exchange).
+        int initialPolls = 10;
+
+        while (System.currentTimeMillis() - t0 < timeout) {
+            IgniteInternalFuture<Boolean> fut = ignite.cachex(cacheName).context().preloader().rebalanceFuture();
+
+            GridDhtPartitionDemander.RebalanceFuture rebFut = (GridDhtPartitionDemander.RebalanceFuture) fut;
+
+            if (rebFut.isInitial()) {
+                if (initialPolls-- > 0) {
+                    Thread.sleep(100);
+                    continue;
+                }
+                // Rebalance still initial after polling — no rebalance needed.
+                return;
+            }
+
+            // Wait for rebalance to complete.
+            boolean res = fut.get();
+
+            if (res)
+                return;
+
+            // Rebalance was cancelled (topology changed again) — retry with new future.
+            Thread.sleep(50);
+        }
+
+        throw new AssertionError("Rebalance did not finish within " + timeout + "ms for cache " + cacheName);
     }
 
     /**
