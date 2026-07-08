@@ -431,9 +431,12 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
             for (int i = 2; i < descriptors.length; i++) {
                 final CacheColumnDescriptor desc = descriptors[i];
 
+                if (!desc.field() || desc.key())
+                    continue;
+
                 Object fieldVal = hnd.get(i, row);
 
-                if (desc.field() && !desc.key() && fieldVal != null)
+                if (fieldVal != null)
                     desc.set(val, TypeUtils.fromInternal(ectx, fieldVal, desc.storageType()));
             }
         }
