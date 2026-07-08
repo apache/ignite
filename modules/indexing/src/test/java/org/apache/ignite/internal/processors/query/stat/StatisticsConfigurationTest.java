@@ -155,17 +155,26 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
     }
 
     /** */
-    protected void stopGridAndChangeBaseline(int nodeIdx) {
+    protected void stopGridAndChangeBaseline(int nodeIdx) throws Exception {
         stopGrid(nodeIdx);
 
-        if (persist)
+        if (persist) {
             F.first(G.allGrids()).cluster().setBaselineTopology(F.first(G.allGrids()).cluster().topologyVersion());
 
-        try {
-            awaitPartitionMapExchange();
+            // Wait for all partitions to reach OWNING after baseline change.
+            // setBaselineTopology triggers a full exchange with async rebalancing.
+            // The regular awaitPartitionMapExchange() only waits for exchange completion,
+            // not for partitions to settle. If the next stopGrid() is called while
+            // partitions are still MOVING, a new exchange cascades on top → timeout.
+            awaitPartitionMapExchange(true, false, null);
         }
-        catch (InterruptedException e) {
-            // No-op.
+        else {
+            try {
+                awaitPartitionMapExchange();
+            }
+            catch (InterruptedException e) {
+                // No-op.
+            }
         }
     }
 
