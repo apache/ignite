@@ -367,7 +367,6 @@
                                     <include>${project.groupId}:ignite-grid-unsafe</include>
                                     <include>${project.groupId}:ignite-thin-client-api</include>
                                     <include>${project.groupId}:ignite-thin-client-impl</include>
-                                    <include>${project.groupId}:ignite-nio</include>
                                 </includes>
                             </artifactSet>
                         </configuration>
