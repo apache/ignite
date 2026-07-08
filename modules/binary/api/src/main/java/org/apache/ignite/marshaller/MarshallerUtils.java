@@ -26,19 +26,16 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.ObjectInputFilter;
 import java.net.URL;
-import java.util.Collection;
 import java.util.Enumeration;
 import java.util.Objects;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCommonsSystemProperties;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.ClassSet;
-import org.apache.ignite.plugin.PluginProvider;
-import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_MARSHALLER_BLACKLIST;
+import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION;
+import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_MARSHALLER_BLACKLIST;
 
 /**
  * Utility marshaller methods.
@@ -81,7 +78,7 @@ public class MarshallerUtils {
      * @throws IgniteCheckedException if autoconfiguration failed.
      */
     public static void autoconfigureObjectInputFilter(IgniteMarshallerClassFilter clsFilter) throws IgniteCheckedException {
-        if (!IgniteSystemProperties.getBoolean(IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION, true))
+        if (!IgniteCommonsSystemProperties.getBoolean(IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION, true))
             return;
 
         synchronized (MUX) {
@@ -116,7 +113,7 @@ public class MarshallerUtils {
     private static ClassSet classWhiteList(ClassLoader clsLdr) throws IgniteCheckedException {
         ClassSet clsSet = null;
 
-        String fileName = IgniteSystemProperties.getString(IgniteSystemProperties.IGNITE_MARSHALLER_WHITELIST);
+        String fileName = IgniteCommonsSystemProperties.getString(IgniteCommonsSystemProperties.IGNITE_MARSHALLER_WHITELIST);
 
         if (fileName != null) {
             clsSet = new ClassSet();
@@ -139,7 +136,7 @@ public class MarshallerUtils {
 
         addClassNames(DEFAULT_BLACKLIST_CLS_NAMES_FILE, clsSet, clsLdr);
 
-        String blackListFileName = IgniteSystemProperties.getString(IGNITE_MARSHALLER_BLACKLIST);
+        String blackListFileName = IgniteCommonsSystemProperties.getString(IGNITE_MARSHALLER_BLACKLIST);
 
         if (blackListFileName != null)
             addClassNames(blackListFileName, clsSet, clsLdr);
@@ -197,11 +194,9 @@ public class MarshallerUtils {
      * Find all system class names (for JDK or Ignite classes) and process them with a given consumer.
      *
      * @param ldr Class loader.
-     * @param plugins Plugins.
      * @param proc Class processor (class name consumer).
      */
-    public static void processSystemClasses(ClassLoader ldr, @Nullable Collection<PluginProvider> plugins,
-        Consumer<String> proc) throws IOException {
+    public static void processSystemClasses(ClassLoader ldr, Consumer<String> proc) throws IOException {
         Enumeration<URL> urls = ldr.getResources(CLS_NAMES_FILE);
 
         boolean foundClsNames = false;
@@ -223,16 +218,6 @@ public class MarshallerUtils {
                 "[file=" + JDK_CLS_NAMES_FILE + ", ldr=" + ldr + ']');
 
         processResource(jdkClsNames, proc);
-
-        if (plugins != null && !plugins.isEmpty()) {
-            for (PluginProvider plugin : plugins) {
-                Enumeration<URL> pluginUrls = ldr.getResources("META-INF/" + plugin.name().toLowerCase()
-                    + ".classnames.properties");
-
-                while (pluginUrls.hasMoreElements())
-                    processResource(pluginUrls.nextElement(), proc);
-            }
-        }
     }
 
     /**
@@ -242,7 +227,7 @@ public class MarshallerUtils {
      * @param proc Class processor (class name consumer).
      * @throws IOException In case of error.
      */
-    private static void processResource(URL url, Consumer<String> proc) throws IOException {
+    public static void processResource(URL url, Consumer<String> proc) throws IOException {
         try (BufferedReader rdr = new BufferedReader(new InputStreamReader(url.openStream()))) {
             String line;
 

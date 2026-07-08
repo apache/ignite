@@ -25,9 +25,6 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.UnregisteredBinaryTypeException;
-import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -99,11 +96,8 @@ public class CacheInvokeResult<T> implements EntryProcessorResult<T>, Externaliz
     /** {@inheritDoc} */
     @Override public T get() throws EntryProcessorException {
         if (err != null) {
-            if (err instanceof UnregisteredClassException || err instanceof UnregisteredBinaryTypeException)
-                throw (IgniteException)err;
-
-            if (err instanceof EntryProcessorException)
-                throw (EntryProcessorException)err;
+            if (err instanceof RuntimeException)
+                throw (RuntimeException)err;
 
             throw new EntryProcessorException(err);
         }

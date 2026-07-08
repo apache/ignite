@@ -21,9 +21,7 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.UUID;
 import org.apache.ignite.cache.CacheEntryVersion;
-import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Grid unique version.
@@ -181,13 +179,6 @@ public class GridCacheVersion implements Externalizable, CacheEntryVersion {
      */
     public boolean isLess(GridCacheVersion ver) {
         return compareTo(ver) < 0;
-    }
-
-    /**
-     * @return Version represented as {@code IgniteUuid}
-     */
-    public IgniteUuid asIgniteUuid() {
-        return new IgniteUuid(new UUID(topVer, nodeOrderDrId), order);
     }
 
     /** {@inheritDoc} */
