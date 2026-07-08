@@ -545,8 +545,10 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         RelDataTypeFactory.Builder b = new RelDataTypeFactory.Builder(factory);
 
         if (usedColumns == null) {
-            for (int i = 0; i < descriptors.length; i++)
-                b.add(descriptors[i].name(), descriptors[i].logicalType(factory));
+            for (int i = 0; i < descriptors.length; i++) {
+                if (!isTechnicalColumn(descriptors[i].name()))
+                    b.add(descriptors[i].name(), descriptors[i].logicalType(factory));
+            }
 
             return tableRowType = b.build();
         }
