@@ -352,7 +352,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
                 if (pair.source == leftColl.getFieldIndex() && pair.target == rightColl.getFieldIndex()) {
                     lastCollField = c;
 
-                    if (!nullExclusions.get(p)) {
+                    if (nullExclusions.get(p)) {
                         nullCompAsEqual.clear(c);
 
                         break;
