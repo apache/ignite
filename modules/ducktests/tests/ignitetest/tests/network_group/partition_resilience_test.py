@@ -15,7 +15,6 @@
 from time import sleep
 
 from ducktape.mark import matrix
-from ducktape.utils.util import wait_until
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.network_group.configuration import NetworkGroupStore, CrossNetworkGroupConfiguration
@@ -30,11 +29,6 @@ NUM_NODES = 12
 DC_1_NAME = "DC1"
 DC_2_NAME = "DC2"
 
-# How long to wait for the half-ring to reach the expected cluster state
-# after the partition heals. Discovery failure detection, ring closure and
-# the state transition are asynchronous, so an immediate check is racy.
-CLUSTER_STATE_TIMEOUT_SEC = 60
-
 
 class MultiDCPartitionResilienceTest(NetworkGroupAbstractTest):
     """
@@ -42,10 +36,6 @@ class MultiDCPartitionResilienceTest(NetworkGroupAbstractTest):
     """
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH))
-    # NOTE: for the partition to be reliably *detected*, partition_time_sec must
-    # exceed discovery failureDetectionTimeout + connectionRecoveryTimeout
-    # (~10s + 10s by default). Sub-detection values (e.g. 0.5s) exercise the
-    # "partition heals before the cluster reacts" case instead.
     @matrix(cross_dc_latency_ms=[20], partition_time_sec=[30])
     def test_mdc_cluster_partition_resilience(self, ignite_version, cross_dc_latency_ms, partition_time_sec):
         self.configure_network_and_run(ignite_version=ignite_version, cross_dc_latency_ms=cross_dc_latency_ms,
@@ -86,43 +76,32 @@ class MultiDCPartitionResilienceTest(NetworkGroupAbstractTest):
 
         network_mgr.disable_network_partition(DC_1_NAME, DC_2_NAME)
 
-        self._verify_half_ring_status(self.svc_dc_1, "ACTIVE")
-        self._verify_half_ring_status(self.svc_dc_2, "ACTIVE")
-
-        self._verify_cluster_survived()
+        self._verify_half_ring_healthy(self.svc_dc_1)
+        self._verify_half_ring_healthy(self.svc_dc_2)
 
         self.svc_dc_1.stop()
         self.svc_dc_2.stop()
 
-    def _verify_cluster_survived(self):
-        total_alive = sum(len(svc.alive_nodes) for svc in [self.svc_dc_1, self.svc_dc_2])
-
-        assert total_alive == NUM_NODES, f"{NUM_NODES} nodes should be alive! [actual={total_alive}]"
-
-        coordinator_node = self.svc_dc_1.nodes[0]
-
-        assert self.svc_dc_1.alive(coordinator_node), "Coordinator should remain alive"
-
-        disco_info_dc_1 = coordinator_node.discovery_info()
-
-        assert disco_info_dc_1.is_coordinator, f"{self.svc_dc_1.who_am_i(coordinator_node)} is not a coordinator"
-
     @staticmethod
-    def _verify_half_ring_status(svc: IgniteService, status: str, timeout_sec: int = CLUSTER_STATE_TIMEOUT_SEC):
-        """
-        Polls the half-ring cluster state until it reaches the expected status.
-        The state transition after a partition is asynchronous (failure detection,
-        ring closure, state change exchange), so a one-shot assertion is racy.
-        """
+    def _verify_half_ring_healthy(svc: IgniteService):
+        exp_alive_nodes = NUM_NODES // 2
+        act_alive_nodes = len(svc.alive_nodes)
+
+        assert act_alive_nodes == exp_alive_nodes, f"{exp_alive_nodes} nodes should be alive! [actual={act_alive_nodes}]"
+
+        coordinator_node = svc.nodes[0]
+
+        assert svc.alive(coordinator_node), "Coordinator node should remain alive"
+
+        disco_info = coordinator_node.discovery_info()
+
+        assert disco_info.is_coordinator, f"{svc.who_am_i(coordinator_node)} is not a coordinator"
+
         control_utility = ControlUtility(svc)
 
-        def has_expected_status():
-            try:
-                return status in control_utility.cluster_state()
-            except Exception:
-                # control.sh may transiently fail while the ring is re-forming.
-                return False
+        cluster_state = control_utility.cluster_state()
 
-        wait_until(has_expected_status, timeout_sec=timeout_sec, backoff_sec=1,
-                   err_msg=f"Half-ring did not reach {status} status within {timeout_sec}s "
-                           f"[last known state check failed or mismatched]")
+        assert "ACTIVE" == cluster_state.state, f"Half-ring state should remain ACTIVE [actual={cluster_state.state}]"
+
+        assert len(cluster_state.baseline) == exp_alive_nodes, \
+            f"Half-ring baseline is not expected [exp={exp_alive_nodes}, actual={cluster_state.baseline}]"
