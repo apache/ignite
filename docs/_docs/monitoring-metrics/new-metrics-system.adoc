@@ -276,7 +276,7 @@ The metric is called `TotalAllocatedSize`.
 
 For link:memory-configuration/data-regions[data region] metrics, Ignite also exposes the `SizeUsedByData` metric.
 It estimates how many bytes are currently occupied by data in the region.
-The metric is calculated as `(TotalAllocatedPages - EmptyDataPages) * pageSize * PagesFillFactor`, which is equivalent to `TotalUsedSize * PagesFillFactor`. `PagesFillFactor` is the average ratio of data bytes to page size in non-empty data pages.
+The metric is calculated as `(TotalAllocatedPages - EmptyDataPages) * pageSize * PagesFillFactor`. `PagesFillFactor` is the average ratio of data bytes to page size in non-empty data pages.
 Use `SizeUsedByData` when you need a more direct estimate of how much data is stored in the region, and use `TotalAllocatedSize` when you need to monitor how much space has already been allocated for that region.
 
 Add up the estimated size of all data regions to get the estimated total amount of data on the node.
