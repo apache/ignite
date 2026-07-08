@@ -307,6 +307,9 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * Test that JDBC cfg:// URL with remote HTTP, HTTPS, and FTP location is blocked.
+     */
     @Test
     public void testRemoteCfgUrlsAreBlocked() {
         for (String scheme : Arrays.asList("http", "https", "ftp", "ftps")) {
