@@ -561,6 +561,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @param accessTtl TTL for read operation.
      * @param needRetVal Return value flag.
      * @param skipStore Skip store flag.
+     * @param skipReadThrough Skip read-through cache store flag.
+     * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      * @param keepBinary Keep binary flag.
      * @param nearCache {@code True} if near cache enabled on originating node.
      * @return Lock future.
@@ -576,7 +578,9 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         long accessTtl,
         boolean skipStore,
         boolean skipReadThrough,
+        boolean keepBinaryInInterceptor,
         boolean keepBinary,
+        long waitTimeout,
         boolean nearCache
     ) {
         try {
@@ -649,6 +653,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                             null,
                             skipStore,
                             skipReadThrough,
+                            keepBinaryInInterceptor,
                             keepBinary,
                             nearCache);
 
@@ -693,7 +698,9 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                 accessTtl,
                 skipStore,
                 skipReadThrough,
-                keepBinary);
+                keepBinaryInInterceptor,
+                keepBinary,
+                waitTimeout);
         }
         catch (IgniteCheckedException e) {
             setRollbackOnly();
@@ -712,6 +719,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @param accessTtl TTL for read operation.
      * @param skipStore Skip store flag.
      * @param skipReadThrough Skip read-through cache store flag.
+     * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      * @return Future for lock acquisition.
      */
     private IgniteInternalFuture<GridCacheReturn> obtainLockAsync(
@@ -724,7 +732,9 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         final long accessTtl,
         boolean skipStore,
         boolean skipReadThrough,
-        boolean keepBinary) {
+        boolean keepBinaryInInterceptor,
+        boolean keepBinary,
+        long waitTimeout) {
         if (log.isDebugEnabled())
             log.debug("Before acquiring transaction lock on keys [keys=" + passedKeys + ']');
 
@@ -746,6 +756,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
         IgniteInternalFuture<Boolean> fut = dhtCache.lockAllAsyncInternal(passedKeys,
             timeout,
+            waitTimeout,
             this,
             isInvalidate(),
             read,
@@ -755,24 +766,38 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             accessTtl,
             skipStore,
             skipReadThrough,
+            keepBinaryInInterceptor,
             keepBinary);
 
         return new GridEmbeddedFuture<>(
             fut,
-            new PLC1<GridCacheReturn>(ret) {
+            new PLC1<GridCacheReturn>(ret, true, !CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout)) {
                 @Override protected GridCacheReturn postLock(GridCacheReturn ret) throws IgniteCheckedException {
-                    if (log.isDebugEnabled())
-                        log.debug("Acquired transaction lock on keys: " + passedKeys);
+                    assert fut.error() == null : "Lock future completed with an error: " + fut.error();
 
-                    postLockWrite(cacheCtx,
-                        passedKeys,
-                        ret,
-                        /*remove*/false,
-                        /*retval*/false,
-                        /*read*/read,
-                        accessTtl,
-                        CU.empty0(),
-                        /*computeInvoke*/false);
+                    boolean success = Boolean.TRUE.equals(fut.get());
+
+                    ret.success(success);
+
+                    if (log.isDebugEnabled()) {
+                        if (ret.success())
+                            log.debug("Successfully acquired transaction lock on keys: " + passedKeys);
+                        else
+                            log.debug("Failed to acquire transaction lock on keys: " + passedKeys);
+                    }
+
+                    if (ret.success()) {
+                        postLockWrite(cacheCtx,
+                            passedKeys,
+                            ret,
+                            /*remove*/false,
+                            /*retval*/false,
+                            /*read*/read,
+                            accessTtl,
+                            CU.empty0(),
+                            /*computeInvoke*/false,
+                            /*skipIfLockLost*/CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout));
+                    }
 
                     return ret;
                 }

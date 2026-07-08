@@ -39,8 +39,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteBinary;
+import org.apache.ignite.IgniteCommonsSystemProperties;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.client.ClientAuthenticationException;
 import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
@@ -52,8 +52,8 @@ import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
 import org.apache.ignite.internal.client.thin.io.gridnioserver.GridNioClientConnectionMultiplexer;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.NullLogger;
 import org.jetbrains.annotations.Nullable;
 
@@ -141,10 +141,10 @@ final class ReliableChannelImpl implements ReliableChannelEx {
 
         partitionAwarenessEnabled = clientCfg.isPartitionAwarenessEnabled();
 
-        String dcId = IgniteSystemProperties.getString(IgniteSystemProperties.IGNITE_DATA_CENTER_ID);
+        String dcId = IgniteCommonsSystemProperties.getString(IgniteCommonsSystemProperties.IGNITE_DATA_CENTER_ID);
 
         if (dcId == null && !F.isEmpty(clientCfg.getUserAttributes()))
-            dcId = clientCfg.getUserAttributes().get(IgniteSystemProperties.IGNITE_DATA_CENTER_ID);
+            dcId = clientCfg.getUserAttributes().get(IgniteCommonsSystemProperties.IGNITE_DATA_CENTER_ID);
 
         affinityCtx = new ClientCacheAffinityContext(
             binary,
@@ -1133,7 +1133,7 @@ final class ReliableChannelImpl implements ReliableChannelEx {
          */
         private synchronized void closeChannel() {
             if (ch != null) {
-                U.closeQuiet(ch);
+                CommonUtils.closeQuiet(ch);
 
                 ch = null;
 

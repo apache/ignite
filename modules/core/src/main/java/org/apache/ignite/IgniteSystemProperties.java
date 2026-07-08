@@ -41,7 +41,6 @@ import org.apache.ignite.internal.processors.performancestatistics.FilePerforman
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCachePartitionWorker;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.mxbean.MetricsMxBean;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
@@ -744,12 +743,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
         defaults = "" + DFLT_DISCOVERY_HISTORY_SIZE)
     public static final String IGNITE_DISCOVERY_HISTORY_SIZE = "IGNITE_DISCOVERY_HISTORY_SIZE";
 
-    /** Human-readable ID of a data center where the node is running. */
-    @IgniteExperimental
-    @SystemProperty(value = "Data Center ID where local node is running. Not required for a single Data Center deployments",
-        type = String.class)
-    public static final String IGNITE_DATA_CENTER_ID = "IGNITE_DATA_CENTER_ID";
-
     /** Maximum number of discovery message history used to support client reconnect. */
     @SystemProperty(value = "Maximum number of discovery message history used to support client reconnect",
         type = Integer.class, defaults = "" + DFLT_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE)
@@ -813,31 +806,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
     /** Indicating whether local store keeps primary only. Backward compatibility flag. */
     @SystemProperty("Enables local store keeps primary only. Backward compatibility flag")
     public static final String IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY = "IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY";
-
-    /** Defines path to the file that contains list of classes allowed to safe deserialization.*/
-    @SystemProperty(value = "Path to the file that contains list of classes allowed to safe deserialization",
-        type = String.class)
-    public static final String IGNITE_MARSHALLER_WHITELIST = "IGNITE_MARSHALLER_WHITELIST";
-
-    /** Defines path to the file that contains list of classes disallowed to safe deserialization.*/
-    @SystemProperty(value = "Path to the file that contains list of classes disallowed to safe deserialization",
-        type = String.class)
-    public static final String IGNITE_MARSHALLER_BLACKLIST = "IGNITE_MARSHALLER_BLACKLIST";
-
-    /**
-     * If this parameter is set to true, Ignite will automatically configure an ObjectInputFilter instance for the
-     * current JVM it is running in.
-     * Default value is {@code true}.
-     */
-    @SystemProperty(
-        value = "If this parameter is set to true, Ignite will automatically configure an ObjectInputFilter" +
-            " instance for the current JVM it is running in. Filtering is based on class lists defined by the" +
-            " `IGNITE_MARSHALLER_WHITELIST` and `IGNITE_MARSHALLER_BLACKLIST` system properties or their default values." +
-            " Disabling it is not recommended because the Ignite host may be vulnerable to RCE attacks based on Java" +
-            " serialization mechanisms",
-        defaults = "true"
-    )
-    public static final String IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION = "IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION";
 
     /**
      * If set to {@code true}, then default selected keys set is used inside

@@ -72,11 +72,11 @@ import org.apache.ignite.internal.client.thin.TcpClientTransactions.TcpClientTra
 import org.apache.ignite.internal.processors.cache.CacheInvokeResult;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
@@ -1146,7 +1146,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
                 return new ClientContinuousQueryCursor<>(cur, hnd);
             }
             catch (Exception e) {
-                U.closeQuiet(hnd);
+                CommonUtils.closeQuiet(hnd);
 
                 throw e;
             }
@@ -1202,7 +1202,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
     @Override public void deregisterCacheEntryListener(CacheEntryListenerConfiguration<K, V> cfg) {
         ClientCacheEntryListenerHandler<?, ?> hnd = lsnrsRegistry.deregisterCacheEntryListener(name, cfg);
 
-        U.closeQuiet(hnd);
+        CommonUtils.closeQuiet(hnd);
     }
 
     /**

@@ -13,90 +13,164 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG jdk_version=eclipse-temurin:11
-FROM $jdk_version
+# =====================================================================
+# GLOBAL ARGS (Must be declared at the very top, before any FROM)
+# =====================================================================
+ARG python_version="3.13"
+ARG jdk_version="eclipse-temurin:17"
 
-MAINTAINER Apache Ignite dev@ignite.apache.org
-VOLUME ["/opt/ignite-dev"]
+# ---------------------------------------------------------------------
+# Stage 1: JDK source (Temurin JDKs are self-contained and relocatable,
+# so copying the JDK across images is safe -- unlike copying CPython,
+# whose _ssl extension is linked against the source image's OpenSSL)
+# ---------------------------------------------------------------------
+FROM $jdk_version AS jdk_source
 
-# Set the timezone.
+# ---------------------------------------------------------------------
+# Stage 2: Main Image Build
+# ---------------------------------------------------------------------
+FROM python:${python_version}-slim
+
+# Re-declare global args here to make them accessible inside this specific stage
+ARG python_version
+ARG jdk_version
+
+# ---------------------------------------------------------------------
+# 1. Environment & Global System Configurations
+# ---------------------------------------------------------------------
 ENV TZ=Europe/Moscow
+ENV DEBIAN_FRONTEND=noninteractive
+
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-# Do not ask for confirmations when running apt-get, etc.
-ENV DEBIAN_FRONTEND noninteractive
-
-# Set the ducker.creator label so that we know that this is a ducker image.  This will make it
-# visible to 'ducker purge'.  The ducker.creator label also lets us know what UNIX user built this
-# image.
+# Set up ducker labels
 ARG ducker_creator=default
 LABEL ducker.creator=$ducker_creator
 
-# Update Linux and install necessary utilities.
-RUN cat /etc/apt/sources.list | sed 's/http:\/\/deb.debian.org/https:\/\/deb.debian.org/g' > /etc/apt/sources.list.2 && mv /etc/apt/sources.list.2 /etc/apt/sources.list
-RUN apt update && apt install -y sudo netcat-traditional iptables rsync unzip wget curl jq coreutils openssh-server net-tools vim python3-pip python3-dev python3-venv libffi-dev libssl-dev cmake pkg-config libfuse-dev iperf traceroute mc git && apt-get -y clean
+# Fix package mirror protocol from http to https
+# (Debian trixie uses the deb822 sources file; fall back to sources.list if present)
+RUN if [ -f /etc/apt/sources.list.d/debian.sources ]; then \
+        sed -i 's|http://deb.debian.org|https://deb.debian.org|g' /etc/apt/sources.list.d/debian.sources; \
+    elif [ -f /etc/apt/sources.list ]; then \
+        sed -i 's|http://deb.debian.org|https://deb.debian.org|g' /etc/apt/sources.list; \
+    fi
 
+# ---------------------------------------------------------------------
+# 2. System Utilities Installation
+# ---------------------------------------------------------------------
+RUN apt-get update && apt-get install -y \
+    sudo \
+    netcat-traditional \
+    iptables \
+    rsync \
+    unzip \
+    wget \
+    curl \
+    jq \
+    coreutils \
+    openssh-server \
+    net-tools \
+    vim \
+    libffi-dev \
+    libssl-dev \
+    cmake \
+    pkg-config \
+    libfuse-dev \
+    iperf \
+    traceroute \
+    mc \
+    git \
+    build-essential \
+    && apt-get -y clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# ---------------------------------------------------------------------
+# 3. JDK Installation (copied from the Temurin image)
+# ---------------------------------------------------------------------
+ENV JAVA_HOME=/opt/java/openjdk
+COPY --from=jdk_source $JAVA_HOME $JAVA_HOME
+ENV PATH="$JAVA_HOME/bin:$PATH"
+
+# Confirm both runtimes are healthy
+RUN java -version
+
+# ---------------------------------------------------------------------
+# 4. Python Virtual Environment Setup & Requirements
+# ---------------------------------------------------------------------
+# Standardize path routing via the virtual environment block
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
-COPY ./requirements.txt /root/requirements.txt
-RUN pip3 install -r /root/requirements.txt
 
-# Set up ssh
+# Print the active python version and verify ssl is importable
+RUN python3 --version && python3 -c "import ssl; print(ssl.OPENSSL_VERSION)"
+
+COPY ./requirements.txt /root/requirements.txt
+
+# Install requirements
+RUN pip3 install \
+    --default-timeout=100 \
+    --no-cache-dir \
+    -r /root/requirements.txt
+
+# ---------------------------------------------------------------------
+# 5. SSH & Security Settings
+# ---------------------------------------------------------------------
 COPY ./ssh-config /root/.ssh/config
-# NOTE: The paramiko library supports the PEM-format private key, but does not support the RFC4716 format.
 RUN ssh-keygen -m PEM -q -t rsa -N '' -f /root/.ssh/id_rsa && cp -f /root/.ssh/id_rsa.pub /root/.ssh/authorized_keys
 RUN echo 'PermitUserEnvironment yes' >> /etc/ssh/sshd_config
 
+# ---------------------------------------------------------------------
+# 6. Apache Component Stack Dependencies (Ignite, Zookeeper, Kafka, JMX)
+# ---------------------------------------------------------------------
 ARG APACHE_MIRROR="https://apache-mirror.rbc.ru/pub/apache/"
 ARG APACHE_ARCHIVE="https://archive.apache.org/dist/"
 
-# Install binary test dependencies.
+# Install Ignite
 RUN for v in "2.7.6" "2.17.0"; \
     do cd /opt; \
     curl -O $APACHE_ARCHIVE/ignite/$v/apache-ignite-$v-bin.zip;\
-    unzip apache-ignite-$v-bin.zip && mv /opt/apache-ignite-$v-bin /opt/ignite-$v;\
-    done
+    unzip apache-ignite-$v-bin.zip && mv /opt/apache-ignite-$v-bin /opt/ignite-$v; \
+    done \
+    && rm /opt/apache-ignite-*-bin.zip
 
-RUN rm /opt/apache-ignite-*-bin.zip
-
-#Install zookeeper.
+# Install Zookeeper
 ARG ZOOKEEPER_VERSION="3.5.8"
 ARG ZOOKEEPER_NAME="zookeeper-$ZOOKEEPER_VERSION"
 ARG ZOOKEEPER_RELEASE_NAME="apache-$ZOOKEEPER_NAME-bin"
 ARG ZOOKEEPER_RELEASE_ARTIFACT="$ZOOKEEPER_RELEASE_NAME.tar.gz"
-RUN echo $APACHE_ARCHIVE/zookeeper/$ZOOKEEPER_NAME/$ZOOKEEPER_RELEASE_ARTIFACT
 RUN cd /opt && curl -O $APACHE_ARCHIVE/zookeeper/$ZOOKEEPER_NAME/$ZOOKEEPER_RELEASE_ARTIFACT \
- && tar xvf $ZOOKEEPER_RELEASE_ARTIFACT && rm $ZOOKEEPER_RELEASE_ARTIFACT
-RUN mv /opt/$ZOOKEEPER_RELEASE_NAME /opt/$ZOOKEEPER_NAME
+    && tar xvf $ZOOKEEPER_RELEASE_ARTIFACT && rm $ZOOKEEPER_RELEASE_ARTIFACT \
+    && mv /opt/$ZOOKEEPER_RELEASE_NAME /opt/$ZOOKEEPER_NAME
 
-#Install kafka
+# Install Kafka
 ARG KAFKA_VERSION="3.9.1"
 ARG KAFKA_NAME="kafka"
 ARG KAFKA_RELEASE_NAME="${KAFKA_NAME}_2.13-$KAFKA_VERSION"
 ARG KAFKA_RELEASE_ARTIFACT="$KAFKA_RELEASE_NAME.tgz"
-RUN echo $APACHE_ARCHIVE/kafka/$KAFKA_VERSION/$KAFKA_RELEASE_ARTIFACT
 RUN cd /opt && curl -O $APACHE_ARCHIVE/kafka/$KAFKA_VERSION/$KAFKA_RELEASE_ARTIFACT \
- && tar xvf $KAFKA_RELEASE_ARTIFACT && rm $KAFKA_RELEASE_ARTIFACT
-RUN mv /opt/$KAFKA_RELEASE_NAME /opt/$KAFKA_NAME-$KAFKA_VERSION
+    && tar xvf $KAFKA_RELEASE_ARTIFACT && rm $KAFKA_RELEASE_ARTIFACT \
+    && mv /opt/$KAFKA_RELEASE_NAME /opt/$KAFKA_NAME-$KAFKA_VERSION
 
-# The version of Kibosh to use for testing.
-# If you update this, also update vagrant/base.sh
-ARG KIBOSH_VERSION="8841dd392e6fbf02986e2fb1f1ebf04df344b65a"
-
-# Install Kibosh
-RUN apt-get install fuse
-RUN cd /opt && git clone -q  https://github.com/confluentinc/kibosh.git && cd "/opt/kibosh" && git reset --hard $KIBOSH_VERSION && mkdir "/opt/kibosh/build" && cd "/opt/kibosh/build" && ../configure && make -j 2
-
-#Install jmxterm
+# Install Jmxterm
 ARG JMXTERM_NAME="jmxterm"
 ARG JMXTERM_VERSION="1.0.1"
 ARG JMXTERM_ARTIFACT="$JMXTERM_NAME-$JMXTERM_VERSION-uber.jar"
 RUN cd /opt && curl -OL https://github.com/jiaqi/jmxterm/releases/download/v$JMXTERM_VERSION/$JMXTERM_ARTIFACT \
-       && mv $JMXTERM_ARTIFACT $JMXTERM_NAME.jar
+    && mv $JMXTERM_ARTIFACT $JMXTERM_NAME.jar
 
+# ---------------------------------------------------------------------
+# 7. User Isolation Permissions (Ducker Execution Account Setup)
+# ---------------------------------------------------------------------
 # Set up the ducker user.
-RUN userdel -r ubuntu \
-    && useradd -ms /bin/bash ducker \
+ARG USER_UID=1000
+ARG USER_GID=1000
+
+# Remove conflicting default user if it exists
+RUN getent passwd ubuntu &>/dev/null && userdel -r ubuntu || true
+
+# Provision ducker system environment and security configurations
+RUN groupadd -g $USER_GID ducker \
+    && useradd -u $USER_UID -g $USER_GID -ms /bin/bash ducker \
     && mkdir -p /home/ducker/ \
     && rsync -aiq /root/.ssh/ /home/ducker/.ssh \
     && chown -R ducker /home/ducker/ /mnt/ /var/log/ /opt \
@@ -106,9 +180,9 @@ RUN userdel -r ubuntu \
     && echo "JAVA_HOME=$JAVA_HOME" >> /home/ducker/.ssh/environment \
     && echo 'PATH=$PATH:'"$JAVA_HOME/bin" >> /home/ducker/.profile \
     && echo 'ducker ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
+
 USER ducker
 
 CMD sudo service ssh start && tail -f /dev/null
 
-# Container port exposure
 EXPOSE 11211 47100 47500 49112 10800 8080 2888 3888 2181 1098 8082 8083

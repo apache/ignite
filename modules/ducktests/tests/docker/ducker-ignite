@@ -42,7 +42,10 @@ docker_run_memory_limit="8000m"
 default_num_nodes=4
 
 # The default OpenJDK base image.
-default_jdk="openjdk:11"
+default_jdk="openjdk:17"
+
+# The default Python version.
+default_python="3.13"
 
 # The default ducker-ignite image name.
 default_image_name="ducker-ignite"
@@ -60,11 +63,14 @@ Usage: ${script_path} [command] [options]
 help|-h|--help
     Display this help message
 
-build [-j|--jdk JDK] [-c|--context] [image-name]
+build [-j|--jdk JDK] [-p|--python PYTHON_VERSION] [-c|--context] [image-name]
     Build a docker image that represents ducker node. Image is tagged with specified ${image_name}.
 
     If --jdk is specified then we will use this argument as base image for ducker docker images.
     Otherwise ${default_jdk} is used.
+
+    If --python is specified, its value will be used to extract the Python runtime for the Docker images.
+    Otherwise, ${default_python} will be used.
 
     If --context is specified then build docker image from this path. Context directory must contain Dockerfile.
 
@@ -255,8 +261,10 @@ ducker_build_image() {
     must_pushd "${ducker_dir}"
     # Tip: if you are scratching your head for some dependency problems that are referring to an old code version
     # (for example java.lang.NoClassDefFoundError), add --no-cache flag to the build shall give you a clean start.
-    must_do -v -o docker build --memory="${docker_build_memory_limit}" \
-        --build-arg "ducker_creator=${user_name}" --build-arg "jdk_version=${jdk_version}" -t "${image_name}" \
+    must_do -v -o docker build --network=host --memory="${docker_build_memory_limit}" \
+        --build-arg USER_UID=$(id -u) --build-arg USER_GID=$(id -g) \
+        --build-arg "ducker_creator=${user_name}" --build-arg "jdk_version=${jdk_version}" \
+        --build-arg "python_version=${python_version}" -t "${image_name}" \
         -f "${docker_context}/Dockerfile" -- "${docker_context}"
     docker_status=$?
     must_popd
@@ -279,12 +287,14 @@ ducker_build() {
     while [[ $# -ge 1 ]]; do
         case "${1}" in
             -j|--jdk) set_once jdk_version "${2}" "the OpenJDK base image"; shift 2;;
+            -p|--python) set_once python_version "${2}" "the Python version"; shift 2;;
             -c|--context) docker_context="${2}"; shift 2;;
             *) set_once image_name "${1}" "docker image name"; shift;;
         esac
     done
 
     [[ -n "${jdk_version}" ]] || jdk_version="${default_jdk}"
+    [[ -n "${python_version}" ]] || python_version="${default_python}"
     [[ -n "${image_name}" ]] || image_name="${default_image_name}-${jdk_version/:/-}"
     [[ -n "${docker_context}" ]] || docker_context="${ducker_dir}"
 

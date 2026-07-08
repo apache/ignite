@@ -36,8 +36,8 @@ import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.client.thin.ClientNotificationType.CONTINUOUS_QUERY_EVENT;
 import static org.apache.ignite.internal.client.thin.TcpClientCache.JAVA_PLATFORM;
@@ -176,7 +176,7 @@ public class ClientCacheEntryListenerHandler<K, V> implements NotificationListen
         if (lsnr != null)
             lsnr.onDisconnected(reason);
 
-        U.closeQuiet(this);
+        CommonUtils.closeQuiet(this);
     }
 
     /** {@inheritDoc} */

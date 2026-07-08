@@ -37,7 +37,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteClusterReadOnlyException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -280,7 +279,7 @@ public class DmlBatchSender {
      * Process errors of entry processor - split the keys into duplicated/concurrently modified and those whose
      * processing yielded an exception.
      *
-     * @param res Result of {@link GridCacheAdapter#invokeAll)}
+     * @param res Result of {@link org.apache.ignite.internal.processors.cache.GridCacheAdapter#invokeAll)}
      * @param batch Batch.
      * @return pair [array of duplicated/concurrently modified keys, SQL exception for erroneous keys] (exception is
      * null if all keys are duplicates/concurrently modified ones).

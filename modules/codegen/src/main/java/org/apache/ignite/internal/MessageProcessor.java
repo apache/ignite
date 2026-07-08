@@ -33,12 +33,14 @@ import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 import static org.apache.ignite.internal.MessageSerializerGenerator.DLFT_ENUM_MAPPER_CLS;
@@ -64,7 +66,7 @@ import static org.apache.ignite.internal.MessageSerializerGenerator.DLFT_ENUM_MA
  * service file and triggered during the compilation phase.
  */
 @SupportedAnnotationTypes("org.apache.ignite.internal.Order")
-@SupportedSourceVersion(SourceVersion.RELEASE_11)
+@SupportedSourceVersion(SourceVersion.RELEASE_17)
 public class MessageProcessor extends AbstractProcessor {
     /** Base interface that every message must implement. */
     static final String MESSAGE_INTERFACE = "org.apache.ignite.plugin.extensions.communication.Message";
@@ -75,11 +77,20 @@ public class MessageProcessor extends AbstractProcessor {
     /** Externalizable message. */
     static final String MARSHALLABLE_MESSAGE_INTERFACE = "org.apache.ignite.internal.MarshallableMessage";
 
+    /** */
+    public static final String GRID_H2_NULL = "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Null";
+
+    /** */
+    public static final String ZK_NO_SERVERS_MESSAGE = "org.apache.ignite.spi.discovery.zk.internal.ZkNoServersMessage";
+
+    /** */
+    public static final Set<String> NO_PUBLIC_CTOR_MSGS = Set.of(GRID_H2_NULL, ZK_NO_SERVERS_MESSAGE);
+
     /** Messages with no fields. A serializer must be generated due to restrictions in our communication process. */
     static final String[] EMPTY_MESSAGES = {
         "org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage",
-        "org.apache.ignite.spi.discovery.zk.internal.ZkNoServersMessage",
-        "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Null",
+        ZK_NO_SERVERS_MESSAGE,
+        GRID_H2_NULL,
     };
 
     /** Messages with no fields. A serializer generation intentionally skipped. */
@@ -128,6 +139,9 @@ public class MessageProcessor extends AbstractProcessor {
                     clazz);
             }
 
+            if (!checkConstructors(clazz))
+                continue;
+
             msgFields.put(clazz, fields);
         }
 
@@ -144,6 +158,32 @@ public class MessageProcessor extends AbstractProcessor {
         }
 
         return true;
+    }
+
+    /** */
+    private boolean checkConstructors(TypeElement clazz) {
+        if (NO_PUBLIC_CTOR_MSGS.contains(clazz.getQualifiedName().toString()))
+            return true;
+
+        for (Element el : clazz.getEnclosedElements()) {
+            if (el.getKind() != ElementKind.CONSTRUCTOR || !el.getModifiers().contains(Modifier.PUBLIC))
+                continue;
+
+            ExecutableElement c = (ExecutableElement)el;
+
+            boolean isDfltConstructor = F.isEmpty(c.getParameters());
+
+            if (isDfltConstructor)
+                return true;
+        }
+
+        processingEnv.getMessager().printMessage(
+            Diagnostic.Kind.ERROR,
+            "A class must have a public default constructor: " + clazz.getQualifiedName(),
+            clazz
+        );
+
+        return false;
     }
 
     /**

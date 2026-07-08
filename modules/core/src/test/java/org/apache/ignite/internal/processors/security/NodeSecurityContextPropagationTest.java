@@ -174,7 +174,7 @@ public class NodeSecurityContextPropagationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private BlockingDequeWrapper<TcpDiscoveryAbstractMessage> discoveryRingMessageWorkerQueue(IgniteEx ignite) {
+    public static BlockingDequeWrapper<TcpDiscoveryAbstractMessage> discoveryRingMessageWorkerQueue(IgniteEx ignite) {
         return U.field(discoveryRingMessageWorker(ignite), "queue");
     }
 
@@ -199,7 +199,7 @@ public class NodeSecurityContextPropagationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void wrapRingMessageWorkerQueue(IgniteEx ignite) throws Exception {
+    public static void wrapRingMessageWorkerQueue(IgniteEx ignite) throws Exception {
         Object discoMsgWorker = discoveryRingMessageWorker(ignite);
 
         BlockingDeque<TcpDiscoveryAbstractMessage> queue = U.field(discoMsgWorker, "queue");
@@ -210,7 +210,7 @@ public class NodeSecurityContextPropagationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private Object discoveryRingMessageWorker(IgniteEx ignite) {
+    public static Object discoveryRingMessageWorker(IgniteEx ignite) {
         DiscoverySpi[] discoverySpis = U.field(ignite.context().discovery(), "spis");
 
         Object impl = U.field(discoverySpis[0], "impl");
@@ -227,6 +227,9 @@ public class NodeSecurityContextPropagationTest extends GridCommonAbstractTest {
         private final BlockingDeque<T> delegate;
 
         /** */
+        private Predicate<T> msgInterceptor;
+
+        /** */
         public BlockingDequeWrapper(BlockingDeque<T> delegate) {
             this.delegate = delegate;
         }
@@ -239,6 +242,11 @@ public class NodeSecurityContextPropagationTest extends GridCommonAbstractTest {
         /** */
         public void unblock() {
             isBlocked = false;
+        }
+
+        /** */
+        public void startMessageIntercepting(Predicate<T> msgInterceptor) {
+            this.msgInterceptor = msgInterceptor;
         }
 
         /** {@inheritDoc} */
@@ -293,6 +301,9 @@ public class NodeSecurityContextPropagationTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void addFirst(T t) {
+            if (msgInterceptor != null && !msgInterceptor.test(t))
+                return;
+
             delegate.addFirst(t);
         }
 
@@ -403,6 +414,9 @@ public class NodeSecurityContextPropagationTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public boolean add(T t) {
+            if (msgInterceptor != null && !msgInterceptor.test(t))
+                return true;
+
             return delegate.add(t);
         }
 

@@ -34,7 +34,7 @@ public final class MappedName implements Serializable, Message {
     @Order(0)
     String clsName;
 
-    /** */
+    /** Flag, showing whether this mapping was accepted by other nodes or not. */
     @Order(1)
     boolean accepted;
 
@@ -58,7 +58,7 @@ public final class MappedName implements Serializable, Message {
     }
 
     /**
-     *
+     * @return {@code True} if this mapping was accepted by other nodes.
      */
     public boolean accepted() {
         return accepted;

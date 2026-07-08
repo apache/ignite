@@ -19,26 +19,21 @@ package org.apache.ignite.internal.processors.query.schema.operation;
 
 import java.util.Collection;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.internal.processors.query.QueryEntityEx;
+import org.apache.ignite.internal.processors.query.schema.message.QueryEntityExMessage;
+import org.apache.ignite.internal.processors.query.schema.message.QueryEntityMessage;
+import org.apache.ignite.internal.util.typedef.F;
 
-/**
- * Enabling indexing on cache operation.
- */
-public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation implements MarshallableMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
-    private Collection<QueryEntity> entities;
-
-    /** Serialized form of query entities. */
+/** Operation, which enables indexing on cache operation. */
+public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation {
+    /** Query entities messages. */
     @Order(0)
-    transient byte[] qryEntitiesBytes;
+    Collection<QueryEntityMessage> entitiesMsgs;
+
+    /** Original query entities. We keep them to avoid unneccessary conversions from messages. */
+    private Collection<QueryEntity> entities;
 
     /** */
     @Order(1)
@@ -71,42 +66,34 @@ public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation imple
         this.entities = entities;
         this.qryParallelism = qryParallelism;
         this.sqlEscape = sqlEscape;
+
+        entitiesMsgs = F.viewReadOnly(entities, this::makeEntityMessage);
     }
 
-    /**
-     * @return Collection of query entities.
-     */
+    /** @return Collection of query entities. */
     public Collection<QueryEntity> entities() {
+        if (entities == null)
+            entities = F.transform(entitiesMsgs, QueryEntityMessage::toEntity);
+
         return entities;
     }
 
-    /**
-     * @return Query parallelism.
-     */
+    /** @return Query parallelism. */
     public int queryParallelism() {
         return qryParallelism;
     }
 
-    /**
-     * @return Sql escape flag.
-     */
+    /** @return Sql escape flag. */
     public boolean isSqlEscape() {
         return sqlEscape;
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (entities != null)
-            qryEntitiesBytes = U.marshal(marsh, entities);
+    /**
+     * @param qryEntity Query entity.
+     * @return The appropriate query entity message.
+     */
+    private QueryEntityMessage makeEntityMessage(QueryEntity qryEntity) {
+        return qryEntity instanceof QueryEntityEx ? new QueryEntityExMessage((QueryEntityEx)qryEntity)
+            : new QueryEntityMessage(qryEntity);
     }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (qryEntitiesBytes != null) {
-            entities = U.unmarshal(marsh, qryEntitiesBytes, clsLdr);
-
-            qryEntitiesBytes = null;
-        }
-    }
-
 }

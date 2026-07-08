@@ -97,7 +97,6 @@ import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
-import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNodesRing;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryStatistics;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc.TcpDiscoveryJdbcIpFinder;
@@ -518,16 +517,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             return ((ServerImpl)impl).getNode0(id);
 
         return getNode(id);
-    }
-
-    /**
-     * @return TCP discovery nodes ring.
-     */
-    @Nullable public TcpDiscoveryNodesRing discoveryRing() {
-        if (impl instanceof ServerImpl)
-            return ((ServerImpl)impl).ring();
-
-        return null;
     }
 
     /** {@inheritDoc} */
@@ -2079,21 +2068,14 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         assert dataPacket != null;
         assert dataPacket.joiningNodeId() != null;
 
-        //create data bag, pass it to exchange.collect
         DiscoveryDataBag dataBag = dataPacket.bagForDataCollection();
 
         exchange.collect(dataBag);
 
-        //marshall collected bag into packet, return packet
         if (dataPacket.joiningNodeId().equals(locNode.id()))
             dataPacket.addJoiningNodeData(dataBag);
         else
-            dataPacket.marshalGridNodeData(
-                dataBag,
-                locNode.id(),
-                marshaller(),
-                ignite.configuration().getNetworkCompressionLevel(),
-                log);
+            dataPacket.addNodeData(dataBag, locNode.id());
 
         return dataPacket;
     }
@@ -2108,22 +2090,21 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         DiscoveryDataBag dataBag;
 
-        if (dataPacket.joiningNodeId().equals(locNode.id())) {
-            try {
-                dataBag = dataPacket.unmarshalGridData(marshaller(), clsLdr, locNode.clientRouterNodeId() != null, log);
-            }
-            catch (IgniteCheckedException e) {
-                if (ignite() instanceof IgniteEx) {
-                    FailureProcessor failure = ((IgniteEx)ignite()).context().failure();
-
-                    failure.process(new FailureContext(CRITICAL_ERROR, e));
-                }
-
-                throw new IgniteException(e);
-            }
+        try {
+            if (dataPacket.joiningNodeId().equals(locNode.id()))
+                dataBag = dataPacket.bagWithNodeData(ignite.log(), ignite.configuration().isClientMode());
+            else
+                dataBag = dataPacket.bagWithJoiningNodeData(ignite.log(), ignite.configuration().isClientMode());
         }
-        else
-            dataBag = dataPacket.bagWithJoiningNodeData();
+        catch (IgniteCheckedException e) {
+            if (ignite() instanceof IgniteEx) {
+                FailureProcessor failure = ((IgniteEx)ignite()).context().failure();
+
+                failure.process(new FailureContext(CRITICAL_ERROR, e));
+            }
+
+            throw new IgniteException(e);
+        }
 
         exchange.onExchange(dataBag);
     }

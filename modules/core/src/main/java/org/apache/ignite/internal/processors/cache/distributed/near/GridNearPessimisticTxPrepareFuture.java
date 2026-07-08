@@ -378,7 +378,8 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                 GridNearTxPrepareRequest req = createRequest(txNodes,
                     m,
                     timeout,
-                    m.reads(),
+                    // Read entries do not make sense in the prepare phase for pessimistic transactions.
+                    List.of(),
                     m.writes());
 
                 final MiniFuture fut = new MiniFuture(m, ++miniId);

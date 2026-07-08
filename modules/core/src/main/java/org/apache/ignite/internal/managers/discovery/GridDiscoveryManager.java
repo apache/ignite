@@ -226,7 +226,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     };
 
     /** Discovery cached history size. */
-    private final int DISCOVERY_HISTORY_SIZE = getInteger(IGNITE_DISCOVERY_HISTORY_SIZE, DFLT_DISCOVERY_HISTORY_SIZE);
+    private final int discoHistSz = getInteger(IGNITE_DISCOVERY_HISTORY_SIZE, DFLT_DISCOVERY_HISTORY_SIZE);
 
     /** */
     private final Object discoEvtMux = new Object();
@@ -254,7 +254,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
     /** Topology cache history. */
     private final GridBoundedConcurrentLinkedHashMap<AffinityTopologyVersion, DiscoCache> discoCacheHist =
-        new GridBoundedConcurrentLinkedHashMap<>(DISCOVERY_HISTORY_SIZE);
+        new GridBoundedConcurrentLinkedHashMap<>(discoHistSz);
 
     /** Topology snapshots history. */
     private volatile NavigableMap<Long, Collection<ClusterNode>> topHist = Collections.emptyNavigableMap();
@@ -782,7 +782,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     discoEvtHnd.discoCache = discoCache;
 
                     if (!ctx.clientDisconnected()) {
-                        // The security processor must be notified first, since {@link IgniteSecurity#onLocalJoin}
+                        // The Rolling Upgrade Feature Manager must be notified first, as {@link IgniteFeatureManager#onLocalJoin}
+                        // completes initialization of the local node's Active Feature Set based on data received from the cluster.
+                        // The Active Feature Set, in turn, determines the node's overall behavior.
+                        ctx.rollingUpgrade().features().onLocalJoin();
+
+                        // The security processor must be notified second, since {@link IgniteSecurity#onLocalJoin}
                         // finishes local node security context initialization that can be demanded by other Ignite
                         // components.
                         ctx.security().onLocalJoin();
@@ -1102,7 +1107,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             rcvdCustomMsgs.addLast(customMsg.id());
 
-            while (rcvdCustomMsgs.size() > DISCOVERY_HISTORY_SIZE)
+            while (rcvdCustomMsgs.size() > discoHistSz)
                 rcvdCustomMsgs.pollFirst();
         }
 
@@ -1893,6 +1898,16 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         fut.init();
 
         return fut;
+    }
+
+    /**
+     * Returns a collection of all remote nodes known to the underlying {@link DiscoverySpi} implementation.
+     *
+     * <p>Unlike {@link #remoteNodes()}, this method may include nodes that have successfully completed
+     * validation but have not yet completed their join routine.</p>
+     */
+    public Collection<ClusterNode> discoverySpiRemoteNodes() {
+        return getSpi().getRemoteNodes();
     }
 
     /**

@@ -142,8 +142,11 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     @GridToStringExclude
     private volatile LockTimeoutObject timeoutObj;
 
-    /** Lock timeout. */
+    /** Transaction timeout. */
     private final long timeout;
+
+    /** Lock wait timeout. */
+    private final long waitTimeout;
 
     /** Transaction. */
     @GridToStringExclude
@@ -170,6 +173,9 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     /** Skip read-through cache store flag. */
     private final boolean skipReadThrough;
 
+    /** Handle binary in interceptor operation flag. */
+    private final boolean keepBinaryInInterceptor;
+
     /** */
     private Deque<GridNearLockMapping> mappings;
 
@@ -194,10 +200,13 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      * @param tx Transaction.
      * @param read Read flag.
      * @param retval Flag to return value or not.
-     * @param timeout Lock acquisition timeout.
+     * @param timeout Transaction timeout.
+     * @param waitTimeout Lock wait timeout.
      * @param createTtl TTL for create operation.
      * @param accessTtl TTL for read operation.
      * @param skipStore Skip store flag.
+     * @param skipReadThrough Skip read-through cache store flag.
+     * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      */
     public GridDhtColocatedLockFuture(
         GridCacheContext<?, ?> cctx,
@@ -206,10 +215,12 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         boolean read,
         boolean retval,
         long timeout,
+        long waitTimeout,
         long createTtl,
         long accessTtl,
         boolean skipStore,
         boolean skipReadThrough,
+        boolean keepBinaryInInterceptor,
         boolean keepBinary,
         boolean recovery
     ) {
@@ -223,12 +234,14 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         this.read = read;
         this.retval = retval;
         this.timeout = timeout;
+        this.waitTimeout = waitTimeout;
         this.createTtl = createTtl;
         this.accessTtl = accessTtl;
         this.skipStore = skipStore;
         this.skipReadThrough = skipReadThrough;
         this.keepBinary = keepBinary;
         this.recovery = recovery;
+        this.keepBinaryInInterceptor = keepBinaryInInterceptor;
 
         ignoreInterrupts();
 
@@ -619,6 +632,9 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             if (err != null)
                 success = false;
 
+            if (!success && err == null && CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout))
+                return onComplete(false, true, false);
+
             return onComplete(success, true);
         }
     }
@@ -631,6 +647,18 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      * @return {@code True} if complete by this operation.
      */
     private boolean onComplete(boolean success, boolean distribute) {
+        return onComplete(success, distribute, !success);
+    }
+
+    /**
+     * Completeness callback.
+     *
+     * @param success {@code True} if lock was acquired.
+     * @param distribute {@code True} if need to distribute lock removal in case of failure.
+     * @param rollback {@code True} if should rollback tx on failure.
+     * @return {@code True} if complete by this operation.
+     */
+    private boolean onComplete(boolean success, boolean distribute, boolean rollback) {
         if (log.isDebugEnabled()) {
             log.debug("Received onComplete(..) callback [success=" + success + ", distribute=" + distribute +
                 ", fut=" + this + ']');
@@ -639,13 +667,13 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         if (!DONE_UPD.compareAndSet(this, 0, 1))
             return false;
 
-        if (!success)
+        if (!success && rollback)
             undoLocks(distribute, true);
 
         if (tx != null) {
             cctx.tm().txContext(tx);
 
-            if (success)
+            if (!rollback)
                 tx.clearLockFuture(this);
         }
 
@@ -761,7 +789,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             if (isDone()) // Possible due to async rollback.
                 return;
 
-            if (timeout > 0) {
+            if (lockTimeout() > 0) {
                 timeoutObj = new LockTimeoutObject();
 
                 cctx.time().addTimeoutObject(timeoutObj);
@@ -990,8 +1018,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             if (log.isDebugEnabled())
                 log.debug("Starting (re)map for mappings [mappings=" + mappings + ", fut=" + this + ']');
 
-            boolean hasRmtNodes = false;
-
             boolean first = true;
 
             // Create mini futures.
@@ -1078,6 +1104,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                                         isolation(),
                                         isInvalidate(),
                                         timeout,
+                                        waitTimeout,
                                         mappedKeys.size(),
                                         inTx() ? tx.size() : mappedKeys.size(),
                                         inTx() && tx.syncMode() == FULL_SYNC,
@@ -1086,6 +1113,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                                         read ? accessTtl : -1L,
                                         skipStore,
                                         skipReadThrough,
+                                        keepBinaryInInterceptor,
                                         keepBinary,
                                         clientFirst,
                                         false,
@@ -1128,11 +1156,8 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                     }
                 }
 
-                if (!distributedKeys.isEmpty()) {
+                if (!distributedKeys.isEmpty())
                     mapping.distributedKeys(distributedKeys);
-
-                    hasRmtNodes |= !mapping.node().isLocal();
-                }
                 else {
                     assert mapping.request() == null;
 
@@ -1255,10 +1280,12 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             read,
             retval,
             timeout,
+            waitTimeout,
             createTtl,
             accessTtl,
             skipStore,
             skipReadThrough,
+            keepBinaryInInterceptor,
             keepBinary);
 
         // Add new future.
@@ -1283,16 +1310,18 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                     log.debug("Acquired lock for local DHT mapping [locId=" + cctx.nodeId() +
                         ", mappedKeys=" + keys + ", fut=" + this + ']');
 
-                if (inTx()) {
-                    for (KeyCacheObject key : keys)
-                        tx.entry(cctx.txKey(key)).markLocked();
-                }
-                else {
-                    for (KeyCacheObject key : keys)
-                        cctx.mvcc().markExplicitOwner(cctx.txKey(key), threadId);
-                }
-
                 try {
+                    if (timeoutObj == null)
+                        markLocalDhtLocksAcquired(keys);
+                    else {
+                        synchronized (timeoutObj) {
+                            if (isDone())
+                                return false;
+
+                            markLocalDhtLocksAcquired(keys);
+                        }
+                    }
+
                     // Proceed and add new future (if any) before completing embedded future.
                     if (mappings != null)
                         proceedMapping();
@@ -1306,6 +1335,18 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                 return true;
             },
             fut));
+    }
+
+    /** @param keys Locally locked keys. */
+    private void markLocalDhtLocksAcquired(Collection<KeyCacheObject> keys) {
+        if (inTx()) {
+            for (KeyCacheObject key : keys)
+                tx.entry(cctx.txKey(key)).markLocked();
+        }
+        else {
+            for (KeyCacheObject key : keys)
+                cctx.mvcc().markExplicitOwner(cctx.txKey(key), threadId);
+        }
     }
 
     /**
@@ -1460,6 +1501,13 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     }
 
     /**
+     * @return Timeout value for this lock future.
+     */
+    private long lockTimeout() {
+        return CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout) ? waitTimeout : timeout;
+    }
+
+    /**
      * Lock request timeout object.
      */
     private class LockTimeoutObject extends GridTimeoutObjectAdapter {
@@ -1467,7 +1515,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
          * Default constructor.
          */
         LockTimeoutObject() {
-            super(timeout);
+            super(lockTimeout());
         }
 
         /** Requested keys. */
@@ -1477,6 +1525,20 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         @Override public void onTimeout() {
             if (log.isDebugEnabled())
                 log.debug("Timed out waiting for lock response: " + this);
+
+            if (CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout)) {
+                synchronized (GridDhtColocatedLockFuture.this) {
+                    requestedKeys = requestedKeys0();
+
+                    clear(); // Stop response processing.
+                }
+
+                synchronized (this) {
+                    onComplete(false, true, false);
+                }
+
+                return;
+            }
 
             if (inTx()) {
                 if (cctx.tm().deadlockDetectionEnabled()) {
@@ -1638,6 +1700,12 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                     onDone(false);
                 else
                     onDone(res.error());
+
+                return;
+            }
+
+            if (!res.lockAcquired()) {
+                onDone(false);
 
                 return;
             }
