@@ -45,7 +45,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.MessageProcessor.COMPRESSED_MESSAGE_CLASS;
 import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
 
-/** Generates {@code *Serializer} classes for {@link org.apache.ignite.plugin.extensions.communication.Message} types. */
+/** Generates {@code *Serializer} classes for {@code Message} types. */
 public class MessageSerializerGenerator extends MessageGenerator {
     /** */
     private static final String RETURN_FALSE_STMT = "return false;";

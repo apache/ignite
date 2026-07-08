@@ -46,8 +46,7 @@ import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
 import static org.apache.ignite.internal.MessageProcessor.NON_MARSHALLABLE_MESSAGE_INTERFACE;
 
 /**
- * Generates {@code *Marshaller} classes for {@link org.apache.ignite.plugin.extensions.communication.Message}
- * types that are not {@link NonMarshallableMessage}.
+ * Generates {@code *Marshaller} classes for {@code Message} types that are not {@code NonMarshallableMessage}.
  */
 public class MessageMarshallerGenerator extends MessageGenerator {
     /** Accumulated source lines for all generated marshal/unmarshal methods. */
