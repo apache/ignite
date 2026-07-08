@@ -14,19 +14,44 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.internal.management.classpath;
 
-import org.apache.ignite.internal.classpath.IgniteClassPath;
-import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 
-/** Command to manage {@link IgniteClassPath}. */
-public class ClassPathCommand extends CommandRegistryImpl {
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.api.Argument;
+
+public class ClassPathRemoveCommandArg extends IgniteDataTransferObject {
     /** */
-    public ClassPathCommand() {
-        super(
-            new ClassPathCreateCommand(),
-            new ClassPathRemoveCommand()
-        );
+    private static final long serialVersionUID = 0;
+
+    /** */
+    @Order(0)
+    @Argument(description = "Name of the classpath")
+    String name;
+
+    /** */
+    @Order(1)
+    @Argument(description = "Forcefully remove ClassPath. Don't wait for running tasks to finish. Use with cautious!")
+    boolean force;
+
+    /** */
+    public String name() {
+        return name;
+    }
+
+    /** */
+    public void name(String name) {
+        this.name = name;
+    }
+
+    /** */
+    public boolean force() {
+        return force;
+    }
+
+    /** */
+    public void force(boolean force) {
+        this.force = force;
     }
 }

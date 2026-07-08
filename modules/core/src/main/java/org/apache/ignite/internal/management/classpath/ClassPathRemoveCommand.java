@@ -14,19 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.internal.management.classpath;
 
-import org.apache.ignite.internal.classpath.IgniteClassPath;
-import org.apache.ignite.internal.management.api.CommandRegistryImpl;
+import org.apache.ignite.internal.management.api.ComputeCommand;
+import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 
-/** Command to manage {@link IgniteClassPath}. */
-public class ClassPathCommand extends CommandRegistryImpl {
-    /** */
-    public ClassPathCommand() {
-        super(
-            new ClassPathCreateCommand(),
-            new ClassPathRemoveCommand()
-        );
+/** */
+public class ClassPathRemoveCommand implements ComputeCommand<ClassPathRemoveCommandArg, Void> {
+    /** {@inheritDoc} */
+    @Override public Class<? extends VisorMultiNodeTask<ClassPathRemoveCommandArg, Void, ?>> taskClass() {
+        return ClassPathRemoveTask.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String description() {
+        return "Removes IgniteClassPath from cluster";
+    }
+
+    /** {@inheritDoc} */
+    @Override public Class<? extends ClassPathRemoveCommandArg> argClass() {
+        return ClassPathRemoveCommandArg.class;
     }
 }

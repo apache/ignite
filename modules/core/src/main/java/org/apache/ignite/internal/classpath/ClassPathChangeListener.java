@@ -29,7 +29,6 @@ import static org.apache.ignite.internal.classpath.ClassPathProcessor.className;
 import static org.apache.ignite.internal.classpath.ClassPathProcessor.isClassPath;
 import static org.apache.ignite.internal.classpath.IgniteClassPathState.LOST;
 import static org.apache.ignite.internal.classpath.IgniteClassPathState.NEW;
-import static org.apache.ignite.internal.classpath.IgniteClassPathState.READY;
 
 /**
  * Listener of {@link DistributedMetaStorage} updates related to {@link IgniteClassPath} instances.
@@ -65,15 +64,13 @@ class ClassPathChangeListener implements DistributedMetaStorageListener<Serializ
         IgniteClassPath newIcp = (IgniteClassPath)newVal;
 
         if (newIcp == null) {
-            log.warning("IgniteClassPath removed. Remove operation not supported at a time");
+            onRemoveFromMetastorage(oldIcp);
 
             return;
         }
 
-        if (newIcp.deployedOnNodes().isEmpty() && (newIcp.state() == NEW || newIcp.state() == READY)) {
-            log.warning("All nodes that haves IgniteClassPath files left the grid [icp=" + newIcp.name() + ']');
-
-            ctx.classPath().addClassPathTask(newIcp, new ChangeStateTask(ctx, newIcp.id(), LOST));
+        if (newIcp.deployedOnNodes().isEmpty()) {
+            onNoDeployNodes(newIcp);
 
             return;
         }
@@ -85,6 +82,13 @@ class ClassPathChangeListener implements DistributedMetaStorageListener<Serializ
             return;
         }
 
+        onChange(newIcp, oldIcp);
+    }
+
+    /**
+     * Handles regular change in {@link IgniteClassPath}.
+     */
+    private void onChange(IgniteClassPath newIcp, IgniteClassPath oldIcp) {
         switch (newIcp.state()) {
             case NEW:
                 log.info("IgniteClassPath created. Waiting for READY state to start download file to local node.");
@@ -101,6 +105,7 @@ class ClassPathChangeListener implements DistributedMetaStorageListener<Serializ
 
                     log.info("IgniteClassPath READY. Starting download to local node.");
 
+                    // TODO: save new state in descriptor.
                     ctx.classPath().addClassPathTask(newIcp, new DownloadTask(ctx, newIcp.id()));
                 }
                 else
@@ -109,17 +114,74 @@ class ClassPathChangeListener implements DistributedMetaStorageListener<Serializ
                 break;
 
             case LOST:
-                log.info("IgniteClassPath lost. Handle of LOST state not supported at a time");
+                // No-op.
 
                 break;
 
             case REMOVING:
-                log.info("IgniteClassPath removed. Remove operation not supported at a time");
+                // Don't check anything. Download task may be in progress.
+                // Cleanup will just raise log warning if local data not exists.
+                log.info("IgniteClassPath remove operation started. Local cleanup: " + newIcp);
+
+                ctx.classPath().addClassPathTask(newIcp, CleanupTask.localCleanup(ctx, newIcp));
+                ctx.classPath().addClassPathTask(newIcp, ChangeNodesTask.removeNode(ctx, newIcp.id(), ctx.localNodeId()));
 
                 break;
 
             default:
                 throw new IllegalArgumentException("Unknown IgniteClassPath state: " + newIcp.state());
+        }
+    }
+
+    /**
+     * Handle {@link IgniteClassPath} event when it removed from metastorage.
+     */
+    private void onRemoveFromMetastorage(IgniteClassPath icp) {
+        // Maybe remove with force flag or error while uploading.
+        // Cancelling all in flight and remove right away.
+        ctx.classPath().cancelTasksAndDisallowNew(icp.id(), icp.name());
+
+        if (!ctx.pdsFolderResolver().fileTree().classPathRoot(icp.name()).exists()) {
+            log.info("IgniteClassPath removed: " + icp);
+
+            return;
+        }
+
+        // Concurrent class path tasks not run. Cleaning up without queue. Mostly harmless (no local data at the moment).
+        CleanupTask t = CleanupTask.localCleanup(ctx, icp);
+
+        t.result().listen(() -> log.info("IgniteClassPath removed: " + icp));
+
+        ctx.classPath().startAsync(t);
+    }
+
+    /** Handle {@link IgniteClassPath} event when no nodes that stores ClassPath files in cluster. */
+    private void onNoDeployNodes(IgniteClassPath icp) {
+        assert icp.deployedOnNodes().isEmpty();
+
+        switch (icp.state()) {
+            case READY:
+            case NEW:
+                log.warning("All nodes that haves IgniteClassPath files left the grid [icp=" + icp.name() + ']');
+
+                ctx.classPath().addClassPathTask(icp, new ChangeStateTask(ctx, icp.id(), LOST));
+
+                break;
+
+            case REMOVING:
+                ctx.classPath().cancelTasksAndDisallowNew(icp.id(), icp.name());
+
+                // Remove from metastorage after all nodes cleanup.
+                ctx.classPath().startAsync(CleanupTask.clusterWideCleanup(ctx, icp));
+
+                break;
+            case LOST:
+                // No-op.
+
+                break;
+
+            default:
+                throw new IllegalStateException("Unknown state: " + icp.state());
         }
     }
 }

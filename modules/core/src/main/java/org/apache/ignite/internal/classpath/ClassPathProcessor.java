@@ -49,6 +49,7 @@ import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -72,8 +73,14 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.N
  * Do we want to have some flag to skip remove in this case? (if we preparing for ICP registration).
  * 3. Should we include CP into snapshots and dumps?
  * 4. Should we control file size to ensure disk free space enough to upload CP files?
+ * 5. TODO: support --force flag
+ * 6. TODO: support tasks stop.
+ * 7. TODO: stop tasks on
  */
 public class ClassPathProcessor extends GridProcessorAdapter implements DistributedMetastorageLifecycleListener {
+    /** */
+    private static final Queue<ClassPathTask<?>> NO_NEW_TASKS = new ConcurrentLinkedQueue<>();
+
     /** Prefix for metastorage keys. */
     static final String METASTORE_PREFIX = "icp.";
 
@@ -169,6 +176,13 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
         synchronized (this) {
             if (discoLsnr != null)
                 ctx.event().removeDiscoveryEventListener(discoLsnr);
+        }
+
+        if (cancel) {
+            Set<UUID> ids = icpTasks.keySet();
+
+            for (UUID id : ids)
+                cancelTasksAndDisallowNew(id, "unknown");
         }
     }
 
@@ -323,6 +337,76 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
     }
 
     /** */
+    public IgniteInternalFuture<Void> remove(String name, boolean force) {
+        try {
+            Serializable icp0 = ctx.distributedMetastorage().read(metastorageKey(name));
+
+            if (!isClassPath(icp0))
+                throw new IgniteException("ClassPath not found: " + name);
+
+            IgniteClassPath icp = (IgniteClassPath)icp0;
+
+            if (force) {
+                log.warning("Forcefully removing ClassPath: " + icp);
+
+                try {
+                    removeFromMetastorage(icp);
+
+                    // Cleanup will be performed in {@link ClassPathChangeListener}.
+                    return new GridFinishedFuture<>();
+                }
+                catch (Exception e) {
+                    return new GridFinishedFuture<>(e);
+                }
+                finally {
+                    // Cleanup queue after key removed from metastore.
+                    cancelTasksAndDisallowNew(icp.id(), icp.name());
+
+                    icpTasks.remove(icp.id());
+                }
+            }
+
+            if (icp.state() == REMOVING)
+                return new GridFinishedFuture<>();
+
+            // Cleanup and metastorage removal will be performed in {@link ClassPathChangeListener}.
+            ChangeStateTask changeState = new ChangeStateTask(ctx, icp.id(), REMOVING);
+
+            addClassPathTask(icp, changeState);
+
+            return changeState.result();
+        }
+        catch (Exception e) {
+            log.warning("Error while removing ClassPath", e);
+
+            return new GridFinishedFuture<>(e);
+        }
+    }
+
+    /** */
+    void cancelTasksAndDisallowNew(UUID icpId, String name) {
+        Queue<ClassPathTask<?>> tasks = icpTasks.put(icpId, NO_NEW_TASKS);
+
+        if (!F.isEmpty(tasks)) {
+            // TODO: add cancel support in all tasks.
+            for (ClassPathTask<?> task : tasks) {
+                log.info("Cancelling task [icp=" + name + ", task=" + task.name() + ']');
+
+                task.stopped = true;
+            }
+
+            for (ClassPathTask<?> task : tasks) {
+                try {
+                    task.result().get();
+                }
+                catch (IgniteCheckedException e) {
+                    log.warning("Stoped task exception", e);
+                }
+            }
+        }
+    }
+
+    /** */
     <R> void addClassPathTask(IgniteClassPath icp, ClassPathTask<R> task) {
         UUID icpId = icp.id();
 
@@ -333,6 +417,12 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
                 log.warning("IgniteClassPath task failure [task=" + task.name() + ", icp=" + icp + ']', task.result().error());
 
             icpTasks.compute(icpId, (ignored, tasks) -> {
+                if (tasks == NO_NEW_TASKS) {
+                    log.debug("Tasks dropped. No new task allowed for ClassPath. Remove in progress? [icp=" + icp + ']');
+
+                    return NO_NEW_TASKS;
+                }
+
                 if (tasks == null)
                     tasks = new ConcurrentLinkedQueue<>();
 
@@ -350,6 +440,12 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
         });
 
         icpTasks.compute(icpId, (ignored, tasks) -> {
+            if (tasks == NO_NEW_TASKS) {
+                log.debug("Tasks dropped. No new task allowed for ClassPath. Remove in progress? [icp=" + icp + ']');
+
+                return NO_NEW_TASKS;
+            }
+
             if (tasks == null)
                 tasks = new ConcurrentLinkedQueue<>();
 
@@ -368,7 +464,7 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
     }
 
     /** */
-    private <R> void startAsync(ClassPathTask<R> t) {
+    <R> void startAsync(ClassPathTask<R> t) {
         try {
             ctx.pools().getSystemExecutorService().submit(() -> {
                 if (ctx.isStopping()) {
@@ -387,6 +483,32 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
         }
         catch (RejectedExecutionException e) {
             t.result().onDone(e);
+        }
+    }
+
+    /** */
+    void removeFromMetastorage(IgniteClassPath icp) throws IgniteCheckedException {
+        String key = metastorageKey(icp.name());
+
+        int iter = 0;
+
+        while (true) {
+            Serializable curData = ctx.distributedMetastorage().read(key);
+
+            if (curData == null || !isClassPath(curData) || !Objects.equals(((IgniteClassPath)curData).id(), icp.id()))
+                break;
+
+            if (ctx.distributedMetastorage().compareAndRemove(key, curData))
+                break;
+
+            iter++;
+
+            if (iter == 500)
+                throw new IgniteException("Too many iterations");
+
+            if (iter % 100 == 0)
+                log.warning("Remove operation makes too many iterations. Bug? [icp=" + icp + ", curData=" + curData + ']');
+
         }
     }
 
@@ -630,7 +752,8 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
         File cpRoot = ctx.pdsFolderResolver().fileTree().classPathRoot(icp.name());
 
         if (!guardFile(cpRoot, icp.id()).exists() && !force) {
-            log.warning("No guard file found. Skip local data removal. ClassPath concurrently recreated? [icp=" + icp + ']');
+            log.debug("No guard file found. Skip local data removal. " +
+                "ClassPath not presented locally or concurrently recreated? [icp=" + icp + ']');
 
             return;
         }
@@ -716,6 +839,9 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
         protected final IgniteLogger log;
 
         /** */
+        volatile boolean stopped;
+
+        /** */
         protected ClassPathTask(GridKernalContext ctx, UUID icpId) {
             this.ctx = ctx;
             this.icpId = icpId;
@@ -756,7 +882,22 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
          * Must be nonblocking and fast.
          * In case any exception throwed, {@link #result()} will be finished and task treated as done.
          */
-        abstract void start() throws Exception;
+        final void start() {
+            if (stopped) {
+                result().onDone(new IgniteException("Stoped before start"));
+
+                return;
+            }
+
+            start0();
+        }
+
+        /**
+         * Starts task execution.
+         * Must be nonblocking and fast.
+         * In case any exception throwed, {@link #result()} will be finished and task treated as done.
+         */
+        abstract void start0();
 
         /**
          * @return Task name.

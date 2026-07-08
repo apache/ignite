@@ -16,14 +16,8 @@
  */
 package org.apache.ignite.internal.classpath;
 
-import java.io.Serializable;
-import java.util.Objects;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
-
-import static org.apache.ignite.internal.classpath.ClassPathProcessor.isClassPath;
-import static org.apache.ignite.internal.classpath.ClassPathProcessor.metastorageKey;
 
 /**
  * Removes {@link IgniteClassPath} metastorage record and deletes its local files.
@@ -32,80 +26,55 @@ class CleanupTask extends ClassPathProcessor.ClassPathTask<Void> {
     /** */
     private final IgniteClassPath icp;
 
-    /** If {@code true} then remove only local data. */
-    private final boolean loc;
+    /** If {@code true} then remove from metastore. */
+    private final boolean rmvFromMetastore;
 
     /** */
-    private CleanupTask(GridKernalContext ctx, IgniteClassPath icp, boolean loc) {
+    private CleanupTask(GridKernalContext ctx, IgniteClassPath icp, boolean rmvFromMetastore) {
         super(ctx, icp.id());
         this.icp = icp;
-        this.loc = loc;
+        this.rmvFromMetastore = rmvFromMetastore;
     }
 
     /** @return Task to clean up local files. */
     public static CleanupTask localCleanup(GridKernalContext ctx, IgniteClassPath icp) {
-        return new CleanupTask(ctx, icp, true);
+        return new CleanupTask(ctx, icp, false);
     }
 
     /** @return Task to clean up both local files and metastorage record. */
     public static CleanupTask clusterWideCleanup(GridKernalContext ctx, IgniteClassPath icp) {
-        return new CleanupTask(ctx, icp, false);
+        return new CleanupTask(ctx, icp, true);
     }
 
     /** {@inheritDoc} */
-    @Override void start() {
-        if (!loc)
-            removeFromMetastorage();
+    @Override void start0() {
+        if (rmvFromMetastore) {
+            try {
+                ctx.classPath().removeFromMetastorage(icp);
+            }
+            catch (IgniteCheckedException e) {
+                result().onDone(e);
+            }
+        }
 
         ctx.classPath().removeClassPathLocally(icp, false);
 
         result().onDone();
     }
 
-    /** */
-    private void removeFromMetastorage() {
-        try {
-            String key = metastorageKey(icp.name());
-
-            int iter = 0;
-
-            while (true) {
-                Serializable curData = ctx.distributedMetastorage().read(key);
-
-                if (curData == null || !isClassPath(curData) || !Objects.equals(((IgniteClassPath)curData).id(), icp.id()))
-                    break;
-
-                if (ctx.distributedMetastorage().compareAndRemove(key, curData))
-                    break;
-
-                iter++;
-
-                if (iter == 500)
-                    throw new IgniteException("Too many iterations");
-
-                if (iter % 100 == 0)
-                    log.warning("Remove operation makes too many iterations. Bug? [icp=" + icp + ", curData=" + curData + ']');
-
-            }
-        }
-        catch (IgniteCheckedException e) {
-            result().onDone(e);
-        }
-    }
-
     /** {@inheritDoc} */
     @Override String name() {
-        return (loc ? "local " : "") + "cleanup";
+        return (rmvFromMetastore ? "local " : "") + "cleanup";
     }
 
     /** {@inheritDoc} */
     @Override void ok() {
         if (log.isDebugEnabled())
-            log.debug("ClassPath cleanup done [icp=" + icp + ", loc=" + loc + ']');
+            log.debug("ClassPath cleanup done [icp=" + icp + ", loc=" + rmvFromMetastore + ']');
     }
 
     /** {@inheritDoc} */
     @Override void fail(Throwable t) {
-        log.warning("Fail to cleanup ClassPath [icp=" + icp + ", loc=" + loc + ']', t);
+        log.warning("Fail to cleanup ClassPath [icp=" + icp + ", loc=" + rmvFromMetastore + ']', t);
     }
 }

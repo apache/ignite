@@ -41,7 +41,7 @@ class DownloadTask extends ClassPathProcessor.ClassPathTask<Void> {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws Exception {
+    @Override public void start0() {
         IgniteClassPath icp = fromMetastorage(icpId, READY, ctx);
 
         if (icp.deployedOnNodes().contains(ctx.localNodeId())) {
@@ -63,6 +63,13 @@ class DownloadTask extends ClassPathProcessor.ClassPathTask<Void> {
 
         UUID rmtNode = F.rand(icp.deployedOnNodes());
 
+        if (stopped) {
+            result().onDone(new IgniteException("Download task stoped"));
+
+            return;
+        }
+
+        // TODO: pass stop flag to download.
         IgniteInternalFuture<Void> downloadRes = ctx.classPath().icpFilesHnd.downloadLocally(rmtNode, icp);
 
         downloadRes.listen(f -> {
