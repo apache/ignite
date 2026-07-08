@@ -27,7 +27,8 @@ from ignitetest.services.network_group.configuration import NetworkGroupStore, C
 from ignitetest.services.network_group.tc_rule_args import (
     ACTION_ADD, ACTION_OVERWRITE,
     to_tcset_cmd, to_tcdel_all_cmd,
-    partition_chain_name, to_partition_enable_cmd, to_partition_disable_cmd, to_partition_teardown_cmd
+    partition_chain_name, to_partition_enable_cmd, to_partition_disable_cmd, to_partition_teardown_cmd,
+    PARTITION_CHAIN_PREFIX
 )
 from ignitetest.services.utils.decorators import memoize
 
@@ -279,9 +280,10 @@ class NetworkGroupManager:
                     targets_str = f" -> to [{', '.join(dst_ips)}]" if dst_ips and constraints != "noqueue" else ""
                     node_ip = socket.gethostbyname(node.account.externally_routable_ip)
 
-                    drop_count = self._get_ssh_output(
-                        node, "sudo iptables -S 2>/dev/null | grep -c -- '-j DROP' || true")
-                    partition_str = f" | partition DROP rules: {drop_count}" if drop_count not in ("", "0") else ""
+                    iptables_lines = self._get_ssh_output(
+                        node, "sudo iptables -S 2>/dev/null || true").splitlines()
+                    partition_str = self._format_partition_drops(
+                        self._parse_partition_drops(iptables_lines))
 
                     node_status = f"[{group:<4}] {svc.who_am_i(node):<45}[{node_ip}] : " \
                                   f"{constraints}{targets_str}{partition_str}"
@@ -325,6 +327,65 @@ class NetworkGroupManager:
                     continue
 
         return dst_ips
+
+    @staticmethod
+    def _parse_partition_drops(iptables_lines: List[str]) -> Dict[str, Dict[str, set]]:
+        """
+        Parses 'iptables -S' output lines into per-partition-chain drop sets.
+
+        :return: {chain_name: {'s': {inbound-dropped ips}, 'd': {outbound-dropped ips}}}
+        """
+        pattern = re.compile(
+            rf"^-A\s+({re.escape(PARTITION_CHAIN_PREFIX)}\S+)\s+"
+            rf"-(s|d)\s+(\d{{1,3}}(?:\.\d{{1,3}}){{3}})(?:/32)?\s+-j\s+DROP$"
+        )
+
+        drops: Dict[str, Dict[str, set]] = {}
+
+        for line in iptables_lines:
+            match = pattern.match(line.strip())
+
+            if match:
+                chain, direction, ip = match.groups()
+
+                drops.setdefault(chain, {"s": set(), "d": set()})[direction].add(ip)
+
+        return drops
+
+    @staticmethod
+    def _format_partition_drops(drops: Dict[str, Dict[str, set]]) -> str:
+        """
+        Renders parsed partition drops into a compact, human-readable suffix.
+
+        Fully cut peers (both inbound and outbound DROP present) are shown as
+        '<-X->'. Peers with only a one-way drop are flagged explicitly as
+        'in-X'/'out-X' — on a healthy partition these lists are empty, so any
+        occurrence pinpoints a node with partially applied rules.
+        """
+        if not drops:
+            return ""
+
+        def fmt(ips: set) -> str:
+            return ", ".join(sorted(ips, key=lambda ip: tuple(map(int, ip.split(".")))))
+
+        chain_summaries = []
+
+        for chain in sorted(drops):
+            inbound, outbound = drops[chain]["s"], drops[chain]["d"]
+
+            both, in_only, out_only = inbound & outbound, inbound - outbound, outbound - inbound
+
+            details = []
+            if both:
+                details.append(f"<-X-> [{fmt(both)}]")
+            if in_only:
+                details.append(f"in-X only [{fmt(in_only)}]")
+            if out_only:
+                details.append(f"out-X only [{fmt(out_only)}]")
+
+            chain_summaries.append(f"{chain} {' '.join(details)}")
+
+        return " | partition: " + "; ".join(chain_summaries)
 
     @staticmethod
     def _parse_qdisc_constraints(qdisc_lines: List[str]) -> str:
