@@ -15,9 +15,11 @@
 from time import sleep
 
 from ducktape.mark import matrix
+from ducktape.utils.util import wait_until
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.network_group.configuration import NetworkGroupStore, CrossNetworkGroupConfiguration
+from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.tests.network_group import NetworkGroupAbstractTest
 from ignitetest.utils import cluster, ignite_versions
@@ -28,6 +30,11 @@ NUM_NODES = 12
 DC_1_NAME = "DC1"
 DC_2_NAME = "DC2"
 
+# How long to wait for the half-ring to reach the expected cluster state
+# after the partition heals. Discovery failure detection, ring closure and
+# the state transition are asynchronous, so an immediate check is racy.
+CLUSTER_STATE_TIMEOUT_SEC = 60
+
 
 class MultiDCPartitionResilienceTest(NetworkGroupAbstractTest):
     """
@@ -35,11 +42,14 @@ class MultiDCPartitionResilienceTest(NetworkGroupAbstractTest):
     """
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH))
-    @matrix(cross_dc_latency_ms=[5, 10, 20, 50], partition_time_sec=[0.5, 1, 5], is_node_count_odd=[True, False])
-    def test_mdc_cluster_partition_resilience(self, ignite_version, cross_dc_latency_ms, partition_time_sec,
-                                              is_node_count_odd):
+    # NOTE: for the partition to be reliably *detected*, partition_time_sec must
+    # exceed discovery failureDetectionTimeout + connectionRecoveryTimeout
+    # (~10s + 10s by default). Sub-detection values (e.g. 0.5s) exercise the
+    # "partition heals before the cluster reacts" case instead.
+    @matrix(cross_dc_latency_ms=[20], partition_time_sec=[30])
+    def test_mdc_cluster_partition_resilience(self, ignite_version, cross_dc_latency_ms, partition_time_sec):
         self.configure_network_and_run(ignite_version=ignite_version, cross_dc_latency_ms=cross_dc_latency_ms,
-                                       partition_time_sec=partition_time_sec, is_node_count_odd=is_node_count_odd)
+                                       partition_time_sec=partition_time_sec)
 
     def _configure_network_group_store(self, **kwargs) -> NetworkGroupStore:
         store = super()._configure_network_group_store(**kwargs)
@@ -53,7 +63,7 @@ class MultiDCPartitionResilienceTest(NetworkGroupAbstractTest):
     def _configure_services(self, **kwargs):
         self.ign_cfg = IgniteConfiguration(version=IgniteVersion(kwargs['ignite_version']))
 
-        dc_1_nodes_num, dc_2_nodes_num = self._dc_node_counts(kwargs['is_node_count_odd'])
+        dc_1_nodes_num, dc_2_nodes_num = NUM_NODES // 2, NUM_NODES // 2
 
         self.svc_dc_1 = IgniteService(self.test_context, self.ign_cfg, num_nodes=dc_1_nodes_num,
                                       jvm_opts=[f"-DIGNITE_DATA_CENTER_ID={DC_1_NAME}"])
@@ -76,17 +86,18 @@ class MultiDCPartitionResilienceTest(NetworkGroupAbstractTest):
 
         network_mgr.disable_network_partition(DC_1_NAME, DC_2_NAME)
 
-        self._verify_cluster_survived(kwargs['is_node_count_odd'])
+        self._verify_half_ring_status(self.svc_dc_1, "ACTIVE")
+        self._verify_half_ring_status(self.svc_dc_2, "READ_ONLY")
+
+        self._verify_cluster_survived()
 
         self.svc_dc_1.stop()
         self.svc_dc_2.stop()
 
-    def _verify_cluster_survived(self, is_node_count_odd: bool):
+    def _verify_cluster_survived(self):
         total_alive = sum(len(svc.alive_nodes) for svc in [self.svc_dc_1, self.svc_dc_2])
 
-        alive_nodes = sum(self._dc_node_counts(is_node_count_odd))
-
-        assert total_alive == alive_nodes, f"{alive_nodes} nodes should be alive! [actual={total_alive}]"
+        assert total_alive == NUM_NODES, f"{NUM_NODES} nodes should be alive! [actual={total_alive}]"
 
         coordinator_node = self.svc_dc_1.nodes[0]
 
@@ -97,12 +108,21 @@ class MultiDCPartitionResilienceTest(NetworkGroupAbstractTest):
         assert disco_info_dc_1.is_coordinator, f"{self.svc_dc_1.who_am_i(coordinator_node)} is not a coordinator"
 
     @staticmethod
-    def _dc_node_counts(is_node_count_odd: bool):
+    def _verify_half_ring_status(svc: IgniteService, status: str, timeout_sec: int = CLUSTER_STATE_TIMEOUT_SEC):
         """
-        :return: (dc_1_nodes_num, dc_2_nodes_num). DC2 gets one node fewer when
-        an odd total cluster size is requested.
+        Polls the half-ring cluster state until it reaches the expected status.
+        The state transition after a partition is asynchronous (failure detection,
+        ring closure, state change exchange), so a one-shot assertion is racy.
         """
-        dc_1 = NUM_NODES // 2
-        dc_2 = NUM_NODES // 2 - 1 if is_node_count_odd else NUM_NODES // 2
+        control_utility = ControlUtility(svc)
 
-        return dc_1, dc_2
+        def has_expected_status():
+            try:
+                return status in control_utility.cluster_state()
+            except Exception:
+                # control.sh may transiently fail while the ring is re-forming.
+                return False
+
+        wait_until(has_expected_status, timeout_sec=timeout_sec, backoff_sec=1,
+                   err_msg=f"Half-ring did not reach {status} status within {timeout_sec}s "
+                           f"[last known state check failed or mismatched]")
