@@ -96,7 +96,7 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testBitwiseOperations() {
-        //doTestBitwiseOperations(false);
+        doTestBitwiseOperations(false);
 
         doTestBitwiseOperations(true);
     }
@@ -149,7 +149,7 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
         SqlValidatorException xorErr = new SqlValidatorException("Cannot apply 'BITXOR' to arguments of type", null);
 
         // BITAND
-/*        res.add(F.asList("AND", 1, null, 1.0, null, andErr));
+        res.add(F.asList("AND", 1, null, 1.0, null, andErr));
         res.add(F.asList("AND", 1.0, null, 1, null, andErr));
         res.add(F.asList("AND", 1, null, 1.0f, null, andErr));
         res.add(F.asList("AND", 1.0f, null, 1, null, andErr));
@@ -205,8 +205,7 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
         res.add(F.asList("XOR", (short)32767, null, 65535, null, 32768));
         res.add(F.asList("XOR", (short)32767, null, 65536, null, 98303));
         res.add(F.asList("XOR", null, null, 1, "TINYINT", null));
-        res.add(F.asList("XOR", 1, null, null, null, null));*/
-        res.add(F.asList("XOR", (short)32767, null, 65536, null, 98303));
+        res.add(F.asList("XOR", 1, null, null, null, null));
 
         return res;
     }

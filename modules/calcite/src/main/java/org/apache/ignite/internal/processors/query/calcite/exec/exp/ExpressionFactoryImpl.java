@@ -578,8 +578,6 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
 
         String code = Expressions.toString(F.asList(decl), "\n", false);
 
-        System.err.println("!!!code: " + code);
-
         return Commons.compile(clazz, code);
     }
 
