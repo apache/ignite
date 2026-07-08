@@ -3335,11 +3335,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             originVer = ver;
             this.nearVer = nearVer;
         }
-
-        /** {@inheritDoc} */
-        @Override public short directType() {
-            throw new UnsupportedOperationException("Near committed version container is not a message to send or serialize.");
-        }
     }
 
     /**
