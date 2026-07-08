@@ -252,18 +252,6 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
     }
 
     /** {@inheritDoc} */
-    @Override public RelDataType selectForUpdateRowType(IgniteTypeFactory factory) {
-        RelDataTypeFactory.Builder b = new RelDataTypeFactory.Builder(factory);
-
-        for (CacheColumnDescriptor desc : descriptors) {
-            if (!QueryUtils.isTechnicalFieldNameIgnoreCase(desc.name()))
-                b.add(desc.name(), desc.logicalType(factory));
-        }
-
-        return b.build();
-    }
-
-    /** {@inheritDoc} */
     @Override public GridCacheContext cacheContext() {
         return cacheInfo.cacheContext();
     }
@@ -318,9 +306,6 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
     /** {@inheritDoc} */
     @Override public boolean isUpdateAllowed(RelOptTable tbl, int colIdx) {
         final CacheColumnDescriptor desc = descriptors[colIdx];
-
-        if (isTechnicalColumn(desc.name()))
-            return false;
 
         return !desc.key() && (desc.field() || QueryUtils.isSqlType(desc.storageType()));
     }
