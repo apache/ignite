@@ -217,6 +217,8 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
 import org.apache.ignite.internal.processors.query.messages.GridQueryKillRequest;
 import org.apache.ignite.internal.processors.query.messages.GridQueryKillResponse;
+import org.apache.ignite.internal.processors.query.schema.message.QueryEntityExMessage;
+import org.apache.ignite.internal.processors.query.schema.message.QueryEntityMessage;
 import org.apache.ignite.internal.processors.query.schema.message.QueryInlineSizesDataBagItem;
 import org.apache.ignite.internal.processors.query.schema.message.QueryProposalsDataBagItem;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
@@ -587,7 +589,9 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(GridDhtTxSalvageMessage.class);
         withSchema(CacheContinuousQueryEntry.class);
         withNoSchema(QueryInlineSizesDataBagItem.class);
-        withSchema(QueryProposalsDataBagItem.class);
+        withNoSchema(QueryProposalsDataBagItem.class);
+        withNoSchema(QueryEntityMessage.class);
+        withNoSchema(QueryEntityExMessage.class);
 
         // [11200 - 11300]: Compute, distributed process messages.
         msgIdx = 11200;
@@ -642,7 +646,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(UserAuthenticateRequestMessage.class);
         withNoSchema(UserAuthenticateResponseMessage.class);
         withNoSchema(TcpDiscoveryAuthFailedMessage.class);
-        withSchema(AuthentificationDataBagItem.class);
+        withNoSchema(AuthentificationDataBagItem.class);
 
         // [12200 - 12300]: Binary, classloading and marshalling messages.
         msgIdx = 12200;
