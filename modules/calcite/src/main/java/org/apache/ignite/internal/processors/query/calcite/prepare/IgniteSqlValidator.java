@@ -247,29 +247,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     }
 
     /** {@inheritDoc} */
-    @Override protected void validateOrderList(SqlSelect select) {
-        super.validateOrderList(select);
-
-        SqlNodeList orderList = select.getOrderList();
-
-        if (orderList == null)
-            return;
-
-        for (SqlNode orderItem : orderList) {
-            SqlNode node = orderItem;
-
-            // Unwrap DESC / NULLS FIRST / NULLS LAST wrappers to get the actual expression.
-            while (node.getKind() == SqlKind.DESCENDING
-                || node.getKind() == SqlKind.NULLS_FIRST
-                || node.getKind() == SqlKind.NULLS_LAST) {
-                node = ((SqlCall)node).operand(0);
-            }
-
-            validateTechnicalColumnAccess(node);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override protected void validateNamespace(SqlValidatorNamespace namespace, RelDataType targetRowType) {
         SqlValidatorTable table = namespace.getTable();
 
@@ -316,7 +293,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         if (call.getKind() == SqlKind.AS) {
             final String alias = deriveAlias(call, 0);
 
-            if (QueryUtils.isReservedFieldName(alias))
+            if (isSystemFieldName(alias))
                 throw newValidationError(call, IgniteResource.INSTANCE.illegalAlias(alias));
         }
         else if (call.getKind() == SqlKind.CAST) {
@@ -434,26 +411,18 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         SelectScope scope,
         boolean includeSysVars
     ) {
-        if (!includeSysVars && exp.getKind() == SqlKind.IDENTIFIER) {
-            String alias = deriveAlias(exp, 0);
+        if (!includeSysVars && exp.getKind() == SqlKind.IDENTIFIER && isSystemFieldName(deriveAlias(exp, 0))) {
+            SqlQualified qualified = scope.fullyQualify((SqlIdentifier)exp);
 
-            // Technical columns are never exposed via SELECT *.
-            if (QueryUtils.isTechnicalFieldNameIgnoreCase(alias))
+            if (qualified.namespace == null)
                 return;
 
-            if (QueryUtils.isReservedFieldName(alias)) {
-                SqlQualified qualified = scope.fullyQualify((SqlIdentifier)exp);
-
-                if (qualified.namespace == null)
-                    return;
-
-                if (qualified.namespace.getTable() != null) {
-                    // If child is table and has only system fields, expand star to these fields.
-                    // Otherwise, expand star to non-system fields only.
-                    for (RelDataTypeField fld : qualified.namespace.getRowType().getFieldList()) {
-                        if (!isSystemField(fld))
-                            return;
-                    }
+            if (qualified.namespace.getTable() != null) {
+                // If child is table and has only system fields, expand star to these fields.
+                // Otherwise, expand star to non-system fields only.
+                for (RelDataTypeField fld : qualified.namespace.getRowType().getFieldList()) {
+                    if (!isSystemField(fld))
+                        return;
                 }
             }
         }
@@ -463,7 +432,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** {@inheritDoc} */
     @Override public boolean isSystemField(RelDataTypeField field) {
-        return QueryUtils.isReservedFieldName(field.getName());
+        return isSystemFieldName(field.getName());
     }
 
     /** */
@@ -582,10 +551,14 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         return (IgniteTypeFactory)typeFactory;
     }
 
+    /** */
+    private boolean isSystemFieldName(String alias) {
+        return QueryUtils.KEY_FIELD_NAME.equalsIgnoreCase(alias)
+            || QueryUtils.VAL_FIELD_NAME.equalsIgnoreCase(alias);
+    }
+
     /** {@inheritDoc} */
     @Override public RelDataType deriveType(SqlValidatorScope scope, SqlNode expr) {
-        validateTechnicalColumnAccess(expr);
-
         if (expr instanceof SqlDynamicParam) {
             RelDataType type = deriveDynamicParameterType((SqlDynamicParam)expr, nullType);
 
@@ -594,21 +567,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         }
 
         return super.deriveType(scope, expr);
-    }
-
-    /** */
-    private void validateTechnicalColumnAccess(SqlNode expr) {
-        if (!(expr instanceof SqlIdentifier))
-            return;
-
-        SqlIdentifier id = (SqlIdentifier)expr;
-
-        String fieldName = id.names.get(id.names.size() - 1);
-
-        if (id.isStar() || !QueryUtils.isTechnicalFieldNameIgnoreCase(fieldName))
-            return;
-
-        throw newValidationError(id, IgniteResource.INSTANCE.cannotAccessTechnicalColumn(id.toString()));
     }
 
     /** @return A derived type or {@code null} if unable to determine. */
