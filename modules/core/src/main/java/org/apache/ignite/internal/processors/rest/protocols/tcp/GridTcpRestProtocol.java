@@ -209,13 +209,15 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
             GridNioFilter[] filters;
 
+            MetricRegistryImpl mreg = ctx.metric().registry(REST_CONNECTOR_METRIC_REGISTRY_NAME);
+
             if (sslCtx != null) {
                 GridNioSslFilter sslFilter = U.sslFilter(
                     sslCtx,
                     cfg.isDirectBuffer(),
                     ByteOrder.nativeOrder(),
                     log,
-                    ctx.metric().registry(REST_CONNECTOR_METRIC_REGISTRY_NAME));
+                    mreg);
 
                 sslFilter.directMode(false);
 
@@ -232,8 +234,6 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
             }
             else
                 filters = new GridNioFilter[] { codec };
-
-            MetricRegistryImpl mreg = ctx.metric().registry(REST_CONNECTOR_METRIC_REGISTRY_NAME);
 
             GridNioServer.Builder<GridClientMessage> builder = GridNioServer.<GridClientMessage>builder()
                 .address(hostAddr)

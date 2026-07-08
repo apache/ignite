@@ -93,7 +93,7 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
     @Nullable private final LongConsumer maxMessagesQueueSizeMetric;
 
     /** Span manager used to resolve trace names for logging. */
-    private final SpanManager tracer;
+    private final SpanManager tracing;
 
     /**
      * Creates session instance.
@@ -107,7 +107,7 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
      * @param sndQueueLimit Send queue limit.
      * @param outboundMessagesQueueSizeMetric Outbound messages queue size metric, or {@code null} if metrics disabled.
      * @param maxMessagesQueueSizeMetric Maximum outbound messages queue size metric, or {@code null} if metrics disabled.
-     * @param tracer Span manager used to resolve trace names for logging.
+     * @param tracing Span manager used to resolve trace names for logging.
      * @param writeBuf Write buffer.
      * @param readBuf Read buffer.
      */
@@ -121,7 +121,7 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
         int sndQueueLimit,
         @Nullable LongConsumer outboundMessagesQueueSizeMetric,
         @Nullable LongConsumer maxMessagesQueueSizeMetric,
-        SpanManager tracer,
+        SpanManager tracing,
         @Nullable ByteBuffer writeBuf,
         @Nullable ByteBuffer readBuf
     ) {
@@ -157,7 +157,7 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
 
         this.maxMessagesQueueSizeMetric = maxMessagesQueueSizeMetric;
 
-        this.tracer = tracer;
+        this.tracing = tracing;
     }
 
     /** {@inheritDoc} */
@@ -319,7 +319,7 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
 
         boolean res = queue.offerFirst(writeFut);
 
-        MTC.span().addLog(() -> "Added to system queue - " + tracer.traceName((Message)writeFut.message()));
+        MTC.span().addLog(() -> "Added to system queue - " + tracing.traceName((Message)writeFut.message()));
 
         assert res : "Future was not added to queue";
 
@@ -357,7 +357,7 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
 
         boolean res = queue.offer(writeFut);
 
-        MTC.span().addLog(() -> "Added to queue - " + tracer.traceName((Message)writeFut.message()));
+        MTC.span().addLog(() -> "Added to queue - " + tracing.traceName((Message)writeFut.message()));
 
         assert res : "Future was not added to queue";
 
