@@ -25,11 +25,13 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.annotation.processing.Processor;
 import javax.tools.JavaFileObject;
 import com.google.testing.compile.Compilation;
 import com.google.testing.compile.Compiler;
 import com.google.testing.compile.JavaFileObjects;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.MessageProcessor;
@@ -38,7 +40,6 @@ import org.apache.ignite.internal.cache.query.QueryIndexMessage;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.mappers.DefaultEnumMapper;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
@@ -363,10 +364,16 @@ public class MessageProcessorTest {
         for (String srcFile: srcFiles)
             input.add(javaFile(srcFile));
 
-        File igniteCoreJar = jarForClass(Message.class);
+        File igniteCoreJar = jarForClass(Ignite.class);
         File igniteCodegenJar = jarForClass(Order.class);
         File igniteBinaryApiJar = jarForClass(IgniteUuid.class);
         File igniteCommonsJar = jarForClass(CommonUtils.class);
+
+        // Actually can throw 'duplicate element'. But this would mean the same.
+        assertTrue(
+            "Some classpath locations became the same. A required classpath might be lost.",
+            Set.of(igniteCoreJar, igniteCodegenJar, igniteBinaryApiJar, igniteCommonsJar).size() == 4
+        );
 
         return Compiler.javac()
             .withClasspath(F.asList(igniteCoreJar, igniteCodegenJar, igniteBinaryApiJar, igniteCommonsJar))
