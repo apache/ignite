@@ -59,6 +59,8 @@ public class WelcomeHandler extends HttpServlet {
 
         String target = req.getRequestURI();
 
+        res.setStatus(HttpServletResponse.SC_OK);
+
         if (target.startsWith("/favicon.ico")) {
             res.setContentType("image/x-icon");
             res.getOutputStream().write(favicon);
@@ -73,8 +75,6 @@ public class WelcomeHandler extends HttpServlet {
         }
 
         res.getOutputStream().flush();
-
-        res.setStatus(HttpServletResponse.SC_OK);
     }
 
     /** */

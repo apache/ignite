@@ -143,7 +143,7 @@ public class GridJtaLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSel
     /** {@inheritDoc} */
     @Test
     @Override public void testLifecycleAware() {
-        // No-op, see another tests.
+        // No-op, see other tests.
     }
 
     /** */

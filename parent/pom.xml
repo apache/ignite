@@ -688,7 +688,7 @@
                             <excludes>
                                 <exclude>javax.transaction:jta</exclude>
                                 <exclude>javax.transaction:javax.transaction-api</exclude>
-                                <exclude>jakarta.transaction:jakarta.transaction-api:(,2.0.0)</exclude>
+                                <exclude>jakarta.transaction:jakarta.transaction-api:(,2.0.1)</exclude>
                             </excludes>
                             <message>
                                 Use jakarta.transaction:jakarta.transaction-api:2.0.1+ only.
