@@ -1603,9 +1603,8 @@ public class RexImpTable {
             if (type instanceof RelDataTypeFactoryImpl.JavaType) {
                 Class<?> javaCls = ((RelDataTypeFactoryImpl.JavaType)type).getJavaClass();
                 final Class<?> primitive = Primitive.unbox(javaCls);
-                if (primitive != javaCls) {
+                if (primitive != javaCls)
                     return typeFactory.createJavaType(primitive);
-                }
             }
             return typeFactory.createTypeWithNullability(type, nullable);
         }

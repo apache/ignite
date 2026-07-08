@@ -150,7 +150,7 @@ public class IgniteOwnSqlOperatorTable extends ReflectiveSqlOperatorTable {
         new SqlFunction(
             "BITXOR",
             SqlKind.OTHER_FUNCTION,
-            ReturnTypes.BIGINT_NULLABLE,
+            ReturnTypes.LEAST_RESTRICTIVE,
             InferTypes.RETURN_TYPE,
             OperandTypes.family(SqlTypeFamily.INTEGER, SqlTypeFamily.INTEGER),
             SqlFunctionCategory.NUMERIC);

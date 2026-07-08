@@ -86,7 +86,7 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
 
             assertQuery("SELECT BITAND(i, s) FROM TBL WHERE l=?").withParams(Short.MAX_VALUE).returns(0).check();
             assertQuery("SELECT BITOR(i, s) FROM TBL WHERE l=?").withParams(Short.MAX_VALUE).returns(65535).check();
-            assertQuery("SELECT BITXOR(i, s) FROM TBL WHERE l=?").withParams(Short.MAX_VALUE).returns(65535L).check();
+            assertQuery("SELECT BITXOR(i, s) FROM TBL WHERE l=?").withParams(Short.MAX_VALUE).returns(65535).check();
         }
         finally {
             sql("DROP TABLE if EXISTS TBL");
@@ -161,12 +161,13 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
         res.add(F.asList("AND", 1, "TINYINT", 1, "INT", 1));
         res.add(F.asList("AND", 1, "TINYINT", 1, "SMALLINT", (short)1));
         res.add(F.asList("AND", 0, "TINYINT", 0, "TINYINT", (byte)0));
-        res.add(F.asList("AND", 1, "TINYINT", 1, "SMALLINT", (short)1));
+        res.add(F.asList("AND", 1, "SMALLINT", 1, "TINYINT", (short)1));
         res.add(F.asList("AND", 15, null, 7, null, 7));
         res.add(F.asList("AND", -1, null, 1, null, 1));
         res.add(F.asList("AND", (short)32767, null, 65535, null, 32767));
         res.add(F.asList("AND", null, null, 1, null, null));
         res.add(F.asList("AND", 1, "SMALLINT", null, null, null));
+        res.add(F.asList("AND", 1, null, null, null, null));
         // BITOR
         res.add(F.asList("OR", 1, null, 1.0, null, orErr));
         res.add(F.asList("OR", 1.0, null, 1, null, orErr));
@@ -179,7 +180,7 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
         res.add(F.asList("OR", 1, "TINYINT", 1, "INT", 1));
         res.add(F.asList("OR", 1, "TINYINT", 1, "SMALLINT", (short)1));
         res.add(F.asList("OR", 0, "TINYINT", 0, "TINYINT", (byte)0));
-        res.add(F.asList("OR", 1, "TINYINT", 1, "SMALLINT", (short)1));
+        res.add(F.asList("OR", 1, "SMALLINT", 1, "TINYINT", (short)1));
         res.add(F.asList("OR", 8, null, 7, null, 15));
         res.add(F.asList("OR", -1, null, 1, null, -1));
         res.add(F.asList("OR", (short)32767, null, 65535, null, 65535));
@@ -191,20 +192,21 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
         res.add(F.asList("XOR", 1.0, null, 1, null, xorErr));
         res.add(F.asList("XOR", 1, null, 1.0f, null, xorErr));
         res.add(F.asList("XOR", 1.0f, null, 1, null, xorErr));
-        res.add(F.asList("XOR", 1, null, 1, null, 0L));
-        res.add(F.asList("XOR", 1, null, 0, null, 1L));
-        res.add(F.asList("XOR", 0, null, 1, null, 1L));
+        res.add(F.asList("XOR", 1, null, 1, null, 0));
+        res.add(F.asList("XOR", 1, null, 0, null, 1));
+        res.add(F.asList("XOR", 0, null, 1, null, 1));
         res.add(F.asList("XOR", 1, null, 1, "BIGINT", 0L));
-        res.add(F.asList("XOR", 1, "TINYINT", 1, "INT", 0L));
-        res.add(F.asList("XOR", 1, "TINYINT", 1, "SMALLINT", 0L));
-        res.add(F.asList("XOR", 0, "TINYINT", 0, "TINYINT", 0L));
-        res.add(F.asList("XOR", 1, "TINYINT", 1, "SMALLINT", 0L));
-        res.add(F.asList("XOR", 8, null, 7, null, 15L));
-        res.add(F.asList("XOR", -1, null, 1, null, -2L));
-        res.add(F.asList("XOR", (short)32767, null, 65535, null, 32768L));
-        res.add(F.asList("XOR", (short)32767, null, 65536, null, 98303L));
+        res.add(F.asList("XOR", 1, "TINYINT", 1, "INT", 0));
+        res.add(F.asList("XOR", 1, "TINYINT", 1, "SMALLINT", (short)0));
+        res.add(F.asList("XOR", 0, "TINYINT", 0, "TINYINT", (byte)0));
+        res.add(F.asList("XOR", 1, "SMALLINT", 1, "TINYINT", (short)0));
+        res.add(F.asList("XOR", 8, null, 7, null, 15));
+        res.add(F.asList("XOR", -1, null, 1, null, -2));
+        res.add(F.asList("XOR", (short)32767, null, 65535, null, 32768));
+        res.add(F.asList("XOR", (short)32767, null, 65536, null, 98303));
         res.add(F.asList("XOR", null, null, 1, "TINYINT", null));
         res.add(F.asList("XOR", 1, null, null, null, null));
+        res.add(F.asList("XOR", null, null, null, null, null));
 
         return res;
     }

@@ -419,6 +419,15 @@ public class ConverterUtils {
         }
         else if (toType == UUID.class && fromType == String.class)
             return Expressions.call(UUID.class, "fromString", operand);
+        else if (fromType == Object.class && Number.class.isAssignableFrom((Class<?>)toType)) {
+            Primitive primitiveFromToType = Primitive.ofBox(toType);
+            if (primitiveFromToType != null) {
+                Expression res = Expressions.convert_(operand, Number.class);
+                res = Expressions.unbox(res, primitiveFromToType);
+                res = Expressions.box(res);
+                return res;
+            }
+        }
 
         return Expressions.convert_(operand, toType);
     }
