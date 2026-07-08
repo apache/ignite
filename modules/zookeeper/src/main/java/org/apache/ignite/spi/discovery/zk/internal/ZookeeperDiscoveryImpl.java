@@ -2699,27 +2699,22 @@ public class ZookeeperDiscoveryImpl {
 
         // Need keep processed custom events since they contain message object which is needed to create ack.
         if (!locNode.isClient() && rtState.evtsData != null) {
-            Map<Long, ZkDiscoveryEventData> updatedEvts = Collections.emptyMap();
-
             for (Map.Entry<Long, ZkDiscoveryEventData> e : rtState.evtsData.evts.entrySet()) {
                 ZkDiscoveryEventData evtData = e.getValue();
 
                 if (evtData.eventType() == ZkDiscoveryEventData.ZK_EVT_CUSTOM_EVT) {
-                    ZkDiscoveryCustomEventData ed = (ZkDiscoveryCustomEventData)newEvts.evts.get(evtData.eventId());
+                    ZkDiscoveryCustomEventData ed0 = (ZkDiscoveryCustomEventData)newEvts.evts.get(evtData.eventId());
 
-                    if (ed != null) {
-                        if (updatedEvts == Collections.EMPTY_MAP)
-                            updatedEvts = new HashMap<>();
+                    if (ed0 != null && ((ZkDiscoveryCustomEventData)evtData).customEventMessageHolder() != null) {
+                        assert ed0.customEventMessageHolder() == null;
 
-                        ed = new ZkDiscoveryCustomEventData(ed.eventId(), ed.origEvtId, ed.topologyVersion(), ed.sndNodeId,
-                            ((ZkDiscoveryCustomEventData)evtData).customEventMessageHolder(), ed.evtPath);
+                        ed0 = new ZkDiscoveryCustomEventData(ed0.eventId(), ed0.origEvtId, ed0.topologyVersion(), ed0.sndNodeId,
+                            ((ZkDiscoveryCustomEventData)evtData).customEventMessageHolder(), ed0.evtPath);
 
-                        updatedEvts.put(e.getKey(), ed);
+                        newEvts.evts.replace(e.getKey(), ed0);
                     }
                 }
             }
-
-            newEvts.evts.putAll(updatedEvts);
         }
 
         processNewEvents(newEvts);
