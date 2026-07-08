@@ -568,7 +568,7 @@
                                             <regexp pattern="(ignite.version=).+$" />
                                             <substitution expression="\1${project.version}" />
                                             <fileset dir="${project.basedir}/modules/core/">
-                                                <include name="src/main/resources/ignite.properties" />
+                                                <include name="src/main/resources/ignite-build-info.properties" />
                                             </fileset>
                                         </replaceregexp>
 
