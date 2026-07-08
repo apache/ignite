@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import javax.cache.CacheException;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheEntry;
@@ -53,7 +54,6 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryC
 import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
-import org.apache.ignite.internal.processors.query.calcite.schema.TechnicalColumns;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -185,6 +185,26 @@ public class TechnicalColumnsScanTest extends GridCommonAbstractTest {
 
     /** */
     @Test
+    public void testCannotCreateTableWithTechnicalColumnNames() {
+        assertTechnicalColumnCreateForbidden("CREATE TABLE PersonVer (id INT PRIMARY KEY, _ver INT)",
+            QueryUtils.VER_FIELD_NAME);
+        assertTechnicalColumnCreateForbidden("CREATE TABLE PersonSrc (id INT PRIMARY KEY, _src INT)",
+            QueryUtils.SRC_FIELD_NAME);
+    }
+
+    /** */
+    @Test
+    public void testCannotAddTechnicalColumnNames() throws Exception {
+        createAndPopulatePersonTable();
+
+        assertTechnicalColumnAddForbidden("ALTER TABLE Person ADD COLUMN _ver INT",
+            QueryUtils.VER_FIELD_NAME);
+        assertTechnicalColumnAddForbidden("ALTER TABLE Person ADD COLUMN _src INT",
+            QueryUtils.SRC_FIELD_NAME);
+    }
+
+    /** */
+    @Test
     public void testTechnicalColumnsAreHiddenFromSql() throws Exception {
         createAndPopulatePersonTable();
 
@@ -206,7 +226,7 @@ public class TechnicalColumnsScanTest extends GridCommonAbstractTest {
         assertTechnicalColumnAccessForbidden("SELECT CAST(_ver AS VARCHAR) FROM Person");
         assertTechnicalColumnAccessForbidden("SELECT id FROM Person WHERE (SELECT _ver FROM Person WHERE id = 1) IS NOT NULL");
 
-        // MERGE: technical columns must be forbidden in all clause positions.
+        // MERGE: technical columns must not be exposed in all clause positions.
         assertTechnicalColumnAccessForbidden(
             "MERGE INTO Person " +
             "USING (SELECT id, _ver FROM Person) AS src ON (Person.id = src.id) " +
@@ -224,9 +244,48 @@ public class TechnicalColumnsScanTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void assertTechnicalColumnAccessForbidden(String qry) {
+    private void assertTechnicalColumnCreateForbidden(String qry, String colName) {
+        String expMsg = "Name '" + colName + "' is reserved and cannot be used as a field name";
+
+        try {
+            sql(qry);
+
+            fail("Exception is expected");
+        }
+        catch (CacheException e) {
+            assertTrue("Expected reserved field name exception was not found: " + e,
+                hasCauseOrSuppressed(e, IgniteCheckedException.class, expMsg));
+        }
+    }
+
+    /** */
+    private boolean hasCauseOrSuppressed(Throwable t, Class<? extends Throwable> cls, String msg) {
+        if (t == null)
+            return false;
+
+        if (cls.isAssignableFrom(t.getClass()) && t.getMessage() != null && t.getMessage().contains(msg))
+            return true;
+
+        if (hasCauseOrSuppressed(t.getCause(), cls, msg))
+            return true;
+
+        for (Throwable suppressed : t.getSuppressed()) {
+            if (hasCauseOrSuppressed(suppressed, cls, msg))
+                return true;
+        }
+
+        return false;
+    }
+
+    /** */
+    private void assertTechnicalColumnAddForbidden(String qry, String colName) {
         GridTestUtils.assertThrowsAnyCause(log, () -> sql(qry), IgniteSQLException.class,
-            "Cannot access technical column");
+            "Column already exists: " + colName);
+    }
+
+    /** */
+    private void assertTechnicalColumnAccessForbidden(String qry) {
+        GridTestUtils.assertThrowsAnyCause(log, () -> sql(qry), IgniteSQLException.class, "not found");
     }
 
     /** */
@@ -286,8 +345,8 @@ public class TechnicalColumnsScanTest extends GridCommonAbstractTest {
     private ImmutableBitSet requiredColumns(IgniteCacheTable tbl) {
         return ImmutableBitSet.of(
             columnIndex(tbl, "ID"),
-            columnIndex(tbl, TechnicalColumns.VER_FIELD_NAME),
-            columnIndex(tbl, TechnicalColumns.SRC_FIELD_NAME)
+            columnIndex(tbl, QueryUtils.VER_FIELD_NAME),
+            columnIndex(tbl, QueryUtils.SRC_FIELD_NAME)
         );
     }
 
@@ -296,8 +355,8 @@ public class TechnicalColumnsScanTest extends GridCommonAbstractTest {
         return ImmutableBitSet.of(
             columnIndex(tbl, QueryUtils.KEY_FIELD_NAME),
             columnIndex(tbl, QueryUtils.VAL_FIELD_NAME),
-            columnIndex(tbl, TechnicalColumns.VER_FIELD_NAME),
-            columnIndex(tbl, TechnicalColumns.SRC_FIELD_NAME)
+            columnIndex(tbl, QueryUtils.VER_FIELD_NAME),
+            columnIndex(tbl, QueryUtils.SRC_FIELD_NAME)
         );
     }
 

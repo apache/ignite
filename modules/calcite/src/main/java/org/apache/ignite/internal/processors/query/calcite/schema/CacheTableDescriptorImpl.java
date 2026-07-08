@@ -112,8 +112,8 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
     /** */
     private final ImmutableBitSet insertFields;
 
-    /** Count of non-technical columns used in the UPDATE source SELECT. */
-    private final int updateRowFieldCnt;
+    /** Count of non-technical columns used in MERGE source SELECT sections. */
+    private final int mergeSourceRowFieldCnt;
 
     /** */
     private RelDataType tableRowType;
@@ -182,7 +182,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         }
 
         virtualFields.set(descriptors.size());
-        descriptors.add(new TechnicalDescriptor(TechnicalColumns.VER_FIELD_NAME, GridCacheVersion.class, descriptors.size()) {
+        descriptors.add(new TechnicalDescriptor(QueryUtils.VER_FIELD_NAME, GridCacheVersion.class, descriptors.size()) {
             @Override public Object value(ExecutionContext<?> ectx, GridCacheContext<?, ?> cctx, CacheDataRow src)
                 throws IgniteCheckedException {
                 GridCacheVersion ver = src.version();
@@ -197,7 +197,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         });
 
         virtualFields.set(descriptors.size());
-        descriptors.add(new TechnicalDescriptor(TechnicalColumns.SRC_FIELD_NAME, Integer.class, descriptors.size()) {
+        descriptors.add(new TechnicalDescriptor(QueryUtils.SRC_FIELD_NAME, Integer.class, descriptors.size()) {
             @Override public Object value(ExecutionContext<?> ectx, GridCacheContext<?, ?> cctx, CacheDataRow src) {
                 return cctx.cacheId();
             }
@@ -238,8 +238,8 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         this.affFields = ImmutableIntList.copyOf(affFields);
         this.descriptors = descriptors.toArray(DUMMY);
         this.descriptorsMap = descriptorsMap;
-        this.updateRowFieldCnt = (int)descriptors.stream()
-            .filter(d -> !TechnicalColumns.isTechnicalFieldNameIgnoreCase(d.name()))
+        this.mergeSourceRowFieldCnt = (int)descriptors.stream()
+            .filter(d -> !QueryUtils.isTechnicalFieldNameIgnoreCase(d.name()))
             .count();
 
         virtualFields.flip(0, descriptors.size());
@@ -256,7 +256,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         RelDataTypeFactory.Builder b = new RelDataTypeFactory.Builder(factory);
 
         for (CacheColumnDescriptor desc : descriptors) {
-            if (!TechnicalColumns.isTechnicalFieldNameIgnoreCase(desc.name()))
+            if (!QueryUtils.isTechnicalFieldNameIgnoreCase(desc.name()))
                 b.add(desc.name(), desc.logicalType(factory));
         }
 
@@ -335,7 +335,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
     /** */
     private static boolean isTechnicalColumn(String fieldName) {
-        return TechnicalColumns.isTechnicalFieldName(fieldName);
+        return QueryUtils.isTechnicalFieldName(fieldName);
     }
 
     /** {@inheritDoc} */
@@ -501,15 +501,15 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         // number of updated columns, it may coincide with the width of a WHEN MATCHED-only row.
         if (updateColList.isEmpty())
             return insertTuple(row, ectx); // Only WHEN NOT MATCHED clause in MERGE.
-        else if (rowColumnsCnt == updateRowFieldCnt + updateColList.size())
+        else if (rowColumnsCnt == mergeSourceRowFieldCnt + updateColList.size())
             return updateTuple(row, updateColList, 0, ectx); // Only WHEN MATCHED clause in MERGE.
         else {
             // Both WHEN MATCHED and WHEN NOT MATCHED clauses in MERGE.
-            // INSERT section has all fields (insertRowType); UPDATE section excludes technical columns.
-            assert rowColumnsCnt == descriptors.length + updateRowFieldCnt + updateColList.size() :
+            // INSERT and UPDATE source sections both exclude technical columns.
+            assert rowColumnsCnt == mergeSourceRowFieldCnt * 2 + updateColList.size() :
                 "Unexpected columns count: " + rowColumnsCnt;
 
-            int updateOffset = descriptors.length; // Offset of fields for update statement.
+            int updateOffset = mergeSourceRowFieldCnt; // Offset of fields for update statement.
 
             if (hnd.get(updateOffset + QueryUtils.KEY_COL, row) != null)
                 return updateTuple(row, updateColList, updateOffset, ectx);

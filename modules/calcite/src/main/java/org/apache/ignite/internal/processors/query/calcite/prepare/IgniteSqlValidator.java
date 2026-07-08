@@ -70,7 +70,6 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
-import org.apache.ignite.internal.processors.query.calcite.schema.TechnicalColumns;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlDecimalLiteral;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.OtherType;
@@ -317,7 +316,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         if (call.getKind() == SqlKind.AS) {
             final String alias = deriveAlias(call, 0);
 
-            if (isSystemFieldName(alias))
+            if (QueryUtils.isReservedFieldName(alias))
                 throw newValidationError(call, IgniteResource.INSTANCE.illegalAlias(alias));
         }
         else if (call.getKind() == SqlKind.CAST) {
@@ -439,10 +438,10 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             String alias = deriveAlias(exp, 0);
 
             // Technical columns are never exposed via SELECT *.
-            if (TechnicalColumns.isTechnicalFieldNameIgnoreCase(alias))
+            if (QueryUtils.isTechnicalFieldNameIgnoreCase(alias))
                 return;
 
-            if (isSystemFieldName(alias)) {
+            if (QueryUtils.isReservedFieldName(alias)) {
                 SqlQualified qualified = scope.fullyQualify((SqlIdentifier)exp);
 
                 if (qualified.namespace == null)
@@ -464,7 +463,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** {@inheritDoc} */
     @Override public boolean isSystemField(RelDataTypeField field) {
-        return isSystemFieldName(field.getName());
+        return QueryUtils.isReservedFieldName(field.getName());
     }
 
     /** */
@@ -583,13 +582,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         return (IgniteTypeFactory)typeFactory;
     }
 
-    /** */
-    private boolean isSystemFieldName(String alias) {
-        return QueryUtils.KEY_FIELD_NAME.equalsIgnoreCase(alias)
-            || QueryUtils.VAL_FIELD_NAME.equalsIgnoreCase(alias)
-            || TechnicalColumns.isTechnicalFieldNameIgnoreCase(alias);
-    }
-
     /** {@inheritDoc} */
     @Override public RelDataType deriveType(SqlValidatorScope scope, SqlNode expr) {
         validateTechnicalColumnAccess(expr);
@@ -613,7 +605,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
         String fieldName = id.names.get(id.names.size() - 1);
 
-        if (id.isStar() || !TechnicalColumns.isTechnicalFieldNameIgnoreCase(fieldName))
+        if (id.isStar() || !QueryUtils.isTechnicalFieldNameIgnoreCase(fieldName))
             return;
 
         throw newValidationError(id, IgniteResource.INSTANCE.cannotAccessTechnicalColumn(id.toString()));
