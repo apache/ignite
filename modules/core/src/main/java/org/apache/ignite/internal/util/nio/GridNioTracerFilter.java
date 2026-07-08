@@ -23,9 +23,9 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.NoopSpan;
-import org.apache.ignite.internal.processors.tracing.NoopTracing;
+import org.apache.ignite.internal.processors.tracing.NoopSpanManager;
 import org.apache.ignite.internal.processors.tracing.Span;
-import org.apache.ignite.internal.processors.tracing.Tracing;
+import org.apache.ignite.internal.processors.tracing.SpanManager;
 import org.apache.ignite.internal.processors.tracing.messages.SpanTransport;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -42,7 +42,7 @@ public class GridNioTracerFilter extends GridNioFilterAdapter {
     private IgniteLogger log;
 
     /** Tracing processor. */
-    private final Tracing tracer;
+    private final SpanManager tracer;
 
     /**
      * Creates a tracer filter.
@@ -50,11 +50,11 @@ public class GridNioTracerFilter extends GridNioFilterAdapter {
      * @param log Log instance to use.
      * @param tracer Tracing processor.
      */
-    public GridNioTracerFilter(IgniteLogger log, Tracing tracer) {
+    public GridNioTracerFilter(IgniteLogger log, SpanManager tracer) {
         super("GridNioTracerFilter");
 
         this.log = log;
-        this.tracer = tracer == null ? new NoopTracing() : tracer;
+        this.tracer = tracer == null ? new NoopSpanManager() : tracer;
     }
 
     /** {@inheritDoc} */

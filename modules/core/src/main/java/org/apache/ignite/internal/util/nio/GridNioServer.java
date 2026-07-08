@@ -47,6 +47,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.LongConsumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -55,17 +56,15 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.odbc.ClientMessage;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.NoopSpan;
-import org.apache.ignite.internal.processors.tracing.NoopTracing;
+import org.apache.ignite.internal.processors.tracing.NoopSpanManager;
 import org.apache.ignite.internal.processors.tracing.Span;
+import org.apache.ignite.internal.processors.tracing.SpanManager;
 import org.apache.ignite.internal.processors.tracing.SpanTags;
 import org.apache.ignite.internal.processors.tracing.SpanType;
-import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -97,7 +96,6 @@ import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.SOCKET_WRITE_BYTES;
 import static org.apache.ignite.internal.processors.tracing.SpanType.COMMUNICATION_SOCKET_WRITE;
-import static org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesTable.traceName;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MSG_WRITER;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.NIO_OPERATION;
 
@@ -251,17 +249,17 @@ public class GridNioServer<T> {
     /** Whether direct mode is used. */
     private final boolean directMode;
 
-    /** */
-    @Nullable private final MetricRegistryImpl mreg;
-
     /** Received bytes count metric. */
-    @Nullable private final LongAdderMetric rcvdBytesCntMetric;
+    @Nullable private final LongConsumer rcvdBytesCntMetric;
 
     /** Sent bytes count metric. */
-    @Nullable private final LongAdderMetric sentBytesCntMetric;
+    @Nullable private final LongConsumer sentBytesCntMetric;
 
     /** Outbound messages queue size. */
-    @Nullable private final LongAdderMetric outboundMessagesQueueSizeMetric;
+    @Nullable private final LongConsumer outboundMessagesQueueSizeMetric;
+
+    /** Per-session maximum outbound messages queue size metric. */
+    @Nullable private final LongConsumer maxMessagesQueueSizeMetric;
 
     /** Sessions. */
     private final GridConcurrentHashSet<GridSelectorNioSessionImpl> sessions = new GridConcurrentHashSet<>();
@@ -295,8 +293,8 @@ public class GridNioServer<T> {
      */
     private final boolean readWriteSelectorsAssign;
 
-    /** Tracing processor. */
-    private Tracing tracing;
+    /** Span manager. */
+    private SpanManager tracing;
 
     /** Message factory. */
     private final MessageFactory msgFactory;
@@ -325,7 +323,10 @@ public class GridNioServer<T> {
      * @param msgQueueLsnr Message queue size listener.
      * @param readWriteSelectorsAssign If {@code true} then in/out connections are assigned to even/odd workers.
      * @param workerLsnr Worker lifecycle listener.
-     * @param mreg Metrics registry.
+     * @param rcvdBytesCntMetric Received bytes count metric, or {@code null} if metrics disabled.
+     * @param sentBytesCntMetric Sent bytes count metric, or {@code null} if metrics disabled.
+     * @param outboundMessagesQueueSizeMetric Per-session outbound messages queue size metric, or {@code null} if metrics disabled.
+     * @param maxMessagesQueueSizeMetric Per-session maximum outbound messages queue size metric, or {@code null} if metrics disabled.
      * @param filters Filters for this server.
      * @throws IgniteCheckedException If failed.
      */
@@ -351,8 +352,11 @@ public class GridNioServer<T> {
         IgniteBiInClosure<GridNioSession, Integer> msgQueueLsnr,
         boolean readWriteSelectorsAssign,
         @Nullable GridWorkerListener workerLsnr,
-        @Nullable MetricRegistryImpl mreg,
-        Tracing tracing,
+        @Nullable LongConsumer rcvdBytesCntMetric,
+        @Nullable LongConsumer sentBytesCntMetric,
+        @Nullable LongConsumer outboundMessagesQueueSizeMetric,
+        @Nullable LongConsumer maxMessagesQueueSizeMetric,
+        SpanManager tracing,
         MessageFactory msgFactory,
         GridNioFilter... filters
     ) throws IgniteCheckedException {
@@ -380,7 +384,11 @@ public class GridNioServer<T> {
         this.selectorSpins = selectorSpins;
         this.readWriteSelectorsAssign = readWriteSelectorsAssign;
         this.lsnr = lsnr;
-        this.tracing = tracing == null ? new NoopTracing() : tracing;
+        this.rcvdBytesCntMetric = rcvdBytesCntMetric;
+        this.sentBytesCntMetric = sentBytesCntMetric;
+        this.outboundMessagesQueueSizeMetric = outboundMessagesQueueSizeMetric;
+        this.maxMessagesQueueSizeMetric = maxMessagesQueueSizeMetric;
+        this.tracing = tracing == null ? new NoopSpanManager() : tracing;
         this.msgFactory = msgFactory;
 
         filterChain = new GridNioFilterChain<>(log, lsnr, new HeadFilter(), filters);
@@ -461,27 +469,13 @@ public class GridNioServer<T> {
         }
 
         this.balancer = balancer0;
+    }
 
-        this.mreg = mreg;
-
-        rcvdBytesCntMetric = mreg == null ?
-            null : mreg.longAdderMetric(RECEIVED_BYTES_METRIC_NAME, RECEIVED_BYTES_METRIC_DESC);
-
-        sentBytesCntMetric = mreg == null ?
-            null : mreg.longAdderMetric(SENT_BYTES_METRIC_NAME, SENT_BYTES_METRIC_DESC);
-
-        outboundMessagesQueueSizeMetric = mreg == null ? null : mreg.longAdderMetric(
-            OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME,
-            OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_DESC
-        );
-
-        if (mreg != null) {
-            mreg.register(SESSIONS_CNT_METRIC_NAME, sessions::size, "Active TCP sessions count.");
-
-            boolean sslEnabled = Arrays.stream(filters).anyMatch(filter -> filter instanceof GridNioSslFilter);
-
-            mreg.register(SSL_ENABLED_METRIC_NAME, () -> sslEnabled, "Whether SSL is enabled");
-        }
+    /**
+     * @return Number of active TCP sessions.
+     */
+    public int activeTcpSessionsCount() {
+        return sessions.size();
     }
 
     /**
@@ -1249,7 +1243,7 @@ public class GridNioServer<T> {
                 log.trace("Bytes received [sockCh=" + sockCh + ", cnt=" + cnt + ']');
 
             if (rcvdBytesCntMetric != null)
-                rcvdBytesCntMetric.add(cnt);
+                rcvdBytesCntMetric.accept(cnt);
 
             ses.bytesReceived(cnt);
 
@@ -1316,7 +1310,7 @@ public class GridNioServer<T> {
                         span.addTag(SOCKET_WRITE_BYTES, () -> Integer.toString(cnt));
 
                         if (sentBytesCntMetric != null)
-                            sentBytesCntMetric.add(cnt);
+                            sentBytesCntMetric.accept(cnt);
 
                         ses.bytesSent(cnt);
                     }
@@ -1418,7 +1412,7 @@ public class GridNioServer<T> {
                 return;
 
             if (rcvdBytesCntMetric != null)
-                rcvdBytesCntMetric.add(cnt);
+                rcvdBytesCntMetric.accept(cnt);
 
             ses.bytesReceived(cnt);
             onRead(cnt);
@@ -1491,7 +1485,7 @@ public class GridNioServer<T> {
                     int cnt = sockCh.write(sslNetBuf);
 
                     if (sentBytesCntMetric != null)
-                        sentBytesCntMetric.add(cnt);
+                        sentBytesCntMetric.accept(cnt);
 
                     ses.bytesSent(cnt);
 
@@ -1578,7 +1572,7 @@ public class GridNioServer<T> {
                             log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
 
                         if (sentBytesCntMetric != null)
-                            sentBytesCntMetric.add(cnt);
+                            sentBytesCntMetric.accept(cnt);
 
                         ses.bytesSent(cnt);
                     }
@@ -1636,7 +1630,7 @@ public class GridNioServer<T> {
             Span span = tracing.create(SpanType.COMMUNICATION_SOCKET_WRITE, req.span());
 
             try (TraceSurroundings ignore = span.equals(NoopSpan.INSTANCE) ? null : MTC.support(span)) {
-                span.addTag(SpanTags.MESSAGE, () -> traceName(msg));
+                span.addTag(SpanTags.MESSAGE, () -> tracing.traceName(msg));
 
                 assert msg != null;
 
@@ -1687,7 +1681,7 @@ public class GridNioServer<T> {
                 int cnt = sockCh.write(buf);
 
                 if (sentBytesCntMetric != null)
-                    sentBytesCntMetric.add(cnt);
+                    sentBytesCntMetric.accept(cnt);
 
                 ses.bytesSent(cnt);
 
@@ -1778,7 +1772,7 @@ public class GridNioServer<T> {
                     log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
 
                 if (sentBytesCntMetric != null)
-                    sentBytesCntMetric.add(cnt);
+                    sentBytesCntMetric.accept(cnt);
 
                 ses.bytesSent(cnt);
                 onWrite(cnt);
@@ -1839,7 +1833,7 @@ public class GridNioServer<T> {
             Span span = tracing.create(SpanType.COMMUNICATION_SOCKET_WRITE, req.span());
 
             try (TraceSurroundings ignore = span.equals(NoopSpan.INSTANCE) ? null : MTC.support(span)) {
-                span.addTag(SpanTags.MESSAGE, () -> traceName(msg));
+                span.addTag(SpanTags.MESSAGE, () -> tracing.traceName(msg));
 
                 int startPos = buf.position();
 
@@ -2782,7 +2776,9 @@ public class GridNioServer<T> {
                     (InetSocketAddress)sockCh.getRemoteAddress(),
                     fut.accepted(),
                     sndQueueLimit,
-                    mreg,
+                    outboundMessagesQueueSizeMetric,
+                    maxMessagesQueueSizeMetric,
+                    tracing,
                     writeBuf,
                     readBuf);
 
@@ -3055,18 +3051,6 @@ public class GridNioServer<T> {
         @Override public String toString() {
             return S.toString(AbstractNioClientWorker.class, this, super.toString());
         }
-    }
-
-    /**
-     * Gets outbound messages queue size.
-     *
-     * @return Write queue size.
-     */
-    public int outboundMessagesQueueSize() {
-        if (outboundMessagesQueueSizeMetric == null)
-            return -1;
-
-        return (int)outboundMessagesQueueSizeMetric.value();
     }
 
     /**
@@ -3946,11 +3930,20 @@ public class GridNioServer<T> {
         /** Worker lifecycle listener to be used by server's worker threads. */
         private GridWorkerListener workerLsnr;
 
-        /** Metrics registry. */
-        private MetricRegistryImpl mreg;
+        /** Received bytes count metric. */
+        private LongConsumer rcvdBytesCntMetric;
 
-        /** Tracing processor */
-        private Tracing tracing;
+        /** Sent bytes count metric. */
+        private LongConsumer sentBytesCntMetric;
+
+        /** Per-session outbound messages queue size metric. */
+        private LongConsumer outboundMessagesQueueSizeMetric;
+
+        /** Per-session maximum outbound messages queue size metric. */
+        private LongConsumer maxMessagesQueueSizeMetric;
+
+        /** Span manager */
+        private SpanManager tracing;
 
         /** Message factory. */
         private MessageFactory msgFactory;
@@ -3984,7 +3977,10 @@ public class GridNioServer<T> {
                 msgQueueLsnr,
                 readWriteSelectorsAssign,
                 workerLsnr,
-                mreg,
+                rcvdBytesCntMetric,
+                sentBytesCntMetric,
+                outboundMessagesQueueSizeMetric,
+                maxMessagesQueueSizeMetric,
                 tracing,
                 msgFactory,
                 filters != null ? Arrays.copyOf(filters, filters.length) : EMPTY_FILTERS
@@ -4010,10 +4006,10 @@ public class GridNioServer<T> {
         }
 
         /**
-         * @param tracing Tracing processor.
+         * @param tracing Span manager.
          * @return This for chaining.
          */
-        public Builder<T> tracing(Tracing tracing) {
+        public Builder<T> tracing(SpanManager tracing) {
             this.tracing = tracing;
 
             return this;
@@ -4253,11 +4249,41 @@ public class GridNioServer<T> {
         }
 
         /**
-         * @param mreg Metrics registry.
+         * @param rcvdBytesCntMetric Received bytes count metric.
          * @return This for chaining.
          */
-        public Builder<T> metricRegistry(MetricRegistryImpl mreg) {
-            this.mreg = mreg;
+        public Builder<T> receivedBytesMetric(LongConsumer rcvdBytesCntMetric) {
+            this.rcvdBytesCntMetric = rcvdBytesCntMetric;
+
+            return this;
+        }
+
+        /**
+         * @param sentBytesCntMetric Sent bytes count metric.
+         * @return This for chaining.
+         */
+        public Builder<T> sentBytesMetric(LongConsumer sentBytesCntMetric) {
+            this.sentBytesCntMetric = sentBytesCntMetric;
+
+            return this;
+        }
+
+        /**
+         * @param outboundMessagesQueueSizeMetric Per-session outbound messages queue size metric.
+         * @return This for chaining.
+         */
+        public Builder<T> outboundMessagesQueueSizeMetric(LongConsumer outboundMessagesQueueSizeMetric) {
+            this.outboundMessagesQueueSizeMetric = outboundMessagesQueueSizeMetric;
+
+            return this;
+        }
+
+        /**
+         * @param maxMessagesQueueSizeMetric Per-session maximum outbound messages queue size metric.
+         * @return This for chaining.
+         */
+        public Builder<T> maxMessagesQueueSizeMetric(LongConsumer maxMessagesQueueSizeMetric) {
+            this.maxMessagesQueueSizeMetric = maxMessagesQueueSizeMetric;
 
             return this;
         }
