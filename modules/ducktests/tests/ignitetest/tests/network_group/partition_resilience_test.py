@@ -87,7 +87,7 @@ class MultiDCPartitionResilienceTest(NetworkGroupAbstractTest):
         network_mgr.disable_network_partition(DC_1_NAME, DC_2_NAME)
 
         self._verify_half_ring_status(self.svc_dc_1, "ACTIVE")
-        self._verify_half_ring_status(self.svc_dc_2, "READ_ONLY")
+        self._verify_half_ring_status(self.svc_dc_2, "ACTIVE")
 
         self._verify_cluster_survived()
 

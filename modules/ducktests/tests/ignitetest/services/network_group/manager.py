@@ -261,6 +261,8 @@ class NetworkGroupManager:
         """
         self.logger.debug(f"Network State Overview: [START][{log_tag}]")
 
+        node_to_status_map = {}
+
         for group, services in self.network_group_registry.items():
             for svc in services:
                 for node in svc.nodes:
@@ -273,7 +275,12 @@ class NetworkGroupManager:
                     targets_str = f" -> to [{', '.join(dst_ips)}]" if dst_ips and constraints != "noqueue" else ""
                     node_ip = socket.gethostbyname(node.account.externally_routable_ip)
 
-                    self.logger.debug(f"[{group:<4}] {svc.who_am_i(node):<45}[{node_ip}] : {constraints}{targets_str}")
+                    node_status = f"[{group:<4}] {svc.who_am_i(node):<45}[{node_ip}] : {constraints}{targets_str}"
+
+                    node_to_status_map.update({id(node): node_status})
+
+        for node_id, node_status in node_to_status_map.items():
+            self.logger.debug(node_status)
 
         self.logger.debug(f"Network State Overview: [END][{log_tag}]")
 
