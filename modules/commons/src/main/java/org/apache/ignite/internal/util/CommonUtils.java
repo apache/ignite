@@ -2449,12 +2449,6 @@ public abstract class CommonUtils {
         return root;
     }
 
-    /** Default client connector port. */
-    public static final int DFLT_PORT = 10800;
-
-    /** Default client connector port range. */
-    public static final int DFLT_PORT_RANGE = 100;
-
     /**
      * Gets absolute value for integer. If integer is {@link Integer#MIN_VALUE}, then {@code 0} is returned.
      *

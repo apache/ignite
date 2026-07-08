@@ -7707,15 +7707,6 @@ public abstract class IgniteUtils extends CommonUtils {
         }
     }
 
-    /**
-     * Creates thread with given worker.
-     *
-     * @param worker Runnable to create thread with.
-     */
-    public static IgniteThread newThread(GridWorker worker) {
-        return new IgniteThread(worker.igniteInstanceName(), worker.name(), worker);
-    }
-
     /** */
     public static final IgniteDataTransferObjectSerializer<?> EMPTY_DTO_SERIALIZER = new IgniteDataTransferObjectSerializer() {
         /** {@inheritDoc} */
