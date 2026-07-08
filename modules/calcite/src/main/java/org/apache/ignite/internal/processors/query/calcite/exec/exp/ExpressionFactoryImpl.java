@@ -200,7 +200,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     @Override public Comparator<Row> comparator(
         List<RelFieldCollation> left,
         List<RelFieldCollation> right,
-        ImmutableBitSet nullExclusions
+        ImmutableBitSet allowNulls
     ) {
         if (F.isEmpty(left) || F.isEmpty(right) || left.size() != right.size())
             throw new IllegalArgumentException("Both inputs should be non-empty and have the same size: left="
@@ -232,7 +232,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
                     Object c2 = hnd.get(rIdx, o2);
 
                     if (c1 == null && c2 == null && !hasNulls) {
-                        hasNulls = !nullExclusions.get(i);
+                        hasNulls = !allowNulls.get(i);
 
                         continue;
                     }
@@ -577,6 +577,8 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         Class<? extends Scalar> clazz = biInParams ? BiScalar.class : SingleScalar.class;
 
         String code = Expressions.toString(F.asList(decl), "\n", false);
+
+        System.err.println("!!!code: " + code);
 
         return Commons.compile(clazz, code);
     }
