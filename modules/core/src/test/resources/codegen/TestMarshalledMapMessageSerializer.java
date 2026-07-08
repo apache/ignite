@@ -32,9 +32,9 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class TestMarshalledMapMessageSerializer implements MessageSerializer<TestMarshalledMapMessage> {
     /** */
-    private static final MessageCollectionType mapKeysCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.MSG), false);
+    private static final MessageCollectionType mapKeysCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.GRID_CACHE_VERSION), false);
     /** */
-    private static final MessageCollectionType mapValsCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.MSG), false);
+    private static final MessageCollectionType mapValsCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.GRID_CACHE_VERSION), false);
 
     /** */
     public TestMarshalledMapMessageSerializer() {

@@ -57,6 +57,7 @@ import org.apache.ignite.internal.managers.GridManager;
 import org.apache.ignite.internal.managers.tracing.GridTracingManager;
 import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
@@ -915,7 +916,7 @@ public class GridNioServerWrapper {
                 filters.add(new GridConnectionBytesVerifyFilter(log));
 
                 if (stateProvider.isSslEnabled()) {
-                    GridNioSslFilter sslFilter = new GridNioSslFilter(
+                    GridNioSslFilter sslFilter = U.sslFilter(
                         igniteCfg.getSslContextFactory().create(),
                         true,
                         ByteOrder.LITTLE_ENDIAN,
@@ -929,6 +930,11 @@ public class GridNioServerWrapper {
 
                     filters.add(sslFilter);
                 }
+
+                GridNioFilter[] filtersArr = filters.toArray(new GridNioFilter[filters.size()]);
+
+                MetricRegistryImpl mreg = metricMgr != null ?
+                    metricMgr.registry(COMMUNICATION_METRICS_GROUP_NAME) : null;
 
                 GridNioServer.Builder<Message> builder = GridNioServer.<Message>builder()
                     .address(cfg.localHost())
@@ -947,7 +953,7 @@ public class GridNioServerWrapper {
                     .directMode(true)
                     .writeTimeout(cfg.socketWriteTimeout())
                     .selectorSpins(cfg.selectorSpins())
-                    .filters(filters.toArray(new GridNioFilter[filters.size()]))
+                    .filters(filtersArr)
                     .writerFactory(writerFactory)
                     .skipRecoveryPredicate(skipRecoveryPred)
                     .messageQueueSizeListener(queueSizeMonitor)
@@ -955,12 +961,16 @@ public class GridNioServerWrapper {
                     .readWriteSelectorsAssign(cfg.usePairedConnections())
                     .messageFactory(msgFactory);
 
-                if (metricMgr != null) {
-                    builder.workerListener(workersRegistry)
-                        .metricRegistry(metricMgr.registry(COMMUNICATION_METRICS_GROUP_NAME));
+                if (mreg != null) {
+                    builder.workerListener(workersRegistry);
+
+                    U.setNioServerMetrics(builder, mreg);
                 }
 
                 GridNioServer<Message> srvr = builder.build();
+
+                if (mreg != null)
+                    U.registerNioServerMetrics(srvr, filtersArr, mreg);
 
                 cfg.boundTcpPort(port);
 

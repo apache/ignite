@@ -336,6 +336,9 @@ public class MessageSerializerGenerator extends MessageGenerator {
             if (assignableFrom(type, type("org.apache.ignite.lang.IgniteProductVersion")))
                 return new FieldCall("IgniteProductVersion", null, false);
 
+            if (assignableFrom(type, type("org.apache.ignite.internal.processors.cache.version.GridCacheVersion")))
+                return new FieldCall("GridCacheVersion", null, false);
+
             if (assignableFrom(type, type(MESSAGE_INTERFACE))) {
                 if (sameType(type, COMPRESSED_MESSAGE_CLASS))
                     throw new IllegalArgumentException(COMPRESSED_MSG_ERROR);
@@ -526,6 +529,9 @@ public class MessageSerializerGenerator extends MessageGenerator {
 
             if (sameType(type, "org.apache.ignite.lang.IgniteUuid"))
                 return "IGNITE_UUID";
+
+            if (sameType(type, "org.apache.ignite.internal.processors.cache.version.GridCacheVersion"))
+                return "GRID_CACHE_VERSION";
 
             if (sameType(type, "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion"))
                 return "AFFINITY_TOPOLOGY_VERSION";

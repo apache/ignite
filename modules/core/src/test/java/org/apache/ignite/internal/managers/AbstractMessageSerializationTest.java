@@ -29,6 +29,7 @@ import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImp
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
@@ -318,6 +319,11 @@ public abstract class AbstractMessageSerializationTest {
         }
 
         /** {@inheritDoc} */
+        @Override public boolean writeGridCacheVersion(GridCacheVersion ver) {
+            return writeField(GridCacheVersion.class);
+        }
+
+        /** {@inheritDoc} */
         @Override public boolean isHeaderWritten() {
             return true;
         }
@@ -581,6 +587,13 @@ public abstract class AbstractMessageSerializationTest {
         /** {@inheritDoc} */
         @Override public IgniteProductVersion readIgniteProductVersion() {
             readField(IgniteProductVersion.class);
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridCacheVersion readGridCacheVersion() {
+            readField(GridCacheVersion.class);
 
             return null;
         }

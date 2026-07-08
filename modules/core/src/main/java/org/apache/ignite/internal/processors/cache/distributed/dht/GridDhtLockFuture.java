@@ -34,6 +34,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheLockCandidates;
@@ -1255,7 +1256,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
             sb.append("Transaction tx=").append(tx.getClass().getSimpleName());
             sb.append(" [xid=").append(tx.xid());
             sb.append(", xidVer=").append(tx.xidVersion());
-            sb.append(", nearXid=").append(tx.nearXidVersion().asIgniteUuid());
+            sb.append(", nearXid=").append(BinaryUtils.asIgniteUuid(tx.nearXidVersion()));
             sb.append(", nearXidVer=").append(tx.nearXidVersion());
             sb.append(", nearNodeId=").append(tx.nearNodeId());
             sb.append(", label=").append(tx.label());
@@ -1281,7 +1282,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                                 sb.append("key=").append(key).append(", owner=");
                                 sb.append("[xid=").append(itx.xid()).append(", ");
                                 sb.append("xidVer=").append(itx.xidVersion()).append(", ");
-                                sb.append("nearXid=").append(itx.nearXidVersion().asIgniteUuid()).append(", ");
+                                sb.append("nearXid=").append(BinaryUtils.asIgniteUuid(itx.nearXidVersion())).append(", ");
                                 sb.append("nearXidVer=").append(itx.nearXidVersion()).append(", ");
                                 sb.append("label=").append(itx.label()).append(", ");
                                 sb.append("nearNodeId=").append(candidate.otherNodeId()).append("]");

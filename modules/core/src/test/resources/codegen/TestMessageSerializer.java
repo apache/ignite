@@ -37,7 +37,7 @@ public class TestMessageSerializer implements MessageSerializer<TestMessage> {
     /** */
     private static final MessageArrayType strArrCollDesc = new MessageArrayType(new MessageItemType(MessageCollectionItemType.STRING), String.class);
     /** */
-    private static final MessageArrayType verArrCollDesc = new MessageArrayType(new MessageItemType(MessageCollectionItemType.MSG), GridCacheVersion.class);
+    private static final MessageArrayType verArrCollDesc = new MessageArrayType(new MessageItemType(MessageCollectionItemType.GRID_CACHE_VERSION), GridCacheVersion.class);
 
     /** */
     public TestMessageSerializer() {
@@ -84,7 +84,7 @@ public class TestMessageSerializer implements MessageSerializer<TestMessage> {
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeMessage(msg.ver))
+                if (!writer.writeGridCacheVersion(msg.ver))
                     return false;
 
                 writer.incrementState();
@@ -144,7 +144,7 @@ public class TestMessageSerializer implements MessageSerializer<TestMessage> {
                 writer.incrementState();
 
             case 15:
-                if (!writer.writeMessage(msg.ver2))
+                if (!writer.writeMessage(msg.nioMsg))
                     return false;
 
                 writer.incrementState();
@@ -197,7 +197,7 @@ public class TestMessageSerializer implements MessageSerializer<TestMessage> {
                 reader.incrementState();
 
             case 5:
-                msg.ver = reader.readMessage();
+                msg.ver = reader.readGridCacheVersion();
 
                 if (!reader.isLastRead())
                     return false;
@@ -277,7 +277,7 @@ public class TestMessageSerializer implements MessageSerializer<TestMessage> {
                 reader.incrementState();
 
             case 15:
-                msg.ver2 = reader.readMessage();
+                msg.nioMsg = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;

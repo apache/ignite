@@ -33,7 +33,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class TestMarshalledCollectionMessageSerializer implements MessageSerializer<TestMarshalledCollectionMessage> {
     /** */
-    private static final MessageArrayType keysArrCollDesc = new MessageArrayType(new MessageItemType(MessageCollectionItemType.MSG), GridCacheVersion.class);
+    private static final MessageArrayType keysArrCollDesc = new MessageArrayType(new MessageItemType(MessageCollectionItemType.GRID_CACHE_VERSION), GridCacheVersion.class);
 
     /** */
     public TestMarshalledCollectionMessageSerializer() {

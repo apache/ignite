@@ -77,7 +77,7 @@ public class TestMapMessageSerializer implements MessageSerializer<TestMapMessag
     /** */
     private static final MessageMapType longArrayIntArrayMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.LONG_ARR), new MessageItemType(MessageCollectionItemType.INT_ARR), false);
     /** */
-    private static final MessageMapType messageBoxedDoubleMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.MSG), new MessageItemType(MessageCollectionItemType.DOUBLE), false);
+    private static final MessageMapType messageBoxedDoubleMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.GRID_CACHE_VERSION), new MessageItemType(MessageCollectionItemType.DOUBLE), false);
     /** */
     private static final MessageMapType shortArrayByteArrayMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.SHORT_ARR), new MessageItemType(MessageCollectionItemType.BYTE_ARR), false);
     /** */
@@ -88,7 +88,7 @@ public class TestMapMessageSerializer implements MessageSerializer<TestMapMessag
     /** */
     public TestMapMessageSerializer() {
     }
-    
+
     /** */
     @Override public boolean writeTo(TestMapMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {

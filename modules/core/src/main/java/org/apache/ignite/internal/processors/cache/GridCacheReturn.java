@@ -278,7 +278,8 @@ public class GridCacheReturn implements Message, CacheIdAware {
                     throw (UnregisteredBinaryTypeException)err;
             }
 
-            CacheInvokeResult res0 = err == null ? CacheInvokeResult.fromResult(res) : CacheInvokeResult.fromError(err);
+            CacheInvokeResult res0 = err == null ? CacheInvokeResult.fromResult(res)
+                : CacheInvokeResult.fromError(CU.prepareEntryProcessorError(err));
 
             Object resKey = key0 != null ? key0 :
                 ((keepBinary && key instanceof BinaryObject) ? key : CU.value(key, cctx, true));

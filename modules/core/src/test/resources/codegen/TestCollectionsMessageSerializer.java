@@ -76,7 +76,7 @@ public class TestCollectionsMessageSerializer implements MessageSerializer<TestC
     /** */
     private static final MessageCollectionType longArrayListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.LONG_ARR), false);
     /** */
-    private static final MessageCollectionType messageListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.MSG), false);
+    private static final MessageCollectionType messageListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.GRID_CACHE_VERSION), false);
     /** */
     private static final MessageCollectionType shortArrayListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.SHORT_ARR), false);
     /** */
@@ -87,7 +87,7 @@ public class TestCollectionsMessageSerializer implements MessageSerializer<TestC
     /** */
     public TestCollectionsMessageSerializer() {
     }
-    
+
     /** */
     @Override public boolean writeTo(TestCollectionsMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {

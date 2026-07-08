@@ -2427,7 +2427,7 @@ public class JdbcThinConnection implements Connection {
          */
         public JdbcMarshallerContext() {
             try {
-                processSystemClasses(U.gridClassLoader(), null, sysTypes::add);
+                processSystemClasses(U.gridClassLoader(), sysTypes::add);
             }
             catch (IOException e) {
                 throw new IgniteException("Unable to initialize marshaller context", e);

@@ -37,9 +37,9 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.cache.query.QueryIndexMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.util.CommonUtils;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.mappers.DefaultEnumMapper;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
@@ -554,7 +554,7 @@ public class MessageProcessorTest {
         for (String srcFile: srcFiles)
             input.add(javaFile(srcFile));
 
-        File igniteCoreJar = jarForClass(Message.class);
+        File igniteCoreJar = jarForClass(IgniteUtils.class);
         File igniteCodegenJar = jarForClass(Order.class);
         File igniteBinaryApiJar = jarForClass(IgniteUuid.class);
         File igniteCommonsJar = jarForClass(CommonUtils.class);
