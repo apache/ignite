@@ -22,10 +22,14 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/** Marks an object field whose wire representation is a companion {@code byte[]} {@code @Order} field named by {@link #value()}. */
+/**
+ * Links a message field to its marshalled {@code byte[]} form, held in the field named by {@link #value()}.
+ *
+ * @see Order
+ */
 @Retention(RetentionPolicy.CLASS)
 @Target(ElementType.FIELD)
 public @interface Marshalled {
-    /** Name of the {@code @Order} {@code byte[]} field that holds the serialized form. */
+    /** Name of the linked marshalled {@code byte[]} field. */
     String value();
 }
