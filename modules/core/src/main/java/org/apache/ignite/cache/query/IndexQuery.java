@@ -83,6 +83,21 @@ public final class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** Cache entries filter. Applies remotely to a query result cursor. */
     private IgniteBiPredicate<K, V> filter;
 
+    /** */
+    private boolean incBackups;
+
+    /** */
+    public IndexQuery<K, V> includeBackups(boolean incBackups) {
+        this.incBackups = incBackups;
+
+        return this;
+    }
+
+    /** */
+    public boolean includeBackups() {
+        return incBackups;
+    }
+
     /**
      * Specify index with cache value class and index name.
      *
