@@ -86,7 +86,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     /** Metric that indicates sessions count that were rejected due to SSL errors. */
     @Nullable private final Runnable rejectedSesCnt;
 
-    /** Records the SSL handshake duration (in milliseconds). */
+    /** Histogram that provides distribution of SSL handshake duration. */
     @Nullable private final LongConsumer handshakeDuration;
 
     /**

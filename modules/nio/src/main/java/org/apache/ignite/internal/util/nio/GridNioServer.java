@@ -254,7 +254,7 @@ public class GridNioServer<T> {
     /** Sent bytes count metric. */
     @Nullable private final LongConsumer sentBytesCntMetric;
 
-    /** Per-session outbound messages queue size metric. */
+    /** Outbound messages queue size. */
     @Nullable private final LongConsumer outboundMessagesQueueSizeMetric;
 
     /** Per-session maximum outbound messages queue size metric. */
