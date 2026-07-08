@@ -76,7 +76,7 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
 
     /** @return Original {@link DiscoveryCustomMessage}. */
     public DiscoverySpiCustomMessage resolvedCustomMessage() {
-        return cstEvtHldr.originalMsg;
+        return cstEvtHldr == null ? null : cstEvtHldr.originalMsg;
     }
 
     /** @return Received {@link OperationContext}. */
