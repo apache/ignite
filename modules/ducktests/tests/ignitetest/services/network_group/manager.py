@@ -19,14 +19,15 @@ import sys
 from concurrent.futures import ThreadPoolExecutor
 from itertools import permutations
 from time import monotonic
-from typing import Dict, Iterator, List, Optional, Tuple
+from typing import Dict, Iterator, List, Tuple
 
 from ducktape.services.service import Service
 
 from ignitetest.services.network_group.configuration import NetworkGroupStore, CrossNetworkGroupConfiguration
 from ignitetest.services.network_group.tc_rule_args import (
-    ACTION_ADD, ACTION_CHANGE, ACTION_OVERWRITE,
-    to_tcset_cmd, to_tcdel_all_cmd, to_tcdel_ip_cmd
+    ACTION_ADD, ACTION_OVERWRITE,
+    to_tcset_cmd, to_tcdel_all_cmd,
+    partition_chain_name, to_partition_enable_cmd, to_partition_disable_cmd, to_partition_teardown_cmd
 )
 from ignitetest.services.utils.decorators import memoize
 
@@ -38,15 +39,11 @@ CMD_GET_NETWORK_INTERFACE = "ip route | grep default | awk -- '{printf $5}'"
 # overwrites any stale state, subsequent rules are appended.
 ACTION_DEPLOY = "deploy"
 
-# Complete bidirectional traffic drop, simulating a split-brain.
-PARTITION_CFG = CrossNetworkGroupConfiguration(loss=1.0)
-
 # Upper bound on concurrent SSH sessions used to apply tc rules cluster-wide.
 MAX_PARALLEL_SSH_SESSIONS = 16
 
-# A rule spec: (src_group, dst_group, action, config). config=None means
-# "clear the path" (only valid together with ACTION_CHANGE).
-RuleSpec = Tuple[str, str, str, Optional[CrossNetworkGroupConfiguration]]
+# A rule spec: (src_group, dst_group, action, config).
+RuleSpec = Tuple[str, str, str, CrossNetworkGroupConfiguration]
 
 
 class NetworkGroupManager:
@@ -54,10 +51,15 @@ class NetworkGroupManager:
     Deploys and tears down traffic-control rules between logical node groups,
     and toggles full network partitions between them at test time.
 
-    All tc commands targeting a single node are batched into one SSH
-    invocation, and nodes are configured in parallel, so that a partition
-    (or its removal) takes effect near-atomically across the cluster instead
-    of rolling out node by node.
+    Baseline impairments (delay/loss/rate) are deployed once via tcset.
+    Partitions are layered on top as per-pair iptables DROP chains. The netem
+    rules are never touched by a partition, so healing is a pure chain flush
+    that automatically restores the originally deployed impairments.
+
+    All commands targeting a single node are batched into one SSH invocation,
+    and nodes are configured in parallel, so that a partition (or its removal)
+    takes effect near-atomically across the cluster instead of rolling out
+    node by node.
     """
     def __init__(self, logger, network_group_store: NetworkGroupStore,
                  network_group_registry: Dict[str, List[Service]]):
@@ -101,59 +103,66 @@ class NetworkGroupManager:
         self._apply_specs(specs, tag="DEPLOY")
 
     def destroy(self):
-        """Restores network interfaces back to their un-throttled state."""
+        """
+        Restores network interfaces back to their un-throttled state and
+        removes any leftover partition chains from iptables.
+        """
         tasks = []
 
         for node in self._iter_all_nodes():
             interface = self._get_default_network_interface(node)
 
-            tasks.append((node, to_tcdel_all_cmd(interface)))
+            tasks.append((node, f"{to_tcdel_all_cmd(interface)} && {to_partition_teardown_cmd()}"))
 
         self._ssh_parallel(tasks, tag="DESTROY")
 
     def enable_network_partition(self, group_a: str, group_b: str):
         """
-        Creates a complete, bidirectional network partition between two groups.
-        All cross-group traffic is dropped (100% loss), simulating a split-brain.
-        Both directions and all nodes are configured in a single parallel wave.
+        Creates a complete, bidirectional network partition between two groups
+        by installing iptables DROP rules for all cross-group traffic,
+        simulating a split-brain. The netem impairments deployed via tcset are
+        left untouched underneath.
         """
         self.logger.info(f"Enabling network partition between [{group_a}] <---> [{group_b}]")
 
-        specs = []
+        chain = partition_chain_name(group_a, group_b)
+
+        tasks = []
 
         for src_group, dst_group in self._bidirectional(group_a, group_b):
-            # tcset rejects '--add' for a destination network that already has a rule,
-            # so modify the existing rule in-place when a default impairment is deployed.
-            has_existing_rule = self.network_group_store.get_config(src_group, dst_group) is not None
+            remote_ips = self._resolve_group_ips(dst_group)
 
-            action = ACTION_CHANGE if has_existing_rule else ACTION_ADD
+            cmd = to_partition_enable_cmd(chain, remote_ips)
 
-            specs.append((src_group, dst_group, action, PARTITION_CFG))
+            for node in self._iter_group_nodes(src_group):
+                tasks.append((node, cmd))
 
-        self._apply_specs(specs, tag="PARTITION_ON")
+        self._ssh_parallel(tasks, tag="PARTITION_ON")
 
         self._log_network(f"PARTITION {group_a} <-> {group_b}")
 
     def disable_network_partition(self, group_a: str, group_b: str):
         """
-        Removes an active network partition between two groups by restoring
-        the originally stored rules in-place, or clearing the path entirely
-        if no default impairment was configured.
-        Both directions and all nodes are restored in a single parallel wave.
+        Heals an active network partition between two groups by flushing the
+        pair's iptables DROP chain on every node - a single native call per
+        node. The originally deployed tcset impairments were never modified,
+        so they are back in effect immediately without any re-application.
         """
         self.logger.info(f"Disabling network partition between [{group_a}] <---> [{group_b}]")
 
-        specs = []
+        cmd = to_partition_disable_cmd(partition_chain_name(group_a, group_b))
 
-        for src_group, dst_group in self._bidirectional(group_a, group_b):
-            # A None config makes _collect_node_cmds emit 'tcdel --peer' for each path.
-            cfg = self.network_group_store.get_config(src_group, dst_group)
+        tasks = [(node, cmd)
+                 for group in (group_a, group_b)
+                 for node in self._iter_group_nodes(group)]
 
-            specs.append((src_group, dst_group, ACTION_CHANGE, cfg))
-
-        self._apply_specs(specs, tag="PARTITION_OFF")
+        self._ssh_parallel(tasks, tag="PARTITION_OFF")
 
         self._log_network(f"NET RESTORED {group_a} <-> {group_b}")
+
+    def _resolve_group_ips(self, group: str) -> List[str]:
+        return [socket.gethostbyname(node.account.externally_routable_ip)
+                for node in self._iter_group_nodes(group)]
 
     def _apply_specs(self, specs: List[RuleSpec], tag: str):
         """
@@ -186,11 +195,6 @@ class NetworkGroupManager:
                 _, cmds = per_node.setdefault(id(src_node), (src_node, []))
 
                 for dst_ip in dst_ips:
-                    if cfg is None:
-                        # Healing cycle with no originally stored impairment: clear the path.
-                        cmds.append(to_tcdel_ip_cmd(interface, dst_ip))
-                        continue
-
                     if action == ACTION_DEPLOY:
                         current_action = ACTION_OVERWRITE if not cmds else ACTION_ADD
                     else:
@@ -275,7 +279,12 @@ class NetworkGroupManager:
                     targets_str = f" -> to [{', '.join(dst_ips)}]" if dst_ips and constraints != "noqueue" else ""
                     node_ip = socket.gethostbyname(node.account.externally_routable_ip)
 
-                    node_status = f"[{group:<4}] {svc.who_am_i(node):<45}[{node_ip}] : {constraints}{targets_str}"
+                    drop_count = self._get_ssh_output(
+                        node, "sudo iptables -S 2>/dev/null | grep -c -- '-j DROP' || true")
+                    partition_str = f" | partition DROP rules: {drop_count}" if drop_count not in ("", "0") else ""
+
+                    node_status = f"[{group:<4}] {svc.who_am_i(node):<45}[{node_ip}] : " \
+                                  f"{constraints}{targets_str}{partition_str}"
 
                     node_to_status_map.update({id(node): node_status})
 
