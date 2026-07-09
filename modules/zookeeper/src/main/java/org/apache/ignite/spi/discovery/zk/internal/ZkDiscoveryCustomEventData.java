@@ -73,9 +73,7 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
 
     /** */
     public @Nullable DiscoverySpiCustomMessage resolvedMessage() {
-        return resolvedMsg == null
-            ? null
-            : resolvedMsg instanceof ZkCustomEventMessage ? ((ZkCustomEventMessage)resolvedMsg).delegate : resolvedMsg;
+        return resolvedMsg instanceof ZkCustomEventMessage ? ((ZkCustomEventMessage)resolvedMsg).delegate : resolvedMsg;
     }
 
     /** */

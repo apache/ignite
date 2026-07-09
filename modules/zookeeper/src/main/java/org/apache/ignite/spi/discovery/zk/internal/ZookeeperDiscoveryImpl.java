@@ -3517,8 +3517,8 @@ public class ZookeeperDiscoveryImpl {
 
         IgniteFuture<?> fut;
 
-        OperationContextMessage opCtxMsg = evtData.resolvedMsg instanceof ZkCustomEventMessage
-            ? ((ZkCustomEventMessage)evtData.resolvedMsg).opCtxMsg
+        OperationContextMessage opCtxMsg = msg instanceof ZkCustomEventMessage
+            ? ((ZkCustomEventMessage)msg).opCtxMsg
             : null;
 
         try (Scope ignored = opCtxDispatcher.restoreDistributedAttributes(opCtxMsg)) {
