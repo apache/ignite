@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.service;
 
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
@@ -27,7 +28,10 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** */
-public class ServiceTopology implements Message {
+public class ServiceTopology implements Serializable, Message {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 0L;
+
     /** Empty service topology instance. */
     public static final ServiceTopology EMPTY = empty();
 
