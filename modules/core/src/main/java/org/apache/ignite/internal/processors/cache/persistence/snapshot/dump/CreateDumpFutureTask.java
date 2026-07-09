@@ -72,6 +72,8 @@ import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
@@ -225,8 +227,10 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             int grp = e.getKey();
 
             for (File grpDumpDir : sft.cacheStorages(cctx.cache().cacheGroup(grp).config())) {
-                if (!grpDumpDir.mkdirs())
-                    throw new IgniteCheckedException("Dump directory can't be created: " + grpDumpDir);
+                U.ensureDirectory(grpDumpDir, "directory for dump cache group", log);
+
+                if (!F.isEmpty(grpDumpDir.listFiles()))
+                    throw new IgniteCheckedException("Dump directory not empty: " + grpDumpDir);
             }
 
             CacheGroupContext gctx = cctx.cache().cacheGroup(grp);

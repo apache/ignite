@@ -27,9 +27,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * Schema index drop operation.
  */
 public class SchemaAlterTableAddColumnOperation extends SchemaAbstractOperation {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Target table name. */
     @Order(0)
     String tblName;
