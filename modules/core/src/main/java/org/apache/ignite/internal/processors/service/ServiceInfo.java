@@ -19,12 +19,18 @@ package org.apache.ignite.internal.processors.service;
 
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.MarshallableMessage;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceDescriptor;
 import org.jetbrains.annotations.NotNull;
@@ -35,7 +41,7 @@ import static org.apache.ignite.internal.processors.service.ServiceTopology.EMPT
 /**
  * Service's information container.
  */
-public class ServiceInfo implements ServiceDescriptor {
+public class ServiceInfo implements ServiceDescriptor, MarshallableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -43,23 +49,36 @@ public class ServiceInfo implements ServiceDescriptor {
     private transient volatile GridKernalContext ctx;
 
     /** Origin node ID. */
-    private final UUID originNodeId;
+    @Order(0)
+    UUID originNodeId;
 
     /** Service id. */
-    private final IgniteUuid srvcId;
+    @Order(1)
+    IgniteUuid srvcId;
 
     /** Service configuration. */
-    private final LazyServiceConfiguration cfg;
+    private LazyServiceConfiguration cfg;
+
+    /** Serialized {@link #cfg}.*/
+    @Order(2)
+    transient byte[] cfgBytes;
 
     /** Statically configured flag. */
-    private final boolean staticCfg;
+    @Order(3)
+    boolean staticCfg;
 
     /** Topology snapshot. */
+    @Order(4)
     @GridToStringInclude
-    private volatile ServiceTopology top = EMPTY;
+    volatile ServiceTopology top = EMPTY;
 
     /** Service class. */
     private transient volatile Class<? extends Service> srvcCls;
+
+    /** Default constructor for {@link MessageFactory}. */
+    public ServiceInfo() {
+        // No-op.
+    }
 
     /**
      * @param originNodeId Initiating node id.
@@ -198,5 +217,20 @@ public class ServiceInfo implements ServiceDescriptor {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(ServiceInfo.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (cfg != null)
+            cfgBytes = U.marshal(marsh, cfg);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (cfgBytes != null) {
+            cfg = U.unmarshal(marsh, cfgBytes, clsLdr);
+
+            cfgBytes = null;
+        }
     }
 }
