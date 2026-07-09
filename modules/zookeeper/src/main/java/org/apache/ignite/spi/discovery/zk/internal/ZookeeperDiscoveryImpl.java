@@ -2494,7 +2494,10 @@ public class ZookeeperDiscoveryImpl {
                     continue;
                 }
 
-                generateAndProcessCustomEventOnCoordinator(evtPath, sndNode, msg);
+                // Custom messages are always wrapped.
+                assert msg instanceof ZkCustomEventMessage;
+
+                generateAndProcessCustomEventOnCoordinator(evtPath, sndNode, (ZkCustomEventMessage)msg);
             }
             else {
                 U.warn(log, "Ignore custom event from unknown node: " + sndNodeId);
@@ -2505,18 +2508,26 @@ public class ZookeeperDiscoveryImpl {
     }
 
     /**
+     * @param evtData Event data.
+     * @param cstMsgHldr
+     */
+
+    /**
      * @param evtPath Event data path.
      * @param sndNode Sender node.
-     * @param msg Message instance.
+     * @param cstMsgHldr Custom message holder.
      * @throws Exception If failed.
+     *
+     * @see #notifyCustomEvent(ZkDiscoveryCustomEventData, DiscoverySpiCustomMessage)
      */
-    private void generateAndProcessCustomEventOnCoordinator(String evtPath,
+    private void generateAndProcessCustomEventOnCoordinator(
+        String evtPath,
         ZookeeperClusterNode sndNode,
-        DiscoverySpiCustomMessage msg
+        ZkCustomEventMessage cstMsgHldr
     ) throws Exception {
+        DiscoverySpiCustomMessage msg = cstMsgHldr.delegate;
         ZookeeperClient zkClient = rtState.zkClient;
         ZkDiscoveryEventsData evtsData = rtState.evtsData;
-
         ZookeeperClusterNode failedNode = null;
 
         if (msg instanceof ZkForceNodeFailMessage) {
@@ -2582,7 +2593,8 @@ public class ZookeeperDiscoveryImpl {
         if (msg instanceof ZkInternalMessage)
             processInternalMessage(evtData, (ZkInternalMessage)msg);
         else {
-            notifyCustomEvent(evtData, msg);
+            // Pass exactly the holder to keep the distributed operation context.
+            notifyCustomEvent(evtData, cstMsgHldr);
 
             if (msg.stopProcess()) {
                 if (log.isDebugEnabled())
@@ -2603,7 +2615,7 @@ public class ZookeeperDiscoveryImpl {
                     if (log.isDebugEnabled())
                         log.debug("Generated CUSTOM event (ack for fast stop process) [evt=" + evtData + ", msg=" + msg + ']');
 
-                    notifyCustomEvent(evtData, ack);
+                    notifyCustomEvent(evtData, new ZkCustomEventMessage(ack, cstMsgHldr.opCtxMsg));
                 }
                 else
                     evtData = null;
@@ -3501,12 +3513,12 @@ public class ZookeeperDiscoveryImpl {
 
     /**
      * @param evtData Event data.
-     * @param msg Custom message. Must not be unwrapped from {@link ZkCustomEventMessage} if currently is.
+     * @param msg Custom message to process. Is allowed to be a {@link ZkCustomEventMessage}.
      */
     private void notifyCustomEvent(ZkDiscoveryCustomEventData evtData, DiscoverySpiCustomMessage msg) {
         OperationContextMessage opCtxMsg = null;
 
-        if (msg instanceof ZkCustomEventMessage) {
+        if(msg instanceof ZkCustomEventMessage) {
             opCtxMsg = ((ZkCustomEventMessage)msg).opCtxMsg;
             msg = ((ZkCustomEventMessage)msg).delegate;
         }
