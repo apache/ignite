@@ -20,8 +20,9 @@ package org.apache.ignite.internal.processors.cache.jta;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import jakarta.transaction.Status;
+import jakarta.transaction.TransactionManager;
 import jakarta.transaction.UserTransaction;
-
+import com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionManagerImple;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.UserTransactionImple;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
@@ -46,29 +47,17 @@ public abstract class AbstractCacheJtaSelfTest extends GridCacheAbstractSelfTest
     private static final int GRID_CNT = 1;
 
     /** Transaction manager. */
-    protected static TransactionManagerWrapper txMgr;
+    protected static TransactionManager txMgr;
 
     /** User transaction. */
     protected static UserTransaction userTx;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        txMgr = new TransactionManagerWrapper();
+        txMgr = new TransactionManagerImple();
         userTx = new UserTransactionImple();
 
         super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        if (txMgr != null) {
-            jakarta.transaction.Transaction tx = txMgr.getTransaction();
-
-            if (tx != null && tx.getStatus() == Status.STATUS_ACTIVE)
-                txMgr.rollback();
-        }
     }
 
     /** {@inheritDoc} */
