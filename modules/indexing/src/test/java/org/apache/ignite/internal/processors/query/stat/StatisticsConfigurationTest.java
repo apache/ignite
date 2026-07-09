@@ -30,7 +30,6 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
@@ -165,17 +164,24 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
 
             // Wait for rebalancing to finish on all nodes after baseline change.
             // setBaselineTopology triggers a full exchange with async rebalancing.
-            // CacheAffinityChangeMessage may trigger a new exchange (higher minorTopVer)
-            // while rebalancing is still ongoing. awaitPartitionMapExchange checks
-            // ownerNodesCnt against the readyAffinityVersion, but partition topology
-            // (MOVING) lags behind — causing infinite loop and timeout.
+            // awaitPartitionMapExchange checks ownerNodesCnt against readyAffinityVersion,
+            // but partition topology (MOVING) lags behind — causing infinite loop and timeout.
+            // We wait for the rebalance future to complete (blocking.get()) before proceeding.
             for (Ignite grid : G.allGrids()) {
                 IgniteEx ign = (IgniteEx)grid;
 
                 if (ign.cluster().localNode().isClient())
                     continue;
 
-                waitRebalanceFinishedNoVersionCheck(ign, "SMALLnull");
+                // Wait for ongoing rebalance to complete.
+                GridDhtPartitionDemander.RebalanceFuture rebFut = (GridDhtPartitionDemander.RebalanceFuture)ign
+                    .cachex("SMALLnull").context().preloader().rebalanceFuture();
+
+                // If rebalance was cancelled (false), a new one may have started — retry.
+                while (!rebFut.isInitial() && !rebFut.get()) {
+                    rebFut = (GridDhtPartitionDemander.RebalanceFuture) ign.cachex("SMALLnull")
+                        .context().preloader().rebalanceFuture();
+                }
             }
         }
 
@@ -185,46 +191,6 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
         catch (InterruptedException e) {
             // No-op.
         }
-    }
-
-    /**
-     * Wait for rebalance to finish without strict topology version check.
-     * Unlike {@link #waitRebalanceFinished}, this method simply waits for the rebalance future
-     * to complete, which is more robust when topology changes frequently (e.g., after
-     * setBaselineTopology).
-     */
-    private void waitRebalanceFinishedNoVersionCheck(IgniteEx ignite, String cacheName) throws Exception {
-        long t0 = System.currentTimeMillis();
-        long timeout = 30_000;
-
-        // Poll a few times: rebalance may not have started yet (isInitial=true before exchange).
-        int initialPolls = 10;
-
-        while (System.currentTimeMillis() - t0 < timeout) {
-            IgniteInternalFuture<Boolean> fut = ignite.cachex(cacheName).context().preloader().rebalanceFuture();
-
-            GridDhtPartitionDemander.RebalanceFuture rebFut = (GridDhtPartitionDemander.RebalanceFuture) fut;
-
-            if (rebFut.isInitial()) {
-                if (initialPolls-- > 0) {
-                    Thread.sleep(100);
-                    continue;
-                }
-                // Rebalance still initial after polling — no rebalance needed.
-                return;
-            }
-
-            // Wait for rebalance to complete.
-            boolean res = fut.get();
-
-            if (res)
-                return;
-
-            // Rebalance was cancelled (topology changed again) — retry with new future.
-            Thread.sleep(50);
-        }
-
-        throw new AssertionError("Rebalance did not finish within " + timeout + "ms for cache " + cacheName);
     }
 
     /**
