@@ -19,25 +19,24 @@ package org.apache.ignite.spi.discovery.zk.internal;
 
 import org.apache.ignite.internal.OperationContextMessage;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
+import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * <p>A holder for effective attributes of distributed {@link OperationContext}. Analogue of
- * {@link TcpDiscoveryAbstractMessage#opCtxMsg} while we do not use a base class for all the Zookeeper messages.</p>
+ * {@link TcpDiscoveryAbstractMessage#opCtxMsg} while we do not use a common base class for all the Zookeeper messages.</p>
  *
  * <p>NOTE: The difference is also the limitation on message type. In {@link TcpDiscoverySpi} we transfer distributed
- * {@link OperationContext} with all the messages. In {@link ZookeeperDiscoveryImpl} with custom events only.</p>
+ * {@link OperationContext} with all the messages. In {@link ZookeeperDiscoverySpi} with {@link DiscoverySpiCustomMessage} only.</p>
  *
  * @see OperationContextDispatcher
- * @see GridDiscoveryManager#sendCustomEvent(DiscoveryCustomMessage)
+ * @see ZookeeperDiscoverySpi#sendCustomEvent(DiscoverySpiCustomMessage)
  */
 public class ZkCustomEventMessage implements DiscoverySpiCustomMessage {
     /** */
@@ -68,7 +67,7 @@ public class ZkCustomEventMessage implements DiscoverySpiCustomMessage {
 
         assert !(res instanceof ZkCustomEventMessage);
 
-        return res  == null ? null : new ZkCustomEventMessage(res, opCtxMsg);
+        return res == null ? null : new ZkCustomEventMessage(res, opCtxMsg);
     }
 
     /** {@inheritDoc} */
