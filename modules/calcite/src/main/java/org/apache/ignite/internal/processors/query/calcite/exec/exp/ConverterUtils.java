@@ -423,7 +423,12 @@ public class ConverterUtils {
             Primitive primitiveFromToType = Primitive.ofBox(toType);
             if (primitiveFromToType != null) {
                 Expression res = Expressions.convert_(operand, Number.class);
-                res = Expressions.unbox(res, primitiveFromToType);
+
+                res = Expressions.condition(
+                    Expressions.equal(res, RexImpTable.NULL_EXPR),
+                    RexImpTable.NULL_EXPR,
+                    Expressions.unbox(res, primitiveFromToType));
+
                 res = Expressions.box(res);
                 return res;
             }
