@@ -38,11 +38,15 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
     /** */
     final String evtPath;
 
-    /** Message (can be marshalled as part of ZkDiscoveryCustomEventData or stored in separate znode. */
+    /** Message (can be marshalled as part of ZkDiscoveryCustomEventData or stored in separate node. */
     byte[] msgBytes;
 
-    /** Unmarshalled message. */
-    transient DiscoverySpiCustomMessage resolvedMsg;
+    /**
+     * Unmarshalled custom message holder. Can be wrapped with {@link ZkCustomEventMessage}.
+     *
+     * @see #resolvedCustomMessage()
+     */
+    transient DiscoverySpiCustomMessage cstMsgHldr;
 
     /**
      * @param evtId Event ID.
@@ -66,26 +70,26 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
         assert msg != null || origEvtId != 0 || !F.isEmpty(evtPath);
 
         this.origEvtId = origEvtId;
-        this.resolvedMsg = msg;
+        this.cstMsgHldr = msg;
         this.sndNodeId = sndNodeId;
         this.evtPath = evtPath;
     }
 
-    /** */
-    public @Nullable DiscoverySpiCustomMessage resolvedMessage() {
-        return resolvedMsg instanceof ZkCustomEventMessage ? ((ZkCustomEventMessage)resolvedMsg).delegate : resolvedMsg;
+    /** @return Original custom message or taken from wrapped with {@link ZkCustomEventMessage}. */
+    public @Nullable DiscoverySpiCustomMessage resolvedCustomMessage() {
+        return cstMsgHldr instanceof ZkCustomEventMessage ? ((ZkCustomEventMessage)cstMsgHldr).delegate : cstMsgHldr;
     }
 
     /** */
     public void prepareMarshal(DiscoveryMessageParser parser) {
-        if (resolvedMsg != null)
-            msgBytes = parser.marshalZip(resolvedMsg);
+        if (cstMsgHldr != null)
+            msgBytes = parser.marshalZip(cstMsgHldr);
     }
 
     /** */
     public void finishUnmarshal(DiscoveryMessageParser parser) {
         if (msgBytes != null)
-            resolvedMsg = parser.unmarshalZip(msgBytes);
+            cstMsgHldr = parser.unmarshalZip(msgBytes);
     }
 
     /**
