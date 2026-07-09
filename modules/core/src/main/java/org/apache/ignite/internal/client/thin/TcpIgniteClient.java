@@ -81,6 +81,7 @@ import org.apache.ignite.internal.processors.platform.client.IgniteClientExcepti
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContext;

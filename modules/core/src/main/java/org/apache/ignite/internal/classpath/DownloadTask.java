@@ -110,6 +110,6 @@ class DownloadTask extends ClassPathProcessor.ClassPathTask<Void> {
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return "DownloadTask";
+        return "download";
     }
 }

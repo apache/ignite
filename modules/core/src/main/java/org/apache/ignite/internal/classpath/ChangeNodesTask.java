@@ -55,7 +55,7 @@ public class ChangeNodesTask extends ClassPathProcessor.ClassPathTask<Void> {
 
     /** {@inheritDoc} */
     @Override String name() {
-        return add ? "Add node" : "Remove node";
+        return add ? "add node" : "remove node";
     }
 
     /** {@inheritDoc} */

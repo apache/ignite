@@ -191,8 +191,8 @@ public class ClassPathCreationFailoverTest extends GridCommonAbstractTest {
         Set<Path> cpFiles = ClassPathTestUtils.files();
 
         LogListener createdMsg = newClassPathListener();
-        LogListener oneNodeFailMsg = logListener("IgniteClassPath task failure [task=Download files");
-        LogListener donloadSucceedMsg = logListener("IgniteClassPath task done [task=Download files");
+        LogListener oneNodeFailMsg = logListener("IgniteClassPath task failure [task=download");
+        LogListener donloadSucceedMsg = logListener("IgniteClassPath task done [task=download");
 
         lsnrLog.registerAllListeners(createdMsg, oneNodeFailMsg, donloadSucceedMsg);
 

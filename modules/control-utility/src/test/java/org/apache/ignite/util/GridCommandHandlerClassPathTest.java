@@ -379,7 +379,7 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
     /** */
     private static LogListener readyLogListener(int succeed) {
         return LogListener
-            .matches("IgniteClassPath task done [task=Download files")
+            .matches("IgniteClassPath task done [task=download")
             .times(succeed)
             .build();
     }

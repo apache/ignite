@@ -334,7 +334,7 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
             log.warning("Remove from mestastorage fail", e);
         }
         finally {
-            removeClassPathLocally(icp, false);
+            removeClassPathLocally(icp, true);
         }
     }
 

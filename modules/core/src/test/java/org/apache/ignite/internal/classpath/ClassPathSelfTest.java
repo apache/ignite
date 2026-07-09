@@ -41,7 +41,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
 public class ClassPathSelfTest extends GridCommonAbstractTest {
-    // New node moves LOST to READY.
+    // TODO: New node moves LOST to READY.
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
