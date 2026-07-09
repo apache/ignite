@@ -28,7 +28,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 
 /**
  * Verifies that first bytes received in accepted (incoming)
- * NIO session are equal to {@link U#IGNITE_HEADER}.
+ * NIO session are equal to {@link CommonUtils#IGNITE_HEADER}.
  * <p>
  * First {@code CommonUtils.IGNITE_HEADER.length} bytes are consumed by this filter
  * and all other bytes are forwarded through chain without any modification.
