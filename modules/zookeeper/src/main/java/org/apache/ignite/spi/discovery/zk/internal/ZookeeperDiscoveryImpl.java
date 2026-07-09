@@ -3513,7 +3513,7 @@ public class ZookeeperDiscoveryImpl {
     private void notifyCustomEvent(ZkDiscoveryCustomEventData evtData, DiscoverySpiCustomMessage msg) {
         OperationContextMessage opCtxMsg = null;
 
-        if(msg instanceof ZkCustomEventMessage) {
+        if (msg instanceof ZkCustomEventMessage) {
             opCtxMsg = ((ZkCustomEventMessage)msg).opCtxMsg;
             msg = ((ZkCustomEventMessage)msg).delegate;
         }
