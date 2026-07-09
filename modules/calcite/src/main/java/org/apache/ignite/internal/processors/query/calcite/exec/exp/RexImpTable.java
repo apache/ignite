@@ -1572,7 +1572,7 @@ public class RexImpTable {
         /** {@inheritDoc} */
         @Override Expression implementSafe(final RexToLixTranslator translator,
             final RexCall call, final List<Expression> argValueList) {
-            assert call.operandCount() <= 2;
+            assert call.getOperands().size() == 1;
             final RelDataType srcType = call.getOperands().get(0).getType();
 
             RexNode arg = call.getOperands().get(0);
