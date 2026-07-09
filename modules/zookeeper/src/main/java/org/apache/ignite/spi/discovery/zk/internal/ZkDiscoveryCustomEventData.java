@@ -18,9 +18,6 @@
 package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.util.UUID;
-import org.apache.ignite.internal.OperationContextMessage;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.jetbrains.annotations.Nullable;
@@ -41,11 +38,11 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
     /** */
     final String evtPath;
 
-    /** Unmarshalled message and holder of distributed {@link OperationContext}. */
-    transient ZkCustomEventMessage cstEvtHldr;
+    /** Message (can be marshalled as part of ZkDiscoveryCustomEventData or stored in separate znode. */
+    byte[] msgBytes;
 
-    /** Mrshalled {@code cstEvtHldr}. */
-    private byte[] cstEvtHldrBytes;
+    /** Unmarshalled message. */
+    transient DiscoverySpiCustomMessage resolvedMsg;
 
     /**
      * @param evtId Event ID.
@@ -66,39 +63,31 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
         super(evtId, ZK_EVT_CUSTOM_EVT, topVer);
 
         assert sndNodeId != null;
-        assert (cstEvtHldr != null && cstEvtHldr.originalMsg != null) || origEvtId != 0 || !F.isEmpty(evtPath);
+        assert msg != null || origEvtId != 0 || !F.isEmpty(evtPath);
 
         this.origEvtId = origEvtId;
-        this.cstEvtHldr = ZkCustomEventMessage.of(msg);
+        this.resolvedMsg = msg;
         this.sndNodeId = sndNodeId;
         this.evtPath = evtPath;
     }
 
-    /** @return Original {@link DiscoveryCustomMessage}. */
-    public DiscoverySpiCustomMessage resolvedCustomMessage() {
-        return cstEvtHldr == null ? null : cstEvtHldr.originalMsg;
-    }
-
     /** */
-    public ZkCustomEventMessage customEventMessageHolder() {
-        return cstEvtHldr;
-    }
-
-    /** @return Received {@link OperationContext}. */
-    public @Nullable OperationContextMessage operationContext() {
-        return cstEvtHldr.opCtxMsg;
+    public @Nullable DiscoverySpiCustomMessage resolvedMessage() {
+        return resolvedMsg == null
+            ? null
+            : resolvedMsg instanceof ZkCustomEventMessage ? ((ZkCustomEventMessage)resolvedMsg).delegate : resolvedMsg;
     }
 
     /** */
     public void prepareMarshal(DiscoveryMessageParser parser) {
-        if (cstEvtHldr != null)
-            cstEvtHldrBytes = parser.marshalZip(cstEvtHldr);
+        if (resolvedMsg != null)
+            msgBytes = parser.marshalZip(resolvedMsg);
     }
 
     /** */
     public void finishUnmarshal(DiscoveryMessageParser parser) {
-        if (cstEvtHldrBytes != null)
-            cstEvtHldr = parser.unmarshalZip(cstEvtHldrBytes);
+        if (msgBytes != null)
+            resolvedMsg = parser.unmarshalZip(msgBytes);
     }
 
     /**

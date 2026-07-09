@@ -23,7 +23,6 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -40,10 +39,10 @@ import org.jetbrains.annotations.Nullable;
  * @see OperationContextDispatcher
  * @see GridDiscoveryManager#sendCustomEvent(DiscoveryCustomMessage)
  */
-public class ZkCustomEventMessage implements Message {
+public class ZkCustomEventMessage implements DiscoverySpiCustomMessage {
     /** */
     @Order(0)
-    DiscoverySpiCustomMessage originalMsg;
+    DiscoverySpiCustomMessage delegate;
 
     /** */
     @Order(1)
@@ -54,22 +53,27 @@ public class ZkCustomEventMessage implements Message {
         // No-op.
     }
 
-    /** */
-    public ZkCustomEventMessage(DiscoverySpiCustomMessage msg, @Nullable OperationContextMessage opCtxMsg) {
-        this.originalMsg = msg;
+    /**
+     * @param delegate Original message.
+     * @param opCtxMsg Distributed operation context message.
+     */
+    public ZkCustomEventMessage(DiscoverySpiCustomMessage delegate, @Nullable OperationContextMessage opCtxMsg) {
+        this.delegate = delegate;
         this.opCtxMsg = opCtxMsg;
     }
 
-    /**
-     * Wraps {@code msg} as or casts to {@link ZkCustomEventMessage}.
-     *
-     * @param msg either a {@link DiscoverySpiCustomMessage} or a {@link ZkCustomEventMessage}.
-     */
-    public static ZkCustomEventMessage of(Message msg) {
-        assert msg instanceof ZkCustomEventMessage || msg instanceof DiscoverySpiCustomMessage;
+    /** {@inheritDoc} */
+    @Override public @Nullable DiscoverySpiCustomMessage ackMessage() {
+        return delegate.ackMessage();
+    }
 
-        return msg instanceof ZkCustomEventMessage
-            ? (ZkCustomEventMessage)msg
-            : new ZkCustomEventMessage((DiscoverySpiCustomMessage)msg, null);
+    /** {@inheritDoc} */
+    @Override public boolean isMutable() {
+        return delegate.isMutable();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean stopProcess() {
+        return delegate.stopProcess();
     }
 }
