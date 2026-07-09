@@ -49,6 +49,7 @@ public abstract class MdcCacheAwareApplication extends IgniteAwareApplication {
             .setTopologyValidator(topValidator)
             .setCacheMode(PARTITIONED)
             .setBackups(backups)
+            .setReadFromBackup(true)
             .setAffinity(new RendezvousAffinityFunction()
                 .setPartitions(32)
                 .setAffinityBackupFilter(new MdcAffinityBackupFilter(dcsNum, backups)));
