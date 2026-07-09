@@ -179,7 +179,7 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
 
                 // If rebalance was cancelled (false), a new one may have started — retry.
                 while (!rebFut.isInitial() && !rebFut.get()) {
-                    rebFut = (GridDhtPartitionDemander.RebalanceFuture) ign.cachex("SMALLnull")
+                    rebFut = (GridDhtPartitionDemander.RebalanceFuture)ign.cachex("SMALLnull")
                         .context().preloader().rebalanceFuture();
                 }
             }
