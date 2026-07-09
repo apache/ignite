@@ -2508,11 +2508,6 @@ public class ZookeeperDiscoveryImpl {
     }
 
     /**
-     * @param evtData Event data.
-     * @param cstMsgHldr
-     */
-
-    /**
      * @param evtPath Event data path.
      * @param sndNode Sender node.
      * @param cstMsgHldr Custom message holder.
