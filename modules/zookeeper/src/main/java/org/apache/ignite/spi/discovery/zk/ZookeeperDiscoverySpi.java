@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -57,6 +58,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.DiscoverySpiMutableCustomMessageSupport;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
+import org.apache.ignite.spi.discovery.zk.internal.ZkCustomEventMessage;
 import org.apache.ignite.spi.discovery.zk.internal.ZkIgnitePaths;
 import org.apache.ignite.spi.discovery.zk.internal.ZkMessageFactory;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperClusterNode;
@@ -119,6 +121,9 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
     /** */
     @GridToStringExclude
     private ZookeeperDiscoveryImpl impl;
+
+    /** */
+    private OperationContextDispatcher opCtxDispatcher;
 
     /** */
     @GridToStringExclude
@@ -407,6 +412,9 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
 
     /** {@inheritDoc} */
     @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) {
+        // Holds the distributed operation context.
+        msg = new ZkCustomEventMessage(msg, opCtxDispatcher.collectDistributedAttributes());
+
         impl.sendCustomMessage(msg);
     }
 
@@ -453,6 +461,8 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
                 ", zkRootPath=" + zkRootPath + ']');
         }
 
+        opCtxDispatcher = ((IgniteEx)ignite).context().operationContextDispatcher();
+
         impl = new ZookeeperDiscoveryImpl(
             this,
             igniteInstanceName,
@@ -461,9 +471,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
             locNode,
             lsnr,
             exchange,
-            stats,
-            ((IgniteEx)ignite).context().marshallerContext().jdkMarshaller(),
-            ((IgniteEx)ignite).context().messageFactory()
+            stats
         );
 
         registerMBean(igniteInstanceName, new ZookeeperDiscoverySpiMBeanImpl(this), ZookeeperDiscoverySpiMBean.class);

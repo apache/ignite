@@ -20,7 +20,6 @@ package org.apache.ignite.spi.discovery.zk.internal;
 import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
-import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -43,10 +42,8 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
 
     /**
      * Unmarshalled custom message holder. Can be wrapped with {@link ZkCustomEventMessage}.
-     *
-     * @see #resolvedCustomMessage()
      */
-    transient DiscoverySpiCustomMessage cstMsgHldr;
+    transient DiscoverySpiCustomMessage resolvedMsg;
 
     /**
      * @param evtId Event ID.
@@ -70,26 +67,21 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
         assert msg != null || origEvtId != 0 || !F.isEmpty(evtPath);
 
         this.origEvtId = origEvtId;
-        this.cstMsgHldr = msg;
+        this.resolvedMsg = msg;
         this.sndNodeId = sndNodeId;
         this.evtPath = evtPath;
     }
 
-    /** @return Original custom message or taken from wrapped with {@link ZkCustomEventMessage}. */
-    public @Nullable DiscoverySpiCustomMessage resolvedCustomMessage() {
-        return cstMsgHldr instanceof ZkCustomEventMessage ? ((ZkCustomEventMessage)cstMsgHldr).delegate : cstMsgHldr;
-    }
-
     /** */
     public void prepareMarshal(DiscoveryMessageParser parser) {
-        if (cstMsgHldr != null)
-            msgBytes = parser.marshalZip(cstMsgHldr);
+        if (resolvedMsg != null)
+            msgBytes = parser.marshalZip(resolvedMsg);
     }
 
     /** */
     public void finishUnmarshal(DiscoveryMessageParser parser) {
         if (msgBytes != null)
-            cstMsgHldr = parser.unmarshalZip(msgBytes);
+            resolvedMsg = parser.unmarshalZip(msgBytes);
     }
 
     /**

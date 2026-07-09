@@ -63,8 +63,12 @@ public class ZkCustomEventMessage implements DiscoverySpiCustomMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable DiscoverySpiCustomMessage ackMessage() {
-        return delegate.ackMessage();
+    @Override public @Nullable ZkCustomEventMessage ackMessage() {
+        DiscoverySpiCustomMessage res = delegate.ackMessage();
+
+        assert !(res instanceof ZkCustomEventMessage);
+
+        return res  == null ? null : new ZkCustomEventMessage(res, opCtxMsg);
     }
 
     /** {@inheritDoc} */
