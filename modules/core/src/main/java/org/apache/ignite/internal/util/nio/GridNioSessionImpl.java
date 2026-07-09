@@ -24,10 +24,10 @@ import javax.net.ssl.SSLPeerUnverifiedException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.nio.ssl.GridSslMeta;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
@@ -103,7 +103,7 @@ public class GridNioSessionImpl implements GridNioSession {
         this.rmtAddr = rmtAddr;
         this.accepted = accepted;
 
-        long now = U.currentTimeMillis();
+        long now = CommonUtils.currentTimeMillis();
 
         sndSchedTime = now;
         createTime = now;
@@ -317,7 +317,7 @@ public class GridNioSessionImpl implements GridNioSession {
         bytesSent += cnt;
         bytesSent0 += cnt;
 
-        lastSndTime = U.currentTimeMillis();
+        lastSndTime = CommonUtils.currentTimeMillis();
     }
 
     /**
@@ -331,14 +331,14 @@ public class GridNioSessionImpl implements GridNioSession {
         bytesRcvd += cnt;
         bytesRcvd0 += cnt;
 
-        lastRcvTime = U.currentTimeMillis();
+        lastRcvTime = CommonUtils.currentTimeMillis();
     }
 
     /**
      * Resets send schedule time to avoid multiple idle notifications.
      */
     public void resetSendScheduleTime() {
-        sndSchedTime = U.currentTimeMillis();
+        sndSchedTime = CommonUtils.currentTimeMillis();
     }
 
     /**
@@ -348,7 +348,7 @@ public class GridNioSessionImpl implements GridNioSession {
      *      {@code false} if session was already closed.
      */
     public boolean setClosed() {
-        return closeTime.compareAndSet(0, U.currentTimeMillis());
+        return closeTime.compareAndSet(0, CommonUtils.currentTimeMillis());
     }
 
     /**

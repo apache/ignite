@@ -30,10 +30,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.nio.GridNioException;
 import org.apache.ignite.internal.util.nio.GridNioSession;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
@@ -197,7 +197,7 @@ class GridNioSslHandler extends ReentrantLock {
         if (log.isDebugEnabled())
             log.debug("Entered handshake(): [handshakeStatus=" + handshakeStatus + ", ses=" + ses + ']');
 
-        long startTs = U.currentTimeMillis();
+        long startTs = CommonUtils.currentTimeMillis();
 
         lock();
 
@@ -258,7 +258,7 @@ class GridNioSslHandler extends ReentrantLock {
                     case NEED_WRAP: {
                         // If the output buffer has remaining data, clear it.
                         if (outNetBuf.hasRemaining())
-                            U.warn(log, "Output net buffer has unsent bytes during handshake (will clear): " + ses);
+                            CommonUtils.warn(log, "Output net buffer has unsent bytes during handshake (will clear): " + ses);
 
                         outNetBuf.clear();
 
@@ -287,7 +287,7 @@ class GridNioSslHandler extends ReentrantLock {
         finally {
             unlock();
 
-            long elapsed = U.currentTimeMillis() - startTs;
+            long elapsed = CommonUtils.currentTimeMillis() - startTs;
 
             if (elapsed > LONG_HANDSHAKE_THRESHOLD_MS && log.isInfoEnabled()) {
                 log.info("Handshake took too long: [millis=" + elapsed + ", handshakeStatus=" + handshakeStatus +
@@ -334,7 +334,7 @@ class GridNioSslHandler extends ReentrantLock {
 
                 // If we received close_notify but not all bytes has been read by SSL engine, print a warning.
                 if (buf.hasRemaining())
-                    U.warn(log, "Got unread bytes after receiving close_notify message (will ignore): " + ses);
+                    CommonUtils.warn(log, "Got unread bytes after receiving close_notify message (will ignore): " + ses);
             }
 
             inNetBuf.clear();

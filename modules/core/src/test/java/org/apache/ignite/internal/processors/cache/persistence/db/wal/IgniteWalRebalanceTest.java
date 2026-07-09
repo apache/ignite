@@ -496,12 +496,11 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         forceCheckpoint();
 
-        stopAllGrids();
+        stopGrid(1);
+        stopGrid(2);
 
         // Rewrite data to trigger further rebalance.
-        IgniteEx supplierNode = startGrid(0);
-
-        supplierNode.cluster().state(ACTIVE);
+        IgniteEx supplierNode = grid(0);
 
         IgniteCache<Object, Object> cache = supplierNode.cache(CACHE_NAME);
 
@@ -532,12 +531,15 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
             getTestTimeout()
         );
 
+        // Hold the demand until the WAL read is armed to fail, so the error fires mid-rebalance.
+        TestRecordingCommunicationSpi spi = (TestRecordingCommunicationSpi)demanderNode.configuration().getCommunicationSpi();
+
+        spi.waitForBlocked();
+
         // Inject I/O factory which can throw exception during WAL read on supplier node.
         FailingIOFactory ioFactory = injectFailingIOFactory(supplierNode);
 
         // Resume rebalance process.
-        TestRecordingCommunicationSpi spi = (TestRecordingCommunicationSpi)demanderNode.configuration().getCommunicationSpi();
-
         spi.stopBlock();
 
         // Wait till rebalance will be failed and cancelled.

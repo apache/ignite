@@ -26,7 +26,7 @@ import java.util.NoSuchElementException;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 
-import static org.apache.ignite.internal.util.IgniteUtils.EMPTY_LONGS;
+import static org.apache.ignite.internal.util.CommonUtils.EMPTY_LONGS;
 
 /**
  * Minimal list API to work with primitive longs. This list exists

@@ -18,18 +18,15 @@
 package org.apache.ignite.cache;
 
 import java.io.Serializable;
-import java.util.Map;
-import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 
 /**
  * Entry event order.
  * Two concurrent updates of the same entry can be ordered based on {@link CacheEntryVersion} comparsion.
  * Greater value means that event occurs later.
  *
- * @see CacheConflictResolutionManager
- * @see GridCacheVersionManager#dataCenterId(byte)
+ *
+ * {@ignitelink org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager}
+ * {@ignitelink org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager#dataCenterId(byte)}
  */
 public interface CacheEntryVersion extends Comparable<CacheEntryVersion>, Serializable {
     /**
@@ -44,7 +41,7 @@ public interface CacheEntryVersion extends Comparable<CacheEntryVersion>, Serial
     /**
      * Cluster id is a value to distinguish updates in case user wants to aggregate and sort updates from several
      * Ignite clusters. {@code clusterId} id can be set for the node using
-     * {@link GridCacheVersionManager#dataCenterId(byte)}.
+     * {@ignitelink org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager#dataCenterId(byte)}
      *
      * @return Cluster id.
      */
@@ -55,11 +52,12 @@ public interface CacheEntryVersion extends Comparable<CacheEntryVersion>, Serial
 
     /**
      * If source of the update is "local" cluster then {@code null} will be returned.
-     * If updated comes from the other cluster using {@link IgniteInternalCache#putAllConflict(Map)}
+     * If updated comes from the other cluster using
+     * {@ignitelink org.apache.ignite.internal.processors.cache.IgniteInternalCache#putAllConflict(Map)}
      * then entry version for other cluster.
      * @return Replication version.
-     * @see IgniteInternalCache#putAllConflict(Map)
-     * @see IgniteInternalCache#removeAllConflict(Map)
+     * {@ignitelink org.apache.ignite.internal.processors.cache.IgniteInternalCache#putAllConflict(Map)}
+     * {@ignitelink org.apache.ignite.internal.processors.cache.IgniteInternalCache#removeAllConflict(Map)}
      */
     public CacheEntryVersion otherClusterVersion();
 }
