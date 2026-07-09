@@ -2588,7 +2588,7 @@ public class ZookeeperDiscoveryImpl {
         if (msg instanceof ZkInternalMessage)
             processInternalMessage(evtData, (ZkInternalMessage)msg);
         else {
-            // Pass exactly the holder to keep the distributed operation context.
+            // Pass exactly a holder to keep the distributed operation context.
             notifyCustomEvent(evtData, cstMsgHldr);
 
             if (msg.stopProcess()) {
