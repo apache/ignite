@@ -4620,13 +4620,9 @@ public class GridNioServer<T> {
         NioOperation operation();
     }
 
-    /**
-     * A message that wraps (contains) another message.
-     */
+    /** */
     public interface MessageWrapper {
-        /**
-         * @return The wrapped message.
-         */
+        /** */
         public Message message();
     }
 }
