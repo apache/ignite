@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.util.lang;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiInClosure;
 
@@ -25,6 +26,7 @@ import org.apache.ignite.lang.IgniteBiInClosure;
  * Convenient in-closure subclass that allows for thrown grid exception. This class
  * implements {@link #apply(Object, Object)} method that calls {@link #applyx(Object, Object)}
  * method and properly wraps {@link IgniteCheckedException} into {@link GridClosureException} instance.
+ * @see CIX2
  */
 public abstract class IgniteInClosure2X<E1, E2> implements IgniteBiInClosure<E1, E2> {
     /** */

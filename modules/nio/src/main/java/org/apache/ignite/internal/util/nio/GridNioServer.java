@@ -52,7 +52,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCommonsSystemProperties;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.tracing.MTC;
@@ -452,8 +451,7 @@ public class GridNioServer<T> {
         this.skipRecoveryPred = skipRecoveryPred != null ? skipRecoveryPred : F.<Message>alwaysFalse();
 
         long balancePeriod = IgniteCommonsSystemProperties.getLong(
-            IgniteCommonsSystemProperties.IGNITE_IO_BALANCE_PERIOD,
-            IgniteCommonsSystemProperties.DFLT_IO_BALANCE_PERIOD);
+            IgniteCommonsSystemProperties.IGNITE_IO_BALANCE_PERIOD, IgniteCommonsSystemProperties.DFLT_IO_BALANCE_PERIOD);
 
         IgniteRunnable balancer0 = null;
 
