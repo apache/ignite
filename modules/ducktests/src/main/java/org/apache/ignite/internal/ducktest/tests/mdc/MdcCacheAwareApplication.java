@@ -2,6 +2,8 @@ package org.apache.ignite.internal.ducktest.tests.mdc;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.affinity.rendezvous.MdcAffinityBackupFilter;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.ducktest.tests.dto.IndexedDataRecord;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
@@ -24,6 +26,9 @@ public abstract class MdcCacheAwareApplication extends IgniteAwareApplication {
     /** */
     protected static int DFLT_BACKUPS = 0;
 
+    /** */
+    protected static int DFLT_DCS_NUM = 2;
+
     /**
      * @param jNode Parameters.
      * @return Cache configured with the MDC topology validator.
@@ -33,6 +38,7 @@ public abstract class MdcCacheAwareApplication extends IgniteAwareApplication {
         int backups = jNode.path("backups").asInt(DFLT_BACKUPS);
 
         String mainDc = jNode.path("mainDc").asText();
+        int dcsNum = jNode.path("dcsNum").asInt(DFLT_DCS_NUM);
 
         MdcTopologyValidator topValidator = new MdcTopologyValidator();
 
@@ -42,7 +48,10 @@ public abstract class MdcCacheAwareApplication extends IgniteAwareApplication {
             .setName(cacheName)
             .setTopologyValidator(topValidator)
             .setCacheMode(PARTITIONED)
-            .setBackups(backups);
+            .setBackups(backups)
+            .setAffinity(new RendezvousAffinityFunction()
+                .setPartitions(32)
+                .setAffinityBackupFilter(new MdcAffinityBackupFilter(dcsNum, backups)));
 
         return ignite.getOrCreateCache(cacheCfg);
     }

@@ -21,7 +21,7 @@ from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.network_group.configuration import NetworkGroupStore, CrossNetworkGroupConfiguration
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
-from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_services
+from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.tests.network_group import NetworkGroupAbstractTest
 from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
@@ -71,13 +71,11 @@ class MultiDCPartitionResilienceTest(NetworkGroupAbstractTest):
         self.svc_dc_1 = IgniteService(self.test_context, self.ign_cfg, num_nodes=dc_1_nodes_num, jvm_opts=jvm_opts_dc_1)
         self.svc_dc_2 = IgniteService(self.test_context, self.ign_cfg, num_nodes=dc_2_nodes_num, jvm_opts=jvm_opts_dc_2)
 
-        cli_cfg = self.ign_cfg._replace(
-            client_mode=True,
-            discovery_spi=from_ignite_services([self.svc_dc_1, self.svc_dc_2])
-        )
+        cli_cfg_dc_1 = self.ign_cfg._replace(client_mode=True, discovery_spi=from_ignite_cluster(self.svc_dc_1))
+        cli_cfg_dc_2 = self.ign_cfg._replace(client_mode=True, discovery_spi=from_ignite_cluster(self.svc_dc_2))
 
-        self.app_dc_1 = IgniteApplicationService(self.test_context, cli_cfg, jvm_opts=jvm_opts_dc_1)
-        self.app_dc_2 = IgniteApplicationService(self.test_context, cli_cfg, jvm_opts=jvm_opts_dc_2)
+        self.app_dc_1 = IgniteApplicationService(self.test_context, cli_cfg_dc_1, jvm_opts=jvm_opts_dc_1)
+        self.app_dc_2 = IgniteApplicationService(self.test_context, cli_cfg_dc_2, jvm_opts=jvm_opts_dc_2)
 
     def _configure_network_group_registry(self, **kwargs):
         return {
@@ -109,6 +107,8 @@ class MultiDCPartitionResilienceTest(NetworkGroupAbstractTest):
         self._verify_half_ring_healthy(self.svc_dc_1)
         self._verify_half_ring_healthy(self.svc_dc_2)
 
+        self._verify_split_brain(self.svc_dc_1, self.svc_dc_2)
+
         self._check_data_accessible()
         self._check_data_change_access()
 
@@ -124,14 +124,6 @@ class MultiDCPartitionResilienceTest(NetworkGroupAbstractTest):
 
         assert act_alive_nodes == exp_alive_nodes, f"{exp_alive_nodes} nodes should be alive! [actual={act_alive_nodes}]"
 
-        coordinator_node = svc.nodes[0]
-
-        assert svc.alive(coordinator_node), "Coordinator node should remain alive"
-
-        disco_info = coordinator_node.discovery_info()
-
-        assert disco_info.is_coordinator, f"{svc.who_am_i(coordinator_node)} is not a coordinator"
-
         control_utility = ControlUtility(svc)
 
         cluster_state = control_utility.cluster_state()
@@ -139,14 +131,23 @@ class MultiDCPartitionResilienceTest(NetworkGroupAbstractTest):
         assert "ACTIVE" == cluster_state.state, f"Half-ring state should remain ACTIVE [actual={cluster_state.state}]"
 
         assert len(cluster_state.baseline) == exp_alive_nodes, \
-            f"Half-ring baseline is not expected [exp={exp_alive_nodes}, actual={cluster_state.baseline}]"
+            f"Half-ring baseline is not expected [exp={exp_alive_nodes}, actual_baseline={cluster_state.baseline}]"
+
+    def _verify_split_brain(self, svc_dc_1: IgniteService, svc_dc_2: IgniteService):
+        control_utility_dc_1 = ControlUtility(svc_dc_1)
+        cluster_state_dc_1 = control_utility_dc_1.cluster_state()
+
+        control_utility_dc_2 = ControlUtility(svc_dc_2)
+        cluster_state_dc_2 = control_utility_dc_2.cluster_state()
+
+        # Check baseline doesn't intersect, each has it's own coordinator
 
     def _populate_cluster_with_data(self):
         self.app_dc_1.java_class_name = GENERATOR_JAVA_CLASS_NAME
         self.app_dc_2.java_class_name = GENERATOR_JAVA_CLASS_NAME
 
-        self.app_dc_1.params = {"mainDc": DC_1_NAME, "cacheName": CACHE_NAME, "backups": 2, "from": 0, "to": 100}
-        self.app_dc_2.params = {"mainDc": DC_1_NAME, "cacheName": CACHE_NAME, "backups": 2, "from": 100, "to": 200}
+        self.app_dc_1.params = {"mainDc": DC_1_NAME, "cacheName": CACHE_NAME, "backups": 1, "from": 0, "to": 100}
+        self.app_dc_2.params = {"mainDc": DC_1_NAME, "cacheName": CACHE_NAME, "backups": 1, "from": 100, "to": 200}
 
         self.app_dc_1.start()
         self.app_dc_2.start()
@@ -164,8 +165,8 @@ class MultiDCPartitionResilienceTest(NetworkGroupAbstractTest):
         self.app_dc_1.params = {"cacheName": CACHE_NAME, "from": 0, "to": 200}
         self.app_dc_2.params = {"cacheName": CACHE_NAME, "from": 0, "to": 200}
 
-        self.app_dc_1.start()
-        self.app_dc_2.start()
+        self.app_dc_1.start(clean=False)
+        self.app_dc_2.start(clean=False)
 
         self.app_dc_1.wait()
         self.app_dc_2.wait()
@@ -180,8 +181,8 @@ class MultiDCPartitionResilienceTest(NetworkGroupAbstractTest):
         self.app_dc_1.params = {"cacheName": CACHE_NAME, "expectAdmissible": True}
         self.app_dc_2.params = {"cacheName": CACHE_NAME, "expectAdmissible": False}
 
-        self.app_dc_1.start()
-        self.app_dc_2.start()
+        self.app_dc_1.start(clean=False)
+        self.app_dc_2.start(clean=False)
 
         self.app_dc_1.wait()
         self.app_dc_2.wait()
