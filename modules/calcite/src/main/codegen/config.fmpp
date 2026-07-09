@@ -73,7 +73,9 @@ data: {
       "REFRESH",
       "ANALYZE",
       "MAX_CHANGED_PARTITION_ROWS_PERCENT",
-      "TOTAL"
+      "TOTAL",
+      "WAIT",
+      "NOWAIT"
     ]
 
     # List of non-reserved keywords to add;
@@ -110,6 +112,8 @@ data: {
       "ANALYZE"
       "MAX_CHANGED_PARTITION_ROWS_PERCENT"
       "TOTAL"
+      "WAIT"
+      "NOWAIT"
 
       # Keywords reserved by Calcite, but not required to be reserved in Ignite.
       "ABS"
@@ -448,10 +452,11 @@ data: {
       "SqlSavepoint()",
       "SqlRollbackToSavepoint()",
       "SqlCommitTransaction()",
-      "SqlRollbackTransaction()"
-      "SqlStatisticsAnalyze()"
-      "SqlStatisticsRefresh()"
-      "SqlStatisticsDrop()"
+      "SqlRollbackTransaction()",
+      "SqlStatisticsAnalyze()",
+      "SqlStatisticsRefresh()",
+      "SqlStatisticsDrop()",
+      "SqlSelectForUpdate()"
     ]
 
     # List of methods for parsing extensions to "CREATE [OR REPLACE]" calls.

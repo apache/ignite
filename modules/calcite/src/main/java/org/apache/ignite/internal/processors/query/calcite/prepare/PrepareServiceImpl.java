@@ -37,8 +37,10 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.DistributedCalciteConfiguration;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DdlSqlToCommandConverter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlSelectForUpdate;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
+import org.apache.ignite.internal.processors.query.calcite.util.IgniteResource;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -92,6 +94,10 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
 
             if (!F.isEmpty(disbledRules))
                 ctx.addRulesFilter(new IgnitePlanner.DisabledRuleFilter(disbledRules));
+
+            if (sqlNode instanceof IgniteSqlSelectForUpdate)
+                throw new IgniteSQLException(IgniteResource.INSTANCE.selectForUpdateNotSupported().str(),
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
             if (SqlKind.DDL.contains(sqlNode.getKind()))
                 return prepareDdl(sqlNode, ctx);
