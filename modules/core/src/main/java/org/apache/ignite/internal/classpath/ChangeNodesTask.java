@@ -47,9 +47,9 @@ public class ChangeNodesTask extends ClassPathProcessor.ClassPathTask<Void> {
     }
 
     /** {@inheritDoc} */
-    @Override void start() {
+    @Override void start0() {
         ctx.classPath()
-            .modifyInMetastorageAsync(icpId, null, icp -> add ? icp.addDeployedOnNode(node) : icp.removeDeployedOnNode(node))
+            .modifyInMetastorageAsync(icpId, null, icp -> add ? icp.addDeployedOnNode(node) : icp.removeDeployedOnNode(node), this::stopped)
             .listen(this::finishTaskWithFutureResult);
     }
 

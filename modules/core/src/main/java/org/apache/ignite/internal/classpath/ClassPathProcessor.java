@@ -36,6 +36,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.function.BiConsumer;
+import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
 import org.apache.ignite.IgniteCheckedException;
@@ -73,9 +74,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.N
  * Do we want to have some flag to skip remove in this case? (if we preparing for ICP registration).
  * 3. Should we include CP into snapshots and dumps?
  * 4. Should we control file size to ensure disk free space enough to upload CP files?
- * 5. TODO: support --force flag
- * 6. TODO: support tasks stop.
- * 7. TODO: stop tasks on
+ * TODO: update local file on changes.
  */
 public class ClassPathProcessor extends GridProcessorAdapter implements DistributedMetastorageLifecycleListener {
     /** */
@@ -155,9 +154,9 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
 
             IgniteClassPath loc = readClassPathDescriptor(ft.classPathDescriptor(icp.name()));
 
-            // Partially donwloaded or locally unknown ClassPath.
+            // Partially downloaded or locally unknown ClassPath.
             if (loc == null) {
-                addClassPathTask(icp, CleanupTask.localCleanup(ctx, icp));
+                addClassPathTask(icp, CleanupTask.removeFiles(ctx, icp));
 
                 if (icp.state() == READY)
                     addClassPathTask(icp, new DownloadTask(ctx, icp.id()));
@@ -182,7 +181,7 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
             Set<UUID> ids = icpTasks.keySet();
 
             for (UUID id : ids)
-                cancelTasksAndDisallowNew(id, "unknown");
+                cancelTasksAndDisallowNew(id, "unknown", false);
         }
     }
 
@@ -208,14 +207,15 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
 
         Boolean metastorageWritten = casToMetastorageAsync(null, icp).get();
 
-        if (metastorageWritten != null && !metastorageWritten) {
+        if (metastorageWritten == null || !metastorageWritten) {
             removeClassPathLocally(icp, true);
 
             throw new IgniteException("Fail to register ClassPath. Same ClassPath exists, already?");
         }
 
-        log.info("New IgniteClasspath created " +
-            "[root = " + ctx.pdsFolderResolver().fileTree().classPathRoot(icp.name()) + ", icp=" + icp + ']');
+        File cpRoot = ctx.pdsFolderResolver().fileTree().classPathRoot(icp.name());
+
+        log.info("New IgniteClasspath created [root = " + cpRoot + ", icp=" + icp + ']');
 
         return icp.id();
     }
@@ -267,7 +267,7 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
                 "[name=" + icp.name() + ", id=" + icpId + ", file=" + name + ']', e);
 
             // Cleaning up synchronously.
-            CleanupTask.clusterWideCleanup(ctx, icp).start();
+            cleanAll(icp);
 
             throw new IgniteException(e);
         }
@@ -319,10 +319,28 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
                 "[name=" + icp.name() + ", id=" + icpId + ']', e);
 
             // Cleaning up synchronously.
-            CleanupTask.clusterWideCleanup(ctx, icp).start();
+            cleanAll(icp);
 
             throw new IgniteException(e);
         }
+    }
+
+    /** */
+    private void cleanAll(IgniteClassPath icp) {
+        try {
+            removeFromMetastorage(icp, () -> false);
+        }
+        catch (IgniteCheckedException e) {
+            log.warning("Remove from mestastorage fail", e);
+        }
+        finally {
+            removeClassPathLocally(icp, false);
+        }
+    }
+
+    /** */
+    public void cleanQueue(UUID icpId) {
+        icpTasks.remove(icpId);
     }
 
     /** */
@@ -350,7 +368,7 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
                 log.warning("Forcefully removing ClassPath: " + icp);
 
                 try {
-                    removeFromMetastorage(icp);
+                    removeFromMetastorage(icp, () -> true);
 
                     // Cleanup will be performed in {@link ClassPathChangeListener}.
                     return new GridFinishedFuture<>();
@@ -360,9 +378,7 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
                 }
                 finally {
                     // Cleanup queue after key removed from metastore.
-                    cancelTasksAndDisallowNew(icp.id(), icp.name());
-
-                    icpTasks.remove(icp.id());
+                    cancelTasksAndDisallowNew(icp.id(), icp.name(), false);
                 }
             }
 
@@ -384,11 +400,12 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
     }
 
     /** */
-    void cancelTasksAndDisallowNew(UUID icpId, String name) {
-        Queue<ClassPathTask<?>> tasks = icpTasks.put(icpId, NO_NEW_TASKS);
+    void cancelTasksAndDisallowNew(UUID icpId, String name, boolean keepQueueLock) {
+        Queue<ClassPathTask<?>> tasks = keepQueueLock
+            ? icpTasks.put(icpId, NO_NEW_TASKS)
+            : icpTasks.remove(icpId);
 
         if (!F.isEmpty(tasks)) {
-            // TODO: add cancel support in all tasks.
             for (ClassPathTask<?> task : tasks) {
                 log.info("Cancelling task [icp=" + name + ", task=" + task.name() + ']');
 
@@ -400,7 +417,7 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
                     task.result().get();
                 }
                 catch (IgniteCheckedException e) {
-                    log.warning("Stoped task exception", e);
+                    log.warning("Stopped task exception", e);
                 }
             }
         }
@@ -487,12 +504,14 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
     }
 
     /** */
-    void removeFromMetastorage(IgniteClassPath icp) throws IgniteCheckedException {
+    void removeFromMetastorage(IgniteClassPath icp, BooleanSupplier stopped) throws IgniteCheckedException {
         String key = metastorageKey(icp.name());
 
         int iter = 0;
 
         while (true) {
+            ensureNotStopped(stopped);
+
             Serializable curData = ctx.distributedMetastorage().read(key);
 
             if (curData == null || !isClassPath(curData) || !Objects.equals(((IgniteClassPath)curData).id(), icp.id()))
@@ -548,15 +567,17 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
      * Retries modification if {@link #casToMetastorageAsync(IgniteClassPath, IgniteClassPath)} failed.
      * If {@code change} returns same {@link IgniteClassPath} no updates will be done.
      * If {@code change} or read from metastorge throws then operation will finish with the corresponding exception.
+     * @return Future with the new {@link IgniteClassPath} instance.
      */
-    public GridFutureAdapter<Void> modifyInMetastorageAsync(
+    public GridFutureAdapter<IgniteClassPath> modifyInMetastorageAsync(
         UUID icpId,
         @Nullable IgniteClassPathState state,
-        Function<IgniteClassPath, IgniteClassPath> change
+        Function<IgniteClassPath, IgniteClassPath> change,
+        BooleanSupplier stopped
     ) {
-        GridFutureAdapter<Void> res = new GridFutureAdapter<>();
+        GridFutureAdapter<IgniteClassPath> res = new GridFutureAdapter<>();
 
-        modifyWithRetriesAsync(icpId, state, change, res, 100);
+        modifyWithRetriesAsync(icpId, state, change, res, stopped, 100);
 
         return res;
     }
@@ -566,7 +587,8 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
         UUID icpId,
         @Nullable IgniteClassPathState state,
         Function<IgniteClassPath, IgniteClassPath> change,
-        GridFutureAdapter<Void> res,
+        GridFutureAdapter<IgniteClassPath> res,
+        BooleanSupplier stopped,
         int hardLimit
     ) {
         if (hardLimit == 0) {
@@ -578,11 +600,13 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
         }
 
         try {
+            ensureNotStopped(stopped);
+
             IgniteClassPath prev = fromMetastorage(icpId, state, ctx);
             IgniteClassPath icp = change.apply(prev);
 
             if (Objects.equals(prev, icp)) {
-                res.onDone();
+                res.onDone(icp);
 
                 return;
             }
@@ -600,13 +624,13 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
                 boolean metastorageWritten = casRes.result() != null && casRes.result();
 
                 if (metastorageWritten) {
-                    res.onDone((Void)null);
+                    res.onDone(icp);
 
                     return;
                 }
 
                 // Concurrent node modifies first? It's OK, trying to repeat.
-                modifyWithRetriesAsync(icpId, state, change, res, hardLimit - 1);
+                modifyWithRetriesAsync(icpId, state, change, res, stopped, hardLimit - 1);
 
             });
         }
@@ -825,9 +849,15 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
     }
 
     /** */
+    static void ensureNotStopped(BooleanSupplier stopped) {
+        if (stopped.getAsBoolean())
+            throw new IgniteException("Stopped");
+    }
+
+    /** */
     abstract static class ClassPathTask<R> {
         /** */
-        private final GridFutureAdapter<R> taskRes = new GridFutureAdapter<R>();
+        private final GridFutureAdapter<R> res = new GridFutureAdapter<R>();
 
         /** */
         protected final GridKernalContext ctx;
@@ -870,9 +900,11 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
         }
 
         /** */
-        void finishTaskWithFutureResult(IgniteInternalFuture<?> action) {
-            if (action.error() == null)
-                result().onDone();
+        void finishTaskWithFutureResult(IgniteInternalFuture<IgniteClassPath> action) {
+            if (action.error() == null) {
+                if (updateDescriptor(action.result()))
+                    result().onDone();
+            }
             else
                 result().onDone(action.error());
         }
@@ -884,12 +916,17 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
          */
         final void start() {
             if (stopped) {
-                result().onDone(new IgniteException("Stoped before start"));
+                result().onDone(new IgniteException("Stopped before start"));
 
                 return;
             }
 
-            start0();
+            try {
+                start0();
+            }
+            catch (Throwable e) {
+                res.onDone(e);
+            }
         }
 
         /**
@@ -908,7 +945,26 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
          * @return Task results.
          */
         GridFutureAdapter<R> result() {
-            return taskRes;
+            return res;
+        }
+
+        /** */
+        boolean stopped() {
+            return stopped;
+        }
+
+        /** */
+        protected boolean updateDescriptor(IgniteClassPath icp) {
+            try {
+                writeClassPathDescriptor(ctx.pdsFolderResolver().fileTree(), icp);
+
+                return true;
+            }
+            catch (Exception e) {
+                result().onDone(e);
+
+                return false;
+            }
         }
 
         /** */

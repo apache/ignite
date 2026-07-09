@@ -35,7 +35,9 @@ class ChangeStateTask extends ClassPathProcessor.ClassPathTask<Void> {
 
     /** {@inheritDoc} */
     @Override void start0() {
-        ctx.classPath().modifyInMetastorageAsync(icpId, null, icp -> icp.newState(state)).listen(this::finishTaskWithFutureResult);
+        ctx.classPath()
+            .modifyInMetastorageAsync(icpId, null, icp -> icp.newState(state), this::stopped)
+            .listen(this::finishTaskWithFutureResult);
     }
 
     /** {@inheritDoc} */

@@ -64,13 +64,12 @@ class DownloadTask extends ClassPathProcessor.ClassPathTask<Void> {
         UUID rmtNode = F.rand(icp.deployedOnNodes());
 
         if (stopped) {
-            result().onDone(new IgniteException("Download task stoped"));
+            result().onDone(new IgniteException("Download task stopped"));
 
             return;
         }
 
-        // TODO: pass stop flag to download.
-        IgniteInternalFuture<Void> downloadRes = ctx.classPath().icpFilesHnd.downloadLocally(rmtNode, icp);
+        IgniteInternalFuture<Void> downloadRes = ctx.classPath().icpFilesHnd.downloadLocally(rmtNode, icp, this::stopped);
 
         downloadRes.listen(f -> {
             if (f.error() != null) {
@@ -82,17 +81,8 @@ class DownloadTask extends ClassPathProcessor.ClassPathTask<Void> {
             if (log.isDebugEnabled())
                 log.debug("ClassPath files from remote node has been fully received [icp=" + icp.name() + ']');
 
-            try {
-                ClassPathProcessor.writeClassPathDescriptor(ctx.pdsFolderResolver().fileTree(), icp);
-            }
-            catch (Exception e) {
-                result().onDone(e);
-
-                return;
-            }
-
             ctx.classPath()
-                .modifyInMetastorageAsync(icpId, READY, state -> state.addDeployedOnNode(ctx.localNodeId()))
+                .modifyInMetastorageAsync(icpId, READY, state -> state.addDeployedOnNode(ctx.localNodeId()), this::stopped)
                 .listen(this::finishTaskWithFutureResult);
         });
     }
@@ -111,7 +101,7 @@ class DownloadTask extends ClassPathProcessor.ClassPathTask<Void> {
             log.warning("Failed to download ClassPath files [icp=" + icp.name() + "]", t);
 
             // Cleanup local files.
-            ctx.classPath().addClassPathTask(icp, CleanupTask.localCleanup(ctx, icp));
+            ctx.classPath().addClassPathTask(icp, CleanupTask.removeFiles(ctx, icp));
         }
         catch (Exception e) {
             log.warning("onDowloadFailed", e);
@@ -120,6 +110,6 @@ class DownloadTask extends ClassPathProcessor.ClassPathTask<Void> {
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return "Download files";
+        return "DownloadTask";
     }
 }

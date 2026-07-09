@@ -25,6 +25,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.apache.ignite.IgniteException;
@@ -49,6 +50,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.classpath.ClassPathProcessor.ensureNotStopped;
 import static org.apache.ignite.internal.classpath.ClassPathProcessor.fromMetastorage;
 import static org.apache.ignite.internal.classpath.IgniteClassPathState.READY;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
@@ -98,15 +100,16 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
      * Downloads {@link IgniteClassPath} files locally from the remote node specified by {@code rmtNodeId}.
      * @param rmtNodeId Remote node id.
      * @param icp ClassPath.
+     * @param stopped Stop flag supplier.
      * @return Future for download operation.
      */
-    IgniteInternalFuture<Void> downloadLocally(UUID rmtNodeId, IgniteClassPath icp) {
+    IgniteInternalFuture<Void> downloadLocally(UUID rmtNodeId, IgniteClassPath icp, BooleanSupplier stopped) {
         assert !rmtNodeId.equals(ctx.localNodeId());
 
         if (log.isInfoEnabled())
             log.info("Start download ClassPath files [icp=" + icp.name() + ", rmtNode=" + rmtNodeId + ']');
 
-        DownloadClassPathTask task = new DownloadClassPathTask(rmtNodeId, icp);
+        DownloadClassPathTask task = new DownloadClassPathTask(rmtNodeId, icp, stopped);
 
         try {
             submit(task);
@@ -188,7 +191,7 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
     @Override public void onMessage(UUID nodeId, Object msg0, byte plc) {
         try {
             if (msg0 instanceof DownloadClassPathMessage msg) {
-                IgniteClassPath icp = null;
+                IgniteClassPath icp;
 
                 try {
                     icp = fromMetastorage(msg.icpId, READY, ctx);
@@ -262,6 +265,12 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
         if (!ensureTask(nodeId, task))
             return;
 
+        if (task.stopped.getAsBoolean()) {
+            task.res.onDone(new IgniteException("Stopped"));
+
+            return;
+        }
+
         int filesLeft = task.filesLeft.get();
 
         if (filesLeft != 0) {
@@ -281,6 +290,12 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
         if (!ensureTask(nodeId, task))
             return;
 
+        if (task.stopped.getAsBoolean()) {
+            task.res.onDone(new IgniteException("Stopped"));
+
+            return;
+        }
+
         task.res.onDone(ex);
     }
 
@@ -297,6 +312,9 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
             throw new TransmissionCancelledException("Stale ClassPath transmission will be ignored " +
                 "[icpId=" + icp.id() + ", file=" + name + ']');
         }
+
+        if (task.stopped.getAsBoolean())
+            throw new TransmissionCancelledException("Task stopped [icpId=" + icp.id() + ", file=" + name + ']');
 
         NodeFileTree ft = ctx.pdsFolderResolver().fileTree();
 
@@ -321,6 +339,9 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
                 throw new TransmissionCancelledException("Stale ClassPath transmission will be ignored " +
                     "[icpId=" + icp.id() + ", file=" + name + ']');
             }
+
+            if (task.stopped.getAsBoolean())
+                throw new TransmissionCancelledException("Task stopped [icpId=" + icp.id() + ", file=" + name + ']');
 
             int filesLeft = task.filesLeft.decrementAndGet();
 
@@ -370,9 +391,11 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
 
         try {
             // submit can be invoked from discovery thread.
-            // sendOrderedMessage can be blocking so invok it in separate thread to release discovery.
+            // sendOrderedMessage can be blocking so invoke it in separate thread to release discovery.
             ctx.pools().getSystemExecutorService().submit(() -> {
                 try {
+                    ensureNotStopped(next.stopped);
+
                     ctx.cache().context().gridIO().sendOrderedMessage(
                         rmtNode,
                         FILES_TOPIC,
@@ -433,15 +456,19 @@ class ClassPathFilesTransmissionHandler implements TransmissionHandler, GridMess
         /** Result of download. */
         final GridFutureAdapter<Void> res;
 
+        /** Stop flag supplier. */
+        final BooleanSupplier stopped;
+
         /** Files counter. */
         final AtomicInteger filesLeft;
 
         /** */
-        public DownloadClassPathTask(UUID rmtNodeId, IgniteClassPath icp) {
+        public DownloadClassPathTask(UUID rmtNodeId, IgniteClassPath icp, BooleanSupplier stopped) {
             this.rmtNodeId = rmtNodeId;
             this.icp = icp;
             this.res = new GridFutureAdapter<>();
             this.filesLeft = new AtomicInteger(icp.files().length);
+            this.stopped = stopped;
         }
     }
 }

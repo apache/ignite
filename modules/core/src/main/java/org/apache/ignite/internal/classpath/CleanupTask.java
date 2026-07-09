@@ -20,13 +20,13 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 
 /**
- * Removes {@link IgniteClassPath} metastorage record and deletes its local files.
+ * Removes {@link IgniteClassPath} local files.
  */
 class CleanupTask extends ClassPathProcessor.ClassPathTask<Void> {
     /** */
     private final IgniteClassPath icp;
 
-    /** If {@code true} then remove from metastore. */
+    /** */
     private final boolean rmvFromMetastore;
 
     /** */
@@ -37,12 +37,12 @@ class CleanupTask extends ClassPathProcessor.ClassPathTask<Void> {
     }
 
     /** @return Task to clean up local files. */
-    public static CleanupTask localCleanup(GridKernalContext ctx, IgniteClassPath icp) {
+    public static CleanupTask removeFiles(GridKernalContext ctx, IgniteClassPath icp) {
         return new CleanupTask(ctx, icp, false);
     }
 
-    /** @return Task to clean up both local files and metastorage record. */
-    public static CleanupTask clusterWideCleanup(GridKernalContext ctx, IgniteClassPath icp) {
+    /** @return Task to remove metastore record. */
+    public static CleanupTask removeFromMetastore(GridKernalContext ctx, IgniteClassPath icp) {
         return new CleanupTask(ctx, icp, true);
     }
 
@@ -50,31 +50,34 @@ class CleanupTask extends ClassPathProcessor.ClassPathTask<Void> {
     @Override void start0() {
         if (rmvFromMetastore) {
             try {
-                ctx.classPath().removeFromMetastorage(icp);
+                ctx.classPath().removeFromMetastorage(icp, this::stopped);
             }
             catch (IgniteCheckedException e) {
                 result().onDone(e);
+
+                return;
             }
         }
-
-        ctx.classPath().removeClassPathLocally(icp, false);
+        else
+            ctx.classPath().removeClassPathLocally(icp, false);
 
         result().onDone();
     }
 
     /** {@inheritDoc} */
     @Override String name() {
-        return (rmvFromMetastore ? "local " : "") + "cleanup";
+        return "cleanup";
     }
 
     /** {@inheritDoc} */
     @Override void ok() {
         if (log.isDebugEnabled())
-            log.debug("ClassPath cleanup done [icp=" + icp + ", loc=" + rmvFromMetastore + ']');
+            log.debug("ClassPath cleanup done [icp=" + icp + ", rmvFromMetastore=" + rmvFromMetastore + ']');
     }
 
     /** {@inheritDoc} */
     @Override void fail(Throwable t) {
-        log.warning("Fail to cleanup ClassPath [icp=" + icp + ", loc=" + rmvFromMetastore + ']', t);
+        if (log.isDebugEnabled())
+            log.debug("Fail to cleanup ClassPath [icp=" + icp + ", rmvFromMetastore=" + rmvFromMetastore + "]: " + t.getMessage());
     }
 }

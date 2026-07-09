@@ -123,7 +123,7 @@ class ClassPathChangeListener implements DistributedMetaStorageListener<Serializ
                 // Cleanup will just raise log warning if local data not exists.
                 log.info("IgniteClassPath remove operation started. Local cleanup: " + newIcp);
 
-                ctx.classPath().addClassPathTask(newIcp, CleanupTask.localCleanup(ctx, newIcp));
+                ctx.classPath().addClassPathTask(newIcp, CleanupTask.removeFiles(ctx, newIcp));
                 ctx.classPath().addClassPathTask(newIcp, ChangeNodesTask.removeNode(ctx, newIcp.id(), ctx.localNodeId()));
 
                 break;
@@ -139,7 +139,7 @@ class ClassPathChangeListener implements DistributedMetaStorageListener<Serializ
     private void onRemoveFromMetastorage(IgniteClassPath icp) {
         // Maybe remove with force flag or error while uploading.
         // Cancelling all in flight and remove right away.
-        ctx.classPath().cancelTasksAndDisallowNew(icp.id(), icp.name());
+        ctx.classPath().cancelTasksAndDisallowNew(icp.id(), icp.name(), false);
 
         if (!ctx.pdsFolderResolver().fileTree().classPathRoot(icp.name()).exists()) {
             log.info("IgniteClassPath removed: " + icp);
@@ -147,8 +147,8 @@ class ClassPathChangeListener implements DistributedMetaStorageListener<Serializ
             return;
         }
 
-        // Concurrent class path tasks not run. Cleaning up without queue. Mostly harmless (no local data at the moment).
-        CleanupTask t = CleanupTask.localCleanup(ctx, icp);
+        // Concurrent class path tasks not run. Cleaning up without queue. Mostly harmless (no local data at the moment until force remove).
+        CleanupTask t = CleanupTask.removeFiles(ctx, icp);
 
         t.result().listen(() -> log.info("IgniteClassPath removed: " + icp));
 
@@ -169,10 +169,10 @@ class ClassPathChangeListener implements DistributedMetaStorageListener<Serializ
                 break;
 
             case REMOVING:
-                ctx.classPath().cancelTasksAndDisallowNew(icp.id(), icp.name());
+                ctx.classPath().cancelTasksAndDisallowNew(icp.id(), icp.name(), true);
 
                 // Remove from metastorage after all nodes cleanup.
-                ctx.classPath().startAsync(CleanupTask.clusterWideCleanup(ctx, icp));
+                ctx.classPath().startAsync(CleanupTask.removeFromMetastore(ctx, icp));
 
                 break;
             case LOST:

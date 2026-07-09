@@ -16,11 +16,11 @@
  */
 package org.apache.ignite.internal.management.classpath;
 
-
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 
+/** */
 public class ClassPathRemoveCommandArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0;
