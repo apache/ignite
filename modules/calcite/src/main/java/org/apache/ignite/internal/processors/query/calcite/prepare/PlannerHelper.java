@@ -117,6 +117,8 @@ public class PlannerHelper {
             // Transformation chain
             rel = planner.transform(PlannerPhase.HEP_DECORRELATE, rel.getTraitSet(), rel);
 
+            rel = planner.transform(PlannerPhase.HEP_REWRITE_WINDOWS, rel.getTraitSet(), rel);
+
             // RelOptUtil#propagateRelHints(RelNode, equiv) may skip hints because current RelNode has no hints.
             // Or if hints reside in a child nodes which are not inputs of the current node. Like LogicalFlter#condition.
             // Such hints may appear or be required below in the tree, after rules applying.
