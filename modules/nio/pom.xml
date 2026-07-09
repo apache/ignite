@@ -27,10 +27,10 @@
         <groupId>org.apache.ignite</groupId>
         <artifactId>ignite-parent-internal</artifactId>
         <version>${revision}</version>
-        <relativePath>../../../parent-internal/pom.xml</relativePath>
+        <relativePath>../../parent-internal/pom.xml</relativePath>
     </parent>
 
-    <artifactId>ignite-thin-client-impl</artifactId>
+    <artifactId>ignite-nio</artifactId>
 
     <url>http://ignite.apache.org</url>
 
@@ -49,13 +49,7 @@
 
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>ignite-thin-client-api</artifactId>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>ignite-nio</artifactId>
+            <artifactId>ignite-grid-unsafe</artifactId>
             <scope>provided</scope>
         </dependency>
 

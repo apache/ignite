@@ -23,7 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
@@ -122,7 +122,7 @@ public class ClientMessage implements Message, Externalizable {
             cnt = -4;
 
             if (stream != null) {
-                U.closeQuiet(stream);
+                CommonUtils.closeQuiet(stream);
 
                 stream = null;
             }
@@ -212,7 +212,7 @@ public class ClientMessage implements Message, Externalizable {
     public byte[] payload() {
         if (stream != null) {
             data = stream.arrayCopy();
-            U.closeQuiet(stream);
+            CommonUtils.closeQuiet(stream);
             stream = null;
         }
 

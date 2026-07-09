@@ -52,10 +52,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCommonsSystemProperties;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.odbc.ClientMessage;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
@@ -229,7 +227,7 @@ public class GridNioServer<T> {
     private volatile long writeTimeout = DFLT_SES_WRITE_TIMEOUT;
 
     /** Idle timeout. */
-    private volatile long idleTimeout = ConnectorConfiguration.DFLT_IDLE_TIMEOUT;
+    private volatile long idleTimeout = DFLT_IDLE_TIMEOUT;
 
     /** For test purposes only. */
     private boolean skipWrite;
@@ -2501,8 +2499,8 @@ public class GridNioServer<T> {
 
                                 Object msg = req.message();
 
-                                if (shortInfo && msg instanceof GridIoMessage)
-                                    msg = ((GridIoMessage)msg).message().getClass().getSimpleName();
+                                if (shortInfo && msg instanceof MessageWrapper)
+                                    msg = ((MessageWrapper)msg).message().getClass().getSimpleName();
 
                                 sb.append(msg);
 
@@ -2545,8 +2543,8 @@ public class GridNioServer<T> {
                     for (SessionWriteRequest req : ses.writeQueue()) {
                         Object msg = req.message();
 
-                        if (shortInfo && msg instanceof GridIoMessage)
-                            msg = ((GridIoMessage)msg).message().getClass().getSimpleName();
+                        if (shortInfo && msg instanceof MessageWrapper)
+                            msg = ((MessageWrapper)msg).message().getClass().getSimpleName();
 
                         if (cnt == 0)
                             sb.append(",\n opQueue=[").append(msg);
@@ -4620,5 +4618,11 @@ public class GridNioServer<T> {
          * @return Requested change operation.
          */
         NioOperation operation();
+    }
+
+    /** */
+    public interface MessageWrapper {
+        /** */
+        public Message message();
     }
 }
