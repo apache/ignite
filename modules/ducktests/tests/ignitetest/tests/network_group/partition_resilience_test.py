@@ -38,6 +38,7 @@ GET_CHECKER_JAVA_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.mdc.Mdc
 PUT_CHECKER_JAVA_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.mdc.MdcPutAdmissibilityCheckerApplication"
 
 CACHE_NAME = "replicated"
+BACKUPS = 1
 
 DATA_CENTER_ATTR = "IGNITE_DATA_CENTER_ID"
 
@@ -87,8 +88,39 @@ class MultiDCPartitionResilienceTest(NetworkGroupAbstractTest):
         for svc in [self.svc_dc_1, self.svc_dc_2]:
             svc.start()
 
-        self._populate_cluster_with_data()
+        self._populate_cluster_with_data(self.app_dc_1, 0, 100)
+        self._populate_cluster_with_data(self.app_dc_2, 100, 200)
 
+        self._verify_cache_distribution()
+
+        network_mgr.enable_network_partition(DC_1_NAME, DC_2_NAME)
+
+        sleep(10)
+
+        self._verify_split_brain(self.svc_dc_1, self.svc_dc_2)
+
+        self._check_data_accessible(self.app_dc_1, 0, 200)
+        self._check_data_accessible(self.app_dc_2, 0, 200)
+
+        self._check_client_data_change_access(self.app_dc_1, True)
+        self._check_client_data_change_access(self.app_dc_2, False)
+
+        network_mgr.disable_network_partition(DC_1_NAME, DC_2_NAME)
+
+        self.svc_dc_2.stop()
+        self.svc_dc_2.start(clean=False)
+
+        self.svc_dc_2.await_rebalance()
+
+        self._check_client_data_change_access(self.app_dc_1, True)
+        self._check_client_data_change_access(self.app_dc_2, True)
+
+        self._verify_cache_distribution()
+
+        self.svc_dc_1.stop()
+        self.svc_dc_2.stop()
+
+    def _verify_cache_distribution(self):
         control_utility = ControlUtility(self.svc_dc_1)
 
         distribution = control_utility.cache_distribution(
@@ -100,45 +132,14 @@ class MultiDCPartitionResilienceTest(NetworkGroupAbstractTest):
             dc_attr=DATA_CENTER_ATTR,
             expected_dcs=[DC_1_NAME, DC_2_NAME])
 
-        network_mgr.enable_network_partition(DC_1_NAME, DC_2_NAME)
-
-        sleep(10)
-
-        self._verify_half_ring_healthy(self.svc_dc_1)
-        self._verify_half_ring_healthy(self.svc_dc_2)
-
-        self._verify_split_brain(self.svc_dc_1, self.svc_dc_2)
-
-        self._check_data_accessible()
-        self._check_data_change_access()
-
-        network_mgr.disable_network_partition(DC_1_NAME, DC_2_NAME)
-
-        self.svc_dc_1.stop()
-        self.svc_dc_2.stop()
-
-    @staticmethod
-    def _verify_half_ring_healthy(svc: IgniteService):
-        exp_alive_nodes = SRV_NODES // 2
-        act_alive_nodes = len(svc.alive_nodes)
-
-        assert act_alive_nodes == exp_alive_nodes, f"{exp_alive_nodes} nodes should be alive! [actual={act_alive_nodes}]"
-
-        control_utility = ControlUtility(svc)
-
-        cluster_state = control_utility.cluster_state()
-
-        assert "ACTIVE" == cluster_state.state, f"Half-ring state should remain ACTIVE [actual={cluster_state.state}]"
-
-        assert len(cluster_state.baseline) == exp_alive_nodes, \
-            f"Half-ring baseline is not expected [exp={exp_alive_nodes}, actual_baseline={cluster_state.baseline}]"
-
-    @staticmethod
-    def _verify_split_brain(svc_dc_1: IgniteService, svc_dc_2: IgniteService):
+    def _verify_split_brain(self, svc_dc_1: IgniteService, svc_dc_2: IgniteService):
         """
         Verifies that after the network partition the cluster has split into two independent
         half-rings: their baselines don't intersect and each half elected its own coordinator.
         """
+        self._verify_half_ring_healthy(svc_dc_1)
+        self._verify_half_ring_healthy(svc_dc_2)
+
         cluster_state_dc_1 = ControlUtility(svc_dc_1).cluster_state()
         cluster_state_dc_2 = ControlUtility(svc_dc_2).cluster_state()
 
@@ -168,53 +169,51 @@ class MultiDCPartitionResilienceTest(NetworkGroupAbstractTest):
             f"{DC_2_NAME} coordinator should belong to its own half-ring baseline " \
             f"[coordinator={coordinator_dc_2.consistent_id}, baseline={sorted(baseline_dc_2)}]"
 
-    def _populate_cluster_with_data(self):
-        self.app_dc_1.java_class_name = GENERATOR_JAVA_CLASS_NAME
-        self.app_dc_2.java_class_name = GENERATOR_JAVA_CLASS_NAME
+    @staticmethod
+    def _verify_half_ring_healthy(svc: IgniteService):
+        exp_alive_nodes = SRV_NODES // 2
+        act_alive_nodes = len(svc.alive_nodes)
 
-        self.app_dc_1.params = {"mainDc": DC_1_NAME, "cacheName": CACHE_NAME, "backups": 1, "from": 0, "to": 100}
-        self.app_dc_2.params = {"mainDc": DC_1_NAME, "cacheName": CACHE_NAME, "backups": 1, "from": 100, "to": 200}
+        assert act_alive_nodes == exp_alive_nodes, f"{exp_alive_nodes} nodes should be alive! [actual={act_alive_nodes}]"
 
-        self.app_dc_1.start()
-        self.app_dc_2.start()
+        control_utility = ControlUtility(svc)
 
-        self.app_dc_1.wait()
-        self.app_dc_2.wait()
+        cluster_state = control_utility.cluster_state()
 
-        self.app_dc_1.stop()
-        self.app_dc_2.stop()
+        assert "ACTIVE" == cluster_state.state, f"Half-ring state should remain ACTIVE [actual={cluster_state.state}]"
 
-    def _check_data_accessible(self):
-        self.app_dc_1.java_class_name = GET_CHECKER_JAVA_CLASS_NAME
-        self.app_dc_2.java_class_name = GET_CHECKER_JAVA_CLASS_NAME
+        assert len(cluster_state.baseline) == exp_alive_nodes, \
+            f"Half-ring baseline is not expected [exp={exp_alive_nodes}, actual_baseline={cluster_state.baseline}]"
 
-        self.app_dc_1.params = {"cacheName": CACHE_NAME, "from": 0, "to": 200}
-        self.app_dc_2.params = {"cacheName": CACHE_NAME, "from": 0, "to": 200}
+    @staticmethod
+    def _populate_cluster_with_data(cli: IgniteApplicationService, from_idx: int, to_idx: int):
+        cli.java_class_name = GENERATOR_JAVA_CLASS_NAME
 
-        self.app_dc_1.start(clean=False)
-        self.app_dc_2.start(clean=False)
+        cli.params = {"mainDc": DC_1_NAME, "cacheName": CACHE_NAME, "backups": BACKUPS, "from": from_idx, "to": to_idx}
 
-        self.app_dc_1.wait()
-        self.app_dc_2.wait()
+        cli.start()
+        cli.wait()
+        cli.stop()
 
-        self.app_dc_1.stop()
-        self.app_dc_2.stop()
+    @staticmethod
+    def _check_data_accessible(cli: IgniteApplicationService, from_idx: int, to_idx: int):
+        cli.java_class_name = GET_CHECKER_JAVA_CLASS_NAME
 
-    def _check_data_change_access(self):
-        self.app_dc_1.java_class_name = PUT_CHECKER_JAVA_CLASS_NAME
-        self.app_dc_2.java_class_name = PUT_CHECKER_JAVA_CLASS_NAME
+        cli.params = {"cacheName": CACHE_NAME, "from": from_idx, "to": to_idx}
 
-        self.app_dc_1.params = {"cacheName": CACHE_NAME, "expectAdmissible": True}
-        self.app_dc_2.params = {"cacheName": CACHE_NAME, "expectAdmissible": False}
+        cli.start(clean=False)
+        cli.wait()
+        cli.stop()
 
-        self.app_dc_1.start(clean=False)
-        self.app_dc_2.start(clean=False)
+    @staticmethod
+    def _check_client_data_change_access(cli: IgniteApplicationService, expect_admissible: bool):
+        cli.java_class_name = PUT_CHECKER_JAVA_CLASS_NAME
 
-        self.app_dc_1.wait()
-        self.app_dc_2.wait()
+        cli.params = {"cacheName": CACHE_NAME, "expectAdmissible": expect_admissible}
 
-        self.app_dc_1.stop()
-        self.app_dc_2.stop()
+        cli.start(clean=False)
+        cli.wait()
+        cli.stop()
 
     def assert_cross_dc_distribution_by_attribute(self, distribution, dc_attr, expected_dcs, owning_only=True):
         """
