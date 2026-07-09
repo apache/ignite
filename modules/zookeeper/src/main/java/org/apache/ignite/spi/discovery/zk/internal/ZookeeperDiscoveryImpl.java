@@ -66,6 +66,7 @@ import org.apache.ignite.internal.OperationContextMessage;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
@@ -1168,6 +1169,18 @@ public class ZookeeperDiscoveryImpl {
         catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to marshal node security credentials: " + node.id(), e);
         }
+    }
+
+    /**
+     * Sends from-Ignite custom event, not Zookeeper-related. Is aware of distributed {@link OperationContext}.
+     *
+     * @see ZkCustomEventMessage
+     */
+    public void sendExternalCustomMessage(DiscoverySpiCustomMessage msg) {
+        // Holds the distributed operation context.
+        msg = new ZkCustomEventMessage(msg, opCtxDispatcher.collectDistributedAttributes());
+
+        sendCustomMessage(msg);
     }
 
     /**
