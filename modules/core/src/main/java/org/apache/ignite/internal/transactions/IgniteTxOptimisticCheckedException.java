@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.transactions;
 
-import org.apache.ignite.internal.ExpectedFailure;
+import org.apache.ignite.internal.util.future.GridCompoundFuture.SkipLoggingException;
 
 /**
  * Exception thrown whenever grid transactions fail optimistically.
  */
-public class IgniteTxOptimisticCheckedException extends TransactionCheckedException implements ExpectedFailure {
+public class IgniteTxOptimisticCheckedException extends TransactionCheckedException implements SkipLoggingException {
     /** */
     private static final long serialVersionUID = 0L;
 

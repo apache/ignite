@@ -26,7 +26,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.ExpectedFailure;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.util.CommonUtils;
@@ -116,7 +115,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
         }
         catch (IgniteCheckedException e) {
             if (!processFailure(e, fut)) {
-                if (!(e instanceof ExpectedFailure)) {
+                if (!(e instanceof SkipLoggingException)) {
                     if (e instanceof NodeStoppingException)
                         logDebug(logger(), "Failed to execute compound future reducer, node stopped.");
                     else
@@ -418,5 +417,10 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
             "futs",
             F.viewReadOnly(futures(), (IgniteInternalFuture<T> f) -> Boolean.toString(f.isDone()))
         );
+    }
+
+    /** */
+    public interface SkipLoggingException {
+        // No-op marker interface.
     }
 }
