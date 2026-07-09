@@ -33,7 +33,8 @@ import org.jetbrains.annotations.Nullable;
  * {@link TcpDiscoveryAbstractMessage#opCtxMsg} while we do not use a common base class for all the Zookeeper messages.</p>
  *
  * <p>NOTE: The difference is also the limitation on message type. In {@link TcpDiscoverySpi} we transfer distributed
- * {@link OperationContext} with all the messages. In {@link ZookeeperDiscoverySpi} with {@link DiscoverySpiCustomMessage} only.</p>
+ * {@link OperationContext} with all the messages. In {@link ZookeeperDiscoverySpi} with from-Ignite
+ * {@link DiscoverySpiCustomMessage} only.</p>
  *
  * @see OperationContextDispatcher
  * @see ZookeeperDiscoverySpi#sendCustomEvent(DiscoverySpiCustomMessage)
