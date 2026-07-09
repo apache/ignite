@@ -132,7 +132,7 @@ public class GridCacheReturn implements Message, CacheIdAware {
                 for (CacheInvokeDirectResult res : invokeResCol) {
                     CacheInvokeResult<?> res0 = res.error() == null ?
                         CacheInvokeResult.fromResult(ctx.cacheObjectContext().unwrapBinaryIfNeeded(res.result(), true, false, null)) :
-                        CacheInvokeResult.fromError(res.error());
+                        CacheInvokeResult.fromError(CU.prepareEntryProcessorError(res.error()));
 
                     map0.put(ctx.cacheObjectContext().unwrapBinaryIfNeeded(res.key(), true, false, null), res0);
                 }
