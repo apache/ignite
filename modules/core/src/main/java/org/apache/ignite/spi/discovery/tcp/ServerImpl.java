@@ -95,7 +95,6 @@ import org.apache.ignite.internal.processors.tracing.SpanTags;
 import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessage;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesTable;
-import org.apache.ignite.internal.thread.context.DistributedOperationContextManager;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.GridBoundedLinkedHashSet;
@@ -3019,7 +3018,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (!fromSocket)
-                msg.opCtxMsg = DistributedOperationContextManager.instance().collectDistributedAttributes();
+                msg.opCtxMsg = operationCtxDispatcher.collectDistributedAttributes();
 
             if (msg instanceof TraceableMessage tMsg) {
 
@@ -3291,7 +3290,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (msg == WAKEUP)
                 return;
 
-            try (Scope ignored = DistributedOperationContextManager.instance().restoreDistributedAttributes(msg.opCtxMsg)) {
+            try (Scope ignored = operationCtxDispatcher.restoreDistributedAttributes(msg.opCtxMsg)) {
                 processMessage0(msg);
             }
         }

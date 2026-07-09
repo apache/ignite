@@ -101,7 +101,7 @@
         <maven.flatten.plugin.version>1.7.3</maven.flatten.plugin.version>
         <maven.flatten.file.name>pom-installed.xml</maven.flatten.file.name>
         <maven.model.version>3.8.9</maven.model.version>
-        <checkstyle.puppycrawl.version>8.45</checkstyle.puppycrawl.version>
+        <checkstyle.puppycrawl.version>12.3.1</checkstyle.puppycrawl.version>
         <mockito.version>5.21.0</mockito.version>
         <mysql.connector.version>8.0.30</mysql.connector.version>
         <postgres.connector.version>42.7.3</postgres.connector.version>
@@ -860,6 +860,7 @@
                                         <!-- RAT 0.17 bug: creates temp dir NameSet* in basedir for case-sensitivity check -->
                                         <inputExclude>NameSet*</inputExclude>
                                         <inputExclude>**/.gitignore</inputExclude>
+                                        <inputExclude>**/.git</inputExclude>
                                         <inputExclude>**/.asf.yaml</inputExclude>
                                         <inputExclude>.travis.yml</inputExclude>
                                         <inputExclude>.github/PULL_REQUEST_TEMPLATE.md</inputExclude>

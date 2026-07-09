@@ -102,7 +102,6 @@ import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.processors.tracing.SpanTags;
-import org.apache.ignite.internal.thread.context.DistributedOperationContextManager;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -138,7 +137,6 @@ import org.apache.ignite.spi.communication.tcp.internal.CommunicationListenerEx;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectionRequestor;
 import org.apache.ignite.spi.communication.tcp.internal.TcpConnectionRequestDiscoveryMessage;
 import org.apache.ignite.spi.communication.tcp.internal.TcpInverseConnectionResponseMessage;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -461,7 +459,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                 try {
                     GridIoMessage msg0 = (GridIoMessage)msg;
 
-                    try (Scope ignored = DistributedOperationContextManager.instance().restoreDistributedAttributes(msg0.opCtxMsg)) {
+                    try (Scope ignored = ctx.operationContextDispatcher().restoreDistributedAttributes(msg0.opCtxMsg)) {
                         onMessage0(nodeId, msg0, msgC);
                     }
                 }
@@ -1318,7 +1316,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
                     assert obj != null;
 
-                    invokeListener(msg.policy(), lsnr, nodeId, obj, secSubjId(msg));
+                    invokeListener(msg.policy(), lsnr, nodeId, obj);
                 }
                 finally {
                     threadProcessingMessage(false, null);
@@ -1456,7 +1454,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
         assert obj != null;
 
-        invokeListener(msg.policy(), lsnr, nodeId, obj, secSubjId(msg));
+        invokeListener(msg.policy(), lsnr, nodeId, obj);
     }
 
     /**
@@ -1820,9 +1818,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
      * @param lsnr Listener.
      * @param nodeId Node ID.
      * @param msg Message.
-     * @param secSubjId Security subject that will be used to open a security session.
      */
-    private void invokeListener(Byte plc, GridMessageListener lsnr, UUID nodeId, Object msg, UUID secSubjId) {
+    private void invokeListener(Byte plc, GridMessageListener lsnr, UUID nodeId, Object msg) {
         MTC.span().addLog(() -> "Invoke listener");
 
         Byte oldPlc = CUR_PLC.get();
@@ -1832,15 +1829,26 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         if (change)
             CUR_PLC.set(plc);
 
-        UUID newSecSubjId = secSubjId != null ? secSubjId : nodeId;
-
-        try (Scope ignored = ctx.security().withContext(newSecSubjId)) {
+        try (Scope ignored = withRemoteSecurityContext(nodeId)) {
             lsnr.onMessage(nodeId, msg, plc);
         }
         finally {
             if (change)
                 CUR_PLC.set(oldPlc);
         }
+    }
+
+    /** */
+    private Scope withRemoteSecurityContext(UUID nodeId) {
+        // No remote Security Context has been attached to the message processing thread so far.
+        // This means that the message was sent as part of an operation initiated by the sender node.
+        if (ctx.security().isDefaultContext())
+            return ctx.security().withContext(nodeId);
+
+        // Verify that the Security Context currently attached to the thread is valid.
+        ctx.security().securityContext();
+
+        return Scope.NOOP_SCOPE;
     }
 
     /**
@@ -2030,11 +2038,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         return ctx.config().getFailureDetectionTimeout();
     }
 
-    /**
-     * @return One of two message wrappers. The first is {@link GridIoMessage}, the second is secured version {@link
-     * GridIoSecurityAwareMessage}.
-     */
-    private @NotNull GridIoMessage createGridIoMessage(
+    /** @return A {@link GridIoMessage} wrapper for {@code msg}. */
+    public GridIoMessage createGridIoMessage(
         Object topic,
         Message msg,
         byte plc,
@@ -2044,18 +2049,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
     ) {
         GridIoMessage res;
 
-        if (ctx.security().enabled()) {
-            UUID secSubjId = null;
+        res = new GridIoMessage(plc, topic, msg, ordered, timeout, skipOnTimeout);
 
-            if (!ctx.security().isDefaultContext())
-                secSubjId = ctx.security().securityContext().subject().id();
-
-            res = new GridIoSecurityAwareMessage(secSubjId, plc, topic, msg, ordered, timeout, skipOnTimeout);
-        }
-        else
-            res = new GridIoMessage(plc, topic, msg, ordered, timeout, skipOnTimeout);
-
-        res.opCtxMsg = DistributedOperationContextManager.instance().collectDistributedAttributes();
+        res.opCtxMsg = ctx.operationContextDispatcher().collectDistributedAttributes();
 
         return res;
     }
@@ -3813,7 +3809,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
                         MTC.span().addTag(SpanTags.MESSAGE, () -> traceName(fmc.message));
 
-                        invokeListener(plc, lsnr, nodeId, mc.message.message(), secSubjId(mc.message));
+                        invokeListener(plc, lsnr, nodeId, mc.message.message());
                     }
                     finally {
                         if (mc.closure != null)
@@ -4240,19 +4236,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
             return latencyLimit / (1000 * (resLatency.length - 1));
         }
-    }
-
-    /**
-     * @return Security subject id.
-     */
-    private UUID secSubjId(GridIoMessage msg) {
-        if (ctx.security().enabled()) {
-            assert msg instanceof GridIoSecurityAwareMessage;
-
-            return ((GridIoSecurityAwareMessage)msg).securitySubjectId();
-        }
-
-        return null;
     }
 
     /**

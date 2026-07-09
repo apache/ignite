@@ -462,6 +462,9 @@ public class MessageSerializerGenerator {
             else if (assignableFrom(type, type("org.apache.ignite.lang.IgniteProductVersion")))
                 returnFalseIfWriteFailed(write, field, "writer.writeIgniteProductVersion", getExpr);
 
+            else if (assignableFrom(type, type("org.apache.ignite.internal.processors.cache.version.GridCacheVersion")))
+                returnFalseIfWriteFailed(write, field, "writer.writeGridCacheVersion", getExpr);
+
             else if (assignableFrom(type, type(MESSAGE_INTERFACE))) {
                 if (sameType(type, COMPRESSED_MESSAGE_CLASS))
                     throw new IllegalArgumentException(COMPRESSED_MSG_ERROR);
@@ -691,6 +694,9 @@ public class MessageSerializerGenerator {
             else if (assignableFrom(type, type("org.apache.ignite.lang.IgniteProductVersion")))
                 returnFalseIfReadFailed(field, "reader.readIgniteProductVersion");
 
+            else if (assignableFrom(type, type("org.apache.ignite.internal.processors.cache.version.GridCacheVersion")))
+                returnFalseIfReadFailed(field, "reader.readGridCacheVersion");
+
             else if (assignableFrom(type, type(MESSAGE_INTERFACE))) {
                 if (sameType(type, COMPRESSED_MESSAGE_CLASS))
                     throw new IllegalArgumentException(COMPRESSED_MSG_ERROR);
@@ -832,6 +838,9 @@ public class MessageSerializerGenerator {
 
             if (sameType(type, "org.apache.ignite.lang.IgniteUuid"))
                 return "IGNITE_UUID";
+
+            if (sameType(type, "org.apache.ignite.internal.processors.cache.version.GridCacheVersion"))
+                return "GRID_CACHE_VERSION";
 
             if (sameType(type, "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion"))
                 return "AFFINITY_TOPOLOGY_VERSION";

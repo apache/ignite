@@ -22,13 +22,13 @@ import java.util.Iterator;
 import java.util.concurrent.Callable;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
-import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -36,10 +36,13 @@ import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionHeuristicException;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
+
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Indexing Spi transactional query test
@@ -75,7 +78,7 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
 
         assertNotNull(client.cache(DEFAULT_CACHE_NAME));
 
-        doTestIndexingSpiWithTx(client, 0);
+        doTestIndexingSpiWithTx(client, 0, false);
     }
 
     /** */
@@ -83,7 +86,7 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
     public void testIndexingSpiWithTxLocal() throws Exception {
         IgniteEx ignite = (IgniteEx)primaryNode(0, DEFAULT_CACHE_NAME);
 
-        doTestIndexingSpiWithTx(ignite, 0);
+        doTestIndexingSpiWithTx(ignite, 0, true);
     }
 
     /** */
@@ -91,13 +94,13 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
     public void testIndexingSpiWithTxNotLocal() throws Exception {
         IgniteEx ignite = (IgniteEx)primaryNode(0, DEFAULT_CACHE_NAME);
 
-        doTestIndexingSpiWithTx(ignite, 1);
+        doTestIndexingSpiWithTx(ignite, 1, false);
     }
 
     /**
      * @throws Exception If failed.
      */
-    private void doTestIndexingSpiWithTx(IgniteEx ignite, int key) throws Exception {
+    private void doTestIndexingSpiWithTx(IgniteEx ignite, int key, boolean heuristic) throws Exception {
         final IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         final IgniteTransactions txs = ignite.transactions();
@@ -107,7 +110,7 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
                 System.out.println("Run in transaction: " + concurrency + " " + isolation);
 
                 GridTestUtils.assertThrowsWithCause(new Callable<Void>() {
-                    @Override public Void call() throws Exception {
+                    @Override public Void call() {
                         Transaction tx;
 
                         try (Transaction tx0 = tx = txs.txStart(concurrency, isolation)) {
@@ -120,9 +123,20 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
 
                         return null;
                     }
-                }, IgniteTxHeuristicCheckedException.class);
+                }, heuristic ? TransactionHeuristicException.class : IgniteException.class);
 
-                checkFutures();
+                // Cause asynced salvage in action
+                assertTrue(
+                    waitForCondition(() -> {
+                        try {
+                            checkFutures();
+                            return true;
+                        }
+                        catch (AssertionError err) {
+                            return false;
+                        }
+                    }, 5_000)
+                );
             }
         }
     }

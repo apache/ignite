@@ -1484,7 +1484,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param req Request.
      * @return Result future.
      */
-    private IgniteInternalFuture<Message> prepareMasterKeyChange(MasterKeyChangeRequest req) {
+    private IgniteInternalFuture<Message> prepareMasterKeyChange(UUID ignored, MasterKeyChangeRequest req) {
         if (masterKeyChangeRequest != null) {
             return new GridFinishedFuture<>(new IgniteException("Master key change was rejected. " +
                 "The previous change was not completed."));
@@ -1547,7 +1547,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param req Request.
      * @return Result future.
      */
-    private IgniteInternalFuture<Message> performMasterKeyChange(MasterKeyChangeRequest req) {
+    private IgniteInternalFuture<Message> performMasterKeyChange(UUID ignored, MasterKeyChangeRequest req) {
         if (masterKeyChangeRequest == null || !masterKeyChangeRequest.equals(req))
             return new GridFinishedFuture<>(new IgniteException("Unknown master key change was rejected."));
 

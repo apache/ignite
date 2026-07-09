@@ -34,6 +34,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheLockCandidates;
@@ -154,8 +155,11 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
     @GridToStringExclude
     private LockTimeoutObject timeoutObj;
 
-    /** Lock timeout. */
+    /** Transaction timeout. */
     private final long timeout;
+
+    /** Lock wait timeout. */
+    private final long waitTimeout;
 
     /** Transaction. */
     private final GridDhtTxLocalAdapter tx;
@@ -201,7 +205,8 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
      * @param cnt Number of keys to lock.
      * @param read Read flag.
      * @param needReturnVal Need return value flag.
-     * @param timeout Lock acquisition timeout.
+     * @param timeout Transaction timeout.
+     * @param waitTimeout Lock wait timeout.
      * @param tx Transaction.
      * @param threadId Thread ID.
      * @param accessTtl TTL for read operation.
@@ -219,6 +224,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         boolean read,
         boolean needReturnVal,
         long timeout,
+        long waitTimeout,
         GridDhtTxLocalAdapter tx,
         long threadId,
         long createTtl,
@@ -241,6 +247,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         this.read = read;
         this.needReturnVal = needReturnVal;
         this.timeout = timeout;
+        this.waitTimeout = waitTimeout;
         this.tx = tx;
         this.createTtl = createTtl;
         this.accessTtl = accessTtl;
@@ -435,18 +442,21 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
             threadId,
             lockVer,
             null,
-            timeout,
+            lockTimeout(),
             /*reenter*/false,
             inTx(),
             implicitSingle(),
             false
         );
 
-        if (c == null && timeout < 0) {
+        if (c == null && lockTimeout() < 0) {
             if (log.isDebugEnabled())
                 log.debug("Failed to acquire lock with negative timeout: " + entry);
 
-            onFailed();
+            if (CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout))
+                onComplete(false, false, false, false);
+            else
+                onFailed();
 
             return null;
         }
@@ -631,10 +641,13 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                 try {
                     CacheLockCandidates owners = entry.readyLock(lockVer);
 
-                    if (timeout < 0) {
+                    if (lockTimeout() < 0) {
                         if (owners == null || !owners.hasCandidate(lockVer)) {
                             // We did not send any requests yet.
-                            onFailed();
+                            if (CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout))
+                                onComplete(false, false, false, false);
+                            else
+                                onFailed();
 
                             return;
                         }
@@ -749,6 +762,9 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                     this.err = err;
             }
 
+            if (!success && err == null && CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout))
+                return onComplete(false, false, false, false);
+
             return onComplete(success, err instanceof NodeStoppingException, true);
         }
     }
@@ -762,13 +778,26 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
      * @return {@code True} if complete by this operation.
      */
     private synchronized boolean onComplete(boolean success, boolean stopping, boolean unlock) {
+        return onComplete(success, stopping, unlock, !success);
+    }
+
+    /**
+     * Completeness callback.
+     *
+     * @param success {@code True} if lock was acquired.
+     * @param stopping {@code True} if node is stopping.
+     * @param unlock {@code True} if locks should be released.
+     * @param rollback {@code True} if should rollback tx on failure.
+     * @return {@code True} if complete by this operation.
+     */
+    private synchronized boolean onComplete(boolean success, boolean stopping, boolean unlock, boolean rollback) {
         if (log.isDebugEnabled())
             log.debug("Received onComplete(..) callback [success=" + success + ", fut=" + this + ']');
 
         if (isDone())
             return false;
 
-        if (!success && !stopping && unlock)
+        if (!success && !stopping && unlock && rollback)
             undoLocks(true);
 
         boolean set = false;
@@ -778,7 +807,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
             set = cctx.tm().setTxTopologyHint(tx.topologyVersionSnapshot());
 
-            if (success)
+            if (!rollback)
                 tx.clearLockFuture(this);
         }
 
@@ -821,7 +850,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
             readyLocks();
 
-            if (timeout > 0 && !isDone()) { // Prevent memory leak if future is completed by call to readyLocks.
+            if (lockTimeout() > 0 && !isDone()) { // Prevent memory leak if future is completed by call to readyLocks.
                 timeoutObj = new LockTimeoutObject();
 
                 cctx.time().addTimeoutObject(timeoutObj);
@@ -1166,6 +1195,13 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
     }
 
     /**
+     * @return Timeout value for this lock future.
+     */
+    private long lockTimeout() {
+        return CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout) ? waitTimeout : timeout;
+    }
+
+    /**
      * Lock request timeout object.
      */
     private class LockTimeoutObject extends GridTimeoutObjectAdapter {
@@ -1173,7 +1209,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
          * Default constructor.
          */
         LockTimeoutObject() {
-            super(timeout);
+            super(lockTimeout());
         }
 
         /** {@inheritDoc} */
@@ -1198,9 +1234,13 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                 clear();
             }
 
-            boolean releaseLocks = !(inTx() && cctx.tm().deadlockDetectionEnabled());
+            if (CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout))
+                onComplete(false, false, false, false);
+            else {
+                boolean releaseLocks = !(inTx() && cctx.tm().deadlockDetectionEnabled());
 
-            onComplete(false, false, releaseLocks);
+                onComplete(false, false, releaseLocks);
+            }
         }
 
         /** {@inheritDoc} */
@@ -1219,7 +1259,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
             sb.append("Transaction tx=").append(tx.getClass().getSimpleName());
             sb.append(" [xid=").append(tx.xid());
             sb.append(", xidVer=").append(tx.xidVersion());
-            sb.append(", nearXid=").append(tx.nearXidVersion().asIgniteUuid());
+            sb.append(", nearXid=").append(BinaryUtils.asIgniteUuid(tx.nearXidVersion()));
             sb.append(", nearXidVer=").append(tx.nearXidVersion());
             sb.append(", nearNodeId=").append(tx.nearNodeId());
             sb.append(", label=").append(tx.label());
@@ -1245,7 +1285,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                                 sb.append("key=").append(key).append(", owner=");
                                 sb.append("[xid=").append(itx.xid()).append(", ");
                                 sb.append("xidVer=").append(itx.xidVersion()).append(", ");
-                                sb.append("nearXid=").append(itx.nearXidVersion().asIgniteUuid()).append(", ");
+                                sb.append("nearXid=").append(BinaryUtils.asIgniteUuid(itx.nearXidVersion())).append(", ");
                                 sb.append("nearXidVer=").append(itx.nearXidVersion()).append(", ");
                                 sb.append("label=").append(itx.label()).append(", ");
                                 sb.append("nearNodeId=").append(candidate.otherNodeId()).append("]");
