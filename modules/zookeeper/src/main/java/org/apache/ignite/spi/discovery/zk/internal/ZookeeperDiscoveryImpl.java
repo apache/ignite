@@ -3528,7 +3528,7 @@ public class ZookeeperDiscoveryImpl {
      * @param evtData Event data.
      * @param msg Custom message to process. Can be a {@link ZkCustomEventMessage}.
      */
-    private void notifyCustomEvent(ZkDiscoveryCustomEventData evtData, DiscoverySpiCustomMessage msg) {
+    private void notifyCustomEvent(final ZkDiscoveryCustomEventData evtData, DiscoverySpiCustomMessage msg) {
         OperationContextMessage opCtxMsg = null;
 
         if (msg instanceof ZkCustomEventMessage) {
@@ -3541,11 +3541,11 @@ public class ZookeeperDiscoveryImpl {
         if (log.isDebugEnabled())
             log.debug(" [topVer=" + evtData.topologyVersion() + ", msg=" + msg + ']');
 
-        ZookeeperClusterNode sndNode = rtState.top.nodesById.get(evtData.sndNodeId);
+        final ZookeeperClusterNode sndNode = rtState.top.nodesById.get(evtData.sndNodeId);
 
         assert sndNode != null : evtData;
 
-        List<ClusterNode> topSnapshot = rtState.top.topologySnapshot();
+        final List<ClusterNode> topSnapshot = rtState.top.topologySnapshot();
 
         IgniteFuture<?> fut;
 
