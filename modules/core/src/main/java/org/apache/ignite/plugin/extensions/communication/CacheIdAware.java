@@ -17,7 +17,10 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
-/** Implemented by messages that carry a cache ID identifying the target cache. */
+/**
+ * Implemented by messages targeting a specific cache. The cache ID lets the generated marshaller and deployer resolve
+ * the cache object context used to (un)marshal and deploy the message's cache objects.
+ */
 public interface CacheIdAware {
     /** @return Cache ID identifying the target cache. */
     public int cacheId();

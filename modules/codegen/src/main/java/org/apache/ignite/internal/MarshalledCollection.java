@@ -22,10 +22,15 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/** Marks a {@code Collection} field whose wire form is a companion {@code @Order} array field named by {@link #value()}. */
+/**
+ * Links a {@code Collection} field to its marshalled companion {@code @Order} array, held in the field named by
+ * {@link #value()}.
+ *
+ * @see Order
+ */
 @Retention(RetentionPolicy.CLASS)
 @Target(ElementType.FIELD)
 public @interface MarshalledCollection {
-    /** Name of the {@code @Order} array field that holds the elements. */
+    /** Name of the linked {@code @Order} array field that holds the elements. */
     String value();
 }

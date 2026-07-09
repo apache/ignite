@@ -23,14 +23,14 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.managers.communication.UnknownMessageException;
 
 /**
- * Base class for all communication messages.
+ * Base type for all messages sent between nodes, both over the communication SPI and via discovery.
  * <p>
- * Wire fields are declared by annotating instance fields; {@link org.apache.ignite.internal.MessageProcessor} then
+ * Serialized fields are declared by annotating instance fields; {@link org.apache.ignite.internal.MessageProcessor} then
  * generates the serializer, so implementations should not hand-write {@code writeTo}/{@code readFrom}. Available
  * field annotations (see each annotation's javadoc for details):
  * <ul>
- *     <li>{@link org.apache.ignite.internal.Order @Order} — an ordered wire field (the basic building block);</li>
- *     <li>{@link org.apache.ignite.internal.Compress @Compress} — compress the field's wire form;</li>
+ *     <li>{@link org.apache.ignite.internal.Order @Order} — an ordered serialized field (the basic building block);</li>
+ *     <li>{@link org.apache.ignite.internal.Compress @Compress} — compress the field's serialized form;</li>
  *     <li>{@link org.apache.ignite.internal.NioField @NioField} — a low-level NIO field;</li>
  *     <li>{@link org.apache.ignite.internal.CustomMapper @CustomMapper} — map the field via a custom mapper;</li>
  *     <li>{@link org.apache.ignite.internal.Marshalled @Marshalled} /
@@ -47,7 +47,7 @@ public interface Message {
     /** Registry of message class to direct type mappings, populated during factory initialization. */
     Map<Class<?>, Short> REGISTRATIONS = new ConcurrentHashMap<>();
 
-    /** Per-class cache over {@link #REGISTRATIONS}; keeps {@link #directType()} off the hash lookup on the hot path. */
+    /** Per-class cache over {@link #REGISTRATIONS}; keeps {@link #directType()} off the map lookup done for every sent message. */
     ClassValue<Short> DIRECT_TYPES = new ClassValue<>() {
         @Override protected Short computeValue(Class<?> type) {
             Short directType = REGISTRATIONS.get(type);

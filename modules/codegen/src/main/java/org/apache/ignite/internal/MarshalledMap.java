@@ -22,7 +22,11 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/** Marks a {@code Map} field whose wire form is a pair of {@code @Order} companion fields: {@link #keys()} and {@link #values()}. */
+/**
+ * Links a {@code Map} field to its marshalled companion {@code @Order} fields: {@link #keys()} and {@link #values()}.
+ *
+ * @see Order
+ */
 @Retention(RetentionPolicy.CLASS)
 @Target(ElementType.FIELD)
 public @interface MarshalledMap {

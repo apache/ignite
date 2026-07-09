@@ -23,7 +23,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Marks a {@code Collection} field of arbitrary (non-{@code Message}) objects whose wire form is a companion
+ * Marks a {@code Collection} field of arbitrary (non-{@code Message}) objects whose marshalled form is a companion
  * {@code @Order Collection<byte[]>} field named by {@link #value()}: each element is marshalled to its own
  * {@code byte[]}, so elements that need different deployment class loaders survive. Use {@code @MarshalledCollection}
  * instead when the elements are {@code Message}s.

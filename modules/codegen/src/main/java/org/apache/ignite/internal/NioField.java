@@ -23,9 +23,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Marks a {@code Message}-typed {@link Order} field that is unmarshalled early — on the NIO (read) thread —
- * instead of being deferred to the worker thread with the rest of the message. Used for routing headers such as
- * the topic, which must be read before the message can be dispatched to a pool.
+ * Marks an {@link Order} field, of {@code Message} type, that is read on the network (NIO) thread rather than a
+ * worker thread. This is for routing headers such as the topic, which must be known before the message can be
+ * dispatched to a pool.
  */
 @Retention(RetentionPolicy.CLASS)
 @Target(ElementType.FIELD)
