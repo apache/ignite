@@ -81,6 +81,7 @@ class JmxClient:
 
         return os.path.join(f"java {extra_flag} -jar {self.install_root}/jmxterm.jar -v silent -n")
 
+    @memoize
     def find_mbean(self, pattern, negative_pattern=None, domain='org.apache'):
         """
         Find mbean by specified pattern and domain on node.
@@ -179,13 +180,6 @@ class DiscoveryInfo:
         val = self.__find__("intOrder=(\\d+),")
         return int(val) if val else -1
 
-    @property
-    def is_coordinator(self):
-        """
-        :return: True if node is coordinator. False otherwise.
-        """
-        return self.coordinator == self.node_id
-
     def __find__(self, pattern):
         res = re.search(pattern, self._local_raw)
         return res.group(1) if res else None
@@ -195,6 +189,7 @@ class IgniteJmxMixin:
     """
     Mixin to IgniteService node, exposing useful properties, obtained from JMX.
     """
+    @memoize
     def jmx_client(self):
         """
         :return: JmxClient instance.
@@ -225,6 +220,7 @@ class IgniteJmxMixin:
         """
         return self.jmx_client().find_mbean('.*group=Kernal.*name=IgniteKernal')
 
+    @memoize
     def disco_mbean(self):
         """
         :return: DiscoverySpi MBean.
