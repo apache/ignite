@@ -88,6 +88,12 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
     /** */
     private volatile boolean isVerUpgradeEnabled;
 
+    /**
+     * We rely on the guarantee that this varable is only accessed from the Discovery thread.
+     * Therefore, synchronization is not required.
+     */
+    @Nullable private volatile UUID curFinalizeProcId;
+
     /** */
     public RollingUpgradeProcessor(GridKernalContext ctx) {
         this(
@@ -216,6 +222,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
         RollingUpgradeNodeData gridData = data.commonData();
 
         isVerUpgradeEnabled = gridData.isVersionUpgradeEnabled;
+        curFinalizeProcId = gridData.curFinalizeProcId;
         isNodeFenceActive = gridData.isNodeFenceActive;
 
         featureMgr.onGridDataReceived(gridData.activeFeatures);
@@ -342,7 +349,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
     /** */
     private RollingUpgradeNodeData collectRollingUpgradeNodeData() {
-        return new RollingUpgradeNodeData(isVerUpgradeEnabled, isNodeFenceActive, featureMgr.activeFeatures());
+        return new RollingUpgradeNodeData(isVerUpgradeEnabled, curFinalizeProcId, isNodeFenceActive, featureMgr.activeFeatures());
     }
 
     /** */
@@ -407,12 +414,6 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
         /** */
         private final DistributedProcess<Message, Message> completePhase;
 
-        /**
-         * We rely on the guarantee that {@code activeProcId} is only accessed from the Discovery thread.
-         * Therefore, synchronization is not required.
-         */
-        @Nullable private volatile UUID activeProcId;
-
         /** */
         public ClusterVersionFinalizationProcess() {
             preparePhase = new DistributedProcess<>(
@@ -447,37 +448,37 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
             if (err != null)
                 U.error(log, "Cluster version finalization process failed [procId=" + reqId + ']', err);
 
-            if (reqId.equals(activeProcId))
-                activeProcId = null;
+            if (reqId.equals(curFinalizeProcId))
+                curFinalizeProcId = null;
 
             super.finishProcess(reqId, err);
         }
 
         /** {@inheritDoc} */
-        @Override protected void abort(String reasonMsg) {
-            U.warn(log, "Cluster version finalization process has been aborted [procId=" + activeProcId + ", reason=" + reasonMsg + ']');
+        @Override protected void abort(String reason) {
+            U.warn(log, "Cluster version finalization process has been aborted [procId=" + curFinalizeProcId + ", reason=" + reason + ']');
 
-            activeProcId = null;
+            curFinalizeProcId = null;
             isNodeFenceActive = false;
 
-            super.abort(reasonMsg);
+            super.abort(reason);
         }
 
         /** */
         boolean isInProgress() {
-            return isVerUpgradeEnabled && activeProcId != null;
+            return isVerUpgradeEnabled && curFinalizeProcId != null;
         }
 
         /** */
         private IgniteInternalFuture<Message> executePreparePhase(UUID reqId, Message req) {
-            if (activeProcId != null) {
+            if (curFinalizeProcId != null) {
                 U.error(log, "Failed to handle cluster version finalization request. Another process is " +
-                    "already in progress [curProcId=" + reqId + ", activeProcId=" + activeProcId + ']');
+                    "already in progress [curProcId=" + reqId + ", activeProcId=" + curFinalizeProcId + ']');
 
                 return new GridFinishedFuture<>(new IgniteException("Cluster version finalization process is already in progress"));
             }
 
-            activeProcId = reqId;
+            curFinalizeProcId = reqId;
 
             synchronized (topGuard) {
                 Set<IgniteProductVersion> distinctNodeVersions = distinctClusterProductVersions();
@@ -499,18 +500,18 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
         /** */
         private void finishPreparePhase(UUID reqId, Map<UUID, Message> responses, Map<UUID, Throwable> errors) {
             if (!F.isEmpty(errors)) {
-                if (reqId.equals(activeProcId))
+                if (reqId.equals(curFinalizeProcId))
                     isNodeFenceActive = false;
 
                 finishProcess(reqId, firstError(errors));
             }
-            else if (reqId.equals(activeProcId) && U.isLocalNodeCoordinator(ctx.discovery()))
+            else if (reqId.equals(curFinalizeProcId) && U.isLocalNodeCoordinator(ctx.discovery()))
                 completePhase.start(reqId, null);
         }
 
         /** */
         private IgniteInternalFuture<Message> executeCompletePhase(UUID reqId, Message req) {
-            if (!reqId.equals(activeProcId)) {
+            if (!reqId.equals(curFinalizeProcId)) {
                 // This condition is guaranteed to occur only when cluster version finalization is aborted
                 // after the prepare phase has completed successfully but before the completion phase begins.
                 // Aborting cluster version finalization is mutually exclusive with the finalization completion

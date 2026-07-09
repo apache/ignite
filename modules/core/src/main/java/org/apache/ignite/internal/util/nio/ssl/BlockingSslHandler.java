@@ -28,8 +28,8 @@ import javax.net.ssl.SSLEngineResult.Status;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.nio.GridNioException;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.FINISHED;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NEED_TASK;
@@ -171,7 +171,7 @@ public class BlockingSslHandler {
                 case NEED_WRAP: {
                     // If the output buffer has remaining data, clear it.
                     if (outNetBuf.hasRemaining())
-                        U.warn(log, "Output net buffer has unsent bytes during handshake (will clear). ");
+                        CommonUtils.warn(log, "Output net buffer has unsent bytes during handshake (will clear). ");
 
                     outNetBuf.clear();
 
@@ -301,7 +301,7 @@ public class BlockingSslHandler {
 
                 // If we received close_notify but not all bytes has been read by SSL engine, print a warning.
                 if (buf.hasRemaining())
-                    U.warn(log, "Got unread bytes after receiving close_notify message (will ignore).");
+                    CommonUtils.warn(log, "Got unread bytes after receiving close_notify message (will ignore).");
             }
 
             inNetBuf.clear();
@@ -539,7 +539,7 @@ public class BlockingSslHandler {
      */
     private void writeNetBuffer() throws IgniteCheckedException {
         try {
-            U.writeFully(ch, outNetBuf);
+            CommonUtils.writeFully(ch, outNetBuf);
         }
         catch (IOException e) {
             throw new IgniteCheckedException("Failed to write byte to socket.", e);

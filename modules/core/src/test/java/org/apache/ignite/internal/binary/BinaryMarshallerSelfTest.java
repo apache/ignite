@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.io.ByteArrayOutputStream;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -751,6 +752,28 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         assertEquals(DeclaredBodyEnum.TWO.ordinal(), obj.type.ordinal());
         assertEquals(DeclaredBodyEnum.TWO, obj.type);
         assertTrue(obj.type == DeclaredBodyEnum.TWO);
+    }
+
+    /**
+     * Marshalling into an {@link java.io.OutputStream} must produce exactly the same bytes as marshalling into an array.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMarshalToStreamMatchesArray() throws Exception {
+        BinaryMarshaller marsh = binaryMarshaller();
+
+        for (Object obj : new Object[] {null, "string", 42, simpleObject()}) {
+            byte[] arr = marsh.marshal(obj);
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+            marsh.marshal(obj, out);
+
+            assertArrayEquals("Mismatch for " + obj, arr, out.toByteArray());
+
+            assertEquals(obj, marsh.unmarshal(out.toByteArray(), null));
+        }
     }
 
     /**

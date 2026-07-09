@@ -35,6 +35,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.communication.UnknownMessageException;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -43,8 +44,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.makeMessageType;
 
 /**
  * Handles I/O operations between discovery nodes in the cluster. This class encapsulates the socket connection used
@@ -150,7 +149,7 @@ public class TcpDiscoveryIoSession {
             byte b0 = (byte)in.read();
             byte b1 = (byte)in.read();
 
-            short msgType = makeMessageType(b0, b1);
+            short msgType = CommonUtils.makeMessageType(b0, b1);
 
             Message msg;
 
