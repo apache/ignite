@@ -34,7 +34,7 @@ class IgniteApplicationService(IgniteAwareService):
     APP_FINISH_EVT_MSG = "IGNITE_APPLICATION_FINISHED"
     APP_BROKEN_EVT_MSG = "IGNITE_APPLICATION_BROKEN"
 
-    def __init__(self, context, config, java_class_name, num_nodes=1, params="", startup_timeout_sec=60,
+    def __init__(self, context, config, java_class_name=None, num_nodes=1, params="", startup_timeout_sec=60,
                  shutdown_timeout_sec=60, modules=None, main_java_class=SERVICE_JAVA_CLASS_NAME, jvm_opts=None,
                  merge_with_default=True):
         super().__init__(context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, main_java_class,
@@ -43,7 +43,7 @@ class IgniteApplicationService(IgniteAwareService):
         self.java_class_name = java_class_name
         self.params = params
 
-    def await_started(self):
+    def await_started(self, nodes=None):
         super().await_started()
 
         self.__check_status(self.APP_INIT_EVT_MSG, timeout=self.startup_timeout_sec)

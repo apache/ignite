@@ -181,6 +181,83 @@ class ControlUtility:
 
         return re.search(r'/.*.txt', data).group(0)
 
+    def cache_distribution(self, node_id=None, cache_names=None, user_attributes=None):
+        """
+        Prints partition distribution.
+
+        :param node_id: Node id to get distribution for, all nodes if None.
+        :param cache_names: Cache name, or list of cache names, all caches if None.
+        :param user_attributes: Node attribute name or list of names to add to the output
+                                (e.g. "IGNITE_DATA_CENTER_ID").
+        :return: CacheDistribution.
+        """
+        if isinstance(cache_names, str):
+            cache_names = [cache_names]
+
+        if isinstance(user_attributes, str):
+            user_attributes = [user_attributes]
+
+        cmd = f"--cache distribution {node_id if node_id else 'null'}"
+
+        if cache_names:
+            cmd += f" {','.join(cache_names)}"
+
+        if user_attributes:
+            cmd += f" --user-attributes {','.join(user_attributes)}"
+
+        result = self.__run(cmd)
+
+        return self.__parse_cache_distribution(result, user_attributes)
+
+    @staticmethod
+    def __parse_cache_distribution(output, user_attributes=None):
+        group_pattern = re.compile(r"\[next group: id=(?P<group_id>-?\d+), name=(?P<name>[^\]]+)\]")
+
+        # Trailing attribute values appear after nodeAddresses, comma-separated,
+        # in the same order they were passed to --user-attributes.
+        row_pattern = re.compile(r"(?P<group_id>-?\d+),"
+                                 r"(?P<partition>\d+),"
+                                 r"(?P<node_id>[0-9a-fA-F]+),"
+                                 r"(?P<primary>[PB]),"
+                                 r"(?P<state>[A-Z_]+),"
+                                 r"(?P<update_counter>\d+),"
+                                 r"(?P<partition_size>\d+),"
+                                 r"\[(?P<node_addresses>[^\]]*)\]"
+                                 r"(?:,(?P<attr_values>.*))?$")
+
+        groups = {}
+        cur_group = None
+
+        for line in output.splitlines():
+            line = line.strip()
+
+            match = group_pattern.search(line)
+            if match:
+                cur_group = CacheGroupDistribution(group_id=int(match.group("group_id")),
+                                                   name=match.group("name"),
+                                                   partitions={})
+                groups[cur_group.name] = cur_group
+                continue
+
+            match = row_pattern.match(line)
+            if match and cur_group is not None:
+                attrs = {}
+                if user_attributes and match.group("attr_values") is not None:
+                    values = [v.strip() for v in match.group("attr_values").split(",")]
+                    attrs = dict(zip(user_attributes, values))
+
+                copy = PartitionCopy(node_id=match.group("node_id"),
+                                     primary=match.group("primary") == "P",
+                                     state=match.group("state"),
+                                     update_counter=int(match.group("update_counter")),
+                                     partition_size=int(match.group("partition_size")),
+                                     node_addresses=[a.strip() for a in match.group("node_addresses").split(",") if a],
+                                     user_attributes=attrs)
+
+                cur_group.partitions.setdefault(int(match.group("partition")), []).append(copy)
+
+        return CacheDistribution(groups=groups)
+
     def check_consistency(self, args):
         """
         Consistency check.
@@ -518,6 +595,35 @@ class TxVerboseInfo(NamedTuple):
     caches: dict
     cache_groups: dict
     states: list
+
+
+class PartitionCopy(NamedTuple):
+    """
+    Single copy (primary or backup) of a partition on a node.
+    """
+    node_id: str
+    primary: bool
+    state: str
+    update_counter: int
+    partition_size: int
+    node_addresses: list
+    user_attributes: dict
+
+
+class CacheGroupDistribution(NamedTuple):
+    """
+    Distribution of a single cache group: partition id -> list of PartitionCopy.
+    """
+    group_id: int
+    name: str
+    partitions: dict
+
+
+class CacheDistribution(NamedTuple):
+    """
+    Distribution info for all printed cache groups: group name -> CacheGroupDistribution.
+    """
+    groups: dict
 
 
 class ControlUtilityError(RemoteCommandError):
