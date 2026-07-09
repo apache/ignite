@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -111,6 +112,9 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
     /** */
     private final ImmutableBitSet insertFields;
 
+    /** Count of non-technical columns used in MERGE source SELECT sections. */
+    private final int mergeSourceRowFieldCnt;
+
     /** */
     private RelDataType tableRowType;
 
@@ -123,7 +127,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
         Set<String> fields = this.typeDesc.fields().keySet();
 
-        List<CacheColumnDescriptor> descriptors = new ArrayList<>(fields.size() + 2);
+        List<CacheColumnDescriptor> descriptors = new ArrayList<>(fields.size() + 4);
 
         // A _key/_val field is virtual in case there is an alias or a property(es) mapped to the _key/_val field.
         BitSet virtualFields = new BitSet();
@@ -177,6 +181,28 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
             }
         }
 
+        virtualFields.set(descriptors.size());
+        descriptors.add(new TechnicalDescriptor(QueryUtils.VER_FIELD_NAME, GridCacheVersion.class, descriptors.size()) {
+            @Override public Object value(ExecutionContext<?> ectx, GridCacheContext<?, ?> cctx, CacheDataRow src)
+                throws IgniteCheckedException {
+                GridCacheVersion ver = src.version();
+
+                if (ver != null)
+                    return ver;
+
+                CacheDataRow row = cctx.offheap().read(cctx, src.key());
+
+                return row == null ? null : row.version();
+            }
+        });
+
+        virtualFields.set(descriptors.size());
+        descriptors.add(new TechnicalDescriptor(QueryUtils.SRC_FIELD_NAME, Integer.class, descriptors.size()) {
+            @Override public Object value(ExecutionContext<?> ectx, GridCacheContext<?, ?> cctx, CacheDataRow src) {
+                return cctx.cacheId();
+            }
+        });
+
         Map<String, CacheColumnDescriptor> descriptorsMap = U.newHashMap(descriptors.size());
         for (CacheColumnDescriptor descriptor : descriptors)
             descriptorsMap.put(descriptor.name(), descriptor);
@@ -212,6 +238,9 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         this.affFields = ImmutableIntList.copyOf(affFields);
         this.descriptors = descriptors.toArray(DUMMY);
         this.descriptorsMap = descriptorsMap;
+        this.mergeSourceRowFieldCnt = (int)descriptors.stream()
+            .filter(d -> !QueryUtils.isTechnicalFieldNameIgnoreCase(d.name()))
+            .count();
 
         virtualFields.flip(0, descriptors.size());
         insertFields = ImmutableBitSet.fromBitSet(virtualFields);
@@ -287,6 +316,11 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
             return ColumnStrategy.DEFAULT;
 
         return super.generationStrategy(tbl, colIdx);
+    }
+
+    /** */
+    private static boolean isTechnicalColumn(String fieldName) {
+        return QueryUtils.isTechnicalFieldName(fieldName);
     }
 
     /** {@inheritDoc} */
@@ -382,9 +416,12 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
             for (int i = 2; i < descriptors.length; i++) {
                 final CacheColumnDescriptor desc = descriptors[i];
 
+                if (!desc.field() || desc.key())
+                    continue;
+
                 Object fieldVal = hnd.get(i, row);
 
-                if (desc.field() && !desc.key() && fieldVal != null)
+                if (fieldVal != null)
                     desc.set(val, TypeUtils.fromInternal(ectx, fieldVal, desc.storageType()));
             }
         }
@@ -412,7 +449,8 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         Object key = Objects.requireNonNull(hnd.get(offset + QueryUtils.KEY_COL, row));
         Object val = clone(Objects.requireNonNull(hnd.get(offset + QueryUtils.VAL_COL, row)));
 
-        offset += descriptorsMap.size();
+        // New values start after the source fields; compute dynamically to handle both UPDATE and MERGE.
+        offset = hnd.columnCount(row) - updateColList.size();
 
         for (int i = 0; i < updateColList.size(); i++) {
             final CacheColumnDescriptor desc = Objects.requireNonNull(descriptorsMap.get(updateColList.get(i)));
@@ -442,16 +480,21 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
         int rowColumnsCnt = hnd.columnCount(row);
 
-        if (rowColumnsCnt == descriptors.length)
+        // An empty update column list unambiguously means there is no WHEN MATCHED clause at all (a MERGE
+        // statement always has at least one WHEN clause), so the row can only originate from the INSERT
+        // section. Note: the row width alone can't be used to detect this case, since, depending on the
+        // number of updated columns, it may coincide with the width of a WHEN MATCHED-only row.
+        if (updateColList.isEmpty())
             return insertTuple(row, ectx); // Only WHEN NOT MATCHED clause in MERGE.
-        else if (rowColumnsCnt == descriptors.length + updateColList.size())
+        else if (rowColumnsCnt == mergeSourceRowFieldCnt + updateColList.size())
             return updateTuple(row, updateColList, 0, ectx); // Only WHEN MATCHED clause in MERGE.
         else {
             // Both WHEN MATCHED and WHEN NOT MATCHED clauses in MERGE.
-            assert rowColumnsCnt == descriptors.length * 2 + updateColList.size() : "Unexpected columns count: " +
-                rowColumnsCnt;
+            // INSERT and UPDATE source sections both exclude technical columns.
+            assert rowColumnsCnt == mergeSourceRowFieldCnt * 2 + updateColList.size() :
+                "Unexpected columns count: " + rowColumnsCnt;
 
-            int updateOffset = descriptors.length; // Offset of fields for update statement.
+            int updateOffset = mergeSourceRowFieldCnt; // Offset of fields for update statement.
 
             if (hnd.get(updateOffset + QueryUtils.KEY_COL, row) != null)
                 return updateTuple(row, updateColList, updateOffset, ectx);
@@ -490,8 +533,10 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         RelDataTypeFactory.Builder b = new RelDataTypeFactory.Builder(factory);
 
         if (usedColumns == null) {
-            for (int i = 0; i < descriptors.length; i++)
-                b.add(descriptors[i].name(), descriptors[i].logicalType(factory));
+            for (int i = 0; i < descriptors.length; i++) {
+                if (!isTechnicalColumn(descriptors[i].name()))
+                    b.add(descriptors[i].name(), descriptors[i].logicalType(factory));
+            }
 
             return tableRowType = b.build();
         }
@@ -802,6 +847,79 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
             final Object val0 = key() ? null : dst;
 
             desc.setValue(key0, val0, val);
+        }
+    }
+
+    /** */
+    private abstract static class TechnicalDescriptor implements CacheColumnDescriptor {
+        /** */
+        private final String name;
+
+        /** */
+        private final Class<?> storageType;
+
+        /** */
+        private final int fieldIdx;
+
+        /** */
+        private volatile RelDataType logicalType;
+
+        /** */
+        private TechnicalDescriptor(String name, Class<?> storageType, int fieldIdx) {
+            this.name = name;
+            this.storageType = storageType;
+            this.fieldIdx = fieldIdx;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean field() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean key() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasDefaultValue() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object defaultValue() {
+            throw new AssertionError();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String name() {
+            return name;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int fieldIndex() {
+            return fieldIdx;
+        }
+
+        /** {@inheritDoc} */
+        @Override public RelDataType logicalType(IgniteTypeFactory f) {
+            if (logicalType == null) {
+                logicalType = storageType == GridCacheVersion.class
+                    ? f.createTypeWithNullability(f.createJavaType(storageType), true)
+                    : TypeUtils.sqlType(f, storageType, PRECISION_NOT_SPECIFIED, SCALE_NOT_SPECIFIED, true);
+            }
+
+            return logicalType;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Class<?> storageType() {
+            return storageType;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void set(Object dst, Object val) {
+            throw new AssertionError();
         }
     }
 
