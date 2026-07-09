@@ -55,7 +55,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CommunicationFailureResolver;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.NodeValidationFailedEvent;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
@@ -85,6 +84,7 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -239,6 +239,8 @@ public class ZookeeperDiscoveryImpl {
      * @param lsnr Discovery events listener.
      * @param exchange Discovery data exchange.
      * @param stats Zookeeper DiscoverySpi statistics collector.
+     * @param jdkMarshaller JDK Marshaller.
+     * @param msgFactory Message Factory.
      */
     public ZookeeperDiscoveryImpl(
         ZookeeperDiscoverySpi spi,
@@ -248,7 +250,9 @@ public class ZookeeperDiscoveryImpl {
         ZookeeperClusterNode locNode,
         DiscoverySpiListener lsnr,
         DiscoverySpiDataExchange exchange,
-        ZookeeperDiscoveryStatistics stats
+        ZookeeperDiscoveryStatistics stats,
+        JdkMarshaller jdkMarshaller,
+        MessageFactory msgFactory
     ) {
         assert locNode.id() != null && locNode.isLocal() : locNode;
 
@@ -263,10 +267,7 @@ public class ZookeeperDiscoveryImpl {
         this.lsnr = lsnr;
         this.exchange = exchange;
         this.clientReconnectEnabled = locNode.isClient() && !spi.isClientReconnectDisabled();
-
-        GridKernalContext kctx = ((IgniteEx)spi.ignite()).context();
-
-        this.marsh = kctx.marshallerContext().jdkMarshaller();
+        this.marsh = jdkMarshaller;
 
         int evtsAckThreshold = IgniteSystemProperties.getInteger(IGNITE_ZOOKEEPER_DISCOVERY_SPI_ACK_THRESHOLD,
             DFLT_ZOOKEEPER_DISCOVERY_SPI_ACK_THRESHOLD);
@@ -278,9 +279,9 @@ public class ZookeeperDiscoveryImpl {
 
         this.stats = stats;
 
-        msgParser = new DiscoveryMessageParser(kctx.messageFactory());
+        msgParser = new DiscoveryMessageParser(msgFactory);
 
-        opCtxDispatcher = kctx.operationContextDispatcher();
+        opCtxDispatcher = ((IgniteEx)spi.ignite()).context().operationContextDispatcher();
     }
 
     /**
@@ -691,7 +692,9 @@ public class ZookeeperDiscoveryImpl {
             checkState();
 
         try {
-            saveCustomMessage(rtState.zkClient, msgBytes);
+            ZookeeperClient zkClient = rtState.zkClient;
+
+            saveCustomMessage(zkClient, msgBytes);
         }
         catch (ZookeeperClientFailedException e) {
             if (clientReconnectEnabled)
@@ -1542,8 +1545,11 @@ public class ZookeeperDiscoveryImpl {
                 evtData0.finishUnmarshal(msgParser);
 
                 // It is possible previous coordinator failed before finished cleanup.
-                if (evtData0.resolvedMsg instanceof ZkCommunicationErrorResolveFinishMessage msg) {
+                if (evtData0.resolvedMsg instanceof ZkCommunicationErrorResolveFinishMessage) {
                     try {
+                        ZkCommunicationErrorResolveFinishMessage msg =
+                            (ZkCommunicationErrorResolveFinishMessage)evtData0.resolvedMsg;
+
                         ZkCommunicationErrorResolveResult res = unmarshalZip(
                             ZkDistributedCollectDataFuture.readResult(rtState.zkClient, zkPaths, msg.futId));
 
@@ -3114,12 +3120,19 @@ public class ZookeeperDiscoveryImpl {
             processCommunicationErrorResolveFinishMessage(
                 (ZkCommunicationErrorResolveFinishMessage)msg);
         }
-        else if (msg instanceof ZkNoServersMessage) {
-            assert locNode.isClient() : locNode;
+        else if (msg instanceof ZkNoServersMessage)
+            processNoServersMessage((ZkNoServersMessage)msg);
+    }
 
-            throw localNodeFail("All server nodes failed, client node disconnected " +
-                "(received 'no-servers' message) [locId=" + locNode.id() + ']', true);
-        }
+    /**
+     * @param msg Message.
+     * @throws Exception If failed.
+     */
+    private void processNoServersMessage(ZkNoServersMessage msg) throws Exception {
+        assert locNode.isClient() : locNode;
+
+        throw localNodeFail("All server nodes failed, client node disconnected " +
+            "(received 'no-servers' message) [locId=" + locNode.id() + ']', true);
     }
 
     /**
@@ -3909,8 +3922,13 @@ public class ZookeeperDiscoveryImpl {
         if (!evtData.ackEvent()) {
             if (evtData.evtPath != null)
                 deleteCustomEventDataAsync(rtState.zkClient, evtData.evtPath);
-            else if (evtData.resolvedMsg instanceof ZkCommunicationErrorResolveFinishMessage msg)
-                ZkDistributedCollectDataFuture.deleteFutureData(rtState.zkClient, zkPaths, msg.futId, log);
+            else {
+                if (evtData.resolvedMsg instanceof ZkCommunicationErrorResolveFinishMessage) {
+                    UUID futId = ((ZkCommunicationErrorResolveFinishMessage)evtData.resolvedMsg).futId;
+
+                    ZkDistributedCollectDataFuture.deleteFutureData(rtState.zkClient, zkPaths, futId, log);
+                }
+            }
 
             assert evtData.resolvedMsg != null || locNode.order() > evtData.topologyVersion() : evtData;
 
