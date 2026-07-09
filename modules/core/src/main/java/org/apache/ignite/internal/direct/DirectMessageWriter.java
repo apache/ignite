@@ -421,7 +421,7 @@ public class DirectMessageWriter implements MessageWriter {
 
     /** {@inheritDoc} */
     @Override public boolean writeGridCacheVersion(GridCacheVersion ver) {
-        DirectByteBufferStream stream = state.item().stream;
+        DirectByteBufferStream stream = curStream;
 
         stream.writeGridCacheVersion(ver);
 
