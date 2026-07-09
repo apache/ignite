@@ -54,6 +54,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.odbc.ClientMessage;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.NoopSpan;
@@ -82,12 +83,10 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageContainer;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.apache.ignite.plugin.extensions.communication.SelfSerializingMessage;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
@@ -1637,9 +1636,9 @@ public class GridNioServer<T> {
                 int startPos = buf.position();
 
                 if (messageFactory() == null) {
-                    assert msg instanceof SelfSerializingMessage;  // TODO: Will refactor in IGNITE-26554.
+                    assert msg instanceof ClientMessage;  // TODO: Will refactor in IGNITE-26554.
 
-                    finished = ((SelfSerializingMessage)msg).writeTo(buf);
+                    finished = ((ClientMessage)msg).writeTo(buf);
                 }
                 else {
                     MessageSerializer msgSer = messageFactory().serializer(msg.directType());
@@ -1838,9 +1837,9 @@ public class GridNioServer<T> {
                 int startPos = buf.position();
 
                 if (msgFactory == null) {
-                    assert msg instanceof SelfSerializingMessage;  // TODO: Will refactor in IGNITE-26554.
+                    assert msg instanceof ClientMessage;  // TODO: Will refactor in IGNITE-26554.
 
-                    finished = ((SelfSerializingMessage)msg).writeTo(buf);
+                    finished = ((ClientMessage)msg).writeTo(buf);
                 }
                 else {
                     MessageSerializer msgSer = msgFactory.serializer(msg.directType());
@@ -2500,8 +2499,8 @@ public class GridNioServer<T> {
 
                                 Object msg = req.message();
 
-                                if (shortInfo && msg instanceof MessageContainer)
-                                    msg = ((MessageContainer)msg).message().getClass().getSimpleName();
+                                if (shortInfo && msg instanceof MessageWrapper)
+                                    msg = ((MessageWrapper)msg).message().getClass().getSimpleName();
 
                                 sb.append(msg);
 
@@ -2544,8 +2543,8 @@ public class GridNioServer<T> {
                     for (SessionWriteRequest req : ses.writeQueue()) {
                         Object msg = req.message();
 
-                        if (shortInfo && msg instanceof MessageContainer)
-                            msg = ((MessageContainer)msg).message().getClass().getSimpleName();
+                        if (shortInfo && msg instanceof MessageWrapper)
+                            msg = ((MessageWrapper)msg).message().getClass().getSimpleName();
 
                         if (cnt == 0)
                             sb.append(",\n opQueue=[").append(msg);
@@ -4619,5 +4618,15 @@ public class GridNioServer<T> {
          * @return Requested change operation.
          */
         NioOperation operation();
+    }
+
+    /**
+     * A message that wraps (contains) another message.
+     */
+    public interface MessageWrapper {
+        /**
+         * @return The wrapped message.
+         */
+        public Message message();
     }
 }
