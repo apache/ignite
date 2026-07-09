@@ -133,14 +133,40 @@ class MultiDCPartitionResilienceTest(NetworkGroupAbstractTest):
         assert len(cluster_state.baseline) == exp_alive_nodes, \
             f"Half-ring baseline is not expected [exp={exp_alive_nodes}, actual_baseline={cluster_state.baseline}]"
 
-    def _verify_split_brain(self, svc_dc_1: IgniteService, svc_dc_2: IgniteService):
-        control_utility_dc_1 = ControlUtility(svc_dc_1)
-        cluster_state_dc_1 = control_utility_dc_1.cluster_state()
+    @staticmethod
+    def _verify_split_brain(svc_dc_1: IgniteService, svc_dc_2: IgniteService):
+        """
+        Verifies that after the network partition the cluster has split into two independent
+        half-rings: their baselines don't intersect and each half elected its own coordinator.
+        """
+        cluster_state_dc_1 = ControlUtility(svc_dc_1).cluster_state()
+        cluster_state_dc_2 = ControlUtility(svc_dc_2).cluster_state()
 
-        control_utility_dc_2 = ControlUtility(svc_dc_2)
-        cluster_state_dc_2 = control_utility_dc_2.cluster_state()
+        baseline_dc_1 = {node.consistent_id for node in cluster_state_dc_1.baseline}
+        baseline_dc_2 = {node.consistent_id for node in cluster_state_dc_2.baseline}
 
-        # Check baseline doesn't intersect, each has it's own coordinator
+        common_nodes = baseline_dc_1 & baseline_dc_2
+
+        assert not common_nodes, \
+            f"Half-ring baselines should not intersect " \
+            f"[common={sorted(common_nodes)}, dc1={sorted(baseline_dc_1)}, dc2={sorted(baseline_dc_2)}]"
+
+        coordinator_dc_1 = cluster_state_dc_1.coordinator
+        coordinator_dc_2 = cluster_state_dc_2.coordinator
+
+        assert coordinator_dc_1, f"Coordinator is not found in {DC_1_NAME} half-ring baseline output!"
+        assert coordinator_dc_2, f"Coordinator is not found in {DC_2_NAME} half-ring baseline output!"
+
+        assert coordinator_dc_1.consistent_id != coordinator_dc_2.consistent_id, \
+            f"Half-rings should have different coordinators [coordinator={coordinator_dc_1.consistent_id}]"
+
+        assert coordinator_dc_1.consistent_id in baseline_dc_1, \
+            f"{DC_1_NAME} coordinator should belong to its own half-ring baseline " \
+            f"[coordinator={coordinator_dc_1.consistent_id}, baseline={sorted(baseline_dc_1)}]"
+
+        assert coordinator_dc_2.consistent_id in baseline_dc_2, \
+            f"{DC_2_NAME} coordinator should belong to its own half-ring baseline " \
+            f"[coordinator={coordinator_dc_2.consistent_id}, baseline={sorted(baseline_dc_2)}]"
 
     def _populate_cluster_with_data(self):
         self.app_dc_1.java_class_name = GENERATOR_JAVA_CLASS_NAME

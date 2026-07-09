@@ -467,6 +467,8 @@ class ControlUtility:
                                       ",\\sS(tate|TATE)=(?P<state>[^\\s,]+)"
                                       "(,\\sOrder=(?P<order>\\d+))?")
 
+        coordinator_pattern = re.compile("\\(Coordinator: [^)]*Order=(?P<order>\\d+)\\)")
+
         match = state_pattern.search(output)
         state = match.group("cluster_state") if match else None
 
@@ -481,7 +483,19 @@ class ControlUtility:
                                 order=int(match.group("order")) if match.group("order") else None)
             baseline.append(node)
 
-        return ClusterState(state=state, topology_version=topology, baseline=baseline)
+        coordinator = None
+
+        match = coordinator_pattern.search(output)
+
+        if match:
+            order = int(match.group("order"))
+
+            coordinator = next((node for node in baseline if node.order == order), None)
+
+            if coordinator is None:
+                raise AssertionError(f"Coordinator with order={order} is not found in baseline [baseline={baseline}]")
+
+        return ClusterState(state=state, topology_version=topology, baseline=baseline, coordinator=coordinator)
 
     def __run(self, cmd, node=None):
         if node is None:
@@ -558,6 +572,7 @@ class ClusterState(NamedTuple):
     state: str
     topology_version: int
     baseline: list
+    coordinator: BaselineNode = None
 
 
 class TxInfo(NamedTuple):
