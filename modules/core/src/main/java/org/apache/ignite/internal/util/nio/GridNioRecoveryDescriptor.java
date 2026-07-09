@@ -20,9 +20,9 @@ package org.apache.ignite.internal.util.nio;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import org.apache.ignite.IgniteCommonsSystemProperties;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -30,18 +30,16 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT;
+import static org.apache.ignite.IgniteCommonsSystemProperties.DFLT_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT;
+import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT;
 
 /**
  * Recovery information for single node.
  */
 public class GridNioRecoveryDescriptor {
-    /** @see IgniteSystemProperties#IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT */
-    public static final int DFLT_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT = 5_000;
-
     /** Timeout for outgoing recovery descriptor reservation. */
     private static final long DESC_RESERVATION_TIMEOUT = Math.max(1_000,
-        IgniteSystemProperties.getLong(IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT,
+        IgniteCommonsSystemProperties.getLong(IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT,
             DFLT_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT));
 
     /** Number of acknowledged messages. */

@@ -65,7 +65,6 @@ import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileLock;
-import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -228,7 +227,6 @@ import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionHeuristicException;
 import org.apache.ignite.transactions.TransactionOptimisticException;
@@ -297,9 +295,6 @@ public abstract class IgniteUtils extends CommonUtils {
     /** Empty integers array. */
     public static final int[] EMPTY_INTS = new int[0];
 
-    /** Empty longs array. */
-    public static final long[] EMPTY_LONGS = new long[0];
-
     /** Empty strings array. */
     public static final String[] EMPTY_STRS = new String[0];
 
@@ -346,9 +341,6 @@ public abstract class IgniteUtils extends CommonUtils {
     /** JMX domain as 'xxx.apache.ignite'. */
     public static final String JMX_DOMAIN = IgniteUtils.class.getName().substring(0, IgniteUtils.class.getName().
         indexOf('.', IgniteUtils.class.getName().indexOf('.') + 1));
-
-    /** Network packet header. */
-    public static final byte[] IGNITE_HEADER = intToBytes(0x0149474E);
 
     /** Default buffer size = 4K. */
     private static final int BUF_SIZE = 4096;
@@ -2124,28 +2116,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * Compares fragments of byte arrays.
-     *
-     * @param a First array.
-     * @param aOff First array offset.
-     * @param b Second array.
-     * @param bOff Second array offset.
-     * @param len Length of fragments.
-     * @return {@code true} if fragments are equal, {@code false} otherwise.
-     */
-    public static boolean bytesEqual(byte[] a, int aOff, byte[] b, int bOff, int len) {
-        if (aOff + len > a.length || bOff + len > b.length)
-            return false;
-        else {
-            for (int i = 0; i < len; i++)
-                if (a[aOff + i] != b[bOff + i])
-                    return false;
-
-            return true;
-        }
-    }
-
-    /**
      * @param bytes Number of bytes to display.
      * @param si If {@code true}, then unit base is 1000, otherwise unit base is 1024.
      * @return Formatted size.
@@ -3235,69 +3205,6 @@ public abstract class IgniteUtils extends CommonUtils {
         if (workers != null)
             for (Thread worker : workers)
                 if (!join(worker, log))
-                    retval = false;
-
-        return retval;
-    }
-
-    /**
-     * Cancels given runnable.
-     *
-     * @param w Worker to cancel - it's no-op if runnable is {@code null}.
-     */
-    public static void cancel(@Nullable GridWorker w) {
-        if (w != null)
-            w.cancel();
-    }
-
-    /**
-     * Cancels collection of runnables.
-     *
-     * @param ws Collection of workers - it's no-op if collection is {@code null}.
-     */
-    public static void cancel(Iterable<? extends GridWorker> ws) {
-        if (ws != null)
-            for (GridWorker w : ws)
-                w.cancel();
-    }
-
-    /**
-     * Joins runnable.
-     *
-     * @param w Worker to join.
-     * @param log The logger to possible exception.
-     * @return {@code true} if worker has not been interrupted, {@code false} if it was interrupted.
-     */
-    public static boolean join(@Nullable GridWorker w, @Nullable IgniteLogger log) {
-        if (w != null)
-            try {
-                w.join();
-            }
-            catch (InterruptedException ignore) {
-                warn(log, "Got interrupted while waiting for completion of runnable: " + w);
-
-                Thread.currentThread().interrupt();
-
-                return false;
-            }
-
-        return true;
-    }
-
-    /**
-     * Joins given collection of runnables.
-     *
-     * @param ws Collection of workers to join.
-     * @param log The logger to possible exceptions.
-     * @return {@code true} if none of the worker have been interrupted,
-     *      {@code false} if at least one was interrupted.
-     */
-    public static boolean join(Iterable<? extends GridWorker> ws, IgniteLogger log) {
-        boolean retval = true;
-
-        if (ws != null)
-            for (GridWorker w : ws)
-                if (!join(w, log))
                     retval = false;
 
         return retval;
@@ -5060,23 +4967,6 @@ public abstract class IgniteUtils extends CommonUtils {
 
         if (interrupted)
             Thread.currentThread().interrupt();
-    }
-
-    /**
-     * Sleeps for given number of milliseconds.
-     *
-     * @param ms Time to sleep.
-     * @throws IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
-     */
-    public static void sleep(long ms) throws IgniteInterruptedCheckedException {
-        try {
-            Thread.sleep(ms);
-        }
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-
-            throw new IgniteInterruptedCheckedException(e);
-        }
     }
 
     /**
@@ -7311,30 +7201,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     *  Safely write buffer fully to blocking socket channel.
-     *  Will throw assert if non blocking channel passed.
-     *
-     * @param sockCh WritableByteChannel.
-     * @param buf Buffer.
-     * @throws IOException IOException.
-     */
-    public static void writeFully(SocketChannel sockCh, ByteBuffer buf) throws IOException {
-        int totalWritten = 0;
-
-        assert sockCh.isBlocking() : "SocketChannel should be in blocking mode " + sockCh;
-
-        while (buf.hasRemaining()) {
-            int written = sockCh.write(buf);
-
-            if (written < 0)
-                throw new IOException("Error writing buffer to channel " +
-                    "[written = " + written + ", buf " + buf + ", totalWritten = " + totalWritten + "]");
-
-            totalWritten += written;
-        }
-    }
-
-    /**
      * @return New identity hash set.
      */
     public static <X> Set<X> newIdentityHashSet() {
@@ -7839,15 +7705,6 @@ public abstract class IgniteUtils extends CommonUtils {
 
             builder0.affinityFieldName(fieldName);
         }
-    }
-
-    /**
-     * Creates thread with given worker.
-     *
-     * @param worker Runnable to create thread with.
-     */
-    public static IgniteThread newThread(GridWorker worker) {
-        return new IgniteThread(worker.igniteInstanceName(), worker.name(), worker);
     }
 
     /** */
