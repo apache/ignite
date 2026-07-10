@@ -25,14 +25,12 @@ import java.util.Random;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Before;
@@ -91,8 +89,8 @@ public class DirectByteBufferStreamImplByteOrderSelfTest {
      */
     private static DirectByteBufferStream createStream(ByteBuffer buff) {
         DirectByteBufferStream stream = new DirectByteBufferStream(new MessageFactory() {
-            @Override public void register(short directType, Supplier<Message> supplier, MessageSerializer serializer,
-                @Nullable MessageMarshaller marshaller, @Nullable GridCacheMessageDeployer deployer) throws IgniteException {
+            @Override public void register(short directType, Supplier<Message> supplier,
+                MessageSerializer serializer) throws IgniteException {
                 throw new UnsupportedOperationException();
             }
 
@@ -101,10 +99,6 @@ public class DirectByteBufferStreamImplByteOrderSelfTest {
             }
 
             @Override public MessageSerializer serializer(short type) {
-                return null;
-            }
-
-            @Nullable @Override public MessageMarshaller marshaller(short type) {
                 return null;
             }
         });

@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.calcite.message;
 
+import org.apache.ignite.internal.managers.communication.IgniteMessageFactory;
 import org.apache.ignite.internal.plugin.AbstractMarshallableMessageFactoryProvider;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /**
  * Message factory.
@@ -35,7 +35,7 @@ public class CalciteMessageFactory extends AbstractMarshallableMessageFactoryPro
     public static final short MAX_MESSAGE_TYPE = 311;
 
     /** {@inheritDoc} */
-    @Override public void registerAll(MessageFactory factory) {
+    @Override public void registerAll(IgniteMessageFactory factory) {
         register(factory, QueryStartRequest.class, (short)300, schemaAwareMarsh);
         register(factory, QueryStartResponse.class, (short)301, dfltMarsh);
         register(factory, CalciteErrorMessage.class, (short)302, dfltMarsh);

@@ -54,6 +54,7 @@ import org.apache.ignite.internal.IgniteTooManyOpenFilesException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.GridManager;
+import org.apache.ignite.internal.managers.communication.IgniteMessageFactory;
 import org.apache.ignite.internal.managers.tracing.GridTracingManager;
 import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
@@ -814,8 +815,8 @@ public class GridNioServerWrapper {
 
         for (int port = cfg.localPort(); port <= lastPort; port++) {
             try {
-                MessageFactory msgFactory = new MessageFactory() {
-                    private MessageFactory impl;
+                MessageFactory msgFactory = new IgniteMessageFactory() {
+                    private IgniteMessageFactory impl;
 
                     @Override public void register(short directType, Supplier<Message> supplier, MessageSerializer serializer,
                         @Nullable MessageMarshaller marshaller, @Nullable GridCacheMessageDeployer deployer) throws IgniteException {
@@ -838,9 +839,13 @@ public class GridNioServerWrapper {
                         return get().marshaller(type);
                     }
 
-                    private MessageFactory get() {
+                    @Nullable @Override public GridCacheMessageDeployer deployer(short type) {
+                        return get().deployer(type);
+                    }
+
+                    private IgniteMessageFactory get() {
                         if (impl == null) {
-                            impl = stateProvider.getSpiContext().messageFactory();
+                            impl = (IgniteMessageFactory)stateProvider.getSpiContext().messageFactory();
 
                             assert impl != null;
                         }

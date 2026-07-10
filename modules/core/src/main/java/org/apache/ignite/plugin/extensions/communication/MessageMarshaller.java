@@ -19,6 +19,7 @@ package org.apache.ignite.plugin.extensions.communication;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.managers.communication.IgniteMessageFactory;
 import org.apache.ignite.internal.managers.communication.MessageUnmarshalDedup;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -148,6 +149,6 @@ public interface MessageMarshaller<M extends Message> {
     /** @return the marshaller registered for {@code msg}'s direct type, or {@code null} if none. */
     @SuppressWarnings("unchecked")
     private static <M extends Message> MessageMarshaller<M> resolve(MessageFactory factory, M msg) {
-        return (MessageMarshaller<M>)factory.marshaller(msg.directType());
+        return (MessageMarshaller<M>)((IgniteMessageFactory)factory).marshaller(msg.directType());
     }
 }

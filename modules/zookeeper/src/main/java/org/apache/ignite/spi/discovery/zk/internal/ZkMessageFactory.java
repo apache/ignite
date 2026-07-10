@@ -17,13 +17,13 @@
 
 package org.apache.ignite.spi.discovery.zk.internal;
 
+import org.apache.ignite.internal.managers.communication.IgniteMessageFactory;
 import org.apache.ignite.internal.plugin.AbstractMarshallableMessageFactoryProvider;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** */
 public class ZkMessageFactory extends AbstractMarshallableMessageFactoryProvider {
     /** {@inheritDoc} */
-    @Override public void registerAll(MessageFactory factory) {
+    @Override public void registerAll(IgniteMessageFactory factory) {
         register(factory, ZkCommunicationErrorResolveFinishMessage.class, (short)400, 
             ZkCommunicationErrorResolveFinishMessage::new, dfltMarsh);
         register(factory, ZkCommunicationErrorResolveStartMessage.class, (short)401, 

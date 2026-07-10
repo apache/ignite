@@ -23,11 +23,11 @@ import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.managers.communication.IgniteMessageFactory;
 import org.apache.ignite.internal.processors.query.h2.QueryTable;
 import org.apache.ignite.internal.processors.query.h2.QueryTableSerializer;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.h2.value.Value;
 
@@ -36,7 +36,7 @@ import org.h2.value.Value;
  */
 public class GridH2ValueMessageFactory implements MessageFactoryProvider {
     /** {@inheritDoc} */
-    @Override public void registerAll(MessageFactory factory) {
+    @Override public void registerAll(IgniteMessageFactory factory) {
         factory.register(-4, () -> GridH2Null.INSTANCE, new GridH2NullSerializer());
         factory.register(-5, GridH2Boolean::new, new GridH2BooleanSerializer());
         factory.register(-6, GridH2Byte::new, new GridH2ByteSerializer());

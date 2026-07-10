@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.managers.communication.IgniteMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
@@ -47,7 +48,7 @@ public interface GridCacheMessageDeployer<M extends GridCacheMessage> {
         if (!msg.addDeploymentInfo() && !ctx.deploymentEnabled())
             return;
 
-        GridCacheMessageDeployer deployer = factory.deployer(msg.directType());
+        GridCacheMessageDeployer deployer = ((IgniteMessageFactory)factory).deployer(msg.directType());
 
         if (deployer != null)
             deployer.deploy(msg, ctx);

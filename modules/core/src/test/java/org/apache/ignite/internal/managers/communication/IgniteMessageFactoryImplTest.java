@@ -106,7 +106,7 @@ public class IgniteMessageFactoryImplTest {
      */
     private static class TestMessageFactoryPovider implements MessageFactoryProvider {
         /** {@inheritDoc} */
-        @Override public void registerAll(MessageFactory factory) {
+        @Override public void registerAll(IgniteMessageFactory factory) {
             factory.register(TEST_MSG_1_TYPE, TestMessage1::new, new TestMessage1Serializer());
             factory.register(TEST_MSG_42_TYPE, TestMessage42::new, new TestMessage42Serializer());
         }
@@ -117,7 +117,7 @@ public class IgniteMessageFactoryImplTest {
      */
     private static class TestMessageFactoryPoviderWithTheSameDirectType implements MessageFactoryProvider {
         /** {@inheritDoc} */
-        @Override public void registerAll(MessageFactory factory) {
+        @Override public void registerAll(IgniteMessageFactory factory) {
             factory.register(TEST_MSG_1_TYPE, TestMessage1::new, new TestMessage1Serializer());
         }
     }
@@ -127,7 +127,7 @@ public class IgniteMessageFactoryImplTest {
      */
     private static class TestMessageFactory implements MessageFactoryProvider {
         /** {@inheritDoc} */
-        @Override public void registerAll(MessageFactory factory) {
+        @Override public void registerAll(IgniteMessageFactory factory) {
             factory.register(TEST_MSG_2_TYPE, TestMessage2::new, new TestMessage2Serializer());
         }
     }

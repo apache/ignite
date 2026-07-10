@@ -22,13 +22,13 @@ import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.managers.communication.IgniteMessageFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
@@ -57,7 +57,7 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
     }
 
     /** Registers a message with its generated serializer, marshaller (if marshallable), and deployer (if any). */
-    protected static <T extends Message> void register(MessageFactory factory, Class<T> cls, short id, Marshaller marsh) {
+    protected static <T extends Message> void register(IgniteMessageFactory factory, Class<T> cls, short id, Marshaller marsh) {
         Constructor<T> ctor;
 
         try {
@@ -82,7 +82,7 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
      * marshallable), and deployer (if any). Use this overload when {@code cls} is package-private and so cannot be
      * instantiated by reflection from this package — pass an in-package {@code ::new} reference as {@code supplier}.
      */
-    protected static <T extends Message> void register(MessageFactory factory, Class<T> cls, short id,
+    protected static <T extends Message> void register(IgniteMessageFactory factory, Class<T> cls, short id,
         Supplier<Message> supplier, Marshaller marsh) {
         MessageSerializer<T> serializer = requireGenerated(cls, "Serializer", marsh);
 

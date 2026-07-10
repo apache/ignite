@@ -24,7 +24,6 @@ import org.apache.ignite.internal.processors.cache.DeployableMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
@@ -33,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Message factory implementation which is responsible for instantiation of all communication messages.
  */
-public class IgniteMessageFactoryImpl implements MessageFactory {
+public class IgniteMessageFactoryImpl implements IgniteMessageFactory {
     /** Offset. */
     private static final int OFF = -Short.MIN_VALUE;
 

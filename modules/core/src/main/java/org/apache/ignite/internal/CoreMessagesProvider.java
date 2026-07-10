@@ -30,6 +30,7 @@ import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.communication.GridIoUserMessage;
 import org.apache.ignite.internal.managers.communication.IgniteIoTestMessage;
+import org.apache.ignite.internal.managers.communication.IgniteMessageFactory;
 import org.apache.ignite.internal.managers.communication.SessionChannelMessage;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
@@ -257,7 +258,6 @@ import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.spi.collision.jobstealing.JobStealingRequest;
 import org.apache.ignite.spi.communication.tcp.internal.TcpConnectionRequestDiscoveryMessage;
 import org.apache.ignite.spi.communication.tcp.internal.TcpInverseConnectionResponseMessage;
@@ -316,7 +316,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
     private short msgIdx;
 
     /** */
-    private @Nullable MessageFactory factory;
+    private @Nullable IgniteMessageFactory factory;
 
     /**
      * Default plugin-purposes constructor.
@@ -343,7 +343,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
      * The listing order is important here. If wish to remove a message, put 'msgIdx++' on its place. If wish to add,
      * put it to end of a group.
      */
-    @Override public void registerAll(MessageFactory factory) {
+    @Override public void registerAll(IgniteMessageFactory factory) {
         assert this.factory == null;
 
         this.factory = factory;
