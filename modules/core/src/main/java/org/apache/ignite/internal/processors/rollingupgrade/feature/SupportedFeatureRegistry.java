@@ -90,7 +90,7 @@ import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProces
  * @see IgniteFeatureManager
  * @see RollingUpgradeProcessor
  */
-public class SupportedFeaturesRegistry {
+public class SupportedFeatureRegistry {
     /** */
     public static final IgniteFeature ROLLING_UPGRADE_FEATURE = new IgniteCoreFeature(0);
 }

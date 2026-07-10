@@ -17,30 +17,18 @@
 
 package org.apache.ignite.internal.processors.rollingupgrade;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProcessor.RollingUpgradeState;
-import org.apache.ignite.internal.processors.rollingupgrade.feature.AbstractRollingUpgradeTest;
-import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeature;
 import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
-import org.apache.ignite.internal.util.lang.ConsumerX;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -53,7 +41,6 @@ import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
-import static org.apache.ignite.internal.IgniteVersionUtils.semanticVersion;
 import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
 import static org.apache.ignite.internal.processors.rollingupgrade.feature.TestIgniteReleaseFeatures_2_19_2.VER_2_19_2_ID_1_FEATURE;
 import static org.apache.ignite.internal.processors.security.NodeSecurityContextPropagationTest.discoveryRingMessageWorkerQueue;
@@ -61,15 +48,7 @@ import static org.apache.ignite.internal.processors.security.NodeSecurityContext
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
-public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTest {
-    /** */
-    private static final String NODE_IS_INCOMPATIBLE_WIH_RU_ERR =
-        "The joining node version is incompatible with the current state of the cluster version Rolling Upgrade being in progress";
-
-    /** */
-    private static final String MULTIPLE_VER_IN_TOP_ERR =
-        "Cluster version finalization failed. The topology contains nodes running multiple different versions";
-
+public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
     /** */
     @Test
     public void testVersionUpgradeDisabledSingleServer() throws Exception {
@@ -85,7 +64,7 @@ public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTes
 
         checkVersionUpgradeInactive(TEST_DEFAULT_VER);
 
-        String msg = "The joining node version differs from the version of the cluster";
+        String msg = VER_NOT_EQUAL_ERR;
 
         checkJoinFailed(3, "2.18.0", msg);
         checkJoinFailed(3, "2.19.1", msg);
@@ -151,14 +130,14 @@ public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTes
 
         checkVersionUpgradeInProgress(TEST_DEFAULT_VER, null);
 
-        checkJoinFailed(5, "2.18.0", NODE_IS_INCOMPATIBLE_WIH_RU_ERR);
+        checkJoinFailed(5, "2.18.0", VER_INCOMPATIBLE_ERR);
 
         upgradeNodeVersion(0, "2.19.1");
         upgradeNodeVersion(2, "2.19.1");
 
         checkVersionUpgradeInProgress(TEST_DEFAULT_VER, "2.19.1");
 
-        checkJoinFailed(5, "2.19.2", NODE_IS_INCOMPATIBLE_WIH_RU_ERR);
+        checkJoinFailed(5, "2.19.2", VER_INCOMPATIBLE_ERR);
 
         restartNode(3);
         restartNode(4);
@@ -247,15 +226,15 @@ public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTes
         checkJoinSuccess(3, TEST_DEFAULT_VER, false);
         checkJoinSuccess(4, TEST_DEFAULT_VER, true);
 
-        checkUpgradeFailed(2, "2.19.3", NODE_IS_INCOMPATIBLE_WIH_RU_ERR);
-        checkUpgradeFailed(1, "2.19.3", NODE_IS_INCOMPATIBLE_WIH_RU_ERR);
+        checkUpgradeFailed(2, "2.19.3", VER_INCOMPATIBLE_ERR);
+        checkUpgradeFailed(1, "2.19.3", VER_INCOMPATIBLE_ERR);
 
         upgradeNodeVersion(3, "2.19.2");
         upgradeNodeVersion(4, "2.19.2");
         checkJoinSuccess(0, "2.19.3", false);
 
-        checkUpgradeFailed(2, TEST_DEFAULT_VER, NODE_IS_INCOMPATIBLE_WIH_RU_ERR);
-        checkUpgradeFailed(1, TEST_DEFAULT_VER, NODE_IS_INCOMPATIBLE_WIH_RU_ERR);
+        checkUpgradeFailed(2, TEST_DEFAULT_VER, VER_INCOMPATIBLE_ERR);
+        checkUpgradeFailed(1, TEST_DEFAULT_VER, VER_INCOMPATIBLE_ERR);
 
         restartNode(1);
         restartNode(2);
@@ -305,8 +284,8 @@ public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTes
 
         upgradeNodeVersion(0, "2.19.3");
 
-        checkUpgradeFailed(1, "2.19.2", NODE_IS_INCOMPATIBLE_WIH_RU_ERR);
-        checkUpgradeFailed(2, "2.19.2", NODE_IS_INCOMPATIBLE_WIH_RU_ERR);
+        checkUpgradeFailed(1, "2.19.2", VER_INCOMPATIBLE_ERR);
+        checkUpgradeFailed(2, "2.19.2", VER_INCOMPATIBLE_ERR);
 
         upgradeNodeVersion(1, "2.19.3");
         upgradeNodeVersion(2, "2.19.3");
@@ -321,8 +300,7 @@ public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTes
 
         ru(1).enableVersionUpgrade();
 
-        checkJoinFailed(3, "2.20.0",
-            "Rolling Upgrade is not available between the current cluster logical version and the joining node product version");
+        checkJoinFailed(3, "2.20.0", RU_UNAVAILABLE_BETWEEN_VER_ERR);
 
         forAllNodes(nodeIdx -> upgradeNodeVersion(nodeIdx, "2.19.3", "2.20.1"));
 
@@ -967,237 +945,5 @@ public class ClusterVersionsRollingUpgradeTest extends AbstractRollingUpgradeTes
         }
 
         return expCnt == cnt;
-    }
-
-    /** */
-    private void startCluster() throws Exception {
-        startCluster(TEST_DEFAULT_VER);
-    }
-
-    /** */
-    private void startCluster(String ver) throws Exception {
-        startGrid(0, ver);
-        startGrid(1, ver);
-        startClientGrid(2, ver);
-    }
-
-    /** */
-    private UUID extractFinalizeProcessId(int nodeIdx) {
-        Object proc = U.field(grid(nodeIdx).context().rollingUpgrade(), "finalizeProc");
-
-        return U.field(proc, "locInitOpId");
-    }
-
-    /** */
-    private void checkVersionFinalizationFailed(int initiatorNodeIdx, String msg) {
-        GridTestUtils.assertThrowsAnyCause(
-            log,
-            () -> {
-                ru(initiatorNodeIdx).finalizeClusterVersion();
-
-                return null;
-            },
-            IgniteCheckedException.class,
-            msg
-        );
-    }
-
-    /** */
-    private void checkJoinSuccess(int nodeIdx, boolean isClient) throws Exception {
-        checkJoinSuccess(nodeIdx, TEST_DEFAULT_VER, isClient);
-    }
-
-    /** */
-    private void checkJoinSuccess(int nodeIdx, String ver, boolean isClient) throws Exception {
-        int clusterSize = clusterNode().cluster().nodes().size();
-
-        startGrid(nodeIdx, ver, isClient);
-
-        assertEquals(clusterSize + 1, clusterNode().cluster().nodes().size());
-    }
-
-    /** */
-    private void checkJoinFailed(int nodeIdx, String ver, String msg) {
-        int expClusterSize = clusterNode().cluster().nodes().size();
-
-        GridTestUtils.assertThrowsAnyCause(log, () -> startGrid(nodeIdx, ver ), IgniteSpiException.class, msg);
-        GridTestUtils.assertThrowsAnyCause(log, () -> startClientGrid(nodeIdx, ver), IgniteSpiException.class, msg);
-
-        assertEquals(expClusterSize, clusterNode().cluster().nodes().size());
-    }
-
-    /** */
-    private IgniteEx clusterNode() {
-        return (IgniteEx)Ignition.allGrids().stream().filter(i -> !i.cluster().localNode().isClient()).findFirst().orElseThrow();
-    }
-
-    /** */
-    private void checkVersionUpgradeInProgress(String srcVer, String targetVer) throws Exception {
-        checkVersionUpgradeInProgress(srcVer, srcVer, targetVer);
-    }
-
-    /** */
-    private void checkVersionUpgradeInProgress(String logicalVer, String srcVer, String targetVer) throws Exception {
-        checkVersionUpgradeEnabledStatus(true);
-        checkRollingUpgradeState(logicalVer, srcVer, targetVer);
-
-        checkProductFeaturesActive(logicalVer);
-
-        if (targetVer != null)
-            checkFeaturesNotActive(newFeatures(logicalVer, targetVer));
-    }
-
-    /** */
-    private void checkVersionUpgradeInactive(String expVer) throws Exception {
-        checkVersionUpgradeEnabledStatus(false);
-        checkProductFeaturesActive(expVer);
-    }
-
-    /** */
-    private void checkVersionUpgradeEnabledStatus(boolean enabled) {
-        List<Ignite> cluster = Ignition.allGrids();
-
-        for (Ignite ignite : cluster)
-            assertEquals(enabled, ru(ignite).isVersionUpgradeEnabled());
-    }
-
-    /** */
-    private void checkProductFeaturesActive(String ver) throws Exception {
-        Collection<IgniteFeature> features = readDeclaredFeatures(ver);
-
-        List<Ignite> cluster = Ignition.allGrids();
-
-        AtomicInteger validatedFeatures = new AtomicInteger();
-
-        for (Ignite ignite : cluster) {
-            for (IgniteFeature feature : features) {
-                assertTrue(isFeatureActive(ignite, feature));
-                listenFeatureActivation(ignite, feature, validatedFeatures::incrementAndGet);
-            }
-        }
-
-        assertEquals(cluster.size() * features.size(), validatedFeatures.get());
-    }
-
-    /** */
-    private void checkFeaturesNotActive(Collection<IgniteFeature> features) {
-        assertFalse(F.isEmpty(features));
-
-        for (Ignite ignite : Ignition.allGrids()) {
-            for (IgniteFeature feature : features)
-                assertFalse(isFeatureActive(ignite, feature));
-        }
-    }
-
-    /** */
-    private Collection<IgniteFeature> newFeatures(String srcVer, String targetVer) throws Exception {
-        Collection<IgniteFeature> srcFeatures = readDeclaredFeatures(srcVer);
-        Collection<IgniteFeature> targetFeatures = readDeclaredFeatures(targetVer);
-
-        List<IgniteFeature> res = new ArrayList<>();
-
-        for (IgniteFeature targetFeature : targetFeatures) {
-            if (!srcFeatures.contains(targetFeature))
-                res.add(targetFeature);
-        }
-
-        return res;
-    }
-
-    /** */
-    private void checkFeatureActivationSubscription(int nodeIdx, IgniteFeature feature, CountDownLatch featureActivationLatch) {
-        long expCnt = featureActivationLatch.getCount();
-
-        assertFalse(isFeatureActive(grid(nodeIdx), feature));
-        listenFeatureActivation(grid(nodeIdx), feature, featureActivationLatch::countDown);
-        assertEquals(expCnt, featureActivationLatch.getCount());
-    }
-
-    /** */
-    private void upgradeNodeVersion(int nodeIdx, String targetVer) throws Exception {
-        upgradeNodeVersion(nodeIdx, TEST_DEFAULT_VER, targetVer);
-    }
-
-    /** */
-    private void upgradeNodeVersion(int nodeIdx, String srcVer, String targetVer) throws Exception {
-        upgradeNodeVersion(nodeIdx, srcVer, srcVer, targetVer);
-    }
-
-    /** */
-    private void upgradeNodeVersion(int nodeIdx, String logicalVer, String srcVer, String targetVer) throws Exception {
-        boolean isClient = grid(nodeIdx).context().clientNode();
-
-        stopGrid(nodeIdx);
-        checkJoinSuccess(nodeIdx, targetVer, isClient);
-        checkVersionUpgradeInProgress(logicalVer, srcVer, targetVer);
-    }
-
-    /** */
-    private void finalizeClusterVersion(int nodeIdx, String expVer) throws Exception {
-        ru(nodeIdx).finalizeClusterVersion();
-
-        checkVersionUpgradeInactive(expVer);
-    }
-
-    /** */
-    private void restartNode(int nodeIdx) throws Exception {
-        String ver = semanticVersion(grid(nodeIdx).context().discovery().localNode().version());
-        boolean isClient = grid(nodeIdx).context().clientNode();
-
-        stopGrid(nodeIdx);
-        checkJoinSuccess(nodeIdx, ver, isClient);
-    }
-
-    /** */
-    private void forAllNodes(ConsumerX<Integer> nodeProcessor) throws Exception {
-        for (Ignite ignite : Ignition.allGrids())
-            nodeProcessor.accept(getTestIgniteInstanceIndex(ignite.name()));
-    }
-
-    /** */
-    private void checkUpgradeFailed(int nodeIdx, String targetVer, String errMsg) throws Exception {
-        String srcVer = semanticVersion(grid(nodeIdx).context().discovery().localNode().version());
-        boolean isClient = grid(nodeIdx).context().clientNode();
-
-        stopGrid(nodeIdx);
-
-        GridTestUtils.assertThrowsAnyCause(log, () -> startGrid(nodeIdx, targetVer, isClient), IgniteSpiException.class, errMsg);
-
-        startGrid(nodeIdx, srcVer, isClient);
-    }
-
-    /** */
-    private void checkRollingUpgradeState(String expLogicalVer, String expSrcVer, String expTargetVer) {
-        for (Ignite ignite : Ignition.allGrids()) {
-            assertTrue(ru(ignite).isVersionUpgradeEnabled());
-            assertEquals(expLogicalVer, semanticVersion(ru(ignite).features().activeFeatures().version()));
-
-            RollingUpgradeState state = ru(ignite).state();
-
-            assertEquals(expSrcVer, semanticVersion(state.srcVer));
-            assertEquals(expTargetVer, state.targetVer == null ? null : semanticVersion(state.targetVer));
-        }
-    }
-    
-    /** */
-    private RollingUpgradeProcessor ru(int nodeIdx) {
-        return ru(grid(nodeIdx));
-    }
-
-    /** */
-    private static RollingUpgradeProcessor ru(Ignite ignite) {
-        return ((IgniteEx)ignite).context().rollingUpgrade();
-    }
-
-    /** */
-    private int coordinatorIndex() {
-        for (Ignite grid : IgnitionEx.allGridsx()) {
-            if (U.isLocalNodeCoordinator(((IgniteEx)grid).context().discovery()))
-                return getTestIgniteInstanceIndex(grid.name());
-        }
-
-        fail("Failed to resolve coordinator node");
-
-        return -1;
     }
 }
