@@ -26,7 +26,10 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
 
-/** Diagnostic request carrying cache keys pending transaction lock info for a specific cache. */
+/**
+ * Diagnostic info block that dumps the state of cache entries for the given keys. Requested when a transaction
+ * lock future waits for a remote node's response for too long.
+ */
 public final class TxEntriesInfo extends IgniteDiagnosticRequest.DiagnosticBaseInfo implements CacheIdAware {
     /** */
     @Order(0)
