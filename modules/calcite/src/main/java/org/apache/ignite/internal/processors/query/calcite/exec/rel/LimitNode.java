@@ -35,7 +35,7 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
     private int rowsProcessed;
 
     /** Fetch can be unset, in this case we need all rows. */
-    private @Nullable Supplier<Integer> fetchNode;
+    private final @Nullable Supplier<Number> fetchNode;
 
     /** Waiting results counter. */
     private int waiting;
@@ -49,13 +49,13 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
     public LimitNode(
         ExecutionContext<Row> ctx,
         RelDataType rowType,
-        Supplier<Integer> offsetNode,
-        Supplier<Integer> fetchNode
+        @Nullable Supplier<Number> offsetNode,
+        @Nullable Supplier<Number> fetchNode
     ) {
         super(ctx, rowType);
 
-        offset = offsetNode == null ? 0 : offsetNode.get();
-        fetch = fetchNode == null ? 0 : fetchNode.get();
+        offset = RelNodeUtils.limitValueWithCheck(offsetNode, "OFFSET");
+        fetch = RelNodeUtils.limitValueWithCheck(fetchNode, "FETCH");
         this.fetchNode = fetchNode;
     }
 
