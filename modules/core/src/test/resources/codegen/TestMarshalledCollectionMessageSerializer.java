@@ -36,10 +36,6 @@ public class TestMarshalledCollectionMessageSerializer implements MessageSeriali
     private static final MessageArrayType keysArrCollDesc = new MessageArrayType(new MessageItemType(MessageCollectionItemType.GRID_CACHE_VERSION), GridCacheVersion.class);
 
     /** */
-    public TestMarshalledCollectionMessageSerializer() {
-    }
-
-    /** */
     @Override public boolean writeTo(TestMarshalledCollectionMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))

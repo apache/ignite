@@ -40,10 +40,6 @@ public class TestMessageSerializer implements MessageSerializer<TestMessage> {
     private static final MessageArrayType verArrCollDesc = new MessageArrayType(new MessageItemType(MessageCollectionItemType.GRID_CACHE_VERSION), GridCacheVersion.class);
 
     /** */
-    public TestMessageSerializer() {
-    }
-
-    /** */
     @Override public boolean writeTo(TestMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))

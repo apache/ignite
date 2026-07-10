@@ -32,10 +32,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
  */
 public class TestMarshalledCollectionMessageMarshaller implements MessageMarshaller<TestMarshalledCollectionMessage> {
     /** */
-    public TestMarshalledCollectionMessageMarshaller() {
-    }
-
-    /** */
     @Override public void marshal(TestMarshalledCollectionMessage msg, GridKernalContext kctx, CacheObjectContext nested) throws IgniteCheckedException {
         if (msg.keys != null && msg.keysArr == null)
             msg.keysArr = msg.keys.toArray(new GridCacheVersion[0]);

@@ -30,10 +30,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
  */
 public class ChildMessageMarshaller implements MessageMarshaller<ChildMessage> {
     /** */
-    public ChildMessageMarshaller() {
-    }
-
-    /** */
     @Override public void marshal(ChildMessage msg, GridKernalContext kctx, CacheObjectContext nested) throws IgniteCheckedException {
     }
 

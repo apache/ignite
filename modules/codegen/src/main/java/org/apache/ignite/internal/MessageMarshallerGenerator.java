@@ -143,13 +143,10 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         }
     }
 
-    /** Writes the constructor, including the {@code marshaller} field when needed. */
+    /** Writes the {@code marshaller} field and the constructor initializing it, when the marshaller is needed. */
     private void writeConstructor(Writer writer, String marshallerClsName) throws IOException {
-        if (!marshallable && !hasMarshalled) {
-            writeDefaultConstructor(writer, marshallerClsName);
-
+        if (!marshallable && !hasMarshalled)
             return;
-        }
 
         writer.write(indentedLine(METHOD_JAVADOC));
         writer.write(NL);

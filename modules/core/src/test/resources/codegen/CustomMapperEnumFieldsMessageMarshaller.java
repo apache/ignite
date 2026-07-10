@@ -30,10 +30,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
  */
 public class CustomMapperEnumFieldsMessageMarshaller implements MessageMarshaller<CustomMapperEnumFieldsMessage> {
     /** */
-    public CustomMapperEnumFieldsMessageMarshaller() {
-    }
-
-    /** */
     @Override public void marshal(CustomMapperEnumFieldsMessage msg, GridKernalContext kctx, CacheObjectContext nested) throws IgniteCheckedException {
     }
 

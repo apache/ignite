@@ -35,10 +35,6 @@ public class CustomMapperEnumFieldsMessageSerializer implements MessageSerialize
     private final EnumMapper<TransactionIsolation> transactionIsolationMapper = new TransactionIsolationEnumMapper();
 
     /** */
-    public CustomMapperEnumFieldsMessageSerializer() {
-    }
-    
-    /** */
     @Override public boolean writeTo(CustomMapperEnumFieldsMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))

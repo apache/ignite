@@ -159,16 +159,6 @@ public abstract class MessageGenerator {
         }
     }
 
-    /** Writes the no-arg constructor with a javadoc stub. */
-    void writeDefaultConstructor(Writer writer, String clsName) throws IOException {
-        writer.write(indentedLine(METHOD_JAVADOC));
-        writer.write(NL);
-        writer.write(indentedLine("public " + clsName + "() {"));
-        writer.write(NL);
-        writer.write(indentedLine("}"));
-        writer.write(NL + NL);
-    }
-
     /** Writes license, package, imports, javadoc, and class declaration; {@link #imports} must be populated before calling. */
     void writeClassHeader(Writer writer, String interfaceName, String clsName) throws IOException {
         writeLicense(writer);

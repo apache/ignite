@@ -86,10 +86,6 @@ public class TestMapMessageSerializer implements MessageSerializer<TestMapMessag
     private static final MessageMapType uuidStringMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.UUID), new MessageItemType(MessageCollectionItemType.STRING), false);
 
     /** */
-    public TestMapMessageSerializer() {
-    }
-
-    /** */
     @Override public boolean writeTo(TestMapMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))

@@ -35,10 +35,6 @@ public class TestMarshalledObjectsMessageSerializer implements MessageSerializer
     private static final MessageCollectionType dataBytesCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.BYTE_ARR), false);
 
     /** */
-    public TestMarshalledObjectsMessageSerializer() {
-    }
-
-    /** */
     @Override public boolean writeTo(TestMarshalledObjectsMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))

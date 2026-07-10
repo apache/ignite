@@ -47,10 +47,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
  */
 public class TestCollectionsMessageMarshaller implements MessageMarshaller<TestCollectionsMessage> {
     /** */
-    public TestCollectionsMessageMarshaller() {
-    }
-
-    /** */
     @Override public void marshal(TestCollectionsMessage msg, GridKernalContext kctx, CacheObjectContext nested) throws IgniteCheckedException {
         CacheObjectContext ctx = nested;
 

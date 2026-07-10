@@ -29,10 +29,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class TestMarshallableMessageSerializer implements MessageSerializer<TestMarshallableMessage> {
     /** */
-    public TestMarshallableMessageSerializer() {
-    }
-
-    /** */
     @Override public boolean writeTo(TestMarshallableMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))

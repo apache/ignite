@@ -37,10 +37,6 @@ public class TestMarshalledMapMessageSerializer implements MessageSerializer<Tes
     private static final MessageCollectionType mapValsCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.GRID_CACHE_VERSION), false);
 
     /** */
-    public TestMarshalledMapMessageSerializer() {
-    }
-
-    /** */
     @Override public boolean writeTo(TestMarshalledMapMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))

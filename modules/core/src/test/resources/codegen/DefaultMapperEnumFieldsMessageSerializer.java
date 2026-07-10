@@ -37,10 +37,6 @@ public class DefaultMapperEnumFieldsMessageSerializer implements MessageSerializ
     private final TransactionIsolation[] transactionIsolationVals = TransactionIsolation.values();
 
     /** */
-    public DefaultMapperEnumFieldsMessageSerializer() {
-    }
-    
-    /** */
     @Override public boolean writeTo(DefaultMapperEnumFieldsMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))

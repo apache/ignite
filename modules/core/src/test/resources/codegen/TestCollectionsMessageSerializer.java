@@ -85,10 +85,6 @@ public class TestCollectionsMessageSerializer implements MessageSerializer<TestC
     private static final MessageCollectionType uuidListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.UUID), false);
 
     /** */
-    public TestCollectionsMessageSerializer() {
-    }
-
-    /** */
     @Override public boolean writeTo(TestCollectionsMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))

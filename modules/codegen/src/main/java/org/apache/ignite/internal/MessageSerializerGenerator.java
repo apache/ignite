@@ -98,8 +98,6 @@ public class MessageSerializerGenerator extends MessageGenerator {
 
             writeClassFields(writer);
 
-            writeDefaultConstructor(writer, serClsName);
-
             for (String w: write)
                 writer.write(w + NL);
 

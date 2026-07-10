@@ -30,10 +30,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class ChildMessageSerializer implements MessageSerializer<ChildMessage> {
     /** */
-    public ChildMessageSerializer() {
-    }
-
-    /** */
     @Override public boolean writeTo(ChildMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
