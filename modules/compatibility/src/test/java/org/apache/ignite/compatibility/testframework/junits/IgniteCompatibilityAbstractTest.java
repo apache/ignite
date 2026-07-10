@@ -294,6 +294,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
             "ignite-binary-impl",
             "ignite-commons",
             "ignite-grid-unsafe",
+            "ignite-nio",
             "ignite-thin-client-api",
             "ignite-thin-client-impl"
         ));
@@ -305,6 +306,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
             "modules/binary/impl",
             "modules/commons",
             "modules/unsafe",
+            "modules/nio",
             "modules/thin-client/api",
             "modules/thin-client/impl"
         ));
