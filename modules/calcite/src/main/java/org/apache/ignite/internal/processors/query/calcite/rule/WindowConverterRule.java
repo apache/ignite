@@ -81,7 +81,8 @@ public class WindowConverterRule extends AbstractIgniteConverterRule<LogicalWind
 
             result = convert(result, inTraits);
 
-            RelRecordType rowType = new RelRecordType(window.getRowType().getFieldList());
+            RelRecordType rowType = new RelRecordType(window.getRowType().getFieldList()
+                .subList(0, result.getRowType().getFieldCount() + grp.aggCalls.size()));
 
             Window.Group newGrp = replaceAggCallOrdinal(grp);
 

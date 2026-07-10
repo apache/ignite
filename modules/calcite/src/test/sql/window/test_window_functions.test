@@ -266,6 +266,27 @@ sales	person
 sales	person
 sales	person
 
+# query with different windows evaluation.
+query III rowsort
+SELECT * FROM (
+    SELECT
+        COUNT(*) OVER (PARTITION BY val2 ORDER BY val3) + SUM(val4) OVER (PARTITION BY val1 ORDER BY val3) AS total,
+        COUNT(*) OVER (PARTITION BY val2 ORDER BY val3) AS val2count, SUM(val4) OVER (PARTITION BY val1 ORDER BY val3) AS val1sum
+    FROM numbers
+) sub WHERE total = val2count + val1sum;
+----
+72	2	70
+72	2	70
+151	3	148
+115	2	113
+115	2	113
+216	3	213
+226	4	222
+71	1	70
+150	2	148
+114	1	113
+158	2	156
+
 # non-default frame specifications
 query IIII rowsort
 SELECT val2, val3,
