@@ -39,8 +39,8 @@ import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
 import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.util.CommonUtils.makeMessageType;
 import static org.apache.ignite.plugin.extensions.communication.Message.DIRECT_TYPE_SIZE;
-import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.makeMessageType;
 import static org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage.NEED_WAIT;
 
 /**

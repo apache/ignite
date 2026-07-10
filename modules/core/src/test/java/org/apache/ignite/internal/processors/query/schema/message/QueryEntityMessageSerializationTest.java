@@ -47,8 +47,8 @@ import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.util.CommonUtils.makeMessageType;
 import static org.apache.ignite.marshaller.Marshallers.jdk;
-import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.makeMessageType;
 
 /** Test for serialization round-trip of {@link QueryEntityMessage} and {@link QueryEntityExMessage}. */
 public class QueryEntityMessageSerializationTest extends GridCommonAbstractTest {

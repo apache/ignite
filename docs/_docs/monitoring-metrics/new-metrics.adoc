@@ -85,6 +85,8 @@ Register name: `cache.{cache_name}.{near}`
 |GetTimeTotal | long | The total time of cache gets for which this node is the initiator, in nanoseconds.
 |HeapEntriesCount|long|Onheap entries count.
 |IndexRebuildKeysProcessed|long | The number of keys with rebuilt indexes.
+|IsCacheAffinityConfigurationMdcSafe|boolean | True if cache affinity guarantees having a copy of each partition in each data center.
+|IsCachePartitionDistributionSafe|boolean | True if current cache partition distribution maintains the guarantee of one partition copy in each data center.
 |IsIndexRebuildInProgress|boolean | True if index build or rebuild is in progress.
 |OffHeapBackupEntriesCount|long|Offheap backup entries count.
 |OffHeapEntriesCount|long|Offheap entries count.
