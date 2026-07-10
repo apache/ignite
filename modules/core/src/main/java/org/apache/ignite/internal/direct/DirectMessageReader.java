@@ -451,7 +451,7 @@ public class DirectMessageReader implements MessageReader {
 
     /** {@inheritDoc} */
     @Override public GridCacheVersion readGridCacheVersion() {
-        DirectByteBufferStream stream = state.item().stream;
+        DirectByteBufferStream stream = curStream;
 
         GridCacheVersion v = stream.readGridCacheVersion();
 
