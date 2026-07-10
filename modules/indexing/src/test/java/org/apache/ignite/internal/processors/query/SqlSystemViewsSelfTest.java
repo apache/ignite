@@ -1918,7 +1918,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
                 // Join explicit locks with key locks.
                 List<List<?>> res = execSql("SELECT el.cache_id, el.thread_id, kl.is_owner, kl.is_tx, kl.originating_node_id " +
-                    "FROM SYS.CACHE_EXPLICIT_LOCKS el JOIN SYS.CACHE_KEY_LOCKS kl ON el.xid = kl.xid");
+                    "FROM SYS.CACHE_EXPLICIT_LOCKS el JOIN SYS.CACHE_LOCKS kl ON el.xid = kl.xid");
 
                 assertEquals(2, res.size());
 
@@ -1932,7 +1932,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
                 // Join transactions with key locks.
                 res = execSql("SELECT kl.cache_id, tx.thread_id, kl.is_owner, kl.is_tx, kl.originating_node_id " +
-                    "FROM SYS.TRANSACTIONS tx JOIN SYS.CACHE_KEY_LOCKS kl ON tx.xid = kl.xid");
+                    "FROM SYS.TRANSACTIONS tx JOIN SYS.CACHE_LOCKS kl ON tx.xid = kl.xid");
 
                 assertEquals(1, res.size());
 

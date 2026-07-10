@@ -26,7 +26,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.systemview.view.CacheExplicitLockView;
-import org.apache.ignite.spi.systemview.view.CacheKeyLockView;
+import org.apache.ignite.spi.systemview.view.CacheLockView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.TransactionView;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -36,7 +36,7 @@ import org.junit.Test;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.processors.cache.GridCacheMvccManager.CACHE_EXPLICIT_LOCKS_VIEW;
-import static org.apache.ignite.internal.processors.cache.GridCacheMvccManager.CACHE_KEY_LOCKS_VIEW;
+import static org.apache.ignite.internal.processors.cache.GridCacheMvccManager.CACHE_LOCKS_VIEW;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.TXS_MON_LIST;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -106,9 +106,9 @@ public class SystemViewLocksTest extends SystemViewAbstractTest {
             List<CacheExplicitLockView> explicitLocks1 = viewContent(ignite1, CACHE_EXPLICIT_LOCKS_VIEW, 2);
             List<CacheExplicitLockView> explicitLocks2 = viewContent(ignite2, CACHE_EXPLICIT_LOCKS_VIEW, 2);
 
-            List<CacheKeyLockView> keyLocks0 = viewContent(ignite0, CACHE_KEY_LOCKS_VIEW, 3);
-            List<CacheKeyLockView> keyLocks1 = viewContent(ignite1, CACHE_KEY_LOCKS_VIEW, 2);
-            List<CacheKeyLockView> keyLocks2 = viewContent(ignite2, CACHE_KEY_LOCKS_VIEW, 1);
+            List<CacheLockView> keyLocks0 = viewContent(ignite0, CACHE_LOCKS_VIEW, 3);
+            List<CacheLockView> keyLocks1 = viewContent(ignite1, CACHE_LOCKS_VIEW, 2);
+            List<CacheLockView> keyLocks2 = viewContent(ignite2, CACHE_LOCKS_VIEW, 1);
 
             // Check threads.
             assertEquals(explicitLocks0.get(0).threadId(), explicitLocks0.get(1).threadId());
@@ -116,9 +116,9 @@ public class SystemViewLocksTest extends SystemViewAbstractTest {
             assertNotSame(explicitLocks2.get(0).threadId(), explicitLocks2.get(1).threadId());
 
             // Check lock owners.
-            CacheKeyLockView owner0 = F.find(keyLocks0, null, CacheKeyLockView::isOwner);
-            CacheKeyLockView owner1 = F.find(keyLocks1, null, CacheKeyLockView::isOwner);
-            CacheKeyLockView owner2 = F.find(keyLocks2, null, CacheKeyLockView::isOwner);
+            CacheLockView owner0 = F.find(keyLocks0, null, CacheLockView::isOwner);
+            CacheLockView owner1 = F.find(keyLocks1, null, CacheLockView::isOwner);
+            CacheLockView owner2 = F.find(keyLocks2, null, CacheLockView::isOwner);
 
             assertNotNull(owner0);
             assertNotNull(owner1);
@@ -194,14 +194,14 @@ public class SystemViewLocksTest extends SystemViewAbstractTest {
             List<TransactionView> txs1 = viewContent(ignite1, TXS_MON_LIST, 3); // 1 near + 2 dht
             List<TransactionView> txs2 = viewContent(ignite2, TXS_MON_LIST, 3); // 2 near + 1 dht
 
-            List<CacheKeyLockView> keyLocks0 = viewContent(ignite0, CACHE_KEY_LOCKS_VIEW, 3);
-            List<CacheKeyLockView> keyLocks1 = viewContent(ignite1, CACHE_KEY_LOCKS_VIEW, 2);
-            List<CacheKeyLockView> keyLocks2 = viewContent(ignite2, CACHE_KEY_LOCKS_VIEW, 1);
+            List<CacheLockView> keyLocks0 = viewContent(ignite0, CACHE_LOCKS_VIEW, 3);
+            List<CacheLockView> keyLocks1 = viewContent(ignite1, CACHE_LOCKS_VIEW, 2);
+            List<CacheLockView> keyLocks2 = viewContent(ignite2, CACHE_LOCKS_VIEW, 1);
 
             // Check lock owners.
-            CacheKeyLockView owner0 = F.find(keyLocks0, null, CacheKeyLockView::isOwner);
-            CacheKeyLockView owner1 = F.find(keyLocks1, null, CacheKeyLockView::isOwner);
-            CacheKeyLockView owner2 = F.find(keyLocks2, null, CacheKeyLockView::isOwner);
+            CacheLockView owner0 = F.find(keyLocks0, null, CacheLockView::isOwner);
+            CacheLockView owner1 = F.find(keyLocks1, null, CacheLockView::isOwner);
+            CacheLockView owner2 = F.find(keyLocks2, null, CacheLockView::isOwner);
 
             assertNotNull(owner0);
             assertNotNull(owner1);
@@ -219,11 +219,11 @@ public class SystemViewLocksTest extends SystemViewAbstractTest {
             assertEquals(1, F.size(txs2, l -> l.xid().equals(owner2.xid()))); // Dht.
 
             // Check waiting locks.
-            CacheKeyLockView waiting1on0 = F.find(keyLocks0, null,
+            CacheLockView waiting1on0 = F.find(keyLocks0, null,
                 l -> !l.isOwner() && l.originatingNodeId().equals(ignite1.localNode().id()));
-            CacheKeyLockView waiting2on0 = F.find(keyLocks0, null,
+            CacheLockView waiting2on0 = F.find(keyLocks0, null,
                 l -> !l.isOwner() && l.originatingNodeId().equals(ignite2.localNode().id()));
-            CacheKeyLockView waiting2on1 = F.find(keyLocks1, null,
+            CacheLockView waiting2on1 = F.find(keyLocks1, null,
                 l -> !l.isOwner() && l.originatingNodeId().equals(ignite2.localNode().id()));
 
             assertNotNull(waiting1on0);
@@ -297,12 +297,12 @@ public class SystemViewLocksTest extends SystemViewAbstractTest {
             List<TransactionView> txs1 = viewContent(ignite1, TXS_MON_LIST, 2); // 1 near + 1 dht
             List<TransactionView> txs2 = viewContent(ignite2, TXS_MON_LIST, 2); // 1 near + 1 dht
 
-            List<CacheKeyLockView> keyLocks1 = viewContent(ignite1, CACHE_KEY_LOCKS_VIEW, 2);
-            List<CacheKeyLockView> keyLocks2 = viewContent(ignite2, CACHE_KEY_LOCKS_VIEW, 2);
+            List<CacheLockView> keyLocks1 = viewContent(ignite1, CACHE_LOCKS_VIEW, 2);
+            List<CacheLockView> keyLocks2 = viewContent(ignite2, CACHE_LOCKS_VIEW, 2);
 
             // Check lock owners.
-            CacheKeyLockView owner1 = F.find(keyLocks1, null, CacheKeyLockView::isOwner);
-            CacheKeyLockView owner2 = F.find(keyLocks2, null, CacheKeyLockView::isOwner);
+            CacheLockView owner1 = F.find(keyLocks1, null, CacheLockView::isOwner);
+            CacheLockView owner2 = F.find(keyLocks2, null, CacheLockView::isOwner);
 
             assertNotNull(owner1);
             assertNotNull(owner2);
@@ -315,9 +315,9 @@ public class SystemViewLocksTest extends SystemViewAbstractTest {
             assertEquals(1, F.size(txs2, l -> l.xid().equals(owner2.xid()))); // Dht.
 
             // Check waiting locks.
-            CacheKeyLockView waiting2on1 = F.find(keyLocks1, null,
+            CacheLockView waiting2on1 = F.find(keyLocks1, null,
                 l -> !l.isOwner() && l.originatingNodeId().equals(ignite2.localNode().id()));
-            CacheKeyLockView waiting2on2 = F.find(keyLocks2, null,
+            CacheLockView waiting2on2 = F.find(keyLocks2, null,
                 l -> !l.isOwner() && l.originatingNodeId().equals(ignite2.localNode().id()));
 
             assertNotNull(waiting2on1);

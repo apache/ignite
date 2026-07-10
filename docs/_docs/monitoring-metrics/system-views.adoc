@@ -314,7 +314,7 @@ Explicit locks are acquired using the `Cache.lock(key)` API.
 |XID | UUID | Lock ID (unique identifier)
 |===
 
-== CACHE_KEY_LOCKS
+== CACHE_LOCKS
 
 This view exposes information about all locks (both explicit and transactional) requested for keys hosted on the current node.
 This includes locks from remote nodes trying to access primary keys on this node.
@@ -328,7 +328,7 @@ This includes locks from remote nodes trying to access primary keys on this node
 |ORIGINATING_NODE_ID | UUID | ID of the node that initiated the lock request
 |IS_OWNER | boolean | `True` if the lock is currently owned
 |IS_TX | boolean | `True` if the lock is part of a transaction
-|FLAGS | string | All flags for the lock
+|FLAGS | short | All flags for the lock. This field represents a bit mask with possible values: LOCAL(0x01), OWNER(0x02), READY(0x04), REENTRY(0x08), USED(0x10), TX(0x40), SINGLE_IMPLICIT(0x80), DHT_LOCAL(0x100), NEAR_LOCAL(0x200), REMOVED(0x400), READ(0x800);
 |XID | UUID | Current transaction ID (or explicit lock ID)
 |ORIGINATING_XID | UUID | Originating transaction ID (or explicit lock ID)
 |===

@@ -30,14 +30,14 @@ import org.apache.ignite.lang.IgniteUuid;
  * including explicit locks and transactional locks.
  */
 @SystemViewDescriptor
-public class CacheKeyLockView {
+public class CacheLockView {
     /** Lock candidate. */
     private final GridCacheMvccCandidate cand;
 
     /**
      * @param cand Lock candidate
      */
-    public CacheKeyLockView(GridCacheMvccCandidate cand) {
+    public CacheLockView(GridCacheMvccCandidate cand) {
         this.cand = cand;
     }
 
@@ -93,8 +93,8 @@ public class CacheKeyLockView {
      * @return All enabled flags.
      */
     @Order(6)
-    public String flags() {
-        return cand.enabledFlags();
+    public short flags() {
+        return cand.flags();
     }
 
     /**

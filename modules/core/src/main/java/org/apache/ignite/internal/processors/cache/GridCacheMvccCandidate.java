@@ -607,22 +607,6 @@ public class GridCacheMvccCandidate implements Externalizable,
         return parent0.txKey();
     }
 
-    /** */
-    public String enabledFlags() {
-        SB sb = new SB();
-
-        for (Mask m : Mask.MASKS) {
-            if (m.bit(flags) != 0) {
-                if (sb.length() != 0)
-                    sb.a(" | ");
-
-                sb.a(m.name());
-            }
-        }
-
-        return sb.toString();
-    }
-
     /** {@inheritDoc} */
     @Override public GridCacheMvccCandidate candidate(int idx) {
         assert idx == 0 : idx;
