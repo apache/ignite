@@ -183,10 +183,6 @@ public final class MetadataUpdateProposedMessage extends DiscoveryCustomMessage 
     /** @param metadata Metadata. */
     public void metadata(BinaryMetadata metadata) {
         this.metadata = metadata;
-
-        // Invalidate the cached marshalled form so a re-marshal (e.g. coordinator re-propagating merged metadata)
-        // picks up the new value instead of keeping the stale bytes under the marshal-once guard.
-        this.metadataBytes = null;
     }
 
     /** */
