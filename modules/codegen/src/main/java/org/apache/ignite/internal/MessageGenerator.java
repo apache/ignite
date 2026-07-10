@@ -67,7 +67,7 @@ public abstract class MessageGenerator {
     public static final String CLS_JAVADOC = "/**" + NL +
         " * This class is generated automatically." + NL +
         " *" + NL +
-        " * @see org.apache.ignite.internal.MessageProcessor" + NL +
+        " * @see " + MessageProcessor.class.getName() + NL +
         " */";
 
     /** */
