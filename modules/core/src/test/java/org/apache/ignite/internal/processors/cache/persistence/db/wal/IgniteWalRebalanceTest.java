@@ -341,7 +341,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         // Wait for rebalance to complete on all nodes (don't enforce success — it may switch to full rebalance).
         for (Ignite ig : G.allGrids()) {
             assertTrue(GridTestUtils.waitForCondition(
-                () -> ((IgniteEx) ig).cachex(CACHE_NAME).context().preloader().rebalanceFuture().isDone(),
+                () -> ((IgniteEx)ig).cachex(CACHE_NAME).context().preloader().rebalanceFuture().isDone(),
                 getTestTimeout()));
         }
 
@@ -374,7 +374,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         // Wait for rebalance to complete on all nodes (don't enforce success — it may switch to full rebalance).
         for (Ignite ig : G.allGrids()) {
             assertTrue(GridTestUtils.waitForCondition(
-                () -> ((IgniteEx) ig).cachex(CACHE_NAME).context().preloader().rebalanceFuture().isDone(),
+                () -> ((IgniteEx)ig).cachex(CACHE_NAME).context().preloader().rebalanceFuture().isDone(),
                 getTestTimeout()));
         }
 
