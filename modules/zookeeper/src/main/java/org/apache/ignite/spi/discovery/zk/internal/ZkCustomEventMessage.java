@@ -68,10 +68,10 @@ public class ZkCustomEventMessage implements DiscoverySpiCustomMessage {
 
         assert !(res instanceof ZkCustomEventMessage);
 
-        if (opCtxMsg == null)
+        if (opCtxMsg == null || res == null)
             return res;
 
-        return res == null ? null : new ZkCustomEventMessage(res, opCtxMsg);
+        return new ZkCustomEventMessage(res, opCtxMsg);
     }
 
     /** {@inheritDoc} */
