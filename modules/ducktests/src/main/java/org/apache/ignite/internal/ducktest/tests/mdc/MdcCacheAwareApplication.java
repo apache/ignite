@@ -60,7 +60,7 @@ public abstract class MdcCacheAwareApplication extends IgniteAwareApplication {
     protected static final int DFLT_DCS_NUM = 2;
 
     /** */
-    protected static final int DFLT_PARTITIONS = 32;
+    protected static final int DFLT_PARTITIONS = 512;
 
     /** */
     protected static final CacheAtomicityMode DFLT_ATOMICITY_MODE = ATOMIC;

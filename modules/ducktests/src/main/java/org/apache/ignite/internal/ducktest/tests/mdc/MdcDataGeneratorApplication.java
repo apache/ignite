@@ -1,5 +1,7 @@
 package org.apache.ignite.internal.ducktest.tests.mdc;
 
+import java.util.Map;
+import java.util.TreeMap;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -14,6 +16,7 @@ public class MdcDataGeneratorApplication extends MdcCacheAwareApplication {
     @Override public void run(JsonNode jNode) throws IgniteInterruptedCheckedException {
         int from = jNode.path("from").asInt(0);
         int to = jNode.path("to").asInt(10_000);
+        int batchSize = jNode.path("batchSize").asInt(1_024);
 
         markInitialized();
         waitForActivation();
@@ -23,8 +26,19 @@ public class MdcDataGeneratorApplication extends MdcCacheAwareApplication {
         log.info("Data generation started [dc=" + dcId() + ", cache=" + cache.getName() +
             ", from=" + from + ", to=" + to + "]");
 
-        for (int i = from; i < to && !terminated(); i++)
-            cache.put(i, new IndexedDataRecord(i));
+        Map<Integer, IndexedDataRecord> batch = new TreeMap<>();
+
+        for (int i = from; i < to && !terminated(); i++) {
+            batch.put(i, new IndexedDataRecord(i));
+
+            if (batch.size() >= batchSize) {
+                cache.putAll(batch);
+                batch.clear();
+            }
+        }
+
+        if (!batch.isEmpty() && !terminated())
+            cache.putAll(batch);
 
         log.info("Data generation finished [dc=" + dcId() + ", entries=" + (to - from) + "]");
 
