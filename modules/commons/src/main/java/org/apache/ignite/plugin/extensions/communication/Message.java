@@ -25,18 +25,18 @@ import org.apache.ignite.internal.managers.communication.UnknownMessageException
 /**
  * Base type for all messages sent between nodes, both over the communication SPI and via discovery.
  * <p>
- * Serialized fields are declared by annotating instance fields; {@link org.apache.ignite.internal.MessageProcessor} then
+ * Serialized fields are declared by annotating instance fields; {@ignitelink org.apache.ignite.internal.MessageProcessor} then
  * generates the serializer, so implementations should not hand-write {@code writeTo}/{@code readFrom}. Available
  * field annotations (see each annotation's javadoc for details):
  * <ul>
- *     <li>{@link org.apache.ignite.internal.Order @Order} — an ordered serialized field (the basic building block);</li>
- *     <li>{@link org.apache.ignite.internal.Compress @Compress} — compress the field's serialized form;</li>
- *     <li>{@link org.apache.ignite.internal.NioField @NioField} — a low-level NIO field;</li>
- *     <li>{@link org.apache.ignite.internal.CustomMapper @CustomMapper} — map the field via a custom mapper;</li>
- *     <li>{@link org.apache.ignite.internal.Marshalled @Marshalled} /
- *         {@link org.apache.ignite.internal.MarshalledMap @MarshalledMap} /
- *         {@link org.apache.ignite.internal.MarshalledCollection @MarshalledCollection} /
- *         {@link org.apache.ignite.internal.MarshalledObjects @MarshalledObjects} — for {@link MarshallableMessage}
+ *     <li>{@ignitelink org.apache.ignite.internal.Order @Order} — an ordered serialized field (the basic building block);</li>
+ *     <li>{@ignitelink org.apache.ignite.internal.Compress @Compress} — compress the field's serialized form;</li>
+ *     <li>{@ignitelink org.apache.ignite.internal.NioField @NioField} — a low-level NIO field;</li>
+ *     <li>{@ignitelink org.apache.ignite.internal.CustomMapper @CustomMapper} — map the enum field via a custom mapper;</li>
+ *     <li>{@ignitelink org.apache.ignite.internal.Marshalled @Marshalled} /
+ *         {@ignitelink org.apache.ignite.internal.MarshalledMap @MarshalledMap} /
+ *         {@ignitelink org.apache.ignite.internal.MarshalledCollection @MarshalledCollection} /
+ *         {@ignitelink org.apache.ignite.internal.MarshalledObjects @MarshalledObjects} — for {@link MarshallableMessage}
  *         payloads serialized via a {@link org.apache.ignite.marshaller.Marshaller}.</li>
  * </ul>
  */
