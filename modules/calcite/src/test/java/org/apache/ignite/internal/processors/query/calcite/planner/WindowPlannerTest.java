@@ -430,7 +430,6 @@ public class WindowPlannerTest extends AbstractPlannerTest {
         );
 
         Predicate<RelNode> colocatedPredicate = nodeOrAnyChild(isInstanceOf(IgniteColocatedAggregateBase.class)
-            .and(hasChildThat(isInstanceOf(IgniteExchange.class)).negate())
             .and(hasChildThat(isInstanceOf(IgniteWindow.class))
                 .and(window -> TraitUtils.correlation(window).correlated())));
 
