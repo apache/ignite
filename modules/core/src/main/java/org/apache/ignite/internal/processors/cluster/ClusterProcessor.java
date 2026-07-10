@@ -76,7 +76,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.mxbean.IgniteClusterMXBean;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
@@ -379,13 +378,6 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
             @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 if (msg instanceof IgniteDiagnosticRequest) {
                     IgniteDiagnosticRequest infoReq = (IgniteDiagnosticRequest)msg;
-
-                    try {
-                        MessageMarshaller.unmarshal(ctx.messageFactory(), infoReq, ctx, null, U.gridClassLoader());
-                    }
-                    catch (IgniteCheckedException e) {
-                        U.error(diagnosticLog, "Failed to ummarshall diagnostic request [msg=" + infoReq + "]", e);
-                    }
 
                     ClusterNode node = ctx.discovery().node(nodeId);
 
