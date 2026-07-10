@@ -45,6 +45,7 @@
         <module>modules/thin-client/api</module>
         <module>modules/thin-client/impl</module>
         <module>modules/unsafe</module>
+        <module>modules/nio</module>
         <module>modules/core</module>
         <module>modules/compress</module>
         <module>modules/dev-utils</module>
@@ -568,7 +569,7 @@
                                             <regexp pattern="(ignite.version=).+$" />
                                             <substitution expression="\1${project.version}" />
                                             <fileset dir="${project.basedir}/modules/core/">
-                                                <include name="src/main/resources/ignite.properties" />
+                                                <include name="src/main/resources/ignite-build-info.properties" />
                                             </fileset>
                                         </replaceregexp>
 

@@ -31,6 +31,7 @@ import org.apache.ignite.internal.managers.communication.CompressedMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -442,6 +443,17 @@ public class DirectMessageReader implements MessageReader {
         DirectByteBufferStream stream = curStream;
 
         IgniteProductVersion v = stream.readIgniteProductVersion();
+
+        lastRead = stream.lastFinished();
+
+        return v;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheVersion readGridCacheVersion() {
+        DirectByteBufferStream stream = state.item().stream;
+
+        GridCacheVersion v = stream.readGridCacheVersion();
 
         lastRead = stream.lastFinished();
 

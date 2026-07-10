@@ -179,8 +179,6 @@ import org.apache.ignite.internal.processors.cache.transactions.TxLocksResponse;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.verify.TransactionsHashRecord;
 import org.apache.ignite.internal.processors.cache.version.GridCacheRawVersionedEntry;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.processors.cluster.CacheMetricsMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
@@ -218,6 +216,8 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
 import org.apache.ignite.internal.processors.query.messages.GridQueryKillRequest;
 import org.apache.ignite.internal.processors.query.messages.GridQueryKillResponse;
+import org.apache.ignite.internal.processors.query.schema.message.QueryEntityExMessage;
+import org.apache.ignite.internal.processors.query.schema.message.QueryEntityMessage;
 import org.apache.ignite.internal.processors.query.schema.message.QueryInlineSizesDataBagItem;
 import org.apache.ignite.internal.processors.query.schema.message.QueryProposalsDataBagItem;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
@@ -236,9 +236,9 @@ import org.apache.ignite.internal.processors.query.stat.messages.StatisticsReque
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsResponse;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultRequest;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultResponse;
-import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeNodeData;
+import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeClusterData;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteComponentFeatureSet;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureSet;
-import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteProductFeatures;
 import org.apache.ignite.internal.processors.security.SecurityContextWrapper;
 import org.apache.ignite.internal.processors.service.ServiceChangeBatchRequest;
 import org.apache.ignite.internal.processors.service.ServiceClusterDeploymentResult;
@@ -362,8 +362,6 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(DiscoveryDataPacket.class);
         withNoSchema(GridByteArrayList.class);
         withNoSchema(CacheVersionedValue.class);
-        withNoSchema(GridCacheVersion.class);
-        withNoSchema(GridCacheVersionEx.class);
         withNoSchema(WALPointer.class);
         withNoSchemaResolvedClassLoader(SerializableDataBagItemWrapper.class);
         withSchemaResolvedClassLoader(GridTopicMessage.class);
@@ -589,7 +587,9 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(GridDhtTxSalvageMessage.class);
         withSchema(CacheContinuousQueryEntry.class);
         withNoSchema(QueryInlineSizesDataBagItem.class);
-        withSchema(QueryProposalsDataBagItem.class);
+        withNoSchema(QueryProposalsDataBagItem.class);
+        withNoSchema(QueryEntityMessage.class);
+        withNoSchema(QueryEntityExMessage.class);
 
         // [11200 - 11300]: Compute, distributed process messages.
         msgIdx = 11200;
@@ -644,7 +644,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(UserAuthenticateRequestMessage.class);
         withNoSchema(UserAuthenticateResponseMessage.class);
         withNoSchema(TcpDiscoveryAuthFailedMessage.class);
-        withSchema(AuthentificationDataBagItem.class);
+        withNoSchema(AuthentificationDataBagItem.class);
 
         // [12200 - 12300]: Binary, classloading and marshalling messages.
         msgIdx = 12200;
@@ -696,8 +696,8 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         // [13600 - 13700]: Rolling Upgrade messages.
         msgIdx = 13600;
         withNoSchema(IgniteFeatureSet.class);
-        withNoSchema(IgniteProductFeatures.class);
-        withNoSchema(RollingUpgradeNodeData.class);
+        withNoSchema(IgniteComponentFeatureSet.class);
+        withNoSchema(RollingUpgradeClusterData.class);
 
         assert msgIdx <= MAX_MESSAGE_ID;
     }
