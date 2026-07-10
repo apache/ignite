@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.service;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import org.apache.ignite.internal.Order;
@@ -77,14 +76,8 @@ public class ServiceSingleNodeDeploymentResult implements Message, Serializable 
      * @param errors Exceptions.
      */
     public void errors(@Nullable Collection<Throwable> errors) {
-        if (errors == null)
-            return;
-
-        this.errors = new ArrayList<>();
-
-        for (Throwable th : errors) {
-            this.errors.add(new ErrorMessage(th));
-        }
+        if (!F.isEmpty(errors))
+            this.errors = F.transform(errors, ErrorMessage::new);
     }
 
     /** {@inheritDoc} */
