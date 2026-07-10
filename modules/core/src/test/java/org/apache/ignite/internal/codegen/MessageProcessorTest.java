@@ -163,15 +163,12 @@ public class MessageProcessorTest {
 
         assertThat(compilation).succeeded();
 
-        assertEquals(2, compilation.generatedSourceFiles().size());
+        // No marshaller: the messages have nothing to marshal, so its generation is skipped.
+        assertEquals(1, compilation.generatedSourceFiles().size());
 
         assertThat(compilation)
             .generatedSourceFile("org.apache.ignite.internal.ChildMessageSerializer")
             .hasSourceEquivalentTo(javaFile("ChildMessageSerializer.java"));
-
-        assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.ChildMessageMarshaller")
-            .hasSourceEquivalentTo(javaFile("ChildMessageMarshaller.java"));
     }
 
     /** */
@@ -181,15 +178,12 @@ public class MessageProcessorTest {
 
         assertThat(compilation).succeeded();
 
-        assertEquals(4, compilation.generatedSourceFiles().size());
+        // No ChildMessageMarshaller: the message has nothing to marshal, so its generation is skipped.
+        assertEquals(3, compilation.generatedSourceFiles().size());
 
         assertThat(compilation)
             .generatedSourceFile("org.apache.ignite.internal.ChildMessageSerializer")
             .hasSourceEquivalentTo(javaFile("ChildMessageSerializer.java"));
-
-        assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.ChildMessageMarshaller")
-            .hasSourceEquivalentTo(javaFile("ChildMessageMarshaller.java"));
 
         assertThat(compilation)
             .generatedSourceFile("org.apache.ignite.internal.TestMessageSerializer")
@@ -262,15 +256,12 @@ public class MessageProcessorTest {
 
         assertThat(compilation).succeeded();
 
-        assertEquals(2, compilation.generatedSourceFiles().size());
+        // No marshaller: enum fields need no marshalling, so its generation is skipped.
+        assertEquals(1, compilation.generatedSourceFiles().size());
 
         assertThat(compilation)
             .generatedSourceFile("org.apache.ignite.internal.DefaultMapperEnumFieldsMessageSerializer")
             .hasSourceEquivalentTo(javaFile("DefaultMapperEnumFieldsMessageSerializer.java"));
-
-        assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.DefaultMapperEnumFieldsMessageMarshaller")
-            .hasSourceEquivalentTo(javaFile("DefaultMapperEnumFieldsMessageMarshaller.java"));
     }
 
     /**
@@ -308,15 +299,12 @@ public class MessageProcessorTest {
 
         assertThat(compilation).succeeded();
 
-        assertEquals(2, compilation.generatedSourceFiles().size());
+        // No marshaller: enum fields need no marshalling, so its generation is skipped.
+        assertEquals(1, compilation.generatedSourceFiles().size());
 
         assertThat(compilation)
             .generatedSourceFile("org.apache.ignite.internal.CustomMapperEnumFieldsMessageSerializer")
             .hasSourceEquivalentTo(javaFile("CustomMapperEnumFieldsMessageSerializer.java"));
-
-        assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.CustomMapperEnumFieldsMessageMarshaller")
-            .hasSourceEquivalentTo(javaFile("CustomMapperEnumFieldsMessageMarshaller.java"));
     }
 
     /** */

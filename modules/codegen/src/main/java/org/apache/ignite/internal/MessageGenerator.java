@@ -114,6 +114,9 @@ public abstract class MessageGenerator {
         String fqnClsName = env.getElementUtils().getPackageOf(type) + "." + clsName;
         String code = buildClassCode(clsName);
 
+        if (code == null)
+            return;
+
         try {
             JavaFileObject file = env.getFiler().createSourceFile(fqnClsName);
 
@@ -143,7 +146,7 @@ public abstract class MessageGenerator {
     /** Populates internal state (method body lines etc.) from {@code fields}; called before {@link #buildClassCode}. */
     abstract void generateBody(List<VariableElement> fields) throws Exception;
 
-    /** Generates and returns the complete source code for the generated class. */
+    /** Generates and returns the complete source code for the generated class, or {@code null} to skip the class. */
     abstract String buildClassCode(String clsName) throws IOException;
 
     /** */
@@ -235,8 +238,10 @@ public abstract class MessageGenerator {
      * Emits an {@code @Override public void <signature> throws IgniteCheckedException} method into {@code target}: a
      * leading blank separator, the {@link #METHOD_JAVADOC} stub, the signature line, and the indented body produced by
      * {@code bodyBuilder}.
+     *
+     * @return {@code true} if {@code bodyBuilder} produced any body lines, {@code false} for an empty method.
      */
-    protected void emitMethod(List<String> target, String signature, Consumer<List<String>> bodyBuilder) {
+    protected boolean emitMethod(List<String> target, String signature, Consumer<List<String>> bodyBuilder) {
         if (!target.isEmpty())
             target.add(EMPTY);
 
@@ -252,6 +257,8 @@ public abstract class MessageGenerator {
         indent--;
 
         target.add(indentedLine("}"));
+
+        return !body.isEmpty();
     }
 
     /** @return {@code true} if a file with identical content is already generated (e.g. during incremental build). */

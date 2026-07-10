@@ -86,9 +86,15 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
         Supplier<Message> supplier, Marshaller marsh) {
         MessageSerializer<T> serializer = requireGenerated(cls, "Serializer", marsh);
 
+        // A MarshallableMessage always gets a generated marshaller (the hook call alone is a statement), so its
+        // absence is a build problem. For the rest the generator skips statement-free marshallers, so absence
+        // legitimately means "nothing to marshal"; the message and its companions ship in the same jar, hence
+        // a missing class cannot be a packaging accident that spares the (required) serializer.
         MessageMarshaller<T> marshaller = NonMarshallableMessage.class.isAssignableFrom(cls)
             ? null
-            : requireGenerated(cls, "Marshaller", marsh);
+            : MarshallableMessage.class.isAssignableFrom(cls)
+            ? requireGenerated(cls, "Marshaller", marsh)
+            : loadGenerated(cls, "Marshaller", marsh);
 
         // Deployers are generated for GridCacheMessage subclasses only, so the class lookup is skipped for the rest;
         // a DeployableMessage left without a deployer is then rejected at registration.

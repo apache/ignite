@@ -79,6 +79,9 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     /** */
     private boolean hasMarshalled;
 
+    /** Whether any generated method got a non-empty body; a marshaller without one is skipped entirely. */
+    private boolean hasStatements;
+
     /** Enclosed fields of the currently processed type. Computed once per {@link #generateBody} call. */
     private Map<String, VariableElement> enclosed;
 
@@ -121,6 +124,9 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
     /** {@inheritDoc} */
     @Override String buildClassCode(String marshallerClsName) throws IOException {
+        if (!hasStatements)
+            return null;
+
         try (Writer writer = new StringWriter()) {
             imports.add(type.toString());
             imports.add("org.apache.ignite.plugin.extensions.communication.MessageMarshaller");
@@ -177,7 +183,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
         String signature = "marshal(" + simpleNameWithGeneric(type) + " msg, GridKernalContext kctx, CacheObjectContext nested)";
 
-        emitMethod(marshall, signature, body -> {
+        hasStatements |= emitMethod(marshall, signature, body -> {
             if (needsCtx(orderedFields))
                 appendBlock(body, List.of(ctxResolutionLine()));
 
@@ -231,7 +237,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
     /** Generates the cache-aware {@code unmarshal} overload: the full field set, with cache context and deployment class loader. */
     private void generateUnmarshalMethod(String params, List<VariableElement> fields) {
-        emitMethod(marshall, "unmarshal(" + params + ")", body -> {
+        hasStatements |= emitMethod(marshall, "unmarshal(" + params + ")", body -> {
             Set<String> wireFieldSkip = marshalledWireFieldsToSkip();
 
             if (needsCtx(fields) || !wireFieldSkip.isEmpty())
@@ -252,7 +258,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
     /** Generates the {@code unmarshalNio} method for NIO-eligible {@code @Message} fields. */
     private void generateUnmarshalNioMethod(String params, List<VariableElement> nioFields) {
-        emitMethod(marshall, "unmarshalNio(" + params + ")", body -> {
+        hasStatements |= emitMethod(marshall, "unmarshalNio(" + params + ")", body -> {
             for (VariableElement f : nioFields)
                 appendBlock(body, unmarshalNioField(fieldAccessor(f)));
         });
