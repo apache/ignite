@@ -338,6 +338,13 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
+        // Wait for rebalance to complete on all nodes (don't enforce success — it may switch to full rebalance).
+        for (Ignite ig : G.allGrids()) {
+            assertTrue(GridTestUtils.waitForCondition(
+                () -> ((IgniteEx) ig).cachex(CACHE_NAME).context().preloader().rebalanceFuture().isDone(),
+                getTestTimeout()));
+        }
+
         Set<Long> topVers = ((WalRebalanceCheckingCommunicationSpi)ignite.configuration().getCommunicationSpi())
             .walRebalanceVersions(grpId);
 
@@ -363,6 +370,13 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         ignite = startGrid(3);
 
         awaitPartitionMapExchange();
+
+        // Wait for rebalance to complete on all nodes (don't enforce success — it may switch to full rebalance).
+        for (Ignite ig : G.allGrids()) {
+            assertTrue(GridTestUtils.waitForCondition(
+                () -> ((IgniteEx) ig).cachex(CACHE_NAME).context().preloader().rebalanceFuture().isDone(),
+                getTestTimeout()));
+        }
 
         topVers = ((WalRebalanceCheckingCommunicationSpi)ignite.configuration().getCommunicationSpi())
             .walRebalanceVersions(grpId);
