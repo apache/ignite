@@ -40,17 +40,14 @@ import org.jetbrains.annotations.Nullable;
  * the generated deployer then also delegates to its {@code deploy}, mirroring {@code marshal}.
  */
 public class MessageDeploymentGenerator extends MessageGenerator {
-    /** FQN of GridCacheMessage; hierarchy scan stops here (exclusive). */
-    private static final String GRID_CACHE_MESSAGE = "org.apache.ignite.internal.processors.cache.GridCacheMessage";
+    /** */
+    private final TypeMirror gridCacheMsgMirror;
 
     /** */
-    private final TypeMirror gridCacheMessageMirror;
+    private final TypeMirror deployableMsgMirror;
 
     /** */
-    private final TypeMirror deployableMessageMirror;
-
-    /** */
-    private final TypeMirror cacheObjectMirror;
+    private final TypeMirror cacheObjMirror;
 
     /** */
     private final TypeMirror txEntryMirror;
@@ -61,7 +58,7 @@ public class MessageDeploymentGenerator extends MessageGenerator {
     /** */
     private final TypeMirror iterableMirror;
 
-    /** Accumulated source lines for the generated {@code deploy} method. */
+    /** Accumulated source lines for the generated {@code GridCacheMessageDeployer#deploy} implementation. */
     private final List<String> deploy = new ArrayList<>();
 
     /** */
@@ -71,9 +68,9 @@ public class MessageDeploymentGenerator extends MessageGenerator {
     MessageDeploymentGenerator(ProcessingEnvironment env) {
         super(env);
 
-        gridCacheMessageMirror = type(GRID_CACHE_MESSAGE);
-        deployableMessageMirror = type("org.apache.ignite.internal.processors.cache.DeployableMessage");
-        cacheObjectMirror = type("org.apache.ignite.internal.processors.cache.CacheObject");
+        gridCacheMsgMirror = type("org.apache.ignite.internal.processors.cache.GridCacheMessage");
+        deployableMsgMirror = type("org.apache.ignite.internal.processors.cache.DeployableMessage");
+        cacheObjMirror = type("org.apache.ignite.internal.processors.cache.CacheObject");
         txEntryMirror = type("org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry");
         collectionMirror = erasedType(type("java.util.Collection"));
         iterableMirror = erasedType(type("java.lang.Iterable"));
@@ -86,7 +83,7 @@ public class MessageDeploymentGenerator extends MessageGenerator {
 
     /** {@inheritDoc} */
     @Override boolean shouldSkip(TypeElement type, List<VariableElement> fields) {
-        if (gridCacheMessageMirror == null || !assignableFrom(type.asType(), gridCacheMessageMirror))
+        if (gridCacheMsgMirror == null || !assignableFrom(type.asType(), gridCacheMsgMirror))
             return true;
 
         // Generate when the message carries custom deployment logic...
@@ -104,7 +101,7 @@ public class MessageDeploymentGenerator extends MessageGenerator {
 
     /** @return {@code true} if {@code type} implements {@code DeployableMessage} (has hand-written {@code deploy}). */
     private boolean hasCustomDeployment(TypeElement type) {
-        return deployableMessageMirror != null && assignableFrom(type.asType(), deployableMessageMirror);
+        return deployableMsgMirror != null && assignableFrom(type.asType(), deployableMsgMirror);
     }
 
     /** {@inheritDoc} */
@@ -180,7 +177,7 @@ public class MessageDeploymentGenerator extends MessageGenerator {
         if (fieldType.getKind() == TypeKind.ARRAY || fieldType.getKind().isPrimitive())
             return null;
 
-        if (assignableFrom(fieldType, cacheObjectMirror))
+        if (assignableFrom(fieldType, cacheObjMirror))
             return DeployKind.CACHE_OBJECT;
 
         if (!(fieldType instanceof DeclaredType))
@@ -193,7 +190,7 @@ public class MessageDeploymentGenerator extends MessageGenerator {
             TypeMirror elemType = erasedType(elementBound(args.get(0)));
 
             if (assignableFrom(erased, collectionMirror)
-                && assignableFrom(elemType, cacheObjectMirror))
+                && assignableFrom(elemType, cacheObjMirror))
                 return DeployKind.CACHE_OBJECTS;
 
             if (txEntryMirror != null && iterableMirror != null
@@ -203,7 +200,7 @@ public class MessageDeploymentGenerator extends MessageGenerator {
         }
 
         // A nested message field delegates its own deployment (a no-op when that message has no deployer).
-        if (gridCacheMessageMirror != null && assignableFrom(fieldType, gridCacheMessageMirror))
+        if (gridCacheMsgMirror != null && assignableFrom(fieldType, gridCacheMsgMirror))
             return DeployKind.NESTED;
 
         return null;
