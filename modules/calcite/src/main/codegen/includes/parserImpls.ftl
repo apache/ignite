@@ -816,3 +816,17 @@ SqlDrop SqlDropView(Span s, boolean replace) :
         return SqlDdlNodes.dropView(s.end(this), ifExists, id);
     }
 }
+
+JAVACODE
+SqlNode FetchCount() {
+    SqlNode e;
+    if (getToken(1).kind == LPAREN) {
+        jj_consume_token(LPAREN);
+        e = Expression(ExprContext.ACCEPT_NON_QUERY);
+        jj_consume_token(RPAREN);
+    }
+    else
+        e = UnsignedNumericLiteralOrParam();
+
+    return e;
+}
