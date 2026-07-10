@@ -26,7 +26,7 @@ import java.nio.ByteBuffer;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -34,7 +34,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.makeMessageType;
 
@@ -49,15 +48,15 @@ public class DiscoveryMessageParser {
     private final MessageFactory msgFactory;
 
     /** */
-    private final ZookeeperDiscoverySpi spi;
+    private final GridKernalContext ctx;
 
     /**
      * @param msgFactory Message factory.
-     * @param spi Discovery SPI.
+     * @param ctx Kernal context.
      */
-    public DiscoveryMessageParser(MessageFactory msgFactory, ZookeeperDiscoverySpi spi) {
+    public DiscoveryMessageParser(MessageFactory msgFactory, GridKernalContext ctx) {
         this.msgFactory = msgFactory;
-        this.spi = spi;
+        this.ctx = ctx;
     }
 
     /** Marshals discovery message to bytes array. */
@@ -95,7 +94,7 @@ public class DiscoveryMessageParser {
         msgWriter.setBuffer(msgBuf);
 
         try {
-            MessageMarshaller.marshal(msgFactory, m, ((IgniteEx)spi.ignite()).context(), null);
+            MessageMarshaller.marshal(msgFactory, m, ctx, null);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to marshal discovery message", e);
@@ -142,7 +141,7 @@ public class DiscoveryMessageParser {
         while (!finished);
 
         try {
-            MessageMarshaller.unmarshal(msgFactory, msg, ((IgniteEx)spi.ignite()).context());
+            MessageMarshaller.unmarshal(msgFactory, msg, ctx);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to unmarshal discovery message", e);
