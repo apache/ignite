@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -63,10 +64,10 @@ public class FileTreeUtils {
     public static void removeTmpSnapshotFiles(SnapshotFileTree sft, boolean err, IgniteLogger log) {
         NodeFileTree tmpFt = sft.tempFileTree();
 
-        removeTmpDir(tmpFt.root(), err, log);
+        removeTmpDir(tmpFt.nodeStorage(), tmpFt.root(), err, log);
 
         for (File tmpDrStorage : tmpFt.extraStorages().values())
-            removeTmpDir(tmpDrStorage.getParentFile(), err, log);
+            removeTmpDir(tmpDrStorage, tmpDrStorage.getParentFile(), err, log);
     }
 
     /**
@@ -104,20 +105,25 @@ public class FileTreeUtils {
     }
 
     /**
-     * @param dir Directory to remove
-     * @param err If {@code true} then operation ends with error.
+     * @param nodeStorage Node-specific temporary snapshot storage directory.
+     * @param root Snapshot temporary root directory.
+     * @param err {@code True} if snapshot processing finished with an error.
      * @param log Logger.
      */
-    private static void removeTmpDir(File dir, boolean err, IgniteLogger log) {
-        U.delete(dir);
+    private static void removeTmpDir(File nodeStorage, File root, boolean err, IgniteLogger log) {
+        U.delete(nodeStorage);
 
-        // Delete snapshot directory if no other files exists.
+        // Delete snapshot temporary root if no other files exist or snapshot cleanup is performed after an error.
         try {
-            if (U.fileCount(dir.toPath()) == 0 || err)
-                U.delete(dir.toPath());
+            if (err || U.fileCount(root.toPath()) == 0)
+                U.delete(root.toPath());
+        }
+        catch (NoSuchFileException ignored) {
+            // Temporary snapshot root has already been removed.
         }
         catch (IOException e) {
-            log.error("Snapshot directory doesn't exist [snpName=" + dir.getName() + ", dir=" + dir.getParentFile() + ']');
+            log.error("Failed to clean up snapshot temporary directory " +
+                "[snpName=" + root.getName() + ", dir=" + root + ']', e);
         }
     }
 

@@ -94,6 +94,9 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
     /** Number of threads being used to perform snapshot operation. */
     private Integer snapshotThreadPoolSize;
 
+    /** Log listener for snapshot temporary directory cleanup routine. */
+    private LogListener tmpDirCleanupLsnr;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -102,13 +105,32 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         // listener registration and calling snpFutTask.start().
         cfg.getDataStorageConfiguration().setCheckpointFrequency(TimeUnit.DAYS.toMillis(365));
 
-        if (listenLog != null)
-            cfg.setGridLogger(listenLog);
+        assertNotNull(listenLog);
+
+        cfg.setGridLogger(listenLog);
 
         if (nonNull(snapshotThreadPoolSize))
             cfg.setSnapshotThreadPoolSize(snapshotThreadPoolSize);
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        listenLog = new ListeningTestLogger(log);
+
+        tmpDirCleanupLsnr = LogListener.matches("Failed to clean up snapshot temporary directory [snpName=").build();
+
+        listenLog.registerListener(tmpDirCleanupLsnr);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        assertFalse("Snapshot temporary directory cleanup error was logged", tmpDirCleanupLsnr.check());
+
+        super.afterTest();
     }
 
     /**
@@ -525,8 +547,6 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
     public void testSnapshotAlwaysStartsNewCheckpoint() throws Exception {
         long testTimeout = 30_000;
 
-        listenLog = new ListeningTestLogger(log);
-
         LogListener lsnr = LogListener.matches("Snapshot operation is scheduled on local node").times(1).build();
 
         listenLog.registerListener(lsnr);
@@ -606,8 +626,6 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
     @Test
     public void testFullSnapshotCreationLog() throws Exception {
         assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
-
-        listenLog = new ListeningTestLogger(log);
 
         final int entriesCnt = 4;
 
