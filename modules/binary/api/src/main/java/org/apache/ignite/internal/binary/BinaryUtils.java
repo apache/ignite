@@ -79,6 +79,7 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
@@ -3282,5 +3283,15 @@ public class BinaryUtils {
             if (listeners != null)
                 listeners.clear();
         }
+    }
+
+    /**
+     * Represents the given cache version as an {@link IgniteUuid}.
+     *
+     * @param ver Cache version.
+     * @return Version represented as {@code IgniteUuid}.
+     */
+    public static IgniteUuid asIgniteUuid(GridCacheVersion ver) {
+        return new IgniteUuid(new UUID(ver.topologyVersion(), ver.nodeOrderAndDrIdRaw()), ver.order());
     }
 }

@@ -34,8 +34,10 @@ import org.apache.ignite.internal.processors.tracing.SpanType;
 import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.processors.tracing.configuration.GridTracingConfigurationManager;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesHandler;
+import org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesTable;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.logger.NullLogger;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.tracing.NoopTracingSpi;
 import org.apache.ignite.spi.tracing.Scope;
@@ -505,6 +507,11 @@ public class GridTracingManager extends GridManagerAdapter<TracingSpi> implement
                 return NoopSpan.INSTANCE;
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String traceName(Message msg) {
+        return TraceableMessagesTable.traceName(msg);
     }
 
     /** {@inheritDoc} */

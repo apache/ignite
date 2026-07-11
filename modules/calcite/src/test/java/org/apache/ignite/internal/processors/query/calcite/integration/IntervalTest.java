@@ -150,11 +150,11 @@ public class IntervalTest extends AbstractBasicIntegrationTest {
      */
     @Test
     public void testDml() {
-        executeSql("CREATE TABLE test(ym INTERVAL YEAR, dt INTERVAL DAYS)");
-        executeSql("INSERT INTO test(ym, dt) VALUES (INTERVAL 1 MONTH, INTERVAL 2 DAYS)");
-        executeSql("INSERT INTO test(ym, dt) VALUES (INTERVAL 3 YEARS, INTERVAL 4 HOURS)");
-        executeSql("INSERT INTO test(ym, dt) VALUES (INTERVAL '4-5' YEARS TO MONTHS, INTERVAL '6:7' HOURS TO MINUTES)");
-        executeSql("INSERT INTO test(ym, dt) VALUES (NULL, NULL)");
+        sql("CREATE TABLE test(ym INTERVAL YEAR, dt INTERVAL DAYS)");
+        sql("INSERT INTO test(ym, dt) VALUES (INTERVAL 1 MONTH, INTERVAL 2 DAYS)");
+        sql("INSERT INTO test(ym, dt) VALUES (INTERVAL 3 YEARS, INTERVAL 4 HOURS)");
+        sql("INSERT INTO test(ym, dt) VALUES (INTERVAL '4-5' YEARS TO MONTHS, INTERVAL '6:7' HOURS TO MINUTES)");
+        sql("INSERT INTO test(ym, dt) VALUES (NULL, NULL)");
         assertThrows("INSERT INTO test(ym, dt) VALUES (INTERVAL 1 DAYS, INTERVAL 1 HOURS)",
             IgniteSQLException.class, "Cannot assign");
         assertThrows("INSERT INTO test(ym, dt) VALUES (INTERVAL 1 YEARS, INTERVAL 1 MONTHS)",
@@ -170,13 +170,12 @@ public class IntervalTest extends AbstractBasicIntegrationTest {
         assertThrows("SELECT * FROM test WHERE ym = INTERVAL 6 DAYS", IgniteSQLException.class, "Cannot apply");
         assertThrows("SELECT * FROM test WHERE dt = INTERVAL 6 YEARS", IgniteSQLException.class, "Cannot apply");
 
-        executeSql("UPDATE test SET dt = INTERVAL 3 DAYS WHERE ym = INTERVAL 1 MONTH");
-        executeSql("UPDATE test SET ym = INTERVAL 5 YEARS WHERE dt = INTERVAL 4 HOURS");
-        executeSql("UPDATE test SET ym = INTERVAL '6-7' YEARS TO MONTHS, dt = INTERVAL '8 9' DAYS TO HOURS " +
+        sql("UPDATE test SET dt = INTERVAL 3 DAYS WHERE ym = INTERVAL 1 MONTH");
+        sql("UPDATE test SET ym = INTERVAL 5 YEARS WHERE dt = INTERVAL 4 HOURS");
+        sql("UPDATE test SET ym = INTERVAL '6-7' YEARS TO MONTHS, dt = INTERVAL '8 9' DAYS TO HOURS " +
             "WHERE ym = INTERVAL '4-5' YEARS TO MONTHS AND dt = INTERVAL '6:7' HOURS TO MINUTES");
 
-        assertThrows("UPDATE test SET dt = INTERVAL 5 YEARS WHERE ym = INTERVAL 1 MONTH", IgniteSQLException.class,
-            "Cannot assign");
+        assertThrowsSqlException("UPDATE test SET dt = INTERVAL 5 YEARS WHERE ym = INTERVAL 1 MONTH", null);
 
         assertThrows("UPDATE test SET ym = INTERVAL 8 YEARS WHERE dt = INTERVAL 1 MONTH", IgniteSQLException.class,
             "Cannot apply");
@@ -191,16 +190,16 @@ public class IntervalTest extends AbstractBasicIntegrationTest {
         assertThrows("DELETE FROM test WHERE ym = INTERVAL 6 DAYS", IgniteSQLException.class, "Cannot apply");
         assertThrows("DELETE FROM test WHERE dt = INTERVAL 6 YEARS", IgniteSQLException.class, "Cannot apply");
 
-        executeSql("DELETE FROM test WHERE ym = INTERVAL 1 MONTH");
-        executeSql("DELETE FROM test WHERE dt = INTERVAL 4 HOURS");
-        executeSql("DELETE FROM test WHERE ym = INTERVAL '6-7' YEARS TO MONTHS AND dt = INTERVAL '8 9' DAYS TO HOURS");
-        executeSql("DELETE FROM test WHERE ym IS NULL AND dt IS NULL");
+        sql("DELETE FROM test WHERE ym = INTERVAL 1 MONTH");
+        sql("DELETE FROM test WHERE dt = INTERVAL 4 HOURS");
+        sql("DELETE FROM test WHERE ym = INTERVAL '6-7' YEARS TO MONTHS AND dt = INTERVAL '8 9' DAYS TO HOURS");
+        sql("DELETE FROM test WHERE ym IS NULL AND dt IS NULL");
 
-        assertEquals(0, executeSql("SELECT * FROM test").size());
+        assertEquals(0, sql("SELECT * FROM test").size());
 
-        executeSql("ALTER TABLE test ADD (ym2 INTERVAL MONTH, dt2 INTERVAL HOURS)");
+        sql("ALTER TABLE test ADD (ym2 INTERVAL MONTH, dt2 INTERVAL HOURS)");
 
-        executeSql("INSERT INTO test(ym, ym2, dt, dt2) VALUES (INTERVAL 1 YEAR, INTERVAL 2 YEARS, " +
+        sql("INSERT INTO test(ym, ym2, dt, dt2) VALUES (INTERVAL 1 YEAR, INTERVAL 2 YEARS, " +
             "INTERVAL 1 SECOND, INTERVAL 2 MINUTES)");
 
         assertQuery("SELECT ym, ym2, dt, dt2 FROM test")

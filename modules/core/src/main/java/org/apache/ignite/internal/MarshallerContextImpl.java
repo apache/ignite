@@ -19,10 +19,12 @@ package org.apache.ignite.internal;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -34,6 +36,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.function.BiPredicate;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
@@ -125,7 +128,7 @@ public class MarshallerContextImpl implements MarshallerContext {
         try {
             ClassLoader ldr = U.gridClassLoader();
 
-            MarshallerUtils.processSystemClasses(ldr, plugins, clsName -> {
+            processSystemClasses(ldr, plugins, clsName -> {
                 int typeId = clsName.hashCode();
 
                 MappedName oldClsName;
@@ -707,6 +710,29 @@ public class MarshallerContextImpl implements MarshallerContext {
      */
     public void setMarshallerMappingFileStoreDir(@Nullable final File marshallerMappingFileStoreDir) {
         this.marshallerMappingFileStoreDir = marshallerMappingFileStoreDir;
+    }
+
+    /**
+     * Finds all system class names (JDK, Ignite and plugin classes) and processes them with the given consumer.
+     *
+     * @param ldr Class loader.
+     * @param plugins Plugins (may be {@code null}).
+     * @param proc Class processor (class name consumer).
+     * @throws IOException In case of error.
+     */
+    private static void processSystemClasses(ClassLoader ldr, @Nullable Collection<PluginProvider> plugins,
+                                             Consumer<String> proc) throws IOException {
+        MarshallerUtils.processSystemClasses(ldr, proc);
+
+        if (plugins != null && !plugins.isEmpty()) {
+            for (PluginProvider plugin : plugins) {
+                Enumeration<URL> pluginUrls = ldr.getResources("META-INF/" + plugin.name().toLowerCase()
+                    + ".classnames.properties");
+
+                while (pluginUrls.hasMoreElements())
+                    MarshallerUtils.processResource(pluginUrls.nextElement(), proc);
+            }
+        }
     }
 
     /**

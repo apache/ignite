@@ -387,6 +387,7 @@ data: {
       "UESCAPE"
       "UNIQUE"
       "UNKNOWN"
+      "UNSIGNED"
       "UPPER"
       "UPSERT"
       "UUID"
