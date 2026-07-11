@@ -252,10 +252,10 @@ public class IgniteFeatureSet implements Iterable<Integer>, Message, Externaliza
      * <p>{@link IgniteFeature} instances that are not present in the specified collection and whose IDs are lower than
      * the minimum ID among the specified {@link IgniteFeature}s are considered non-deactivatable.</p>
      */
-    public static IgniteFeatureSet buildFrom(Collection<? extends IgniteFeature> nodeFeatures) {
-        A.notEmpty(nodeFeatures, "node features");
+    public static IgniteFeatureSet buildFrom(Collection<? extends IgniteFeature> features) {
+        A.notEmpty(features, "features");
 
-        GridIntList featureIds = new GridIntList(nodeFeatures.stream().mapToInt(IgniteFeature::id).toArray());
+        GridIntList featureIds = new GridIntList(features.stream().mapToInt(IgniteFeature::id).toArray());
 
         featureIds.sort();
 
@@ -281,7 +281,7 @@ public class IgniteFeatureSet implements Iterable<Integer>, Message, Externaliza
     }
 
     /** */
-    static Collection<IgniteFeature> readDeclaredFeatures(Class<?> cls) {
+    public static Collection<IgniteFeature> readDeclaredFeatures(Class<?> cls) {
         A.notNull(cls, "cls");
 
         List<IgniteFeature> features = new ArrayList<>();
