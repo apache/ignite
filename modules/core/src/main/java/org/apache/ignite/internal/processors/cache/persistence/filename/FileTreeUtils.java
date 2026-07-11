@@ -105,13 +105,13 @@ public class FileTreeUtils {
     }
 
     /**
-     * @param nodeStorage Node-specific temporary snapshot storage directory.
+     * @param storage Temporary snapshot storage directory.
      * @param root Snapshot temporary root directory.
      * @param err {@code True} if snapshot processing finished with an error.
      * @param log Logger.
      */
-    private static void removeTmpDir(File nodeStorage, File root, boolean err, IgniteLogger log) {
-        U.delete(nodeStorage);
+    private static void removeTmpDir(File storage, File root, boolean err, IgniteLogger log) {
+        U.delete(storage);
 
         // Delete snapshot temporary root if no other files exist or snapshot cleanup is performed after an error.
         try {
