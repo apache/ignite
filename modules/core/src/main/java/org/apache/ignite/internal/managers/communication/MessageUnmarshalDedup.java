@@ -23,7 +23,7 @@ import java.lang.ref.WeakReference;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.plugin.extensions.communication.MarshallableMessage;
+import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 

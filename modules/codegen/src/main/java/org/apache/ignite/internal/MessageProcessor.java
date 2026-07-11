@@ -79,7 +79,7 @@ public class MessageProcessor extends AbstractProcessor {
     static final String COMPRESSED_MESSAGE_CLASS = "org.apache.ignite.internal.managers.communication.CompressedMessage";
 
     /** Externalizable message. */
-    static final String MARSHALLABLE_MESSAGE_INTERFACE = "org.apache.ignite.plugin.extensions.communication.MarshallableMessage";
+    static final String MARSHALLABLE_MESSAGE_INTERFACE = "org.apache.ignite.internal.MarshallableMessage";
 
     /** Marker of messages with no marshaller. */
     static final String NON_MARSHALLABLE_MESSAGE_INTERFACE = "org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage";

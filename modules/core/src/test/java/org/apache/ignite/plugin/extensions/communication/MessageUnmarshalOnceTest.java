@@ -17,6 +17,7 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
+import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.managers.communication.MessageUnmarshalDedup;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;

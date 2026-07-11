@@ -36,8 +36,9 @@ import org.apache.ignite.internal.managers.communication.UnknownMessageException
  *     <li>{@ignitelink org.apache.ignite.internal.Marshalled @Marshalled} /
  *         {@ignitelink org.apache.ignite.internal.MarshalledMap @MarshalledMap} /
  *         {@ignitelink org.apache.ignite.internal.MarshalledCollection @MarshalledCollection} /
- *         {@ignitelink org.apache.ignite.internal.MarshalledObjects @MarshalledObjects} — for {@link MarshallableMessage}
- *         payloads serialized via a {@link org.apache.ignite.marshaller.Marshaller}.</li>
+ *         {@ignitelink org.apache.ignite.internal.MarshalledObjects @MarshalledObjects} — for
+ *         {@ignitelink org.apache.ignite.internal.MarshallableMessage MarshallableMessage} payloads serialized via a
+ *         {@link org.apache.ignite.marshaller.Marshaller}.</li>
  * </ul>
  */
 public interface Message {
