@@ -678,7 +678,7 @@ public class ZookeeperDiscoveryImpl {
     /**
      * @param msg Message.
      */
-    public void sendCustomMessage(DiscoverySpiCustomMessage msg) {
+    void sendCustomMessage(DiscoverySpiCustomMessage msg) {
         assert msg != null;
 
         List<ClusterNode> nodes = rtState.top.topologySnapshot();
