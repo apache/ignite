@@ -59,6 +59,8 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
@@ -94,9 +96,6 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
     /** Number of threads being used to perform snapshot operation. */
     private Integer snapshotThreadPoolSize;
 
-    /** Log listener for snapshot temporary directory cleanup routine. */
-    private LogListener tmpDirCleanupLsnr;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -105,32 +104,13 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         // listener registration and calling snpFutTask.start().
         cfg.getDataStorageConfiguration().setCheckpointFrequency(TimeUnit.DAYS.toMillis(365));
 
-        assertNotNull(listenLog);
-
-        cfg.setGridLogger(listenLog);
+        if (listenLog != null)
+            cfg.setGridLogger(listenLog);
 
         if (nonNull(snapshotThreadPoolSize))
             cfg.setSnapshotThreadPoolSize(snapshotThreadPoolSize);
 
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        listenLog = new ListeningTestLogger(log);
-
-        tmpDirCleanupLsnr = LogListener.matches("Failed to clean up snapshot temporary directory [snpName=").build();
-
-        listenLog.registerListener(tmpDirCleanupLsnr);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        assertFalse("Snapshot temporary directory cleanup error was logged", tmpDirCleanupLsnr.check());
-
-        super.afterTest();
     }
 
     /**
@@ -547,6 +527,8 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
     public void testSnapshotAlwaysStartsNewCheckpoint() throws Exception {
         long testTimeout = 30_000;
 
+        listenLog = new ListeningTestLogger(log);
+
         LogListener lsnr = LogListener.matches("Snapshot operation is scheduled on local node").times(1).build();
 
         listenLog.registerListener(lsnr);
@@ -627,6 +609,8 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
     public void testFullSnapshotCreationLog() throws Exception {
         assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
 
+        listenLog = new ListeningTestLogger(log);
+
         final int entriesCnt = 4;
 
         LogListener matchStart = LogListener.matches("Cluster-wide snapshot operation started: ").times(entriesCnt).build();
@@ -663,6 +647,70 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         assertTrue(matchFullParams.check());
         assertTrue(matchIncParams.check());
         assertFalse(noMatchParams.check());
+    }
+
+    /**
+     * Tests that snapshot temporary root is not removed on successful cleanup if it still contains files after
+     * node-specific storage has been removed.
+     */
+    @Test
+    public void testSnapshotTmpRootIsNotRemovedIfNotEmptyOnSuccess() throws Exception {
+        IgniteEx ignite = startGridWithCache(dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        SnapshotFileTree sft = snapshotFileTree(ignite, SNAPSHOT_NAME);
+
+        NodeFileTree tmpFt = sft.tempFileTree();
+
+        File root = tmpFt.root();
+        File nodeStorage = tmpFt.nodeStorage();
+
+        assertTrue(nodeStorage.mkdirs());
+
+        File extraFile = new File(root, "unexpected-tmp-file");
+
+        assertTrue(extraFile.createNewFile());
+
+        try {
+            FileTreeUtils.removeTmpSnapshotFiles(sft, false, log);
+
+            assertFalse("Node-specific temporary storage must be removed: " + nodeStorage, nodeStorage.exists());
+
+            assertTrue("Snapshot temporary root must not be removed if it is not empty: " + root, root.exists());
+
+            assertTrue("Unexpected temporary file must not be removed on successful cleanup: " + extraFile,
+                extraFile.exists());
+        }
+        finally {
+            U.delete(root);
+        }
+    }
+
+    /**
+     * Tests that snapshot temporary root is removed on cleanup after an error even if it still contains files after
+     * node-specific storage has been removed.
+     */
+    @Test
+    public void testSnapshotTmpRootIsRemovedIfNotEmptyOnError() throws Exception {
+        IgniteEx ignite = startGridWithCache(dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        SnapshotFileTree sft = snapshotFileTree(ignite, SNAPSHOT_NAME);
+
+        NodeFileTree tmpFt = sft.tempFileTree();
+
+        File root = tmpFt.root();
+        File nodeStorage = tmpFt.nodeStorage();
+
+        assertTrue(nodeStorage.mkdirs());
+
+        File extraFile = new File(root, "unexpected-tmp-file");
+
+        assertTrue(extraFile.createNewFile());
+
+        FileTreeUtils.removeTmpSnapshotFiles(sft, true, log);
+
+        assertFalse("Node-specific temporary storage must be removed: " + nodeStorage, nodeStorage.exists());
+
+        assertFalse("Snapshot temporary root must be removed on error: " + root, root.exists());
     }
 
     /**
