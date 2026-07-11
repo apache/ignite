@@ -65,7 +65,6 @@ import org.apache.ignite.internal.OperationContextMessage;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.processors.security.SecurityContext;
-import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
@@ -666,6 +665,16 @@ public class ZookeeperDiscoveryImpl {
         }
     }
 
+    /** */
+    public void sendCustomEvent(DiscoverySpiCustomMessage msg) {
+        OperationContextMessage opCtx = opCtxDispatcher.collectDistributedAttributes();
+
+        if (opCtx != null)
+            sendCustomMessage(new ZkOperationContextAwareCustomMessage(msg, opCtx));
+        else
+            sendCustomMessage(msg);
+    }
+
     /**
      * @param msg Message.
      */
@@ -1172,18 +1181,6 @@ public class ZookeeperDiscoveryImpl {
         catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to marshal node security credentials: " + node.id(), e);
         }
-    }
-
-    /**
-     * Sends from-Ignite custom event, not Zookeeper-related. Is aware of distributed {@link OperationContext}.
-     *
-     * @see ZkCustomEventMessage
-     */
-    public void sendExternalCustomMessage(DiscoverySpiCustomMessage msg) {
-        // Holds the distributed operation context.
-        msg = new ZkCustomEventMessage(msg, opCtxDispatcher.collectDistributedAttributes());
-
-        sendCustomMessage(msg);
     }
 
     /**
@@ -3523,17 +3520,17 @@ public class ZookeeperDiscoveryImpl {
     }
 
     /**
-     * Notifies the {@link DiscoverySpiListener} listener of a custom event. Is aware of {@link ZkCustomEventMessage}.
+     * Notifies the {@link DiscoverySpiListener} listener of a custom event. Is aware of {@link ZkOperationContextAwareCustomMessage}.
      *
      * @param evtData Event data.
-     * @param msg Custom message to process. Can be a {@link ZkCustomEventMessage}.
+     * @param msg Custom message to process. Can be a {@link ZkOperationContextAwareCustomMessage}.
      */
     private void notifyCustomEvent(final ZkDiscoveryCustomEventData evtData, DiscoverySpiCustomMessage msg) {
         OperationContextMessage opCtxMsg = null;
 
-        if (msg instanceof ZkCustomEventMessage) {
-            opCtxMsg = ((ZkCustomEventMessage)msg).opCtxMsg;
-            msg = ((ZkCustomEventMessage)msg).delegate;
+        if (msg instanceof ZkOperationContextAwareCustomMessage) {
+            opCtxMsg = ((ZkOperationContextAwareCustomMessage)msg).opCtxMsg;
+            msg = ((ZkOperationContextAwareCustomMessage)msg).delegate;
         }
 
         assert !(msg instanceof ZkInternalMessage) : msg;

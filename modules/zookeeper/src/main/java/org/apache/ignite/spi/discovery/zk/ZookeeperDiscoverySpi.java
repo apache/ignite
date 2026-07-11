@@ -407,7 +407,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
 
     /** {@inheritDoc} */
     @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) {
-        impl.sendExternalCustomMessage(msg);
+        impl.sendCustomEvent(msg);
     }
 
     /** {@inheritDoc} */

@@ -39,17 +39,17 @@ import org.jetbrains.annotations.Nullable;
  * @see OperationContextDispatcher
  * @see ZookeeperDiscoverySpi#sendCustomEvent(DiscoverySpiCustomMessage)
  */
-public class ZkCustomEventMessage implements DiscoverySpiCustomMessage {
+public class ZkOperationContextAwareCustomMessage implements DiscoverySpiCustomMessage {
     /** */
     @Order(0)
     DiscoverySpiCustomMessage delegate;
 
     /** */
     @Order(1)
-    @Nullable OperationContextMessage opCtxMsg;
+    OperationContextMessage opCtxMsg;
 
     /** Default constructor for {@link MessageFactory}. */
-    public ZkCustomEventMessage() {
+    public ZkOperationContextAwareCustomMessage() {
         // No-op.
     }
 
@@ -57,21 +57,19 @@ public class ZkCustomEventMessage implements DiscoverySpiCustomMessage {
      * @param delegate Original message.
      * @param opCtxMsg Distributed operation context message.
      */
-    public ZkCustomEventMessage(DiscoverySpiCustomMessage delegate, @Nullable OperationContextMessage opCtxMsg) {
+    public ZkOperationContextAwareCustomMessage(DiscoverySpiCustomMessage delegate, OperationContextMessage opCtxMsg) {
+        assert delegate != null;
+        assert opCtxMsg != null;
+        assert !(delegate instanceof ZkOperationContextAwareCustomMessage);
+
         this.delegate = delegate;
         this.opCtxMsg = opCtxMsg;
     }
 
     /** {@inheritDoc} */
     @Override public @Nullable DiscoverySpiCustomMessage ackMessage() {
-        DiscoverySpiCustomMessage res = delegate.ackMessage();
-
-        assert !(res instanceof ZkCustomEventMessage);
-
-        if (opCtxMsg == null || res == null)
-            return res;
-
-        return new ZkCustomEventMessage(res, opCtxMsg);
+        DiscoverySpiCustomMessage ack = delegate.ackMessage();
+        return ack == null ? null : new ZkOperationContextAwareCustomMessage(ack, opCtxMsg);
     }
 
     /** {@inheritDoc} */
