@@ -23,20 +23,19 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Per-message deployer. A generated {@code <Msg>Deployer} implements {@link #deploy(GridCacheMessage, GridCacheSharedContext)}
- * to deploy the message's fields (via {@code GridCacheMessage}'s public {@code deploy*} methods). The static
- * {@link #deploy(MessageFactory, GridCacheMessage, GridCacheSharedContext)} is the factory-resolving entry point,
- * mirroring the static {@code MessageMarshaller#marshal}.
+ * Per-message deployer generated for a {@link GridCacheMessage} whose fields need deployment: the generated
+ * {@code <Message>Deployer} deploys them via {@code GridCacheMessage}'s public {@code deploy*} methods. The static
+ * {@link #deploy(MessageFactory, GridCacheMessage, GridCacheSharedContext)} resolves the deployer from the message
+ * factory and dispatches, mirroring the static {@code MessageMarshaller#marshal}.
  */
 public interface GridCacheMessageDeployer<M extends GridCacheMessage> {
     /** Deploys all deployable fields of {@code msg}. */
     void deploy(M msg, GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException;
 
     /**
-     * Deploys {@code msg} through its factory-registered deployer (a no-op when {@code msg} is
-     * {@code null} — e.g. an absent nested message — or the message has no registered deployer). Single entry point
-     * for message deployment: called both by message-sending code and by a generated deployer delegating to a nested
-     * message. Mirrors the static {@code MessageMarshaller#marshal}.
+     * Resolves {@code msg}'s deployer from the message factory and deploys the message's fields. A no-op when the
+     * message has no deployer, or {@code msg} is {@code null} — generated deployers delegate nested message fields
+     * here without null checks. Called both when sending a message and from a generated deployer for a nested message.
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
     static void deploy(MessageFactory factory, @Nullable GridCacheMessage msg, GridCacheSharedContext<?, ?> ctx)
