@@ -43,14 +43,14 @@ public interface IgniteMessageFactory extends MessageFactory {
     }
 
     /**
-     * Register message factory with given direct type, serializer, and marshaller. All messages must be registered
-     * during construction of class which implements this interface.
+     * Registers a message with the given direct type, serializer, and marshaller. All messages must be registered
+     * during construction of the class that implements this interface.
      *
-     * @param directType Direct type.
-     * @param supplier Message factory.
+     * @param directType Direct type ({@link Message#directType()}) to register the message under.
+     * @param supplier Message supplier.
      * @param serializer Message serializer.
      * @param marshaller Message marshaller, or {@code null} for non-marshallable messages.
-     * @throws IgniteException In case of attempt to register message with direct type which is already registered.
+     * @throws IgniteException If a message is already registered under the given direct type.
      */
     default void register(short directType, Supplier<Message> supplier, MessageSerializer serializer,
         @Nullable MessageMarshaller marshaller) throws IgniteException {
@@ -58,15 +58,15 @@ public interface IgniteMessageFactory extends MessageFactory {
     }
 
     /**
-     * Register message factory with given direct type, serializer, marshaller, and deployer. All messages must be
-     * registered during construction of class which implements this interface.
+     * Registers a message with the given direct type, serializer, marshaller, and deployer. All messages must be
+     * registered during construction of the class that implements this interface.
      *
-     * @param directType Direct type.
-     * @param supplier Message factory.
+     * @param directType Direct type ({@link Message#directType()}) to register the message under.
+     * @param supplier Message supplier.
      * @param serializer Message serializer.
      * @param marshaller Message marshaller, or {@code null} for non-marshallable messages.
      * @param deployer Message deployer, or {@code null} for messages without deployable fields.
-     * @throws IgniteException In case of attempt to register message with direct type which is already registered.
+     * @throws IgniteException If a message is already registered under the given direct type.
      */
     public void register(short directType, Supplier<Message> supplier, MessageSerializer serializer,
         @Nullable MessageMarshaller marshaller, @Nullable GridCacheMessageDeployer deployer) throws IgniteException;

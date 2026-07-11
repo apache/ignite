@@ -27,10 +27,12 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
+import org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Message factory implementation which is responsible for instantiation of all communication messages.
+ * Message factory implementation responsible for instantiation of all messages sent between nodes, both over the
+ * communication SPI and via discovery.
  */
 public class IgniteMessageFactoryImpl implements IgniteMessageFactory {
     /** Offset. */
@@ -53,7 +55,7 @@ public class IgniteMessageFactoryImpl implements IgniteMessageFactory {
         (GridCacheMessageDeployer[])Array.newInstance(GridCacheMessageDeployer.class, ARR_SIZE);
 
     /** Initialized flag. If {@code true} then new message type couldn't be registered. */
-    private boolean initialized;
+    private final boolean initialized;
 
     /** Min index of registered message supplier. */
     private int minIdx = Integer.MAX_VALUE;
@@ -64,11 +66,7 @@ public class IgniteMessageFactoryImpl implements IgniteMessageFactory {
     /** Count of registered message suppliers. */
     private int cnt;
 
-    /**
-     * Contructor.
-     *
-     * @param factories Concrete message factories or message factory providers. Cfn't be empty or {@code null}.
-     */
+    /** @param factories Message factory providers. Can't be empty or {@code null}. */
     public IgniteMessageFactoryImpl(MessageFactoryProvider[] factories) {
         if (factories == null || factories.length == 0)
             throw new IllegalArgumentException("Message factory couldn't be initialized. Factories aren't provided.");
@@ -80,13 +78,13 @@ public class IgniteMessageFactoryImpl implements IgniteMessageFactory {
     }
 
     /**
-     * Registers a message type with a serializer, an optional marshaller, and an optional deployer.
+     * Registers a message with a serializer, an optional marshaller, and an optional deployer.
      *
-     * @param directType  Direct type.
-     * @param supplier    Message factory.
-     * @param serializer  Message serializer.
-     * @param marshaller  Message marshaller, or {@code null} for NonMarshallableMessage types.
-     * @param deployer    Message deployer, or {@code null} for messages without deployable fields.
+     * @param directType Direct type ({@link Message#directType()}) to register the message under.
+     * @param supplier Message supplier.
+     * @param serializer Message serializer.
+     * @param marshaller Message marshaller, or {@code null} for {@link NonMarshallableMessage} types.
+     * @param deployer Message deployer, or {@code null} for messages without deployable fields.
      */
     @Override public void register(short directType, Supplier<Message> supplier, MessageSerializer serializer,
         @Nullable MessageMarshaller marshaller, @Nullable GridCacheMessageDeployer deployer) throws IgniteException {
@@ -99,14 +97,14 @@ public class IgniteMessageFactoryImpl implements IgniteMessageFactory {
             Message msg = supplier.get();
 
             if (marshaller == null && msg instanceof MarshallableMessage) {
-                throw new IgniteException("Message implements MarshallableMessage but is registered without" +
-                    " a marshaller, so it would be sent unmarshalled [directType=" + directType +
+                throw new IgniteException("Failed to register a message: it implements MarshallableMessage but no" +
+                    " marshaller is provided [directType=" + directType +
                     ", cls=" + msg.getClass().getName() + ']');
             }
 
             if (deployer == null && msg instanceof DeployableMessage) {
-                throw new IgniteException("Message implements DeployableMessage but is registered without" +
-                    " a deployer, so its custom deployment logic would never run [directType=" + directType +
+                throw new IgniteException("Failed to register a message: it implements DeployableMessage but no" +
+                    " deployer is provided [directType=" + directType +
                     ", cls=" + msg.getClass().getName() + ']');
             }
 
@@ -138,13 +136,13 @@ public class IgniteMessageFactoryImpl implements IgniteMessageFactory {
     }
 
     /**
-     * Creates new message instance of provided direct type.
+     * Creates a new message instance of the provided direct type.
      *
      * @param directType Message direct type.
      * @return Message instance.
-     * @throws IgniteException If there are no any message factory for given {@code directType}.
+     * @throws UnknownMessageException If no message is registered under the given {@code directType}.
      */
-    @Override public @Nullable Message create(short directType) {
+    @Override public Message create(short directType) {
         Supplier<Message> supplier = msgSuppliers[directTypeToIndex(directType)];
 
         if (supplier == null)
