@@ -40,6 +40,8 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Parent of all cache messages.
+ *
+ * @see DeployableMessage
  */
 public abstract class GridCacheMessage implements Message {
     /** Maximum number of cache lookup indexes. */
