@@ -421,7 +421,7 @@ include::{javaFile}[tag=timeout;!pme;indent=0]
 tab:C#/.NET[]
 [source,csharp]
 ----
-include::code-snippets/dotnet/PerformingTransactions.cs[tag=pmeTimeout,indent=0]
+include::code-snippets/dotnet/PerformingTransactions.cs[tag=txTimeout,indent=0]
 ----
 tab:C++[unsupported]
 --
