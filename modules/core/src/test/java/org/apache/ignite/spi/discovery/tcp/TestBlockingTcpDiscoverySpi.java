@@ -39,7 +39,7 @@ public class TestBlockingTcpDiscoverySpi extends TestTcpDiscoverySpi {
     private volatile Predicate<TcpDiscoveryAbstractMessage> msgFilter;
     
     /** */
-    private ServerImpl.RingMessageWorker messageWorker;
+    private volatile ServerImpl.RingMessageWorker messageWorker;
 
     /** */
     public TestBlockingTcpDiscoverySpi(TcpDiscoveryIpFinder ipFinder) {
@@ -89,6 +89,8 @@ public class TestBlockingTcpDiscoverySpi extends TestTcpDiscoverySpi {
 
     /** */
     public static TestBlockingTcpDiscoverySpi blockingDiscovery(Ignite node) {
+        assert !node.configuration().isClientMode();
+
         return (TestBlockingTcpDiscoverySpi)node.configuration().getDiscoverySpi();
     }
 
