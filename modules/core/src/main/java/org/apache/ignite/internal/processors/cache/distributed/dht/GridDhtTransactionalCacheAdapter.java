@@ -1631,7 +1631,14 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             return;
 
         // Remove mapped versions.
-        GridCacheVersion dhtVer = unmap ? ctx.mvcc().unmapVersion(ver) : ver;
+        GridCacheVersion dhtVer;
+
+        if (!unmap)
+            dhtVer = ver;
+        else if (forSavepoint)
+            dhtVer = ctx.tm().mappedVersion(ver);
+        else
+            dhtVer = ctx.mvcc().unmapVersion(ver);
 
         if (!forSavepoint)
             ctx.mvcc().addRemoved(ctx, ver);

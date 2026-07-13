@@ -90,10 +90,18 @@ public interface IgniteResource {
     Resources.ExInst<SqlValidatorException> invalidCastParameters();
 
     /** */
-    @Resources.BaseMessage("SELECT FOR UPDATE is not yet supported.")
-    Resources.ExInst<SqlValidatorException> selectForUpdateNotSupported();
-
-    /** */
     @Resources.BaseMessage("WAIT value must be a positive integer, but was: {0}")
     Resources.ExInst<SqlValidatorException> illegalWaitTimeout(String value);
+
+    /** */
+    @Resources.BaseMessage("SELECT FOR UPDATE requires an active PESSIMISTIC transaction")
+    Resources.ExInst<SqlValidatorException> selectForUpdateRequiresPessimisticTx();
+
+    /** */
+    @Resources.BaseMessage("SELECT FOR UPDATE is not supported for multi-table (JOIN) queries")
+    Resources.ExInst<SqlValidatorException> selectForUpdateJoinNotSupported();
+
+    /** */
+    @Resources.BaseMessage("SELECT FOR UPDATE: could not acquire lock (row version changed concurrently)")
+    Resources.ExInst<SqlValidatorException> selectForUpdateLockFailed();
 }
