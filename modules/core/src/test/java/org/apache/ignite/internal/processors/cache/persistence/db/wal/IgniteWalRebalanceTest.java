@@ -338,6 +338,14 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
+        // Wait for WAL rebalance to complete before modifying data to avoid race conditions.
+        for (Ignite ig : G.allGrids()) {
+            GridCachePreloader preloader = ((IgniteEx)ig).cachex(CACHE_NAME).context().group().preloader();
+
+            if (preloader.rebalanceFuture() != null)
+                preloader.rebalanceFuture().get();
+        }
+
         Set<Long> topVers = ((WalRebalanceCheckingCommunicationSpi)ignite.configuration().getCommunicationSpi())
             .walRebalanceVersions(grpId);
 
