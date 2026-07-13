@@ -395,6 +395,15 @@ public class IntervalTest extends AbstractBasicIntegrationTest {
     }
 
     /** */
+    @Test
+    public void testDmlIntervalArithmetic() {
+        sql("CREATE TABLE test(ts TIMESTAMP)");
+        sql("INSERT INTO test VALUES (?)", Timestamp.valueOf("2021-01-01 00:00:01"));
+        sql("UPDATE test SET ts = ts - INTERVAL 1 SECOND");
+        assertQuery("SELECT * FROM test").returns(Timestamp.valueOf("2021-01-01 00:00:00")).check();
+    }
+
+    /** */
     public Object eval(String exp, Object... params) {
         return executeSql("SELECT " + exp, params).get(0).get(0);
     }
