@@ -83,8 +83,14 @@
         </dependency>
 
         <dependency>
+            <groupId>org.eclipse.jetty.ee11</groupId>
+            <artifactId>jetty-ee11-servlet</artifactId>
+            <version>${jetty.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-servlet</artifactId>
+            <artifactId>jetty-session</artifactId>
             <version>${jetty.version}</version>
         </dependency>
 
@@ -95,8 +101,8 @@
         </dependency>
 
         <dependency>
-            <groupId>org.eclipse.jetty.toolchain</groupId>
-            <artifactId>jetty-jakarta-servlet-api</artifactId>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
             <version>${jetty-jakarta-servlet-api.version}</version>
         </dependency>
 

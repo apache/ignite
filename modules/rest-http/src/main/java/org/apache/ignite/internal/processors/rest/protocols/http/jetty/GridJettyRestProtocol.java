@@ -44,20 +44,20 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.eclipse.jetty.ee11.servlet.FilterHolder;
+import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee11.servlet.ServletHolder;
 import org.eclipse.jetty.server.AbstractNetworkConnector;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.server.handler.HandlerList;
-import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.jetbrains.annotations.Nullable;
@@ -238,17 +238,6 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
         catch (Exception e) {
             boolean failedToBind = e instanceof SocketException;
 
-            if (e instanceof MultiException) {
-                if (log.isDebugEnabled())
-                    log.debug("Caught multi exception: " + e);
-
-                failedToBind = true;
-
-                for (Object obj : ((MultiException)e).getThrowables())
-                    if (!(obj instanceof SocketException))
-                        failedToBind = false;
-            }
-
             if (e instanceof IOException && X.hasCause(e, SocketException.class))
                 failedToBind = true;
 
@@ -309,7 +298,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             XmlConfiguration cfg;
 
             try {
-                Resource rsrc = Resource.newResource(cfgUrl);
+                Resource rsrc = ResourceFactory.root().newResource(cfgUrl.toURI());
 
                 cfg = new XmlConfiguration(rsrc);
             }
@@ -336,18 +325,27 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
         assert httpSrv != null;
 
-        Handler extsHnd = loadExtensions();
-        WelcomeHandler welcomeHnd = new WelcomeHandler(log);
+        ContextHandlerCollection hnds = new ContextHandlerCollection();
 
-        httpSrv.setHandler(new HandlerList(jettyHnd, extsHnd, welcomeHnd));
+        loadExtensions(hnds);
+
+        // Main context serves the REST command endpoint and the welcome page.
+        // Its root context path ("/") is matched last, after the more specific extension contexts.
+        ServletContextHandler mainCtx = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
+
+        mainCtx.setContextPath("/");
+        mainCtx.addServlet(new ServletHolder(jettyHnd), IGNITE_CMD_PATH + "/*");
+        mainCtx.addServlet(new ServletHolder(new WelcomeHandler(log)), "/");
+
+        hnds.addHandler(mainCtx);
+
+        httpSrv.setHandler(hnds);
 
         override(getJettyConnector());
     }
 
-    /** */
-    private Handler loadExtensions() throws IgniteCheckedException {
-        HandlerList extsHnd = new HandlerList();
-
+    /** Discovers REST extensions and registers a dedicated servlet context for each one. */
+    private void loadExtensions(ContextHandlerCollection hnds) throws IgniteCheckedException {
         CommonUtils.loadService(IgniteRestExtension.class).forEach(exts::add);
 
         Set<String> paths = new HashSet<>();
@@ -372,13 +370,11 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             A.ensure(!extCtx.isContextPathDefault(), "The context path must be configured: " + ext.getClass().getName());
             A.ensure(paths.add(extCtx.getContextPath()), "Duplicate REST context path: " + extCtx.getContextPath());
 
-            extsHnd.addHandler(extCtx);
+            hnds.addHandler(extCtx);
 
             if (log.isInfoEnabled())
                 log.info("Configured REST extension: " + ext.getClass().getName());
         }
-
-        return extsHnd;
     }
 
     /**

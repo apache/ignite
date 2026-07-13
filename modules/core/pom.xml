@@ -89,6 +89,12 @@
 
         <dependency>
             <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-nio</artifactId>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-codegen</artifactId>
             <scope>provided</scope>
         </dependency>
@@ -156,15 +162,15 @@
         </dependency>
 
         <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-servlets</artifactId>
+            <groupId>org.eclipse.jetty.ee11</groupId>
+            <artifactId>jetty-ee11-servlets</artifactId>
             <version>${jetty.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-webapp</artifactId>
+            <groupId>org.eclipse.jetty.ee11</groupId>
+            <artifactId>jetty-ee11-webapp</artifactId>
             <version>${jetty.version}</version>
             <scope>test</scope>
         </dependency>
@@ -367,6 +373,7 @@
                                     <include>${project.groupId}:ignite-grid-unsafe</include>
                                     <include>${project.groupId}:ignite-thin-client-api</include>
                                     <include>${project.groupId}:ignite-thin-client-impl</include>
+                                    <include>${project.groupId}:ignite-nio</include>
                                 </includes>
                             </artifactSet>
                         </configuration>
