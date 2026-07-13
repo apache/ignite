@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.jta;
 
+import jakarta.transaction.TransactionManager;
 import javax.cache.configuration.Factory;
-import javax.transaction.TransactionManager;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 
@@ -42,7 +42,7 @@ public class GridPartitionedCacheJtaFactorySelfTest extends AbstractCacheJtaSelf
 
         /** {@inheritDoc} */
         @Override public TransactionManager create() {
-            return jotm.getTransactionManager();
+            return txMgr;
         }
     }
 }
