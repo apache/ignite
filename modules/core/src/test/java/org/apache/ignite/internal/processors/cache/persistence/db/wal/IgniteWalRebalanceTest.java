@@ -384,6 +384,12 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         stopGrid(1);
 
+        // Await exchange so that grid(2) finishes processing NODE_LEFT for the stopped
+        // nodes before grid(3) starts. Otherwise grid(2) may send near-atomic-update
+        // requests to already stopped nodes, causing CorruptedTreeException
+        // ("Invalid version for inner update").
+        awaitPartitionMapExchange();
+
         // Start new node which should rebalance all data from node(2) without using WAL,
         // because node(2) doesn't have full history for rebalance.
         ignite = startGrid(3);
