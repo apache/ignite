@@ -39,9 +39,6 @@ public class TestBlockingTcpDiscoverySpi extends TestTcpDiscoverySpi {
     private volatile Predicate<TcpDiscoveryAbstractMessage> msgFilter;
     
     /** */
-    private volatile ServerImpl.RingMessageWorker messageWorker;
-
-    /** */
     public TestBlockingTcpDiscoverySpi(TcpDiscoveryIpFinder ipFinder) {
         setIpFinder(ipFinder);
     }
@@ -55,16 +52,9 @@ public class TestBlockingTcpDiscoverySpi extends TestTcpDiscoverySpi {
     @Override TcpDiscoveryImpl createServerTcpDiscoveryImplementation() {
         return new ServerImpl(this, DFLT_UTLITY_POOL_SIZE, DFLT_RMT_DC_PING_POOL_SIZE) {
             @Override protected ServerImpl.RingMessageWorker createMessageWorker() {
-                messageWorker = new RingMessageWorker(log, msgQueue);
-
-                return messageWorker;
+                return new RingMessageWorker(log, msgQueue);
             }
         };
-    }
-
-    /** */
-    public long pollingTimeout() {
-        return messageWorker.pollingTimeout;
     }
 
     /** */

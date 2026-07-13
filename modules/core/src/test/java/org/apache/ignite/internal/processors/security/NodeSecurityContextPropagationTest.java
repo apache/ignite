@@ -119,11 +119,6 @@ public class NodeSecurityContextPropagationTest extends GridCommonAbstractTest {
 
         blockingDiscovery(srv).block();
 
-        long pollingTimeout = blockingDiscovery(srv).pollingTimeout();
-
-        // We need to wait for any active BlockingDeque#poll operation to complete.
-        U.sleep(5 * pollingTimeout);
-
         cli.context().discovery().sendCustomEvent(new TestDiscoveryMessage());
 
         waitForCondition(() -> anyReceivedMessageMatch(srv, msg -> msg instanceof TestDiscoveryMessage), getTestTimeout());

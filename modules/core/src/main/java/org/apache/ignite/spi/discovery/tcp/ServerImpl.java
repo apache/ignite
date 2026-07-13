@@ -8116,7 +8116,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         protected final BlockingDeque<T> queue;
 
         /** Polling timeout. */
-        final long pollingTimeout;
+        private final long pollingTimeout;
 
         /** */
         private Runnable beforeEachPoll;
