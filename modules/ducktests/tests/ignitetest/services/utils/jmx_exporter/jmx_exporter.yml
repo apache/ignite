@@ -1,0 +1,66 @@
+# JVM Memory & GC metrics for Prometheus scraping
+# Sufficient to reproduce jconsole "Memory" tab in Grafana.
+#
+# Exposed on :8083/metrics
+
+lowercaseOutputName: true
+whitelistObjectNames:
+  - "java.lang:type=Memory"
+  - "java.lang:type=MemoryPool,*"
+  - "java.lang:type=GarbageCollector,*"
+
+rules:
+  # ------------------------------------------------------------------
+  # Heap / Non-Heap overview  (java.lang:type=Memory)
+  #   Attributes: heapMemoryUsage (CompositeData: used/init/max/committed)
+  #               nonHeapMemoryUsage (CompositeData)
+  # ------------------------------------------------------------------
+  - pattern: "java.lang<type=Memory><heapMemoryUsage>(\w+)"
+    name: "jvm_memory_heap_bytes_$1"
+    type: GAUGE
+    help: "JVM heap memory — used / init / max / committed"
+
+  - pattern: "java.lang<type=Memory><nonHeapMemoryUsage>(\w+)"
+    name: "jvm_memory_nonheap_bytes_$1"
+    type: GAUGE
+    help: "JVM non-heap memory — used / init / max / committed"
+
+  # ------------------------------------------------------------------
+  # Per-pool usage  (java.lang:type=MemoryPool,name=<pool>)
+  #   Attributes: usage (CompositeData: used/init/max/committed)
+  #               collectionUsage (CompositeData, post-GC usage)
+  # ------------------------------------------------------------------
+  - pattern: "java.lang<type=MemoryPool,name=(.*?)><usage>(\w+)"
+    name: "jvm_memory_pool_usage_bytes"
+    labels:
+      pool: "$1"
+      attribute: "$2"
+    type: GAUGE
+    help: "JVM memory pool usage — used / init / max / committed"
+
+  - pattern: "java.lang<type=MemoryPool,name=(.*?)><collectionUsage>(\w+)"
+    name: "jvm_memory_pool_collection_bytes"
+    labels:
+      pool: "$1"
+      attribute: "$2"
+    type: GAUGE
+    help: "JVM memory pool post-GC usage — used / init / max / committed"
+
+  # ------------------------------------------------------------------
+  # Garbage Collectors  (java.lang:type=GarbageCollector,name=<gc>)
+  #   Attributes: collectionCount, collectionTime
+  # ------------------------------------------------------------------
+  - pattern: "java.lang<type=GarbageCollector,name=(.*?)><collectionCount>"
+    name: "jvm_gc_collection_count_total"
+    labels:
+      gc: "$1"
+    type: COUNTER
+    help: "Total number of GC collections"
+
+  - pattern: "java.lang<type=GarbageCollector,name=(.*?)><collectionTime>"
+    name: "jvm_gc_collection_time_seconds_total"
+    labels:
+      gc: "$1"
+    type: COUNTER
+    help: "Total GC collection time (ms → seconds via divisor)"
+    valueFactor: 0.001

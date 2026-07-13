@@ -158,6 +158,12 @@ ARG JMXTERM_ARTIFACT="$JMXTERM_NAME-$JMXTERM_VERSION-uber.jar"
 RUN cd /opt && curl -OL https://github.com/jiaqi/jmxterm/releases/download/v$JMXTERM_VERSION/$JMXTERM_ARTIFACT \
     && mv $JMXTERM_ARTIFACT $JMXTERM_NAME.jar
 
+# Install JMX Prometheus Exporter (javaagent for exposing JMX metrics to Prometheus)
+ARG JMX_EXPORTER_VERSION="1.1.0"
+ARG JMX_EXPORTER_ARTIFACT="jmx_prometheus_javaagent-${JMX_EXPORTER_VERSION}.jar"
+RUN cd /opt && curl -OL "https://github.com/prometheus/jmx_exporter/releases/download/v${JMX_EXPORTER_VERSION}/${JMX_EXPORTER_ARTIFACT}" \
+    && mv $JMX_EXPORTER_ARTIFACT jmx_exporter.jar
+
 # ---------------------------------------------------------------------
 # 7. User Isolation Permissions (Ducker Execution Account Setup)
 # ---------------------------------------------------------------------

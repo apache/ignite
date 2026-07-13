@@ -37,11 +37,19 @@ from ignitetest.services.utils import IgniteServiceType
 from ignitetest.services.utils.background_thread import BackgroundThreadService
 from ignitetest.services.utils.concurrent import CountDownLatch, AtomicValue
 from ignitetest.services.utils.ignite_spec import resolve_spec, SHARED_PREPARED_FILE
+from ignitetest.services.utils.jmx_exporter import is_jmx_exporter_enabled, get_jmx_exporter_yml_content, \
+    JMX_EXPORTER_JAR_PATH, JMX_EXPORTER_YML_NAME
 from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin, JmxClient
 from ignitetest.services.utils.jvm_utils import JvmProcessMixin, JvmVersionMixin
 from ignitetest.services.utils.log_utils import monitor_log
 from ignitetest.services.utils.path import IgnitePathAware
 from ignitetest.utils.enum import constructible
+
+
+JMX_EXPORTER_DOWNLOAD_URL = (
+    "https://github.com/prometheus/jmx_exporter/releases/download/v1.1.0/"
+    "jmx_prometheus_javaagent-1.1.0.jar"
+)
 
 
 class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMixin, JvmVersionMixin, metaclass=ABCMeta):
@@ -184,7 +192,23 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
         """
         super().init_persistent(node)
 
+        # Ensure jmx_exporter.jar is available on the node
+        if is_jmx_exporter_enabled(self.globals):
+            self._ensure_jmx_exporter_jar(node)
+
         self._prepare_configs(node)
+
+    @staticmethod
+    def _ensure_jmx_exporter_jar(node):
+        """
+        Download jmx_exporter.jar to the node if it's not already present.
+        Uses curl and conditional execution — idempotent.
+        """
+        cmd = (
+            f"test -f {JMX_EXPORTER_JAR_PATH} || "
+            f"curl -sL {JMX_EXPORTER_DOWNLOAD_URL} -o {JMX_EXPORTER_JAR_PATH}"
+        )
+        node.account.ssh(cmd, allow_fail=False)
 
     def init_shared(self, node):
         """
@@ -230,6 +254,13 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
             node.account.create_file(os.path.join(self.config_dir, name), config_txt)
 
             self.logger.debug("Config %s for node %s: %s" % (name, node.account.hostname, config_txt))
+
+        # Create jmx_exporter.yml config if enabled
+        if is_jmx_exporter_enabled(self.globals):
+            yml_on_node = os.path.join(self.config_dir, JMX_EXPORTER_YML_NAME)
+            yml_content = get_jmx_exporter_yml_content()
+            node.account.create_file(yml_on_node, yml_content)
+            self.logger.debug("JMX Exporter config %s created on node %s" % (yml_on_node, node.account.hostname))
 
         setattr(node, "consistent_id", node.account.externally_routable_ip)
 
