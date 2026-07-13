@@ -100,8 +100,6 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
     // TODO add in production code checks of files integriy. Perform file integrity check on startup.
 
     // Support pretty print for command.
-    // TODO: reboot of in-memory cluster erase distributed metastorage state. ???
-    // TODO: support deployment on newly joined node.
     // TODO: add MAX file size check, free disk amount check.
 
     /** Concurrent {@code --create} commands with the same name must result in exactly one success. */
@@ -202,6 +200,8 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
         ClassPathTestUtils.checkDeployedOn(grid(2), cpName());
 
         checkFilesExists(cpName(), -1, cpFiles);
+
+        assertEquals(EXIT_CODE_OK, execute(hnd, "--class-path", "remove", "--name", cpName()));
     }
 
     /** Tests --create command. */
