@@ -34,6 +34,7 @@ import org.jetbrains.annotations.Nullable;
  *   <li>Extracts the hidden columns described by {@link #lockTargets} from every row.</li>
  *   <li>Creates {@link CacheEntry} to lock in the current transaction.</li>
  *   <li>Calls {@code cache.lockTxEntries(entries, waitMs)} to acquire pessimistic locks.</li>
+ *   <li>Repeats the inner plan when a selected entry version changes before locking.</li>
  *   <li>Returns only the first {@link #userColumnCount} columns to the caller.</li>
  * </ol>
  */

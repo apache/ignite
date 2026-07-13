@@ -603,11 +603,11 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
      *
      * <ol>
      *   <li>Validates that the current transaction is PESSIMISTIC.</li>
-     *   <li>Runs the inner SELECT (which has {@code _KEY} appended) and materialises all rows.</li>
-     *   <li>Extracts keys from the last column of each row.</li>
-     *   <li>Calls {@code cache.getEntries(keys)} to obtain current entry versions.</li>
+     *   <li>Runs the inner SELECT with hidden key, value, and version columns and materialises all rows.</li>
+     *   <li>Builds cache entries from the hidden columns.</li>
      *   <li>Creates a savepoint, acquires pessimistic locks via {@code lockTxEntries()},
      *       and releases the savepoint on success (or rolls back on failure).</li>
+     *   <li>Repeats the SELECT and lock attempt after a concurrent version change while the deadline permits.</li>
      *   <li>Returns a cursor with only the user-visible columns (the appended _KEY is stripped).</li>
      * </ol>
      */
@@ -619,6 +619,54 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 IgniteResource.INSTANCE.selectForUpdateRequiresPessimisticTx().str(),
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
+        // waitSeconds: null = use tx remaining time (0), 0 = NOWAIT (-1), positive = ms.
+        Long waitSeconds = plan.waitSeconds();
+        long waitMs;
+
+        if (waitSeconds == null)
+            waitMs = 0L;
+        else if (waitSeconds == 0L)
+            waitMs = -1L;
+        else
+            waitMs = waitSeconds * 1000L;
+
+        // Zero means that retries are limited only by the transaction or query timeout.
+        long deadline = waitMs > 0
+            ? U.currentTimeMillis() + waitMs
+            : waitMs < 0 ? U.currentTimeMillis() : 0L;
+
+        RootQuery<Row> selectQry = qry;
+
+        while (true) {
+            FieldsQueryCursor<List<?>> cursor = tryExecuteForUpdate(selectQry, plan, userTx, waitMs, deadline);
+
+            if (cursor != null)
+                return cursor;
+
+            if (deadline != 0 && U.currentTimeMillis() >= deadline) {
+                throw new IgniteSQLException(
+                    IgniteResource.INSTANCE.selectForUpdateLockFailed().str(),
+                    IgniteQueryErrorCode.CONCURRENT_UPDATE);
+            }
+
+            // The previous query has already been closed after materialisation, so retry with a fresh root query.
+            selectQry = qry.retryQuery();
+            qryReg.register(selectQry);
+        }
+    }
+
+    /**
+     * Executes the inner SELECT once and tries to lock the selected row versions.
+     *
+     * @return Result cursor when locking succeeds, or {@code null} when the SELECT must be executed again.
+     */
+    @Nullable private FieldsQueryCursor<List<?>> tryExecuteForUpdate(
+        RootQuery<Row> qry,
+        SelectForUpdatePlan plan,
+        GridNearTxLocal userTx,
+        long waitMs,
+        long deadline
+    ) {
         // Run the inner SELECT (with _KEY, _VAL, _VER appended) and collect all rows.
         ListFieldsQueryCursor<?> innerCursor = mapAndExecutePlan(qry, plan.innerPlan());
         List<List<?>> rows = innerCursor.getAll();
@@ -682,18 +730,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         lockBatches.sort(Comparator.comparingInt(left -> left.getKey().context().cacheId()));
 
         try {
-            // Compute lock wait timeout.
-            // waitSeconds: null = use tx remaining time (0), 0 = NOWAIT (-1), positive = ms.
-            Long waitSeconds = plan.waitSeconds();
-            long waitMs;
-
-            if (waitSeconds == null)
-                waitMs = 0L;
-            else if (waitSeconds == 0L)
-                waitMs = -1L;
-            else
-                waitMs = waitSeconds * 1000L;
-
             // lockTxEntries() requires the transaction to be bound to the current thread
             // (it checks cctx.tm().threadLocalTx()). Resume it here and suspend afterwards,
             // following the same pattern as ModifyNode.invokeInsideTransaction().
@@ -706,7 +742,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 userTx.savepoint(spName, false);
 
                 boolean locked = true;
-                long deadline = waitMs > 0 ? U.currentTimeMillis() + waitMs : 0L;
 
                 try {
                     for (Map.Entry<IgniteInternalCache<Object, Object>, Map<Object, CacheEntry<Object, Object>>> batch :
@@ -750,9 +785,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                             IgniteQueryErrorCode.UNKNOWN, rollbackEx);
                     }
 
-                    throw new IgniteSQLException(
-                        IgniteResource.INSTANCE.selectForUpdateLockFailed().str(),
-                        IgniteQueryErrorCode.CONCURRENT_UPDATE);
+                    return null;
                 }
 
                 try {

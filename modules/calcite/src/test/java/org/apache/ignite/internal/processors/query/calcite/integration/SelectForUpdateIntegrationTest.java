@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
@@ -30,7 +31,9 @@ import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.calcite.message.QueryBatchMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -57,7 +60,8 @@ public class SelectForUpdateIntegrationTest extends GridCommonAbstractTest {
                 .setTxAwareQueriesEnabled(true))
             .setSqlConfiguration(new SqlConfiguration()
                 .setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration()
-                    .setDefault(true)));
+                    .setDefault(true)))
+            .setCommunicationSpi(new TestRecordingCommunicationSpi());
     }
 
     /** {@inheritDoc} */
@@ -274,6 +278,48 @@ public class SelectForUpdateIntegrationTest extends GridCommonAbstractTest {
 
             assertEquals(30, rows.size());
         }
+    }
+
+    /** SELECT is executed again when the selected row version changes before locking. */
+    @Test
+    public void testSelectForUpdateRetriesQueryAfterVersionChange() throws Exception {
+        UUID clientNodeId = client.cluster().localNode().id();
+        CountDownLatch batchBlocked = new CountDownLatch(1);
+
+        for (int i = 0; i < 3; i++) {
+            TestRecordingCommunicationSpi.spi(grid(i)).blockMessages((node, msg) -> {
+                boolean block = node.id().equals(clientNodeId) && msg instanceof QueryBatchMessage;
+
+                if (block)
+                    batchBlocked.countDown();
+
+                return block;
+            });
+        }
+
+        IgniteInternalFuture<List<List<?>>> selectFut = GridTestUtils.runAsync(() -> {
+            try (Transaction tx = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+                List<List<?>> rows =
+                    sql(client, "SELECT id, age FROM Person WHERE id = 10 FOR UPDATE WAIT 5");
+
+                tx.commit();
+
+                return rows;
+            }
+        });
+
+        try {
+            assertTrue("The first SELECT result was not intercepted",
+                batchBlocked.await(10, TimeUnit.SECONDS));
+
+            assertEquals(1L, sql("UPDATE Person SET age = 100 WHERE id = 10").get(0).get(0));
+        }
+        finally {
+            for (int i = 0; i < 3; i++)
+                TestRecordingCommunicationSpi.spi(grid(i)).stopBlock();
+        }
+
+        assertRows(selectFut.get(10_000), Arrays.asList(10, 100));
     }
 
     /** FOR UPDATE with WHERE is supported. */

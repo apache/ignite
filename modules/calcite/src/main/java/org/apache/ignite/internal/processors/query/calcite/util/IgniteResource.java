@@ -98,6 +98,6 @@ public interface IgniteResource {
     Resources.ExInst<SqlValidatorException> selectForUpdateRequiresPessimisticTx();
 
     /** */
-    @Resources.BaseMessage("SELECT FOR UPDATE: could not acquire lock (row version changed concurrently)")
+    @Resources.BaseMessage("SELECT FOR UPDATE: could not acquire lock")
     Resources.ExInst<SqlValidatorException> selectForUpdateLockFailed();
 }
