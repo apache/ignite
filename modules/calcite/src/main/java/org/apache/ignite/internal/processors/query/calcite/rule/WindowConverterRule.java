@@ -33,7 +33,6 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Window;
 import org.apache.calcite.rel.logical.LogicalWindow;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rel.type.RelRecordType;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -82,15 +81,8 @@ public class WindowConverterRule extends AbstractIgniteConverterRule<LogicalWind
 
             result = convert(result, inTraits);
 
-            // Add fields added by current group.
-            // see org.apache.calcite.rel.logical.LogicalWindow#create
-            String grpFieldPrefix = "w" + grpIdx + "$";
-            List<RelDataTypeField> fieldsAddedByCurGrp = U.arrayList(window.getRowType().getFieldList(),
-                it -> it.getName().startsWith(grpFieldPrefix));
-            List<RelDataTypeField> grpFields = new ArrayList<>(result.getRowType().getFieldList());
-            grpFields.addAll(fieldsAddedByCurGrp);
-
-            RelRecordType rowType = new RelRecordType(grpFields);
+            RelRecordType rowType = new RelRecordType(window.getRowType().getFieldList()
+                .subList(0, result.getRowType().getFieldCount() + grp.aggCalls.size()));
 
             Window.Group newGrp = replaceAggCallOrdinal(grp);
 
