@@ -32,9 +32,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Parse tree for {@code SELECT ... FOR UPDATE [OF col [, col ...]] [WAIT n | NOWAIT]} statement.
  *
- * <p>The {@code FOR UPDATE} clause requests pessimistic row-level locks on the rows returned
- * by the query. Actual lock acquisition is not yet supported; this node exists to reserve the
- * syntax and produce a clear "not yet supported" error at query-preparation time.
+ * <p>The {@code FOR UPDATE} clause requests pessimistic row-level locks on rows returned by the query.
+ * When {@code OF} is specified, only tables owning the listed columns are locked.
  *
  * <p>Fields:
  * <ul>

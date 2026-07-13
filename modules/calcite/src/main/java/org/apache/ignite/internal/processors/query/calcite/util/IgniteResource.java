@@ -98,10 +98,6 @@ public interface IgniteResource {
     Resources.ExInst<SqlValidatorException> selectForUpdateRequiresPessimisticTx();
 
     /** */
-    @Resources.BaseMessage("SELECT FOR UPDATE is not supported for multi-table (JOIN) queries")
-    Resources.ExInst<SqlValidatorException> selectForUpdateJoinNotSupported();
-
-    /** */
     @Resources.BaseMessage("SELECT FOR UPDATE: could not acquire lock (row version changed concurrently)")
     Resources.ExInst<SqlValidatorException> selectForUpdateLockFailed();
 }

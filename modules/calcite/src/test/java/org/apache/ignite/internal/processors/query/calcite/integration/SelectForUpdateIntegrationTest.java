@@ -86,21 +86,148 @@ public class SelectForUpdateIntegrationTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        sql("CREATE TABLE Person (id INT PRIMARY KEY, name VARCHAR, age INT) WITH atomicity=TRANSACTIONAL");
-        sql("INSERT INTO Person VALUES (1, 'Alice', 20), (2, 'Bob', 21), (3, 'Ann', 22), (4, 'Bill', 23)" +
+        sql("CREATE TABLE Person (id INT PRIMARY KEY, name VARCHAR, age INT, deptId INT, managerId INT) " +
+            "WITH atomicity=TRANSACTIONAL");
+        sql("INSERT INTO Person (id, name, age) VALUES " +
+            "(1, 'Alice', 20), (2, 'Bob', 21), (3, 'Ann', 22), (4, 'Bill', 23)" +
             ", (5, 'Alex', 24), (6, 'Ben', 25), (7, 'Cathy', 26), (8, 'Carl', 27), (9, 'Diana', 28)" +
             ", (10, 'David', 29), (11, 'Eva', 30), (12, 'Evan', 31), (13, 'Fiona', 32), (14, 'Frank', 33)" +
             ", (15, 'Grace', 34), (16, 'George', 35), (17, 'Hannah', 36), (18, 'Harry', 37), (19, 'Ivy', 38)" +
             ", (20, 'Ian', 39), (21, 'Jack', 40), (22, 'Jill', 41), (23, 'Karen', 42), (24, 'Kyle', 43)" +
             ", (25, 'Laura', 44), (26, 'Leo', 45), (27, 'Mia', 46), (28, 'Mike', 47), (29, 'Nina', 48)" +
             ", (30, 'Nick', 49)");
+        sql("UPDATE Person SET deptId = 1, managerId = 2 WHERE id = 1");
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        sql("DROP TABLE IF EXISTS Dept");
         sql("DROP TABLE IF EXISTS Person");
 
         super.afterTest();
+    }
+
+    /** SELECT FOR UPDATE without OF locks rows of every table participating in a JOIN. */
+    @Test
+    public void testSelectForUpdateJoinLocksAllTables() throws Exception {
+        createDeptTable();
+
+        CountDownLatch locked = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+
+        IgniteInternalFuture<?> lockFut = GridTestUtils.runAsync(() -> {
+            try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+                assertRows(
+                    sql("SELECT p.id FROM Person p JOIN Dept d ON p.deptId = d.id WHERE p.id = 1 FOR UPDATE"),
+                    Arrays.asList(1)
+                );
+
+                locked.countDown();
+
+                assertTrue("Timed out waiting to release JOIN locks", release.await(30, TimeUnit.SECONDS));
+
+                tx.commit();
+            }
+        });
+
+        try {
+            assertTrue("JOIN transaction did not acquire locks in time", locked.await(10, TimeUnit.SECONDS));
+
+            assertTableRowLocked(ignite1, "Person", 1);
+            assertTableRowLocked(ignite1, "Dept", 1);
+        }
+        finally {
+            release.countDown();
+        }
+
+        lockFut.get(10_000);
+    }
+
+    /** FOR UPDATE OF locks only the table owning the specified JOIN column. */
+    @Test
+    public void testSelectForUpdateJoinOfLocksSelectedTable() throws Exception {
+        createDeptTable();
+
+        CountDownLatch locked = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+
+        IgniteInternalFuture<?> lockFut = GridTestUtils.runAsync(() -> {
+            try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+                assertRows(
+                    sql("SELECT p.id FROM Person p JOIN Dept d ON p.deptId = d.id WHERE p.id = 1 FOR UPDATE OF p.id"),
+                    Arrays.asList(1)
+                );
+
+                locked.countDown();
+
+                assertTrue("Timed out waiting to release JOIN locks", release.await(30, TimeUnit.SECONDS));
+
+                tx.commit();
+            }
+        });
+
+        try {
+            assertTrue("JOIN transaction did not acquire locks in time", locked.await(10, TimeUnit.SECONDS));
+
+            assertTableRowLocked(ignite1, "Person", 1);
+
+            try (Transaction tx = ignite1.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+                assertRows(sql(ignite1, "SELECT * FROM Dept WHERE id = 1 FOR UPDATE NOWAIT"),
+                    Arrays.asList(1, "Engineering"));
+
+                tx.commit();
+            }
+        }
+        finally {
+            release.countDown();
+        }
+
+        lockFut.get(10_000);
+    }
+
+    /** A qualified OF column selects a particular table occurrence in a self-join. */
+    @Test
+    public void testSelectForUpdateSelfJoinOfUsesAlias() throws Exception {
+        assertSelfJoinOfLocks("employee", 1, 2);
+        assertSelfJoinOfLocks("manager", 2, 1);
+    }
+
+    /** Creates a second transactional table used by JOIN tests. */
+    private void createDeptTable() {
+        sql("CREATE TABLE Dept (id INT PRIMARY KEY, name VARCHAR) WITH atomicity=TRANSACTIONAL");
+        sql("INSERT INTO Dept VALUES (1, 'Engineering'), (2, 'Sales'), (3, 'HR')");
+    }
+
+    /** Verifies that OF resolves an alias to the correct side of a self-join. */
+    private void assertSelfJoinOfLocks(String alias, int lockedId, int unlockedId) throws Exception {
+        CountDownLatch locked = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+
+        IgniteInternalFuture<?> lockFut = GridTestUtils.runAsync(() -> {
+            try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+                assertRows(sql("SELECT employee.id, manager.id FROM Person employee " +
+                    "JOIN Person manager ON employee.managerId = manager.id " +
+                    "WHERE employee.id = 1 FOR UPDATE OF " + alias + ".id"), Arrays.asList(1, 2));
+
+                locked.countDown();
+
+                assertTrue("Timed out waiting to release self-join lock", release.await(30, TimeUnit.SECONDS));
+
+                tx.commit();
+            }
+        });
+
+        try {
+            assertTrue("Self-join transaction did not acquire lock in time", locked.await(10, TimeUnit.SECONDS));
+
+            assertTableRowLocked(ignite1, "Person", lockedId);
+            assertTableRowUnlocked(ignite1, "Person", unlockedId);
+        }
+        finally {
+            release.countDown();
+        }
+
+        lockFut.get(10_000);
     }
 
     /** FOR UPDATE without an active transaction produces "requires an active PESSIMISTIC transaction". */
@@ -164,7 +291,7 @@ public class SelectForUpdateIntegrationTest extends GridCommonAbstractTest {
     public void testSelectForUpdateByPrimaryKey() {
         try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
             assertRows(sql("SELECT * FROM Person WHERE id = 2 FOR UPDATE"),
-                Arrays.asList(2, "Bob", 21));
+                Arrays.asList(2, "Bob", 21, null, null));
 
             tx.commit();
         }
@@ -187,11 +314,11 @@ public class SelectForUpdateIntegrationTest extends GridCommonAbstractTest {
     public void testSelectForUpdateRepeatedInSameTx() {
         try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
             assertRows(sql("SELECT * FROM Person WHERE id = 2 FOR UPDATE"),
-                Arrays.asList(2, "Bob", 21));
+                Arrays.asList(2, "Bob", 21, null, null));
 
             // Second FOR UPDATE on the same key in the same transaction should succeed.
             assertRows(sql("SELECT * FROM Person WHERE id = 2 FOR UPDATE"),
-                Arrays.asList(2, "Bob", 21));
+                Arrays.asList(2, "Bob", 21, null, null));
 
             tx.commit();
         }
@@ -339,13 +466,28 @@ public class SelectForUpdateIntegrationTest extends GridCommonAbstractTest {
 
     /** Verifies that a transaction on the specified node cannot acquire the row lock. */
     private void assertRowLocked(Ignite ignite, int id) {
+        assertTableRowLocked(ignite, "Person", id);
+    }
+
+    /** Verifies that a transaction cannot acquire a row lock in the specified table. */
+    private void assertTableRowLocked(Ignite ignite, String tableName, int id) {
         try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
             GridTestUtils.assertThrowsAnyCause(log,
-                () -> sql(ignite, "SELECT * FROM Person WHERE id = ? FOR UPDATE NOWAIT", id),
+                () -> sql(ignite, "SELECT * FROM " + tableName + " WHERE id = ? FOR UPDATE NOWAIT", id),
                 IgniteSQLException.class,
                 "could not acquire lock");
 
             tx.rollback();
+        }
+    }
+
+    /** Verifies that a transaction can acquire the row lock in the specified table. */
+    private void assertTableRowUnlocked(Ignite ignite, String tableName, int id) {
+        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+            assertRows(sql(ignite, "SELECT id FROM " + tableName + " WHERE id = ? FOR UPDATE NOWAIT", id),
+                Arrays.asList(id));
+
+            tx.commit();
         }
     }
 

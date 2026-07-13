@@ -19,7 +19,9 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -107,6 +109,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.PrepareServic
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCache;
 import org.apache.ignite.internal.processors.query.calcite.prepare.SelectForUpdatePlan;
+import org.apache.ignite.internal.processors.query.calcite.prepare.SelectForUpdatePlan.LockTarget;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.CreateTableCommand;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexBound;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
@@ -634,33 +637,49 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             return resCur;
         }
 
-        List<CacheEntry<Object, Object>> entries = new ArrayList<>();
+        Map<IgniteInternalCache<Object, Object>, Map<Object, CacheEntry<Object, Object>>> entriesByCache =
+            new LinkedHashMap<>();
 
-        for (List<?> row : rows) {
-            GridCacheVersion ver = (GridCacheVersion) row.get(row.size() - 1);
-            Object val = row.get(row.size() - 2);
-            Object key = row.get(row.size() - 3);
+        for (LockTarget target : plan.lockTargets()) {
+            SchemaPlus schemaPlus = schemaHolder.schema(target.schemaName());
 
-            entries.add(new CacheEntryImplEx<>(key, val, ver));
+            if (schemaPlus == null)
+                throw new IgniteSQLException("Schema not found: " + target.schemaName(),
+                    IgniteQueryErrorCode.SCHEMA_NOT_FOUND);
+
+            IgniteTable igniteTable = (IgniteTable)schemaPlus.getTable(target.tableName());
+
+            if (igniteTable == null)
+                throw new IgniteSQLException("Table not found: " + target.tableName(),
+                    IgniteQueryErrorCode.TABLE_NOT_FOUND);
+
+            GridCacheContext<Object, Object> cctx =
+                (GridCacheContext<Object, Object>)((CacheTableDescriptor)igniteTable.descriptor()).cacheContext();
+
+            IgniteInternalCache<Object, Object> cache = cctx.cache().keepBinary();
+            Map<Object, CacheEntry<Object, Object>> entries =
+                entriesByCache.computeIfAbsent(cache, key -> new LinkedHashMap<>());
+            int keyColumnIndex = target.keyColumnIndex();
+
+            for (List<?> row : rows) {
+                Object key = row.get(keyColumnIndex);
+
+                // An outer join has no row to lock on its non-matching side.
+                if (key == null)
+                    continue;
+
+                Object val = row.get(keyColumnIndex + 1);
+                GridCacheVersion ver = (GridCacheVersion)row.get(keyColumnIndex + 2);
+
+                // JOINs can repeat a row, but a transaction needs only one lock per cache key.
+                entries.put(key, new CacheEntryImplEx<>(key, val, ver));
+            }
         }
 
-        // Resolve the target cache via the schema holder.
-        SchemaPlus schemaPlus = schemaHolder.schema(plan.schemaName());
+        List<Map.Entry<IgniteInternalCache<Object, Object>, Map<Object, CacheEntry<Object, Object>>>> lockBatches =
+            new ArrayList<>(entriesByCache.entrySet());
 
-        if (schemaPlus == null)
-            throw new IgniteSQLException("Schema not found: " + plan.schemaName(),
-                IgniteQueryErrorCode.SCHEMA_NOT_FOUND);
-
-        IgniteTable igniteTable = (IgniteTable)schemaPlus.getTable(plan.tableName());
-
-        if (igniteTable == null)
-            throw new IgniteSQLException("Table not found: " + plan.tableName(),
-                IgniteQueryErrorCode.TABLE_NOT_FOUND);
-
-        GridCacheContext<Object, Object> cctx =
-            (GridCacheContext<Object, Object>)((CacheTableDescriptor)igniteTable.descriptor()).cacheContext();
-
-        IgniteInternalCache<Object, Object> cache = cctx.cache().keepBinary();
+        lockBatches.sort(Comparator.comparingInt(left -> left.getKey().context().cacheId()));
 
         try {
             // Compute lock wait timeout.
@@ -686,10 +705,29 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
                 userTx.savepoint(spName, false);
 
-                boolean locked = false;
+                boolean locked = true;
+                long deadline = waitMs > 0 ? U.currentTimeMillis() + waitMs : 0L;
 
                 try {
-                    locked = cache.lockTxEntries(entries, waitMs);
+                    for (Map.Entry<IgniteInternalCache<Object, Object>, Map<Object, CacheEntry<Object, Object>>> batch :
+                        lockBatches) {
+                        if (batch.getValue().isEmpty())
+                            continue;
+
+                        long batchWaitMs = waitMs;
+
+                        if (deadline > 0) {
+                            batchWaitMs = deadline - U.currentTimeMillis();
+
+                            if (batchWaitMs <= 0)
+                                batchWaitMs = -1L;
+                        }
+
+                        if (!batch.getKey().lockTxEntries(batch.getValue().values(), batchWaitMs)) {
+                            locked = false;
+                            break;
+                        }
+                    }
                 }
                 catch (IgniteCheckedException e) {
                     try {

@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.type.RelDataType;
@@ -27,6 +30,7 @@ import org.apache.calcite.sql.SqlDdl;
 import org.apache.calcite.sql.SqlExplain;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.sql.SqlJoin;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
@@ -37,15 +41,16 @@ import org.apache.calcite.tools.ValidationException;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.DistributedCalciteConfiguration;
+import org.apache.ignite.internal.processors.query.calcite.prepare.SelectForUpdatePlan.LockTarget;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DdlSqlToCommandConverter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlSelectForUpdate;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
-import org.apache.ignite.internal.processors.query.calcite.util.IgniteResource;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -152,9 +157,10 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
      * <p>Steps:
      * <ol>
      *   <li>Validate that the inner query is a plain {@link SqlSelect} (not UNION etc.).</li>
-     *   <li>Validate that the FROM clause is a single table (no JOINs, no subqueries).</li>
-     *   <li>Rewrite the SELECT list to append {@code _KEY} as the last column.</li>
+     *   <li>Collect base tables from the FROM clause.</li>
+     *   <li>Append OF columns for validation and lock columns for every table.</li>
      *   <li>Prepare the modified SELECT as a normal {@link MultiStepQueryPlan}.</li>
+     *   <li>Resolve tables selected by OF using aliases and validated column origins.</li>
      *   <li>Return a {@link SelectForUpdatePlan} wrapping the inner plan.</li>
      * </ol>
      */
@@ -177,45 +183,29 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
                 "SELECT FOR UPDATE requires a FROM clause",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
-        SqlNode fromUnwrapped = from.getKind() == SqlKind.AS ? ((SqlCall)from).operand(0) : from;
+        List<TableRef> tableRefs = new ArrayList<>();
 
-        // Reject JOINs.
-        if (fromUnwrapped.getKind() == SqlKind.JOIN)
-            throw new IgniteSQLException(
-                IgniteResource.INSTANCE.selectForUpdateJoinNotSupported().str(),
-                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+        collectTableRefs(from, ctx.schemaName(), tableRefs);
 
-        // Reject subqueries and other non-table references.
-        if (!(fromUnwrapped instanceof SqlIdentifier))
-            throw new IgniteSQLException(
-                "SELECT FOR UPDATE is only supported for simple table references",
-                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
-        SqlIdentifier tableId = (SqlIdentifier)fromUnwrapped;
-
-        // Extract schema and table names.
-        String schemaName;
-        String tableName;
-
-        if (tableId.names.size() >= 2) {
-            schemaName = tableId.names.get(tableId.names.size() - 2);
-            tableName = tableId.names.get(tableId.names.size() - 1);
-        }
-        else {
-            schemaName = ctx.schemaName();
-            tableName = tableId.getSimple();
-        }
-
-        // Rewrite SELECT list: append _KEY as the last column.
         SqlNodeList origList = select.getSelectList();
         SqlNodeList newList = new SqlNodeList(SqlParserPos.ZERO);
 
         for (SqlNode col : origList)
             newList.add(col);
 
-        newList.add(new SqlIdentifier(QueryUtils.KEY_FIELD_NAME, SqlParserPos.ZERO));
-        newList.add(new SqlIdentifier(QueryUtils.VAL_FIELD_NAME, SqlParserPos.ZERO));
-        newList.add(new SqlIdentifier(QueryUtils.VER_FIELD_NAME, SqlParserPos.ZERO));
+        SqlNodeList ofList = forUpdate.ofList();
+        int ofColumnCount = ofList == null ? 0 : ofList.size();
+
+        if (ofList != null) {
+            for (SqlNode col : ofList)
+                newList.add(col);
+        }
+
+        for (TableRef tableRef : tableRefs) {
+            newList.add(tableRef.column(QueryUtils.KEY_FIELD_NAME));
+            newList.add(tableRef.column(QueryUtils.VAL_FIELD_NAME));
+            newList.add(tableRef.column(QueryUtils.VER_FIELD_NAME));
+        }
 
         SqlSelect modifiedSelect = new SqlSelect(
             SqlParserPos.ZERO,
@@ -235,9 +225,176 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
 
         MultiStepQueryPlan innerPlan = (MultiStepQueryPlan)prepareQuery(modifiedSelect, ctx);
 
-        int userColCount = innerPlan.fieldsMetadata().rowType().getFieldCount() - 3;
+        int lockColumnCount = tableRefs.size() * 3;
+        int userColCount = innerPlan.fieldsMetadata().rowType().getFieldCount() - ofColumnCount - lockColumnCount;
+        Set<TableRef> tablesToLock = new LinkedHashSet<>();
 
-        return new SelectForUpdatePlan(innerPlan, userColCount, forUpdate.waitSeconds(), schemaName, tableName);
+        if (ofList == null)
+            tablesToLock.addAll(tableRefs);
+        else {
+            List<GridQueryFieldMetadata> fieldsMeta = innerPlan.fieldsMetadata().queryFieldsMetadata(ctx.typeFactory());
+
+            for (int i = 0; i < ofList.size(); i++) {
+                SqlNode ofColumn = ofList.get(i);
+
+                if (!(ofColumn instanceof SqlIdentifier))
+                    throw new IgniteSQLException(
+                        "SELECT FOR UPDATE OF accepts only column references",
+                        IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+                tablesToLock.add(resolveLockTarget(
+                    tableRefs,
+                    (SqlIdentifier)ofColumn,
+                    fieldsMeta.get(userColCount + i)
+                ));
+            }
+        }
+
+        List<LockTarget> lockTargets = new ArrayList<>(tablesToLock.size());
+
+        for (int i = 0; i < tableRefs.size(); i++) {
+            TableRef tableRef = tableRefs.get(i);
+
+            if (tablesToLock.contains(tableRef)) {
+                lockTargets.add(new LockTarget(
+                    tableRef.schemaName,
+                    tableRef.tableName,
+                    userColCount + ofColumnCount + i * 3
+                ));
+            }
+        }
+
+        return new SelectForUpdatePlan(innerPlan, userColCount, forUpdate.waitSeconds(), lockTargets);
+    }
+
+    /** Collects simple table references from a possibly nested JOIN tree. */
+    private void collectTableRefs(SqlNode from, String dfltSchemaName, List<TableRef> tableRefs) {
+        if (from instanceof SqlJoin) {
+            SqlJoin join = (SqlJoin)from;
+
+            collectTableRefs(join.getLeft(), dfltSchemaName, tableRefs);
+            collectTableRefs(join.getRight(), dfltSchemaName, tableRefs);
+
+            return;
+        }
+
+        SqlNode tableNode = from;
+        SqlIdentifier qualifier = null;
+
+        if (from.getKind() == SqlKind.AS) {
+            SqlCall asCall = (SqlCall)from;
+            SqlNode aliasNode = asCall.operand(1);
+
+            tableNode = asCall.operand(0);
+
+            if (!(aliasNode instanceof SqlIdentifier))
+                throw unsupportedFrom(from);
+
+            qualifier = (SqlIdentifier)aliasNode;
+        }
+
+        if (!(tableNode instanceof SqlIdentifier))
+            throw unsupportedFrom(from);
+
+        SqlIdentifier tableId = (SqlIdentifier)tableNode;
+        int nameCount = tableId.names.size();
+        String tableName = tableId.names.get(nameCount - 1);
+        String schemaName = nameCount >= 2 ? tableId.names.get(nameCount - 2) : dfltSchemaName;
+
+        if (qualifier == null)
+            qualifier = tableId.getComponent(nameCount - 1);
+
+        tableRefs.add(new TableRef(schemaName, tableName, qualifier));
+    }
+
+    /** Resolves an OF column to one table reference. */
+    private TableRef resolveLockTarget(
+        List<TableRef> tableRefs,
+        SqlIdentifier column,
+        GridQueryFieldMetadata fieldMeta
+    ) {
+        if (column.names.size() > 1) {
+            List<String> qualifier = column.names.subList(0, column.names.size() - 1);
+            TableRef match = null;
+
+            for (TableRef tableRef : tableRefs) {
+                if (tableRef.matchesQualifier(qualifier)) {
+                    if (match != null)
+                        throw ambiguousOfColumn(column);
+
+                    match = tableRef;
+                }
+            }
+
+            if (match != null)
+                return match;
+        }
+
+        TableRef match = null;
+
+        for (TableRef tableRef : tableRefs) {
+            if (tableRef.matchesQualifier(List.of(fieldMeta.schemaName(), fieldMeta.typeName()))) {
+                if (match != null)
+                    throw ambiguousOfColumn(column);
+
+                match = tableRef;
+            }
+        }
+
+        if (match == null)
+            throw new IgniteSQLException(
+                "SELECT FOR UPDATE OF column does not belong to a table in FROM: " + column,
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        return match;
+    }
+
+    /** */
+    private IgniteSQLException ambiguousOfColumn(SqlIdentifier column) {
+        return new IgniteSQLException(
+            "SELECT FOR UPDATE OF column is ambiguous: " + column,
+            IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+    }
+
+    /** */
+    private IgniteSQLException unsupportedFrom(SqlNode from) {
+        return new IgniteSQLException(
+            "SELECT FOR UPDATE is only supported for tables and JOINs of tables: " + from,
+            IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+    }
+
+    /** A base table and the qualifier used to reference it in the SELECT scope. */
+    private static class TableRef {
+        /** */
+        private final String schemaName;
+
+        /** */
+        private final String tableName;
+
+        /** */
+        private final SqlIdentifier qualifier;
+
+        /** */
+        private TableRef(String schemaName, String tableName, SqlIdentifier qualifier) {
+            this.schemaName = schemaName;
+            this.tableName = tableName;
+            this.qualifier = qualifier;
+        }
+
+        /** */
+        private SqlIdentifier column(String columnName) {
+            return qualifier.plus(columnName, SqlParserPos.ZERO);
+        }
+
+        /** */
+        private boolean matchesQualifier(List<String> names) {
+            if (names.size() == 1)
+                return qualifier.getSimple().equals(names.get(0));
+
+            int size = names.size();
+
+            return schemaName.equals(names.get(size - 2)) && tableName.equals(names.get(size - 1));
+        }
     }
 
     /**

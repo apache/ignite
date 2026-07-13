@@ -17,17 +17,21 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import org.apache.ignite.cache.CacheEntry;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Query plan for {@code SELECT ... FOR UPDATE} statements.
  *
- * <p>Wraps an inner {@link MultiStepQueryPlan} whose SELECT list has the table's {@code _KEY},
- * {@code _VAL}, and {@code _VER} columns appended at the end.  At execution time the executor:
+ * <p>Wraps an inner {@link MultiStepQueryPlan} whose SELECT list has {@code _KEY}, {@code _VAL},
+ * and {@code _VER} columns of the tables participating in the query appended at the end. At execution time
+ * the executor:
  * <ol>
  *   <li>Runs the inner plan and materialises the full result set.</li>
- *   <li>Extracts the last columns (_KEY, _VAL, _VER) from every row.</li>
+ *   <li>Extracts the hidden columns described by {@link #lockTargets} from every row.</li>
  *   <li>Creates {@link CacheEntry} to lock in the current transaction.</li>
  *   <li>Calls {@code cache.lockTxEntries(entries, waitMs)} to acquire pessimistic locks.</li>
  *   <li>Returns only the first {@link #userColumnCount} columns to the caller.</li>
@@ -47,27 +51,22 @@ public class SelectForUpdatePlan extends AbstractQueryPlan {
      */
     @Nullable private final Long waitSeconds;
 
-    /** SQL schema name for the target table (used at execution time for cache lookup). */
-    private final String schemaName;
-
-    /** SQL table name (uppercased) for the target table. */
-    private final String tableName;
+    /** Tables whose rows must be locked and positions of their hidden columns in the inner result. */
+    private final List<LockTarget> lockTargets;
 
     /** */
     public SelectForUpdatePlan(
         MultiStepQueryPlan innerPlan,
         int userColumnCount,
         @Nullable Long waitSeconds,
-        String schemaName,
-        String tableName
+        List<LockTarget> lockTargets
     ) {
         super(innerPlan.query());
 
         this.innerPlan = innerPlan;
         this.userColumnCount = userColumnCount;
         this.waitSeconds = waitSeconds;
-        this.schemaName = schemaName;
-        this.tableName = tableName;
+        this.lockTargets = Collections.unmodifiableList(new ArrayList<>(lockTargets));
     }
 
     /** Returns the inner plan that reads rows together with the appended columns. */
@@ -88,14 +87,9 @@ public class SelectForUpdatePlan extends AbstractQueryPlan {
         return waitSeconds;
     }
 
-    /** SQL schema name of the target table. */
-    public String schemaName() {
-        return schemaName;
-    }
-
-    /** SQL table name of the target table. */
-    public String tableName() {
-        return tableName;
+    /** Tables whose rows must be locked. */
+    public List<LockTarget> lockTargets() {
+        return lockTargets;
     }
 
     /** {@inheritDoc} */
@@ -109,8 +103,41 @@ public class SelectForUpdatePlan extends AbstractQueryPlan {
             (MultiStepQueryPlan)innerPlan.copy(),
             userColumnCount,
             waitSeconds,
-            schemaName,
-            tableName
+            lockTargets
         );
+    }
+
+    /** A table to lock and the position of its {@code _KEY} column in the inner result. */
+    public static class LockTarget {
+        /** SQL schema name. */
+        private final String schemaName;
+
+        /** SQL table name. */
+        private final String tableName;
+
+        /** Index of {@code _KEY}; {@code _VAL} and {@code _VER} immediately follow it. */
+        private final int keyColumnIndex;
+
+        /** */
+        public LockTarget(String schemaName, String tableName, int keyColumnIndex) {
+            this.schemaName = schemaName;
+            this.tableName = tableName;
+            this.keyColumnIndex = keyColumnIndex;
+        }
+
+        /** SQL schema name. */
+        public String schemaName() {
+            return schemaName;
+        }
+
+        /** SQL table name. */
+        public String tableName() {
+            return tableName;
+        }
+
+        /** Index of the hidden {@code _KEY} column in the inner result. */
+        public int keyColumnIndex() {
+            return keyColumnIndex;
+        }
     }
 }
