@@ -19,17 +19,14 @@ package org.apache.ignite.internal.processors.service;
 
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceDescriptor;
@@ -41,7 +38,7 @@ import static org.apache.ignite.internal.processors.service.ServiceTopology.EMPT
 /**
  * Service's information container.
  */
-public class ServiceInfo implements ServiceDescriptor, MarshallableMessage {
+public class ServiceInfo implements ServiceDescriptor, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -57,11 +54,8 @@ public class ServiceInfo implements ServiceDescriptor, MarshallableMessage {
     IgniteUuid srvcId;
 
     /** Service configuration. */
-    private LazyServiceConfiguration cfg;
-
-    /** Serialized {@link #cfg}.*/
     @Order(2)
-    transient byte[] cfgBytes;
+    LazyServiceConfiguration cfg;
 
     /** Statically configured flag. */
     @Order(3)
@@ -217,20 +211,5 @@ public class ServiceInfo implements ServiceDescriptor, MarshallableMessage {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(ServiceInfo.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (cfg != null)
-            cfgBytes = U.marshal(marsh, cfg);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (cfgBytes != null) {
-            cfg = U.unmarshal(marsh, cfgBytes, clsLdr);
-
-            cfgBytes = null;
-        }
     }
 }

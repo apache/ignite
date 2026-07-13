@@ -246,6 +246,7 @@ import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFe
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureSet;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgnitePluginFeatureSet;
 import org.apache.ignite.internal.processors.security.SecurityContextWrapper;
+import org.apache.ignite.internal.processors.service.LazyServiceConfiguration;
 import org.apache.ignite.internal.processors.service.ServiceChangeBatchRequest;
 import org.apache.ignite.internal.processors.service.ServiceClusterDeploymentResult;
 import org.apache.ignite.internal.processors.service.ServiceClusterDeploymentResultBatch;
@@ -437,6 +438,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(ServiceProcessorCommonDiscoveryData.class);
         withNoSchema(ServiceInfo.class);
         withNoSchema(ServiceTopology.class);
+        withNoSchema(LazyServiceConfiguration.class);
 
         // [6500 - 6700]: DiscoveryCustomMessage
         msgIdx = 6500;
