@@ -105,7 +105,6 @@ class ClassPathChangeListener implements DistributedMetaStorageListener<Serializ
 
                     log.info("IgniteClassPath READY. Starting download to local node.");
 
-                    // TODO: save new state in descriptor.
                     ctx.classPath().addClassPathTask(newIcp, new DownloadTask(ctx, newIcp.id()));
                 }
                 else
