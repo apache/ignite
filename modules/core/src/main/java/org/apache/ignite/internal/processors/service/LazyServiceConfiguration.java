@@ -19,12 +19,9 @@ package org.apache.ignite.internal.processors.service;
 
 import java.util.Arrays;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceCallInterceptor;
 import org.apache.ignite.services.ServiceConfiguration;
@@ -32,7 +29,7 @@ import org.apache.ignite.services.ServiceConfiguration;
 /**
  * Lazy service configuration.
  */
-public class LazyServiceConfiguration extends ServiceConfiguration implements Message {
+public class LazyServiceConfiguration extends ServiceConfiguration {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -49,27 +46,24 @@ public class LazyServiceConfiguration extends ServiceConfiguration implements Me
     private transient ServiceCallInterceptor[] interceptors;
 
     /** */
-    @Order(0)
-    String srvcClsName;
+    private String srvcClsName;
 
     /** */
-    @Order(1)
-    byte[] srvcBytes;
+    private byte[] srvcBytes;
 
     /** */
-    @Order(2)
-    byte[] nodeFilterBytes;
+    private byte[] nodeFilterBytes;
 
     /** */
-    @Order(3)
-    byte[] interceptorsBytes;
+    private byte[] interceptorsBytes;
 
     /** Names of platform service methods to build service statistics. */
-    @Order(4)
     @GridToStringExclude
-    String[] platformMtdNames;
+    private String[] platformMtdNames;
 
-    /** Default constructor for {@link MessageFactory}. */
+    /**
+     * Default constructor.
+     */
     public LazyServiceConfiguration() {
         // No-op.
     }
