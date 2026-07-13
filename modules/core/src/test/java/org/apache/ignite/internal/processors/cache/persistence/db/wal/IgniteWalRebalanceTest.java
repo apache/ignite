@@ -336,15 +336,33 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         // This node should rebalance data from other nodes and shouldn't have WAL history.
         Ignite ignite = startGrid(2);
 
-        awaitPartitionMapExchange();
+        awaitPartitionMapExchange(true, true, null);
 
-        // Wait for WAL rebalance to complete before modifying data to avoid race conditions.
+        // Wait for WAL rebalance to complete. With ASYNC rebalance, rebalance completion triggers
+        // a minor exchange to update partition states (REBALANCING -> OWNED). We must wait for
+        // both rebalance AND the resulting minor exchange to finish, otherwise cache writes can
+        // race with the minor exchange and hit "Invalid version for inner update" errors.
         for (Ignite ig : G.allGrids()) {
-            GridCachePreloader preloader = ((IgniteEx)ig).cachex(CACHE_NAME).context().group().preloader();
+            GridCachePreloader pld = ((IgniteEx)ig).cachex(CACHE_NAME).context().group().preloader();
 
-            if (preloader.rebalanceFuture() != null)
-                preloader.rebalanceFuture().get();
+            if (pld.rebalanceFuture() != null)
+                pld.rebalanceFuture().get();
         }
+
+        // Wait for minor exchanges triggered by rebalance completion to finish on all nodes.
+        // Since minor exchanges are created asynchronously, we poll until no pending exchanges exist.
+        assertTrue(GridTestUtils.waitForCondition(() -> {
+            for (Ignite ig : G.allGrids()) {
+                List<GridDhtPartitionsExchangeFuture> futs = ((IgniteEx)ig).context().cache().context().exchange().exchangeFutures();
+
+                for (GridDhtPartitionsExchangeFuture fut : futs) {
+                    if (!fut.isDone())
+                        return false;
+                }
+            }
+
+            return true;
+        }, getTestTimeout()));
 
         Set<Long> topVers = ((WalRebalanceCheckingCommunicationSpi)ignite.configuration().getCommunicationSpi())
             .walRebalanceVersions(grpId);
