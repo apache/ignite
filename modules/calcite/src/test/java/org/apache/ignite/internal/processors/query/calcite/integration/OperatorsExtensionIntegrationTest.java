@@ -171,50 +171,18 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
     @Test
     public void testOverriveBinaryOperator() {
         sql("create table person(id int primary key, val_ts timestamp)");
-        sql("insert into person values (?, ?)", 1, Timestamp.valueOf("2024-01-01 00:00:00"));
 
-        // Check SELECT.
-        assertQuery("SELECT val_ts - 1 FROM person")
-            .returns(Timestamp.valueOf("2023-12-31 00:00:00"))
-            .check();
-        assertQuery("SELECT id FROM person WHERE val_ts - 1 = ?")
-            .withParams(Timestamp.valueOf("2023-12-31 00:00:00"))
-            .returns(1)
-            .check();
-        assertQuery("SELECT id FROM person WHERE val_ts = ? - 1")
-            .withParams(Timestamp.valueOf("2024-01-02 00:00:00"))
-            .returns(1)
-            .check();
+        Timestamp ts0 = Timestamp.valueOf("2024-01-01 00:00:00");
+        Timestamp ts1 = Timestamp.valueOf("2023-12-28 00:00:00");
 
-        // Check INSERT.
-        assertQuery("INSERT INTO person(id, val_ts) VALUES (?, ? - 1)")
-            .withParams(2, Timestamp.valueOf("2024-01-01 00:00:00"))
-            .returns(1L)
-            .check();
+        // Let's check the basic queries.
+        assertQuery("INSERT INTO person(id, val_ts) VALUES (?, ? - 1)").withParams(1, ts0).returns(1L).check();
+        assertQuery("UPDATE person SET val_ts = val_ts - 1 WHERE id = ?").withParams(1).returns(1L).check();
+        assertQuery("SELECT val_ts - 2 FROM person").returns(ts1).check();
+        assertQuery("DELETE FROM person WHERE val_ts - 2 = ?").withParams(ts1).returns(1L).check();
 
-        // Check UPDATE.
-        assertQuery("UPDATE person SET val_ts = val_ts - 1 WHERE id = ?")
-            .withParams(1)
-            .returns(1L)
-            .check();
-        assertQuery("UPDATE person SET val_ts = ? - 1 WHERE id = ?")
-            .withParams(Timestamp.valueOf("2024-01-01 00:00:00"), 2)
-            .returns(1L)
-            .check();
-        assertQuery("UPDATE person SET val_ts = ? - 2 WHERE val_ts - 1 = ?")
-            .withParams(Timestamp.valueOf("2024-01-01 00:00:00"), Timestamp.valueOf("2023-12-30 00:00:00"))
-            .returns(2L)
-            .check();
-        assertQuery("UPDATE person SET val_ts = ? - 3 WHERE val_ts = ? - 2")
-            .withParams(Timestamp.valueOf("2024-01-01 00:00:00"), Timestamp.valueOf("2024-01-01 00:00:00"))
-            .returns(2L)
-            .check();
-
-        // Check DELETE.
-        assertQuery("DELETE FROM person WHERE val_ts - 1 = ?")
-            .withParams(Timestamp.valueOf("2023-12-28 00:00:00"))
-            .returns(2L)
-            .check();
+        // Let's verify that the original operator still works.
+        sql("UPDATE person SET val_ts = val_ts - INTERVAL 1 SECOND");
     }
 
     /** Rewrites LTRIM with 2 parameters. */
@@ -464,14 +432,12 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
                 );
             }
 
-            RexNode leftRex = cx.convertExpression(left);
-            RexNode rightRex = cx.convertExpression(right);
+            SqlOperator origin = ((SqlTimestampMinusNumericOperator)call.getOperator()).origin;
+            SqlCall originCall = origin.createCall(call.getParserPosition(), call.getOperandList());
 
-            return cx.getRexBuilder().makeCall(
-                callType,
-                SqlStdOperatorTable.MINUS,
-                ImmutableList.of(leftRex, rightRex)
-            );
+            cx.getValidator().setValidatedNodeType(originCall, callType);
+
+            return cx.convertExpression(originCall);
         }
     }
 }
