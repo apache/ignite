@@ -76,10 +76,10 @@ import org.apache.ignite.internal.processors.query.calcite.integration.SqlDiagno
 import org.apache.ignite.internal.processors.query.calcite.integration.SqlPlanHistoryIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.StatisticsCommandDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.StdSqlOperatorsTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.SystemColumnsScanTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SystemViewsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.TableDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.TableDmlIntegrationTest;
-import org.apache.ignite.internal.processors.query.calcite.integration.TechnicalColumnsScanTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.TimeoutIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.UnnestIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.UnstableTopologyIntegrationTest;
@@ -187,7 +187,7 @@ import org.junit.runners.Suite;
     TxThreadLockingTest.class,
     SelectByKeyFieldTest.class,
     WindowIntegrationTest.class,
-    TechnicalColumnsScanTest.class,
+    SystemColumnsScanTest.class,
     SelectForUpdateIntegrationTest.class,
 })
 public class IntegrationTestSuite {

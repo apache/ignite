@@ -150,7 +150,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     }
 
     /**
-     * Validates insert target columns to ensure they do not contain any technical columns.
+     * Validates insert target columns to ensure they do not contain the version column.
      *
      * @param insert Insert statement.
      */
@@ -158,7 +158,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         for (SqlNode node : insert.getTargetColumnList()) {
             SqlIdentifier id = (SqlIdentifier)node;
 
-            validateTechnicalColumnDmlTarget(id);
+            validateVersionColumnDmlTarget(id);
         }
     }
 
@@ -218,7 +218,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             .selectForUpdateRowType(typeFactory());
 
         for (RelDataTypeField field : updateRowType.getFieldList()) {
-            if (QueryUtils.isTechnicalFieldName(field.getName())) {
+            if (QueryUtils.VER_FIELD_NAME.equals(field.getName())) {
                 selectList.add(SqlValidatorUtil.addAlias(
                     SqlLiteral.createNull(SqlParserPos.ZERO),
                     "__IGNITE_DML" + field.getName()
@@ -320,7 +320,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         if (call.getKind() == SqlKind.AS) {
             final String alias = deriveAlias(call, 0);
 
-            if (QueryUtils.isReservedFieldName(alias))
+            if (QueryUtils.isSystemFieldNameIgnoreCase(alias))
                 throw newValidationError(call, IgniteResource.INSTANCE.illegalAlias(alias));
         }
         else if (call.getKind() == SqlKind.CAST) {
@@ -448,11 +448,11 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         if (!includeSysVars && exp.getKind() == SqlKind.IDENTIFIER) {
             String alias = deriveAlias(exp, 0);
 
-            // Technical columns are never exposed via SELECT *.
-            if (QueryUtils.isTechnicalFieldNameIgnoreCase(alias))
+            // The version column is never exposed via SELECT *.
+            if (QueryUtils.VER_FIELD_NAME.equalsIgnoreCase(alias))
                 return;
 
-            if (QueryUtils.isReservedFieldName(alias)) {
+            if (QueryUtils.isSystemFieldNameIgnoreCase(alias)) {
                 SqlQualified qualified = scope.fullyQualify((SqlIdentifier)exp);
 
                 if (qualified.namespace == null)
@@ -474,7 +474,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** {@inheritDoc} */
     @Override public boolean isSystemField(RelDataTypeField field) {
-        return QueryUtils.isReservedFieldName(field.getName());
+        return QueryUtils.isSystemFieldNameIgnoreCase(field.getName());
     }
 
     /** */
@@ -558,7 +558,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
         for (SqlNode node : call.getTargetColumnList()) {
             SqlIdentifier id = (SqlIdentifier)node;
-            validateTechnicalColumnDmlTarget(id);
+            validateVersionColumnDmlTarget(id);
 
             RelDataTypeField target = SqlValidatorUtil.getTargetField(
                 baseType, typeFactory(), id, getCatalogReader(), relOptTable);
@@ -614,11 +614,11 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     }
 
     /** */
-    private void validateTechnicalColumnDmlTarget(SqlIdentifier id) {
+    private void validateVersionColumnDmlTarget(SqlIdentifier id) {
         String fieldName = id.names.get(id.names.size() - 1);
 
-        if (QueryUtils.isTechnicalFieldNameIgnoreCase(fieldName))
-            throw newValidationError(id, IgniteResource.INSTANCE.cannotModifyTechnicalColumn(id.toString()));
+        if (QueryUtils.VER_FIELD_NAME.equalsIgnoreCase(fieldName))
+            throw newValidationError(id, IgniteResource.INSTANCE.cannotModifySystemColumn(id.toString()));
     }
 
     /** @return A derived type or {@code null} if unable to determine. */

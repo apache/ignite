@@ -179,7 +179,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         }
 
         virtualFields.set(descriptors.size());
-        descriptors.add(new TechnicalDescriptor(QueryUtils.VER_FIELD_NAME, GridCacheVersion.class, descriptors.size()) {
+        descriptors.add(new SystemDescriptor(QueryUtils.VER_FIELD_NAME, GridCacheVersion.class, descriptors.size()) {
             @Override public Object value(ExecutionContext<?> ectx, GridCacheContext<?, ?> cctx, CacheDataRow src)
                 throws IgniteCheckedException {
                 GridCacheVersion ver = src.version();
@@ -190,13 +190,6 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
                 CacheDataRow row = cctx.offheap().read(cctx, src.key());
 
                 return row == null ? null : row.version();
-            }
-        });
-
-        virtualFields.set(descriptors.size());
-        descriptors.add(new TechnicalDescriptor(QueryUtils.SRC_FIELD_NAME, Integer.class, descriptors.size()) {
-            @Override public Object value(ExecutionContext<?> ectx, GridCacheContext<?, ?> cctx, CacheDataRow src) {
-                return cctx.cacheId();
             }
         });
 
@@ -301,7 +294,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
     @Override public boolean isUpdateAllowed(RelOptTable tbl, int colIdx) {
         final CacheColumnDescriptor desc = descriptors[colIdx];
 
-        if (QueryUtils.isTechnicalFieldName(desc.name()))
+        if (QueryUtils.VER_FIELD_NAME.equals(desc.name()))
             return false;
 
         return !desc.key() && (desc.field() || QueryUtils.isSqlType(desc.storageType()));
@@ -839,7 +832,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
     }
 
     /** */
-    private abstract static class TechnicalDescriptor implements CacheColumnDescriptor {
+    private abstract static class SystemDescriptor implements CacheColumnDescriptor {
         /** */
         private final String name;
 
@@ -853,7 +846,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         private volatile RelDataType logicalType;
 
         /** */
-        private TechnicalDescriptor(String name, Class<?> storageType, int fieldIdx) {
+        private SystemDescriptor(String name, Class<?> storageType, int fieldIdx) {
             this.name = name;
             this.storageType = storageType;
             this.fieldIdx = fieldIdx;

@@ -36,8 +36,8 @@ public interface IgniteResource {
     Resources.ExInst<SqlValidatorException> cannotUpdateField(String field);
 
     /** */
-    @Resources.BaseMessage("Cannot modify technical column \"{0}\".")
-    Resources.ExInst<SqlValidatorException> cannotModifyTechnicalColumn(String field);
+    @Resources.BaseMessage("Cannot modify system column \"{0}\".")
+    Resources.ExInst<SqlValidatorException> cannotModifySystemColumn(String field);
 
     /** */
     @Resources.BaseMessage("Illegal aggregate function. {0} is unsupported at the moment.")

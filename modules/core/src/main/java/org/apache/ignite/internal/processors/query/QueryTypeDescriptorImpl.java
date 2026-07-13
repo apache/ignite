@@ -412,8 +412,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      */
     public boolean hasField(String field) {
         return props.containsKey(field)
-            || QueryUtils.VAL_FIELD_NAME.equalsIgnoreCase(field)
-            || QueryUtils.isTechnicalFieldNameIgnoreCase(field);
+            || QueryUtils.isSystemFieldNameIgnoreCase(field);
     }
 
     /**

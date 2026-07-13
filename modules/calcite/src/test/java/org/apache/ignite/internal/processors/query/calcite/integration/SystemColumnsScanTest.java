@@ -58,8 +58,8 @@ import org.junit.Test;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 
-/** Tests technical columns returned by direct table and index scans. */
-public class TechnicalColumnsScanTest extends GridCommonAbstractTest {
+/** Tests system columns returned by direct table and index scans. */
+public class SystemColumnsScanTest extends GridCommonAbstractTest {
     /** */
     private IgniteEx node;
 
@@ -87,18 +87,18 @@ public class TechnicalColumnsScanTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testTableScanReturnsTechnicalColumns() throws Exception {
+    public void testTableScanReturnsSystemColumns() throws Exception {
         createAndPopulatePersonTable();
 
         IgniteCacheTable tbl = personTable();
         ScanContext scanCtx = scanContext(tbl);
 
-        assertTechnicalColumns(tbl.scan(scanCtx.ectx, scanCtx.grp, requiredColumns(tbl)), tbl);
+        assertSystemColumns(tbl.scan(scanCtx.ectx, scanCtx.grp, requiredSystemColumns(tbl)));
     }
 
     /** */
     @Test
-    public void testIndexScanReturnsTechnicalColumns() throws Exception {
+    public void testIndexScanReturnsSystemColumns() throws Exception {
         createAndPopulatePersonTable();
 
         IgniteCacheTable tbl = personTable();
@@ -108,51 +108,45 @@ public class TechnicalColumnsScanTest extends GridCommonAbstractTest {
 
         ScanContext scanCtx = scanContext(tbl);
 
-        assertTechnicalColumns(idx.scan(scanCtx.ectx, scanCtx.grp, null, requiredColumns(tbl)), tbl);
+        assertSystemColumns(idx.scan(scanCtx.ectx, scanCtx.grp, null, requiredSystemColumns(tbl)));
     }
 
-    /** Verifies that an explicit SQL query returns technical columns. */
+    /** Verifies that an explicit SQL query returns system columns. */
     @Test
-    public void testExplicitSelectReturnsTechnicalColumns() throws Exception {
+    public void testExplicitSelectReturnsSystemColumns() throws Exception {
         createAndPopulatePersonTable();
 
-        List<List<?>> rows = sql("SELECT id, _ver, _src FROM Person");
+        List<List<?>> rows = sql("SELECT _key, _val, _ver FROM Person");
 
         assertEquals(30, rows.size());
-
-        Integer expSrc = personTable().descriptor().cacheInfo().cacheId();
 
         for (List<?> row : rows) {
             assertEquals(3, row.size());
             assertTrue(row.get(0) instanceof Integer);
-            assertTrue("Unexpected _VER value: " + row.get(1), row.get(1) instanceof GridCacheVersion);
-            assertEquals(expSrc, row.get(2));
+            assertNotNull(row.get(1));
+            assertTrue("Unexpected _VER value: " + row.get(2), row.get(2) instanceof GridCacheVersion);
         }
     }
 
     /** */
     @Test
-    public void testCannotCreateTableWithTechnicalColumnNames() {
-        assertTechnicalColumnCreateForbidden("CREATE TABLE PersonVer (id INT PRIMARY KEY, _ver INT)",
+    public void testCannotCreateTableWithSystemColumnName() {
+        assertSystemColumnCreateForbidden("CREATE TABLE PersonVer (id INT PRIMARY KEY, _ver INT)",
             QueryUtils.VER_FIELD_NAME);
-        assertTechnicalColumnCreateForbidden("CREATE TABLE PersonSrc (id INT PRIMARY KEY, _src INT)",
-            QueryUtils.SRC_FIELD_NAME);
     }
 
     /** */
     @Test
-    public void testCannotAddTechnicalColumnNames() throws Exception {
+    public void testCannotAddSystemColumnName() throws Exception {
         createAndPopulatePersonTable();
 
-        assertTechnicalColumnAddForbidden("ALTER TABLE Person ADD COLUMN _ver INT",
+        assertSystemColumnAddForbidden("ALTER TABLE Person ADD COLUMN _ver INT",
             QueryUtils.VER_FIELD_NAME);
-        assertTechnicalColumnAddForbidden("ALTER TABLE Person ADD COLUMN _src INT",
-            QueryUtils.SRC_FIELD_NAME);
     }
 
     /** */
     @Test
-    public void testTechnicalColumnsAreHiddenFromSelectStar() throws Exception {
+    public void testSystemColumnsAreHiddenFromSelectStar() throws Exception {
         createAndPopulatePersonTable();
 
         List<List<?>> rows = sql("SELECT * FROM Person");
@@ -164,19 +158,16 @@ public class TechnicalColumnsScanTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testTechnicalColumnsCannotBeDmlTargets() throws Exception {
+    public void testVersionColumnCannotBeDmlTarget() throws Exception {
         createAndPopulatePersonTable();
 
-        assertTechnicalColumnDmlTargetForbidden(
+        assertVersionColumnDmlTargetForbidden(
             "INSERT INTO Person (id, name, age, _ver) VALUES (1, 'Ann', 21, NULL)");
-        assertTechnicalColumnDmlTargetForbidden(
-            "INSERT INTO Person (id, name, age, _src) VALUES (1, 'Ann', 21, NULL)");
-        assertTechnicalColumnDmlTargetForbidden("UPDATE Person SET _ver = NULL");
-        assertTechnicalColumnDmlTargetForbidden("UPDATE Person SET _src = NULL");
+        assertVersionColumnDmlTargetForbidden("UPDATE Person SET _ver = NULL");
     }
 
     /** */
-    private void assertTechnicalColumnCreateForbidden(String qry, String colName) {
+    private void assertSystemColumnCreateForbidden(String qry, String colName) {
         String expMsg = "Name '" + colName + "' is reserved and cannot be used as a field name";
 
         try {
@@ -210,15 +201,15 @@ public class TechnicalColumnsScanTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void assertTechnicalColumnAddForbidden(String qry, String colName) {
+    private void assertSystemColumnAddForbidden(String qry, String colName) {
         GridTestUtils.assertThrowsAnyCause(log, () -> sql(qry), IgniteSQLException.class,
             "Column already exists: " + colName);
     }
 
     /** */
-    private void assertTechnicalColumnDmlTargetForbidden(String qry) {
+    private void assertVersionColumnDmlTargetForbidden(String qry) {
         GridTestUtils.assertThrowsAnyCause(log, () -> sql(qry), IgniteSQLException.class,
-            "Cannot modify technical column");
+            "Cannot modify system column");
     }
 
     /** */
@@ -237,19 +228,18 @@ public class TechnicalColumnsScanTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void assertTechnicalColumns(Iterable<Object[]> rowsIterable, IgniteCacheTable tbl) throws Exception {
+    private void assertSystemColumns(Iterable<Object[]> rowsIterable) throws Exception {
         List<Object[]> rows = materialize(rowsIterable);
         Set<Integer> ids = new HashSet<>();
-        Integer expSrc = tbl.descriptor().cacheInfo().cacheId();
 
         assertEquals(30, rows.size());
 
         for (Object[] row : rows) {
             assertEquals(3, row.length);
             assertTrue(row[0] instanceof Integer);
-            assertTrue("Unexpected _VER value [val=" + row[1] + ", cls=" +
-                (row[1] == null ? null : row[1].getClass()) + ']', row[1] instanceof GridCacheVersion);
-            assertEquals(expSrc, row[2]);
+            assertNotNull(row[1]);
+            assertTrue("Unexpected _VER value [val=" + row[2] + ", cls=" +
+                (row[2] == null ? null : row[2].getClass()) + ']', row[2] instanceof GridCacheVersion);
 
             ids.add((Integer)row[0]);
         }
@@ -275,11 +265,11 @@ public class TechnicalColumnsScanTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private ImmutableBitSet requiredColumns(IgniteCacheTable tbl) {
+    private ImmutableBitSet requiredSystemColumns(IgniteCacheTable tbl) {
         return ImmutableBitSet.of(
-            columnIndex(tbl, "ID"),
-            columnIndex(tbl, QueryUtils.VER_FIELD_NAME),
-            columnIndex(tbl, QueryUtils.SRC_FIELD_NAME)
+            columnIndex(tbl, QueryUtils.KEY_FIELD_NAME),
+            columnIndex(tbl, QueryUtils.VAL_FIELD_NAME),
+            columnIndex(tbl, QueryUtils.VER_FIELD_NAME)
         );
     }
 

@@ -114,9 +114,6 @@ public class QueryUtils {
     /** Field name for row version. */
     public static final String VER_FIELD_NAME = "_VER";
 
-    /** Field name for row source. */
-    public static final String SRC_FIELD_NAME = "_SRC";
-
     /** Well-known template name for PARTITIONED cache. */
     public static final String TEMPLATE_PARTITIONED = "PARTITIONED";
 
@@ -1483,19 +1480,9 @@ public class QueryUtils {
     }
 
     /** */
-    public static boolean isReservedFieldName(String fieldName) {
+    public static boolean isSystemFieldNameIgnoreCase(String fieldName) {
         return KEY_FIELD_NAME.equalsIgnoreCase(fieldName) || VAL_FIELD_NAME.equalsIgnoreCase(fieldName) ||
-            isTechnicalFieldNameIgnoreCase(fieldName);
-    }
-
-    /** */
-    public static boolean isTechnicalFieldName(String fieldName) {
-        return VER_FIELD_NAME.equals(fieldName) || SRC_FIELD_NAME.equals(fieldName);
-    }
-
-    /** */
-    public static boolean isTechnicalFieldNameIgnoreCase(String fieldName) {
-        return VER_FIELD_NAME.equalsIgnoreCase(fieldName) || SRC_FIELD_NAME.equalsIgnoreCase(fieldName);
+            VER_FIELD_NAME.equalsIgnoreCase(fieldName);
     }
 
     /**
