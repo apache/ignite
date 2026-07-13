@@ -49,6 +49,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -873,7 +874,8 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNearEntryUpdateRacePut() throws Exception {
-        nearEntryUpdateRace(cache -> cache.put(0, 1), F.asMap(0, 2));
+        for (CacheWriteSynchronizationMode writeSync : new CacheWriteSynchronizationMode[] {FULL_SYNC, PRIMARY_SYNC})
+            nearEntryUpdateRace(writeSync, cache -> cache.put(0, 1), F.asMap(0, 2));
     }
 
     /**
@@ -881,7 +883,8 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNearEntryUpdateRacePutIfAbsent() throws Exception {
-        nearEntryUpdateRace(cache -> assertTrue(cache.putIfAbsent(0, 1)), F.asMap(0, 2));
+        for (CacheWriteSynchronizationMode writeSync : new CacheWriteSynchronizationMode[] {FULL_SYNC, PRIMARY_SYNC})
+            nearEntryUpdateRace(writeSync, cache -> assertTrue(cache.putIfAbsent(0, 1)), F.asMap(0, 2));
     }
 
     /**
@@ -889,7 +892,8 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNearEntryUpdateRaceInvoke() throws Exception {
-        nearEntryUpdateRace(cache -> cache.invoke(0, new SetValueEntryProcessor(1)), F.asMap(0, 2));
+        for (CacheWriteSynchronizationMode writeSync : new CacheWriteSynchronizationMode[] {FULL_SYNC, PRIMARY_SYNC})
+            nearEntryUpdateRace(writeSync, cache -> cache.invoke(0, new SetValueEntryProcessor(1)), F.asMap(0, 2));
     }
 
     /**
@@ -905,7 +909,8 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
             newVals.put(i, i + 10_000);
         }
 
-        nearEntryUpdateRace(cache -> cache.putAll(initVals), newVals);
+        for (CacheWriteSynchronizationMode writeSync : new CacheWriteSynchronizationMode[] {FULL_SYNC, PRIMARY_SYNC})
+            nearEntryUpdateRace(writeSync, cache -> cache.putAll(initVals), newVals);
     }
 
     /**
@@ -941,13 +946,42 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Without any near eviction policy: delete-history tombstones are purged on remove-queue rollover via
+     * {@code markObsoleteVersion}, which is blocked while an update-time eviction reservation is not released.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    @WithSystemProperty(key = "IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE", value = "40")
+    public void testNearDeleteHistoryPurgeWithoutEvictionPolicy() throws Exception {
+        ccfg = cacheConfiguration(1, FULL_SYNC);
+
+        startGrid(0);
+
+        ccfg = null;
+
+        Ignite client = startClientGrid(1);
+
+        IgniteCache<Integer, Integer> nearCache = client.createNearCache(TEST_CACHE, new NearCacheConfiguration<>());
+
+        for (int i = 0; i < 100; i++) {
+            nearCache.put(i, i);
+            nearCache.remove(i);
+        }
+
+        // Remove queue capacity is ceilPow2(historySize / 10) = 4: everything beyond it must be purged.
+        assertEquals(4, ((IgniteKernal)client).internalCache(TEST_CACHE).context().near().map().internalSize());
+    }
+
+    /**
+     * @param writeSync Cache write synchronization mode.
      * @param nearOp Near cache update.
      * @param newVals Concurrent update from the primary that must win.
      * @throws Exception If failed.
      */
-    private void nearEntryUpdateRace(Consumer<IgniteCache<Integer, Integer>> nearOp, Map<Integer, Integer> newVals)
-        throws Exception {
-        ccfg = cacheConfiguration(1, FULL_SYNC);
+    private void nearEntryUpdateRace(CacheWriteSynchronizationMode writeSync,
+        Consumer<IgniteCache<Integer, Integer>> nearOp, Map<Integer, Integer> newVals) throws Exception {
+        ccfg = cacheConfiguration(1, writeSync);
 
         Ignite srv0 = startGrid(0);
 
@@ -974,6 +1008,8 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
         nearOpFut.get();
 
         checkData(newVals);
+
+        stopAllGrids();
     }
 
     /**

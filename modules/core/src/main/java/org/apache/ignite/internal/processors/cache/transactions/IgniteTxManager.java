@@ -132,7 +132,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DU
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MAX_COMPLETED_TX_COUNT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SLOW_TX_WARN_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.configuration.TransactionConfiguration.TX_AWARE_QUERIES_SUPPORTED_MODES;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -144,7 +143,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.REA
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.RECOVERY_FINISH;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.USER_FINISH;
-import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateImpl.deriveSyncMode;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 import static org.apache.ignite.internal.util.GridConcurrentFactory.newMap;
 import static org.apache.ignite.transactions.TransactionState.ACTIVE;
@@ -3139,8 +3137,18 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     else if (tx.storeWriteThrough() && !tx.masterNodeIds().contains(cctx.localNodeId())
                         && tx.nodeId().equals(evtNodeId) && tx.state() == PREPARED) {
                         // Delay a commit, on backup. It will be raised further after near or coord. node will confirm it.
-                        // In different from {@code FULL_SYNC} modes, appropriate recovery message can never be raized.
-                        if (deriveSyncMode(cctx, tx.txState().cacheIds()) != FULL_SYNC)
+                        // In modes different from FULL_SYNC, appropriate recovery message can never be raized.
+                        // Approach with {@code IgniteTxImplicitSingleStateImpl.syncMode} can`t be used here because
+                        // {@code IgniteTxRemoteStateAdapter#cacheIds} can be empty.
+                        boolean fullSyncedOp = false;
+                        for (IgniteTxEntry ent : tx.writeEntries()) {
+                            if (cctx.cacheContext(ent.cacheId()).syncCommit()) {
+                                fullSyncedOp = true;
+                                break;
+                            }
+                        }
+
+                        if (!fullSyncedOp)
                             cctx.time().schedule(() -> salvageTx(tx, RECOVERY_FINISH), 1000, -1);
                     }
                     else if ((tx.near() && !tx.local() && tx.originatingNodeId().equals(evtNodeId))
@@ -3326,11 +3334,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
             originVer = ver;
             this.nearVer = nearVer;
-        }
-
-        /** {@inheritDoc} */
-        @Override public short directType() {
-            throw new UnsupportedOperationException("Near committed version container is not a message to send or serialize.");
         }
     }
 

@@ -25,6 +25,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /** Represents an implementation of {@link IgniteFeature} used to define incompatible changes in Ignite core functionality. */
 public class IgniteCoreFeature implements IgniteFeature {
     /** */
+    public static final String COMPONENT_NAME = "core";
+
+    /** */
     @GridToStringInclude
     private final int id;
 
@@ -38,6 +41,11 @@ public class IgniteCoreFeature implements IgniteFeature {
     /** {@inheritDoc} */
     @Override public int id() {
         return id;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String componentName() {
+        return COMPONENT_NAME;
     }
 
     /** {@inheritDoc} */

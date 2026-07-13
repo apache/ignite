@@ -77,6 +77,8 @@
       url: clustering/discovery-in-the-cloud
     - title: Network Configuration
       url: clustering/network-configuration
+    - title: Multi Data Center Deployment
+      url: clustering/multi-data-center
     - title: Connecting Client Nodes 
       url: clustering/connect-client-nodes
     - title: Baseline Topology

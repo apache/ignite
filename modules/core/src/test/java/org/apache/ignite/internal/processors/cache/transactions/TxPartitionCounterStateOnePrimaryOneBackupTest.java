@@ -29,6 +29,7 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -348,7 +349,7 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
         @Override public boolean beforeBackupPrepare(IgniteEx primary, IgniteEx backup, IgniteInternalTx primaryTx,
             GridFutureAdapter<?> proceedFut) {
             runAsync(() -> {
-                IgniteUuid nearXidVer = primaryTx.nearXidVersion().asIgniteUuid();
+                IgniteUuid nearXidVer = BinaryUtils.asIgniteUuid(primaryTx.nearXidVersion());
 
                 onPrimaryPrepared(primary, primaryTx, order(nearXidVer));
 

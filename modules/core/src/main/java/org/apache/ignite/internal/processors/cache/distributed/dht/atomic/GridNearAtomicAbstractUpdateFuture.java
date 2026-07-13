@@ -158,7 +158,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
     protected boolean keepBinaryInInterceptor;
 
     /** Near entries reserved against eviction for the time of update. */
-    protected Map<KeyCacheObject, GridNearCacheEntry> reservedEntries;
+    private Map<KeyCacheObject, GridNearCacheEntry> reservedEntries;
 
     /**
      * Constructor.
