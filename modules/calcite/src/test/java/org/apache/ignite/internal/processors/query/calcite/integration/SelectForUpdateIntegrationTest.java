@@ -250,6 +250,49 @@ public class SelectForUpdateIntegrationTest extends GridCommonAbstractTest {
         }
     }
 
+    /** SELECT FOR UPDATE does not support DISTINCT because a result row may represent several cache entries. */
+    @Test
+    public void testSelectForUpdateRejectsDistinct() {
+        assertSelectForUpdateUnsupported(
+            "SELECT DISTINCT deptId FROM Person FOR UPDATE",
+            "DISTINCT");
+    }
+
+    /** SELECT FOR UPDATE does not support GROUP BY because grouped rows do not identify individual cache entries. */
+    @Test
+    public void testSelectForUpdateRejectsGroupBy() {
+        assertSelectForUpdateUnsupported(
+            "SELECT deptId, COUNT(*) FROM Person GROUP BY deptId FOR UPDATE",
+            "GROUP BY");
+    }
+
+    /** SELECT FOR UPDATE does not support HAVING because it operates on grouped result rows. */
+    @Test
+    public void testSelectForUpdateRejectsHaving() {
+        assertSelectForUpdateUnsupported(
+            "SELECT COUNT(*) FROM Person HAVING COUNT(*) > 1 FOR UPDATE",
+            "HAVING");
+    }
+
+    /** Aggregate queries without GROUP BY also collapse cache entries into a derived result row. */
+    @Test
+    public void testSelectForUpdateRejectsAggregateWithoutGroupBy() {
+        assertSelectForUpdateUnsupported(
+            "SELECT COUNT(*) FROM Person FOR UPDATE",
+            "aggregate functions");
+    }
+
+    /** Windowed aggregates preserve the identity of every source row and remain supported. */
+    @Test
+    public void testSelectForUpdateSupportsWindowedAggregates() {
+        try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+            assertRows(
+                sql("SELECT id, COUNT(*) OVER () FROM Person WHERE id <= 2 FOR UPDATE"),
+                Arrays.asList(1, 2L),
+                Arrays.asList(2, 2L));
+        }
+    }
+
     /** FOR UPDATE OF columns is supported. */
     @Test
     public void forUpdateOfColumn() {
@@ -534,6 +577,14 @@ public class SelectForUpdateIntegrationTest extends GridCommonAbstractTest {
                 Arrays.asList(id));
 
             tx.commit();
+        }
+    }
+
+    /** Checks that a row-collapsing SELECT form is rejected before lock execution. */
+    private void assertSelectForUpdateUnsupported(String qry, String clause) {
+        try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+            GridTestUtils.assertThrowsAnyCause(log, () -> sql(qry), IgniteSQLException.class,
+                "SELECT FOR UPDATE does not support " + clause);
         }
     }
 

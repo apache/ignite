@@ -831,6 +831,7 @@ SqlNode SqlSelectForUpdate() :
     List<SqlNode> ofCols = null;
     SqlIdentifier col;
     Long waitSeconds = null;
+    String waitValue;
 }
 {
     qry = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) { s = span(); }
@@ -853,7 +854,20 @@ SqlNode SqlSelectForUpdate() :
             LOOKAHEAD(<WAIT>)
             <WAIT> <UNSIGNED_INTEGER_LITERAL>
             {
-                waitSeconds = Long.parseLong(token.image);
+                waitValue = token.image;
+
+                try {
+                    waitSeconds = Long.parseLong(waitValue);
+                }
+                catch (NumberFormatException ignored) {
+                    throw SqlUtil.newContextException(getPos(),
+                        IgniteResource.INSTANCE.illegalWaitTimeout(waitValue));
+                }
+
+                if (waitSeconds <= 0) {
+                    throw SqlUtil.newContextException(getPos(),
+                        IgniteResource.INSTANCE.illegalWaitTimeout(waitValue));
+                }
             }
         |
             <NOWAIT>

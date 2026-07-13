@@ -175,6 +175,8 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
 
         SqlSelect select = (SqlSelect)innerQuery;
 
+        validateSelectForUpdateShape(select, ctx.planner());
+
         // Unwrap optional AS alias around the table reference.
         SqlNode from = select.getFrom();
 
@@ -215,8 +217,8 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
             select.getWhere(),
             select.getGroup(),
             select.getHaving(),
-            null,
-            null,
+            select.getWindowList(),
+            select.getQualify(),
             select.getOrderList(),
             select.getOffset(),
             select.getFetch(),
@@ -265,6 +267,28 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
         }
 
         return new SelectForUpdatePlan(innerPlan, userColCount, forUpdate.waitSeconds(), lockTargets);
+    }
+
+    /** Rejects SELECT forms whose result rows cannot be mapped one-to-one to cache entries. */
+    private void validateSelectForUpdateShape(SqlSelect select, IgnitePlanner planner) {
+        if (select.isDistinct())
+            throw unsupportedSelectForUpdateClause("DISTINCT");
+
+        if (select.getGroup() != null)
+            throw unsupportedSelectForUpdateClause("GROUP BY");
+
+        if (select.getHaving() != null)
+            throw unsupportedSelectForUpdateClause("HAVING");
+
+        if (planner.isAggregate(select))
+            throw unsupportedSelectForUpdateClause("aggregate functions");
+    }
+
+    /** */
+    private IgniteSQLException unsupportedSelectForUpdateClause(String clause) {
+        return new IgniteSQLException(
+            "SELECT FOR UPDATE does not support " + clause,
+            IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 
     /** Collects simple table references from a possibly nested JOIN tree. */

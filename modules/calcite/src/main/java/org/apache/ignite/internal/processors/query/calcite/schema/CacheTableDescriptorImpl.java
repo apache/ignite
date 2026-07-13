@@ -124,7 +124,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
         Set<String> fields = this.typeDesc.fields().keySet();
 
-        List<CacheColumnDescriptor> descriptors = new ArrayList<>(fields.size() + 4);
+        List<CacheColumnDescriptor> descriptors = new ArrayList<>(fields.size() + 3);
 
         // A _key/_val field is virtual in case there is an alias or a property(es) mapped to the _key/_val field.
         BitSet virtualFields = new BitSet();
@@ -884,11 +884,8 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
         /** {@inheritDoc} */
         @Override public RelDataType logicalType(IgniteTypeFactory f) {
-            if (logicalType == null) {
-                logicalType = storageType == GridCacheVersion.class
-                    ? f.createTypeWithNullability(f.createJavaType(storageType), true)
-                    : TypeUtils.sqlType(f, storageType, PRECISION_NOT_SPECIFIED, SCALE_NOT_SPECIFIED, true);
-            }
+            if (logicalType == null)
+                logicalType = f.createTypeWithNullability(f.createJavaType(storageType), true);
 
             return logicalType;
         }

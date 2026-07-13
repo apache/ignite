@@ -365,7 +365,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         }
 
         CalciteCatalogReader catalogReader = this.catalogReader.withSchemaPath(schemaPath);
-        IgniteSqlValidator validator = new IgniteSqlValidator(operatorTbl, catalogReader, typeFactory, validatorCfg, ctx.parameters());
+        SqlValidator validator = new IgniteSqlValidator(operatorTbl, catalogReader, typeFactory, validatorCfg, ctx.parameters());
         SqlToRelConverter sqlToRelConverter = sqlToRelConverter(validator, catalogReader, sqlToRelConverterCfg);
         RelRoot root = sqlToRelConverter.convertQuery(sqlNode, true, false);
         root = root.withRel(sqlToRelConverter.decorrelate(sqlNode, root.rel));
@@ -421,6 +421,15 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         ((VolcanoPlanner)planner).dump(new PrintWriter(w));
 
         return w.toString();
+    }
+
+    /** Returns whether the SELECT changes row cardinality using aggregation. */
+    @SuppressWarnings("deprecation")
+    public boolean isAggregate(SqlSelect select) {
+        SqlValidator validator = validator();
+
+        return validator.isAggregate(select)
+            || (select.getOrderList() != null && validator.isAggregate(select.getOrderList()));
     }
 
     /** */

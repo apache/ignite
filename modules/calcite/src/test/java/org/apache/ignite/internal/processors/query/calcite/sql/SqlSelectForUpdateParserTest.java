@@ -24,6 +24,7 @@ import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.ignite.internal.processors.query.calcite.sql.generated.IgniteSqlParserImpl;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -136,14 +137,15 @@ public class SqlSelectForUpdateParserTest extends GridCommonAbstractTest {
         assertThat(forUpdate.waitSeconds(), is(5L));
     }
 
-    /** FOR UPDATE with WAIT 0 (equivalent to NOWAIT). */
+    /** FOR UPDATE WAIT accepts positive values only. */
     @Test
-    public void forUpdateWaitZero() throws SqlParseException {
-        SqlNode node = parse("SELECT name FROM Person FOR UPDATE WAIT 0");
-
-        assertThat(node, instanceOf(IgniteSqlSelectForUpdate.class));
-
-        assertThat(((IgniteSqlSelectForUpdate)node).waitSeconds(), is(0L));
+    public void forUpdateRejectsIllegalWait() {
+        for (String wait : new String[] {"0", "9223372036854775808"}) {
+            GridTestUtils.assertThrowsAnyCause(log,
+                () -> parse("SELECT name FROM Person FOR UPDATE WAIT " + wait),
+                SqlParseException.class,
+                "WAIT value must be a positive integer, but was: " + wait);
+        }
     }
 
     /** FOR UPDATE on a query with ORDER BY and LIMIT. */
@@ -159,7 +161,6 @@ public class SqlSelectForUpdateParserTest extends GridCommonAbstractTest {
     public void withQueryIsNotWrapped() throws SqlParseException {
         SqlNode node = parse("WITH cte AS (SELECT id FROM Person) SELECT id FROM cte");
 
-        assertThat(node, instanceOf(SqlNode.class));
         // Must NOT be wrapped in IgniteSqlSelectForUpdate
         assertThat(node instanceof IgniteSqlSelectForUpdate, is(false));
     }
