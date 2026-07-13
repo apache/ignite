@@ -17,39 +17,51 @@
 
 package org.apache.ignite.internal.processors.rollingupgrade.feature;
 
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.jetbrains.annotations.Nullable;
 
-/** Maintains the set of active cluster {@link IgniteProductFeatures} used by Rolling Upgrade logic. */
+/** Maintains the set of active cluster {@link IgniteComponentFeatureSet} used by Rolling Upgrade logic. */
 public class IgniteFeatureManager {
     /** */
     private final GridKernalContext ctx;
 
     /** */
-    private final IgniteProductFeatures locVerFeatures;
+    private final IgniteNodeFeatureSet locVerFeatures;
 
     /** */
     private final GridFutureAdapter<Void> locVerFeaturesActivationFut;
 
     /** */
-    private volatile IgniteProductFeatures activeFeatures;
+    private volatile IgniteNodeFeatureSet activeFeatures;
 
     /** */
-    public IgniteFeatureManager(GridKernalContext ctx, IgniteProductFeatures locVerFeatures) {
+    public IgniteFeatureManager(GridKernalContext ctx, IgniteComponentFeatureSet locCoreFeatures) {
         this.ctx = ctx;
-        this.locVerFeatures = locVerFeatures;
+        this.locVerFeatures = collectLocalVersionFeatures(ctx, locCoreFeatures);
         locVerFeaturesActivationFut = new GridFutureAdapter<>();
     }
 
     /** @return The set of features declared by the local node's product version. */
-    public IgniteProductFeatures localVersionFeatures() {
+    public IgniteNodeFeatureSet localVersionFeatures() {
         return locVerFeatures;
     }
 
+    /** @return Active functions of the specified component. */
+    @Nullable public IgniteComponentFeatureSet activeComponentFeatures(String cmpName) {
+        return activeFeatures().componentFeatures(cmpName);
+    }
+
     /** @return The set of features currently active in the cluster. */
-    public IgniteProductFeatures activeFeatures() {
-        final IgniteProductFeatures finalActiveFeatures = activeFeatures;
+    public IgniteNodeFeatureSet activeFeatures() {
+        final IgniteNodeFeatureSet finalActiveFeatures = activeFeatures;
 
         checkActiveFeaturesInitialized(finalActiveFeatures);
 
@@ -58,7 +70,7 @@ public class IgniteFeatureManager {
 
     /** @return {@code true} if the specified {@link IgniteFeature} is active in the cluster; {@code false} otherwise. */
     public boolean isActive(IgniteFeature feature) {
-        final IgniteProductFeatures finalActiveFeatures = activeFeatures;
+        final IgniteNodeFeatureSet finalActiveFeatures = activeFeatures;
 
         checkActiveFeaturesInitialized(finalActiveFeatures);
 
@@ -69,7 +81,7 @@ public class IgniteFeatureManager {
     public void listenActivation(IgniteFeature feature, IgniteRunnable lsnr) {
         assert locVerFeatures.contains(feature);
 
-        final IgniteProductFeatures finalActiveFeatures = activeFeatures;
+        final IgniteNodeFeatureSet finalActiveFeatures = activeFeatures;
 
         checkActiveFeaturesInitialized(finalActiveFeatures);
 
@@ -80,7 +92,7 @@ public class IgniteFeatureManager {
     }
 
     /** */
-    public void onGridDataReceived(IgniteProductFeatures activeClusterFeatures) {
+    public void onGridDataReceived(IgniteNodeFeatureSet activeClusterFeatures) {
         if (locVerFeatures.equals(activeClusterFeatures))
             activateLocalVersionFeatures();
         else
@@ -104,10 +116,48 @@ public class IgniteFeatureManager {
     }
 
     /** */
-    private void checkActiveFeaturesInitialized(IgniteProductFeatures activeFeatures) {
+    private void checkActiveFeaturesInitialized(IgniteNodeFeatureSet activeFeatures) {
         if (activeFeatures == null) {
             throw new IllegalStateException("Local node features are not yet initialized [locNodeId=" +
                 ctx.discovery().localNode().id() + ']');
         }
+    }
+
+    /** */
+    private IgniteNodeFeatureSet collectLocalVersionFeatures(GridKernalContext ctx, IgniteComponentFeatureSet locCoreFeatures) {
+        Set<IgniteComponentFeatureSet> features = new HashSet<>();
+
+        features.add(locCoreFeatures);
+
+        IgniteComponentFeatureSetProvider[] components = ctx.plugins().extensions(IgniteComponentFeatureSetProvider.class);
+
+        if (!F.isEmpty(components)) {
+            for (IgniteComponentFeatureSetProvider component : components)
+                features.add(buildComponentFeatures(component));
+        }
+
+        return new IgniteNodeFeatureSet(features);
+    }
+
+    /** */
+    private IgniteComponentFeatureSet buildComponentFeatures(IgniteComponentFeatureSetProvider cmpFeaturesProvider) {
+        Collection<IgniteFeature> cmpFeatures = cmpFeaturesProvider.features();
+
+        A.notEmpty(cmpFeatures, "component features");
+
+        boolean allFeaturesBelongToComponent = cmpFeatures.stream()
+            .map(IgniteFeature::componentName)
+            .allMatch(featureCmp -> featureCmp.equals(cmpFeaturesProvider.componentName()));
+
+        if (!allFeaturesBelongToComponent) {
+            throw new IgniteException("All specified Ignite Features must belong to the same component" +
+                " [componentName=" + cmpFeaturesProvider.componentName() + ']');
+        }
+
+        return new IgniteComponentFeatureSet(
+            cmpFeaturesProvider.componentName(),
+            cmpFeaturesProvider.componentVersion(),
+            IgniteFeatureSet.buildFrom(cmpFeatures)
+        );
     }
 }

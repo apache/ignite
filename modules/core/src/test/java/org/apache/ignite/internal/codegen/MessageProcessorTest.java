@@ -39,6 +39,7 @@ import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.mappers.DefaultEnumMapper;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
@@ -367,9 +368,10 @@ public class MessageProcessorTest {
         File igniteCodegenJar = jarForClass(Order.class);
         File igniteBinaryApiJar = jarForClass(IgniteUuid.class);
         File igniteCommonsJar = jarForClass(CommonUtils.class);
+        File igniteNioJar = jarForClass(Message.class);
 
         return Compiler.javac()
-            .withClasspath(F.asList(igniteCoreJar, igniteCodegenJar, igniteBinaryApiJar, igniteCommonsJar))
+            .withClasspath(F.asList(igniteCoreJar, igniteCodegenJar, igniteBinaryApiJar, igniteCommonsJar, igniteNioJar))
             .withProcessors(proc)
             .compile(input);
     }

@@ -186,6 +186,36 @@ public class IgniteCommonsSystemProperties {
     public static final String IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION = "IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION";
 
     /**
+     * Enables default selected keys set to be used inside {@code GridNioServer}.
+     * <p>
+     * Default value is {@code false}. Should be switched to {@code true} if there are
+     * any problems in communication layer.
+     */
+    @SystemProperty("Enables default selected keys set to be used inside GridNioServer " +
+        "which lead to some extra garbage generation when processing selected keys. " +
+        "Should be switched to true if there are any problems in communication layer")
+    public static final String IGNITE_NO_SELECTOR_OPTS = "IGNITE_NO_SELECTOR_OPTS";
+
+    /** Default IO balance period. */
+    public static final int DFLT_IO_BALANCE_PERIOD = 5000;
+
+    /** */
+    @SystemProperty(value = "IO balance period in milliseconds", type = Long.class,
+        defaults = "" + DFLT_IO_BALANCE_PERIOD)
+    public static final String IGNITE_IO_BALANCE_PERIOD = "IGNITE_IO_BALANCE_PERIOD";
+
+    /** Default timeout for TCP client recovery descriptor reservation. */
+    public static final int DFLT_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT = 5_000;
+
+    /**
+     * Sets timeout for TCP client recovery descriptor reservation.
+     */
+    @SystemProperty(value = "Timeout for TCP client recovery descriptor reservation in milliseconds",
+        type = Long.class, defaults = "" + DFLT_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT)
+    public static final String IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT =
+            "IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT";
+
+    /**
      * @param enumCls Enum type.
      * @param name Name of the system property or environment variable.
      * @param <E> Type of the enum.
