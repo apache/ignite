@@ -629,12 +629,12 @@ control.sh|bat --cache scan cache1 --limit 10
 
 == Resetting Lost Partitions
 
-You can use the control script to reset lost partitions for specific caches.
+You can use the control script to reset lost partitions for specific cache groups.
 Refer to link:configuring-caches/partition-loss-policy[Partition Loss Policy] for details.
 
 [source, shell]
 ----
-control.sh --cache reset_lost_partitions cacheName1,cacheName2,...
+control.sh --cache reset_lost_partitions cacheGroupName1,cacheGroupName2,...
 ----
 
 
