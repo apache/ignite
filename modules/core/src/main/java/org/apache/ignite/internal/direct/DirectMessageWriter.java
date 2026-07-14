@@ -467,6 +467,8 @@ public class DirectMessageWriter implements MessageWriter {
         state.backward(finished);
 
         curStream = state.item().stream;
+
+        curStream.setBuffer(buf);
     }
 
     /** {@inheritDoc} */
