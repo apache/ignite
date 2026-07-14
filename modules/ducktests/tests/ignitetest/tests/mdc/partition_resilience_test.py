@@ -49,14 +49,14 @@ class MdcPartitionResilienceTest(IgniteTest):
     """
     @cluster(num_nodes=12)
     @ignite_versions(str(DEV_BRANCH))
-    @matrix(cross_dc_latency_ms=[100])
+    @matrix(cross_dc_latency_ms=[25, 50, 100])
     def test_mdc_cluster_partition_resilience(self, ignite_version, cross_dc_latency_ms):
         """
         The canonical split-brain lifecycle: partition -> split into two healthy half-rings
         (DC1 active, DC2 read-only) -> all data readable everywhere -> heal -> DC2 rejoins
         via restart -> writes restored everywhere, distribution and consistency verified.
         """
-        mdc = MdcCluster(self, ignite_version, srv_per_dc=5, runners_per_dc=1, network_timeout=10_000, tcp_connect_timeout=10_000)
+        mdc = MdcCluster(self, ignite_version, srv_per_dc=5, runners_per_dc=1, network_timeout=20_000, tcp_connect_timeout=10_000)
 
         with cross_dc_network(self.logger, mdc, delay_ms=cross_dc_latency_ms) as net:
             mdc.start_servers()
