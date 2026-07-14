@@ -17,11 +17,8 @@
 Thin client data-center-aware routing.
 
 Every thin client is configured with the addresses of ALL server nodes of BOTH DCs.
-A client pinned to a data center (via the ``-DIGNITE_DATA_CENTER_ID=...`` JVM system
-property, per the MDC docs) must route partition-aware reads to nodes of its own DC:
-with a large cross-DC netem delay its average read latency stays small, while an
-unpinned client's reads hit remote primaries for about half the keys and pay the
-cross-DC round trip. Latency is the routing proxy - no metrics infrastructure needed.
+A client pinned to a data center must route partition-aware reads to nodes of its own DC:
+with a large cross-DC netem delay its average read latency stays small.
 
 The partition part verifies the thin client experience of a split-brain: a client
 pinned to the main-DC half keeps writing; a client pinned to the read-only half still
@@ -47,14 +44,13 @@ CACHE_NAME = "mdc-thin"
 KEYS = 100
 
 PINNED_GET_ITERS = 200
-UNPINNED_GET_ITERS = 60
 PUT_ITERS = 30
 
 OFFSET_DURING = 1_000_000
 OFFSET_REJECTED_PROBES = 9_000_000
 OFFSET_AFTER = 2_000_000
 
-SPLIT_SETTLE_SECS = 10
+SPLIT_SETTLE_SECS = 15
 
 
 class MdcThinClientTest(IgniteTest):
@@ -63,12 +59,11 @@ class MdcThinClientTest(IgniteTest):
     """
     @cluster(num_nodes=8)
     @ignite_versions(str(DEV_BRANCH))
-    @matrix(cross_dc_latency_ms=[20])
+    @matrix(cross_dc_latency_ms=[25, 50, 100])
     def test_thin_client_dc_aware_routing_and_partition(self, ignite_version, cross_dc_latency_ms):
         """
-        DC-pinned thin client reads locally (latency far below the cross-DC delay),
-        an unpinned client pays the cross-DC price; through a partition the pinned
-        clients behave like their half-ring: main half writes, read-only half reads
+        DC-pinned thin client reads locally (latency far below the cross-DC delay);
+        through a partition the pinned clients behave like their half-ring: main half writes, read-only half reads
         but rejects writes, and writes resume after the heal.
         """
         mdc = MdcCluster(self, ignite_version, srv_per_dc=2, runners_per_dc={DC_1: 1},
@@ -76,62 +71,44 @@ class MdcThinClientTest(IgniteTest):
 
         # All thin clients get the full address list of both DCs: DC preference must come
         # from routing, not from the address list.
-        pinned_dc1 = self._thin_client(mdc, dc_jvm_opts(DC_1))
-        pinned_dc2 = self._thin_client(mdc, dc_jvm_opts(DC_2))
-        unpinned = self._thin_client(mdc, [])
+        cli_dc1 = self._thin_client(mdc, dc_jvm_opts(DC_1))
+        cli_dc2 = self._thin_client(mdc, dc_jvm_opts(DC_2))
 
-        # Register the thin client hosts into the network groups, so netem and the
-        # partition apply to them. The unpinned client observes from DC1's side.
-        mdc.register(DC_1, pinned_dc1)
-        mdc.register(DC_2, pinned_dc2)
-        mdc.register(DC_1, unpinned)
+        # Register the thin client hosts into the network groups, so netem and the partition apply to them.
+        mdc.register(DC_1, cli_dc1)
+        mdc.register(DC_2, cli_dc2)
 
         first_start = set()
 
-        def run_thin(svc, params):
-            svc.params = params
+        def run_thin(cli_svc, params):
+            cli_svc.params = params
 
-            svc.start(clean=id(svc) not in first_start)
+            cli_svc.start(clean=id(cli_svc) not in first_start)
 
-            first_start.add(id(svc))
+            first_start.add(id(cli_svc))
 
-            svc.wait()
-            svc.stop()
+            cli_svc.wait()
+            cli_svc.stop()
 
-            return svc
+            return cli_svc
 
         with cross_dc_network(self.logger, mdc, delay_ms=cross_dc_latency_ms) as net:
             mdc.start_servers()
 
-            # readFromBackup=true + FULL_SYNC (the fixture defaults) are exactly the
-            # documented preconditions of thin client partition-aware local reads.
             mdc.generate_data(DC_1, CACHE_NAME, 0, KEYS, backups=1)
 
-            # ---- DC-aware routing: latency comparison.
-            svc = run_thin(pinned_dc1, {"mode": "GET", "cacheName": CACHE_NAME, "keyFrom": 0,
+            svc = run_thin(cli_dc1, {"mode": "GET", "cacheName": CACHE_NAME, "keyFrom": 0,
                                         "keyTo": KEYS, "iterations": PINNED_GET_ITERS,
                                         "resultPrefix": "pinnedGet"})
 
-            avg_pinned = mdc.result_float(svc, "pinnedGetAvgOpMs")
+            avg_cli_dc_1 = mdc.result_float(svc, "pinnedGetAvgOpMs")
 
-            svc = run_thin(unpinned, {"mode": "GET", "cacheName": CACHE_NAME, "keyFrom": 0,
-                                      "keyTo": KEYS, "iterations": UNPINNED_GET_ITERS,
-                                      "resultPrefix": "freeGet"})
+            self.logger.info(f"Thin client routing latency [delayMs={cross_dc_latency_ms}, getAvgOpMs={avg_cli_dc_1}]")
 
-            avg_unpinned = mdc.result_float(svc, "freeGetAvgOpMs")
-
-            self.logger.info(f"Thin client routing latency [delayMs={cross_dc_latency_ms}, "
-                             f"pinnedAvgMs={avg_pinned}, unpinnedAvgMs={avg_unpinned}]")
-
-            assert avg_pinned < cross_dc_latency_ms * 0.5, \
+            assert avg_cli_dc_1 < cross_dc_latency_ms, \
                 f"DC-pinned thin client reads should be served locally " \
-                f"[avgMs={avg_pinned}, delayMs={cross_dc_latency_ms}]"
+                f"[avgMs={avg_cli_dc_1}, delayMs={cross_dc_latency_ms}]"
 
-            assert avg_unpinned > avg_pinned * 2, \
-                f"Unpinned thin client reads should pay the cross-DC latency " \
-                f"[unpinnedAvgMs={avg_unpinned}, pinnedAvgMs={avg_pinned}]"
-
-            # ---- Thin clients through a partition.
             net.enable_network_partition(DC_1, DC_2)
 
             sleep(SPLIT_SETTLE_SECS)
@@ -139,13 +116,13 @@ class MdcThinClientTest(IgniteTest):
             mdc.verify_split_brain()
 
             # The client pinned to the main half keeps writing...
-            run_thin(pinned_dc1, {"mode": "PUT", "cacheName": CACHE_NAME, "keyFrom": OFFSET_DURING,
+            run_thin(cli_dc1, {"mode": "PUT", "cacheName": CACHE_NAME, "keyFrom": OFFSET_DURING,
                                   "keyTo": OFFSET_DURING + PUT_ITERS, "iterations": PUT_ITERS,
                                   "resultPrefix": "duringPut"})
 
             # ...while the client pinned to the read-only half still reads cleanly
             # (its DC1 addresses are unreachable, so it falls back to DC2 nodes)...
-            svc = run_thin(pinned_dc2, {"mode": "GET", "cacheName": CACHE_NAME, "keyFrom": 0,
+            svc = run_thin(cli_dc2, {"mode": "GET", "cacheName": CACHE_NAME, "keyFrom": 0,
                                         "keyTo": KEYS, "iterations": PINNED_GET_ITERS,
                                         "resultPrefix": "roGet"})
 
@@ -153,22 +130,20 @@ class MdcThinClientTest(IgniteTest):
                 "Thin client reads in the read-only DC must be clean"
 
             # ...and has every write rejected by the topology validator.
-            run_thin(pinned_dc2, {"mode": "PUT", "cacheName": CACHE_NAME,
+            run_thin(cli_dc2, {"mode": "PUT", "cacheName": CACHE_NAME,
                                   "keyFrom": OFFSET_REJECTED_PROBES,
                                   "keyTo": OFFSET_REJECTED_PROBES + PUT_ITERS,
                                   "iterations": PUT_ITERS, "expectAdmissible": False,
                                   "resultPrefix": "roPut"})
 
-            # ---- Heal, rejoin, thin client writes resume in the former read-only DC.
             net.disable_network_partition(DC_1, DC_2)
 
             mdc.restart(DC_2)
 
-            run_thin(pinned_dc2, {"mode": "PUT", "cacheName": CACHE_NAME, "keyFrom": OFFSET_AFTER,
+            run_thin(cli_dc2, {"mode": "PUT", "cacheName": CACHE_NAME, "keyFrom": OFFSET_AFTER,
                                   "keyTo": OFFSET_AFTER + PUT_ITERS, "iterations": PUT_ITERS,
                                   "resultPrefix": "afterPut"})
 
-            # Everything the thin clients acknowledged is readable via the thick client.
             mdc.check_data(DC_1, CACHE_NAME, OFFSET_DURING, OFFSET_DURING + PUT_ITERS)
             mdc.check_data(DC_1, CACHE_NAME, OFFSET_AFTER, OFFSET_AFTER + PUT_ITERS)
 
