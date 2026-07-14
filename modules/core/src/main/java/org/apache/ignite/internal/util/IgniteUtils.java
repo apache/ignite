@@ -2600,20 +2600,21 @@ public abstract class IgniteUtils extends CommonUtils {
 
             String scheme = cfgUrl.getProtocol().toLowerCase(Locale.ROOT);
 
-            // Handle jar:<nested_url>!/path to avoid bypassing remote-scheme checks.
-            if ("jar".equals(scheme)) {
+            // Unwrap jar:<nested_url>!/path (potentially nested) to avoid bypassing remote-scheme checks.
+            while ("jar".equals(scheme)) {
                 String file = cfgUrl.getFile();
 
                 int sep = file.indexOf("!/");
 
-                if (sep > 0) {
-                    try {
-                        cfgUrl = new URL(file.substring(0, sep));
-                        scheme = cfgUrl.getProtocol().toLowerCase(Locale.ROOT);
-                    }
-                    catch (MalformedURLException ignored) {
-                        // No-op.
-                    }
+                if (sep <= 0)
+                    break;
+
+                try {
+                    cfgUrl = new URL(file.substring(0, sep));
+                    scheme = cfgUrl.getProtocol().toLowerCase(Locale.ROOT);
+                }
+                catch (MalformedURLException ignored) {
+                    break;
                 }
             }
 
