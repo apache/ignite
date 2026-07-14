@@ -22,17 +22,23 @@ import java.util.Collection;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cdc.CdcCacheEvent;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
+import org.apache.ignite.internal.processors.query.QueryEntityEx;
+import org.apache.ignite.internal.processors.query.schema.message.QueryEntityExMessage;
+import org.apache.ignite.internal.processors.query.schema.message.QueryEntityMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /**
@@ -43,7 +49,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
  * <p>
  * All changes must be made with the respect of RU rules.
  */
-public class StoredCacheData implements Serializable, CdcCacheEvent, Message {
+public class StoredCacheData implements Serializable, CdcCacheEvent, MarshallableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -58,12 +64,11 @@ public class StoredCacheData implements Serializable, CdcCacheEvent, Message {
 
     /** Query entities. */
     @GridToStringInclude
-    @Marshalled("qryEntitiesBytes")
     Collection<QueryEntity> qryEntities;
 
-    /** Serialized {@link #qryEntities}. */
+    /** {@link #qryEntities} as wire DTOs. */
     @Order(1)
-    transient byte[] qryEntitiesBytes;
+    transient Collection<QueryEntityMessage> qryEntityMsgs;
 
     /** SQL flag - {@code true} if cache was created with {@code CREATE TABLE}. */
     @Order(2)
@@ -207,6 +212,24 @@ public class StoredCacheData implements Serializable, CdcCacheEvent, Message {
         cacheConfigurationEnrichment = splitCfg.get2();
 
         return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
+        if (qryEntities != null && qryEntityMsgs == null) {
+            qryEntityMsgs = F.transform(qryEntities, e -> e instanceof QueryEntityEx
+                ? new QueryEntityExMessage((QueryEntityEx)e)
+                : new QueryEntityMessage(e));
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (qryEntityMsgs != null) {
+            qryEntities = F.transform(qryEntityMsgs, QueryEntityMessage::toEntity);
+
+            qryEntityMsgs = null;
+        }
     }
 
     /** {@inheritDoc} */
