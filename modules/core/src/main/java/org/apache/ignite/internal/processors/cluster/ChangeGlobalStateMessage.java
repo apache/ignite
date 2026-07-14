@@ -32,13 +32,12 @@ import org.apache.ignite.internal.processors.service.ServiceDeploymentActions;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Message represent request for change cluster global state.
  */
-public class ChangeGlobalStateMessage extends DiscoveryCustomMessage implements Message {
+public class ChangeGlobalStateMessage extends DiscoveryCustomMessage {
     /** Request ID */
     @Order(0)
     UUID reqId;

@@ -26,7 +26,6 @@ import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -71,7 +70,7 @@ import org.jetbrains.annotations.Nullable;
  * it gets blocked until {@link MetadataUpdateAcceptedMessage} arrives with <b>accepted version</b>
  * equals to <b>pending version</b> of this metadata to the moment when is was initially read by the thread.
  */
-public final class MetadataUpdateProposedMessage extends DiscoveryCustomMessage implements Message {
+public final class MetadataUpdateProposedMessage extends DiscoveryCustomMessage {
     /** Node UUID which initiated metadata update. */
     @Order(0)
     UUID origNodeId;
