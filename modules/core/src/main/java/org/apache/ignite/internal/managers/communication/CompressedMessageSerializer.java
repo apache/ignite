@@ -110,9 +110,10 @@ public class CompressedMessageSerializer implements MessageSerializer<Compressed
                     if (!reader.isLastRead())
                         return false;
 
-                    if (msg.chunk == null)
+                    if (msg.chunk == null) {
                         throw new IgniteException("Failed to read compressed message: unexpected null chunk " +
                             "(stream is corrupted or the sender is incompatible).");
+                    }
 
                     if (msg.chunks == null)
                         msg.chunks = new ArrayList<>(Math.min(msg.dataSize / CHUNK_SIZE + 1, 1024));

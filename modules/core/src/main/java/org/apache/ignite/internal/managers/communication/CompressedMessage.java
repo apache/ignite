@@ -37,6 +37,18 @@ public class CompressedMessage implements Message {
     /** Chunk size. */
     static final int CHUNK_SIZE = 10 * 1024;
 
+    /**
+     * Maximum expansion ratio for raw deflate.
+     * Raw deflate cannot expand beyond roughly 1032:1; a larger ratio indicates a corrupted size header.
+     */
+    private static final int MAX_DEFLATE_EXPANSION_RATIO = 1032;
+
+    /**
+     * Fixed additive margin for the expansion ratio check.
+     * Accounts for small constant overhead in deflate so the check doesn't falsely reject valid small messages.
+     */
+    private static final int MAX_DEFLATE_BLOCK_OVERHEAD = 64;
+
     /** Compressed data chunks: filled by {@link #compress(ByteBuffer)} on send, by the serializer on receive. */
     List<byte[]> chunks;
 
@@ -133,11 +145,11 @@ public class CompressedMessage implements Message {
         for (int i = 0; i < chunks.size(); i++)
             compressedTotal += chunks.get(i).length;
 
-        // Raw deflate cannot expand beyond ~1032:1, a larger claim means a corrupted size header; also bounds the
-        // upfront allocation by ~1032x of the actually received bytes.
-        if (dataSize > compressedTotal * 1032L + 64)
+        // Maximum expansion ratio check to detect corrupted size headers.
+        if (dataSize > compressedTotal * MAX_DEFLATE_EXPANSION_RATIO + MAX_DEFLATE_BLOCK_OVERHEAD) {
             throw new IgniteException("Invalid compressed message data size [dataSize=" + dataSize +
                 ", compressedBytes=" + compressedTotal + ']');
+        }
 
         byte[] data = new byte[dataSize];
 

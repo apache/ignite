@@ -494,6 +494,8 @@ public class DirectMessageReader implements MessageReader {
         state.backward(finished);
 
         curStream = state.item().stream;
+
+        curStream.setBuffer(buf);
     }
 
     /** {@inheritDoc} */
@@ -538,9 +540,10 @@ public class DirectMessageReader implements MessageReader {
             res = fun.apply(tmpReader);
 
             // The payload buffer is always complete, so a partial read means a corrupted stream, not a lack of data.
-            if (!tmpReader.state.item().stream.lastFinished())
+            if (!tmpReader.state.item().stream.lastFinished()) {
                 throw new IgniteException("Failed to deserialize compressed payload: uncompressed data ended " +
                     "unexpectedly [dataSize=" + msg0.dataSize() + ']');
+            }
 
             ok = true;
         }
