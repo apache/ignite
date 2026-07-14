@@ -38,6 +38,7 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.processing.FilerException;
@@ -394,7 +395,10 @@ public class IDTOSerializerGenerator {
 
         throwIfNull(type, serDes);
 
-        boolean nullable = !type.toString().startsWith("@" + NotNull.class.getName());
+        // Can't rely on TypeMirror#toString(): the @NotNull position within the string differs between JDKs.
+        boolean nullable = type.getAnnotationMirrors().stream()
+            .noneMatch(am -> ((TypeElement)am.getAnnotationType().asElement())
+                .getQualifiedName().contentEquals(NotNull.class.getName()));
 
         if (nullable || write)
             return simpleSerdes(serDes, var, type);
@@ -607,7 +611,7 @@ public class IDTOSerializerGenerator {
 
         Map<String, String> params = Map.of(
             "${var}", var,
-            "${Type}", colEl.toString(),
+            "${Type}", stripAnnotations(colEl.toString()),
             "${CollectionImpl}", simpleName(COLL_IMPL.get(className(type))),
             "${len}", withLevel("len"),
             "${i}", withLevel("i"),
@@ -741,16 +745,24 @@ public class IDTOSerializerGenerator {
 
     /** @return FQN of {@code comp}. */
     private static String className(TypeMirror comp) {
-        String n = comp.toString();
-
-        int spaceIdx = n.indexOf(' ');
-
-        if (spaceIdx != -1)
-            n = n.substring(spaceIdx + 1);
+        String n = stripAnnotations(comp.toString());
 
         int genIdx = n.indexOf('<');
 
         return genIdx == -1 ? n : n.substring(0, genIdx);
+    }
+
+    /** Type-use annotation with an optional trailing whitespace, e.g. {@code @NotNull} in {@code java.util.@NotNull List}. */
+    private static final Pattern TYPE_ANNOTATION = Pattern.compile("@[\\w.]+\\s*");
+
+    /**
+     * @param type Type string.
+     * @return Type string without type-use annotations. {@link TypeMirror#toString()} renders them at a JDK-dependent
+     * position ({@code @NotNull java.util.List} on JDK 17, {@code java.util.@NotNull List} on JDK 21+), so they are
+     * stripped to obtain a stable fully qualified type name.
+     */
+    private static String stripAnnotations(String type) {
+        return TYPE_ANNOTATION.matcher(type).replaceAll("");
     }
 
     /** @return Serializer class name. */
@@ -798,7 +810,7 @@ public class IDTOSerializerGenerator {
 
             generic.append((gt.getKind() == TypeKind.TYPEVAR || gt.getKind() == TypeKind.WILDCARD)
                 ? "Object"
-                : gt.toString());
+                : stripAnnotations(gt.toString()));
         }
 
         return simpleClassName(tp) + generic.append(">");

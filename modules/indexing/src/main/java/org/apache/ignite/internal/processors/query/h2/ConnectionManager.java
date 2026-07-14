@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -367,20 +366,16 @@ public class ConnectionManager {
     private static void forbidH2DbSettings(String... settings) {
         try {
             Field knownSettingsField = ConnectionInfo.class.getDeclaredField("KNOWN_SETTINGS");
-            Field modifiers = Field.class.getDeclaredField("modifiers");
-
-            modifiers.setAccessible(true);
-            modifiers.setInt(knownSettingsField, knownSettingsField.getModifiers() & ~Modifier.FINAL);
 
             knownSettingsField.setAccessible(true);
 
+            // KNOWN_SETTINGS is a static final collection whose contents (not the reference) are modified here, so
+            // there is no need to strip the FINAL modifier. The legacy trick that did so via java.lang.reflect.Field
+            // internals silently fails ggion JDK 17+ (InaccessibleObjectException) and is unnecessary in the first place.
             HashSet<String> knownSettings = (HashSet<String>)knownSettingsField.get(null);
 
             for (String s: settings)
                 knownSettings.remove(s);
-
-            modifiers.setInt(knownSettingsField, knownSettingsField.getModifiers() & Modifier.FINAL);
-            modifiers.setAccessible(false);
 
             knownSettingsField.setAccessible(false);
         }

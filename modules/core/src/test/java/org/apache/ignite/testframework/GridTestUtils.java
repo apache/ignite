@@ -24,8 +24,6 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.VarHandle;
 import java.lang.management.ManagementFactory;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.SoftReference;
@@ -1884,21 +1882,9 @@ public final class GridTestUtils {
             if (isFinal && isStatic)
                 throw new IgniteException("Modification of static final field through reflection.");
 
-            if (isFinal && U.majorJavaVersion(U.jdkVersion()) >= 12) {
-                MethodHandles.Lookup lookup = MethodHandles.privateLookupIn(Field.class, MethodHandles.lookup());
-
-                VarHandle varHandle = lookup.findVarHandle(Field.class, "modifiers", int.class);
-
-                varHandle.set(field, field.getModifiers() & ~Modifier.FINAL);
-            }
-            else if (isFinal) {
-                Field modifiersField = Field.class.getDeclaredField("modifiers");
-
-                modifiersField.setAccessible(true);
-
-                modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-            }
-
+            // A non-static final field is writable after setAccessible(true) on JDK 9+. The legacy trick of clearing
+            // the FINAL bit via Field.modifiers is unnecessary and, since JDK 21, broken (a VarHandle to a final field
+            // rejects the 'set' access mode with UnsupportedOperationException).
             field.set(obj, val);
         }
         catch (NoSuchFieldException | IllegalAccessException e) {

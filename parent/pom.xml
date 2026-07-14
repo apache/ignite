@@ -589,6 +589,7 @@
                         <include>**/*.java</include>
                     </includes>
                     <argLine>
+                        -Djava.security.manager=allow
                         --add-opens=java.base/jdk.internal.access=ALL-UNNAMED
                         --add-opens=java.base/jdk.internal.loader=ALL-UNNAMED
                         --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED
