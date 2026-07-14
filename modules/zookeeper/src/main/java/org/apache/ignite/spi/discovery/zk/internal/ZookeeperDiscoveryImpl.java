@@ -4072,7 +4072,10 @@ public class ZookeeperDiscoveryImpl {
     byte[] marshalZip(Object obj) throws IgniteCheckedException {
         assert obj != null;
 
-        GridByteArrayOutputStream out = new GridByteArrayOutputStream();
+        // Seed the output buffer so the compressed stream doesn't grow through a chain of doubling
+        // reallocations; 8 KB matches the BufferedOutputStream buffer we already allocate below, so
+        // it stays cheap for small payloads.
+        GridByteArrayOutputStream out = new GridByteArrayOutputStream(8 * 1024);
 
         // BufferedOutputStream's 8 KB buffer coalesces JdkMarshaller's ~1 KB ObjectOutputStream
         // block-data writes into fewer Deflater JNI calls.
