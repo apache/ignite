@@ -97,7 +97,7 @@ public class TxLocksResponse extends GridCacheMessage {
      * @return Lock list for given tx key.
      */
     public List<TxLock> txLocks(IgniteTxKey txKey) {
-        return txLocks().get(txKey);
+        return nearTxKeyLocks.get(txKey);
     }
 
     /**
