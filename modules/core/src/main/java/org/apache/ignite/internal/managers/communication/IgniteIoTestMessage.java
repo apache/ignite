@@ -238,10 +238,7 @@ public class IgniteIoTestMessage implements Message {
         return resRcvTsMillis;
     }
 
-    /**
-     * Captures the receive timestamp. Invoked by {@code GridIoManager} right after the message is received,
-     * not during unmarshalling.
-     */
+    /** Captures the received timestamp; repeated calls are no-ops. */
     public void onAfterRead() {
         if (req && reqRcvTs == 0) {
             reqRcvTs = System.nanoTime();
@@ -256,10 +253,7 @@ public class IgniteIoTestMessage implements Message {
         }
     }
 
-    /**
-     * Captures the send timestamp. Invoked by {@code GridIoManager} right before the message is sent,
-     * not during marshalling.
-     */
+    /** Captures the sent timestamp; repeated calls are no-ops. */
     public void onBeforeWrite() {
         if (req && reqSndTs == 0) {
             reqSndTs = System.nanoTime();
