@@ -2618,15 +2618,19 @@ public abstract class IgniteUtils extends CommonUtils {
                 }
             }
 
+            String prop = IgniteSystemProperties.IGNITE_ALLOW_REMOTE_SPRING_CFG_URL;
+
             if (REMOTE_CFG_SCHEMES.contains(scheme)) {
                 if (ALWAYS_BLOCKED_CFG_SCHEMES.contains(scheme))
                     throw new IgniteCheckedException(
                         "Spring configuration URLs with scheme '" + scheme + "' are always blocked " +
-                        "due to security risk. Use HTTPS or a local file/classpath reference instead. " +
+                        "due to security risk. Use a local file/classpath reference instead. " +
+                        "For remote HTTP/HTTPS set system property: -D" +
+                        prop + "=true. " +
                         "Provided host: " + cfgUrl.getHost()
                     );
 
-                boolean allowRemote = Boolean.getBoolean(IgniteSystemProperties.IGNITE_ALLOW_REMOTE_SPRING_CFG_URL);
+                boolean allowRemote = IgniteSystemProperties.getBoolean(prop);
 
                 if (!allowRemote)
                     throw new IgniteCheckedException(
@@ -2634,7 +2638,7 @@ public abstract class IgniteUtils extends CommonUtils {
                         "to prevent remote code execution via attacker-controlled Spring XML. " +
                         "Provided host: " + cfgUrl.getHost() + ". " +
                         "To allow remote URLs set system property: -D" +
-                        IgniteSystemProperties.IGNITE_ALLOW_REMOTE_SPRING_CFG_URL + "=true"
+                        prop + "=true"
                     );
             }
         }
