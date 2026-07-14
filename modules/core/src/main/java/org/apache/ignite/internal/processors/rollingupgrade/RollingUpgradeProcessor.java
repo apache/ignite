@@ -89,9 +89,6 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
     private final Set<ClusterNode> joiningNodes = new HashSet<>();
 
     /** */
-    private volatile boolean isNodeFenceActive;
-
-    /** */
     private volatile boolean isVerUpgradeEnabled;
 
     /**
@@ -233,7 +230,6 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
         isVerUpgradeEnabled = gridData.isVersionUpgradeEnabled;
         curFinalizeProcId = gridData.curFinalizeProcId;
-        isNodeFenceActive = gridData.isNodeFenceActive;
 
         featureMgr.onGridDataReceived(new IgniteNodeFeatureSet(gridData.activeFeatures));
     }
@@ -241,7 +237,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
     /** {@inheritDoc} */
     @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode joiningNode) {
         synchronized (topGuard) {
-            if (isNodeFenceActive) {
+            if (curFinalizeProcId != null) {
                 return new IgniteNodeValidationResult(
                     joiningNode.id(),
                     "Node joins are not allowed during cluster version finalization. Retry the node join procedure after" +
@@ -408,7 +404,6 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
         return new RollingUpgradeClusterData(
             isVerUpgradeEnabled,
             curFinalizeProcId,
-            isNodeFenceActive,
             featureMgr.activeFeatures().values()
         );
     }
@@ -543,9 +538,6 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
             if (err != null)
                 U.error(log, "Cluster version finalization process failed [procId=" + reqId + ']', err);
 
-            if (reqId.equals(curFinalizeProcId))
-                curFinalizeProcId = null;
-
             super.finishProcess(reqId, err);
         }
 
@@ -554,7 +546,6 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
             U.warn(log, "Cluster version finalization process has been aborted [procId=" + curFinalizeProcId + ", reason=" + reason + ']');
 
             curFinalizeProcId = null;
-            isNodeFenceActive = false;
 
             super.abort(reason);
         }
@@ -566,16 +557,16 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
         /** */
         private IgniteInternalFuture<Message> executePreparePhase(UUID reqId, Message req) {
-            if (curFinalizeProcId != null) {
-                U.error(log, "Failed to handle cluster version finalization request. Another process is " +
-                    "already in progress [curProcId=" + reqId + ", activeProcId=" + curFinalizeProcId + ']');
-
-                return new GridFinishedFuture<>(new IgniteException("Cluster version finalization process is already in progress"));
-            }
-
-            curFinalizeProcId = reqId;
-
             synchronized (topGuard) {
+                if (curFinalizeProcId != null) {
+                    U.error(log, "Failed to handle cluster version finalization request. Another process is " +
+                        "already in progress [curProcId=" + reqId + ", activeProcId=" + curFinalizeProcId + ']');
+
+                    return new GridFinishedFuture<>(new IgniteException("Cluster version finalization process is already in progress"));
+                }
+
+                curFinalizeProcId = reqId;
+
                 if (!isReadyForVersionFinalization())
                     return new GridFinishedFuture<>(new IgniteException(
                     "Cluster version finalization failed. The cluster contains nodes running" +
@@ -583,8 +574,6 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
                         " all cluster node components to the same version" +
                         " [clusterFeatures=" + clusterFeatures().entrySet().stream().collect(
                         Collectors.toMap(e -> e.getKey().id(), Map.Entry::getValue)) + ']'));
-
-                isNodeFenceActive = true;
 
                 return new GridFinishedFuture<>();
             }
@@ -594,7 +583,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
         private void finishPreparePhase(UUID reqId, Map<UUID, Message> responses, Map<UUID, Throwable> errors) {
             if (!F.isEmpty(errors)) {
                 if (reqId.equals(curFinalizeProcId))
-                    isNodeFenceActive = false;
+                    curFinalizeProcId = null;
 
                 finishProcess(reqId, firstError(errors));
             }
@@ -618,8 +607,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
             featureMgr.activateLocalVersionFeatures();
 
             isVerUpgradeEnabled = false;
-
-            isNodeFenceActive = false;
+            curFinalizeProcId = null;
 
             return new GridFinishedFuture<>();
         }
