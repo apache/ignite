@@ -1668,7 +1668,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      * Test that remote HTTP URL is allowed when system property is set.
      */
     @Test
-    @WithSystemProperty(key = "ignite.spring.cfg.allowRemoteUrl", value = "true")
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_ALLOW_REMOTE_SPRING_CFG_URL, value = "true")
     public void testResolveSpringUrlAllowsHttpWhenPropertySet() throws IgniteCheckedException {
         URL url = IgniteUtils.resolveSpringUrl("http://127.0.0.1:1/nonexistent.xml");
 
@@ -1680,7 +1680,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      * Test that FTP is always blocked even when remote URL property is set.
      */
     @Test
-    @WithSystemProperty(key = "ignite.spring.cfg.allowRemoteUrl", value = "true")
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_ALLOW_REMOTE_SPRING_CFG_URL, value = "true")
     public void testResolveSpringUrlFtpAlwaysBlocked() {
         assertThrows(log, () -> {
             IgniteUtils.resolveSpringUrl("ftp://attacker.example.com/evil.xml");
