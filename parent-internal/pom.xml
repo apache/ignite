@@ -94,7 +94,6 @@
                     <execution>
                         <id>flatten</id>
                         <inherited>false</inherited>
-                        <phase></phase>
                     </execution>
                 </executions>
             </plugin>

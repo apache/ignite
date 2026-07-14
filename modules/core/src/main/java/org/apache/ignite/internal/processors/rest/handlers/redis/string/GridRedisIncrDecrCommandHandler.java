@@ -54,8 +54,7 @@ public class GridRedisIncrDecrCommandHandler extends GridRedisRestCommandHandler
         INCR,
         DECR,
         INCRBY,
-        DECRBY,
-        HINCRBY
+        DECRBY
     );
 
     /** Delta position in the message. */
@@ -153,7 +152,6 @@ public class GridRedisIncrDecrCommandHandler extends GridRedisRestCommandHandler
         switch (msg.command()) {
             case INCR:
             case INCRBY:
-            case HINCRBY:
                 restReq.command(ATOMIC_INCREMENT);
                 break;
 

@@ -44,7 +44,7 @@ import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.Gri
 public class GridRedisMGetCommandHandler extends GridRedisRestCommandHandler {
     /** Supported commands. */
     private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
-        MGET,HMGET,HGETALL
+        MGET
     );
 
     /**
@@ -66,8 +66,7 @@ public class GridRedisMGetCommandHandler extends GridRedisRestCommandHandler {
     /** {@inheritDoc} */
     @Override public GridRestRequest asRestRequest(GridRedisMessage msg) throws IgniteCheckedException {
         assert msg != null;
-
-        if (msg.messageSize() < 2 && msg.command()!=HGETALL)
+        if (msg.messageSize() < 2)
             throw new GridRedisGenericException("Wrong number of arguments");
 
         GridRestCacheRequest restReq = new GridRestCacheRequest();

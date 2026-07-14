@@ -43,7 +43,7 @@ import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.Gri
 public class GridRedisStrlenCommandHandler extends GridRedisRestCommandHandler {
     /** Supported commands. */
     private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
-        STRLEN,HLEN
+        STRLEN
     );
 
     /**
@@ -70,16 +70,8 @@ public class GridRedisStrlenCommandHandler extends GridRedisRestCommandHandler {
 
         restReq.clientId(msg.clientId());
         restReq.key(msg.key());
-        if(msg.command()==HLEN) {        	
-        	restReq.command(CACHE_SIZE);
-        	restReq.cacheName(msg.cacheName());
-        }        
-        else {
-        	restReq.command(CACHE_GET);
-        	restReq.cacheName(msg.cacheName());
-        }
-        
-
+        restReq.command(CACHE_GET);
+        restReq.cacheName(msg.cacheName());
         return restReq;
     }
 

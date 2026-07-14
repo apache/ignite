@@ -46,7 +46,7 @@ import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.Gri
 public class GridRedisDelCommandHandler extends GridRedisRestCommandHandler {
     /** Supported commands. */
     private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
-        DEL,HDEL,XDEL
+        DEL,XDEL
     );
 
     /**
@@ -110,7 +110,7 @@ public class GridRedisDelCommandHandler extends GridRedisRestCommandHandler {
     /** {@inheritDoc} */
     @Override public ByteBuffer makeResponse(final GridRestResponse restRes, GridRedisMessage msg, List<String> params) {
         if(restRes.getResponse() == null || restRes.getResponse().equals(Boolean.FALSE)) {
-            if(msg.command()==HDEL || msg.command()==XDEL){
+            if(msg.command()==XDEL){
                 if(params.isEmpty()){
                     ctx.grid().destroyCache(msg.cacheName());
                     return GridRedisProtocolParser.toInteger("1");

@@ -257,84 +257,14 @@ public class FileUtil {
     }
 
     public static String getContentType(String fileName) {
-        String contentType = "application/octet-stream";
         String[] fileNameList = fileName.split("\\.");
         if(fileNameList.length==1){
-            return contentType;
+            return "application/octet-stream";
         }
         String fileExt = fileNameList[fileNameList.length-1];
-        if (fileExt != null) {
-            fileExt = fileExt.toLowerCase();
-            switch (fileExt) {
-                case "txt":
-                    contentType = "text/plain";
-                    break;
-                case "html":
-                case "htm":
-                    contentType = "text/html";
-                    break;
-                case "css":
-                    contentType = "text/css";
-                    break;
-                case "js":
-                    contentType = "application/javascript";
-                    break;
-                case "json":
-                    contentType = "application/json";
-                    break;
-                case "xml":
-                    contentType = "application/xml";
-                    break;
-                case "jpg":
-                case "jpeg":
-                    contentType = "image/jpeg";
-                    break;
-                case "gif":
-                    contentType = "image/gif";
-                    break;
-                case "png":
-                    contentType = "image/png";
-                    break;
-                case "svg":
-                    contentType = "image/svg+xml";
-                    break;
-                case "mp3":
-                    contentType = "audio/mpeg";
-                    break;
-                case "mp4":
-                    contentType = "video/mp4";
-                    break;
-                case "avi":
-                    contentType = "video/avi";
-                    break;
-                case "mov":
-                    contentType = "video/quicktime";
-                    break;
-                case "doc":
-                case "docx":
-                    contentType = "application/msword";
-                    break;
-                case "xls":
-                case "xlsx":
-                    contentType = "application/vnd.ms-excel";
-                    break;
-                case "ppt":
-                case "pptx":
-                    contentType = "application/vnd.ms-powerpoint";
-                    break;
-                case "rar":
-                    contentType = "application/x-rar-compressed";
-                    break;
-                case "zip":
-                    contentType = "application/zip";
-                    break;
-                case "tar":
-                    contentType = "application/x-tar";
-                    break;
-                case "gz":
-                    contentType = "application/x-gzip";
-                    break;
-            }
+        String contentType = URLConnection.guessContentTypeFromName(fileName);
+        if(contentType==null){
+            return "application/octet-stream";
         }
         return contentType;
     }

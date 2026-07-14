@@ -54,7 +54,7 @@ public class GridRedisSortedSetsCommandHandler implements GridRedisCommandHandle
 
 	/** Supported commands. */
     private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
-			ZADD,ZRANK,ZREVRANK,ZRANGE,ZREVRANGE,ZRANGEBYSCORE,ZREVRANGEBYSCORE,ZSCAN,ZCARD
+			ZADD,ZRANK,ZREVRANK,ZRANGE,ZREVRANGE,ZRANGEBYSCORE,ZREVRANGEBYSCORE,ZSCAN,ZCARD,ZREMRANGEBYSCORE
     );
 
     /** Logger. */
@@ -75,6 +75,7 @@ public class GridRedisSortedSetsCommandHandler implements GridRedisCommandHandle
         this.ctx = ctx;
 		cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 		cfg.setBackups(1);
+		cfg.setCollocated(true);
     }
 
     /** {@inheritDoc} */
@@ -203,6 +204,41 @@ public class GridRedisSortedSetsCommandHandler implements GridRedisCommandHandle
         	}
         	msg.setResponse(GridRedisProtocolParser.toArray(result));
         }
+		else if(cmd == ZREMRANGEBYSCORE) {
+
+			Iterator<ScoredItem<String>> it = list.iterator();
+			String minStr = msg.aux(2);
+			String maxStr = msg.aux(3);
+			boolean minInc = true;
+			if(minStr.charAt(0)=='('){
+				minStr = minStr.substring(1);
+				minInc = false;
+			}
+			boolean maxInc = true;
+			if(maxStr.charAt(0)=='('){
+				maxStr = maxStr.substring(1);
+				maxInc = false;
+			}
+			double min = Double.parseDouble(minStr);
+			double max = Double.parseDouble(maxStr);
+
+			int n = 0;
+			Iterator<ScoredItem<String>> it2 = list.iterator();
+			while(it2.hasNext()) {
+				ScoredItem<String> item = it2.next();
+				if(item.getScore()>=min && item.getScore()<=max) {
+					if(!minInc && item.getScore()==min){
+						continue;
+					}
+					if(!maxInc && item.getScore()==max){
+						continue;
+					}
+					it2.remove();
+					n++;
+				}
+			}
+			msg.setResponse(GridRedisProtocolParser.toInteger(n));
+		}
         else if(cmd == ZSCAN) {
         	
         	Iterator<ScoredItem<String>> it = list.iterator();

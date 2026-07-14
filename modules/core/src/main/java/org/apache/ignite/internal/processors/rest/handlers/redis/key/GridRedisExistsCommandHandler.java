@@ -45,7 +45,7 @@ import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.Gri
 public class GridRedisExistsCommandHandler extends GridRedisRestCommandHandler {
     /** Supported commands. */
     private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
-        EXISTS,HEXISTS
+        EXISTS
     );
 
     /**

@@ -21,18 +21,16 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
-import java.nio.charset.CharacterCodingException;
-import java.nio.charset.CharsetDecoder;
-import java.nio.charset.CodingErrorAction;
-import java.nio.charset.StandardCharsets;
+import java.nio.charset.*;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
+
 
 /**
  * Parser to decode/encode Redis protocol (RESP) requests.
@@ -86,82 +84,28 @@ public class GridRedisProtocolParser {
     
     static MethodHandles.Lookup lookup = MethodHandles.lookup();
     static MethodHandle isLatin1Handle = null;
+    static MethodHandle newStringNoReplHandle = null;
+    static MethodHandle getBytesNoReplHandle = null;
+
     static {
    
 		try {
 			Method isLatin1 = String.class.getDeclaredMethod("isLatin1");
 			isLatin1.setAccessible(true);
 	    	isLatin1Handle = lookup.unreflect(isLatin1);
+
+            Method newStringNoRepl = String.class.getDeclaredMethod("newStringNoRepl",byte[].class, Charset.class);
+            newStringNoRepl.setAccessible(true);
+            newStringNoReplHandle = lookup.unreflect(newStringNoRepl);
+
+            Method getBytesNoRepl = String.class.getDeclaredMethod("getBytesNoRepl",String.class, Charset.class);
+            getBytesNoRepl.setAccessible(true);
+            getBytesNoReplHandle = lookup.unreflect(getBytesNoRepl);
+
 		} catch (NoSuchMethodException | SecurityException | IllegalAccessException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-    	
-    }
-
-    /**
-     * Reads an array into {@link GridRedisMessage}.
-     *
-     * @param buf Buffer.
-     * @return {@link GridRedisMessage}.
-     * @throws IgniteCheckedException
-     */
-    public static GridRedisMessage readArray(ByteBuffer buf) throws IgniteCheckedException {
-        byte b = buf.get();
-
-        if (b != ARRAY)
-            throw new IgniteCheckedException("Invalid request byte! " + b);
-
-        int arrLen = readInt(buf);
-
-        GridRedisMessage msg = new GridRedisMessage(arrLen);
-
-        for (int i = 0; i < arrLen; i++)
-            msg.append(readBulkStr(buf));
-
-        return msg;
-    }
-
-
-    /**
-     * @param buf Buffer containing not parsed bytes.
-     */
-    public static boolean validatePacketHeader(ByteBuffer buf) {
-        boolean result = true;
-
-        //mark at initial position
-        buf.mark();
-
-        if (buf.get() != ARRAY)
-            result = false;
-
-        //reset to initial position
-        buf.reset();
-
-        return result;
-    }
-
-    /**
-     * @param buf Buffer containing not parsed bytes.
-     */
-    public static boolean validatePacketFooter(ByteBuffer buf) {
-        boolean result = true;
-
-        //mark at initial position
-        buf.mark();
-
-        int limit = buf.limit();
-
-        assert limit > 2;
-
-        //check the final CR(last -2 ) and LF(last -1) byte
-        if (buf.get(limit - 2) != CR || buf.get(limit - 1) != LF)
-            result = false;
-
-        //reset to initial position
-        buf.reset();
-
-        return result;
     }
 
     /**
@@ -206,8 +150,8 @@ public class GridRedisProtocolParser {
             return null;
 
         try {
-            return decodeStrict(bulkStr);
-        } catch (CharacterCodingException e) {
+            return (String)newStringNoReplHandle.invokeExact(bulkStr,StandardCharsets.ISO_8859_1);
+        } catch (Throwable e) {
             return new String(bulkStr,StandardCharsets.ISO_8859_1);
         }
     }
@@ -302,7 +246,11 @@ public class GridRedisProtocolParser {
 			}
         }
         if(isLatin) {
-        	b = val.getBytes(StandardCharsets.ISO_8859_1);
+            try {
+                b = (byte[])getBytesNoReplHandle.invokeExact(val,StandardCharsets.ISO_8859_1);
+            } catch (Throwable e) {
+                b = val.getBytes(StandardCharsets.ISO_8859_1);
+            }
         }
         else {
         	b = val.getBytes(StandardCharsets.UTF_8);
@@ -442,18 +390,22 @@ public class GridRedisProtocolParser {
         	boolean isLatin = false;
             if(isLatin1Handle!=null) {
             	try {
-    				isLatin = (Boolean)isLatin1Handle.invoke(val);
+    				isLatin = (boolean)isLatin1Handle.bindTo(val).invokeExact();
     			} catch (Throwable e) {
     				// TODO Auto-generated catch block
     				e.printStackTrace();
     			}
             }
             if(isLatin) {
-            	b = val.toString().getBytes(StandardCharsets.ISO_8859_1);
+                try {
+                    b = (byte[])getBytesNoReplHandle.invokeExact(val,StandardCharsets.ISO_8859_1);
+                } catch (Throwable e) {
+                    b = val.toString().getBytes(StandardCharsets.ISO_8859_1);
+                }
             }
             else {
             	b = val.toString().getBytes(StandardCharsets.UTF_8);
-            }        	
+            }
             l = String.valueOf(b.length).getBytes();
         }
         else {
@@ -557,6 +509,11 @@ public class GridRedisProtocolParser {
 
             if (val != null) {
                 ByteBuffer b = toBulkString(val);
+                res.add(b);
+                capacity += b.limit();
+            }
+            else{
+                ByteBuffer b = nil();
                 res.add(b);
                 capacity += b.limit();
             }

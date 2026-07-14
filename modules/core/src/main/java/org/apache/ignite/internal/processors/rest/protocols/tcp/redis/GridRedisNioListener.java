@@ -33,6 +33,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisConnectionCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.redis.hash.GridRedisHashCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.key.GridRedisDelCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.key.GridRedisExistsCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.key.GridRedisExpireCommandHandler;
@@ -131,7 +132,6 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
         addCommandHandler(new GridRedisFlushCommandHandler(log, hnd, ctx));
         addCommandHandler(new GridRedisTransactionCommandHandler(log, ctx, handlers));
         
-        
         // list commands
         addCommandHandler(new GridRedisListAddCommandHandler(log,ctx));
         addCommandHandler(new GridRedisListPopCommandHandler(log,ctx));
@@ -140,6 +140,9 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
         addCommandHandler(new GridRedisSetsCommandHandler(log,ctx));
         addCommandHandler(new GridRedisSortedSetsCommandHandler(log,ctx));
         addCommandHandler(new GridRedisStreamCommandHandler(log,hnd,ctx));
+
+        // hash op
+        addCommandHandler(new GridRedisHashCommandHandler(log,hnd,ctx));
 
         // pubsub commands
         addCommandHandler(subscribeHandler);
@@ -216,13 +219,10 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
                 boolean x = cmd.charAt(0)=='x' || cmd.charAt(0)=='X';
                 try {
                     if (h) { // Hashsets
-                        ccfg0 = ctx.cache().getConfigFromTemplate(GridRedisMessage.DFLT_HASH_CACHE_NAME);
-                        if(ccfg0==null && ctx.cache().cacheDescriptor(GridRedisMessage.DFLT_HASH_CACHE_NAME)!=null){
-                            ccfg0 = ctx.cache().cacheConfiguration(GridRedisMessage.DFLT_HASH_CACHE_NAME);
-                        }
+                        ccfg0 = ctx.cache().cacheConfiguration(GridRedisMessage.DFLT_HASH_CACHE_NAME);
                     } else if (x) { // Streams
                         ccfg0 = ctx.cache().getConfigFromTemplate(GridRedisMessage.DFLT_STREAM_CACHE_NAME);
-                        if(ccfg0==null && ctx.cache().cacheDescriptor(GridRedisMessage.DFLT_STREAM_CACHE_NAME)!=null){
+                        if(ccfg0==null){
                             ccfg0 = ctx.cache().cacheConfiguration(GridRedisMessage.DFLT_STREAM_CACHE_NAME);
                         }
                     } else {
@@ -242,10 +242,7 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
         		CacheConfiguration<String,?> ccfg = new CacheConfiguration<>(ccfg0);
         		ccfg.setName(msg.cacheName());
 
-                if(h) { // Hashsets
-        			ccfg.setGroupName(cacheName+"-hash");
-        		}
-                else if(x){
+                if(x){
                     QueryEntity queryEntity = new QueryEntity();
                     queryEntity.setKeyType("java.lang.Long");
                     queryEntity.setValueType(msg.cacheName());

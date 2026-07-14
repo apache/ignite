@@ -990,6 +990,8 @@ public abstract class IgniteUtils extends CommonUtils {
      * @param sb Buffer.
      */
     private static void printThreadInfo(ThreadInfo threadInfo, GridStringBuilder sb, Set<Long> deadlockedIdSet) {
+        // add@byron
+        if(threadInfo==null) return;
         final long id = threadInfo.getThreadId();
 
         if (deadlockedIdSet.contains(id))

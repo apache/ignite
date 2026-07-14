@@ -77,7 +77,7 @@ public interface GridRedisCommandHandler {
      * @throws GridRedisGenericException If parsing failed.
      */
     @Nullable
-    default Long longValue(String name, List<String> params) throws GridRedisGenericException {
+    default Long longValue(String name, List<String> params)  {
         assert name != null;
 
         Iterator<String> it = params.iterator();
@@ -91,11 +91,9 @@ public interface GridRedisCommandHandler {
                         return Long.valueOf(val);
                     }
                     catch (NumberFormatException ignore) {
-                        throw new GridRedisGenericException("Failed to parse parameter of Long type [" + name + "=" + val + "]");
+                        return null;
                     }
                 }
-                else
-                    throw new GridRedisGenericException("Syntax error. Missing value for parameter: " + name);
             }
         }
 

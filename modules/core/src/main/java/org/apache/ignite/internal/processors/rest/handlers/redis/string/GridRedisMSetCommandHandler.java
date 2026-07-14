@@ -44,7 +44,7 @@ import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.Gri
 public class GridRedisMSetCommandHandler extends GridRedisRestCommandHandler {
     /** Supported commands. */
     private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
-        MSET,HMSET
+        MSET
     );
 
     /**

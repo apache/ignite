@@ -53,7 +53,7 @@ import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.Gri
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisNioListener.*;
 
 /**
- * Redis List pop command handler.
+ * Redis Stream command handler.
  * <p>
  * No key expiration is currently supported.
  */

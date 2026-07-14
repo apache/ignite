@@ -163,10 +163,19 @@ public class GridRedisMessage implements GridClientMessage {
 	public String standardizeParams(String cmd,String baseCacheName) {
     	//add@byron hashset:
     	if(cmd.charAt(0)=='h' || cmd.charAt(0)=='H') { // hash_name as cachename
-    		return baseCacheName+'.'+replaceInvalidCharsWithUnderscore(msgParts.remove(KEY_POS));
+            String collection = this.key();
+            int pos = collection.indexOf(':'); // user:1, group:2
+            if(pos>0 && pos<=32){
+                collection = collection.substring(0,pos);
+                return baseCacheName+'.'+replaceInvalidCharsWithUnderscore(collection);
+            }
+            else{
+                return baseCacheName+'.'+"hash";
+            }
+
     	}
         if(cmd.charAt(0)=='x' || cmd.charAt(0)=='X') { // Stream
-            String streamName = msgParts.get(KEY_POS);
+            String streamName = this.key();
             for(int i=2;i<msgParts.size()-2;i++){
                if(msgParts.get(i).equalsIgnoreCase("STREAMS")){
                    streamName = msgParts.get(i+1);

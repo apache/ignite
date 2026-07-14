@@ -47,7 +47,7 @@ import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.Gri
 public class GridRedisKeysCommandHandler extends GridRedisRestCommandHandler {
     /** Supported commands. */
     private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
-    	KEYS,HKEYS,SCAN,HSCAN
+    	KEYS,SCAN
     );
 
     /**
@@ -78,7 +78,7 @@ public class GridRedisKeysCommandHandler extends GridRedisRestCommandHandler {
         restReq.command(CACHE_GET_KEYS);
         restReq.cacheName(msg.cacheName());
         
-        if(cmd==SCAN || cmd==HSCAN ) {      	
+        if(cmd==SCAN) {
         	 // cmd, key, curser, MATCH pattem, COUNT 1000
         	String matchP = stringValue("MATCH",msg.auxMKeys());
         	if(matchP!=null) {
@@ -93,12 +93,13 @@ public class GridRedisKeysCommandHandler extends GridRedisRestCommandHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public ByteBuffer makeResponse(final GridRestResponse restRes, List<String> params) {
+    @Override public ByteBuffer makeResponse(final GridRestResponse restRes, GridRedisMessage msg, List<String> params) {
     	if(restRes.getResponse() == null)
     		return GridRedisProtocolParser.nil();
     	
     	List<String> list = (List)restRes.getResponse();
-    	if(params.size()>1) { 
+    	if(msg.command()==SCAN) {
+			int totalLen = list.size();
 	    	int offset = 0;
 	    	if(params.get(1).matches("\\d")){ // cmd, key, curser, MATCH pattem, COUNT 1000
 	    		offset = Integer.valueOf(params.get(1));
@@ -108,14 +109,9 @@ public class GridRedisKeysCommandHandler extends GridRedisRestCommandHandler {
 	    	}
 	    	
 	    	int count = 10;
-	    	try {
-				Long countP = longValue("COUNT",params);
-				if(countP!=null) {
-					count = countP.intValue();
-				}
-			} catch (GridRedisGenericException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+			Long countP = longValue("COUNT",params);
+			if(countP!=null) {
+				count = countP.intValue();
 			}
 	    	if(list.size()>offset+count) {
 	    		list = list.subList(offset, offset+count);
@@ -123,6 +119,9 @@ public class GridRedisKeysCommandHandler extends GridRedisRestCommandHandler {
 	    	else if(offset>0){
 	    		list = list.subList(offset, list.size());
 	    	}
+			int nextOffset = offset+list.size();
+			if(nextOffset>=totalLen) nextOffset=0;
+			return  GridRedisProtocolParser.toArray(List.of(nextOffset,list));
     	}
     	
         return  GridRedisProtocolParser.toArray(list);

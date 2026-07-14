@@ -453,12 +453,12 @@ public class S3VertxRestController extends VertxInstanceAware{
         }
         else {        	
         	Range range = null;
-        	long bytesToRead = metadata.getContentLength();
+            long fileSize = metadata.getContentLength();
+        	long bytesToRead = fileSize;
         	if(rangeStr!=null && !rangeStr.isEmpty()) {
         		RangeConverter conv = new RangeConverter();
-        		range = conv.convert(rangeStr);
+        		range = conv.convert(rangeStr);        		
         		
-        		final long fileSize = metadata.getContentLength();
                 bytesToRead = Math.min(fileSize - 1, range.getEnd()) - range.getStart() + 1;
 
                 if (bytesToRead < 0 || fileSize < range.getStart()) {
@@ -477,16 +477,22 @@ public class S3VertxRestController extends VertxInstanceAware{
         	response.putHeader("Content-Disposition", "filename=" + URLEncoder.encode(metadata.getFileName(), "utf-8"));            
             response.putHeader("Last-Modified", DateUtil.getDateGMTFormat(metadata.getLastModified()));                
             response.putHeader("ETag","\""+metadata.getETag()+"\"");
-            response.putHeader("Content-Type",metadata.getContentType() + ";charset="+metadata.getContentEncoding());
-            response.putHeader("Content-Length",String.valueOf(bytesToRead));
-            if(range!=null) {            	
-            	bytesToRead = objectStream.getMetadata().getContentLength();
+            if(metadata.getContentEncoding()!=null)
+                response.putHeader("Content-Type",metadata.getContentType() + ";charset="+metadata.getContentEncoding());
+            else
+                response.putHeader("Content-Type",metadata.getContentType());
+
+            
+            if(range!=null) {
                 response.putHeader("Content-Length",String.valueOf(bytesToRead));
             	response.putHeader(HttpHeaders.CONTENT_RANGE,
-                        String.format("bytes %s-%s", range.getStart(), bytesToRead + range.getStart() - 1));              
+                        String.format("bytes %d-%d/%d", range.getStart(), bytesToRead + range.getStart() - 1,fileSize));
+            }
+            else{
+                response.putHeader("Content-Length",String.valueOf(bytesToRead));
             }
             
-            int bufsize = Math.min(1024*16,(int)(1024+bytesToRead/1024*1024));
+            int bufsize = Math.min(1024*8,(int)bytesToRead);
             byte[] buff = new byte[bufsize];
             Buffer buffer = Buffer.buffer(bufsize);
             int i = 0;
@@ -498,7 +504,8 @@ public class S3VertxRestController extends VertxInstanceAware{
                 }
                 response.end();
             } catch (EOFException e) {                
-                // ignore     
+                // ignore
+                response.end();
             } catch (IOException e) {                
             	e.printStackTrace();
             	response.setStatusCode(404);
