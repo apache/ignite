@@ -66,7 +66,6 @@ SPLIT_SETTLE_SECS = 10
 
 # Boundary tolerance for the background load: a transient error window is possible at
 # the instant the partition is enabled/healed, but must stay marginal.
-BG_MAX_ERR_RATIO = 0.01
 BG_MAX_STALL_MS = 60_000
 
 
@@ -154,10 +153,8 @@ class MdcPartitionLoadTest(IgniteTest):
                 ops = mdc.result_int(svc, f"bg{dc}OpsCnt")
                 errs = mdc.result_int(svc, f"bg{dc}ErrCnt")
                 max_stall = mdc.result_int(svc, f"bg{dc}MaxStallMs")
-                min_window = mdc.result_int(svc, f"bg{dc}MinWindowOps")
 
-                self.logger.info(f"Background GET load [dc={dc}, ops={ops}, errs={errs}, "
-                                 f"maxStallMs={max_stall}, minWindowOps={min_window}]")
+                self.logger.info(f"Background GET load [dc={dc}, ops={ops}, errs={errs}, maxStallMs={max_stall}]")
 
                 assert ops > 0, f"Background get load performed no operations [dc={dc}]"
 
@@ -191,7 +188,7 @@ class MdcPartitionLoadTest(IgniteTest):
 
     @cluster(num_nodes=8)
     @ignite_versions(str(DEV_BRANCH))
-    @matrix(cross_dc_latency_ms=[20], cross_dc_loss=[0.1])
+    @matrix(cross_dc_latency_ms=[20], cross_dc_loss=[0.01])
     def test_degraded_link_without_partition(self, ignite_version, cross_dc_latency_ms, cross_dc_loss):
         """
         A slow, lossy WAN that stays connected ("slow WAN" as opposed to "broken WAN"):

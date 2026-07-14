@@ -41,6 +41,7 @@ BLIP_SECS = 1
 BLIP_SETTLE_SECS = 5
 BLIPS = 10
 
+BG_MAX_STALL_MS = 500
 
 class MdcPartitionResilienceTest(IgniteTest):
     """
@@ -48,14 +49,14 @@ class MdcPartitionResilienceTest(IgniteTest):
     """
     @cluster(num_nodes=12)
     @ignite_versions(str(DEV_BRANCH))
-    @matrix(cross_dc_latency_ms=[20])
+    @matrix(cross_dc_latency_ms=[100])
     def test_mdc_cluster_partition_resilience(self, ignite_version, cross_dc_latency_ms):
         """
         The canonical split-brain lifecycle: partition -> split into two healthy half-rings
         (DC1 active, DC2 read-only) -> all data readable everywhere -> heal -> DC2 rejoins
         via restart -> writes restored everywhere, distribution and consistency verified.
         """
-        mdc = MdcCluster(self, ignite_version, srv_per_dc=5, runners_per_dc=1)
+        mdc = MdcCluster(self, ignite_version, srv_per_dc=5, runners_per_dc=1, network_timeout=10_000, tcp_connect_timeout=10_000)
 
         with cross_dc_network(self.logger, mdc, delay_ms=cross_dc_latency_ms) as net:
             mdc.start_servers()
@@ -97,7 +98,7 @@ class MdcPartitionResilienceTest(IgniteTest):
 
     @cluster(num_nodes=6)
     @ignite_versions(str(DEV_BRANCH))
-    @matrix(cross_dc_latency_ms=20)
+    @matrix(cross_dc_latency_ms=[25, 50, 100])
     def test_main_dc_loss_and_return(self, ignite_version, cross_dc_latency_ms):
         """
         The inverse of the canonical scenario: the MAIN data center goes down entirely.
@@ -127,6 +128,8 @@ class MdcPartitionResilienceTest(IgniteTest):
             # ...but the surviving DC is read-only while the main DC is invisible.
             mdc.check_put_admissibility(DC_2, CACHE_NAME, False)
 
+            mdc.sync_service_discovery()
+
             mdc.servers[DC_1].start(clean=False)
 
             mdc.servers[DC_1].await_rebalance()
@@ -142,22 +145,28 @@ class MdcPartitionResilienceTest(IgniteTest):
 
             mdc.stop_servers()
 
-    @cluster(num_nodes=8)
+    @cluster(num_nodes=10)
     @ignite_versions(str(DEV_BRANCH))
-    @matrix(cross_dc_latency_ms=[20])
+    @matrix(cross_dc_latency_ms=[25, 50, 100])
     def test_short_partition_blips_do_not_split(self, ignite_version, cross_dc_latency_ms):
         """
         A flapping WAN link: several short (below the failure detection timeout) full
         cross-DC connectivity drops. The cluster must NOT split: after the blips it is
         still one ACTIVE cluster, all data is intact and both DCs accept writes.
         """
-        mdc = MdcCluster(self, ignite_version, srv_per_dc=3, runners_per_dc=1)
+        mdc = MdcCluster(self, ignite_version, srv_per_dc=3, runners_per_dc=1, loaders_per_dc=1)
 
         with cross_dc_network(self.logger, mdc, delay_ms=cross_dc_latency_ms) as net:
             mdc.start_servers()
 
             mdc.generate_data(DC_1, CACHE_NAME, 0, 100, backups=BACKUPS)
             mdc.generate_data(DC_2, CACHE_NAME, 100, 200, backups=BACKUPS)
+
+            for dc in (DC_1, DC_2):
+                mdc.start_loader(dc, {"mode": "GET", "cacheName": CACHE_NAME,
+                                      "keyFrom": 0, "keyTo": 200,
+                                      "tolerateErrors": True, "opPauseMs": 5,
+                                      "resultPrefix": f"bg{dc}"})
 
             for i in range(BLIPS):
                 self.logger.info(f"Network blip {i + 1}/{BLIPS}")
@@ -171,6 +180,19 @@ class MdcPartitionResilienceTest(IgniteTest):
                 sleep(BLIP_SETTLE_SECS)
 
             mdc.verify_whole_cluster_healthy()
+
+            for dc in (DC_1, DC_2):
+                svc = mdc.stop_loader(dc)
+
+                ops = mdc.result_int(svc, f"bg{dc}OpsCnt")
+                errs = mdc.result_int(svc, f"bg{dc}ErrCnt")
+                max_stall = mdc.result_int(svc, f"bg{dc}MaxStallMs")
+
+                self.logger.info(f"Background GET load [dc={dc}, ops={ops}, errs={errs}, maxStallMs={max_stall}]")
+
+                assert ops > 0, f"Background get load performed no operations [dc={dc}]"
+                assert errs == 0, f"Background get load errors exceed the boundary tolerance [dc={dc}, ops={ops}, errs={errs}]"
+                assert max_stall < BG_MAX_STALL_MS, f"Background get load stalled for too long [dc={dc}, maxStallMs={max_stall}]"
 
             mdc.check_data(DC_1, CACHE_NAME, 0, 200)
             mdc.check_data(DC_2, CACHE_NAME, 0, 200)

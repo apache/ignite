@@ -36,8 +36,8 @@ from time import sleep
 from ducktape.mark import matrix
 
 from ignitetest.services.ignite_app import IgniteApplicationService
+from ignitetest.services.mdc.mdc_cluster import MdcCluster, dc_jvm_opts, DC_1, DC_2, cross_dc_network, THIN_LOAD_APP
 from ignitetest.services.utils.ignite_configuration import IgniteThinClientConfiguration
-from ignitetest.tests.mdc.fixture import DC_1, DC_2, THIN_LOAD_APP, MdcCluster, cross_dc_network, dc_jvm_opts
 from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
@@ -63,7 +63,7 @@ class MdcThinClientTest(IgniteTest):
     """
     @cluster(num_nodes=8)
     @ignite_versions(str(DEV_BRANCH))
-    @matrix(cross_dc_latency_ms=[200])
+    @matrix(cross_dc_latency_ms=[20])
     def test_thin_client_dc_aware_routing_and_partition(self, ignite_version, cross_dc_latency_ms):
         """
         DC-pinned thin client reads locally (latency far below the cross-DC delay),

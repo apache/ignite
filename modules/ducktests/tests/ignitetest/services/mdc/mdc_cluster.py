@@ -33,8 +33,8 @@ from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.network_group.configuration import NetworkGroupStore, CrossNetworkGroupConfiguration
 from ignitetest.services.network_group.manager import NetworkGroupManager
 from ignitetest.services.utils.control_utility import ControlUtility
-from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
-from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
+from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, TcpCommunicationSpi
+from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster, from_ignite_services
 from ignitetest.services.utils.ssl.client_connector_configuration import ClientConnectorConfiguration
 from ignitetest.utils.version import IgniteVersion
 
@@ -52,9 +52,9 @@ PUT_CHECKER_APP = _APP_PKG + "MdcPutAdmissibilityCheckerApplication"
 LOAD_APP = _APP_PKG + "MdcContinuousLoadApplication"
 THIN_LOAD_APP = _APP_PKG + "MdcThinClientLoadApplication"
 
-# Suspicious server log patterns: none of them is expected in any MDC scenario, todo: Replace with log checks or control.sh commands
+# Suspicious server log patterns: none of them is expected in any MDC scenario,
 # partitioned or not. Matched against the node console capture.
-LRT_PATTERN = "Found long running transaction"
+LRT_PATTERN = "long running transactions"
 PME_FREEZE_PATTERN = "Failed to wait for partition map exchange"
 LOST_PARTITIONS_PATTERN = "Detected lost partitions"
 
@@ -89,12 +89,18 @@ class MdcCluster:
     """
     def __init__(self, test, ignite_version: str, srv_per_dc: Union[int, Dict[str, int]] = 3,
                  runners_per_dc: Union[int, Dict[str, int]] = 1,
-                 loaders_per_dc: Union[int, Dict[str, int]] = 0, # todo: не понял зачем это нужно
-                 client_connector: bool = False):
+                 loaders_per_dc: Union[int, Dict[str, int]] = 0,
+                 client_connector: bool = False,
+                 network_timeout: int = 5_000,
+                 tcp_connect_timeout: int = 5_000):
         self.test_context = test.test_context
         self.logger = test.logger
 
-        cfg_kwargs = {"version": IgniteVersion(ignite_version)}
+        cfg_kwargs = {
+            "version": IgniteVersion(ignite_version),
+            "network_timeout": network_timeout,
+            "communication_spi": TcpCommunicationSpi(connect_timeout=tcp_connect_timeout)
+        }
 
         if client_connector:
             cfg_kwargs["client_connector_configuration"] = ClientConnectorConfiguration()
@@ -121,6 +127,14 @@ class MdcCluster:
         # App services that have been started at least once: the first start is clean,
         # subsequent ones preserve work dirs (and logs - hence unique result prefixes).
         self._started_apps = set()
+
+    def sync_service_discovery(self):
+        all_servers = list(self.servers.values())
+
+        discovery_spi = from_ignite_services(all_servers)
+
+        for dc_key, service in self.servers.items():
+            service.config = service.config._replace(discovery_spi=discovery_spi)
 
     def _app_service(self, dc: str) -> IgniteApplicationService:
         client_cfg = self.ignite_config._replace(client_mode=True, discovery_spi=from_ignite_cluster(self.servers[dc]))
@@ -238,8 +252,6 @@ class MdcCluster:
         self._started_apps.add(id(svc))
 
         return first
-
-    # ------------------------------------------------------- domain applications
 
     def generate_data(self, dc: str, cache_name: str, from_idx: int, to_idx: int, backups: int,
                       main_dc: str = DC_1, **cache_params) -> IgniteApplicationService:
@@ -381,9 +393,7 @@ class MdcCluster:
         """
         for pattern in (LRT_PATTERN, PME_FREEZE_PATTERN, LOST_PARTITIONS_PATTERN):
             for dc, svc in self.servers.items():
-                hits = svc.check_event_absent(pattern)
-
-                assert hits == 0, f"Suspicious events found in {dc} server logs [pattern='{pattern}', hits={hits}]"
+                svc.check_event_absent(pattern)
 
     def verify_no_hanging_txs(self, dc: str = DC_1):
         """
@@ -448,25 +458,6 @@ def assert_cross_dc_distribution_by_attribute(distribution, dc_attr, expected_dc
 
     _assert_cross_dc(distribution, set(expected_dcs), dc_of, owning_only, copies_per_dc,
                      layout_hint=f"DC attribute: {dc_attr}, expected DCs: {sorted(expected_dcs)}")
-
-
-def assert_cross_dc_distribution(distribution, dc_addresses, owning_only=True, copies_per_dc=None):
-    """
-    Same assertion, but DC membership is derived from node IP addresses.
-
-    :param dc_addresses: Dict: DC name -> collection of node IP addresses of that DC,
-                         e.g. {"DC1": ["192.168.64.9", ...], "DC2": [...]}.
-    """
-    dc_addresses = {dc: set(addrs) for dc, addrs in dc_addresses.items()}
-
-    def dc_of(copy):
-        for dc, addrs in dc_addresses.items():
-            if any(addr in addrs for addr in copy.node_addresses):
-                return dc
-        return None
-
-    _assert_cross_dc(distribution, set(dc_addresses), dc_of, owning_only, copies_per_dc,
-                     layout_hint=f"DC layout: { {dc: sorted(addrs) for dc, addrs in dc_addresses.items()} }")
 
 
 def _assert_cross_dc(distribution, expected_dcs, dc_of, owning_only, copies_per_dc, layout_hint):

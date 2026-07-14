@@ -89,7 +89,7 @@ public abstract class MdcCacheAwareApplication extends IgniteAwareApplication {
         cacheCfg.setQueryEntities(Collections.singletonList(
             new QueryEntity(Integer.class, Integer.class).setTableName(SQL_TABLE)));
 
-        return ignite.getOrCreateCache(cacheCfg); // todo: check query engine
+        return ignite.getOrCreateCache(cacheCfg);
     }
 
     /**
@@ -157,7 +157,8 @@ public abstract class MdcCacheAwareApplication extends IgniteAwareApplication {
             return dfltVal;
         try {
             return Enum.valueOf(dfltVal.getDeclaringClass(), field.asText().toUpperCase());
-        } catch (IllegalArgumentException e) {
+        }
+        catch (IllegalArgumentException e) {
             return dfltVal; // Fallback if string doesn't match any enum constant
         }
     }
