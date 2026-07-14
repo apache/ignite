@@ -50,7 +50,11 @@ import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 public class SelectForUpdateIntegrationTest extends GridCommonAbstractTest {
     /** */
     private static Ignite ignite0;
+
+    /** */
     private static Ignite ignite1;
+
+    /** */
     private static Ignite client;
 
     /** {@inheritDoc} */
@@ -594,7 +598,7 @@ public class SelectForUpdateIntegrationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private List<List<?>> sql(Ignite ignite,  String sql, Object... args) {
+    private List<List<?>> sql(Ignite ignite, String sql, Object... args) {
         return ((IgniteEx)ignite).context().query().querySqlFields(
             new SqlFieldsQuery(sql).setSchema("PUBLIC").setArgs(args), true).getAll();
     }

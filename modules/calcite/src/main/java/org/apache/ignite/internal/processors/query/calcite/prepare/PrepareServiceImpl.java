@@ -166,14 +166,14 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
      */
     private SelectForUpdatePlan prepareSelectForUpdate(IgniteSqlSelectForUpdate forUpdate, PlanningContext ctx)
         throws ValidationException {
-        SqlNode innerQuery = forUpdate.query();
+        SqlNode innerQry = forUpdate.query();
 
-        if (!(innerQuery instanceof SqlSelect))
+        if (!(innerQry instanceof SqlSelect))
             throw new IgniteSQLException(
                 "SELECT FOR UPDATE is only supported for plain SELECT statements",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
-        SqlSelect select = (SqlSelect)innerQuery;
+        SqlSelect select = (SqlSelect)innerQry;
 
         validateSelectForUpdateShape(select, ctx.planner());
 
@@ -196,7 +196,7 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
             newList.add(col);
 
         SqlNodeList ofList = forUpdate.ofList();
-        int ofColumnCount = ofList == null ? 0 : ofList.size();
+        int ofColumnCnt = ofList == null ? 0 : ofList.size();
 
         if (ofList != null) {
             for (SqlNode col : ofList)
@@ -227,8 +227,8 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
 
         MultiStepQueryPlan innerPlan = (MultiStepQueryPlan)prepareQuery(modifiedSelect, ctx);
 
-        int lockColumnCount = tableRefs.size() * 3;
-        int userColCount = innerPlan.fieldsMetadata().rowType().getFieldCount() - ofColumnCount - lockColumnCount;
+        int lockColumnCnt = tableRefs.size() * 3;
+        int userColCnt = innerPlan.fieldsMetadata().rowType().getFieldCount() - ofColumnCnt - lockColumnCnt;
         Set<TableRef> tablesToLock = new LinkedHashSet<>();
 
         if (ofList == null)
@@ -247,7 +247,7 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
                 tablesToLock.add(resolveLockTarget(
                     tableRefs,
                     (SqlIdentifier)ofColumn,
-                    fieldsMeta.get(userColCount + i)
+                    fieldsMeta.get(userColCnt + i)
                 ));
             }
         }
@@ -261,12 +261,12 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
                 lockTargets.add(new LockTarget(
                     tableRef.schemaName,
                     tableRef.tableName,
-                    userColCount + ofColumnCount + i * 3
+                    userColCnt + ofColumnCnt + i * 3
                 ));
             }
         }
 
-        return new SelectForUpdatePlan(innerPlan, userColCount, forUpdate.waitSeconds(), lockTargets);
+        return new SelectForUpdatePlan(innerPlan, userColCnt, forUpdate.waitSeconds(), lockTargets);
     }
 
     /** Rejects SELECT forms whose result rows cannot be mapped one-to-one to cache entries. */
@@ -321,12 +321,12 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
             throw unsupportedFrom(from);
 
         SqlIdentifier tableId = (SqlIdentifier)tableNode;
-        int nameCount = tableId.names.size();
-        String tableName = tableId.names.get(nameCount - 1);
-        String schemaName = nameCount >= 2 ? tableId.names.get(nameCount - 2) : dfltSchemaName;
+        int nameCnt = tableId.names.size();
+        String tableName = tableId.names.get(nameCnt - 1);
+        String schemaName = nameCnt >= 2 ? tableId.names.get(nameCnt - 2) : dfltSchemaName;
 
         if (qualifier == null)
-            qualifier = tableId.getComponent(nameCount - 1);
+            qualifier = tableId.getComponent(nameCnt - 1);
 
         tableRefs.add(new TableRef(schemaName, tableName, qualifier));
     }

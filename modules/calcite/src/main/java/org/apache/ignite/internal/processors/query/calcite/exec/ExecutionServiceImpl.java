@@ -671,7 +671,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         ListFieldsQueryCursor<?> innerCursor = mapAndExecutePlan(qry, plan.innerPlan());
         List<List<?>> rows = innerCursor.getAll();
 
-        int userColCount = plan.userColumnCount();
+        int userColCnt = plan.userColumnCount();
 
         if (rows.isEmpty()) {
             // Nothing to lock – return an empty cursor with user-only field metadata.
@@ -680,7 +680,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             IgniteTypeFactory typeFactory = qry.context().typeFactory();
             List<GridQueryFieldMetadata> meta = plan.innerPlan().fieldsMetadata().queryFieldsMetadata(typeFactory);
 
-            resCur.fieldsMeta(meta.subList(0, userColCount));
+            resCur.fieldsMeta(meta.subList(0, userColCnt));
 
             return resCur;
         }
@@ -707,17 +707,17 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             IgniteInternalCache<Object, Object> cache = cctx.cache().keepBinary();
             Map<Object, CacheEntry<Object, Object>> entries =
                 entriesByCache.computeIfAbsent(cache, key -> new LinkedHashMap<>());
-            int keyColumnIndex = target.keyColumnIndex();
+            int keyColumnIdx = target.keyColumnIndex();
 
             for (List<?> row : rows) {
-                Object key = row.get(keyColumnIndex);
+                Object key = row.get(keyColumnIdx);
 
                 // An outer join has no row to lock on its non-matching side.
                 if (key == null)
                     continue;
 
-                Object val = row.get(keyColumnIndex + 1);
-                GridCacheVersion ver = (GridCacheVersion)row.get(keyColumnIndex + 2);
+                Object val = row.get(keyColumnIdx + 1);
+                GridCacheVersion ver = (GridCacheVersion)row.get(keyColumnIdx + 2);
 
                 // JOINs can repeat a row, but a transaction needs only one lock per cache key.
                 entries.put(key, new CacheEntryImplEx<>(key, val, ver));
@@ -808,14 +808,14 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         List<List<?>> userRows = new ArrayList<>(rows.size());
 
         for (List<?> row : rows)
-            userRows.add(row.subList(0, userColCount));
+            userRows.add(row.subList(0, userColCnt));
 
         QueryCursorImpl<List<?>> resCur = new QueryCursorImpl<>(userRows, null, false);
 
         IgniteTypeFactory typeFactory = qry.context().typeFactory();
         List<GridQueryFieldMetadata> meta = plan.innerPlan().fieldsMetadata().queryFieldsMetadata(typeFactory);
 
-        resCur.fieldsMeta(meta.subList(0, userColCount));
+        resCur.fieldsMeta(meta.subList(0, userColCnt));
 
         return resCur;
     }
