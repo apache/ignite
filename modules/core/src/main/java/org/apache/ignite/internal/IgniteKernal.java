@@ -222,7 +222,6 @@ import org.apache.ignite.spi.tracing.TracingConfigurationManager;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.TestOnly;
 
 import static java.util.Collections.singleton;
 import static java.util.Optional.ofNullable;
@@ -1319,8 +1318,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         startTimer.finishGlobalStage("Await exchange");
     }
 
-    /** */
-    @TestOnly
+    /** Public for a cross-package test; the production call is {@link #start} below. */
     public void initMessageFactory() throws IgniteCheckedException {
         MessageFactoryProvider[] msgs = ctx.plugins().extensions(MessageFactoryProvider.class);
 
