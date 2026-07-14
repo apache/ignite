@@ -25,6 +25,7 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -309,6 +310,8 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
             (threadId, lock) -> new CacheExplicitLockView(lock)
         );
 
+        List<GridCacheMvccCandidate> locks = new ArrayList<>();
+
         cctx.kernalContext().systemView().registerInnerCollectionView(
             CACHE_LOCKS_VIEW,
             CACHE_LOCKS_VIEW_DESC,
@@ -317,8 +320,11 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
             entry -> {
                 entry.lockEntry();
                 try {
+                    locks.clear();
+
                     GridCacheMvcc mvcc = entry.mvccExtras();
-                    return mvcc != null ? mvcc.localCandidates() : Collections.emptyList();
+
+                    return mvcc != null ? mvcc.localCandidatesCopy(locks) : Collections.emptyList();
                 }
                 finally {
                     entry.unlockEntry();

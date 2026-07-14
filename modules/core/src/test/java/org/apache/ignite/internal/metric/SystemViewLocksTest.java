@@ -20,6 +20,8 @@ package org.apache.ignite.internal.metric;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.Lock;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.client.Person;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -30,9 +32,11 @@ import org.apache.ignite.spi.systemview.view.CacheLockView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.TransactionView;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.processors.cache.GridCacheMvccManager.CACHE_EXPLICIT_LOCKS_VIEW;
@@ -337,6 +341,61 @@ public class SystemViewLocksTest extends SystemViewAbstractTest {
         }
         finally {
             finishLatch.countDown();
+        }
+    }
+
+    /** */
+    @Test
+    public void testKeyTextIncludeSensitive() throws Exception {
+        checkKeyText(true);
+    }
+
+    /** */
+    @Test
+    @WithSystemProperty(key = IGNITE_TO_STRING_INCLUDE_SENSITIVE, value = "false")
+    public void testKeyTextExcludeSensitive() throws Exception {
+        checkKeyText(false);
+    }
+
+    /** */
+    public void checkKeyText(boolean includeSensitive) throws Exception {
+        IgniteEx ignite = grid(0);
+        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+        // Check primitive object.
+        String key1 = "testKey";
+
+        Lock lock1 = cache.lock(key1);
+
+        lock1.lock();
+
+        try {
+            List<CacheExplicitLockView> explicitLocks = viewContent(ignite, CACHE_EXPLICIT_LOCKS_VIEW, 1);
+            // Sensitive data included: KeyCacheObjectImpl [part=859, val=testKey, hasValBytes=false]
+            // Sensitive data excluded: KeyCacheObject [hasValBytes=false]
+            assertEquals(includeSensitive, explicitLocks.get(0).key().contains(key1));
+        }
+        finally {
+            lock1.unlock();
+        }
+
+        // Check binary object.
+        Person key2 = new Person(12345, "testName");
+
+        Lock lock2 = cache.lock(key2);
+
+        lock2.lock();
+
+        try {
+            List<CacheExplicitLockView> explicitLocks = viewContent(ignite, CACHE_EXPLICIT_LOCKS_VIEW, 1);
+            // Sensitive data included: org.apache.ignite.client.Person [idHash=..., hash=-1202253851, id=12345, name=testName]
+            // Sensitive data excluded: BinaryObject [idHash=..., hash=-1202253851]
+            assertEquals(includeSensitive, explicitLocks.get(0).key().contains(key2.getClass().getName()));
+            assertEquals(includeSensitive, explicitLocks.get(0).key().contains("id=" + key2.getId()));
+            assertEquals(includeSensitive, explicitLocks.get(0).key().contains("name=" + key2.getName()));
+        }
+        finally {
+            lock2.unlock();
         }
     }
 
