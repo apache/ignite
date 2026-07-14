@@ -84,7 +84,6 @@ import org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents;
 import org.apache.ignite.internal.processors.cache.ExchangeFailureMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -128,6 +127,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.emptySet;
@@ -3877,7 +3877,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             else if (forceAffReassignment)
                 msg.idealAffinityDiff(idealAffDiff);
 
-            GridCacheMessageDeployer.deploy(cctx.kernalContext().messageFactory(), msg, cctx);
+            // Marshal eagerly: the heavy partition-map copy lands in the "Full message preparing" stage, and the
+            // message cached in FinishState is sent to late joiners as is (the send-path marshal-once turns no-op).
+            MessageMarshaller.marshal(cctx.kernalContext().messageFactory(), msg, cctx.kernalContext(), null);
 
             timeBag.finishGlobalStage("Full message preparing");
 
