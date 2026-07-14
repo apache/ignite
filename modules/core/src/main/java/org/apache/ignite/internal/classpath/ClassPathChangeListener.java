@@ -17,8 +17,11 @@
 package org.apache.ignite.internal.classpath;
 
 import java.io.Serializable;
+import java.util.concurrent.RejectedExecutionException;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.classpath.ClassPathProcessor.ClassPathTask;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageListener;
@@ -120,7 +123,7 @@ class ClassPathChangeListener implements DistributedMetaStorageListener<Serializ
             case REMOVING:
                 // Don't check anything. Download task may be in progress.
                 // Cleanup will just raise log warning if local data not exists.
-                log.info("IgniteClassPath remove operation started. Local cleanup: " + newIcp);
+                log.info("IgniteClassPath remove started. Local cleanup: " + newIcp);
 
                 ctx.classPath().addClassPathTask(newIcp, CleanupTask.removeFiles(ctx, newIcp));
                 ctx.classPath().addClassPathTask(newIcp, ChangeNodesTask.removeNode(ctx, newIcp.id(), ctx.localNodeId()));
@@ -138,20 +141,41 @@ class ClassPathChangeListener implements DistributedMetaStorageListener<Serializ
     private void onRemoveFromMetastorage(IgniteClassPath icp) {
         // Maybe remove with force flag or error while uploading.
         // Cancelling all in flight and remove right away.
-        ctx.classPath().cancelTasksAndDisallowNew(icp.id(), icp.name(), false);
+        IgniteInternalFuture<Object> cancelFut = ctx.classPath().cancelTasksAndDisallowNew(icp.id(), icp.name(), false);
 
-        if (!ctx.pdsFolderResolver().fileTree().classPathRoot(icp.name()).exists()) {
-            log.info("IgniteClassPath removed: " + icp);
+        try {
+            ctx.pools().getSystemExecutorService().submit(() -> {
+                try {
+                    if (log.isDebugEnabled())
+                        log.debug("Waiting all tasks stoped: " + icp);
 
-            return;
+                    cancelFut.get();
+                }
+                catch (IgniteCheckedException ignore) {
+                    // Expected, because cancelled.
+                }
+
+                if (log.isDebugEnabled())
+                    log.debug("All tasks stoped. Removing local files: " + icp);
+
+                if (!ctx.pdsFolderResolver().fileTree().classPathRoot(icp.name()).exists()) {
+                    log.info("IgniteClassPath removed: " + icp);
+
+                    return;
+                }
+
+                // Concurrent class path tasks not run. Cleaning up without queue.
+                // Mostly harmless (no local data at the moment until force remove).
+                CleanupTask t = CleanupTask.removeFiles(ctx, icp);
+
+                t.result().listen(() -> log.info("IgniteClassPath removed: " + icp));
+
+                ctx.classPath().start(t);
+            });
         }
-
-        // Concurrent class path tasks not run. Cleaning up without queue. Mostly harmless (no local data at the moment until force remove).
-        CleanupTask t = CleanupTask.removeFiles(ctx, icp);
-
-        t.result().listen(() -> log.info("IgniteClassPath removed: " + icp));
-
-        ctx.classPath().startAsync(t);
+        catch (RejectedExecutionException e) {
+            log.warning("Can't submit remove files task", e);
+        }
     }
 
     /** Handle {@link IgniteClassPath} event when no nodes that stores ClassPath files in cluster. */
@@ -168,10 +192,21 @@ class ClassPathChangeListener implements DistributedMetaStorageListener<Serializ
                 break;
 
             case REMOVING:
+                log.info("ClassPath removed from all nodes. Removing from metastore");
+
                 ctx.classPath().cancelTasksAndDisallowNew(icp.id(), icp.name(), true);
 
                 // Remove from metastorage after all nodes cleanup.
-                ctx.classPath().startAsync(CleanupTask.removeFromMetastore(ctx, icp));
+                CleanupTask t = CleanupTask.removeFromMetastore(ctx, icp);
+
+                t.result().listen(fut -> {
+                    if (fut.error() == null)
+                        log.info("IgniteClassPath removed from metastore: " + icp.name());
+                    else
+                        log.warning("IgniteClassPath not removed from metastore: " + icp.name(), fut.error());
+                });
+
+                ctx.classPath().startAsync(t);
 
                 break;
             case LOST:

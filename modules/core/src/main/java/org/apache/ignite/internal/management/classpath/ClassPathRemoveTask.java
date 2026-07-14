@@ -46,7 +46,6 @@ public class ClassPathRemoveTask extends VisorOneNodeTask<ClassPathRemoveCommand
         /** {@inheritDoc} */
         @Override protected Void run(@Nullable ClassPathRemoveCommandArg arg) throws IgniteException {
             try {
-                // TODO: distributed process to wait local cleanup?
                 return ignite.context().classPath().remove(arg.name(), arg.force()).get();
             }
             catch (IgniteCheckedException e) {

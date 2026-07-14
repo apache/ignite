@@ -50,6 +50,7 @@ import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -359,7 +360,7 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
         try {
             Serializable icp0 = ctx.distributedMetastorage().read(metastorageKey(name));
 
-            if (!isClassPath(icp0))
+            if (icp0 == null || !isClassPath(icp0))
                 throw new IgniteException("ClassPath not found: " + name);
 
             IgniteClassPath icp = (IgniteClassPath)icp0;
@@ -368,7 +369,7 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
                 log.warning("Forcefully removing ClassPath: " + icp);
 
                 try {
-                    removeFromMetastorage(icp, () -> true);
+                    removeFromMetastorage(icp, () -> false);
 
                     // Cleanup will be performed in {@link ClassPathChangeListener}.
                     return new GridFinishedFuture<>();
@@ -400,7 +401,7 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
     }
 
     /** */
-    void cancelTasksAndDisallowNew(UUID icpId, String name, boolean keepQueueLock) {
+    IgniteInternalFuture<Object> cancelTasksAndDisallowNew(UUID icpId, String name, boolean keepQueueLock) {
         Queue<ClassPathTask<?>> tasks = keepQueueLock
             ? icpTasks.put(icpId, NO_NEW_TASKS)
             : icpTasks.remove(icpId);
@@ -412,15 +413,15 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
                 task.stopped = true;
             }
 
-            for (ClassPathTask<?> task : tasks) {
-                try {
-                    task.result().get();
-                }
-                catch (IgniteCheckedException e) {
-                    log.warning("Stopped task exception", e);
-                }
-            }
+            GridCompoundFuture<Object, Object> fut = new GridCompoundFuture<>();
+
+            for (ClassPathTask<?> task : tasks)
+                fut.add((IgniteInternalFuture<Object>)task.result());
+
+            return fut.markInitialized();
         }
+
+        return new GridFinishedFuture<>();
     }
 
     /** */
@@ -435,7 +436,8 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
 
             icpTasks.compute(icpId, (ignored, tasks) -> {
                 if (tasks == NO_NEW_TASKS) {
-                    log.debug("Tasks dropped. No new task allowed for ClassPath. Remove in progress? [icp=" + icp + ']');
+                    if (log.isDebugEnabled())
+                        log.debug("Tasks dropped. No new task allowed for ClassPath. Remove in progress? [icp=" + icp + ']');
 
                     return NO_NEW_TASKS;
                 }
@@ -458,7 +460,8 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
 
         icpTasks.compute(icpId, (ignored, tasks) -> {
             if (tasks == NO_NEW_TASKS) {
-                log.debug("Tasks dropped. No new task allowed for ClassPath. Remove in progress? [icp=" + icp + ']');
+                if (log.isDebugEnabled())
+                    log.debug("Tasks dropped. No new task allowed for ClassPath. Remove in progress? [icp=" + icp + ']');
 
                 return NO_NEW_TASKS;
             }
@@ -483,22 +486,25 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
     /** */
     <R> void startAsync(ClassPathTask<R> t) {
         try {
-            ctx.pools().getSystemExecutorService().submit(() -> {
-                if (ctx.isStopping()) {
-                    t.result().onDone(new IgniteException("Node stopping"));
-
-                    return;
-                }
-
-                try {
-                    t.start();
-                }
-                catch (Throwable e) {
-                    t.result().onDone(e);
-                }
-            });
+            ctx.pools().getSystemExecutorService().submit(() -> start(t));
         }
         catch (RejectedExecutionException e) {
+            t.result().onDone(e);
+        }
+    }
+
+    /** */
+    <R> void start(ClassPathTask<R> t) {
+        if (ctx.isStopping()) {
+            t.result().onDone(new IgniteException("Node stopping"));
+
+            return;
+        }
+
+        try {
+            t.start();
+        }
+        catch (Throwable e) {
             t.result().onDone(e);
         }
     }
@@ -955,6 +961,12 @@ public class ClassPathProcessor extends GridProcessorAdapter implements Distribu
 
         /** */
         protected boolean updateDescriptor(IgniteClassPath icp) {
+            if (!ctx.pdsFolderResolver().fileTree().classPathRoot(icp.name()).exists()) {
+                log.warning("ClassPath root not exists: " + icp.name());
+
+                return true;
+            }
+
             try {
                 writeClassPathDescriptor(ctx.pdsFolderResolver().fileTree(), icp);
 

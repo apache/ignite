@@ -42,7 +42,7 @@ class ChangeStateTask extends ClassPathProcessor.ClassPathTask<Void> {
 
     /** {@inheritDoc} */
     @Override String name() {
-        return "ChangeClassPathState[newState=" + state + ']';
+        return "change state to " + state;
     }
 
     /** {@inheritDoc} */

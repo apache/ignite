@@ -32,7 +32,7 @@ public class ClassPathRemoveCommandArg extends IgniteDataTransferObject {
 
     /** */
     @Order(1)
-    @Argument(description = "Forcefully remove ClassPath. Don't wait for running tasks to finish. Use with cautious!")
+    @Argument(description = "Forcefully remove ClassPath. Don't wait for running tasks to finish. Use with cautious!", optional = true)
     boolean force;
 
     /** */

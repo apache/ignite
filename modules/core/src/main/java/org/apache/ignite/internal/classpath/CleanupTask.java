@@ -66,7 +66,7 @@ class CleanupTask extends ClassPathProcessor.ClassPathTask<Void> {
 
     /** {@inheritDoc} */
     @Override String name() {
-        return "cleanup";
+        return "cleanup " + (rmvFromMetastore ? "metastore" : "local files");
     }
 
     /** {@inheritDoc} */

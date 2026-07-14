@@ -173,7 +173,7 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
 
     /** Tests --create command. */
     @Test
-    public void testCreate() throws Exception {
+    public void testCreateRemove() throws Exception {
         injectTestSystemOut();
 
         final TestCommandHandler hnd = newCommandHandler(createTestLogger());
@@ -201,7 +201,23 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
 
         checkFilesExists(cpName(), -1, cpFiles);
 
-        assertEquals(EXIT_CODE_OK, execute(hnd, "--class-path", "remove", "--name", cpName()));
+        if (commandHandler.equals(JMX_CMD_HND))
+            assertEquals(EXIT_CODE_OK, execute(hnd, "--class-path", "remove", "--name", cpName()));
+        else
+            assertEquals(EXIT_CODE_OK, execute(hnd, "--class-path", "remove", "--force", "--name", cpName()));
+
+        assertTrue(waitForCondition(() -> {
+            try {
+                return classPath() == null;
+            }
+            catch (IgniteCheckedException e) {
+                return false;
+            }
+        }, 30_000));
+
+        assertFalse(grid(0).context().pdsFolderResolver().fileTree().classPathRoot(cpName()).exists());
+        assertFalse(grid(1).context().pdsFolderResolver().fileTree().classPathRoot(cpName()).exists());
+        assertFalse(grid(2).context().pdsFolderResolver().fileTree().classPathRoot(cpName()).exists());
     }
 
     /** Tests --create command. */
@@ -347,10 +363,7 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
 
         assertContains(
             log,
-            executeCommand(
-                EXIT_CODE_INVALID_ARGUMENTS,
-                "--class-path", "create", "--name", "mysuperapp", "--files", ""
-            ),
+            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, "--class-path", "create", "--name", "mysuperapp", "--files", ""),
             cliCommandHandler() ? "File name must not be empty" : "Argument --files required"
         );
 
@@ -358,6 +371,24 @@ public class GridCommandHandlerClassPathTest extends GridCommandHandlerAbstractT
             log,
             executeCommand(EXIT_CODE_INVALID_ARGUMENTS, "--class-path", "create", "--files", "f.txt,f.txt"),
             "Mandatory argument(s) missing: [--name]"
+        );
+    }
+
+    /** */
+    @Test
+    public void testRemoveUnknown() {
+        injectTestSystemOut();
+
+        assertContains(
+            log,
+            executeCommand(EXIT_CODE_UNEXPECTED_ERROR, "--class-path", "remove", "--name", "unknown"),
+            "ClassPath not found: unknown"
+        );
+
+        assertContains(
+            log,
+            executeCommand(EXIT_CODE_UNEXPECTED_ERROR, "--class-path", "remove", "--force", "--name", "unknown"),
+            "ClassPath not found: unknown"
         );
     }
 

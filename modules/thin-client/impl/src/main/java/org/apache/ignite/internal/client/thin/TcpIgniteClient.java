@@ -81,7 +81,6 @@ import org.apache.ignite.internal.processors.platform.client.IgniteClientExcepti
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContext;
@@ -642,7 +641,7 @@ public class TcpIgniteClient implements IgniteClient {
         ClientChannel cliCh = ch.nodeClientChannel(node.id());
 
         String name = file.getFileName().toString();
-        byte[] batch = new byte[(int)(U.MB)];
+        byte[] batch = new byte[(int)(CommonUtils.MB)];
 
         try (InputStream fis = Files.newInputStream(file)) {
             long[] offset = new long[]{0};
