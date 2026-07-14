@@ -106,6 +106,7 @@ public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
         msg.addServerCacheMetrics(srvrId, cacheMetrics);
 
         MessageFactory msgFactory = ((TcpDiscoverySpi)grid(0).context().discovery().getInjectedDiscoverySpi()).messageFactory();
+
         // First time we write initial message type which is not read by the reader because the message type is known.
         // We have to skip this header at the further message reading.
         AtomicInteger initHdrSize = new AtomicInteger();
