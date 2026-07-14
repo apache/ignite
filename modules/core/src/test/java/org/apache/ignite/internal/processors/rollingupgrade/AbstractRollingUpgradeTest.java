@@ -64,6 +64,7 @@ import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.TestBlockingTcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jspecify.annotations.Nullable;
@@ -207,13 +208,11 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
             }
         });
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi() {
+        TcpDiscoverySpi discoSpi = new TestBlockingTcpDiscoverySpi(cfg) {
             @Override public void setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ignored) {
                 super.setNodeAttributes(attrs, IgniteProductVersion.fromString(testVersions.coreVersion()));
             }
         };
-
-        discoSpi.setIpFinder(((TcpDiscoverySpi)cfg.getDiscoverySpi()).getIpFinder());
 
         cfg.setDiscoverySpi(discoSpi);
 

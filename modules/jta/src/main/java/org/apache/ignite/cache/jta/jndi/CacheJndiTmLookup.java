@@ -18,9 +18,9 @@
 package org.apache.ignite.cache.jta.jndi;
 
 import java.util.List;
+import jakarta.transaction.TransactionManager;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
-import javax.transaction.TransactionManager;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.jta.CacheTmLookup;
 import org.jetbrains.annotations.Nullable;

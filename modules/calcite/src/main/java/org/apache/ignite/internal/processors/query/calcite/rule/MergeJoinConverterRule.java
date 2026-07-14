@@ -25,11 +25,11 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.PhysicalNode;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoinInfo;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -51,7 +51,7 @@ public class MergeJoinConverterRule extends AbstractIgniteJoinConverterRule {
     @Override public boolean matchesJoin(RelOptRuleCall call) {
         LogicalJoin logicalJoin = call.rel(0);
 
-        IgniteJoinInfo info = IgniteJoinInfo.of(logicalJoin);
+        JoinInfo info = logicalJoin.analyzeCondition();
 
         return info.isEqui() && !F.isEmpty(info.pairs());
     }
@@ -60,7 +60,7 @@ public class MergeJoinConverterRule extends AbstractIgniteJoinConverterRule {
     @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalJoin rel) {
         RelOptCluster cluster = rel.getCluster();
 
-        IgniteJoinInfo joinInfo = IgniteJoinInfo.of(rel);
+        JoinInfo joinInfo = rel.analyzeCondition();
 
         assert joinInfo.isEqui() && !F.isEmpty(joinInfo.pairs());
 
@@ -73,7 +73,7 @@ public class MergeJoinConverterRule extends AbstractIgniteJoinConverterRule {
         RelNode left = convert(rel.getLeft(), leftInTraits);
         RelNode right = convert(rel.getRight(), rightInTraits);
 
-        return new IgniteMergeJoin(cluster, outTraits, left, right, rel.getCondition(), joinInfo.allowNulls(),
+        return new IgniteMergeJoin(cluster, outTraits, left, right, rel.getCondition(),
             rel.getVariablesSet(), rel.getJoinType());
     }
 }

@@ -35,10 +35,6 @@ public class RollingUpgradeClusterData implements Message {
 
     /** */
     @Order(2)
-    boolean isNodeFenceActive;
-
-    /** */
-    @Order(3)
     Collection<IgniteComponentFeatureSet> activeFeatures;
 
     /** */
@@ -50,12 +46,10 @@ public class RollingUpgradeClusterData implements Message {
     public RollingUpgradeClusterData(
         boolean isVersionUpgradeEnabled,
         UUID curFinalizeProcId,
-        boolean isNodeFenceActive,
         Collection<IgniteComponentFeatureSet> activeFeatures
     ) {
         this.isVersionUpgradeEnabled = isVersionUpgradeEnabled;
         this.curFinalizeProcId = curFinalizeProcId;
-        this.isNodeFenceActive = isNodeFenceActive;
         this.activeFeatures = activeFeatures;
     }
 }
