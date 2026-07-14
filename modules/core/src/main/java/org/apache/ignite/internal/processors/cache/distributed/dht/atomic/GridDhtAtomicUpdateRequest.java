@@ -100,14 +100,14 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     boolean forceTransformBackups;
 
     /** Entry processors. */
-    List<EntryProcessor<Object, Object, Object>> entryProcessors;
+    private List<EntryProcessor<Object, Object, Object>> entryProcessors;
 
     /** Entry processors bytes. */
     @Order(12)
     List<byte[]> entryProcessorsBytes;
 
     /** Near entry processors. */
-    List<EntryProcessor<Object, Object, Object>> nearEntryProcessors;
+    private List<EntryProcessor<Object, Object, Object>> nearEntryProcessors;
 
     /** Near entry processors bytes. */
     @Order(13)

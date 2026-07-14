@@ -65,7 +65,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     List<CacheObject> vals;
 
     /** Entry processors. */
-    List<EntryProcessor<Object, Object, Object>> entryProcessors;
+    private List<EntryProcessor<Object, Object, Object>> entryProcessors;
 
     /** Entry processors bytes. */
     @Order(2)
