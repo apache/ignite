@@ -65,7 +65,6 @@ import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileLock;
-import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -114,6 +113,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 import java.util.jar.JarFile;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
@@ -134,6 +134,7 @@ import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -186,6 +187,7 @@ import org.apache.ignite.internal.processors.cache.CacheDefaultBinaryAffinityKey
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgnitePeerToPeerClassLoadingException;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -194,6 +196,9 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
+import org.apache.ignite.internal.util.nio.GridNioFilter;
+import org.apache.ignite.internal.util.nio.GridNioServer;
+import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -222,7 +227,6 @@ import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionHeuristicException;
 import org.apache.ignite.transactions.TransactionOptimisticException;
@@ -291,9 +295,6 @@ public abstract class IgniteUtils extends CommonUtils {
     /** Empty integers array. */
     public static final int[] EMPTY_INTS = new int[0];
 
-    /** Empty longs array. */
-    public static final long[] EMPTY_LONGS = new long[0];
-
     /** Empty strings array. */
     public static final String[] EMPTY_STRS = new String[0];
 
@@ -340,9 +341,6 @@ public abstract class IgniteUtils extends CommonUtils {
     /** JMX domain as 'xxx.apache.ignite'. */
     public static final String JMX_DOMAIN = IgniteUtils.class.getName().substring(0, IgniteUtils.class.getName().
         indexOf('.', IgniteUtils.class.getName().indexOf('.') + 1));
-
-    /** Network packet header. */
-    public static final byte[] IGNITE_HEADER = intToBytes(0x0149474E);
 
     /** Default buffer size = 4K. */
     private static final int BUF_SIZE = 4096;
@@ -2126,28 +2124,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * Compares fragments of byte arrays.
-     *
-     * @param a First array.
-     * @param aOff First array offset.
-     * @param b Second array.
-     * @param bOff Second array offset.
-     * @param len Length of fragments.
-     * @return {@code true} if fragments are equal, {@code false} otherwise.
-     */
-    public static boolean bytesEqual(byte[] a, int aOff, byte[] b, int bOff, int len) {
-        if (aOff + len > a.length || bOff + len > b.length)
-            return false;
-        else {
-            for (int i = 0; i < len; i++)
-                if (a[aOff + i] != b[bOff + i])
-                    return false;
-
-            return true;
-        }
-    }
-
-    /**
      * @param bytes Number of bytes to display.
      * @param si If {@code true}, then unit base is 1000, otherwise unit base is 1024.
      * @return Formatted size.
@@ -3283,69 +3259,6 @@ public abstract class IgniteUtils extends CommonUtils {
         if (workers != null)
             for (Thread worker : workers)
                 if (!join(worker, log))
-                    retval = false;
-
-        return retval;
-    }
-
-    /**
-     * Cancels given runnable.
-     *
-     * @param w Worker to cancel - it's no-op if runnable is {@code null}.
-     */
-    public static void cancel(@Nullable GridWorker w) {
-        if (w != null)
-            w.cancel();
-    }
-
-    /**
-     * Cancels collection of runnables.
-     *
-     * @param ws Collection of workers - it's no-op if collection is {@code null}.
-     */
-    public static void cancel(Iterable<? extends GridWorker> ws) {
-        if (ws != null)
-            for (GridWorker w : ws)
-                w.cancel();
-    }
-
-    /**
-     * Joins runnable.
-     *
-     * @param w Worker to join.
-     * @param log The logger to possible exception.
-     * @return {@code true} if worker has not been interrupted, {@code false} if it was interrupted.
-     */
-    public static boolean join(@Nullable GridWorker w, @Nullable IgniteLogger log) {
-        if (w != null)
-            try {
-                w.join();
-            }
-            catch (InterruptedException ignore) {
-                warn(log, "Got interrupted while waiting for completion of runnable: " + w);
-
-                Thread.currentThread().interrupt();
-
-                return false;
-            }
-
-        return true;
-    }
-
-    /**
-     * Joins given collection of runnables.
-     *
-     * @param ws Collection of workers to join.
-     * @param log The logger to possible exceptions.
-     * @return {@code true} if none of the worker have been interrupted,
-     *      {@code false} if at least one was interrupted.
-     */
-    public static boolean join(Iterable<? extends GridWorker> ws, IgniteLogger log) {
-        boolean retval = true;
-
-        if (ws != null)
-            for (GridWorker w : ws)
-                if (!join(w, log))
                     retval = false;
 
         return retval;
@@ -5108,23 +5021,6 @@ public abstract class IgniteUtils extends CommonUtils {
 
         if (interrupted)
             Thread.currentThread().interrupt();
-    }
-
-    /**
-     * Sleeps for given number of milliseconds.
-     *
-     * @param ms Time to sleep.
-     * @throws IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
-     */
-    public static void sleep(long ms) throws IgniteInterruptedCheckedException {
-        try {
-            Thread.sleep(ms);
-        }
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-
-            throw new IgniteInterruptedCheckedException(e);
-        }
     }
 
     /**
@@ -7359,30 +7255,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     *  Safely write buffer fully to blocking socket channel.
-     *  Will throw assert if non blocking channel passed.
-     *
-     * @param sockCh WritableByteChannel.
-     * @param buf Buffer.
-     * @throws IOException IOException.
-     */
-    public static void writeFully(SocketChannel sockCh, ByteBuffer buf) throws IOException {
-        int totalWritten = 0;
-
-        assert sockCh.isBlocking() : "SocketChannel should be in blocking mode " + sockCh;
-
-        while (buf.hasRemaining()) {
-            int written = sockCh.write(buf);
-
-            if (written < 0)
-                throw new IOException("Error writing buffer to channel " +
-                    "[written = " + written + ", buf " + buf + ", totalWritten = " + totalWritten + "]");
-
-            totalWritten += written;
-        }
-    }
-
-    /**
      * @return New identity hash set.
      */
     public static <X> Set<X> newIdentityHashSet() {
@@ -7889,15 +7761,6 @@ public abstract class IgniteUtils extends CommonUtils {
         }
     }
 
-    /**
-     * Creates thread with given worker.
-     *
-     * @param worker Runnable to create thread with.
-     */
-    public static IgniteThread newThread(GridWorker worker) {
-        return new IgniteThread(worker.igniteInstanceName(), worker.name(), worker);
-    }
-
     /** */
     public static final IgniteDataTransferObjectSerializer<?> EMPTY_DTO_SERIALIZER = new IgniteDataTransferObjectSerializer() {
         /** {@inheritDoc} */
@@ -7933,5 +7796,69 @@ public abstract class IgniteUtils extends CommonUtils {
     public static DiscoveryCustomMessage unwrapCustomMessage(DiscoverySpiCustomMessage msg) {
         return msg instanceof SecurityAwareCustomMessageWrapper ?
             ((SecurityAwareCustomMessageWrapper)msg).delegate() : (DiscoveryCustomMessage)msg;
+    }
+
+    /**
+     * Sets the received/sent bytes and per-session queue-size metric consumers on the given NIO server builder,
+     * creating the underlying metrics in the provided registry.
+     *
+     * @param builder NIO server builder.
+     * @param mreg Metric registry.
+     * @return The given builder for chaining.
+     */
+    public static <T> GridNioServer.Builder<T> setNioServerMetrics(GridNioServer.Builder<T> builder, MetricRegistryImpl mreg) {
+        return builder
+            .receivedBytesMetric(mreg.longAdderMetric(
+                GridNioServer.RECEIVED_BYTES_METRIC_NAME, GridNioServer.RECEIVED_BYTES_METRIC_DESC)::add)
+            .sentBytesMetric(mreg.longAdderMetric(
+                GridNioServer.SENT_BYTES_METRIC_NAME, GridNioServer.SENT_BYTES_METRIC_DESC)::add)
+            .outboundMessagesQueueSizeMetric(mreg.longAdderMetric(
+                GridNioServer.OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME,
+                GridNioServer.OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_DESC)::add)
+            .maxMessagesQueueSizeMetric(mreg.maxValueMetric(
+                GridNioServer.MAX_MESSAGES_QUEUE_SIZE_METRIC_NAME,
+                GridNioServer.MAX_MESSAGES_QUEUE_SIZE_METRIC_DESC, 60_000, 5)::update);
+    }
+
+    /**
+     * Registers the active TCP sessions count metric in the given registry, backed by the NIO server.
+     *
+     * @param srv NIO server.
+     * @param mreg Metric registry.
+     */
+    public static void registerNioServerMetrics(GridNioServer<?> srv, GridNioFilter[] filters, MetricRegistryImpl mreg) {
+        boolean sslEnabled = Arrays.stream(filters).anyMatch(filter -> filter instanceof GridNioSslFilter);
+
+        mreg.register(GridNioServer.SSL_ENABLED_METRIC_NAME, () -> sslEnabled, "Whether SSL is enabled");
+        mreg.register(GridNioServer.SESSIONS_CNT_METRIC_NAME, srv::activeTcpSessionsCount, "Active TCP sessions count.");
+    }
+
+    /**
+     * Creates an SSL NIO filter, wiring its metrics from the given registry.
+     *
+     * @param sslCtx SSL context.
+     * @param directBuf Direct buffer flag.
+     * @param order Byte order.
+     * @param log Logger to use.
+     * @param mreg Optional metric registry; if {@code null}, the filter is created without metrics.
+     * @return SSL NIO filter.
+     */
+    public static GridNioSslFilter sslFilter(
+        SSLContext sslCtx,
+        boolean directBuf,
+        ByteOrder order,
+        IgniteLogger log,
+        @Nullable MetricRegistryImpl mreg
+    ) {
+        LongConsumer handshakeDuration = mreg == null ? null : mreg.histogram(
+            GridNioSslFilter.SSL_HANDSHAKE_DURATION_HISTOGRAM_METRIC_NAME,
+            new long[] {250, 500, 1000},
+            "SSL handshake duration in milliseconds.")::value;
+
+        Runnable rejectedSesCnt = mreg == null ? null : mreg.intMetric(
+            GridNioSslFilter.SSL_REJECTED_SESSIONS_CNT_METRIC_NAME,
+            "TCP sessions count that were rejected due to SSL errors.")::increment;
+
+        return new GridNioSslFilter(sslCtx, directBuf, order, log, handshakeDuration, rejectedSesCnt);
     }
 }
