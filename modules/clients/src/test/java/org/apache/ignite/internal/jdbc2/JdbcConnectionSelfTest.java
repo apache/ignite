@@ -23,6 +23,7 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -38,9 +39,7 @@ import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
  * Connection test.
  */
 public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
-    /**
-     * Custom cache name.
-     */
+    /** Custom cache name. */
     private static final String CUSTOM_CACHE_NAME = "custom-cache";
 
     /**
@@ -335,18 +334,28 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
      * Test that JDBC cfg:// URL with remote HTTP location is allowed when system property is set.
      */
     @Test
-    @WithSystemProperty(key = "ignite.spring.cfg.allowRemoteUrl", value = "true")
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_ALLOW_REMOTE_SPRING_CFG_URL, value = "true")
     public void testRemoteHttpCfgUrlAllowedWhenFlagSet() {
         final String url = CFG_URL_PREFIX + "http://127.0.0.1:1/nonexistent.xml";
 
-        try {
-            DriverManager.getConnection(url);
-        }
-        catch (SQLException e) {
-            assertFalse(
-                "Security exception should not be thrown when flag is enabled",
-                e.getMessage().contains("Remote Spring configuration URLs")
-            );
-        }
+        Throwable err = GridTestUtils.assertThrows(
+            log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    try (Connection conn = DriverManager.getConnection(url)) {
+                        return conn;
+                    }
+                }
+            },
+            SQLException.class,
+            null
+        );
+
+        String msg = err.getMessage();
+
+        assertFalse(
+            "Security exception should not be thrown when flag is enabled",
+            msg != null && msg.contains("Remote Spring configuration URLs")
+        );
     }
 }
