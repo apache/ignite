@@ -161,11 +161,9 @@ class MdcPartitionLoadTest(IgniteTest):
 
                 assert ops > 0, f"Background get load performed no operations [dc={dc}]"
 
-                assert errs <= max(1, int(ops * BG_MAX_ERR_RATIO)), \
-                    f"Background get load errors exceed the boundary tolerance [dc={dc}, ops={ops}, errs={errs}]"
+                assert errs == 0, f"Background get load errors exceed the boundary tolerance [dc={dc}, ops={ops}, errs={errs}]"
 
-                assert max_stall < BG_MAX_STALL_MS, \
-                    f"Background get load stalled for too long [dc={dc}, maxStallMs={max_stall}]"
+                assert max_stall < BG_MAX_STALL_MS, f"Background get load stalled for too long [dc={dc}, maxStallMs={max_stall}]"
 
             # ---- Readback: every acknowledged write is readable from the OPPOSITE DC.
             for idx, (cache, kind, src_dc, offset, cnt) in enumerate(written):
@@ -193,7 +191,7 @@ class MdcPartitionLoadTest(IgniteTest):
 
     @cluster(num_nodes=8)
     @ignite_versions(str(DEV_BRANCH))
-    @matrix(cross_dc_latency_ms=[50], cross_dc_loss=[0.05])
+    @matrix(cross_dc_latency_ms=[20], cross_dc_loss=[0.1])
     def test_degraded_link_without_partition(self, ignite_version, cross_dc_latency_ms, cross_dc_loss):
         """
         A slow, lossy WAN that stays connected ("slow WAN" as opposed to "broken WAN"):
@@ -229,8 +227,6 @@ class MdcPartitionLoadTest(IgniteTest):
 
             mdc.stop_servers()
 
-    # ------------------------------------------------------------------ helpers
-
     def _admissible_write_bursts(self, mdc: MdcCluster, dc: str, phase: str, offset: int):
         """
         Runs the full trio of write bursts (cache API put, transactional put, SQL DML)
@@ -249,7 +245,8 @@ class MdcPartitionLoadTest(IgniteTest):
         """
         return self._admissible_burst(mdc, dc, "PUT", ATOMIC_CACHE, f"{phase}{dc}Put", offset, PUT_BURST)
 
-    def _admissible_burst(self, mdc: MdcCluster, dc: str, mode: str, cache: str, prefix: str,
+    @staticmethod
+    def _admissible_burst(mdc: MdcCluster, dc: str, mode: str, cache: str, prefix: str,
                           offset: int, iterations: int, **cache_params):
         """
         Runs one write burst that must succeed completely: the load application fails fast

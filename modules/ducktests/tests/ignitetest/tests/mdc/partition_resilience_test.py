@@ -39,7 +39,7 @@ SPLIT_SETTLE_SECS = 10
 # A blip must stay well below the failure detection timeout (10s by default).
 BLIP_SECS = 1
 BLIP_SETTLE_SECS = 5
-BLIPS = 3
+BLIPS = 10
 
 
 class MdcPartitionResilienceTest(IgniteTest):
@@ -137,6 +137,8 @@ class MdcPartitionResilienceTest(IgniteTest):
             mdc.verify_cache_distribution(CACHE_NAME, copies_per_dc=1)
 
             mdc.control(DC_1).idle_verify(CACHE_NAME)
+
+            mdc.verify_servers_log_clean()
 
             mdc.stop_servers()
 
