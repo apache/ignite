@@ -166,18 +166,13 @@ public class PerformingTransactions {
         }
     }
 
-    void timeout() {
-        // tag::timeout[]
+    void defaultTimeout() {
+        // tag::default[]
         // Create a configuration
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         // Create a Transaction configuration
         TransactionConfiguration txCfg = new TransactionConfiguration();
-
-        // tag::pme[]
-        // Set the timeout to 20 seconds
-        txCfg.setTxTimeoutOnPartitionMapExchange(20000);
-        // end::pme[]
 
         // Set the timeout to 5 minutes
         txCfg.setDefaultTxTimeout(300000);
@@ -186,7 +181,25 @@ public class PerformingTransactions {
 
         // Start the node
         Ignition.start(cfg);
-        // end::timeout[]
+        // end::default[]
+    }
+
+    void pmeTimeout() {
+        // tag::pme[]
+        // Create a configuration
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        // Create a Transaction configuration
+        TransactionConfiguration txCfg = new TransactionConfiguration();
+
+        // Set the timeout to 20 seconds
+        txCfg.setTxTimeoutOnPartitionMapExchange(20000);
+
+        cfg.setTransactionConfiguration(txCfg);
+
+        // Start the node
+        Ignition.start(cfg);
+        // end::pme[]
     }
 
     public static void deadlockDetectionExample() {

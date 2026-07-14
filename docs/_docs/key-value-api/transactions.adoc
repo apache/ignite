@@ -214,14 +214,14 @@ A transaction, from its initiation to its completion via commit or rollback, goe
 | `PREPARED` | `PREPARE` | The 2PC protocol has completed the preparation phase (nodes participating in the transaction have sent notifications of readiness to commit)
 | `COMMITTING` | `COMMIT` | The 2PC protocol has started the final commit phase and sent the commit command to the nodes
 | `COMMITTED` | `COMMIT` | The 2PC protocol has received responses from all nodes; the transaction commit is complete, and its context is being cleared
-| `MARKED_ROLLBACK` | `PREPARE`/`COMMIT` (\*) | The user called the `rollback` method on the transaction; the 2PC protocol has started the rollback procedure
-| `ROLLING_BACK` | `PREPARE`/`COMMIT` (\*) | The 2PC protocol has sent rollback requests to the nodes participating in the transaction
-| `ROLLED_BACK` | `PREPARE`/`COMMIT` (\*) | The 2PC protocol has received responses from all nodes; the rollback is complete, and the transaction context is being cleared
+| `MARKED_ROLLBACK` | `PREPARE`/`COMMIT` | The user called the `rollback` method on the transaction; the 2PC protocol has started the rollback procedure
+| `ROLLING_BACK` | `PREPARE`/`COMMIT` | The 2PC protocol has sent rollback requests to the nodes participating in the transaction
+| `ROLLED_BACK` | `PREPARE`/`COMMIT` | The 2PC protocol has received responses from all nodes; the rollback is complete, and the transaction context is being cleared
 | `SUSPENDED` | — | The transaction is suspended. This can occur in two cases: upon explicit user request by calling the `suspend` method on the `Transaction` object, or when starting a transaction using a thin client. In this case, the transaction is immediately moved to the `SUSPENDED` status after creation and exits it upon receiving subsequent requests from the client
 | `UNKNOWN` | — | An error occurred during rollback or transaction processing; the state is unknown
 |===
 
-=== Transaction Lifecycle
+== Transaction Lifecycle
 * Transaction with a successful commit: `ACTIVE` → `PREPARING` → `PREPARED` → `COMMITTING` → `COMMITTED`.
 * Transaction that rolled back due to one of the nodes being unready to commit: `ACTIVE` → `PREPARING` → `ROLLING_BACK` → `ROLLED_BACK`.
 
@@ -345,10 +345,9 @@ The `tx` command of the `control.sh` utility allows you to search for transactio
 
 Rolling back a transaction using the `tx` command is only possible for the `ACTIVE`, `PREPARING`, and `PREPARED` statuses. A transaction in statuses related to the `rollback` procedure is already in the process of rolling back. Transactions in the `COMMITTING` and `COMMITTED` statuses cannot be rolled back due to 2PC protocol restrictions.
 
-* First termination stage — cancelling transactions using `tx kill`
-
-To cancel transactions, use the `control.sh` utility to minimize the impact on the cluster:
-# Execute the `control.sh --tx --min-duration <transaction_timeout_in_ms>` command in the cluster. Example output:
+* First termination stage — cancelling transactions using `tx kill`. To cancel transactions, use the `control.sh` utility to minimize the impact on the cluster:
+. Execute the `control.sh --tx --min-duration <transaction_timeout_in_ms>` command in the cluster. Example output:
++
 ----
 Command [TX] started
 Arguments: --tx --min-duration 30
@@ -359,16 +358,15 @@ TcpDiscoveryNode [id=<id>, addrs=[<address>], order=1, ver=2.18.0#YYYYMMDD-sha1:
     Tx: [xid=<id>, label=null, state=ACTIVE, startTime=YYYY-MM-DD 15:15:16.852, duration=3 sec, isolation=REPEATABLE_READ, concurrency=PESSIMISTIC, topVer=AffinityTopologyVersion [topVer=3, minorTopVer=2], timeout=0 sec, size=100, dhtNodes=[<id>, <id>], nearXid=<id>, parentNodeIds=[<id>]]
 Command [TX] finished with code: 0
 ----
-# Extract the `xid` from all transactions across all nodes and remove duplicate `xid` values. Duplicates occur because the same transaction can exist on multiple nodes — in this case, its `xid` will appear in the command output multiple times.
-# For each `xid`, run the `tx kill` command to roll back that transaction. Example call: `control.sh --tx --xid <id> --kill`.
+. Extract the `xid` from all transactions across all nodes and remove duplicate `xid` values. Duplicates occur because the same transaction can exist on multiple nodes — in this case, its `xid` will appear in the command output multiple times.
+. For each `xid`, run the `tx kill` command to roll back that transaction. Example call: `control.sh --tx --xid <id> --kill`.
 
-* Second mitigation stage — restarting nodes that block transaction completion
-Check if the first stage was sufficient to handle LRT. To do this, follow these steps:
-# After completing the first stage, wait for a period equal to the configured transaction timeout.
-# Run the `control.sh --tx --min-duration <transaction_timeout>` command.
-
+* Second termination stage (optional) — restarting nodes that block transaction completion. Check if the first stage was sufficient to handle LRT:
+. After completing the first stage, wait for a period equal to the configured transaction timeout.
+. Run the `control.sh --tx --min-duration <transaction_timeout>` command.
 If the list is empty, all LRTs have been successfully canceled, and the LRT impact should be resolved.
 If the list is not empty, the command output will contain information about nodes and the transactions running on them:
++
 ----
 Command [TX] started
 Arguments: --tx
@@ -383,26 +381,25 @@ TcpDiscoveryNode [id=<id>, addrs=[<address>], order=3, ver=2.18.0#YYYYMMDD-sha1:
     Tx: [xid=<id>, label=label2, state=PREPARING, startTime=YYYY-MM-DD 16:58:45.348, duration=3 sec, isolation=READ_COMMITTED, concurrency=OPTIMISTIC, topVer=AffinityTopologyVersion [topVer=3, minorTopVer=2], timeout=0 sec, size=11, dhtNodes=[<id>, <id>], nearXid=<id>, parentNodeIds=[<id>]]
 Command [TX] finished with code: 0
 ----
-To find and restart nodes that are blocking transaction completion:
-# For each transaction, extract the value of the `dhtNodes` field.
-# For each ID in `dhtNodes`, obtain detailed node information using the `control.sh --system-view NODES` command.
-# In the command output, find the node whose `nodeId` starts with the string from `dhtNodes`.
-# Restart this node to unblock the transaction.
+. For each transaction, extract the value of the `dhtNodes` field.
+. For each ID in `dhtNodes`, obtain detailed node information using the `control.sh --system-view NODES` command.
+. In the command output, find the node whose `nodeId` starts with the string from `dhtNodes`.
+. Restart this node to unblock the transaction.
 
 == Causes of LRT
-- High system load, which leads to slower transaction processing. Indicators:
-  * log messages about the start of page eviction for in-memory data regions or page replacement for persistent data regions;
-  * growth of queues in the striped pool;
-  * increased checkpoint duration for clusters with persistence enabled;
-  * long GC pauses.
-- Unstable network operation. Indicators: log messages about connection loss between nodes, socket closures, or network timeouts triggering.
-- Resource-intensive operations (for example, deleting a cache that is part of a cache group). Indicators: queue growth on individual threads of the system pool and striped pool, while other threads and overall node utilization may remain low.
-- Internal Apache Ignite bugs that can lead to deadlocks. Indicators: thread dumps (`thread dump`) show threads waiting to acquire a read lock (`readLock`) or write lock (`writeLock`) during checkpoint creation; over time, the thread state does not change (stack trace remains unchanged).
+* High system load, which leads to slower transaction processing. Indicators:
+** log messages about the start of page eviction for in-memory data regions or page replacement for persistent data regions;
+** growth of queues in the striped pool;
+** increased checkpoint duration for clusters with persistence enabled;
+** long GC pauses.
+* Unstable network operation. Indicators: log messages about connection loss between nodes, socket closures, or network timeouts triggering.
+* Resource-intensive operations (for example, deleting a cache that is part of a cache group). Indicators: queue growth on individual threads of the system pool and striped pool, while other threads and overall node utilization may remain low.
+* Internal Apache Ignite bugs that can lead to deadlocks. Indicators: thread dumps (`thread dump`) show threads waiting to acquire a read lock (`readLock`) or write lock (`writeLock`) during checkpoint creation; over time, the thread state does not change (stack trace remains unchanged).
 
-== Transactions Timeout
+== Transaction Timeout
 
-=== Overriding default transaction timeout
-- `TransactionConfiguration#setDefaultTxTimeout` — default transaction timeout (used when user code starts a transaction without specifying a timeout). If a transaction execution exceeds this time, the cluster attempts to roll it back. If the transaction state does not allow a rollback, the timeout will have no effect.
+=== Default Transaction Timeout
+`TransactionConfiguration#setDefaultTxTimeout` — default transaction timeout (used when user code starts a transaction without specifying a timeout). If a transaction execution exceeds this time, the cluster attempts to roll it back. If the transaction state does not allow a rollback, the timeout will have no effect.
 
 Example:
 
@@ -416,7 +413,7 @@ include::code-snippets/xml/transactions.xml[tags=ignite-config;configuration;tim
 tab:Java[]
 [source,java]
 ----
-include::{javaFile}[tag=timeout;!pme;indent=0]
+include::{javaFile}[tag=default,indent=0]
 ----
 tab:C#/.NET[]
 [source,csharp]
@@ -426,7 +423,7 @@ include::code-snippets/dotnet/PerformingTransactions.cs[tag=txTimeout,indent=0]
 tab:C++[unsupported]
 --
 
-=== Timeout On Partition Map Exchange
+=== Timeout on Partition Map Exchange
 
 Some cluster events trigger partition map exchange process and data rebalancing within an Ignite cluster to ensure even data distribution cluster-wide. An example of one such event is the cluster-topology-change event that takes place whenever a new node joins the cluster or an existing one leaves it. Plus, every time a new cache or SQL table is created, the partition map exchange gets triggered.
 
@@ -442,12 +439,12 @@ Example:
 tab:XML[]
 [source,xml]
 ----
-include::code-snippets/xml/transactions.xml[tags=ignite-config;configuration;!cache;!discovery, indent=0]
+include::code-snippets/xml/transactions.xml[tags=ignite-config;configuration;!timeout;!cache;!discovery, indent=0]
 ----
 tab:Java[]
 [source,java]
 ----
-include::{javaFile}[tag=timeout,indent=0]
+include::{javaFile}[tag=pme,indent=0]
 ----
 tab:C#/.NET[]
 [source,csharp]
