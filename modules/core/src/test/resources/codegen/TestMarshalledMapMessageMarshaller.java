@@ -34,7 +34,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
  */
 public class TestMarshalledMapMessageMarshaller implements MessageMarshaller<TestMarshalledMapMessage> {
     /** */
-    @Override public void marshal(TestMarshalledMapMessage msg, GridKernalContext kctx, CacheObjectContext nested) throws IgniteCheckedException {
+    @Override public void marshal(TestMarshalledMapMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         if (msg.theMap != null && msg.mapKeys == null) {
             msg.mapKeys = msg.theMap.keySet();
             msg.mapVals = msg.theMap.values();
@@ -42,8 +42,8 @@ public class TestMarshalledMapMessageMarshaller implements MessageMarshaller<Tes
     }
 
     /** */
-    @Override public void unmarshal(TestMarshalledMapMessage msg, GridKernalContext kctx, CacheObjectContext nested, ClassLoader clsLdr) throws IgniteCheckedException {
-        CacheObjectContext ctx = nested;
+    @Override public void unmarshal(TestMarshalledMapMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
+        CacheObjectContext ctx = cacheObjCtx;
 
         if (msg.mapKeys != null) {
             msg.theMap = U.newHashMap(msg.mapKeys.size());

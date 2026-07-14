@@ -32,14 +32,14 @@ import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
  */
 public class TestMarshalledCollectionMessageMarshaller implements MessageMarshaller<TestMarshalledCollectionMessage> {
     /** */
-    @Override public void marshal(TestMarshalledCollectionMessage msg, GridKernalContext kctx, CacheObjectContext nested) throws IgniteCheckedException {
+    @Override public void marshal(TestMarshalledCollectionMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         if (msg.keys != null && msg.keysArr == null)
             msg.keysArr = msg.keys.toArray(new GridCacheVersion[0]);
     }
 
     /** */
-    @Override public void unmarshal(TestMarshalledCollectionMessage msg, GridKernalContext kctx, CacheObjectContext nested, ClassLoader clsLdr) throws IgniteCheckedException {
-        CacheObjectContext ctx = nested;
+    @Override public void unmarshal(TestMarshalledCollectionMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
+        CacheObjectContext ctx = cacheObjCtx;
 
         if (msg.keysArr != null) {
             msg.keys = U.newHashSet(msg.keysArr.length);

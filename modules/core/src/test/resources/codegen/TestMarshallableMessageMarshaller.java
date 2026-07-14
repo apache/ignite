@@ -39,12 +39,12 @@ public class TestMarshallableMessageMarshaller implements MessageMarshaller<Test
     }
 
     /** */
-    @Override public void marshal(TestMarshallableMessage msg, GridKernalContext kctx, CacheObjectContext nested) throws IgniteCheckedException {
+    @Override public void marshal(TestMarshallableMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         msg.marshal(marshaller);
     }
 
     /** */
-    @Override public void unmarshal(TestMarshallableMessage msg, GridKernalContext kctx, CacheObjectContext nested, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void unmarshal(TestMarshallableMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
         msg.unmarshal(marshaller, clsLdr);
     }
 }

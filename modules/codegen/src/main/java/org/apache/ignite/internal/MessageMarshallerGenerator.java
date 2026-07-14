@@ -181,7 +181,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         imports.add("org.apache.ignite.internal.GridKernalContext");
         imports.add("org.apache.ignite.internal.processors.cache.CacheObjectContext");
 
-        String signature = "marshal(" + simpleNameWithGeneric(type) + " msg, GridKernalContext kctx, CacheObjectContext nested)";
+        String signature = "marshal(" + simpleNameWithGeneric(type) + " msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx)";
 
         hasStatements |= emitMethod(marshall, signature, body -> {
             if (needsCtx(orderedFields))
@@ -229,7 +229,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
         String msgParam = simpleNameWithGeneric(type) + " msg, GridKernalContext kctx";
 
-        generateUnmarshalMethod(msgParam + ", CacheObjectContext nested, ClassLoader clsLdr", workerFields);
+        generateUnmarshalMethod(msgParam + ", CacheObjectContext cacheObjCtx, ClassLoader clsLdr", workerFields);
 
         if (!nioFields.isEmpty())
             generateUnmarshalNioMethod(msgParam, nioFields);
@@ -925,14 +925,14 @@ public class MessageMarshallerGenerator extends MessageGenerator {
      */
     private String ctxResolutionLine() {
         if (isCacheIdAwareMessage(type))
-            return indentedLine("CacheObjectContext ctx = nested != null ? nested : " +
+            return indentedLine("CacheObjectContext ctx = cacheObjCtx != null ? cacheObjCtx : " +
                     "kctx.cache().context().cacheObjectContext(msg.cacheId());");
         else if (isCacheGroupIdMessage(type))
-            return indentedLine("CacheObjectContext ctx = nested != null ? nested : " +
+            return indentedLine("CacheObjectContext ctx = cacheObjCtx != null ? cacheObjCtx : " +
                     "kctx.cache().cacheGroup(msg.groupId()) == null ? null : " +
                     "kctx.cache().cacheGroup(msg.groupId()).cacheObjectContext();");
         else
-            return indentedLine("CacheObjectContext ctx = nested;");
+            return indentedLine("CacheObjectContext ctx = cacheObjCtx;");
     }
 
     /** Returns {@code true} if any field requires {@code ctx} in generated marshal/unmarshal code. */

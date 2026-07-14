@@ -50,8 +50,8 @@ import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
  */
 public class TestMapMessageMarshaller implements MessageMarshaller<TestMapMessage> {
     /** */
-    @Override public void marshal(TestMapMessage msg, GridKernalContext kctx, CacheObjectContext nested) throws IgniteCheckedException {
-        CacheObjectContext ctx = nested;
+    @Override public void marshal(TestMapMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
+        CacheObjectContext ctx = cacheObjCtx;
 
         if (msg.gridCacheObjectMap != null) {
             for (KeyCacheObject e : ((Collection<? extends KeyCacheObject>)msg.gridCacheObjectMap.keySet())) {
@@ -74,8 +74,8 @@ public class TestMapMessageMarshaller implements MessageMarshaller<TestMapMessag
     }
 
     /** */
-    @Override public void unmarshal(TestMapMessage msg, GridKernalContext kctx, CacheObjectContext nested, ClassLoader clsLdr) throws IgniteCheckedException {
-        CacheObjectContext ctx = nested;
+    @Override public void unmarshal(TestMapMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
+        CacheObjectContext ctx = cacheObjCtx;
 
         if (msg.gridCacheObjectMap != null) {
             for (KeyCacheObject e : ((Collection<? extends KeyCacheObject>)msg.gridCacheObjectMap.keySet())) {

@@ -32,8 +32,8 @@ import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
  */
 public class TestMessageMarshaller implements MessageMarshaller<TestMessage> {
     /** */
-    @Override public void marshal(TestMessage msg, GridKernalContext kctx, CacheObjectContext nested) throws IgniteCheckedException {
-        CacheObjectContext ctx = nested;
+    @Override public void marshal(TestMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
+        CacheObjectContext ctx = cacheObjCtx;
 
         if (msg.keyCacheObject != null && ctx != null)
             msg.keyCacheObject.marshal(ctx);
@@ -46,8 +46,8 @@ public class TestMessageMarshaller implements MessageMarshaller<TestMessage> {
     }
 
     /** */
-    @Override public void unmarshal(TestMessage msg, GridKernalContext kctx, CacheObjectContext nested, ClassLoader clsLdr) throws IgniteCheckedException {
-        CacheObjectContext ctx = nested;
+    @Override public void unmarshal(TestMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
+        CacheObjectContext ctx = cacheObjCtx;
 
         if (msg.keyCacheObject != null && ctx != null)
             msg.keyCacheObject.unmarshal(ctx, clsLdr);
