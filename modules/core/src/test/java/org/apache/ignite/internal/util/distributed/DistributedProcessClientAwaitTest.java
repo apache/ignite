@@ -204,7 +204,7 @@ public class DistributedProcessClientAwaitTest extends GridCommonAbstractTest {
             super(
                 ctx,
                 TEST_PROCESS,
-                (req) -> new GridFinishedFuture<>(),
+                (uuid, req) -> new GridFinishedFuture<>(),
                 (uuid, res, err) -> {
                     try {
                         assertEquals(expNodeIdsRes, res.keySet());

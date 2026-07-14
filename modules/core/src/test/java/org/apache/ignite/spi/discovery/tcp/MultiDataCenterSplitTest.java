@@ -338,15 +338,8 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void initializeImpl() {
-            if (impl != null)
-                return;
-
-            super.initializeImpl();
-
-            // In theory, might be a ClientImpl.
-            if (impl instanceof ServerImpl)
-                impl = new ServerImpl(this, DFLT_UTLITY_POOL_SIZE, pingPoolSize);
+        @Override TcpDiscoveryImpl createServerTcpDiscoveryImplementation() {
+            return new ServerImpl(this, DFLT_UTLITY_POOL_SIZE, pingPoolSize);
         }
 
         /** {@inheritDoc} */

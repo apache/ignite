@@ -411,9 +411,10 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
 
     /** {@inheritDoc} */
     @Override public int getOutboundMessagesQueueSize() {
-        GridNioServer<Message> srv = nioSrvWrapper.nio();
+        if (metricsLsnr == null)
+            return 0;
 
-        return srv != null ? srv.outboundMessagesQueueSize() : 0;
+        return metricsLsnr.outboundMessagesQueueSize();
     }
 
     /** {@inheritDoc} */
@@ -616,7 +617,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             ctxInitLatch,
             client,
             igniteExSupplier,
-            new CommunicationListener<Message>() {
+            new CommunicationListener<>() {
                 @Override public void onMessage(UUID nodeId, Message msg, IgniteRunnable msgC) {
                     notifyListener(nodeId, msg, msgC);
                 }
@@ -651,7 +652,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             getWorkersRegistry(ignite),
             ignite instanceof IgniteEx ? ((IgniteEx)ignite).context().metric() : null,
             this::createTcpClient,
-            new CommunicationListenerEx<Message>() {
+            new CommunicationListenerEx<>() {
                 @Override public void onMessage(UUID nodeId, Message msg, IgniteRunnable msgC) {
                     notifyListener(nodeId, msg, msgC);
                 }
@@ -1158,17 +1159,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
                 "ctxInitLatch=" + ctxInitLatch.getCount() +
                 ", stopping=" + stopping +
                 "]";
-    }
-
-    /**
-     * Concatenates the two parameter bytes to form a message type value.
-     *
-     * @param b0 The first byte.
-     * @param b1 The second byte.
-     * @return Message type.
-     */
-    public static short makeMessageType(byte b0, byte b1) {
-        return (short)((b1 & 0xFF) << 8 | b0 & 0xFF);
     }
 
     /**

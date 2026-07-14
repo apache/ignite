@@ -37,7 +37,7 @@ public class TestMessageSerializer implements MessageSerializer<TestMessage> {
     /** */
     private final static MessageArrayType strArrCollDesc = new MessageArrayType(new MessageItemType(MessageCollectionItemType.STRING), String.class);
     /** */
-    private final static MessageArrayType verArrCollDesc = new MessageArrayType(new MessageItemType(MessageCollectionItemType.MSG), GridCacheVersion.class);
+    private final static MessageArrayType verArrCollDesc = new MessageArrayType(new MessageItemType(MessageCollectionItemType.GRID_CACHE_VERSION), GridCacheVersion.class);
 
     /** */
     @Override public boolean writeTo(TestMessage msg, MessageWriter writer) {
@@ -80,7 +80,7 @@ public class TestMessageSerializer implements MessageSerializer<TestMessage> {
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeMessage(msg.ver))
+                if (!writer.writeGridCacheVersion(msg.ver))
                     return false;
 
                 writer.incrementState();
@@ -187,7 +187,7 @@ public class TestMessageSerializer implements MessageSerializer<TestMessage> {
                 reader.incrementState();
 
             case 5:
-                msg.ver = reader.readMessage();
+                msg.ver = reader.readGridCacheVersion();
 
                 if (!reader.isLastRead())
                     return false;
