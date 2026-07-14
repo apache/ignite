@@ -4074,7 +4074,8 @@ public class ZookeeperDiscoveryImpl {
 
         GridByteArrayOutputStream out = new GridByteArrayOutputStream();
 
-        // Buffer coalesces ~1KB ObjectOutputStream blocks into fewer JNI deflate calls.
+        // BufferedOutputStream's 8 KB buffer coalesces JdkMarshaller's ~1 KB ObjectOutputStream
+        // block-data writes into fewer Deflater JNI calls.
         try (BufferedOutputStream zipOut = new BufferedOutputStream(new DeflaterOutputStream(out))) {
             U.marshal(marsh, obj, zipOut);
         }
