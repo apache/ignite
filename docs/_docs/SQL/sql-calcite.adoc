@@ -274,6 +274,61 @@ The Calcite-based SQL engine currently supports the following user-facing functi
 
 |===
 
+==== Window functions
+
+Calcite-based SQL engine supports window functions with the `OVER` clause. Window definitions can use
+`PARTITION BY`, `ORDER BY`, and `ROWS` or `RANGE` frame clauses.
+
+[source,sql]
+----
+SELECT depname, empno, salary,
+       RANK() OVER (PARTITION BY depname ORDER BY salary) AS salary_rank,
+       SUM(salary) OVER (PARTITION BY depname) AS dep_salary
+FROM empsalary;
+----
+
+[cols="1,2,4",opts="stretch,header"]
+|===
+|Name | Syntax | Description
+
+|Aggregate window function
+|`aggregateFunction(...) OVER windowSpecification`
+|Evaluates an aggregate function over the rows in the current window.
+
+|`ROW_NUMBER`
+|`ROW_NUMBER() OVER windowSpecification`
+|Returns the ordinal number of the current row within the window.
+
+|`RANK`
+|`RANK() OVER windowSpecification`
+|Returns the rank of the current row within the window, with gaps after peer rows.
+
+|`DENSE_RANK`
+|`DENSE_RANK() OVER windowSpecification`
+|Returns the rank of the current row within the window, without gaps after peer rows.
+
+|`PERCENT_RANK`
+|`PERCENT_RANK() OVER windowSpecification`
+|Returns the relative rank of the current row within the window.
+
+|`CUME_DIST`
+|`CUME_DIST() OVER windowSpecification`
+|Returns the cumulative distribution of the current row within the window.
+
+|`LAG`
+|`LAG(value[, offset[, default]]) OVER windowSpecification`
+|Returns a value from a preceding row in the window, or the default value when that row does not exist.
+
+|`LEAD`
+|`LEAD(value[, offset[, default]]) OVER windowSpecification`
+|Returns a value from a following row in the window, or the default value when that row does not exist.
+
+|`FIRST_VALUE`
+|`FIRST_VALUE(value) OVER windowSpecification`
+|Returns the first value in the window frame.
+
+|===
+
 ==== String functions and predicates
 
 [cols="1,2,4",opts="stretch,header"]
