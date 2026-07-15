@@ -105,6 +105,38 @@ public class CircularStringBuilderSelfTest extends GridCommonAbstractTest {
         assertEquals("f", circularStrBuilder.substring(0, 6));
     }
 
+    /** Assertions to ensure {@link CircularStringBuilder#substring(int, int)} method works */
+    @Test
+    public void testSubstringWithCharSequenceAppend() {
+        CircularStringBuilder circularStrBuilder = new CircularStringBuilder(5);
+        circularStrBuilder.append("abc".toCharArray(), 0, 3);
+        assertEquals("abc", circularStrBuilder.substring(0, 3));
+        assertEquals("ab", circularStrBuilder.substring(0, 2));
+        assertEquals("bc", circularStrBuilder.substring(1, 3));
+        circularStrBuilder.append("de".toCharArray(), 0, 2);
+        assertEquals("abc", circularStrBuilder.substring(0, 3));
+        assertEquals("ab", circularStrBuilder.substring(0, 2));
+        assertEquals("bc", circularStrBuilder.substring(1, 3));
+        assertEquals("abcde", circularStrBuilder.substring(0, 5));
+        assertEquals("de", circularStrBuilder.substring(3, 5));
+        assertEquals("abc", circularStrBuilder.substring(0, 3));
+        circularStrBuilder.append("fg".toCharArray(), 0, 2);
+        assertEquals("cdefg", circularStrBuilder.substring(2, 7));
+        assertEquals("cdef", circularStrBuilder.substring(2, 6));
+        assertEquals("defg", circularStrBuilder.substring(3, 7));
+        assertEquals("cdefg", circularStrBuilder.substring(0, 7));
+        circularStrBuilder.append("ashi".toCharArray(), 2, 2);
+        assertEquals("efg", circularStrBuilder.substring(0, 7));
+        assertEquals("efghi", circularStrBuilder.substring(0, 9));
+        circularStrBuilder.append("j".toCharArray(), 0, 1);
+        circularStrBuilder.append("j".toCharArray(), 1, 0);
+        assertEquals("fghi", circularStrBuilder.substring(0, 9));
+        assertEquals("fghij", circularStrBuilder.substring(0, 10));
+        assertEquals("ghij", circularStrBuilder.substring(6, 10));
+        assertEquals("", circularStrBuilder.substring(0, 5));
+        assertEquals("f", circularStrBuilder.substring(0, 6));
+    }
+
     /**
      * @param capacity Capacity.
      * @param pattern Pattern to add.
