@@ -19,14 +19,13 @@ package org.apache.ignite.plugin.extensions.communication;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.managers.communication.IgniteMessageFactory;
-import org.apache.ignite.internal.managers.communication.MessageUnmarshalDedup;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Handles {@code marshal}/{@code unmarshal} for a {@link Message} that requires custom serialization.
+ * Handles {@code marshal}/{@code unmarshal} for a {@link Message} that requires custom serialization. Resolve-and-dispatch
+ * entry points that look the marshaller up from the message factory live in {@code MessageMarshalling}.
  *
  * @param <M> A message this marshaller handles.
  */
@@ -71,84 +70,5 @@ public interface MessageMarshaller<M extends Message> {
      * @param kctx Kernal context.
      */
     default void unmarshalNio(M msg, GridKernalContext kctx) throws IgniteCheckedException {
-    }
-
-    /**
-     * Null-safe {@code unmarshalNio} — skips when no marshaller is registered.
-     *
-     * @param <M> A message this marshaller handles.
-     * @param factory Message factory.
-     * @param msg Message to unmarshal.
-     * @param kctx Kernal context.
-     */
-    static <M extends Message> void unmarshalNio(MessageFactory factory, M msg, GridKernalContext kctx)
-        throws IgniteCheckedException {
-        MessageMarshaller<M> m = resolve(factory, msg);
-
-        if (m != null)
-            m.unmarshalNio(msg, kctx);
-    }
-
-    /**
-     * Null-safe {@code marshal} — skips when no marshaller is registered.
-     *
-     * @param <M> A message this marshaller handles.
-     * @param factory Message factory.
-     * @param msg Message to marshal.
-     * @param kctx Kernal context.
-     * @param cacheObjCtx Cache object context of the enclosing message, or {@code null} at the top level.
-     */
-    static <M extends Message> void marshal(MessageFactory factory, M msg, GridKernalContext kctx,
-        @Nullable CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
-        MessageMarshaller<M> m = resolve(factory, msg);
-
-        if (m != null)
-            m.marshal(msg, kctx, cacheObjCtx);
-    }
-
-    /**
-     * Null-safe {@code unmarshal} — skips when no marshaller is registered.
-     *
-     * @param <M> A message this marshaller handles.
-     * @param factory Message factory.
-     * @param msg Message to unmarshal.
-     * @param kctx Kernal context.
-     * @param cacheObjCtx Cache object context of the enclosing message, or {@code null} at the top level.
-     * @param clsLdr Class loader for unmarshalling.
-     */
-    static <M extends Message> void unmarshal(MessageFactory factory, M msg, GridKernalContext kctx,
-        @Nullable CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
-        assert !MessageUnmarshalDedup.ENABLED || MessageUnmarshalDedup.firstUnmarshal(msg, true)
-            : "Finish-unmarshalled more than once: " + msg.getClass().getName();
-
-        MessageMarshaller<M> m = resolve(factory, msg);
-
-        if (m != null)
-            m.unmarshal(msg, kctx, cacheObjCtx, clsLdr);
-    }
-
-    /**
-     * Null-safe {@code unmarshal} (cache-free) — skips when no marshaller is registered.
-     *
-     * @param <M> A message this marshaller handles.
-     * @param factory Message factory.
-     * @param msg Message to unmarshal.
-     * @param kctx Kernal context.
-     */
-    static <M extends Message> void unmarshal(MessageFactory factory, M msg, GridKernalContext kctx)
-        throws IgniteCheckedException {
-        assert !MessageUnmarshalDedup.ENABLED || MessageUnmarshalDedup.firstUnmarshal(msg, false)
-            : "Finish-unmarshalled more than once: " + msg.getClass().getName();
-
-        MessageMarshaller<M> m = resolve(factory, msg);
-
-        if (m != null)
-            m.unmarshal(msg, kctx);
-    }
-
-    /** @return the marshaller registered for {@code msg}'s direct type, or {@code null} if none. */
-    @SuppressWarnings("unchecked")
-    private static <M extends Message> MessageMarshaller<M> resolve(MessageFactory factory, M msg) {
-        return (MessageMarshaller<M>)((IgniteMessageFactory)factory).marshaller(msg.directType());
     }
 }

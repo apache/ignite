@@ -25,6 +25,7 @@ import com.tngtech.archunit.core.domain.properties.HasOwner;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.lang.ArchRule;
+import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
@@ -47,8 +48,8 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
  *     <li>{@link MessageSerializer#readFrom(org.apache.ignite.plugin.extensions.communication.MessageFactory,
  *         org.apache.ignite.plugin.extensions.communication.Message,
  *         org.apache.ignite.plugin.extensions.communication.MessageReader)}</li>
- *     <li>{@link MessageMarshaller#marshal}</li>
- *     <li>{@link MessageMarshaller#unmarshal}</li>
+ *     <li>{@link MessageMarshalling#marshal}</li>
+ *     <li>{@code MessageMarshalling.unmarshal}</li>
  *     <li>static {@code GridCacheMessageDeployer.deploy(factory, msg, ctx)}</li>
  * </ul>
  *
@@ -109,23 +110,24 @@ public class MessageSerializationArchitectureTest {
     /**
      * Instance methods of {@link MessageMarshaller} ({@code marshal}, {@code unmarshal}) must
      * only be called from within classes that themselves implement {@link MessageMarshaller} — i.e. generated
-     * marshallers and hand-written wrappers that delegate to the underlying marshaller.
+     * marshallers and hand-written wrappers that delegate to the underlying marshaller — or the
+     * {@link MessageMarshalling} dispatcher that resolves and calls them.
      *
-     * Everyone else must use the static
-     * {@link MessageMarshaller#marshal} and {@link MessageMarshaller#unmarshal} methods.
+     * Everyone else must use the static {@link MessageMarshalling} entry points.
      */
     @Test
     public void marshallerInstanceMethodsOnlyCalledFromImplementations() {
         ArchRule rule = noClasses()
             .that()
-                // Exclude MessageMarshaller itself and all its implementations (generated + wrappers).
+                // Exclude MessageMarshaller implementations (generated + wrappers) and the MessageMarshalling dispatcher.
                 .areNotAssignableTo(MessageMarshaller.class)
+                .and().areNotAssignableTo(MessageMarshalling.class)
             .should()
                 .callMethodWhere(TO_INSTANCE_METHOD
                         .and(target(HasOwner.Predicates.With.owner(assignableTo(MessageMarshaller.class))))
                 )
-            .because("Use static MessageMarshaller.marshal(factory, ...) and " +
-                "MessageMarshaller.unmarshal(factory, ...) instead of calling instance methods directly.");
+            .because("Use the static MessageMarshalling.marshal(...) / MessageMarshalling.unmarshal(...) entry points " +
+                "instead of calling instance methods directly.");
 
         rule.check(classes);
     }

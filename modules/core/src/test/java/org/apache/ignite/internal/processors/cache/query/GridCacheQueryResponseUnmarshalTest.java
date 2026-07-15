@@ -20,10 +20,10 @@ package org.apache.ignite.internal.processors.cache.query;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -57,13 +57,13 @@ public class GridCacheQueryResponseUnmarshalTest extends GridCommonAbstractTest 
 
         res.data(List.of(new T2<>(key, "row")));
 
-        MessageMarshaller.marshal(kctx.messageFactory(), res, kctx, null);
+        MessageMarshalling.marshal(res, kctx, null);
 
         GridCacheQueryResponse rcvd = new GridCacheQueryResponse(cctx.cacheId(), 0, true, false);
 
         rcvd.dataBytes = res.dataBytes;
 
-        MessageMarshaller.unmarshal(kctx.messageFactory(), rcvd, kctx, null, getClass().getClassLoader());
+        MessageMarshalling.unmarshal(rcvd, kctx, null, getClass().getClassLoader());
 
         Map.Entry<?, ?> row = (Map.Entry<?, ?>)rcvd.data().iterator().next();
 

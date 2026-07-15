@@ -42,6 +42,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.CacheGetFuture;
@@ -93,7 +94,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
@@ -1563,8 +1563,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     log.debug("Set P2P context [senderId=" + nodeId + ", msg=" + cacheMsg + ']');
             }
 
-            MessageMarshaller.unmarshal(cctx.kernalContext().messageFactory(),
-                cacheMsg, cctx.kernalContext(), null, cctx.deploy().globalLoader());
+            MessageMarshalling.unmarshal(cacheMsg, cctx.kernalContext(), null, cctx.deploy().globalLoader());
         }
         catch (IgniteCheckedException e) {
             cacheMsg.onClassError(e);

@@ -266,13 +266,15 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
     /** Cache-free unmarshal of a {@code @NioField} message field on the NIO thread (no cache context available). */
     private List<String> unmarshalNioField(String accessor) {
+        imports.add("org.apache.ignite.internal.managers.communication.MessageMarshalling");
+
         List<String> code = new ArrayList<>();
 
         code.add(indentedLine("if (%s != null)", accessor));
 
         indent++;
 
-        code.add(indentedLine("MessageMarshaller.unmarshal(kctx.messageFactory(), %s, kctx);", accessor));
+        code.add(indentedLine("MessageMarshalling.unmarshal(%s, kctx);", accessor));
 
         indent--;
 
@@ -773,8 +775,10 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         return List.of();
     }
 
-    /** Generates a null-guarded {@code MessageMarshaller.marshal/unmarshal} call. */
+    /** Generates a null-guarded {@code MessageMarshalling.marshal/unmarshal} call. */
     private List<String> marshallMessage(String accessor, MarshalMode mode) {
+        imports.add("org.apache.ignite.internal.managers.communication.MessageMarshalling");
+
         List<String> code = new ArrayList<>();
 
         code.add(indentedLine("if (%s != null)", accessor));
@@ -782,8 +786,8 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         indent++;
 
         code.add(mode == MarshalMode.MARSHAL
-            ? indentedLine("MessageMarshaller.marshal(kctx.messageFactory(), %s, kctx, ctx);", accessor)
-            : indentedLine("MessageMarshaller.unmarshal(kctx.messageFactory(), %s, kctx, ctx, clsLdr);", accessor));
+            ? indentedLine("MessageMarshalling.marshal(%s, kctx, ctx);", accessor)
+            : indentedLine("MessageMarshalling.unmarshal(%s, kctx, ctx, clsLdr);", accessor));
 
         indent--;
 

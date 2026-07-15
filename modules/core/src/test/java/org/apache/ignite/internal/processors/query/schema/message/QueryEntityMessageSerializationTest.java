@@ -35,13 +35,13 @@ import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
+import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
-import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -128,7 +128,7 @@ public class QueryEntityMessageSerializationTest extends GridCommonAbstractTest 
         
         kctx.messageFactory = msgFactory;
 
-        MessageMarshaller.marshal(msgFactory, msg, kctx, null);
+        MessageMarshalling.marshal(msg, kctx, null);
 
         ByteBuffer buf = ByteBuffer.allocate(64 * 1024);
 
@@ -150,7 +150,7 @@ public class QueryEntityMessageSerializationTest extends GridCommonAbstractTest 
         assertEquals("Reads" + ERROR_SUFFIX,
             expReadsWritesCnt, reader.state());
 
-        MessageMarshaller.unmarshal(msgFactory, res, kctx, null, U.gridClassLoader());
+        MessageMarshalling.unmarshal(res, kctx, null, U.gridClassLoader());
 
         return res;
     }

@@ -29,10 +29,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
+import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.IgniteSpiException;
 
@@ -93,7 +93,7 @@ public class DiscoveryMessageParser {
         msgWriter.setBuffer(msgBuf);
 
         try {
-            MessageMarshaller.marshal(msgFactory, m, ctx, null);
+            MessageMarshalling.marshal(m, ctx, null);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to marshal discovery message", e);
@@ -140,7 +140,7 @@ public class DiscoveryMessageParser {
         while (!finished);
 
         try {
-            MessageMarshaller.unmarshal(msgFactory, msg, ctx);
+            MessageMarshalling.unmarshal(msg, ctx);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to unmarshal discovery message", e);

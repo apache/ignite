@@ -128,7 +128,6 @@ import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
-import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -1188,12 +1187,12 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
             byte plc = initMsg.policy();
 
-            MessageMarshaller.unmarshalNio(ctx.messageFactory(), initMsg, ctx);
+            MessageMarshalling.unmarshalNio(initMsg, ctx);
 
             pools.poolForPolicy(plc).execute(new Runnable() {
                 @Override public void run() {
                     try {
-                        MessageMarshaller.unmarshal(ctx.messageFactory(), initMsg, ctx);
+                        MessageMarshalling.unmarshal(initMsg, ctx);
 
                         processOpenedChannel(initMsg.topic(), rmtNodeId, (SessionChannelMessage)initMsg.message(),
                             (SocketChannel)channel);
@@ -1266,7 +1265,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
             // Deliberately below the waitMap gate: replayed delayed messages pass through this method twice,
             // and the NIO-thread unmarshal must run exactly once per message.
-            MessageMarshaller.unmarshalNio(ctx.messageFactory(), msg, ctx);
+            MessageMarshalling.unmarshalNio(msg, ctx);
 
             // If message is P2P, then process in P2P service.
             // This is done to avoid extra waiting and potential deadlocks
@@ -1480,7 +1479,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             return;
 
         try {
-            MessageMarshaller.unmarshal(ctx.messageFactory(), msg.message(), ctx);
+            MessageMarshalling.unmarshal(msg.message(), ctx);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to unmarshal message payload", e);
@@ -1972,7 +1971,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             false
         );
 
-        MessageMarshaller.marshal(ctx.messageFactory(), ioMsg, ctx, null);
+        MessageMarshalling.marshal(ioMsg, ctx, null);
 
         try {
             return ((TcpCommunicationSpi)(CommunicationSpi)getSpi()).openChannel(node, ioMsg);
@@ -2042,7 +2041,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                     ackC.apply(null);
             }
             else {
-                MessageMarshaller.marshal(ctx.messageFactory(), ioMsg, ctx, null);
+                MessageMarshalling.marshal(ioMsg, ctx, null);
 
                 sendMarshalled(node, ioMsg, ackC);
             }
@@ -2060,7 +2059,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
         GridIoMessage ioMsg = createGridIoMessage(topic, msg, plc, ordered, timeout, skipOnTimeout);
 
-        MessageMarshaller.marshal(ctx.messageFactory(), ioMsg, ctx, null);
+        MessageMarshalling.marshal(ioMsg, ctx, null);
 
         return ioMsg;
     }
@@ -2122,7 +2121,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                         if (ioMsg == null) {
                             ioMsg = createGridIoMessage(topic, msg, plc, ordered, timeout, skipOnTimeout);
 
-                            MessageMarshaller.marshal(ctx.messageFactory(), ioMsg, ctx, null);
+                            MessageMarshalling.marshal(ioMsg, ctx, null);
                         }
 
                         sendMarshalled(node, ioMsg, null);

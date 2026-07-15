@@ -21,6 +21,7 @@ import java.lang.String;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.TestMessage;
+import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
@@ -42,7 +43,7 @@ public class TestMessageMarshaller implements MessageMarshaller<TestMessage> {
             msg.cacheObject.marshal(ctx);
 
         if (msg.nioMsg != null)
-            MessageMarshaller.marshal(kctx.messageFactory(), msg.nioMsg, kctx, ctx);
+            MessageMarshalling.marshal(msg.nioMsg, kctx, ctx);
     }
 
     /** */
@@ -59,6 +60,6 @@ public class TestMessageMarshaller implements MessageMarshaller<TestMessage> {
     /** */
     @Override public void unmarshalNio(TestMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
         if (msg.nioMsg != null)
-            MessageMarshaller.unmarshal(kctx.messageFactory(), msg.nioMsg, kctx);
+            MessageMarshalling.unmarshal(msg.nioMsg, kctx);
     }
 }
