@@ -283,8 +283,6 @@ JMХ remote access (running on 1098 port by default) to let external tools like 
 ```
   
 # Development
-See [DEV_GUIDE.md](DEV_GUIDE.md) for writing new ducktests.
-
 ## Preparing development environment
 - Create a virtual environment and activate it using following commands:
 ```
