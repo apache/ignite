@@ -30,12 +30,6 @@ import static org.apache.ignite.internal.util.tostring.NodeRecursionMonitor.OBJE
  * and provides static factory and utility methods for all subclasses.
  */
 abstract class GridToStringNode {
-    /**
-     * A thread-local cache for nodes, used to handle references of
-     * inner toString() calls by mapping temporary markers to actual nodes.
-     */
-    static final ThreadLocal<IdentityHashMap<String, GridToStringNode>> CACHED_NODES = new ThreadLocal<>();
-
     /** Inner builder for calls that return empty string by design */
     static final ThreadLocal<StringBuilder> INNER_BUILDER = new ThreadLocal<>();
 
@@ -80,26 +74,15 @@ abstract class GridToStringNode {
     }
 
     /**
-     * Marks a node in the thread-local cache with a unique, empty string key.
-     * Used to handle references during object graph traversal.
-     * @param node The node to mark.
-     * @return The marker string.
-     */
-    static String markNode(GridToStringNode node) {
-        String result = new String(node.toString());
-        CACHED_NODES.get().put(result, node);
-        return result;
-    }
-
-    /**
      * Save node string representation to inner builder
      * @param node Node - new node to fill inner buffer.
      */
     static String memorizeNode(GridToStringNode node) {
         String result = node.toString();
         if (INNER_BUILDER.get() == null)
-            INNER_BUILDER.set(new StringBuilder());
-        INNER_BUILDER.get().append(result);
+            INNER_BUILDER.set(new StringBuilder(result));
+        else
+            INNER_BUILDER.get().append(result);
         return "";
     }
 
@@ -108,19 +91,10 @@ abstract class GridToStringNode {
      * @return True if the context is new; false otherwise.
      */
     static boolean init() {
-        boolean isNew = CACHED_NODES.get() == null;
+        boolean isNew = OBJECT_REGISTRY.get() == null;
         if (isNew)
-            CACHED_NODES.set(new IdentityHashMap<>());
+            OBJECT_REGISTRY.set(new IdentityHashMap<>());
         return isNew;
-    }
-
-    /**
-     * Creates a node for a null value if the object is null.
-     * @param obj The object to check.
-     * @return An Optional containing a null node if the object is null; otherwise, an empty Optional.
-     */
-    static Optional<GridToStringNode> nullNode(Object obj) {
-        return obj == null ? Optional.of(new GridToStringNullNode(null)) : Optional.empty();
     }
 
     /**
@@ -148,10 +122,9 @@ abstract class GridToStringNode {
     }
 
     /**
-     * Clears the thread-local cache of nodes and recursion prevention storage.
+     * Clears recursion prevention storage and inner calls string builder.
      */
     static void clear() {
-        CACHED_NODES.remove();
         OBJECT_REGISTRY.remove();
         INNER_BUILDER.remove();
     }
@@ -169,13 +142,6 @@ abstract class GridToStringNode {
         sb.initLimit(new SBLengthLimit());
         appendNode(sb);
         return previouslyCalculatedResult = sb.toString();
-    }
-
-    /** Retrieves identity hash map if it was initialized earlier
-     * @return Optional identity hash map that stores catched nodes
-     * */
-    static Optional<IdentityHashMap<String, GridToStringNode>> identities() {
-        return Optional.ofNullable(CACHED_NODES.get());
     }
 
     /**

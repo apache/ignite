@@ -56,10 +56,8 @@ class GridToStringMapNode extends NodeRecursionMonitor {
             Iterator<? extends Map.Entry<?, ?>> iter = map.entrySet().iterator();
             while (iter.hasNext() && this.map.size() != COLLECTION_LIMIT) {
                 Map.Entry<?, ?> entry = iter.next();
-                Object key = entry.getKey();
-                Object val = entry.getValue();
-                GridToStringNode keyNode = getGridToStringNode(null, () -> key, () -> key.getClass());
-                GridToStringNode valNode = getGridToStringNode(null, () -> val, () -> val.getClass());
+                GridToStringNode keyNode = getGridToStringNode(null, entry::getKey);
+                GridToStringNode valNode = getGridToStringNode(null, entry::getValue);
                 this.map.put(keyNode, valNode);
             }
         }

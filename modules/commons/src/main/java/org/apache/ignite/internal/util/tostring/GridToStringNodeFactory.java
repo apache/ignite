@@ -25,16 +25,15 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 import static org.apache.ignite.internal.util.tostring.GridToStringNode.INNER_BUILDER;
-import static org.apache.ignite.internal.util.tostring.GridToStringNode.identities;
 
 /**
  * A factory class responsible for creating appropriate GridToStringNode instances
  * based on the type and value of the object being processed.
  */
-public class GridToStringNodeFactory {
+class GridToStringNodeFactory {
     /**
      * Creates a list of nodes from arrays of property names and values.
-     * Handles sensitive data exclusion and node reuse from a thread-local cache.
+     * Handles sensitive data exclusion.
      * @param addNames Array of property names.
      * @param addVals Array of property values.
      * @param addSens Array of flags indicating if a property is sensitive.
@@ -51,8 +50,8 @@ public class GridToStringNodeFactory {
             if (!includeSensitive && shouldBeExcluded(addVals, addSens, i))
                 continue;
             String propName = String.valueOf(addNames[i]);
-            int idx = i;
-            GridToStringNode node = getGridToStringNode(propName, () -> addVals[idx], () -> addVals[idx].getClass());
+            Object val = addVals[i];
+            GridToStringNode node = getGridToStringNode(propName, () -> val);
             result.add(node);
         }
         return result;
@@ -71,28 +70,28 @@ public class GridToStringNodeFactory {
             return new GridToStringNullNode(childPropName);
         return switch (fd.type()) {
             case GridToStringFieldDescriptor.FIELD_TYPE_OBJECT -> {
-                Supplier<Class<?>> fieldClsSupplier = () -> Optional.of(fd)
+                Class<?> fieldCls = Optional.of(fd)
                         .map(GridToStringFieldDescriptor::fieldClass)
                         .map(Class.class::cast)
                         .orElseGet(obj::getClass);
-                yield getGridToStringNode(childPropName, () -> fd.objectValue(obj), fieldClsSupplier);
+                yield getGridToStringNode(childPropName, () -> fd.objectValue(obj), fieldCls);
             }
             case GridToStringFieldDescriptor.FIELD_TYPE_BYTE ->
-                    getGridToStringNode(childPropName, () -> fd.byteValue(obj), () -> byte.class);
+                    getGridToStringNode(childPropName, () -> fd.byteValue(obj), byte.class);
             case GridToStringFieldDescriptor.FIELD_TYPE_BOOLEAN ->
-                    getGridToStringNode(childPropName, () -> fd.booleanValue(obj), () -> boolean.class);
+                    getGridToStringNode(childPropName, () -> fd.booleanValue(obj), boolean.class);
             case GridToStringFieldDescriptor.FIELD_TYPE_CHAR ->
-                    getGridToStringNode(childPropName, () -> fd.charValue(obj), () -> char.class);
+                    getGridToStringNode(childPropName, () -> fd.charValue(obj), char.class);
             case GridToStringFieldDescriptor.FIELD_TYPE_SHORT ->
-                    getGridToStringNode(childPropName, () -> fd.shortValue(obj), () -> short.class);
+                    getGridToStringNode(childPropName, () -> fd.shortValue(obj), short.class);
             case GridToStringFieldDescriptor.FIELD_TYPE_INT ->
-                    getGridToStringNode(childPropName, () -> fd.intField(obj), () -> int.class);
+                    getGridToStringNode(childPropName, () -> fd.intField(obj), int.class);
             case GridToStringFieldDescriptor.FIELD_TYPE_FLOAT ->
-                    getGridToStringNode(childPropName, () -> fd.floatField(obj), () -> float.class);
+                    getGridToStringNode(childPropName, () -> fd.floatField(obj), float.class);
             case GridToStringFieldDescriptor.FIELD_TYPE_LONG ->
-                    getGridToStringNode(childPropName, () -> fd.longField(obj), () -> long.class);
+                    getGridToStringNode(childPropName, () -> fd.longField(obj), long.class);
             case GridToStringFieldDescriptor.FIELD_TYPE_DOUBLE ->
-                    getGridToStringNode(childPropName, () -> fd.doubleField(obj), () -> double.class);
+                    getGridToStringNode(childPropName, () -> fd.doubleField(obj), double.class);
             default -> throw new IllegalStateException("Unexpected field descriptor type: " + fd.type());
         };
     }
@@ -103,12 +102,12 @@ public class GridToStringNodeFactory {
      * Handles nulls, recursion, primitives, arrays, collections, maps, and standard objects.
      * @param childPropName The property name for the new node.
      * @param valSupplier A supplier to lazily retrieve the value.
-     * @param childFieldClsSupplier A supplier to lazily retrieve the class of the value.
+     * @param childFieldCls A class of the value.
      * @return A new GridToStringNode appropriate for the value.
      */
     static GridToStringNode getGridToStringNode(String childPropName,
                                                 Supplier<Object> valSupplier,
-                                                Supplier<Class<?>> childFieldClsSupplier) {
+                                                Class<?> childFieldCls) {
         Object val = valSupplier.get();
         if (val == null)
             return new GridToStringNullNode(childPropName);
@@ -116,7 +115,6 @@ public class GridToStringNodeFactory {
                 .map(monitor -> GridToStringRecursionTerminationNode.of(monitor, val));
         if (recursionTermination.isPresent())
             return recursionTermination.get();
-        Class<?> childFieldCls = childFieldClsSupplier.get();
         if (childFieldCls.isPrimitive())
             return new GridToStringValueNode(childPropName, val);
         else if (childFieldCls.isArray())
@@ -127,10 +125,28 @@ public class GridToStringNodeFactory {
             return new GridToStringMapNode(childPropName, (Map<?, ?>)val);
 
         String toStrResult = val.toString();
-        GridToStringNode node = recoverOrCreate(childPropName, toStrResult);
+        GridToStringNode node = new GridToStringValueNode(childPropName, toStrResult);
         node.innerBuf = INNER_BUILDER.get();
         INNER_BUILDER.set(null);
         return node;
+    }
+
+    /**
+     * The core factory method that creates a node for a given value.
+     * It infers the runtime class of the value and delegates to the 3-arg overload.
+     * Handles nulls, recursion, arrays, collections, maps, and standard objects.
+     * @param childPropName The property name for the new node.
+     * @param valSupplier A supplier to lazily retrieve the value.
+     * @return A new GridToStringNode appropriate for the value.
+     */
+    static GridToStringNode getGridToStringNode(String childPropName,
+                                                Supplier<Object> valSupplier) {
+        Object val = valSupplier.get();
+        if (val == null)
+            return new GridToStringNullNode(childPropName);
+
+        Class<?> valCls = val.getClass();
+        return getGridToStringNode(childPropName, () -> val, valCls);
     }
 
     /**
@@ -148,24 +164,5 @@ public class GridToStringNodeFactory {
                         .map(cls -> cls.getAnnotation(GridToStringInclude.class))
                         .filter(GridToStringInclude::sensitive)
                         .isPresent();
-    }
-
-    /**
-     * Tries to recover node from cached results or creates new,
-     * if {@link GridToStringBuilder#toString)} is not called to get candidate
-     * @param propName Property name.
-     * @param candidate Marker candidate to recover already computed node.
-     * @return Recovered node or new node with candidate's value
-     */
-    private static GridToStringNode recoverOrCreate(String propName, Object candidate) {
-        return identities()
-                .map(cache -> cache.remove(candidate))
-                .map(node -> {
-                    node.propName = propName;
-                    if (node.previouslyCalculatedResult != null)
-                        node.previouslyCalculatedResult = propName + "=" + node.previouslyCalculatedResult;
-                    return node;
-                })
-                .orElseGet(() -> new GridToStringValueNode(propName, candidate));
     }
 }

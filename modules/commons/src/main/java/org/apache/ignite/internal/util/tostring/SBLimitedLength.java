@@ -166,14 +166,30 @@ public class SBLimitedLength extends GridStringBuilder {
 
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(char[] arr) {
-        String str = new String(arr);
-        return a(str);
+        if (lenLimit.overflowed(this)) {
+            tail.append(arr, 0, arr.length);
+            return this;
+        }
+
+        int curLen = length();
+
+        impl().append(arr);
+
+        return onWrite(curLen);
     }
 
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(char[] arr, int offset, int len) {
-        String str = new String(arr, offset, len);
-        return a(str);
+        if (lenLimit.overflowed(this)) {
+            tail.append(arr, offset, len);
+            return this;
+        }
+
+        int curLen = length();
+
+        impl().append(arr, offset, len);
+
+        return onWrite(curLen);
     }
 
     /** {@inheritDoc} */
@@ -280,10 +296,7 @@ public class SBLimitedLength extends GridStringBuilder {
 
     /** {@inheritDoc} */
     @Override public GridStringBuilder i(int idx, char[] str, int off, int len) {
-        StringBuilder strBuilder = new StringBuilder();
-        for (int i = 0; i < len; i++)
-            strBuilder.append(str[i + off]);
-        return i(idx, strBuilder.toString());
+        return i(idx, new String(str, off, len));
     }
 
     /** {@inheritDoc} */
@@ -298,18 +311,12 @@ public class SBLimitedLength extends GridStringBuilder {
 
     /** {@inheritDoc} */
     @Override public GridStringBuilder i(int dstOff, CharSequence s) {
-        StringBuilder strBuilder = new StringBuilder();
-        for (int i = 0; i < s.length(); i++)
-            strBuilder.append(s.charAt(i));
-        return i(dstOff, strBuilder.toString());
+        return i(dstOff, s.toString());
     }
 
     /** {@inheritDoc} */
     @Override public GridStringBuilder i(int dstOff, CharSequence s, int start, int end) {
-        StringBuilder strBuilder = new StringBuilder();
-        for (int i = start; i < end; i++)
-            strBuilder.append(s.charAt(i));
-        return i(dstOff, strBuilder.toString());
+        return i(dstOff, s.subSequence(start, end).toString());
     }
 
     /** {@inheritDoc} */

@@ -788,8 +788,8 @@ public class GridToStringBuilder {
         try {
             List<GridToStringNode> addNodes =
                     GridToStringNodeFactory.getNodes(addNames, addVals, addSens, addLen);
-            GridToStringNode node = GridToStringNode.getRootNode(obj, cls, addNodes);
-            return isNew ? node.toString() : GridToStringNode.markNode(node);
+            return GridToStringNode.getRootNode(obj, cls, addNodes)
+                    .toString();
         }
         catch (RuntimeException | StackOverflowError throwable) {
             if (isNew)

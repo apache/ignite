@@ -126,6 +126,58 @@ public class CircularStringBuilder {
     }
 
     /**
+     * Appends the specified character array (or a subrange) to this circular buffer.
+     *
+     * @param str  the character array.
+     * @param off  the offset within the array.
+     * @param len  the number of characters to append.
+     * @return  a reference to this object.
+     */
+    public CircularStringBuilder append(char[] str, int off, int len) {
+        if (str == null)
+            return appendNull();
+
+        if (len >= value.length) {
+            // Data bigger or equal to value length
+            System.arraycopy(str, off + len - value.length, value, 0, value.length);
+
+            skipped += len - value.length + finishAt + 1;
+
+            finishAt = value.length - 1;
+
+            full = true;
+        }
+        else {
+            // Data smaller than value length
+            if (value.length - finishAt - 1 < len) {
+                // Data doesn't fit into remaining part of value array
+                int firstPart = value.length - finishAt - 1;
+
+                if (firstPart > 0)
+                    System.arraycopy(str, off, value, finishAt + 1, firstPart);
+
+                System.arraycopy(str, off + firstPart, value, 0, len - firstPart);
+
+                skipped += full ? len : len - firstPart;
+
+                finishAt = finishAt + len - value.length;
+
+                full = true;
+            }
+            else {
+                // Whole data fits into remaining part of value array
+                System.arraycopy(str, off, value, finishAt + 1, len);
+
+                skipped += full ? len : 0;
+
+                finishAt += len;
+            }
+        }
+
+        return this;
+    }
+
+    /**
      * Append StringBuffer
      *
      * @param sb StringBuffer to append.

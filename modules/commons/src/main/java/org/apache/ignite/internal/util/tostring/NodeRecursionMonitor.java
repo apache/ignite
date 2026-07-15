@@ -27,8 +27,7 @@ import org.apache.ignite.internal.util.GridStringBuilder;
  */
 abstract class NodeRecursionMonitor extends GridToStringNode {
     /** Thread-local registry to track objects currently being processed. */
-    static final ThreadLocal<IdentityHashMap<Object, NodeRecursionMonitor>> OBJECT_REGISTRY =
-            ThreadLocal.withInitial(IdentityHashMap::new);
+    static final ThreadLocal<IdentityHashMap<Object, NodeRecursionMonitor>> OBJECT_REGISTRY = new ThreadLocal<>();
 
     /** The object being monitored for recursive references. */
     private final Object obj;
@@ -81,13 +80,5 @@ abstract class NodeRecursionMonitor extends GridToStringNode {
         return Optional.of(OBJECT_REGISTRY)
                 .map(ThreadLocal::get)
                 .map(map -> map.get(obj));
-    }
-
-    /**
-     * Checks if the thread-local registry is empty.
-     * @return True if no objects are currently being processed; false otherwise.
-     */
-    static boolean isEmpty() {
-        return OBJECT_REGISTRY.get().isEmpty();
     }
 }

@@ -55,8 +55,7 @@ class GridToStringCollectionNode extends NodeRecursionMonitor {
             skipRule = new LongSequenceSkipRule(col::size);
             Iterator<?> iter = col.iterator();
             while (iter.hasNext() && this.col.size() != COLLECTION_LIMIT) {
-                Object obj = iter.next();
-                GridToStringNode node = getGridToStringNode(null, () -> obj, () -> obj.getClass());
+                GridToStringNode node = getGridToStringNode(null, iter::next);
                 this.col.add(node);
             }
         }
