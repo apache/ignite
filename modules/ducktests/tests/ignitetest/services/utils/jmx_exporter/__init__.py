@@ -10,7 +10,8 @@ Works for both Docker and remote nodes:
 """
 
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from importlib.resources import files
 
 JMX_EXPORTER_JAR_PATH = "/opt/jmx_exporter.jar"
 
@@ -61,19 +62,10 @@ def is_jmx_exporter_enabled(globals_cfg: dict = None) -> bool:
 def get_jmx_exporter_yml_content() -> str:
     """
     Return the bundled jmx_exporter.yml content as a string.
-
-    Uses importlib.resources (Python 3.11+) with a direct file read fallback.
     """
-    try:
-        from importlib.resources import files
-        res = files(__package__).joinpath("jmx_exporter.yml")
-        return res.read_text(encoding="utf-8")
-    except (ModuleNotFoundError, AttributeError, FileNotFoundError):
-        # Fallback: read from the package directory directly
-        pkg_dir = os.path.dirname(os.path.abspath(__file__))
-        yml_path = os.path.join(pkg_dir, "jmx_exporter.yml")
-        with open(yml_path, "r", encoding="utf-8") as f:
-            return f.read()
+    file = (files(__package__)
+           .joinpath("jmx_exporter.yml"))
+    return file.read_text(encoding="utf-8")
 
 
 def jmx_agent_jvm_opt(port: int = 8083, config_path: str = None) -> str:
