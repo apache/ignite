@@ -102,6 +102,8 @@ Always clean up and tear down active background nodes after your test runs finis
 
 ## Local Development & Code Checks
 
+See [DEV_GUIDE.md](DEV_GUIDE.md) for writing new ducktests.
+
 To modify framework logic or contribute features locally without depending on Docker container environments, isolate your development runtime dependencies.
 
 ### 1. Activate the Local Environment
