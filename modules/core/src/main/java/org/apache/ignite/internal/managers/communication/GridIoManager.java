@@ -1187,6 +1187,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
             byte plc = initMsg.policy();
 
+            // Two-stage unmarshal: the routing header (@NioField) is restored here on the NIO thread so the message can
+            // be dispatched, then its full payload is restored below on a pool thread. Not a duplicate — disjoint fields.
             MessageMarshalling.unmarshalNio(initMsg, ctx);
 
             pools.poolForPolicy(plc).execute(new Runnable() {
@@ -1263,8 +1265,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                 }
             }
 
-            // Deliberately below the waitMap gate: replayed delayed messages pass through this method twice,
-            // and the NIO-thread unmarshal must run exactly once per message.
+            // Kept after the delayed-message gate above: a message held back and later replayed enters this method a
+            // second time, and the NIO-thread unmarshal of its routing header must happen once, on the replay only.
             MessageMarshalling.unmarshalNio(msg, ctx);
 
             // If message is P2P, then process in P2P service.
@@ -1474,7 +1476,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
     /** */
     private void unmarshalPayload(GridIoMessage msg) {
-        // Unmarshalled by GridCacheIoManager with the deployment loader; the loader here can't see its peer classes.
+        // Cache messages are unmarshalled later by GridCacheIoManager.unmarshall, which uses the peer-deployment class
+        // loader (GridCacheDeploymentManager#globalLoader). Here the generic pass only has the configuration loader,
+        // which can't see peer-loaded classes, so it must not unmarshal them.
         if (msg.message() instanceof GridCacheMessage)
             return;
 
@@ -2061,6 +2065,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
         MessageMarshalling.marshal(ioMsg, ctx, null);
 
+        ioMsg.markPrepared();
+
         return ioMsg;
     }
 
@@ -2070,6 +2076,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
      */
     public void sendPrepared(ClusterNode node, GridIoMessage ioMsg) throws IgniteCheckedException {
         assert !locNodeId.equals(node.id()) : node;
+        assert ioMsg.prepared() : "Message must be prepared via prepare() before sendPrepared(): " + ioMsg;
 
         try (TraceSurroundings ignored = support(null)) {
             sendMarshalled(node, ioMsg, null);
