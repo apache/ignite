@@ -24,7 +24,6 @@ class CrossNetworkGroupConfiguration:
     """
     delay: Optional[str] = None   # tcset time expression, e.g. "100ms"
     loss: Optional[float] = None  # fraction in [0.0, 1.0], e.g. 0.1 (10%)
-    rate: str = "1gbit"           # Default to high-speed interface
 
     def __post_init__(self):
         if self.loss is not None and not 0.0 <= self.loss <= 1.0:

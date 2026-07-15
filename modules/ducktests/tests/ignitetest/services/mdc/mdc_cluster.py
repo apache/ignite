@@ -115,7 +115,8 @@ class MdcCluster:
         self.srv_per_dc = _per_dc(srv_per_dc)
 
         self.servers: Dict[str, IgniteService] = {
-            dc: IgniteService(self.test_context, self.ignite_config, num_nodes=num, jvm_opts=dc_jvm_opts(dc), startup_timeout_sec=IGNITE_STARTUP_TIMEOUT_SEC)
+            dc: IgniteService(self.test_context, self.ignite_config, num_nodes=num, jvm_opts=dc_jvm_opts(dc),
+                              startup_timeout_sec=IGNITE_STARTUP_TIMEOUT_SEC)
             for dc, num in self.srv_per_dc.items() if num > 0}
 
         self.runners: Dict[str, List[IgniteApplicationService]] = {
@@ -444,7 +445,8 @@ def cross_dc_network(logger, mdc: MdcCluster, delay_ms: Optional[int] = None,
     return NetworkGroupManager(logger, store, mdc.network_registry())
 
 
-def assert_cross_dc_distribution_by_attribute(distribution, dc_attr, expected_dcs, owning_only=True, copies_per_dc=None):
+def assert_cross_dc_distribution_by_attribute(distribution, dc_attr, expected_dcs, owning_only=True,
+                                              copies_per_dc=None):
     """
     Asserts that every partition of every cache group has at least one copy in every DC,
     using a node attribute (requested via --user-attributes) as the DC marker.

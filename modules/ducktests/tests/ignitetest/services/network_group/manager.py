@@ -52,7 +52,7 @@ class NetworkGroupManager:
     Deploys and tears down traffic-control rules between logical node groups,
     and toggles full network partitions between them at test time.
 
-    Baseline impairments (delay/loss/rate) are deployed once via tcset.
+    Baseline impairments (delay/loss) are deployed once via tcset.
     Partitions are layered on top as per-pair iptables DROP chains. The netem
     rules are never touched by a partition, so healing is a pure chain flush
     that automatically restores the originally deployed impairments.

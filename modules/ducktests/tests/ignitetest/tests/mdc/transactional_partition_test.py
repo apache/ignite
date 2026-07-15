@@ -75,7 +75,8 @@ class MdcTransactionalPartitionTest(IgniteTest):
         cache exception the cross-DC partition triggers; afterwards no transaction is left
         hanging on either half-ring and the server logs are clean.
         """
-        mdc = MdcCluster(self, ignite_version, srv_per_dc=2, runners_per_dc=1, loaders_per_dc=1, network_timeout=20_000, tcp_connect_timeout=10_000)
+        mdc = MdcCluster(self, ignite_version, srv_per_dc=2, runners_per_dc=1, loaders_per_dc=1,
+                         network_timeout=20_000, tcp_connect_timeout=10_000)
 
         with cross_dc_network(self.logger, mdc, delay_ms=cross_dc_latency_ms) as net:
             mdc.start_servers()
@@ -83,7 +84,8 @@ class MdcTransactionalPartitionTest(IgniteTest):
             # Continuous single-threaded implicit-transaction insert load from the main DC.
             # It stops on the very first exception (stopOnError) instead of failing the app,
             # recording how many inserts had succeeded up to that point.
-            for dc, offset_from, to in [(DC_1, LOAD_KEY_FROM_DC_1, LOAD_KEY_TO_DC_1), (DC_2, LOAD_KEY_FROM_DC_2, LOAD_KEY_TO_DC_2)]:
+            for dc, offset_from, to in [(DC_1, LOAD_KEY_FROM_DC_1, LOAD_KEY_TO_DC_1),
+                                        (DC_2, LOAD_KEY_FROM_DC_2, LOAD_KEY_TO_DC_2)]:
                 mdc.start_loader(dc, {
                     "mode": "TX_PUT",
                     "cacheName": CACHE_NAME,

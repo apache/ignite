@@ -56,7 +56,8 @@ class MdcPartitionResilienceTest(IgniteTest):
         (DC1 active, DC2 read-only) -> all data readable everywhere -> heal -> DC2 rejoins
         via restart -> writes restored everywhere, distribution and consistency verified.
         """
-        mdc = MdcCluster(self, ignite_version, srv_per_dc=5, runners_per_dc=1, network_timeout=20_000, tcp_connect_timeout=10_000)
+        mdc = MdcCluster(self, ignite_version, srv_per_dc=5, runners_per_dc=1,
+                         network_timeout=20_000, tcp_connect_timeout=10_000)
 
         with cross_dc_network(self.logger, mdc, delay_ms=cross_dc_latency_ms) as net:
             mdc.start_servers()
@@ -191,8 +192,10 @@ class MdcPartitionResilienceTest(IgniteTest):
                 self.logger.info(f"Background GET load [dc={dc}, ops={ops}, errs={errs}, maxStallMs={max_stall}]")
 
                 assert ops > 0, f"Background get load performed no operations [dc={dc}]"
-                assert errs == 0, f"Background get load errors exceed the boundary tolerance [dc={dc}, ops={ops}, errs={errs}]"
-                assert max_stall < BG_MAX_STALL_MS, f"Background get load stalled for too long [dc={dc}, maxStallMs={max_stall}]"
+                assert errs == 0, \
+                    f"Background get load errors exceed the boundary tolerance [dc={dc}, ops={ops}, errs={errs}]"
+                assert max_stall < BG_MAX_STALL_MS, \
+                    f"Background get load stalled for too long [dc={dc}, maxStallMs={max_stall}]"
 
             mdc.check_data(DC_1, CACHE_NAME, 0, 200)
             mdc.check_data(DC_2, CACHE_NAME, 0, 200)

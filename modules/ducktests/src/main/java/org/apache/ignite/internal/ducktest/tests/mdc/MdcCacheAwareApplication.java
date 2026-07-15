@@ -1,7 +1,25 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.ducktest.tests.mdc;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
@@ -149,17 +167,34 @@ public abstract class MdcCacheAwareApplication extends IgniteAwareApplication {
         return IgniteSystemProperties.getString(IGNITE_DATA_CENTER_ID);
     }
 
-    /** */
+    /**
+     * Parses an optional enum-valued field. A missing, null or unrecognized value falls back
+     * to {@code dfltVal}.
+     */
     protected static <E extends Enum<E>> E getEnum(JsonNode jNode, String fieldName, E dfltVal) {
         JsonNode field = jNode.path(fieldName);
 
         if (field.isMissingNode() || field.isNull())
             return dfltVal;
+
         try {
-            return Enum.valueOf(dfltVal.getDeclaringClass(), field.asText().toUpperCase());
+            return Enum.valueOf(dfltVal.getDeclaringClass(), field.asText().toUpperCase(Locale.ROOT));
         }
         catch (IllegalArgumentException e) {
-            return dfltVal; // Fallback if string doesn't match any enum constant
+            return dfltVal; // Fallback if string doesn't match any enum constant.
         }
+    }
+
+    /**
+     * Parses a required enum-valued field. Throws if the field is missing, null or not a valid
+     * constant of {@code cls} (case-insensitively) - a typo must fail the run, not pick a default.
+     */
+    protected static <E extends Enum<E>> E getEnum(JsonNode jNode, String fieldName, Class<E> cls) {
+        JsonNode field = jNode.path(fieldName);
+
+        if (field.isMissingNode() || field.isNull())
+            throw new IllegalArgumentException("Missing required enum field '" + fieldName + "'");
+
+        return Enum.valueOf(cls, field.asText().toUpperCase(Locale.ROOT));
     }
 }
