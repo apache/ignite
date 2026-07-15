@@ -30,8 +30,8 @@ class JmxExporterParams:
             }
         }
     """
-    enabled: bool = True
-    port: int = 8083
+    enabled: bool
+    port: int
 
 
 def get_jmx_exporter_params(globals_cfg: dict = None) -> JmxExporterParams:
@@ -43,10 +43,10 @@ def get_jmx_exporter_params(globals_cfg: dict = None) -> JmxExporterParams:
 
     cfg = globals_cfg.get("jmx_exporter", {})
     if not isinstance(cfg, dict):
-        return JmxExporterParams()
+        return JmxExporterParams(enabled=True, port=8083)
 
     return JmxExporterParams(
-        enabled=bool(cfg.get("enabled", False)),
+        enabled=bool(cfg.get("enabled", True)),
         port=int(cfg.get("port", 8083)),
     )
 
