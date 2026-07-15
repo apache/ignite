@@ -25,31 +25,27 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 
 /**
- * Detects a {@link MarshallableMessage} instance being finish-unmarshalled more than once within the same pass
- * (cache-aware or cache-free) — a class-loader or receive-path bug. The two passes over one message (e.g. the
- * generic {@code GridIoManager} pass plus a subsystem's cache-aware pass) are legitimate and tracked separately.
+ * Detects a {@link MarshallableMessage} instance being finish-unmarshalled twice within the same pass — a class-loader
+ * or receive-path bug. The cache-free and cache-aware passes over one message are both legitimate and tracked apart.
  * Gated by {@link #ENABLED}, so it runs only under tests and is folded away in production.
- *
- * @see MessageMarshaller
  */
-public class MessageUnmarshalDedup {
+public class MessageUnmarshalOnceCheck {
     /**
      * When {@code true}, the no-double-unmarshal check runs. {@code static final} so the JIT folds the guard away
      * in production (even with assertions on); enabled only by tests via {@code IGNITE_MESSAGE_UNMARSHAL_ONCE_CHECK}.
      */
     public static final boolean ENABLED = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_MESSAGE_UNMARSHAL_ONCE_CHECK);
 
-    /** Queue of collected referents, drained on each call to evict stale {@link IdRef}s from {@link #SEEN}. */
-    private static final ReferenceQueue<Message> Q = new ReferenceQueue<>();
+    /** Cleared referents, drained on each call to evict their stale {@link IdRef}s from {@link #seen}. */
+    private static final ReferenceQueue<Message> refQueue = new ReferenceQueue<>();
 
     /** Finish-unmarshalled instances, held weakly and keyed by identity so they vanish with the message. */
-    private static final Set<IdRef> SEEN = ConcurrentHashMap.newKeySet();
+    private static final Set<IdRef> seen = ConcurrentHashMap.newKeySet();
 
     /** */
-    private MessageUnmarshalDedup() {
+    private MessageUnmarshalOnceCheck() {
         // No-op.
     }
 
@@ -64,26 +60,27 @@ public class MessageUnmarshalDedup {
         if (!(msg instanceof MarshallableMessage))
             return true;
 
-        for (Reference<? extends Message> r; (r = Q.poll()) != null; )
-            SEEN.remove(r);
+        // Static set: evict entries whose message was already collected, so it doesn't grow across the suite.
+        for (Reference<? extends Message> r; (r = refQueue.poll()) != null; )
+            seen.remove(r);
 
-        return SEEN.add(new IdRef(msg, cacheMode));
+        return seen.add(new IdRef(msg, cacheMode));
     }
 
-    /** Weak reference to a message keyed by (identity, pass), so distinct messages and the two passes stay distinct. */
+    /** Weak reference to a message keyed by identity and pass, so distinct messages and the two passes stay distinct. */
     private static final class IdRef extends WeakReference<Message> {
-        /** Referent identity hash folded with the pass, captured up front since the referent may be cleared later. */
+        /** Referent {@code identityHashCode} folded with {@code cacheMode}, captured up front as the referent may be cleared later. */
         private final int hash;
 
-        /** Unmarshal pass: cache-aware vs cache-free. Keeps the two legitimate passes over one message distinct. */
+        /** Unmarshal pass: {@code true} = cache-aware, {@code false} = cache-free. */
         private final boolean cacheMode;
 
         /**
          * @param msg Tracked message.
          * @param cacheMode Unmarshal pass.
          */
-        IdRef(Message msg, boolean cacheMode) {
-            super(msg, Q);
+        private IdRef(Message msg, boolean cacheMode) {
+            super(msg, refQueue);
 
             this.cacheMode = cacheMode;
             hash = 31 * System.identityHashCode(msg) + (cacheMode ? 1 : 0);
@@ -99,11 +96,10 @@ public class MessageUnmarshalDedup {
             if (this == o)
                 return true;
 
-            if (!(o instanceof IdRef))
+            if (!(o instanceof IdRef ref))
                 return false;
 
-            IdRef ref = (IdRef)o;
-
+            // Read the referent once: a concurrent GC could otherwise clear it between the null check and the compare.
             Message m = get();
 
             return m != null && m == ref.get() && cacheMode == ref.cacheMode;

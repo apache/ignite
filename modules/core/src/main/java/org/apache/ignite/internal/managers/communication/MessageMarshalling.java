@@ -59,7 +59,7 @@ public final class MessageMarshalling {
      */
     public static <M extends Message> void unmarshal(M msg, GridKernalContext kctx, @Nullable CacheObjectContext cacheObjCtx,
         ClassLoader clsLdr) throws IgniteCheckedException {
-        assert !MessageUnmarshalDedup.ENABLED || MessageUnmarshalDedup.firstUnmarshal(msg, true)
+        assert !MessageUnmarshalOnceCheck.ENABLED || MessageUnmarshalOnceCheck.firstUnmarshal(msg, true)
             : "Finish-unmarshalled more than once: " + msg.getClass().getName();
 
         MessageMarshaller<M> m = resolve(kctx, msg);
@@ -75,7 +75,7 @@ public final class MessageMarshalling {
      * @param kctx Kernal context.
      */
     public static <M extends Message> void unmarshal(M msg, GridKernalContext kctx) throws IgniteCheckedException {
-        assert !MessageUnmarshalDedup.ENABLED || MessageUnmarshalDedup.firstUnmarshal(msg, false)
+        assert !MessageUnmarshalOnceCheck.ENABLED || MessageUnmarshalOnceCheck.firstUnmarshal(msg, false)
             : "Finish-unmarshalled more than once: " + msg.getClass().getName();
 
         MessageMarshaller<M> m = resolve(kctx, msg);
