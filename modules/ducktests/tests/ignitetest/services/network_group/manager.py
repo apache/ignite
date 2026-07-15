@@ -266,7 +266,7 @@ class NetworkGroupManager:
         """
         self.logger.debug(f"Network State Overview: [START][{log_tag}]")
 
-        node_to_status_map = {}
+        node_statuses = []
 
         for group, services in self.network_group_registry.items():
             for svc in services:
@@ -285,12 +285,12 @@ class NetworkGroupManager:
                     partition_str = self._format_partition_drops(
                         self._parse_partition_drops(iptables_lines))
 
-                    node_status = f"[{group:<4}] {svc.who_am_i(node):<45}[{node_ip}] : " \
-                                  f"{constraints}{targets_str}{partition_str}"
+                    node_statuses.append(f"[{group:<4}] {svc.who_am_i(node):<45}[{node_ip}] : "
+                                         f"{constraints}{targets_str}{partition_str}")
 
-                    node_to_status_map.update({id(node): node_status})
-
-        for node_id, node_status in node_to_status_map.items():
+        # The per-node SSH probes above flood the debug log with their own command output.
+        # Collect first, print contiguously after: the overview must stay readable as one block.
+        for node_status in node_statuses:
             self.logger.debug(node_status)
 
         self.logger.debug(f"Network State Overview: [END][{log_tag}]")

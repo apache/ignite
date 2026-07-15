@@ -32,13 +32,14 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
 import static org.apache.ignite.internal.ducktest.utils.Utils.fmtMs;
+import static org.apache.ignite.internal.ducktest.utils.Utils.getEnum;
 import static org.apache.ignite.internal.ducktest.utils.Utils.timed;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Universal MDC load application. Runs a single-threaded synchronous load of the
- * requested {@link Mode} either for a fixed number of iterations (a "burst") or until
+ * requested {@link LoadMode} either for a fixed number of iterations (a "burst") or until
  * externally terminated (a "background" load spanning several test phases, e.g. a
  * network partition and its healing).
  * <p>
@@ -71,33 +72,36 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * </ul>
  */
 public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
-    /** Load modes. */
-    private enum Mode {
-        /** Cache API reads with value verification. */
-        GET,
-
-        /** Cache API writes. */
-        PUT,
-
-        /** Transactional cache API writes (requires a TRANSACTIONAL cache). */
-        TX_PUT,
-
-        /** SQL reads with value verification (requires an SQL-enabled cache). */
-        SQL_SELECT,
-
-        /** SQL DML writes (requires an SQL-enabled cache). */
-        SQL_PUT
-    }
-
     /** */
     public static final TransactionConcurrency DFLT_TX_CONCURRENCY = PESSIMISTIC;
 
     /** */
     public static final TransactionIsolation DFLT_TX_ISOLATION = REPEATABLE_READ;
 
+    /** Cache for the cache API modes ({@code null} in SQL modes). */
+    private IgniteCache<Integer, IndexedDataRecord> cache;
+
+    /** Cache for the SQL modes ({@code null} in cache API modes). */
+    private IgniteCache<Integer, Integer> sqlCache;
+
+    /** Compiled DML statement for {@link LoadMode#SQL_PUT}. */
+    private String mergeSql;
+
+    /** Compiled query for {@link LoadMode#SQL_SELECT}. */
+    private String selectSql;
+
+    /** Latency of successful operations. */
+    private final OpStats stats = new OpStats();
+
+    /** */
+    private TransactionConcurrency txConcurrency;
+
+    /** */
+    private TransactionIsolation txIsolation;
+
     /** {@inheritDoc} */
     @Override public void run(JsonNode jNode) throws Exception {
-        Mode mode = getEnum(jNode, "mode", Mode.class);
+        LoadMode mode = getEnum(jNode, "mode", LoadMode.class);
 
         String cacheName = jNode.path("cacheName").asText(DFLT_CACHE_NAME);
         boolean createCache = jNode.path("createCache").asBoolean(false);
@@ -114,29 +118,19 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
 
         String pfx = jNode.path("resultPrefix").asText("");
 
-        TransactionConcurrency txConcurrency = getEnum(jNode, "txConcurrency", DFLT_TX_CONCURRENCY);
-        TransactionIsolation txIsolation = getEnum(jNode, "txIsolation", DFLT_TX_ISOLATION);
+        txConcurrency = getEnum(jNode, "txConcurrency", DFLT_TX_CONCURRENCY);
+        txIsolation = getEnum(jNode, "txIsolation", DFLT_TX_ISOLATION);
 
         markInitialized();
         waitForActivation();
 
-        boolean sqlMode = mode == Mode.SQL_SELECT || mode == Mode.SQL_PUT;
-        boolean writeMode = mode == Mode.PUT || mode == Mode.TX_PUT || mode == Mode.SQL_PUT;
-
-        IgniteCache<Integer, IndexedDataRecord> cache0 = null;
-        IgniteCache<Integer, Integer> sqlCache0 = null;
-
-        if (sqlMode)
-            sqlCache0 = createCache ? mdcSqlCache(jNode) : ignite.cache(cacheName);
+        if (mode.isSql())
+            sqlCache = createCache ? mdcSqlCache(jNode) : ignite.cache(cacheName);
         else
-            cache0 = createCache ? mdcCache(jNode) : ignite.cache(cacheName);
+            cache = createCache ? mdcCache(jNode) : ignite.cache(cacheName);
 
-        // Effectively-final copies for use inside timed lambdas.
-        IgniteCache<Integer, IndexedDataRecord> cache = cache0;
-        IgniteCache<Integer, Integer> sqlCache = sqlCache0;
-
-        String mergeSql = String.format("MERGE INTO \"%s\".%s(_KEY, _VAL) VALUES(?, ?)", cacheName, SQL_TABLE);
-        String selectSql = String.format("SELECT _VAL FROM \"%s\".%s WHERE _KEY = ?", cacheName, SQL_TABLE);
+        mergeSql = String.format("MERGE INTO \"%s\".%s(_KEY, _VAL) VALUES(?, ?)", cacheName, SQL_TABLE);
+        selectSql = String.format("SELECT _VAL FROM \"%s\".%s WHERE _KEY = ?", cacheName, SQL_TABLE);
 
         log.info("MDC load started [dc=" + dcId() + ", mode=" + mode + ", cache=" + cacheName +
             ", keyFrom=" + keyFrom + ", keyTo=" + keyTo + ", iterations=" + iterations +
@@ -147,92 +141,23 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
 
         boolean stoppedOnError = false;
 
-        OpStats stats = new OpStats();
-
         long maxStallMs = 0;
 
         long startTs = System.currentTimeMillis();
         long lastOkTs = startTs;
 
-        int key0 = keyFrom;
+        int key = keyFrom;
 
         while (!terminated() && (iterations == 0 || opsCnt + errCnt < iterations)) {
-            int key = key0;
-
             boolean ok;
 
             try {
-                switch (mode) {
-                    case GET: {
-                        IndexedDataRecord val = timed(stats, () -> cache.get(key));
-
-                        ok = val != null && val.equals(new IndexedDataRecord(key));
-
-                        if (!ok)
-                            log.error("Read entry is missed or corrupted [dc=" + dcId() + ", key=" + key +
-                                ", val=" + val + "]");
-
-                        break;
-                    }
-
-                    case PUT: {
-                        IndexedDataRecord val = new IndexedDataRecord(key);
-
-                        timed(stats, () -> cache.put(key, val));
-
-                        ok = true;
-
-                        break;
-                    }
-
-                    case TX_PUT: {
-                        IndexedDataRecord val = new IndexedDataRecord(key);
-
-                        timed(stats, () -> {
-                            try (Transaction tx = ignite.transactions().txStart(txConcurrency, txIsolation)) {
-                                cache.put(key, val);
-
-                                tx.commit();
-                            }
-                        });
-
-                        ok = true;
-
-                        break;
-                    }
-
-                    case SQL_PUT: {
-                        SqlFieldsQuery qry = new SqlFieldsQuery(mergeSql).setArgs(key, key);
-
-                        timed(stats, () -> sqlCache.query(qry).getAll());
-
-                        ok = true;
-
-                        break;
-                    }
-
-                    case SQL_SELECT: {
-                        SqlFieldsQuery qry = new SqlFieldsQuery(selectSql).setArgs(key);
-
-                        List<List<?>> rows = timed(stats, () -> sqlCache.query(qry).getAll());
-
-                        ok = !rows.isEmpty() && Objects.equals(rows.get(0).get(0), key);
-
-                        if (!ok)
-                            log.error("SQL row is missed or corrupted [dc=" + dcId() + ", key=" + key +
-                                ", rows=" + rows + "]");
-
-                        break;
-                    }
-
-                    default:
-                        throw new IllegalArgumentException("Unknown mode: " + mode);
-                }
+                ok = doOperation(mode, key);
             }
             catch (CacheException | IgniteException e) {
                 ok = false;
 
-                if (writeMode && !expectAdmissible)
+                if (mode.isWrite() && !expectAdmissible)
                     log.info("Write rejected as expected [dc=" + dcId() + ", key=" + key +
                         ", msg=" + e.getMessage() + "]");
                 else if (stopOnError) {
@@ -265,11 +190,11 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
 
             // Writes advance on success only, so [keyFrom, keyFrom + opsCnt) is guaranteed written.
             // The inadmissible-probe mode advances always to probe distinct keys. Reads cycle the range.
-            if (ok || (writeMode && !expectAdmissible)) {
-                key0++;
+            if (ok || (mode.isWrite() && !expectAdmissible)) {
+                key++;
 
-                if (key0 >= keyTo)
-                    key0 = keyFrom;
+                if (key >= keyTo)
+                    key = keyFrom;
             }
 
             if (opPauseMs > 0)
@@ -278,7 +203,7 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
 
         long durationMs = System.currentTimeMillis() - startTs;
 
-        if (writeMode && !expectAdmissible && opsCnt > 0) {
+        if (mode.isWrite() && !expectAdmissible && opsCnt > 0) {
             throw new IllegalStateException("Write load is admissible while expected to be inadmissible [dc=" +
                 dcId() + ", mode=" + mode + ", succeeded=" + opsCnt + ", rejected=" + errCnt + "]");
         }
@@ -302,5 +227,75 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
             ", maxStallMs=" + maxStallMs + "]");
 
         markFinished();
+    }
+
+    /**
+     * Executes a single operation of the given mode against the given key. Throws a
+     * {@link CacheException} or {@link IgniteException} on operation failure (e.g. a write
+     * rejected by the topology validator).
+     *
+     * @return {@code true} if the operation succeeded and (for reads) returned the expected value.
+     */
+    private boolean doOperation(LoadMode mode, int key) {
+        switch (mode) {
+            case GET: {
+                IndexedDataRecord val = timed(stats, () -> cache.get(key));
+
+                boolean ok = val != null && val.equals(new IndexedDataRecord(key));
+
+                if (!ok)
+                    log.error("Read entry is missed or corrupted [dc=" + dcId() + ", key=" + key +
+                        ", val=" + val + "]");
+
+                return ok;
+            }
+
+            case PUT: {
+                IndexedDataRecord val = new IndexedDataRecord(key);
+
+                timed(stats, () -> cache.put(key, val));
+
+                return true;
+            }
+
+            case TX_PUT: {
+                IndexedDataRecord val = new IndexedDataRecord(key);
+
+                timed(stats, () -> {
+                    try (Transaction tx = ignite.transactions().txStart(txConcurrency, txIsolation)) {
+                        cache.put(key, val);
+
+                        tx.commit();
+                    }
+                });
+
+                return true;
+            }
+
+            case SQL_PUT: {
+                SqlFieldsQuery qry = new SqlFieldsQuery(mergeSql).setArgs(key, key);
+
+                timed(stats, () -> sqlCache.query(qry).getAll());
+
+                return true;
+            }
+
+            case SQL_SELECT: {
+                SqlFieldsQuery qry = new SqlFieldsQuery(selectSql).setArgs(key);
+
+                List<List<?>> rows = timed(stats, () -> sqlCache.query(qry).getAll());
+
+                boolean ok = !rows.isEmpty() && Objects.equals(rows.get(0).get(0), key);
+
+                if (!ok)
+                    log.error("SQL row is missed or corrupted [dc=" + dcId() + ", key=" + key +
+                        ", rows=" + rows + "]");
+
+                return ok;
+            }
+
+            default:
+                throw new IllegalArgumentException("Unknown mode: " + mode);
+        }
     }
 }

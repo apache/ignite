@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.ducktest.tests.mdc;
 
-import java.util.Locale;
 import javax.cache.CacheException;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.client.ClientCache;
@@ -27,6 +26,7 @@ import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 import org.apache.ignite.internal.ducktest.utils.OpStats;
 
 import static org.apache.ignite.internal.ducktest.utils.Utils.fmtMs;
+import static org.apache.ignite.internal.ducktest.utils.Utils.getEnum;
 import static org.apache.ignite.internal.ducktest.utils.Utils.timed;
 
 /**
@@ -45,14 +45,18 @@ import static org.apache.ignite.internal.ducktest.utils.Utils.timed;
 public class MdcThinClientLoadApplication extends IgniteAwareApplication {
     /** {@inheritDoc} */
     @Override public void run(JsonNode jNode) throws Exception {
-        String mode = jNode.get("mode").asText().toUpperCase(Locale.ROOT);
+        LoadMode mode = getEnum(jNode, "mode", LoadMode.class);
+
+        if (mode != LoadMode.GET && mode != LoadMode.PUT)
+            throw new IllegalArgumentException("Unsupported thin client mode: " + mode);
+
         String cacheName = jNode.get("cacheName").asText();
 
         int keyFrom = jNode.path("keyFrom").asInt(0);
         int keyTo = jNode.path("keyTo").asInt(Integer.MAX_VALUE);
         long iterations = jNode.path("iterations").asLong(100);
 
-        boolean put = "PUT".equals(mode);
+        boolean put = mode == LoadMode.PUT;
         boolean expectAdmissible = jNode.path("expectAdmissible").asBoolean(true);
 
         String pfx = jNode.path("resultPrefix").asText("");

@@ -19,9 +19,15 @@ package org.apache.ignite.internal.ducktest.utils;
 
 import java.util.Locale;
 import java.util.function.Supplier;
+import com.fasterxml.jackson.databind.JsonNode;
 
-/** */
+/** Small helpers shared by the ducktest applications. */
 public final class Utils {
+    /** */
+    private Utils() {
+        // No-op.
+    }
+
     /**
      * Runs the operation, records its latency into {@code stats} and returns its result.
      * If the operation throws, nothing is recorded and the exception propagates.
@@ -51,5 +57,36 @@ public final class Utils {
     /** Formats a nanosecond latency as milliseconds with 3 decimal places. */
     public static String fmtMs(double ns) {
         return String.format(Locale.US, "%.3f", ns < 0 ? -1.0 : ns / 1e6);
+    }
+
+    /**
+     * Parses an optional enum-valued field. A missing, null or unrecognized value falls back
+     * to {@code dfltVal}.
+     */
+    public static <E extends Enum<E>> E getEnum(JsonNode jNode, String fieldName, E dfltVal) {
+        JsonNode field = jNode.path(fieldName);
+
+        if (field.isMissingNode() || field.isNull())
+            return dfltVal;
+
+        try {
+            return Enum.valueOf(dfltVal.getDeclaringClass(), field.asText().toUpperCase(Locale.ROOT));
+        }
+        catch (IllegalArgumentException e) {
+            return dfltVal; // Fallback if string doesn't match any enum constant.
+        }
+    }
+
+    /**
+     * Parses a required enum-valued field. Throws if the field is missing, null or not a valid
+     * constant of {@code cls} (case-insensitively) - a typo must fail the run, not pick a default.
+     */
+    public static <E extends Enum<E>> E getEnum(JsonNode jNode, String fieldName, Class<E> cls) {
+        JsonNode field = jNode.path(fieldName);
+
+        if (field.isMissingNode() || field.isNull())
+            throw new IllegalArgumentException("Missing required enum field '" + fieldName + "'");
+
+        return Enum.valueOf(cls, field.asText().toUpperCase(Locale.ROOT));
     }
 }

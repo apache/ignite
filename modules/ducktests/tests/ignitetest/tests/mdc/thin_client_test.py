@@ -37,7 +37,7 @@ from ignitetest.services.mdc.mdc_cluster import MdcCluster, dc_jvm_opts, DC_1, D
 from ignitetest.services.utils.ignite_configuration import IgniteThinClientConfiguration
 from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
+from ignitetest.utils.version import DEV_BRANCH
 
 CACHE_NAME = "mdc-thin"
 
@@ -78,28 +78,14 @@ class MdcThinClientTest(IgniteTest):
         mdc.register(DC_1, cli_dc1)
         mdc.register(DC_2, cli_dc2)
 
-        first_start = set()
-
-        def run_thin(cli_svc, params):
-            cli_svc.params = params
-
-            cli_svc.start(clean=id(cli_svc) not in first_start)
-
-            first_start.add(id(cli_svc))
-
-            cli_svc.wait()
-            cli_svc.stop()
-
-            return cli_svc
-
         with cross_dc_network(self.logger, mdc, delay_ms=cross_dc_latency_ms) as net:
             mdc.start_servers()
 
             mdc.generate_data(DC_1, CACHE_NAME, 0, KEYS, backups=1)
 
-            svc = run_thin(cli_dc1, {"mode": "GET", "cacheName": CACHE_NAME, "keyFrom": 0,
-                                        "keyTo": KEYS, "iterations": PINNED_GET_ITERS,
-                                        "resultPrefix": "pinnedGet"})
+            svc = mdc.run_service(cli_dc1, {"mode": "GET", "cacheName": CACHE_NAME, "keyFrom": 0,
+                                            "keyTo": KEYS, "iterations": PINNED_GET_ITERS,
+                                            "resultPrefix": "pinnedGet"})
 
             avg_cli_dc_1 = mdc.result_float(svc, "pinnedGetAvgOpMs")
 
@@ -116,33 +102,33 @@ class MdcThinClientTest(IgniteTest):
             mdc.verify_split_brain()
 
             # The client pinned to the main half keeps writing...
-            run_thin(cli_dc1, {"mode": "PUT", "cacheName": CACHE_NAME, "keyFrom": OFFSET_DURING,
-                                  "keyTo": OFFSET_DURING + PUT_ITERS, "iterations": PUT_ITERS,
-                                  "resultPrefix": "duringPut"})
+            mdc.run_service(cli_dc1, {"mode": "PUT", "cacheName": CACHE_NAME, "keyFrom": OFFSET_DURING,
+                                      "keyTo": OFFSET_DURING + PUT_ITERS, "iterations": PUT_ITERS,
+                                      "resultPrefix": "duringPut"})
 
             # ...while the client pinned to the read-only half still reads cleanly
             # (its DC1 addresses are unreachable, so it falls back to DC2 nodes)...
-            svc = run_thin(cli_dc2, {"mode": "GET", "cacheName": CACHE_NAME, "keyFrom": 0,
-                                        "keyTo": KEYS, "iterations": PINNED_GET_ITERS,
-                                        "resultPrefix": "roGet"})
+            svc = mdc.run_service(cli_dc2, {"mode": "GET", "cacheName": CACHE_NAME, "keyFrom": 0,
+                                            "keyTo": KEYS, "iterations": PINNED_GET_ITERS,
+                                            "resultPrefix": "roGet"})
 
             assert mdc.result_int(svc, "roGetErrCnt") == 0, \
                 "Thin client reads in the read-only DC must be clean"
 
             # ...and has every write rejected by the topology validator.
-            run_thin(cli_dc2, {"mode": "PUT", "cacheName": CACHE_NAME,
-                                  "keyFrom": OFFSET_REJECTED_PROBES,
-                                  "keyTo": OFFSET_REJECTED_PROBES + PUT_ITERS,
-                                  "iterations": PUT_ITERS, "expectAdmissible": False,
-                                  "resultPrefix": "roPut"})
+            mdc.run_service(cli_dc2, {"mode": "PUT", "cacheName": CACHE_NAME,
+                                      "keyFrom": OFFSET_REJECTED_PROBES,
+                                      "keyTo": OFFSET_REJECTED_PROBES + PUT_ITERS,
+                                      "iterations": PUT_ITERS, "expectAdmissible": False,
+                                      "resultPrefix": "roPut"})
 
             net.disable_network_partition(DC_1, DC_2)
 
             mdc.restart(DC_2)
 
-            run_thin(cli_dc2, {"mode": "PUT", "cacheName": CACHE_NAME, "keyFrom": OFFSET_AFTER,
-                                  "keyTo": OFFSET_AFTER + PUT_ITERS, "iterations": PUT_ITERS,
-                                  "resultPrefix": "afterPut"})
+            mdc.run_service(cli_dc2, {"mode": "PUT", "cacheName": CACHE_NAME, "keyFrom": OFFSET_AFTER,
+                                      "keyTo": OFFSET_AFTER + PUT_ITERS, "iterations": PUT_ITERS,
+                                      "resultPrefix": "afterPut"})
 
             mdc.check_data(DC_1, CACHE_NAME, OFFSET_DURING, OFFSET_DURING + PUT_ITERS)
             mdc.check_data(DC_1, CACHE_NAME, OFFSET_AFTER, OFFSET_AFTER + PUT_ITERS)
@@ -157,7 +143,7 @@ class MdcThinClientTest(IgniteTest):
         return IgniteApplicationService(
             self.test_context,
             IgniteThinClientConfiguration(addresses=mdc.thin_client_addresses(),
-                                          version=IgniteVersion(str(DEV_BRANCH))),
+                                          version=mdc.ignite_config.version),
             java_class_name=THIN_LOAD_APP,
             num_nodes=1,
             jvm_opts=jvm_opts)

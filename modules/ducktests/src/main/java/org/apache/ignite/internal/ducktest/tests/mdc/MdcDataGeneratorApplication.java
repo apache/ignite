@@ -19,6 +19,7 @@ package org.apache.ignite.internal.ducktest.tests.mdc;
 
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.function.IntFunction;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -26,7 +27,8 @@ import org.apache.ignite.internal.ducktest.tests.dto.IndexedDataRecord;
 
 /**
  * Populates the MDC cache with a deterministic data set: keys in {@code [from, to)},
- * values {@code IndexedDataRecord(key)}. Run it before the network partition.
+ * values {@code IndexedDataRecord(key)} (or the key itself in {@code sqlMode}).
+ * Run it before the network partition.
  */
 public class MdcDataGeneratorApplication extends MdcCacheAwareApplication {
     /** {@inheritDoc} */
@@ -39,50 +41,36 @@ public class MdcDataGeneratorApplication extends MdcCacheAwareApplication {
         markInitialized();
         waitForActivation();
 
-        IgniteCache<Integer, IndexedDataRecord> cache = null;
-        IgniteCache<Integer, Integer> sqlCache = null;
-
-        if (sqlMode)
-            sqlCache = mdcSqlCache(jNode);
-        else
-            cache = mdcCache(jNode);
-
         log.info("Data generation started [dc=" + dcId() + ", sqlMode=" + sqlMode +
             ", from=" + from + ", to=" + to + "]");
 
-        if (sqlMode) {
-            Map<Integer, Integer> batch = new TreeMap<>();
-
-            for (int i = from; i < to && !terminated(); i++) {
-                batch.put(i, i);
-
-                if (batch.size() >= batchSize) {
-                    sqlCache.putAll(batch);
-                    batch.clear();
-                }
-            }
-
-            if (!batch.isEmpty() && !terminated())
-                sqlCache.putAll(batch);
-        }
-        else {
-            Map<Integer, IndexedDataRecord> batch = new TreeMap<>();
-
-            for (int i = from; i < to && !terminated(); i++) {
-                batch.put(i, new IndexedDataRecord(i));
-
-                if (batch.size() >= batchSize) {
-                    cache.putAll(batch);
-                    batch.clear();
-                }
-            }
-
-            if (!batch.isEmpty() && !terminated())
-                cache.putAll(batch);
-        }
+        if (sqlMode)
+            load(mdcSqlCache(jNode), from, to, batchSize, i -> i);
+        else
+            load(mdcCache(jNode), from, to, batchSize, IndexedDataRecord::new);
 
         log.info("Data generation finished [dc=" + dcId() + ", entries=" + (to - from) + "]");
 
         markFinished();
+    }
+
+    /**
+     * Streams keys {@code [from, to)} into the cache in {@code putAll} batches, deriving
+     * each value from its key.
+     */
+    private <V> void load(IgniteCache<Integer, V> cache, int from, int to, int batchSize, IntFunction<V> valFn) {
+        Map<Integer, V> batch = new TreeMap<>();
+
+        for (int i = from; i < to && !terminated(); i++) {
+            batch.put(i, valFn.apply(i));
+
+            if (batch.size() >= batchSize) {
+                cache.putAll(batch);
+                batch.clear();
+            }
+        }
+
+        if (!batch.isEmpty() && !terminated())
+            cache.putAll(batch);
     }
 }

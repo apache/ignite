@@ -27,7 +27,6 @@ SUDO_PREFIX = 'sudo env "PATH=$PATH:/home/ducker/.local/bin:/opt/venv/bin"'
 # tcset rule actions.
 ACTION_OVERWRITE = "--overwrite"
 ACTION_ADD = "--add"
-ACTION_CHANGE = "--change"
 
 # -w: wait on the xtables lock instead of failing
 IPTABLES = "sudo iptables -w"
@@ -74,13 +73,6 @@ def to_tcdel_all_cmd(interface: str) -> str:
     Compiles the absolute clear command for an interface.
     """
     return f"{SUDO_PREFIX} tcdel {interface} --all"
-
-
-def to_tcdel_ip_cmd(interface: str, dst_host_or_ip: str) -> str:
-    """
-    Compiles the absolute clear command for destination host.
-    """
-    return f"{SUDO_PREFIX} tcdel {interface} --peer {dst_host_or_ip}"
 
 
 def partition_chain_name(group_a: str, group_b: str) -> str:

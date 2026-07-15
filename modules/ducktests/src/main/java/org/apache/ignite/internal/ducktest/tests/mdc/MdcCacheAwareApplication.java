@@ -19,7 +19,6 @@ package org.apache.ignite.internal.ducktest.tests.mdc;
 
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Locale;
 import java.util.Set;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
@@ -39,6 +38,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_DATA_CENTER_ID;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.ducktest.utils.Utils.getEnum;
 
 /**
  * Base class for MDC test applications.
@@ -54,11 +54,12 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *     <li>{@code datacenters} - full DC set for majority-based validation (odd DC count mode),
  *         takes precedence over {@code mainDc};</li>
  *     <li>{@code dcsNum} - number of data centers, default 2;</li>
+ *     <li>{@code cacheMode} - {@link CacheMode}, default {@code PARTITIONED};</li>
  *     <li>{@code atomicity} - {@link CacheAtomicityMode}, default {@code ATOMIC};</li>
- *     <li>{@code syncMode} - {@link CacheWriteSynchronizationMode}, default {@code FULL_SYNC}.
+ *     <li>{@code writeSync} - {@link CacheWriteSynchronizationMode}, default {@code FULL_SYNC}.
  *         Note: MDC-aware local reads require a mode other than {@code PRIMARY_SYNC};</li>
  *     <li>{@code readFromBackup} - default {@code true}, required for DC-local reads;</li>
- *     <li>{@code partitions} - affinity partitions number, default 32.</li>
+ *     <li>{@code partitions} - affinity partitions number, default 512.</li>
  * </ul>
  */
 public abstract class MdcCacheAwareApplication extends IgniteAwareApplication {
@@ -71,8 +72,8 @@ public abstract class MdcCacheAwareApplication extends IgniteAwareApplication {
     /** */
     protected static final CacheMode DFLT_CACHE_MODE = PARTITIONED;
 
-    /** */
-    protected static final int DFLT_BACKUPS = 0;
+    /** One backup: with the default 2 DCs, {@code (backups + 1) / dcsNum} = 1 copy per DC. */
+    protected static final int DFLT_BACKUPS = 1;
 
     /** */
     protected static final int DFLT_DCS_NUM = 2;
@@ -156,7 +157,7 @@ public abstract class MdcCacheAwareApplication extends IgniteAwareApplication {
      * @param cacheName Cache name.
      * @return Existing cache. The cache must have been created by the generator beforehand.
      */
-    protected IgniteCache<Integer, IndexedDataRecord> mdcCache(String cacheName) {
+    protected IgniteCache<Integer, IndexedDataRecord> existingCache(String cacheName) {
         return ignite.cache(cacheName);
     }
 
@@ -165,36 +166,5 @@ public abstract class MdcCacheAwareApplication extends IgniteAwareApplication {
      */
     protected static String dcId() {
         return IgniteSystemProperties.getString(IGNITE_DATA_CENTER_ID);
-    }
-
-    /**
-     * Parses an optional enum-valued field. A missing, null or unrecognized value falls back
-     * to {@code dfltVal}.
-     */
-    protected static <E extends Enum<E>> E getEnum(JsonNode jNode, String fieldName, E dfltVal) {
-        JsonNode field = jNode.path(fieldName);
-
-        if (field.isMissingNode() || field.isNull())
-            return dfltVal;
-
-        try {
-            return Enum.valueOf(dfltVal.getDeclaringClass(), field.asText().toUpperCase(Locale.ROOT));
-        }
-        catch (IllegalArgumentException e) {
-            return dfltVal; // Fallback if string doesn't match any enum constant.
-        }
-    }
-
-    /**
-     * Parses a required enum-valued field. Throws if the field is missing, null or not a valid
-     * constant of {@code cls} (case-insensitively) - a typo must fail the run, not pick a default.
-     */
-    protected static <E extends Enum<E>> E getEnum(JsonNode jNode, String fieldName, Class<E> cls) {
-        JsonNode field = jNode.path(fieldName);
-
-        if (field.isMissingNode() || field.isNull())
-            throw new IllegalArgumentException("Missing required enum field '" + fieldName + "'");
-
-        return Enum.valueOf(cls, field.asText().toUpperCase(Locale.ROOT));
     }
 }

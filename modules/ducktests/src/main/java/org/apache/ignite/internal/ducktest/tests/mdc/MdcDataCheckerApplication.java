@@ -37,7 +37,7 @@ public class MdcDataCheckerApplication extends MdcCacheAwareApplication {
         markInitialized();
         waitForActivation();
 
-        IgniteCache<Integer, IndexedDataRecord> cache = mdcCache(cacheName);
+        IgniteCache<Integer, IndexedDataRecord> cache = existingCache(cacheName);
 
         log.info("Data check started [dc=" + dcId() + ", cache=" + cache.getName() +
             ", from=" + from + ", to=" + to + "]");

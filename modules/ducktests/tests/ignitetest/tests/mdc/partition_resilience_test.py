@@ -43,6 +43,7 @@ BLIPS = 10
 
 BG_MAX_STALL_MS = 500
 
+
 class MdcPartitionResilienceTest(IgniteTest):
     """
     Tests for cluster network partition resilience in MultiDC.

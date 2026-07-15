@@ -53,7 +53,6 @@ _APP_PKG = "org.apache.ignite.internal.ducktest.tests.mdc."
 
 GENERATOR_APP = _APP_PKG + "MdcDataGeneratorApplication"
 DATA_CHECKER_APP = _APP_PKG + "MdcDataCheckerApplication"
-PUT_CHECKER_APP = _APP_PKG + "MdcPutAdmissibilityCheckerApplication"
 LOAD_APP = _APP_PKG + "MdcContinuousLoadApplication"
 THIN_LOAD_APP = _APP_PKG + "MdcThinClientLoadApplication"
 
@@ -134,12 +133,17 @@ class MdcCluster:
         # subsequent ones preserve work dirs (and logs - hence unique result prefixes).
         self._started_apps = set()
 
+        # Admissibility checks run on reusable services, so each check needs a unique result prefix.
+        self._adm_checks = 0
+
     def sync_service_discovery(self):
-        all_servers = list(self.servers.values())
+        """
+        Points every server service at a discovery SPI covering all DCs (used to let a
+        stopped DC rejoin the full cluster on restart).
+        """
+        discovery_spi = from_ignite_services(list(self.servers.values()))
 
-        discovery_spi = from_ignite_services(all_servers)
-
-        for dc_key, service in self.servers.items():
+        for service in self.servers.values():
             service.config = service.config._replace(discovery_spi=discovery_spi)
 
     def _app_service(self, dc: str) -> IgniteApplicationService:
@@ -150,8 +154,8 @@ class MdcCluster:
     def register(self, dc: str, service):
         """
         Registers an extra service (e.g. a thin client app) into a DC's network group,
-        so netem impairments and partitions apply to it. Must be called before the
-        :class:`NetworkGroupManager` is entered.
+        so netem impairments and partitions apply to it. Must be called before
+        :func:`cross_dc_network` snapshots the registry into a :class:`NetworkGroupManager`.
         """
         self.extras[dc].append(service)
 
@@ -215,9 +219,18 @@ class MdcCluster:
         Runs a run-to-completion application on one of the DC's reusable runner services
         and returns the service (for ``extract_result``).
         """
-        svc = self.runners[dc][runner]
+        return self.run_service(self.runners[dc][runner], params, java_class=java_class)
 
-        svc.java_class_name = java_class
+    def run_service(self, svc: IgniteApplicationService, params: dict,
+                    java_class: str = None) -> IgniteApplicationService:
+        """
+        Runs any reusable run-to-completion application service (a runner, a registered
+        thin client, ...): the first start is clean, subsequent starts preserve work dirs.
+        Returns the service (for ``extract_result``).
+        """
+        if java_class is not None:
+            svc.java_class_name = java_class
+
         svc.params = params
 
         svc.start(clean=self._first_start(svc))
@@ -263,7 +276,7 @@ class MdcCluster:
                       main_dc: str = DC_1, sql_mode: bool = False, **cache_params) -> IgniteApplicationService:
         """
         Creates the MDC cache (if absent) and populates keys ``[from_idx, to_idx)``.
-        Extra cache parameters (``atomicity``, ``syncMode``, ``readFromBackup``,
+        Extra cache parameters (``atomicity``, ``writeSync``, ``readFromBackup``,
         ``partitions``, ...) are passed through to the cache configuration builder.
         """
         params = {"cacheName": cache_name, "backups": backups, "mainDc": main_dc,
@@ -271,28 +284,37 @@ class MdcCluster:
 
         return self.run_app(dc, GENERATOR_APP, params)
 
-    def check_data(self, dc: str, cache_name: str, from_idx: int, to_idx: int) -> IgniteApplicationService:
+    def check_data(self, dc: str, cache_name: str, from_idx: int, to_idx: int) -> Optional[IgniteApplicationService]:
         """
         Verifies that every key in ``[from_idx, to_idx)`` is readable and holds the
         expected value, from a client in the given DC.
+
+        :return: The service that ran the check, or None for an empty range.
         """
         if to_idx <= from_idx:
             self.logger.debug(f"Nothing to check [cache={cache_name}, from={from_idx}, to={to_idx}]")
-            return self.runners[dc][0]
+            return None
 
         params = {"cacheName": cache_name, "from": from_idx, "to": to_idx}
 
         return self.run_app(dc, DATA_CHECKER_APP, params)
 
     def check_put_admissibility(self, dc: str, cache_name: str, admissible: bool,
-                                key_offset: int = 1_000_000) -> IgniteApplicationService:
+                                key_offset: int = 1_000_000, probes: int = 100) -> IgniteApplicationService:
         """
         Verifies that put load from the given DC is admissible (primary DC visible) or
-        rejected by the topology validator (read-only DC).
-        """
-        params = {"cacheName": cache_name, "expectAdmissible": admissible, "keyOffset": key_offset}
+        rejected by the topology validator (read-only DC). A PUT burst of the load
+        application: an admissible check fails fast on the first rejected put, an
+        inadmissible check fails if any of the probe puts succeeds.
 
-        return self.run_app(dc, PUT_CHECKER_APP, params)
+        Probe keys start at ``key_offset`` (defaults to 1_000_000) so they never intersect
+        with the data set verified by ``check_data``.
+        """
+        self._adm_checks += 1
+
+        return self.run_load(dc, "PUT", cache_name, f"admCheck{self._adm_checks}",
+                             keyFrom=key_offset, keyTo=key_offset + probes,
+                             iterations=probes, expectAdmissible=admissible)
 
     def run_load(self, dc: str, mode: str, cache_name: str, result_prefix: str,
                  runner: int = 0, **params) -> IgniteApplicationService:
@@ -398,7 +420,7 @@ class MdcCluster:
         were detected, no PME hang and no lost partitions were reported.
         """
         for pattern in (LRT_PATTERN, PME_FREEZE_PATTERN, LOST_PARTITIONS_PATTERN):
-            for dc, svc in self.servers.items():
+            for svc in self.servers.values():
                 svc.check_event_absent(pattern)
 
     def verify_no_hanging_txs(self, dc: str = DC_1):
@@ -407,6 +429,8 @@ class MdcCluster:
         """
         txs = self.control(dc).tx()
 
+        # ControlUtility.tx() returns a list of parsed transactions, or the raw command
+        # output (a str) when nothing parsed - i.e. when there are no transactions.
         assert not isinstance(txs, list) or not txs, f"No active transactions expected [txs={txs}]"
 
     @staticmethod
