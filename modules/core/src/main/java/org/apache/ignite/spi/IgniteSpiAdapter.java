@@ -41,6 +41,7 @@ import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactory;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.internal.processors.timeout.GridSpiTimeoutObject;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
@@ -753,13 +754,18 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
             this.locNode = locNode;
             this.stopping = stopping;
 
-            MessageFactory msgFactory0 = spiCtx != null ? spiCtx.messageFactory() : null;
+            MessageFactory<? extends Message> msgFactory0 = spiCtx != null ? spiCtx.messageFactory() : null;
             MessageFormatter msgFormatter0 = spiCtx != null ? spiCtx.messageFormatter() : null;
 
             if (msgFactory0 == null) {
-                msgFactory0 = new IgniteMessageFactory() {
-                    @Override public void register(short directType, Supplier<Message> supplier, MessageSerializer serializer,
-                        @Nullable MessageMarshaller marshaller, @Nullable GridCacheMessageDeployer deployer) throws IgniteException {
+                msgFactory0 = new IgniteMessageFactory<>() {
+                    @Override public void register(
+                        short directType,
+                        Supplier<Message> supplier,
+                        MessageSerializer<Message> serializer,
+                        @Nullable MessageMarshaller<Message> marshaller,
+                        @Nullable GridCacheMessageDeployer<GridCacheMessage> deployer
+                    ) throws IgniteException {
                         throw new IgniteException("Failed to register message, node is not started.");
                     }
 
@@ -767,15 +773,15 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
                         throw new IgniteException("Failed to read message, node is not started.");
                     }
 
-                    @Override public MessageSerializer serializer(short type) {
+                    @Override public MessageSerializer<Message> serializer(short type) {
                         throw new IgniteException("Failed to register message, node is not started.");
                     }
 
-                    @Nullable @Override public MessageMarshaller marshaller(short type) {
+                    @Nullable @Override public MessageMarshaller<Message> marshaller(short type) {
                         throw new IgniteException("Failed to register message, node is not started.");
                     }
 
-                    @Nullable @Override public GridCacheMessageDeployer deployer(short type) {
+                    @Nullable @Override public GridCacheMessageDeployer<GridCacheMessage> deployer(short type) {
                         throw new IgniteException("Failed to register message, node is not started.");
                     }
                 };
@@ -783,11 +789,11 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
 
             if (msgFormatter0 == null) {
                 msgFormatter0 = new MessageFormatter() {
-                    @Override public MessageWriter writer(MessageFactory msgFactory) {
+                    @Override public MessageWriter writer(MessageFactory<? extends Message> msgFactory) {
                         throw new IgniteException("Failed to write message, node is not started.");
                     }
 
-                    @Override public MessageReader reader(MessageFactory msgFactory) {
+                    @Override public MessageReader reader(MessageFactory<? extends Message> msgFactory) {
                         throw new IgniteException("Failed to read message, node is not started.");
                     }
                 };

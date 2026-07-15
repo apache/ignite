@@ -22,6 +22,7 @@ import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.processors.cache.DeployableMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -34,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
  * Message factory implementation responsible for instantiation of all messages sent between nodes, both over the
  * communication SPI and via discovery.
  */
-public class IgniteMessageFactoryImpl implements IgniteMessageFactory {
+public class IgniteMessageFactoryImpl<M extends Message, CM extends GridCacheMessage> implements IgniteMessageFactory<M, CM> {
     /** Offset. */
     private static final int OFF = -Short.MIN_VALUE;
 
@@ -42,17 +43,17 @@ public class IgniteMessageFactoryImpl implements IgniteMessageFactory {
     private static final int ARR_SIZE = 1 << Short.SIZE;
 
     /** Message suppliers. */
-    private final Supplier<Message>[] msgSuppliers = (Supplier<Message>[])Array.newInstance(Supplier.class, ARR_SIZE);
+    private final Supplier<M>[] msgSuppliers = (Supplier<M>[])Array.newInstance(Supplier.class, ARR_SIZE);
 
     /** Message serializers. */
-    private final MessageSerializer[] msgSerializers = (MessageSerializer[])Array.newInstance(MessageSerializer.class, ARR_SIZE);
+    private final MessageSerializer<M>[] msgSerializers = (MessageSerializer<M>[])Array.newInstance(MessageSerializer.class, ARR_SIZE);
 
     /** Message marshallers (null entry = no marshaller registered for that type). */
-    private final MessageMarshaller[] msgMarshallers = (MessageMarshaller[])Array.newInstance(MessageMarshaller.class, ARR_SIZE);
+    private final MessageMarshaller<M>[] msgMarshallers = (MessageMarshaller<M>[])Array.newInstance(MessageMarshaller.class, ARR_SIZE);
 
     /** Message deployers (null entry = no deployer registered for that type). */
-    private final GridCacheMessageDeployer[] msgDeployers =
-        (GridCacheMessageDeployer[])Array.newInstance(GridCacheMessageDeployer.class, ARR_SIZE);
+    private final GridCacheMessageDeployer<CM>[] msgDeployers =
+        (GridCacheMessageDeployer<CM>[])Array.newInstance(GridCacheMessageDeployer.class, ARR_SIZE);
 
     /** Initialized flag. If {@code true} then new message type couldn't be registered. */
     private final boolean initialized;
@@ -86,8 +87,8 @@ public class IgniteMessageFactoryImpl implements IgniteMessageFactory {
      * @param marshaller Message marshaller, or {@code null} for {@link NonMarshallableMessage} types.
      * @param deployer Message deployer, or {@code null} for messages without deployable fields.
      */
-    @Override public void register(short directType, Supplier<Message> supplier, MessageSerializer serializer,
-        @Nullable MessageMarshaller marshaller, @Nullable GridCacheMessageDeployer deployer) throws IgniteException {
+    @Override public void register(short directType, Supplier<M> supplier, MessageSerializer<M> serializer,
+        @Nullable MessageMarshaller<M> marshaller, @Nullable GridCacheMessageDeployer<CM> deployer) throws IgniteException {
         if (initialized) {
             throw new IllegalStateException("Message factory is already initialized. " +
                     "Registration of new message types is forbidden.");
@@ -117,7 +118,7 @@ public class IgniteMessageFactoryImpl implements IgniteMessageFactory {
 
         int idx = directTypeToIndex(directType);
 
-        Supplier<Message> curr = msgSuppliers[idx];
+        Supplier<M> curr = msgSuppliers[idx];
 
         if (curr == null) {
             msgSuppliers[idx] = supplier;
@@ -142,8 +143,8 @@ public class IgniteMessageFactoryImpl implements IgniteMessageFactory {
      * @return Message instance.
      * @throws UnknownMessageException If no message is registered under the given {@code directType}.
      */
-    @Override public Message create(short directType) {
-        Supplier<Message> supplier = msgSuppliers[directTypeToIndex(directType)];
+    @Override public M create(short directType) {
+        Supplier<M> supplier = msgSuppliers[directTypeToIndex(directType)];
 
         if (supplier == null)
             throw new UnknownMessageException(directType);
@@ -152,8 +153,8 @@ public class IgniteMessageFactoryImpl implements IgniteMessageFactory {
     }
 
     /** {@inheritDoc} */
-    @Override public MessageSerializer serializer(short directType) {
-        MessageSerializer serializer = msgSerializers[directTypeToIndex(directType)];
+    @Override public MessageSerializer<M> serializer(short directType) {
+        MessageSerializer<M> serializer = msgSerializers[directTypeToIndex(directType)];
 
         if (serializer == null)
             throw new IgniteException("Message serializer not found for a message type: " + directType);
@@ -162,12 +163,12 @@ public class IgniteMessageFactoryImpl implements IgniteMessageFactory {
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable MessageMarshaller marshaller(short directType) {
+    @Override public @Nullable MessageMarshaller<M> marshaller(short directType) {
         return msgMarshallers[directTypeToIndex(directType)];
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable GridCacheMessageDeployer deployer(short directType) {
+    @Override public @Nullable GridCacheMessageDeployer<CM> deployer(short directType) {
         return msgDeployers[directTypeToIndex(directType)];
     }
 

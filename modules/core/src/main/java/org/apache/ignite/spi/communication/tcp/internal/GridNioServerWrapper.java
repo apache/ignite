@@ -56,6 +56,7 @@ import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.GridManager;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactory;
 import org.apache.ignite.internal.managers.tracing.GridTracingManager;
+import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
@@ -226,7 +227,7 @@ public class GridNioServerWrapper {
     private volatile boolean stopping = false;
 
     /** Channel connection index provider. */
-    private ConnectionPolicy chConnPlc;
+    private final ConnectionPolicy chConnPlc;
 
     /** Scheduled executor service which closed the socket if handshake timeout is out. **/
     private final ScheduledExecutorService handshakeTimeoutExecutorService;
@@ -815,11 +816,16 @@ public class GridNioServerWrapper {
 
         for (int port = cfg.localPort(); port <= lastPort; port++) {
             try {
-                MessageFactory msgFactory = new IgniteMessageFactory() {
-                    private IgniteMessageFactory impl;
+                MessageFactory<Message> msgFactory = new IgniteMessageFactory<>() {
+                    private IgniteMessageFactory<Message, GridCacheMessage> impl;
 
-                    @Override public void register(short directType, Supplier<Message> supplier, MessageSerializer serializer,
-                        @Nullable MessageMarshaller marshaller, @Nullable GridCacheMessageDeployer deployer) throws IgniteException {
+                    @Override public void register(
+                        short directType,
+                        Supplier<Message> supplier,
+                        MessageSerializer<Message> serializer,
+                        @Nullable MessageMarshaller<Message> marshaller,
+                        @Nullable GridCacheMessageDeployer<GridCacheMessage> deployer
+                    ) throws IgniteException {
                         get().register(directType, supplier, serializer, marshaller, deployer);
                     }
 
@@ -835,17 +841,17 @@ public class GridNioServerWrapper {
                         return get().serializer(type);
                     }
 
-                    @Nullable @Override public MessageMarshaller marshaller(short type) {
+                    @Nullable @Override public MessageMarshaller<Message> marshaller(short type) {
                         return get().marshaller(type);
                     }
 
-                    @Nullable @Override public GridCacheMessageDeployer deployer(short type) {
+                    @Nullable @Override public GridCacheMessageDeployer<GridCacheMessage> deployer(short type) {
                         return get().deployer(type);
                     }
 
-                    private IgniteMessageFactory get() {
+                    private IgniteMessageFactory<Message, GridCacheMessage> get() {
                         if (impl == null) {
-                            impl = (IgniteMessageFactory)stateProvider.getSpiContext().messageFactory();
+                            impl = (IgniteMessageFactory<Message, GridCacheMessage>)stateProvider.getSpiContext().messageFactory();
 
                             assert impl != null;
                         }
@@ -855,18 +861,18 @@ public class GridNioServerWrapper {
                 };
 
                 GridNioMessageReaderFactory readerFactory = new GridNioMessageReaderFactory() {
-                    private IgniteSpiContext context;
+                    private IgniteSpiContext spiCtx;
 
                     private MessageFormatter formatter;
 
-                    @Override public MessageReader reader(GridNioSession ses, MessageFactory msgFactory)
+                    @Override public MessageReader reader(GridNioSession ses, MessageFactory<? extends Message> msgFactory)
                         throws IgniteCheckedException {
                         final IgniteSpiContext ctx = stateProvider.getSpiContextWithoutInitialLatch();
 
-                        if (formatter == null || context != ctx) {
-                            context = ctx;
+                        if (formatter == null || this.spiCtx != ctx) {
+                            this.spiCtx = ctx;
 
-                            formatter = context.messageFormatter();
+                            formatter = this.spiCtx.messageFormatter();
                         }
 
                         assert formatter != null;

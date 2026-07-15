@@ -88,9 +88,9 @@ public class DirectByteBufferStreamImplByteOrderSelfTest {
      * @return Stream.
      */
     private static DirectByteBufferStream createStream(ByteBuffer buff) {
-        DirectByteBufferStream stream = new DirectByteBufferStream(new MessageFactory() {
+        DirectByteBufferStream stream = new DirectByteBufferStream(new MessageFactory<>() {
             @Override public void register(short directType, Supplier<Message> supplier,
-                MessageSerializer serializer) throws IgniteException {
+                MessageSerializer<Message> serializer) throws IgniteException {
                 throw new UnsupportedOperationException();
             }
 
@@ -98,7 +98,7 @@ public class DirectByteBufferStreamImplByteOrderSelfTest {
                 return null;
             }
 
-            @Override public MessageSerializer serializer(short type) {
+            @Override public MessageSerializer<Message> serializer(short type) {
                 return null;
             }
         });
