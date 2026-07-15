@@ -466,7 +466,9 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.STATISTICS_CONFIGURATION",
                 "SYS.PAGES_TIMESTAMP_HISTOGRAM",
                 "SYS.SQL_PLANS_HISTORY",
-                "SYS.IGNITE_PLUGINS"
+                "SYS.IGNITE_PLUGINS",
+                "SYS.CACHE_EXPLICIT_LOCKS",
+                "SYS.CACHE_LOCKS"
             ))
         );
     }
