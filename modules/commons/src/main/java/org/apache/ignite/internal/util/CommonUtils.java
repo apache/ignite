@@ -37,9 +37,11 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+import java.nio.channels.SocketChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.AccessController;
@@ -79,6 +81,7 @@ import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheClassLoaderMarker;
+import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -86,6 +89,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
 import org.apache.ignite.lang.IgniteFutureTimeoutException;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -100,6 +104,12 @@ import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_HOME;
  * Collection of utility methods used in 'ignite-commons' and throughout the system.
  */
 public abstract class CommonUtils {
+    /** Empty longs array. */
+    public static final long[] EMPTY_LONGS = new long[0];
+
+    /** Network packet header (corresponds to {@code 0x0149474E}). */
+    public static final byte[] IGNITE_HEADER = new byte[] {0x01, 0x49, 0x47, 0x4E};
+
     /** */
     public static final long KB = 1024L;
 
@@ -206,6 +216,24 @@ public abstract class CommonUtils {
 
     /** Ignite package. */
     public static final String IGNITE_PKG = "org.apache.ignite.";
+
+    /** Default data structures group name. */
+    public static final String DEFAULT_DS_GROUP_NAME = "default-ds-group";
+
+    /** Atomics system cache name. */
+    public static final String ATOMICS_CACHE_NAME = "ignite-sys-atomic-cache";
+
+    /** Thin client handshake (connection type) code. */
+    public static final byte THIN_CLIENT = 2;
+
+    /** Handshake request command code. */
+    public static final int HANDSHAKE = 1;
+
+    /** Default client connector port. */
+    public static final int DFLT_PORT = 10800;
+
+    /** Default client connector port range. */
+    public static final int DFLT_PORT_RANGE = 100;
 
     /**
      * Short date format pattern for log messages in "quiet" mode.
@@ -2353,5 +2381,368 @@ public abstract class CommonUtils {
         ));
 
         return sqlClasses;
+    }
+
+    /**
+     * Quietly closes given resource ignoring possible checked exception.
+     *
+     * @param rsrc Resource to close. If it's {@code null} - it's no-op.
+     */
+    public static void closeQuiet(@Nullable AutoCloseable rsrc) {
+        if (rsrc != null)
+            try {
+                rsrc.close();
+            }
+            catch (Exception ignored) {
+                // No-op.
+            }
+    }
+
+    /**
+     * Quietly closes given {@link Socket} ignoring possible checked exception.
+     *
+     * @param sock Socket to close. If it's {@code null} - it's no-op.
+     */
+    public static void closeQuiet(@Nullable Socket sock) {
+        if (sock == null)
+            return;
+
+        try {
+            // Avoid tls 1.3 incompatibility https://bugs.openjdk.java.net/browse/JDK-8208526
+            sock.shutdownOutput();
+            sock.shutdownInput();
+        }
+        catch (Exception ignored) {
+            // No-op.
+        }
+
+        try {
+            sock.close();
+        }
+        catch (Exception ignored) {
+            // No-op.
+        }
+    }
+
+    /**
+     * Utility method to add the given throwable error to the given throwable root error. If the given
+     * suppressed throwable is an {@code Error}, but the root error is not, will change the root to the {@code Error}.
+     *
+     * @param root Root error to add suppressed error to.
+     * @param err Error to add.
+     * @return New root error.
+     */
+    public static <T extends Throwable> T addSuppressed(T root, T err) {
+        assert err != null;
+
+        if (root == null)
+            return err;
+
+        if (err instanceof Error && !(root instanceof Error)) {
+            err.addSuppressed(root);
+
+            root = err;
+        }
+        else
+            root.addSuppressed(err);
+
+        return root;
+    }
+
+    /**
+     * Gets absolute value for integer. If integer is {@link Integer#MIN_VALUE}, then {@code 0} is returned.
+     *
+     * @param i Integer.
+     * @return Absolute value.
+     */
+    public static int safeAbs(int i) {
+        i = Math.abs(i);
+
+        return i < 0 ? 0 : i;
+    }
+
+    /**
+     * Gets absolute value for long. If argument is {@link Long#MIN_VALUE}, then {@code 0} is returned.
+     *
+     * @param i Argument.
+     * @return Absolute value.
+     */
+    public static long safeAbs(long i) {
+        i = Math.abs(i);
+
+        return i < 0 ? 0 : i;
+    }
+
+    /**
+     * Helper method to calculates mask.
+     *
+     * @param parts Number of partitions.
+     * @return Mask to use in calculation when partitions count is power of 2.
+     */
+    public static int calculateMask(int parts) {
+        return (parts & (parts - 1)) == 0 ? parts - 1 : -1;
+    }
+
+    /**
+     * Helper method to calculate partition.
+     *
+     * @param key Key to get partition for.
+     * @param mask Mask to use in calculation when partitions count is power of 2.
+     * @param parts Number of partitions.
+     * @return Partition number for a given key.
+     */
+    public static int calculatePartition(Object key, int mask, int parts) {
+        if (mask >= 0) {
+            int h;
+
+            return ((h = key.hashCode()) ^ (h >>> 16)) & mask;
+        }
+
+        return safeAbs(key.hashCode() % parts);
+    }
+
+    /**
+     * Unwraps closure exceptions.
+     *
+     * @param t Exception.
+     * @return Unwrapped exception.
+     */
+    public static Exception unwrap(Throwable t) {
+        assert t != null;
+
+        while (true) {
+            if (t instanceof Error)
+                throw (Error)t;
+
+            if (t instanceof GridClosureException) {
+                t = ((GridClosureException)t).unwrap();
+
+                continue;
+            }
+
+            return (Exception)t;
+        }
+    }
+
+    /**
+     * Casts the passed {@code Throwable t} to {@link IgniteCheckedException}.<br>
+     * If {@code t} is a {@link GridClosureException}, it is unwrapped and then cast to {@link IgniteCheckedException}.
+     * If {@code t} is an {@link IgniteCheckedException}, it is returned.
+     * If {@code t} is not a {@link IgniteCheckedException}, a new {@link IgniteCheckedException} caused by {@code t}
+     * is returned.
+     *
+     * @param t Throwable to cast.
+     * @return {@code t} cast to {@link IgniteCheckedException}.
+     */
+    public static IgniteCheckedException cast(Throwable t) {
+        assert t != null;
+
+        t = unwrap(t);
+
+        return t instanceof IgniteCheckedException
+            ? (IgniteCheckedException)t
+            : new IgniteCheckedException(t);
+    }
+
+    /**
+     * Gets type name by class name.
+     *
+     * @param clsName Class name.
+     * @return Type name.
+     */
+    public static String typeName(String clsName) {
+        int genericStart = clsName.indexOf('`');  // .NET generic, not valid for Java class name.
+
+        if (genericStart >= 0)
+            clsName = clsName.substring(0, genericStart);
+
+        int pkgEnd = clsName.lastIndexOf('.');
+
+        if (pkgEnd >= 0 && pkgEnd < clsName.length() - 1)
+            clsName = clsName.substring(pkgEnd + 1);
+
+        if (clsName.endsWith("[]"))
+            clsName = clsName.substring(0, clsName.length() - 2) + "_array";
+
+        int parentEnd = clsName.lastIndexOf('$');
+
+        if (parentEnd >= 0)
+            clsName = clsName.substring(parentEnd + 1);
+
+        parentEnd = clsName.lastIndexOf('+');   // .NET parent
+
+        if (parentEnd >= 0)
+            clsName = clsName.substring(parentEnd + 1);
+
+        return clsName;
+    }
+
+    /**
+     * Gets type name by class.
+     *
+     * @param cls Class.
+     * @return Type name.
+     */
+    public static String typeName(Class<?> cls) {
+        String typeName = cls.getSimpleName();
+
+        // To protect from failure on anonymous classes.
+        if (typeName.isEmpty()) {
+            String pkg = cls.getPackage().getName();
+
+            typeName = cls.getName().substring(pkg.length() + (pkg.isEmpty() ? 0 : 1));
+        }
+
+        if (cls.isArray()) {
+            assert typeName.endsWith("[]");
+
+            typeName = typeName.substring(0, typeName.length() - 2) + "_array";
+        }
+
+        return typeName;
+    }
+
+    /**
+     * Cancels given runnable.
+     *
+     * @param w Worker to cancel - it's no-op if runnable is {@code null}.
+     */
+    public static void cancel(@Nullable GridWorker w) {
+        if (w != null)
+            w.cancel();
+    }
+
+    /**
+     * Cancels collection of runnables.
+     *
+     * @param ws Collection of workers - it's no-op if collection is {@code null}.
+     */
+    public static void cancel(Iterable<? extends GridWorker> ws) {
+        if (ws != null)
+            for (GridWorker w : ws)
+                w.cancel();
+    }
+
+    /**
+     * Joins runnable.
+     *
+     * @param w Worker to join.
+     * @param log The logger to possible exception.
+     * @return {@code true} if worker has not been interrupted, {@code false} if it was interrupted.
+     */
+    public static boolean join(@Nullable GridWorker w, @Nullable IgniteLogger log) {
+        if (w != null)
+            try {
+                w.join();
+            }
+            catch (InterruptedException ignore) {
+                warn(log, "Got interrupted while waiting for completion of runnable: " + w);
+
+                Thread.currentThread().interrupt();
+
+                return false;
+            }
+
+        return true;
+    }
+
+    /**
+     * Joins given collection of runnables.
+     *
+     * @param ws Collection of workers to join.
+     * @param log The logger to possible exceptions.
+     * @return {@code true} if none of the worker have been interrupted,
+     *      {@code false} if at least one was interrupted.
+     */
+    public static boolean join(Iterable<? extends GridWorker> ws, IgniteLogger log) {
+        boolean retval = true;
+
+        if (ws != null)
+            for (GridWorker w : ws)
+                if (!join(w, log))
+                    retval = false;
+
+        return retval;
+    }
+
+    /**
+     * Creates thread with given worker.
+     *
+     * @param worker Runnable to create thread with.
+     */
+    public static IgniteThread newThread(GridWorker worker) {
+        return new IgniteThread(worker.igniteInstanceName(), worker.name(), worker);
+    }
+
+    /**
+     * Sleeps for given number of milliseconds.
+     *
+     * @param ms Time to sleep.
+     * @throws IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
+     */
+    public static void sleep(long ms) throws IgniteInterruptedCheckedException {
+        try {
+            Thread.sleep(ms);
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
+            throw new IgniteInterruptedCheckedException(e);
+        }
+    }
+
+    /**
+     * Safely write buffer fully to blocking socket channel.
+     * Will throw assert if non blocking channel passed.
+     *
+     * @param sockCh WritableByteChannel.
+     * @param buf Buffer.
+     * @throws IOException IOException.
+     */
+    public static void writeFully(SocketChannel sockCh, ByteBuffer buf) throws IOException {
+        int totalWritten = 0;
+
+        assert sockCh.isBlocking() : "SocketChannel should be in blocking mode " + sockCh;
+
+        while (buf.hasRemaining()) {
+            int written = sockCh.write(buf);
+
+            if (written < 0)
+                throw new IOException("Error writing buffer to channel " +
+                    "[written = " + written + ", buf " + buf + ", totalWritten = " + totalWritten + "]");
+
+            totalWritten += written;
+        }
+    }
+
+    /**
+     * @param a First byte array.
+     * @param aOff First byte array offset.
+     * @param b Second byte array.
+     * @param bOff Second byte array offset.
+     * @param len Number of bytes to compare.
+     * @return {@code True} if the specified sub-arrays are equal.
+     */
+    public static boolean bytesEqual(byte[] a, int aOff, byte[] b, int bOff, int len) {
+        if (aOff + len > a.length || bOff + len > b.length)
+            return false;
+        else {
+            for (int i = 0; i < len; i++)
+                if (a[aOff + i] != b[bOff + i])
+                    return false;
+
+            return true;
+        }
+    }
+
+    /**
+     * Concatenates the two parameter bytes to form a message type value.
+     *
+     * @param b0 The first byte.
+     * @param b1 The second byte.
+     * @return Message type.
+     */
+    public static short makeMessageType(byte b0, byte b1) {
+        return (short)((b1 & 0xFF) << 8 | b0 & 0xFF);
     }
 }

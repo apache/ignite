@@ -27,12 +27,11 @@ import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.IgniteSpiException;
-
-import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.makeMessageType;
 
 /**
  * Class is responsible for serializing discovery messages using RU-ready {@link MessageSerializer} mechanism.
@@ -104,7 +103,7 @@ public class DiscoveryMessageParser {
 
         msgReader.setBuffer(msgBuf);
 
-        Message msg = msgFactory.create(makeMessageType((byte)in.read(), (byte)in.read()));
+        Message msg = msgFactory.create(CommonUtils.makeMessageType((byte)in.read(), (byte)in.read()));
         MessageSerializer msgSer = msgFactory.serializer(msg.directType());
 
         boolean finished;

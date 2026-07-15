@@ -259,7 +259,8 @@ public class GridCacheReturn implements Message {
                     throw (UnregisteredBinaryTypeException)err;
             }
 
-            CacheInvokeResult res0 = err == null ? CacheInvokeResult.fromResult(res) : CacheInvokeResult.fromError(err);
+            CacheInvokeResult res0 = err == null ? CacheInvokeResult.fromResult(res)
+                : CacheInvokeResult.fromError(CU.prepareEntryProcessorError(err));
 
             Object resKey = key0 != null ? key0 :
                 ((keepBinary && key instanceof BinaryObject) ? key : CU.value(key, cctx, true));
@@ -367,7 +368,7 @@ public class GridCacheReturn implements Message {
             for (CacheInvokeDirectResult res : invokeResCol) {
                 CacheInvokeResult<?> res0 = res.error() == null ?
                     CacheInvokeResult.fromResult(ctx.cacheObjectContext().unwrapBinaryIfNeeded(res.result(), true, false, null)) :
-                    CacheInvokeResult.fromError(res.error());
+                    CacheInvokeResult.fromError(CU.prepareEntryProcessorError(res.error()));
 
                 map0.put(ctx.cacheObjectContext().unwrapBinaryIfNeeded(res.key(), true, false, null), res0);
             }

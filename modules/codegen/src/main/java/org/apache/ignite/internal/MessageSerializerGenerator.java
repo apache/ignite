@@ -462,6 +462,9 @@ public class MessageSerializerGenerator {
             else if (assignableFrom(type, type("org.apache.ignite.lang.IgniteProductVersion")))
                 returnFalseIfWriteFailed(write, field, "writer.writeIgniteProductVersion", getExpr);
 
+            else if (assignableFrom(type, type("org.apache.ignite.internal.processors.cache.version.GridCacheVersion")))
+                returnFalseIfWriteFailed(write, field, "writer.writeGridCacheVersion", getExpr);
+
             else if (assignableFrom(type, type(MESSAGE_INTERFACE))) {
                 if (sameType(type, COMPRESSED_MESSAGE_CLASS))
                     throw new IllegalArgumentException(COMPRESSED_MSG_ERROR);
@@ -691,6 +694,9 @@ public class MessageSerializerGenerator {
             else if (assignableFrom(type, type("org.apache.ignite.lang.IgniteProductVersion")))
                 returnFalseIfReadFailed(field, "reader.readIgniteProductVersion");
 
+            else if (assignableFrom(type, type("org.apache.ignite.internal.processors.cache.version.GridCacheVersion")))
+                returnFalseIfReadFailed(field, "reader.readGridCacheVersion");
+
             else if (assignableFrom(type, type(MESSAGE_INTERFACE))) {
                 if (sameType(type, COMPRESSED_MESSAGE_CLASS))
                     throw new IllegalArgumentException(COMPRESSED_MSG_ERROR);
@@ -832,6 +838,9 @@ public class MessageSerializerGenerator {
 
             if (sameType(type, "org.apache.ignite.lang.IgniteUuid"))
                 return "IGNITE_UUID";
+
+            if (sameType(type, "org.apache.ignite.internal.processors.cache.version.GridCacheVersion"))
+                return "GRID_CACHE_VERSION";
 
             if (sameType(type, "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion"))
                 return "AFFINITY_TOPOLOGY_VERSION";
@@ -1149,5 +1158,28 @@ public class MessageSerializerGenerator {
         }
 
         throw new IllegalArgumentException("Compress annotation is used for an unsupported type: " + type);
+    }
+
+    /** */
+    public static String simpleClassName(TypeMirror type) {
+        if (type.getKind() == TypeKind.DECLARED) {
+            DeclaredType declaredType = (DeclaredType)type;
+
+            return declaredType.asElement().getSimpleName().toString();
+        }
+
+        return type.toString();
+    }
+
+    /** */
+    public static String qualifiedClassName(TypeMirror type) {
+        if (type.getKind() == TypeKind.DECLARED) {
+            DeclaredType declaredType = (DeclaredType)type;
+            TypeElement el = (TypeElement)declaredType.asElement();
+
+            return el.getQualifiedName().toString();
+        }
+
+        return type.toString();
     }
 }
