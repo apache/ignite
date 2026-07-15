@@ -42,6 +42,11 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *     <li>{@code tolerateErrors} - if {@code true}, operation failures are counted instead of
  *         failing fast. Intended for background loads crossing a partition boundary, where a
  *         short transient error window is possible;</li>
+ *     <li>{@code stopOnError} - if {@code true}, the load stops gracefully on the very first
+ *         operation failure (rather than failing the application), records the number of
+ *         successful operations and a {@code StoppedOnError} flag, and finishes. Takes precedence
+ *         over {@code tolerateErrors}. Intended for a load that must be cut off by the first
+ *         exception a network partition triggers;</li>
  *     <li>{@code opPauseMs} - pause between operations, default 0;</li>
  *     <li>{@code resultPrefix} - prefix for recorded results, so that several runs reusing one
  *         service produce uniquely named results;</li>
@@ -86,6 +91,7 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
 
         boolean expectAdmissible = jNode.path("expectAdmissible").asBoolean(true);
         boolean tolerateErrors = jNode.path("tolerateErrors").asBoolean(false);
+        boolean stopOnError = jNode.path("stopOnError").asBoolean(false);
 
         long opPauseMs = jNode.path("opPauseMs").asLong(0);
 
@@ -121,6 +127,8 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
 
         long opsCnt = 0;
         long errCnt = 0;
+
+        boolean stoppedOnError = false;
 
         OpStats stats = new OpStats();
 
@@ -210,6 +218,15 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
                 if (writeMode && !expectAdmissible)
                     log.info("Write rejected as expected [dc=" + dcId() + ", key=" + key +
                         ", msg=" + e.getMessage() + "]");
+                else if (stopOnError) {
+                    log.info("Operation failed, cutting the load on first error [dc=" + dcId() + ", mode=" + mode +
+                        ", key=" + key + ", succeeded=" + opsCnt + ", msg=" + e.getMessage() + "]");
+
+                    errCnt++;
+                    stoppedOnError = true;
+
+                    break;
+                }
                 else if (!tolerateErrors)
                     throw new IllegalStateException("Operation failed [dc=" + dcId() + ", mode=" + mode +
                         ", key=" + key + "]", e);
@@ -251,6 +268,7 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
 
         recordResult(pfx + "OpsCnt", String.valueOf(opsCnt));
         recordResult(pfx + "ErrCnt", String.valueOf(errCnt));
+        recordResult(pfx + "StoppedOnError", String.valueOf(stoppedOnError));
         recordResult(pfx + "DurationMs", String.valueOf(durationMs));
 
         recordResult(pfx + "AvgOpMs", fmtMs(stats.avgNs()));
@@ -262,7 +280,7 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
         recordResult(pfx + "MaxStallMs", String.valueOf(maxStallMs));
 
         log.info("MDC load finished [dc=" + dcId() + ", mode=" + mode + ", ops=" + opsCnt +
-            ", errs=" + errCnt + ", durationMs=" + durationMs +
+            ", errs=" + errCnt + ", stoppedOnError=" + stoppedOnError + ", durationMs=" + durationMs +
             ", avgOpMs=" + fmtMs(stats.avgNs()) + ", maxOpMs=" + fmtMs(stats.maxNs()) +
             ", maxStallMs=" + maxStallMs + "]");
 
