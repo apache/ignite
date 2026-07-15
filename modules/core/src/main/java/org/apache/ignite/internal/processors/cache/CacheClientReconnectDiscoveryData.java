@@ -22,9 +22,7 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-/**
- * Discovery data sent from client reconnecting to cluster.
- */
+/** Discovery data sent from client reconnecting to cluster. */
 public class CacheClientReconnectDiscoveryData implements Message {
     /** */
     @Order(0)
@@ -33,16 +31,12 @@ public class CacheClientReconnectDiscoveryData implements Message {
     /** */
     public CacheClientReconnectDiscoveryData() { }
 
-    /**
-     * @param clientCaches Information about caches started on re-joining client node.
-     */
+    /** @param clientCaches Information about caches started on re-joining client node. */
     CacheClientReconnectDiscoveryData(Map<String, CacheReconnectInfo> clientCaches) {
         this.clientCaches = clientCaches;
     }
 
-    /**
-     * @return Information about caches started on re-joining client node.
-     */
+    /** @return Information about caches started on re-joining client node. */
     public Map<String, CacheReconnectInfo> clientCaches() {
         return clientCaches;
     }

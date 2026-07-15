@@ -53,30 +53,22 @@ public class CacheReconnectInfo implements Message {
         this.nearCache = nearCache;
     }
 
-    /**
-     * @return Cache configuration.
-     */
+    /** @return Cache configuration. */
     String cacheName() {
         return cacheName;
     }
 
-    /**
-     * @return Cache deployment ID.
-     */
+    /** @return Cache deployment ID. */
     IgniteUuid deploymentId() {
         return deploymentId;
     }
 
-    /**
-     * @return Near cache flag.
-     */
+    /** @return Near cache flag. */
     boolean nearCache() {
         return nearCache;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheReconnectInfo.class, this);
     }

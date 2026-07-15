@@ -25,9 +25,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * Information about configured caches sent from joining node.
- */
+/** Information about configured caches sent from joining node. */
 public class CacheJoinNodeDiscoveryData implements Message {
     /** */
     @Order(0)
@@ -73,30 +71,22 @@ public class CacheJoinNodeDiscoveryData implements Message {
         this.startCaches = startCaches;
     }
 
-    /**
-     * @return {@code True} if required to start all caches on joining node.
-     */
+    /** @return {@code True} if required to start all caches on joining node. */
     boolean startCaches() {
         return startCaches;
     }
 
-    /**
-     * @return Deployment ID assigned on joining node.
-     */
+    /** @return Deployment ID assigned on joining node. */
     public IgniteUuid cacheDeploymentId() {
         return cacheDeploymentId;
     }
 
-    /**
-     * @return Templates configured on joining node.
-     */
+    /** @return Templates configured on joining node. */
     public Map<String, CacheJoinInfo> templates() {
         return templates;
     }
 
-    /**
-     * @return Caches configured on joining node.
-     */
+    /** @return Caches configured on joining node. */
     public Map<String, CacheJoinInfo> caches() {
         return caches;
     }
