@@ -1187,8 +1187,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
             byte plc = initMsg.policy();
 
-            // Two-stage unmarshal: the routing header (@NioField) is restored here on the NIO thread so the message can
-            // be dispatched, then its full payload is restored below on a pool thread. Not a duplicate — disjoint fields.
+            // Not a double unmarshal: the @NioField routing header is restored here on the NIO thread, its full
+            // payload below on a pool thread — disjoint fields.
             MessageMarshalling.unmarshalNio(initMsg, ctx);
 
             pools.poolForPolicy(plc).execute(new Runnable() {
@@ -1265,8 +1265,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                 }
             }
 
-            // Kept after the delayed-message gate above: a message held back and later replayed enters this method a
-            // second time, and the NIO-thread unmarshal of its routing header must happen once, on the replay only.
+            // After the delayed-message gate: a replayed message re-enters this method, so its NIO-thread header
+            // unmarshal is kept here to run exactly once.
             MessageMarshalling.unmarshalNio(msg, ctx);
 
             // If message is P2P, then process in P2P service.
@@ -1476,9 +1476,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
     /** */
     private void unmarshalPayload(GridIoMessage msg) {
-        // Cache messages are unmarshalled later by GridCacheIoManager.unmarshall, which uses the peer-deployment class
-        // loader (GridCacheDeploymentManager#globalLoader). Here the generic pass only has the configuration loader,
-        // which can't see peer-loaded classes, so it must not unmarshal them.
+        // Cache messages are unmarshalled later by GridCacheIoManager with the peer-deployment loader; the generic
+        // pass here has only the config loader, which can't see peer classes.
         if (msg.message() instanceof GridCacheMessage)
             return;
 

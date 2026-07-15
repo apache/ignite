@@ -73,7 +73,7 @@ public class GridIoMessage implements Message, SpanTransport, MessageWrapper {
     @GridToStringInclude
     public @Nullable OperationContextMessage opCtxMsg;
 
-    /** Set once the payload has been marshalled by {@code GridIoManager#prepare}; asserted before a prepared send. Not on the wire. */
+    /** Set by {@code GridIoManager#prepare} after marshalling; asserted by {@code sendPrepared}. Not on the wire. */
     private transient boolean prepared;
 
     /**
