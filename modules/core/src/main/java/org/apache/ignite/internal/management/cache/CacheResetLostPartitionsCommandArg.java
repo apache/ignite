@@ -31,15 +31,15 @@ public class CacheResetLostPartitionsCommandArg extends IgniteDataTransferObject
     @Order(0)
     @Positional
     @Argument(example = "cacheGroupName1,...,cacheGroupNameN")
-    String[] caches;
+    String[] cacheGroups;
 
     /** */
-    public String[] caches() {
-        return caches;
+    public String[] cacheGroups() {
+        return cacheGroups;
     }
 
     /** */
-    public void caches(String[] caches) {
-        this.caches = caches;
+    public void cacheGroups(String[] cacheGroups) {
+        this.cacheGroups = cacheGroups;
     }
 }
