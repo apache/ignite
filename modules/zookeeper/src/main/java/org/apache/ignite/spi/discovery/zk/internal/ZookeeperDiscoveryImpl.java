@@ -17,7 +17,9 @@
 
 package org.apache.ignite.spi.discovery.zk.internal;
 
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,7 +41,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.DataFormatException;
-import java.util.zip.Deflater;
+import java.util.zip.DeflaterOutputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 import org.apache.ignite.Ignite;
@@ -78,6 +80,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
@@ -1781,7 +1784,7 @@ public class ZookeeperDiscoveryImpl {
 
         long evtId = rtState.evtsData.evtIdGen;
 
-        List<T2<ZkJoinedNodeEvtData, Map<Integer, Serializable>>> nodes = joinCtx.nodes;
+        List<T2<ZkJoinedNodeEvtData, ZkDiscoDataBagWrapper>> nodes = joinCtx.nodes;
 
         assert nodes != null && !nodes.isEmpty();
 
@@ -1793,11 +1796,9 @@ public class ZookeeperDiscoveryImpl {
         Map<Long, Long> dupDiscoData = null;
 
         for (int i = 0; i < nodeCnt; i++) {
-            T2<ZkJoinedNodeEvtData, Map<Integer, Serializable>> nodeEvtData = nodes.get(i);
+            T2<ZkJoinedNodeEvtData, ZkDiscoDataBagWrapper> nodeEvtData = nodes.get(i);
 
-            Map<Integer, Serializable> discoData = nodeEvtData.get2();
-
-            byte[] discoDataBytes = U.marshal(marsh, discoData);
+            byte[] discoDataBytes = msgParser.marshalZip(nodeEvtData.get2());
 
             Long dupDataNode = null;
 
@@ -2251,7 +2252,7 @@ public class ZookeeperDiscoveryImpl {
 
         exchange.collect(collectBag);
 
-        Map<Integer, Serializable> commonData = collectBag.commonData();
+        Map<Integer, Message> commonData = collectBag.commonData();
 
         Object old = curTop.put(joinedNode.order(), joinedNode);
 
@@ -3021,12 +3022,11 @@ public class ZookeeperDiscoveryImpl {
 
             byte[] discoDataBytes = dataForJoined.discoveryDataForNode(locNode.order());
 
-            Map<Integer, Serializable> commonDiscoData =
-                marsh.unmarshal(discoDataBytes, U.resolveClassLoader(spi.ignite().configuration()));
+            ZkDiscoDataBagWrapper zkDataBagWrapper = msgParser.unmarshalZip(discoDataBytes);
 
             DiscoveryDataBag dataBag = new DiscoveryDataBag(locNode.id(), locNode.isClient());
 
-            dataBag.commonData(commonDiscoData);
+            dataBag.commonData(zkDataBagWrapper.unmarshalledData());
 
             exchange.onExchange(dataBag);
 
@@ -4066,33 +4066,21 @@ public class ZookeeperDiscoveryImpl {
 
     /**
      * @param obj Object.
-     * @return Bytes.
+     * @return Zip-compressed marshalled bytes.
      * @throws IgniteCheckedException If failed.
      */
     byte[] marshalZip(Object obj) throws IgniteCheckedException {
         assert obj != null;
 
-        return zip(U.marshal(marsh, obj));
-    }
+        GridByteArrayOutputStream out = new GridByteArrayOutputStream();
 
-    /**
-     * @param bytes Bytes to compress.
-     * @return Zip-compressed bytes.
-     */
-    private static byte[] zip(byte[] bytes) {
-        Deflater deflater = new Deflater();
-
-        deflater.setInput(bytes);
-        deflater.finish();
-
-        GridByteArrayOutputStream out = new GridByteArrayOutputStream(bytes.length);
-
-        final byte[] buf = new byte[bytes.length];
-
-        while (!deflater.finished()) {
-            int cnt = deflater.deflate(buf);
-
-            out.write(buf, 0, cnt);
+        // BufferedOutputStream's 8 KB buffer coalesces JdkMarshaller's ~1 KB ObjectOutputStream
+        // block-data writes into fewer Deflater JNI calls.
+        try (BufferedOutputStream zipOut = new BufferedOutputStream(new DeflaterOutputStream(out))) {
+            U.marshal(marsh, obj, zipOut);
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException("Failed to marshal object: " + obj, e);
         }
 
         return out.toByteArray();

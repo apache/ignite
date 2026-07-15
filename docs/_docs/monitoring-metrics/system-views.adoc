@@ -314,6 +314,7 @@ The NODES view contains information about the cluster nodes.
 |IS_CLIENT |BOOLEAN |Indicates whether the node is a client.
 |NODE_ID |UUID |Node ID.
 |NODE_ORDER |INT |Node order within the topology.
+|DATA_CENTER_ID |VARCHAR |Node data center ID.
 |VERSION |VARCHAR |Node version.
 |===
 
@@ -343,6 +344,22 @@ The CONFIGURATION view contains the configuration properties of node.
 
 |NAME |VARCHAR |Configuration property name.
 |VALUE |VARCHAR |Configuration property value.
+
+|===
+
+== IGNITE_PLUGINS
+
+
+The IGNITE_PLUGINS view contains information about ignite plugins configured on the node.
+
+[{table_opts}]
+|===
+| Column |Data Type |Description
+
+|NAME |VARCHAR |Plugin name.
+|VERSION |VARCHAR |Plugin version.
+|CLASS_NAME |VARCHAR |Plugin implementation class name.
+|INFO |VARCHAR |Plugin information returned by the provider.
 
 |===
 

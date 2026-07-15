@@ -61,9 +61,9 @@ import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestO
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectEnum;
 import org.apache.ignite.internal.management.SystemViewCommand;
 import org.apache.ignite.internal.management.SystemViewTask;
-import org.apache.ignite.internal.metric.SystemViewSelfTest.TestPredicate;
-import org.apache.ignite.internal.metric.SystemViewSelfTest.TestRunnable;
-import org.apache.ignite.internal.metric.SystemViewSelfTest.TestTransformer;
+import org.apache.ignite.internal.metric.SystemViewExecutorsTest.TestRunnable;
+import org.apache.ignite.internal.metric.SystemViewQueriesTest.TestPredicate;
+import org.apache.ignite.internal.metric.SystemViewQueriesTest.TestTransformer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.metric.SqlViewExporterSpiTest.TestAffinityFunction;
@@ -93,8 +93,8 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK
 import static org.apache.ignite.internal.management.SystemViewCommand.COLUMN_SEPARATOR;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.NODES_SYS_VIEW;
 import static org.apache.ignite.internal.managers.systemview.ScanQuerySystemView.SCAN_QRY_SYS_VIEW;
-import static org.apache.ignite.internal.metric.SystemViewSelfTest.TEST_PREDICATE;
-import static org.apache.ignite.internal.metric.SystemViewSelfTest.TEST_TRANSFORMER;
+import static org.apache.ignite.internal.metric.SystemViewQueriesTest.TEST_PREDICATE;
+import static org.apache.ignite.internal.metric.SystemViewQueriesTest.TEST_TRANSFORMER;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHE_GRPS_VIEW;
 import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.CACHE_GRP_PAGE_LIST_VIEW;
@@ -501,7 +501,8 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
             "DS_SEMAPHORES",
             "DS_QUEUES",
             "PAGES_TIMESTAMP_HISTOGRAM",
-            "SQL_PLANS_HISTORY"
+            "SQL_PLANS_HISTORY",
+            "IGNITE_PLUGINS"
         ));
 
         Set<String> viewNames = new TreeSet<>();

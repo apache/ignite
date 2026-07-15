@@ -63,9 +63,9 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectAllTypes;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectEnum;
 import org.apache.ignite.internal.metric.AbstractExporterSpiTest;
-import org.apache.ignite.internal.metric.SystemViewSelfTest.TestPredicate;
-import org.apache.ignite.internal.metric.SystemViewSelfTest.TestRunnable;
-import org.apache.ignite.internal.metric.SystemViewSelfTest.TestTransformer;
+import org.apache.ignite.internal.metric.SystemViewExecutorsTest.TestRunnable;
+import org.apache.ignite.internal.metric.SystemViewQueriesTest.TestPredicate;
+import org.apache.ignite.internal.metric.SystemViewQueriesTest.TestTransformer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -86,8 +86,8 @@ import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
-import static org.apache.ignite.internal.metric.SystemViewSelfTest.TEST_PREDICATE;
-import static org.apache.ignite.internal.metric.SystemViewSelfTest.TEST_TRANSFORMER;
+import static org.apache.ignite.internal.metric.SystemViewQueriesTest.TEST_PREDICATE;
+import static org.apache.ignite.internal.metric.SystemViewQueriesTest.TEST_TRANSFORMER;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheGroupId;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.queryProcessor;
@@ -464,7 +464,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             "DS_SEMAPHORES",
             "DS_QUEUES",
             "PAGES_TIMESTAMP_HISTOGRAM",
-            "SQL_PLANS_HISTORY"
+            "SQL_PLANS_HISTORY",
+            "IGNITE_PLUGINS"
         ));
 
         Set<String> actViews = new TreeSet<>();

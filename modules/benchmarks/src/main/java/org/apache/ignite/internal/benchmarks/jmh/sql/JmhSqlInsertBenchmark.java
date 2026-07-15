@@ -19,6 +19,7 @@ package org.apache.ignite.internal.benchmarks.jmh.sql;
 
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
+import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -29,9 +30,6 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
-import org.openjdk.jmh.runner.Runner;
-import org.openjdk.jmh.runner.options.Options;
-import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
@@ -111,11 +109,9 @@ public class JmhSqlInsertBenchmark extends JmhSqlAbstractBenchmark {
      * @throws Exception Exception.
      */
     public static void main(String[] args) throws Exception {
-        final Options options = new OptionsBuilder()
-            .include(JmhSqlInsertBenchmark.class.getSimpleName())
-            .build();
-
-        new Runner(options).run();
+        JmhIdeBenchmarkRunner.create()
+            .benchmarks(JmhSqlInsertBenchmark.class.getSimpleName())
+            .run();
     }
 
     /** */

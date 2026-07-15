@@ -14,8 +14,12 @@
 # limitations under the License.
 
 name: Code Style, Abandoned Tests, Javadocs
+
+# pull_request_target (not pull_request) so the checks also run when the PR conflicts with the base
+# branch. These jobs build and run untrusted PR code: keep the token read-only and add no secrets
+# here, otherwise a fork PR could read them.
 on:
-  pull_request:
+  pull_request_target:
   push:
     branches:
       - master
@@ -24,6 +28,9 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   check-java:
@@ -43,6 +50,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: ${{ matrix.java }}
+          cache: 'maven'
 
       - name: Install prerequisites
         run: |
@@ -96,11 +104,26 @@ jobs:
 
       - name: Run codestyle and licenses checks
         run: |
-          ./mvnw test-compile -Pall-java,licenses,lgpl,checkstyle,examples,scala,check-licenses -B -V
+          set -o pipefail
+          rc=0
+          ./mvnw test-compile -Pall-java,licenses,lgpl,checkstyle,examples,check-licenses -B -V -T 1C 2>&1 | tee mvn-codestyle.log || rc=$?
+          if [ "$rc" -ne 0 ] && grep -q "COMPILATION ERROR" mvn-codestyle.log; then
+            echo "::error title=Compilation failed::Java compilation failed - this is a compile error, not a checkstyle violation. The flood of 'cannot find symbol' for generated *Walker/*Serializer/*Factory classes is a cascade: javac drops annotation-processor output when compilation fails. Fix the real error(s) listed in the build log group below first."
+            echo "::group::Likely root-cause compile errors (generated-class cascade filtered out)"
+            awk '
+              /^\[ERROR\].*cannot find symbol/ { loc=$0; getline s; gsub(/^[[:space:]]*(\[ERROR\][[:space:]]*)?/, "", s);
+                if (s !~ /(Walker|Serializer|Factory)([^A-Za-z]|$)/) print loc "  ->  " s; next }
+              /^\[ERROR\].*\.java:\[[0-9]+,[0-9]+\]/ {
+                if ($0 !~ /codegen\.idto|internal\.systemview/) print $0 }
+            ' mvn-codestyle.log | sed -E 's#^.*/modules/#modules/#; s/^\[ERROR\] //' | sort -u | head -n 40
+            echo "::endgroup::"
+          fi
+          exit "$rc"
 
       - name: Run abandoned tests checks.
+        # Reuse classes from the previous step; the differing profiles otherwise trigger a full reactor recompile.
         run : |
-          ./mvnw test -Pcheck-test-suites,all-java,scala -B -V
+          ./mvnw test -Pcheck-test-suites,all-java -B -V -Dmaven.compiler.useIncrementalCompilation=false
 
       - name: Check javadocs.
         run : |
