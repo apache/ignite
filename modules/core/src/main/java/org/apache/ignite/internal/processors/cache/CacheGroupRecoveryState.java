@@ -57,12 +57,12 @@ public class CacheGroupRecoveryState implements Externalizable, Message {
     }
 
     /** */
-    public Set<Integer> zeroUpdateCounterParititons() {
+    public Set<Integer> zeroUpdateCounterPartitions() {
         return Collections.unmodifiableSet(zeroParts);
     }
 
     /** */
-    public Set<Integer> lostParititons() {
+    public Set<Integer> lostPartitions() {
         return Collections.unmodifiableSet(lostParts);
     }
 

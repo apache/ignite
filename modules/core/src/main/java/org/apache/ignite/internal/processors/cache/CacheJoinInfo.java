@@ -17,23 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
-public class CacheJoinInfo implements MarshallableMessage {
-    /** */
-    @GridToStringInclude
-    private StoredCacheData cacheData;
-
+public class CacheJoinInfo implements Message {
     /** */
     @Order(0)
-    byte[] cacheDataBytes;
+    @GridToStringInclude
+    StoredCacheData cacheData;
 
     /** */
     @Order(1)
@@ -72,57 +66,33 @@ public class CacheJoinInfo implements MarshallableMessage {
         this.staticallyConfigured = staticallyConfigured;
     }
 
-    /**
-     * @return Cache data.
-     */
+    /** @return Cache data. */
     public StoredCacheData cacheData() {
         return cacheData;
     }
 
-    /**
-     * @return Cache type.
-     */
+    /** @return Cache type. */
     public CacheType cacheType() {
         return cacheType;
     }
 
-    /**
-     * @return SQL flag - {@code true} if cache was created with {@code CREATE TABLE}.
-     */
+    /** @return SQL flag - {@code true} if cache was created with {@code CREATE TABLE}. */
     public boolean sql() {
         return sql;
     }
 
-    /**
-     * @return {@code true} if it was configured by static config and {@code false} otherwise.
-     */
+    /** @return {@code true} if it was configured by static config and {@code false} otherwise. */
     public boolean isStaticallyConfigured() {
         return staticallyConfigured;
     }
 
-    /**
-     * @return Long which bits represent some flags.
-     */
+    /** @return Long which bits represent some flags. */
     public long getFlags() {
         return flags;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheJoinInfo.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (cacheData != null)
-            cacheDataBytes = U.marshal(marsh, cacheData);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (cacheDataBytes != null)
-            cacheData = U.unmarshal(marsh, cacheDataBytes, clsLdr);
     }
 }
