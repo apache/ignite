@@ -21,9 +21,12 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.communication.MessageMarshalling;
+import org.apache.ignite.internal.processors.cache.CacheObjectNotResolvedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -32,6 +35,14 @@ import org.junit.Test;
  * {@code KeyCacheObject} travels bytes-only and forbids lazy resolution (see {@code @MarshalledObjects}).
  */
 public class GridCacheQueryResponseUnmarshalTest extends GridCommonAbstractTest {
+    /** An unresolved key (only its bytes present) must fail fast rather than resolve lazily. */
+    @Test
+    public void testUnresolvedKeyThrows() {
+        KeyCacheObject unresolved = new KeyCacheObjectImpl(null, new byte[] {1, 2, 3}, -1);
+
+        GridTestUtils.assertThrows(log, unresolved::hashCode, CacheObjectNotResolvedException.class, null);
+    }
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
@@ -67,7 +78,8 @@ public class GridCacheQueryResponseUnmarshalTest extends GridCommonAbstractTest 
 
         Map.Entry<?, ?> row = (Map.Entry<?, ?>)rcvd.data().iterator().next();
 
-        // Throws CacheObjectNotResolvedException on an unresolved key.
+        // The row key resolved during unmarshalling: hashCode() returns instead of throwing
+        // CacheObjectNotResolvedException (see testUnresolvedKeyThrows), and matches the original.
         assertEquals(key.hashCode(), row.getKey().hashCode());
     }
 }
