@@ -290,6 +290,9 @@ public class SBLimitedLength extends GridStringBuilder {
             }
             return this;
         }
+        // INVARIANT: tail is guaranteed to exist when offset >= headLengthLimit,
+        // because overflow would have created tail before head could reach this offset.
+        assert tail != null;
         tail.insert(offset - headLengthLimit, str);
         return this;
     }
