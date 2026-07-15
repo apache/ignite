@@ -132,14 +132,14 @@ public class IgniteFeatureManager {
 
         if (!F.isEmpty(components)) {
             for (IgniteComponentFeatureSetProvider component : components)
-                features.add(buildPluginFeatures(component));
+                features.add(buildPluginFeatureSet(component));
         }
 
         return new IgniteNodeFeatureSet(features.toArray(IgniteComponentFeatureSet[]::new));
     }
 
     /** */
-    private IgniteComponentFeatureSet buildPluginFeatures(IgniteComponentFeatureSetProvider cmpFeaturesProvider) {
+    private IgniteComponentFeatureSet buildPluginFeatureSet(IgniteComponentFeatureSetProvider cmpFeaturesProvider) {
         Collection<IgniteFeature> cmpFeatures = cmpFeaturesProvider.features();
 
         A.notEmpty(cmpFeatures, "component features");
