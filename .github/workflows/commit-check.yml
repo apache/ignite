@@ -110,7 +110,7 @@ jobs:
 
       - name: Documentation code snippets compilation check
         run: |
-          ./mvnw -Pdocs -pl :code-snippets -am compile -B -V
+          ./mvnw compile -Pdocs -pl :code-snippets -am -B -V
 
   check-dotnet:
     name: Сheck .NET code
