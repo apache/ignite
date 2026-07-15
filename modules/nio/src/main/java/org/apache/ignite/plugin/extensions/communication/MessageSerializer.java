@@ -48,7 +48,7 @@ public interface MessageSerializer<M extends Message> {
      * @param <M> Message type.
      * @return Whether message was fully written.
      */
-    static <M extends Message> boolean writeTo(MessageFactory factory, M msg, MessageWriter writer) {
+    public static <M extends Message> boolean writeTo(MessageFactory factory, M msg, MessageWriter writer) {
         return resolve(factory, msg).writeTo(msg, writer);
     }
 
@@ -61,7 +61,7 @@ public interface MessageSerializer<M extends Message> {
      * @param <M> Message type.
      * @return Whether message was fully read.
      */
-    static <M extends Message> boolean readFrom(MessageFactory factory, M msg, MessageReader reader) {
+    public static <M extends Message> boolean readFrom(MessageFactory factory, M msg, MessageReader reader) {
         return resolve(factory, msg).readFrom(msg, reader);
     }
 
