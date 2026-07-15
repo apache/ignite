@@ -71,19 +71,19 @@ public abstract class MessageGenerator {
         " */";
 
     /** */
-    final ProcessingEnvironment env;
+    protected final ProcessingEnvironment env;
 
     /** */
-    final Set<String> imports = new TreeSet<>();
+    protected final Set<String> imports = new TreeSet<>();
 
     /** */
-    TypeElement type;
+    protected TypeElement type;
 
     /** Current indentation level. Set to the class-member level once in {@link #generate}; adjusted only by balanced shifts. */
-    int indent;
+    protected int indent;
 
     /** Dispatches cache-object-context resolution in both the marshaller and the deployment generators. */
-    final TypeMirror cacheIdAwareMirror;
+    protected final TypeMirror cacheIdAwareMirror;
 
     /** */
     MessageGenerator(ProcessingEnvironment env) {
