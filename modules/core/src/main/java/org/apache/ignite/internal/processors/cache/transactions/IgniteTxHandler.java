@@ -438,15 +438,6 @@ public class IgniteTxHandler {
             firstEntry = firstWrite != null ? firstWrite : firstRead;
         }
         catch (IgniteCheckedException e) {
-            try {
-                req.onClassError(e);
-                
-                ctx.io().processFailedMessage(nearNode.id(), req, null, req.policy());
-            }
-            catch (IgniteCheckedException ex) {
-                throw new IgniteException(ex);
-            }
-
             return new GridFinishedFuture<>(e);
         }
 
