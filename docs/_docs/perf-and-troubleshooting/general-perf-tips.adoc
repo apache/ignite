@@ -49,18 +49,27 @@ queries with JOINs at massive scale and expect significant performance benefits.
 
 == How to assess cluster health
 
-Cluster health is assessed against the state and workload intended for the deployment.
-A healthy cluster may undergo planned topology changes or temporary load spikes.
-The important properties are that the cluster serves the operations allowed by its intended state, data remains consistent, expected nodes are present, and transient activity such as rebalancing or queue growth converges instead of accumulating.
-There is no universal single health metric.
+Cluster health is a complex thing. Apache Ignite is capable of demonstrating great performance across different scenarios with varying loads. Therefore, in general terms, a healthy cluster is one whose behavior aligns with your expectations. However, there are some universal aspects that apply to all deployments and warrant attention.
+
+It is important to understand that a healthy cluster may undergo planned topology changes or temporary load spikes.
+
+The key properties are:
+- The cluster serves operations allowed by its intended state.
+- Data remains consistent (`idle_verify` passes, meaning partitions are intact and there are no conflicts).
+- Expected nodes are present.
+- No pending transactions and no split brain.
+- No lost partitions.
+- Transient activity such as rebalancing or queue growth converges instead of accumulating.
+
+But the thing is, there is no universal single health metric.
 
 Use several signals together.
 For example, `SELECT 1` can confirm that a client or SQL query path is reachable, but it does not check user partitions, backup consistency, baseline membership, or all server nodes.
 Similarly, `control.sh --cache idle_verify` is an important consistency check, but it is not a complete health check.
 
-=== Check the intended state and node membership
-
+=== Check the Intended State and Node Membership
 Start with the link:monitoring-metrics/cluster-states[cluster state].
+
 Run:
 
 [source,shell]
@@ -84,7 +93,9 @@ Command [STATE] finished with code: 0
 `INACTIVE` is acceptable only when it matches the current operation, for example planned maintenance; an inactive cluster does not serve the data workload.
 The criterion is whether the actual state matches the state that was intentionally set for the deployment.
 
-For deployments that use the link:clustering/baseline-topology[baseline topology], check the baseline as well:
+If baseline topology is enabled, check the baseline as well:
+
+Run:
 
 [source,shell]
 ----
@@ -124,15 +135,15 @@ The baseline contains server nodes that are intended to store data.
 Client nodes are not part of the baseline.
 An online server node in `Other nodes` is not always an error: the node may have been prepared intentionally but not yet introduced into the data topology.
 If the node is expected to store data, first check the link:clustering/baseline-topology#baseline-topology-autoadjustment[baseline auto-adjustment policy] and the deployment plan, then use the documented baseline change procedure.
-Changing the baseline can start link:data-rebalancing[rebalancing].
+Changing the baseline can start link:data-rebalancing[rebalancing]. This is often not an easy procedure for a cluster with data in persistence storage.
 
-A temporary topology change does not make the cluster unhealthy by itself.
+Frequent unexpected topology changes are not normal and usually indicate node instability, network issues, or misconfigured discovery. However, a temporary topology change does not make the cluster unhealthy by itself.
 Server `JOIN`, `LEFT`, and `FAIL` events change cluster membership and the major topology version.
 Cache start or stop, distributed cache creation, SQL table creation, and other affinity-changing events can change the minor affinity topology version without a node loss.
 Planned events are normal.
 Investigate unexpected repeated membership churn, node segmentation, network failures, or a partition map exchange that does not finish.
 
-=== Verify partition consistency
+=== Verify Partition Consistency
 
 When the cluster is expected to be idle, run:
 
@@ -161,11 +172,11 @@ The command compares partition update counters and partition hashes between prim
 Run it only when data updates are stopped.
 If updates are active, the command can report false conflicts because copies are changing while hashes are being calculated.
 Partitions in `MOVING` or `LOST` state may be skipped, so the result can be incomplete.
-A successful `idle_verify` result is an important confirmation of consistency, but it does not prove application availability, the intended cluster state, lack of queue pressure, or absence of split brain.
+A successful `idle_verify` result is an important confirmation of consistency, but it still does not prove overall cluster health check success.
 
-For more details, see link:tools/control-script#verifying-partition-checksums[Verifying Partition Checksums].
+=== Confirm That Rebalancing Converges
 
-=== Confirm that rebalancing converges
+After a topology event, such as a new node join, transient rebalancing is expected, but it should converge. Rebalance progress should move toward completion.
 
 Use the link:monitoring-metrics/system-views#partition_states[PARTITION_STATES] system view to check partition states:
 
@@ -187,25 +198,10 @@ In steady state, this query usually should not return `MOVING`, `RENTING`, or `L
 `MOVING` and `RENTING` are expected right after an intended topology or cache event, but their count should decrease.
 `LOST` is not a normal transient state.
 
-You can also track rebalance metrics through `SYS.METRICS`:
+=== Check Execution Queues
 
-[source,sql]
-----
-SELECT NAME, VALUE
-FROM SYS.METRICS
-WHERE NAME = 'cluster.Rebalanced'
-   OR NAME LIKE 'cacheGroups.%.LocalNodeMovingPartitionsCount'
-   OR NAME LIKE 'cacheGroups.%.LocalNodeRentingPartitionsCount'
-ORDER BY NAME;
-----
+Ignite has several internal executors. A regular thread pool executes tasks from a shared queue. These queues may grow for a short time under load, but they should not grow continuously. Sustained queue growth means that a node is not keeping up with the workload or that message processing is impaired. The same logic applies to the striped executor.
 
-Do not interpret `cluster.Rebalanced=false` for an `INACTIVE` cluster without checking the cluster state: the link:monitoring-metrics/new-metrics#cluster[metric documentation] notes that an inactive cluster always reports this metric as `False`.
-For related metrics, see link:monitoring-metrics/new-metrics-system#monitoring-rebalancing[Monitoring Rebalancing] and link:monitoring-metrics/new-metrics#cache-groups[cache group metrics].
-
-=== Check execution queues
-
-Ignite has several internal executors.
-A regular thread pool executes tasks from a shared queue.
 The striped executor divides internal cache and transaction tasks between independent stripes: tasks in the same stripe run sequentially, while different stripes can run in parallel.
 If a stripe is blocked, tasks related to that stripe can accumulate even when overall CPU usage does not look high.
 
@@ -215,11 +211,10 @@ Check queue metrics on every server node:
 ----
 SELECT NAME, VALUE
 FROM SYS.METRICS
-WHERE NAME IN (
-    'io.communication.OutboundMessagesQueueSize',
-    'io.discovery.MessageWorkerQueueSize',
-    'threadPools.StripedExecutor.TotalQueueSize',
-    'threadPools.StripedExecutor.DetectStarvation'
+WHERE NAME IN ('io.communication.OutboundMessagesQueueSize'
+,'io.discovery.MessageWorkerQueueSize'
+,'threadPools.StripedExecutor.TotalQueueSize'
+,'threadPools.StripedExecutor.DetectStarvation'
 )
    OR NAME LIKE 'threadPools.%.QueueSize'
 ORDER BY NAME;
@@ -234,7 +229,8 @@ FROM SYS.STRIPED_THREADPOOL_QUEUE
 ORDER BY STRIPE_INDEX, THREAD_NAME;
 ----
 
-Short non-zero queues are acceptable under load.
+As it was said, short non-zero queues are acceptable under load.
+
 On an idle node, queues usually return to zero.
 Investigate continuous growth, lack of drain after load stops, repeated `DetectStarvation=true`, or repeated starvation warnings in logs.
 There is no universal absolute threshold.
@@ -243,14 +239,12 @@ Queue metrics are node-local, so collect them from all server nodes.
 JMX uses the metric registry name to build `group` and `name` in the MBean object name.
 The following mappings are useful for queue checks:
 
-* registry `io.communication` is exposed as JMX group `io`, bean name `communication`; the attribute is `OutboundMessagesQueueSize`;
-* registry `io.discovery` is exposed as JMX group `io`, bean name `discovery`; the attribute is `MessageWorkerQueueSize`;
-* registry `threadPools.StripedExecutor` is exposed as JMX group `threadPools`, bean name `StripedExecutor`; the attributes include `TotalQueueSize`, `StripesQueueSizes`, and `DetectStarvation`;
-* regular pools such as `threadPools.GridSystemExecutor` expose `QueueSize`.
+* Registry `io.communication` is exposed as JMX group `io`, bean name `communication`; the attribute is `OutboundMessagesQueueSize`.
+* Registry `io.discovery` is exposed as JMX group `io`, bean name `discovery`; the attribute is `MessageWorkerQueueSize`.
+* Registry `threadPools.StripedExecutor` is exposed as JMX group `threadPools`, bean name `StripedExecutor`; the attributes include `TotalQueueSize`, `StripesQueueSizes`, and `DetectStarvation`.
+* Regular pools such as `threadPools.GridSystemExecutor` expose `QueueSize`.
 
-The striped executor does not use the regular `QueueSize` attribute; use `TotalQueueSize`.
 For JMX object names and SQL metric access, see link:monitoring-metrics/new-metrics-system#jmx[JMX] and link:monitoring-metrics/new-metrics-system#sql-view[SQL View].
-Do not expose unauthenticated remote JMX in production; use local access or your approved secured JMX setup.
 
 .JConsole view of node-local striped executor queue metrics
 image::perf-and-troubleshooting/images/healthy-cluster-queues-jconsole.png[JConsole MBeans view showing threadPools/StripedExecutor and queue-related attributes]
