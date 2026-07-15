@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.util.tostring;
 
-import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.ignite.internal.util.GridStringBuilder;
 
@@ -51,7 +51,7 @@ class GridToStringMapNode extends NodeRecursionMonitor {
         try {
             acquireRecursionMonitor();
             mapClsSimpleName = map.getClass().getSimpleName();
-            this.map = new HashMap<>();
+            this.map = new LinkedHashMap<>();
             skipRule = new LongSequenceSkipRule(map::size);
             Iterator<? extends Map.Entry<?, ?>> iter = map.entrySet().iterator();
             while (iter.hasNext() && this.map.size() != COLLECTION_LIMIT) {
