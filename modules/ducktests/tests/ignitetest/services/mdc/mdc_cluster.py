@@ -42,7 +42,12 @@ DC_1 = "DC1"
 DC_2 = "DC2"
 DCS = (DC_1, DC_2)
 
+IGNITE_STARTUP_TIMEOUT_SEC = 90
+
 DATA_CENTER_ATTR = "IGNITE_DATA_CENTER_ID"
+IGNITE_SQL_RETRY_TIMEOUT_ATTR = "IGNITE_SQL_RETRY_TIMEOUT"
+
+IGNITE_SQL_RETRY_TIMEOUT_MS = 1_000
 
 _APP_PKG = "org.apache.ignite.internal.ducktest.tests.mdc."
 
@@ -63,7 +68,7 @@ def dc_jvm_opts(dc: str) -> List[str]:
     """
     :return: JVM options assigning a node to the given data center.
     """
-    return [f"-D{DATA_CENTER_ATTR}={dc}"]
+    return [f"-D{DATA_CENTER_ATTR}={dc}", f"-D{IGNITE_SQL_RETRY_TIMEOUT_ATTR}={IGNITE_SQL_RETRY_TIMEOUT_MS}"]
 
 
 def _per_dc(value: Union[int, Dict[str, int]]) -> Dict[str, int]:
@@ -110,7 +115,7 @@ class MdcCluster:
         self.srv_per_dc = _per_dc(srv_per_dc)
 
         self.servers: Dict[str, IgniteService] = {
-            dc: IgniteService(self.test_context, self.ignite_config, num_nodes=num, jvm_opts=dc_jvm_opts(dc))
+            dc: IgniteService(self.test_context, self.ignite_config, num_nodes=num, jvm_opts=dc_jvm_opts(dc), startup_timeout_sec=IGNITE_STARTUP_TIMEOUT_SEC)
             for dc, num in self.srv_per_dc.items() if num > 0}
 
         self.runners: Dict[str, List[IgniteApplicationService]] = {
@@ -254,14 +259,14 @@ class MdcCluster:
         return first
 
     def generate_data(self, dc: str, cache_name: str, from_idx: int, to_idx: int, backups: int,
-                      main_dc: str = DC_1, **cache_params) -> IgniteApplicationService:
+                      main_dc: str = DC_1, sql_mode: bool = False, **cache_params) -> IgniteApplicationService:
         """
         Creates the MDC cache (if absent) and populates keys ``[from_idx, to_idx)``.
         Extra cache parameters (``atomicity``, ``syncMode``, ``readFromBackup``,
         ``partitions``, ...) are passed through to the cache configuration builder.
         """
         params = {"cacheName": cache_name, "backups": backups, "mainDc": main_dc,
-                  "from": from_idx, "to": to_idx, **cache_params}
+                  "from": from_idx, "to": to_idx, "sqlMode": sql_mode, **cache_params}
 
         return self.run_app(dc, GENERATOR_APP, params)
 

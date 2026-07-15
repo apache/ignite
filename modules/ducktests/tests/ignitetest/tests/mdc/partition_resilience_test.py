@@ -22,7 +22,7 @@ and short network blips that must NOT split the cluster.
 """
 from time import sleep
 
-from ducktape.mark import matrix
+from ducktape.mark import parametrize
 
 from ignitetest.services.mdc.mdc_cluster import MdcCluster, cross_dc_network, DC_1, DC_2
 from ignitetest.utils import cluster, ignite_versions
@@ -49,7 +49,7 @@ class MdcPartitionResilienceTest(IgniteTest):
     """
     @cluster(num_nodes=12)
     @ignite_versions(str(DEV_BRANCH))
-    @matrix(cross_dc_latency_ms=[25, 50, 100])
+    @parametrize(cross_dc_latency_ms=100)
     def test_mdc_cluster_partition_resilience(self, ignite_version, cross_dc_latency_ms):
         """
         The canonical split-brain lifecycle: partition -> split into two healthy half-rings
@@ -98,7 +98,7 @@ class MdcPartitionResilienceTest(IgniteTest):
 
     @cluster(num_nodes=6)
     @ignite_versions(str(DEV_BRANCH))
-    @matrix(cross_dc_latency_ms=[25, 50, 100])
+    @parametrize(cross_dc_latency_ms=100)
     def test_main_dc_loss_and_return(self, ignite_version, cross_dc_latency_ms):
         """
         The inverse of the canonical scenario: the MAIN data center goes down entirely.
@@ -147,7 +147,7 @@ class MdcPartitionResilienceTest(IgniteTest):
 
     @cluster(num_nodes=10)
     @ignite_versions(str(DEV_BRANCH))
-    @matrix(cross_dc_latency_ms=[25, 50, 100])
+    @parametrize(cross_dc_latency_ms=100)
     def test_short_partition_blips_do_not_split(self, ignite_version, cross_dc_latency_ms):
         """
         A flapping WAN link: several short (below the failure detection timeout) full

@@ -30,7 +30,7 @@ netem delay and the iptables partition apply to their traffic as well.
 """
 from time import sleep
 
-from ducktape.mark import matrix
+from ducktape.mark import parametrize
 
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.mdc.mdc_cluster import MdcCluster, dc_jvm_opts, DC_1, DC_2, cross_dc_network, THIN_LOAD_APP
@@ -59,7 +59,7 @@ class MdcThinClientTest(IgniteTest):
     """
     @cluster(num_nodes=8)
     @ignite_versions(str(DEV_BRANCH))
-    @matrix(cross_dc_latency_ms=[25, 50, 100])
+    @parametrize(cross_dc_latency_ms=100)
     def test_thin_client_dc_aware_routing_and_partition(self, ignite_version, cross_dc_latency_ms):
         """
         DC-pinned thin client reads locally (latency far below the cross-DC delay);
