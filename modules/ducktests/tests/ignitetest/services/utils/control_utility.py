@@ -38,9 +38,6 @@ class ControlUtility:
     """
     BASE_COMMAND = "control.sh"
 
-    # Column separator used by control.sh --system-view (SystemViewCommand.COLUMN_SEPARATOR).
-    SYSTEM_VIEW_COLUMN_SEPARATOR = "    "
-
     def __init__(self, cluster, ssl_params=None, username=None, password=None):
         self._cluster = cluster
         self.logger = cluster.context.logger
@@ -285,7 +282,7 @@ class ControlUtility:
 
         return self.__parse_system_view(self.__run(cmd, node=node), name)
 
-    def caches(self, cache_name=None, node=None, node_id=None, node_ids=None, all_nodes=False):
+    def system_view_caches(self, cache_name=None, node=None, node_id=None, node_ids=None, all_nodes=False):
         """
         Reads the CACHES system view and returns its rows.
 
@@ -325,14 +322,13 @@ class ControlUtility:
 
         Columns are padded to their widest value and joined by the 4-space column separator;
         cells never hold an empty value (nulls print as "null"), so splitting on the separator
-        and dropping the padding gaps recovers the columns - the same approach the upstream
-        SystemViewCommandTest uses.
+        and dropping the padding gaps recovers the columns.
         """
         if "No system view with specified name was found" in output:
             raise AssertionError(f"No system view named '{name}' was found:\n{output}")
 
         node_pattern = re.compile(r"Results from node with ID: (?P<node_id>\S+)")
-        sep = ControlUtility.SYSTEM_VIEW_COLUMN_SEPARATOR
+        sep = "    "
 
         result = {}
         node_id = None

@@ -219,8 +219,8 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
                     log.info("Write rejected as expected [dc=" + dcId() + ", key=" + key +
                         ", msg=" + e.getMessage() + "]");
                 else if (stopOnError) {
-                    log.info("Operation failed, cutting the load on first error [dc=" + dcId() + ", mode=" + mode +
-                        ", key=" + key + ", succeeded=" + opsCnt + ", msg=" + e.getMessage() + "]");
+                    log.warn("Operation failed, cutting the load on first error [dc=" + dcId() + ", mode=" + mode +
+                        ", key=" + key + ", succeeded=" + opsCnt + ", msg=" + e.getMessage() + "]", e);
 
                     errCnt++;
                     stoppedOnError = true;

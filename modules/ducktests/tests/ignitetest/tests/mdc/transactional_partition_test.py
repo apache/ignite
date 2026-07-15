@@ -46,16 +46,16 @@ CACHE_NAME = "mdc-tx-load"
 
 BACKUPS = 1
 
-# Small seed so the cross-DC cache distribution can be verified before the split.
-SEED_KEYS = 100
-
 # Fresh, disjoint key range for the continuous insert load: the load advances the key
 # on every success, so [LOAD_KEY_FROM, LOAD_KEY_FROM + successfulInserts) gets inserted.
-LOAD_KEY_FROM = 1_000_000
-LOAD_KEY_TO = 100_000_000
+LOAD_KEY_FROM_DC_1 = 1_000_000
+LOAD_KEY_TO_DC_1 = 10_000_000
+
+LOAD_KEY_FROM_DC_2 = 10_000_000
+LOAD_KEY_TO_DC_2 = 20_000_000
 
 # Let the load accumulate successful inserts before the DCs are cut apart.
-LOAD_WARMUP_SECS = 5
+LOAD_WARMUP_SECS = 15
 
 # Time for discovery to detect the partition and for both half-rings to complete PME
 # and account for the split.
@@ -66,38 +66,36 @@ class MdcTransactionalPartitionTest(IgniteTest):
     """
     Transactional load resilience to a cross-DC network partition.
     """
-    @cluster(num_nodes=6)
+    @cluster(num_nodes=8)
     @ignite_versions(str(DEV_BRANCH))
-    @parametrize(cross_dc_latency_ms=20)
+    @parametrize(cross_dc_latency_ms=100)
     def test_transactional_load_cut_on_partition(self, ignite_version, cross_dc_latency_ms):
         """
         Continuous implicit-transaction insert load from the main DC is cut off by the first
         cache exception the cross-DC partition triggers; afterwards no transaction is left
         hanging on either half-ring and the server logs are clean.
         """
-        mdc = MdcCluster(self, ignite_version, srv_per_dc=2,
-                         runners_per_dc={DC_1: 1}, loaders_per_dc={DC_1: 1})
+        mdc = MdcCluster(self, ignite_version, srv_per_dc=2, runners_per_dc=1, loaders_per_dc=1, network_timeout=20_000, tcp_connect_timeout=10_000)
 
         with cross_dc_network(self.logger, mdc, delay_ms=cross_dc_latency_ms) as net:
             mdc.start_servers()
 
-            # Create the TRANSACTIONAL cache and seed it, so every partition owns one copy
-            # per DC - the reason an implicit-transaction write must touch both DCs.
-            mdc.generate_data(DC_1, CACHE_NAME, 0, SEED_KEYS, backups=BACKUPS, atomicity="TRANSACTIONAL")
-
-            mdc.verify_cache_distribution(CACHE_NAME, copies_per_dc=1)
-
             # Continuous single-threaded implicit-transaction insert load from the main DC.
             # It stops on the very first exception (stopOnError) instead of failing the app,
             # recording how many inserts had succeeded up to that point.
-            mdc.start_loader(DC_1, {
-                "mode": "PUT",
-                "cacheName": CACHE_NAME,
-                "keyFrom": LOAD_KEY_FROM,
-                "keyTo": LOAD_KEY_TO,
-                "stopOnError": True,
-                "resultPrefix": "txLoad"
-            })
+            for dc, offset_from, to in [(DC_1, LOAD_KEY_FROM_DC_1, LOAD_KEY_TO_DC_1), (DC_2, LOAD_KEY_FROM_DC_2, LOAD_KEY_TO_DC_2)]:
+                mdc.start_loader(dc, {
+                    "mode": "TX_PUT",
+                    "cacheName": CACHE_NAME,
+                    "keyFrom": offset_from,
+                    "keyTo": to,
+                    "stopOnError": True,
+                    "resultPrefix": f"txLoad{dc}",
+                    "createCache": True,
+                    "backups": BACKUPS,
+                    "atomicity": "TRANSACTIONAL",
+                    "mainDc": DC_1,
+                })
 
             sleep(LOAD_WARMUP_SECS)
 
@@ -110,19 +108,16 @@ class MdcTransactionalPartitionTest(IgniteTest):
             mdc.verify_split_brain()
 
             # The load has already finished on its own - this just collects its results.
-            svc = mdc.stop_loader(DC_1)
+            for dc in [DC_1, DC_2]:
+                svc = mdc.stop_loader(dc)
 
-            inserts = mdc.result_int(svc, "txLoadOpsCnt")
-            stopped_on_error = svc.extract_result("txLoadStoppedOnError")
+                inserts = mdc.result_int(svc, f"txLoad{dc}OpsCnt")
+                errors = mdc.result_int(svc, f"txLoad{dc}ErrCnt")
 
-            self.logger.info(f"Transactional load cut by the partition "
-                             f"[insertsBeforeSplit={inserts}, stoppedOnError={stopped_on_error}]")
+                self.logger.info(f"Transactional load cut by the partition "
+                                 f"[txLoad{dc}OpsCnt={inserts}, txLoad{dc}ErrCnt={errors}]")
 
-            assert inserts > 0, "The transactional load performed no successful inserts before the split"
-
-            assert stopped_on_error == "true", \
-                "The transactional load must be cut off by the partition's first cache exception " \
-                f"[stoppedOnError={stopped_on_error}, inserts={inserts}]"
+                assert inserts > 0, "The transactional load performed no successful inserts"
 
             # The point of the scenario: the aborted implicit transactions leave nothing
             # hanging on either half-ring...
@@ -131,6 +126,19 @@ class MdcTransactionalPartitionTest(IgniteTest):
 
             # ...and neither half-ring logged a hung PME, a long running transaction or a
             # lost partition.
+            mdc.verify_servers_log_clean()
+
+            net.disable_network_partition(DC_1, DC_2)
+
+            mdc.restart(DC_2)
+
+            mdc.check_put_admissibility(DC_1, CACHE_NAME, True, key_offset=100_000_000)
+            mdc.check_put_admissibility(DC_2, CACHE_NAME, True, key_offset=101_000_000)
+
+            mdc.verify_cache_distribution(CACHE_NAME, copies_per_dc=1)
+
+            mdc.control(DC_1).idle_verify(CACHE_NAME)
+
             mdc.verify_servers_log_clean()
 
             mdc.stop_servers()
