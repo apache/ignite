@@ -238,7 +238,7 @@ public class IgniteIoTestMessage implements Message {
         return resRcvTsMillis;
     }
 
-    /** Captures the received timestamp; repeated calls are no-ops. */
+    /** Captures the received timestamp at the first call; later calls are no-ops. */
     public void onAfterRead() {
         if (req && reqRcvTs == 0) {
             reqRcvTs = System.nanoTime();
@@ -253,7 +253,7 @@ public class IgniteIoTestMessage implements Message {
         }
     }
 
-    /** Captures the sent timestamp; repeated calls are no-ops. */
+    /** Captures the sending timestamp at the first call; later calls are no-ops. */
     public void onBeforeWrite() {
         if (req && reqSndTs == 0) {
             reqSndTs = System.nanoTime();

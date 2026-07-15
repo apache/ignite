@@ -47,15 +47,15 @@ public class DiscoveryMessageParser {
     private final MessageFactory msgFactory;
 
     /** */
-    private final GridKernalContext ctx;
+    private final GridKernalContext kctx;
 
     /**
      * @param msgFactory Message factory.
-     * @param ctx Kernal context.
+     * @param kctx Kernal context.
      */
-    public DiscoveryMessageParser(MessageFactory msgFactory, GridKernalContext ctx) {
+    public DiscoveryMessageParser(MessageFactory msgFactory, GridKernalContext kctx) {
         this.msgFactory = msgFactory;
-        this.ctx = ctx;
+        this.kctx = kctx;
     }
 
     /** Marshals discovery message to bytes array. */
@@ -93,7 +93,7 @@ public class DiscoveryMessageParser {
         msgWriter.setBuffer(msgBuf);
 
         try {
-            MessageMarshalling.marshal(m, ctx, null);
+            MessageMarshalling.marshal(m, kctx, null);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to marshal discovery message", e);
@@ -140,7 +140,7 @@ public class DiscoveryMessageParser {
         while (!finished);
 
         try {
-            MessageMarshalling.unmarshal(msg, ctx);
+            MessageMarshalling.unmarshal(msg, kctx);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to unmarshal discovery message", e);

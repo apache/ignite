@@ -2065,7 +2065,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
     }
 
     /**
-     * Transmits a message created by {@link #prepare} to a remote node. Transmission does not mutate the message,
+     * Sends a message created by {@link #prepare} to a remote node. Sending does not mutate the message,
      * so it can be safely retried.
      */
     public void sendPrepared(ClusterNode node, GridIoMessage ioMsg) throws IgniteCheckedException {
