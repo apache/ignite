@@ -41,7 +41,6 @@ import org.apache.ignite.internal.processors.performancestatistics.FilePerforman
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCachePartitionWorker;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.mxbean.MetricsMxBean;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
@@ -134,8 +133,6 @@ import static org.apache.ignite.internal.thread.pool.IgniteStripedExecutor.DFLT_
 import static org.apache.ignite.internal.util.GridReflectionCache.DFLT_REFLECTION_CACHE_SIZE;
 import static org.apache.ignite.internal.util.IgniteExceptionRegistry.DEFAULT_QUEUE_SIZE;
 import static org.apache.ignite.internal.util.IgniteUtils.DFLT_MBEAN_APPEND_CLASS_LOADER_ID;
-import static org.apache.ignite.internal.util.nio.GridNioRecoveryDescriptor.DFLT_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT;
-import static org.apache.ignite.internal.util.nio.GridNioServer.DFLT_IO_BALANCE_PERIOD;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_DISCOVERY_METRICS_QNT_WARN;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_DISCO_FAILED_CLIENT_RECONNECT_DELAY;
@@ -744,12 +741,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
         defaults = "" + DFLT_DISCOVERY_HISTORY_SIZE)
     public static final String IGNITE_DISCOVERY_HISTORY_SIZE = "IGNITE_DISCOVERY_HISTORY_SIZE";
 
-    /** Human-readable ID of a data center where the node is running. */
-    @IgniteExperimental
-    @SystemProperty(value = "Data Center ID where local node is running. Not required for a single Data Center deployments",
-        type = String.class)
-    public static final String IGNITE_DATA_CENTER_ID = "IGNITE_DATA_CENTER_ID";
-
     /** Maximum number of discovery message history used to support client reconnect. */
     @SystemProperty(value = "Maximum number of discovery message history used to support client reconnect",
         type = Integer.class, defaults = "" + DFLT_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE)
@@ -813,44 +804,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
     /** Indicating whether local store keeps primary only. Backward compatibility flag. */
     @SystemProperty("Enables local store keeps primary only. Backward compatibility flag")
     public static final String IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY = "IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY";
-
-    /** Defines path to the file that contains list of classes allowed to safe deserialization.*/
-    @SystemProperty(value = "Path to the file that contains list of classes allowed to safe deserialization",
-        type = String.class)
-    public static final String IGNITE_MARSHALLER_WHITELIST = "IGNITE_MARSHALLER_WHITELIST";
-
-    /** Defines path to the file that contains list of classes disallowed to safe deserialization.*/
-    @SystemProperty(value = "Path to the file that contains list of classes disallowed to safe deserialization",
-        type = String.class)
-    public static final String IGNITE_MARSHALLER_BLACKLIST = "IGNITE_MARSHALLER_BLACKLIST";
-
-    /**
-     * If this parameter is set to true, Ignite will automatically configure an ObjectInputFilter instance for the
-     * current JVM it is running in.
-     * Default value is {@code true}.
-     */
-    @SystemProperty(
-        value = "If this parameter is set to true, Ignite will automatically configure an ObjectInputFilter" +
-            " instance for the current JVM it is running in. Filtering is based on class lists defined by the" +
-            " `IGNITE_MARSHALLER_WHITELIST` and `IGNITE_MARSHALLER_BLACKLIST` system properties or their default values." +
-            " Disabling it is not recommended because the Ignite host may be vulnerable to RCE attacks based on Java" +
-            " serialization mechanisms",
-        defaults = "true"
-    )
-    public static final String IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION = "IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION";
-
-    /**
-     * If set to {@code true}, then default selected keys set is used inside
-     * {@code GridNioServer} which lead to some extra garbage generation when
-     * processing selected keys.
-     * <p>
-     * Default value is {@code false}. Should be switched to {@code true} if there are
-     * any problems in communication layer.
-     */
-    @SystemProperty("Enables default selected keys set to be used inside GridNioServer " +
-        "which lead to some extra garbage generation when processing selected keys. " +
-        "Should be switched to true if there are any problems in communication layer")
-    public static final String IGNITE_NO_SELECTOR_OPTS = "IGNITE_NO_SELECTOR_OPTS";
 
     /**
      * System property to specify period in milliseconds between calls of the SQL statements cache cleanup task.
@@ -925,11 +878,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
     @SystemProperty(value = "Ignores local address's hostname if IGNITE_LOCAL_HOST is defined "
         + "when resolving local node's addresses", defaults = "true")
     public static final String IGNITE_IGNORE_LOCAL_HOST_NAME = "IGNITE_IGNORE_LOCAL_HOST_NAME";
-
-    /** */
-    @SystemProperty(value = "IO balance period in milliseconds", type = Long.class,
-        defaults = "" + DFLT_IO_BALANCE_PERIOD)
-    public static final String IGNITE_IO_BALANCE_PERIOD = "IGNITE_IO_BALANCE_PERIOD";
 
     /**
      * When set to {@code true} BinaryObject will be unwrapped before passing to IndexingSpi to preserve
@@ -1351,13 +1299,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
     public static final String IGNITE_DISABLE_REBALANCING_CANCELLATION_OPTIMIZATION =
         "IGNITE_DISABLE_REBALANCING_CANCELLATION_OPTIMIZATION";
 
-    /**
-     * Sets timeout for TCP client recovery descriptor reservation.
-     */
-    @SystemProperty(value = "Timeout for TCP client recovery descriptor reservation in milliseconds",
-        type = Long.class, defaults = "" + DFLT_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT)
-    public static final String IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT =
-            "IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT";
 
     /**
      * When set to {@code true}, Ignite will skip partitions sizes check on partition validation after rebalance has finished.

@@ -445,7 +445,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     protected IgniteLogger log;
 
     /** */
-    protected TcpDiscoveryImpl impl;
+    TcpDiscoveryImpl impl;
 
     /** */
     private boolean clientReconnectDisabled;
@@ -2118,10 +2118,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         impl.spiStart(igniteInstanceName);
     }
 
-    /**
-     *
-     */
-    protected void initializeImpl() {
+    /** */
+    private void initializeImpl() {
         if (impl != null)
             return;
 
@@ -2147,7 +2145,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             if (sockTimeout == 0)
                 sockTimeout = DFLT_SOCK_TIMEOUT;
 
-            impl = new ServerImpl(this, DFLT_UTLITY_POOL_SIZE, DFLT_RMT_DC_PING_POOL_SIZE);
+            impl = createServerTcpDiscoveryImplementation();
         }
 
         metricsUpdateFreq = ignite.configuration().getMetricsUpdateFrequency();
@@ -2228,6 +2226,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         }
 
         cfgNodeId = ignite.configuration().getNodeId();
+    }
+
+    /** */
+    TcpDiscoveryImpl createServerTcpDiscoveryImplementation() {
+        return new ServerImpl(this, DFLT_UTLITY_POOL_SIZE, DFLT_RMT_DC_PING_POOL_SIZE);
     }
 
     /** {@inheritDoc} */
