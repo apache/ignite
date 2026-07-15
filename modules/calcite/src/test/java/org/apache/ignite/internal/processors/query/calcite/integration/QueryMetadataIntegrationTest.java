@@ -178,6 +178,28 @@ public class QueryMetadataIntegrationTest extends AbstractBasicIntegrationTest {
     }
 
     /** */
+    @Test
+    public void testFetchOffsetParameters() throws Exception {
+        executeSql("CREATE TABLE tbl (id BIGINT, PRIMARY KEY(id))");
+
+        checker("SELECT * FROM tbl OFFSET ? ROWS FETCH FIRST ? ROWS ONLY")
+            .addMeta(
+                builder -> builder.add("PUBLIC", "TBL", Long.class, "ID", 19, 0, true),
+                builder -> builder
+                    .add(null, null, BigDecimal.class, "?0", 32767, 0, false)
+                    .add(null, null, BigDecimal.class, "?1", 32767, 0, false)
+            )
+            .check();
+
+        checker("SELECT * FROM tbl LIMIT ?")
+            .addMeta(
+                builder -> builder.add("PUBLIC", "TBL", Long.class, "ID", 19, 0, true),
+                builder -> builder.add(null, null, BigDecimal.class, "?0", 32767, 0, false)
+            )
+            .check();
+    }
+
+    /** */
     private MetadataChecker checker(String sql) {
         return new MetadataChecker(queryEngine(client), sql);
     }
