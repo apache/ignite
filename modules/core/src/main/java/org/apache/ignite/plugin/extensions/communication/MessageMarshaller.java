@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
  * Handles {@code marshal}/{@code unmarshal} for a {@link Message} that requires custom serialization. Resolve-and-dispatch
  * entry points that look the marshaller up from the message factory live in {@code MessageMarshalling}.
  *
- * @param <M> A message this marshaller handles.
+ * @param <M> Message type.
  */
 public interface MessageMarshaller<M extends Message> {
     /**
@@ -64,7 +64,9 @@ public interface MessageMarshaller<M extends Message> {
     }
 
     /**
-     * Unmarshals only {@code @NioField}-annotated fields in the NIO/IO thread. No-op by default.
+     * Unmarshals only the {@code @NioField}-annotated fields (routing headers such as the topic) on the NIO thread,
+     * where no cache context is available — unlike the {@code unmarshal} overloads, which restore the full field set
+     * later on a worker thread. No-op by default; overridden only for messages that carry {@code @NioField}s.
      *
      * @param msg Message to unmarshal.
      * @param kctx Kernal context.

@@ -100,7 +100,7 @@ public final class MessageMarshalling {
 
     /** @return the marshaller registered for {@code msg}'s direct type, or {@code null} if none. */
     @SuppressWarnings("unchecked")
-    private static <M extends Message> MessageMarshaller<M> resolve(GridKernalContext kctx, M msg) {
+    private static <M extends Message> @Nullable MessageMarshaller<M> resolve(GridKernalContext kctx, M msg) {
         return (MessageMarshaller<M>)((IgniteMessageFactory)kctx.messageFactory()).marshaller(msg.directType());
     }
 }
