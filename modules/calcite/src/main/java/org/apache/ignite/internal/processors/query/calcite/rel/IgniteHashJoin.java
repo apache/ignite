@@ -89,6 +89,8 @@ public class IgniteHashJoin extends AbstractIgniteJoin {
 
         rightSize += distRightRows * rightKeysSize * IgniteCost.AVERAGE_FIELD_SIZE;
 
+        rowCnt = mq.getRowCount(this);
+
         return costFactory.makeCost(rowCnt, rowCnt * IgniteCost.HASH_LOOKUP_COST, 0, rightSize, 0);
     }
 

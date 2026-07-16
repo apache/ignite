@@ -213,8 +213,10 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteJoin {
 
         double rows = leftCnt * rightCnt;
 
-        return costFactory.makeCost(rows,
-            rows * (IgniteCost.ROW_COMPARISON_COST + IgniteCost.ROW_PASS_THROUGH_COST), 0);
+        double rowCnt = mq.getRowCount(this);
+
+        return costFactory.makeCost(rowCnt,
+            rowCnt * (IgniteCost.ROW_COMPARISON_COST + IgniteCost.ROW_PASS_THROUGH_COST), 0);
     }
 
     /** {@inheritDoc} */

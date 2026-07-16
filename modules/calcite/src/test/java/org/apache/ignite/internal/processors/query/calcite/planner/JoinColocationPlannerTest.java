@@ -203,10 +203,8 @@ public class JoinColocationPlannerTest extends AbstractPlannerTest {
         assertPlan("SELECT * FROM aff_tbl WHERE id IN (SELECT id FROM broadcast_tbl)", schema,
             nodeOrAnyChild(isInstanceOf(Join.class))
                 .and(hasChildThat(isTableScan("AFF_TBL")))
-                .and(hasChildThat(isInstanceOf(IgniteTrimExchange.class))
-                    .and(hasChildThat(isInstanceOf(IgniteColocatedAggregateBase.class))
-                        .and(hasChildThat(isTableScan("BROADCAST_TBL")))
-                    )
+                .and(hasChildThat(isInstanceOf(IgniteColocatedAggregateBase.class))
+                    .and(hasChildThat(isTableScan("BROADCAST_TBL")))
                 )
         );
     }

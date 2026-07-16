@@ -23,6 +23,8 @@ import java.util.UUID;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.NO_MERGE_JOIN;
+
 /**
  * Tests correlated queries.
  */

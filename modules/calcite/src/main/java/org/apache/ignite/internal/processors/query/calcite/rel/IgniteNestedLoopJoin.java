@@ -92,8 +92,14 @@ public class IgniteNestedLoopJoin extends AbstractIgniteJoin {
 
         double rightSize = rightCnt * getRight().getRowType().getFieldCount() * IgniteCost.AVERAGE_FIELD_SIZE;
 
-        return costFactory.makeCost(rows,
-            rows * (IgniteCost.ROW_COMPARISON_COST + IgniteCost.ROW_PASS_THROUGH_COST), 0, rightSize, 0);
+        double rowCnt = mq.getRowCount(this);
+
+        RelOptCost cost = costFactory.makeCost(rowCnt,
+            rowCnt * (IgniteCost.ROW_COMPARISON_COST + IgniteCost.ROW_PASS_THROUGH_COST), 0, rightSize, 0);
+
+        cost = cost.multiplyBy(10);
+
+        return cost;
     }
 
     /** {@inheritDoc} */

@@ -441,8 +441,8 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
             algo.rulesToDisable);
 
         // TODO: https://issues.apache.org/jira/browse/IGNITE-16334 Eventually planner skips optimal join plan.
-        if (algo == AggregateAlgorithm.HASH)
-            return;
+/*        if (algo == AggregateAlgorithm.HASH)
+            return;*/
 
         sql = "SELECT dept.deptid, agg.cnt " +
             "FROM dept " +
