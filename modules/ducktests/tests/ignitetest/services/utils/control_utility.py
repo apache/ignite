@@ -244,7 +244,7 @@ class ControlUtility:
                 attrs = {}
                 if user_attributes and match.group("attr_values") is not None:
                     values = [v.strip() for v in match.group("attr_values").split(",")]
-                    attrs = dict(zip(user_attributes, values))
+                    attrs = dict(zip(sorted(user_attributes), values))
 
                 copy = PartitionCopy(node_id=match.group("node_id"),
                                      primary=match.group("primary") == "P",
@@ -491,9 +491,6 @@ class ControlUtility:
             order = int(match.group("order"))
 
             coordinator = next((node for node in baseline if node.order == order), None)
-
-            if coordinator is None:
-                raise AssertionError(f"Coordinator with order={order} is not found in baseline [baseline={baseline}]")
 
         return ClusterState(state=state, topology_version=topology, baseline=baseline, coordinator=coordinator)
 

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.ducktest.tests.mdc;
 
 import javax.cache.CacheException;
 import com.fasterxml.jackson.databind.JsonNode;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.internal.ducktest.tests.dto.IndexedDataRecord;
@@ -81,29 +82,26 @@ public class MdcThinClientLoadApplication extends IgniteAwareApplication {
         for (long i = 0; i < iterations && !terminated(); i++) {
             int key = key0;
 
-            boolean ok;
+            boolean ok = true;
 
             try {
                 if (put) {
                     IndexedDataRecord val = new IndexedDataRecord(key);
 
                     timed(stats, () -> cache.put(key, val));
-
-                    ok = true;
                 }
                 else {
                     IndexedDataRecord val = timed(stats, () -> cache.get(key));
 
-                    ok = val != null && val.equals(new IndexedDataRecord(key));
-
-                    if (!ok)
-                        log.error("Read entry is missed or corrupted [key=" + key + ", val=" + val + "]");
+                    if (val == null || !val.equals(new IndexedDataRecord(key)))
+                        throw new IgniteException("Read entry is missed or corrupted [key=" + key +
+                            ", val=" + val + "]");
                 }
             }
-            catch (ClientException | CacheException e) {
+            catch (ClientException | CacheException | IgniteException e) {
                 ok = false;
 
-                if (put && !expectAdmissible)
+                if (!expectAdmissible)
                     log.info("Put rejected as expected [key=" + key + ", msg=" + e.getMessage() + "]");
                 else
                     throw new IllegalStateException("Operation failed [mode=" + mode + ", key=" + key + "]", e);

@@ -57,7 +57,7 @@ class MdcThinClientTest(IgniteTest):
     """
     Tests for thin client DC-aware routing and behavior through a partition.
     """
-    @cluster(num_nodes=8)
+    @cluster(num_nodes=7)
     @ignite_versions(str(DEV_BRANCH))
     @parametrize(cross_dc_latency_ms=100)
     def test_thin_client_dc_aware_routing_and_partition(self, ignite_version, cross_dc_latency_ms):
@@ -88,12 +88,16 @@ class MdcThinClientTest(IgniteTest):
                                             "resultPrefix": "pinnedGet"})
 
             avg_cli_dc_1 = mdc.result_float(svc, "pinnedGetAvgOpMs")
+            err_cnt_cli_dc_1 = mdc.result_int(svc, "pinnedGetErrCnt")
 
-            self.logger.info(f"Thin client routing latency [delayMs={cross_dc_latency_ms}, getAvgOpMs={avg_cli_dc_1}]")
+            self.logger.info(f"Thin client routing latency [delayMs={cross_dc_latency_ms}, getAvgOpMs={avg_cli_dc_1}, "
+                             f"getErrCnt={err_cnt_cli_dc_1}]")
 
             assert avg_cli_dc_1 < cross_dc_latency_ms, \
                 f"DC-pinned thin client reads should be served locally " \
                 f"[avgMs={avg_cli_dc_1}, delayMs={cross_dc_latency_ms}]"
+
+            assert err_cnt_cli_dc_1 == 0, f"Expected 0 errors for DC-pinned thin client reads, but found {err_cnt_cli_dc_1}"
 
             net.enable_network_partition(DC_1, DC_2)
 

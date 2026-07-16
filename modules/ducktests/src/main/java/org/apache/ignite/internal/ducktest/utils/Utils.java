@@ -59,22 +59,14 @@ public final class Utils {
         return String.format(Locale.US, "%.3f", ns < 0 ? -1.0 : ns / 1e6);
     }
 
-    /**
-     * Parses an optional enum-valued field. A missing, null or unrecognized value falls back
-     * to {@code dfltVal}.
-     */
+    /** Parses an optional enum-valued field.  Defaults only on missing/null. */
     public static <E extends Enum<E>> E getEnum(JsonNode jNode, String fieldName, E dfltVal) {
         JsonNode field = jNode.path(fieldName);
 
         if (field.isMissingNode() || field.isNull())
             return dfltVal;
 
-        try {
-            return Enum.valueOf(dfltVal.getDeclaringClass(), field.asText().toUpperCase(Locale.ROOT));
-        }
-        catch (IllegalArgumentException e) {
-            return dfltVal; // Fallback if string doesn't match any enum constant.
-        }
+        return Enum.valueOf(dfltVal.getDeclaringClass(), field.asText().toUpperCase(Locale.ROOT));
     }
 
     /**

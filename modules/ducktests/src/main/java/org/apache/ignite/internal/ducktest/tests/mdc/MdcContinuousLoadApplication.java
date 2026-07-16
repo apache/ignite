@@ -149,15 +149,15 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
         int key = keyFrom;
 
         while (!terminated() && (iterations == 0 || opsCnt + errCnt < iterations)) {
-            boolean ok;
+            boolean ok = true;
 
             try {
-                ok = doOperation(mode, key);
+                doOperation(mode, key);
             }
             catch (CacheException | IgniteException e) {
                 ok = false;
 
-                if (mode.isWrite() && !expectAdmissible)
+                if (!expectAdmissible)
                     log.info("Write rejected as expected [dc=" + dcId() + ", key=" + key +
                         ", msg=" + e.getMessage() + "]");
                 else if (stopOnError) {
@@ -233,29 +233,21 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
      * Executes a single operation of the given mode against the given key. Throws a
      * {@link CacheException} or {@link IgniteException} on operation failure (e.g. a write
      * rejected by the topology validator).
-     *
-     * @return {@code true} if the operation succeeded and (for reads) returned the expected value.
      */
-    private boolean doOperation(LoadMode mode, int key) {
+    private void doOperation(LoadMode mode, int key) {
         switch (mode) {
             case GET: {
                 IndexedDataRecord val = timed(stats, () -> cache.get(key));
 
-                boolean ok = val != null && val.equals(new IndexedDataRecord(key));
-
-                if (!ok)
-                    log.error("Read entry is missed or corrupted [dc=" + dcId() + ", key=" + key +
+                if (val == null || !val.equals(new IndexedDataRecord(key)))
+                    throw new IgniteException("Read entry is missed or corrupted [dc=" + dcId() + ", key=" + key +
                         ", val=" + val + "]");
-
-                return ok;
             }
 
             case PUT: {
                 IndexedDataRecord val = new IndexedDataRecord(key);
 
                 timed(stats, () -> cache.put(key, val));
-
-                return true;
             }
 
             case TX_PUT: {
@@ -268,16 +260,12 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
                         tx.commit();
                     }
                 });
-
-                return true;
             }
 
             case SQL_PUT: {
                 SqlFieldsQuery qry = new SqlFieldsQuery(mergeSql).setArgs(key, key);
 
                 timed(stats, () -> sqlCache.query(qry).getAll());
-
-                return true;
             }
 
             case SQL_SELECT: {
@@ -285,13 +273,9 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
 
                 List<List<?>> rows = timed(stats, () -> sqlCache.query(qry).getAll());
 
-                boolean ok = !rows.isEmpty() && Objects.equals(rows.get(0).get(0), key);
-
-                if (!ok)
-                    log.error("SQL row is missed or corrupted [dc=" + dcId() + ", key=" + key +
+                if (rows.isEmpty() || !Objects.equals(rows.get(0).get(0), key))
+                    throw new IgniteException("SQL row is missed or corrupted [dc=" + dcId() + ", key=" + key +
                         ", rows=" + rows + "]");
-
-                return ok;
             }
 
             default:

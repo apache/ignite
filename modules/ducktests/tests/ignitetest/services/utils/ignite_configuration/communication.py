@@ -54,7 +54,7 @@ class TcpCommunicationSpi(CommunicationSpi):
                  use_paired_connections: bool = None,
                  message_queue_limit: int = None,
                  unacknowledged_messages_buffer_size: int = None,
-                 connect_timeout: int = 5_000):
+                 connect_timeout: int = None):
         self.local_port = local_port
         self.local_port_range = local_port_range
         self.idle_connection_timeout: int = idle_connection_timeout
