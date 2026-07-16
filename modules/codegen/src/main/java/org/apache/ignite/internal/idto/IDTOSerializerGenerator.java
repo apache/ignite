@@ -62,6 +62,7 @@ import static org.apache.ignite.internal.MessageGenerator.TAB;
 import static org.apache.ignite.internal.MessageGenerator.identicalFileIsAlreadyGenerated;
 import static org.apache.ignite.internal.MessageGenerator.writeLicense;
 import static org.apache.ignite.internal.MessageSerializerGenerator.enumType;
+import static org.apache.ignite.internal.MessageSerializerGenerator.qualifiedClassName;
 import static org.apache.ignite.internal.idto.IgniteDataTransferObjectProcessor.DTO_CLASS;
 
 /**
@@ -370,7 +371,7 @@ public class IDTOSerializerGenerator {
         else if (type.getKind() == TypeKind.TYPEVAR)
             serDes = F.t("out.writeObject(${var})", "in.readObject()");
         else {
-            serDes = TYPE_SERDES.get(className(type));
+            serDes = TYPE_SERDES.get(qualifiedClassName(type));
 
             if (serDes == null) {
                 if (enumType(env, type))
@@ -480,13 +481,13 @@ public class IDTOSerializerGenerator {
         TypeMirror valType = ta.get(1);
         TypeMirror strCls = env.getElementUtils().getTypeElement(String.class.getName()).asType();
 
-        if (className(type).equals(Map.class.getName()) && assignableFrom(keyType, strCls) && assignableFrom(valType, strCls))
+        if (qualifiedClassName(type).equals(Map.class.getName()) && assignableFrom(keyType, strCls) && assignableFrom(valType, strCls))
             serDes = STR_STR_MAP;
 
         if (serDes == null && !hasCustomSerdes(keyType) && !hasCustomSerdes(valType)) {
-            if (className(type).equals(TreeMap.class.getName()))
+            if (qualifiedClassName(type).equals(TreeMap.class.getName()))
                 serDes = F.t("U.writeMap(out, ${var})", "U.readTreeMap(in)");
-            else if (className(type).equals(LinkedHashMap.class.getName()))
+            else if (qualifiedClassName(type).equals(LinkedHashMap.class.getName()))
                 serDes = F.t("U.writeMap(out, ${var})", "U.readLinkedMap(in)");
             else
                 serDes = F.t("U.writeMap(out, ${var})", "U.readMap(in)");
@@ -501,9 +502,9 @@ public class IDTOSerializerGenerator {
         String el = withLevel("el");
         String k = withLevel("k");
         String v = withLevel("v");
-        String mapImpl = className(type).equals(TreeMap.class.getName())
+        String mapImpl = qualifiedClassName(type).equals(TreeMap.class.getName())
             ? TreeMap.class.getName()
-            : className(type).equals(LinkedHashMap.class.getName())
+            : qualifiedClassName(type).equals(LinkedHashMap.class.getName())
                 ? LinkedHashMap.class.getName()
                 : HashMap.class.getName();
 
@@ -577,11 +578,11 @@ public class IDTOSerializerGenerator {
             // Ignite can't serialize collections elements efficiently.
             IgniteBiTuple<String, String> serDes = null;
 
-            if (Collection.class.getName().equals(className(type)))
+            if (Collection.class.getName().equals(qualifiedClassName(type)))
                 serDes = F.t("U.writeCollection(out, ${var})", "U.readCollection(in)");
-            else if (List.class.getName().equals(className(type)))
+            else if (List.class.getName().equals(qualifiedClassName(type)))
                 serDes = F.t("U.writeCollection(out, ${var})", "U.readList(in)");
-            else if (Set.class.getName().equals(className(type)))
+            else if (Set.class.getName().equals(qualifiedClassName(type)))
                 serDes = F.t("U.writeCollection(out, ${var})", "U.readSet(in)");
 
             throwIfNull(type, serDes);
@@ -596,7 +597,7 @@ public class IDTOSerializerGenerator {
         Map<String, String> params = Map.of(
             "${var}", var,
             "${Type}", colEl.toString(),
-            "${CollectionImpl}", simpleName(COLL_IMPL.get(className(type))),
+            "${CollectionImpl}", simpleName(COLL_IMPL.get(qualifiedClassName(type))),
             "${len}", withLevel("len"),
             "${i}", withLevel("i"),
             "${el}", el
@@ -615,7 +616,7 @@ public class IDTOSerializerGenerator {
             res = Stream.concat(res, Stream.of(TAB + TAB + "}", TAB + "}", "}"));
         }
         else {
-            String implCls = COLL_IMPL.get(className(type));
+            String implCls = COLL_IMPL.get(qualifiedClassName(type));
 
             imports.add(implCls);
 
@@ -646,7 +647,7 @@ public class IDTOSerializerGenerator {
     private Stream<String> arrayCode(TypeMirror type, String var) {
         TypeMirror comp = ((ArrayType)type).getComponentType();
 
-        IgniteBiTuple<String, String> arrSerdes = ARRAY_TYPE_SERDES.get(className(comp));
+        IgniteBiTuple<String, String> arrSerdes = ARRAY_TYPE_SERDES.get(qualifiedClassName(comp));
 
         if (arrSerdes == null && !hasCustomSerdes(comp)) {
             // Ignite can't serialize array element efficiently.
@@ -727,20 +728,6 @@ public class IDTOSerializerGenerator {
         return flds.values();
     }
 
-    /** @return FQN of {@code comp}. */
-    private static String className(TypeMirror comp) {
-        String n = comp.toString();
-
-        int spaceIdx = n.indexOf(' ');
-
-        if (spaceIdx != -1)
-            n = n.substring(spaceIdx + 1);
-
-        int genIdx = n.indexOf('<');
-
-        return genIdx == -1 ? n : n.substring(0, genIdx);
-    }
-
     /** @return Serializer class name. */
     private String serializerName() {
         return type.getSimpleName() + "Serializer";
@@ -753,9 +740,9 @@ public class IDTOSerializerGenerator {
      */
     private String simpleClassName(TypeMirror type) {
         if (type instanceof PrimitiveType)
-            return className(type);
+            return qualifiedClassName(type);
 
-        String fqn = className(type);
+        String fqn = qualifiedClassName(type);
 
         if (!fqn.startsWith("java.lang") && type.getKind() != TypeKind.TYPEVAR && type.getKind() != TypeKind.ARRAY)
             imports.add(fqn);
@@ -817,7 +804,7 @@ public class IDTOSerializerGenerator {
 
     /** */
     private boolean hasCustomSerdes(TypeMirror type) {
-        return TYPE_SERDES.containsKey(className(type))
+        return TYPE_SERDES.containsKey(qualifiedClassName(type))
             || enumType(env, type)
             || isCollection(type)
             || isBiTuple(type)

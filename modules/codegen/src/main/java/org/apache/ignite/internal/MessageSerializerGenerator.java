@@ -33,6 +33,7 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.QualifiedNameable;
+import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
@@ -667,5 +668,28 @@ public class MessageSerializerGenerator extends MessageGenerator {
 
             return mtdPrefix + mtd + "(" + String.join(", ", args) + ")";
         }
+    }
+
+    /** */
+    public static String simpleClassName(TypeMirror type) {
+        if (type.getKind() == TypeKind.DECLARED) {
+            DeclaredType declaredType = (DeclaredType)type;
+
+            return declaredType.asElement().getSimpleName().toString();
+        }
+
+        return type.toString();
+    }
+
+    /** */
+    public static String qualifiedClassName(TypeMirror type) {
+        if (type.getKind() == TypeKind.DECLARED) {
+            DeclaredType declaredType = (DeclaredType)type;
+            TypeElement el = (TypeElement)declaredType.asElement();
+
+            return el.getQualifiedName().toString();
+        }
+
+        return type.toString();
     }
 }

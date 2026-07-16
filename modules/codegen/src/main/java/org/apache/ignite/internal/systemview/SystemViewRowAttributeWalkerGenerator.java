@@ -33,12 +33,13 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
-import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.JavaFileObject;
 import org.apache.ignite.internal.util.typedef.F;
 
+import static org.apache.ignite.internal.MessageSerializerGenerator.qualifiedClassName;
+import static org.apache.ignite.internal.MessageSerializerGenerator.simpleClassName;
 import static org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor.superclasses;
 
 /**
@@ -144,10 +145,10 @@ public class SystemViewRowAttributeWalkerGenerator {
 
             String line = TAB + TAB;
 
-            if (!retClazz.getKind().isPrimitive() && !qualifiedName(retClazz).startsWith("java.lang"))
-                imports.add("import " + qualifiedName(retClazz) + ";");
+            if (!retClazz.getKind().isPrimitive() && !qualifiedClassName(retClazz).startsWith("java.lang"))
+                imports.add("import " + qualifiedClassName(retClazz) + ";");
 
-            line += "v.accept(" + i + ", \"" + name + "\", " + simpleName(retClazz) + ".class);";
+            line += "v.accept(" + i + ", \"" + name + "\", " + simpleClassName(retClazz) + ".class);";
 
             code.add(line);
         });
@@ -164,7 +165,7 @@ public class SystemViewRowAttributeWalkerGenerator {
             String line = TAB + TAB;
 
             if (!retClazz.getKind().isPrimitive())
-                line += "v.accept(" + i + ", \"" + name + "\", " + simpleName(retClazz) + ".class, row." + name + "());";
+                line += "v.accept(" + i + ", \"" + name + "\", " + simpleClassName(retClazz) + ".class, row." + name + "());";
             else if (retClazz.getKind() == TypeKind.BOOLEAN)
                 line += "v.acceptBoolean(" + i + ", \"" + name + "\", row." + name + "());";
             else if (retClazz.getKind() == TypeKind.CHAR)
@@ -274,28 +275,5 @@ public class SystemViewRowAttributeWalkerGenerator {
 
         for (int i = 0; i < notOrdered.size(); i++)
             c.accept(notOrdered.get(i), i + ordered.size());
-    }
-
-    /** */
-    private String simpleName(TypeMirror type) {
-        if (type.getKind() == TypeKind.DECLARED) {
-            DeclaredType declaredType = (DeclaredType)type;
-
-            return declaredType.asElement().getSimpleName().toString();
-        }
-
-        return type.toString();
-    }
-
-    /** */
-    private String qualifiedName(TypeMirror type) {
-        if (type.getKind() == TypeKind.DECLARED) {
-            DeclaredType declaredType = (DeclaredType)type;
-            TypeElement el = (TypeElement)declaredType.asElement();
-
-            return el.getQualifiedName().toString();
-        }
-
-        return type.toString();
     }
 }

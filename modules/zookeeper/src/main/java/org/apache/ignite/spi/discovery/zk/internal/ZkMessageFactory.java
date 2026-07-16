@@ -31,5 +31,7 @@ public class ZkMessageFactory extends AbstractMarshallableMessageFactoryProvider
         register(factory, ZkForceNodeFailMessage.class, (short)402, ZkForceNodeFailMessage::new, dfltMarsh);
         register(factory, ZkNoServersMessage.class, (short)403, ZkNoServersMessage::new, dfltMarsh);
         register(factory, ZkDiscoDataBagWrapper.class, (short)404, ZkDiscoDataBagWrapper::new, dfltMarsh);
+        register(factory, ZkOperationContextAwareCustomMessage.class, (short)405,
+            ZkOperationContextAwareCustomMessage::new, dfltMarsh);
     }
 }
