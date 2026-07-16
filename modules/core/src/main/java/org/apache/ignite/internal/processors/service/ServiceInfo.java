@@ -19,17 +19,14 @@ package org.apache.ignite.internal.processors.service;
 
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceDescriptor;
@@ -38,10 +35,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.service.ServiceTopology.EMPTY;
 
-/**
- * Service's information container.
- */
-public class ServiceInfo implements ServiceDescriptor, MarshallableMessage {
+/** Service's information container. */
+public class ServiceInfo implements ServiceDescriptor, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -59,9 +54,9 @@ public class ServiceInfo implements ServiceDescriptor, MarshallableMessage {
     /** Service configuration. */
     private LazyServiceConfiguration cfg;
 
-    /** Serialized {@link #cfg}.*/
+    /** Service configuration message. */
     @Order(2)
-    transient byte[] cfgBytes;
+    transient LazyServiceConfigurationMessage cfgMsg;
 
     /** Statically configured flag. */
     @Order(3)
@@ -101,6 +96,8 @@ public class ServiceInfo implements ServiceDescriptor, MarshallableMessage {
         this.srvcId = srvcId;
         this.cfg = cfg;
         this.staticCfg = staticCfg;
+
+        cfgMsg = new LazyServiceConfigurationMessage(cfg);
     }
 
     /**
@@ -126,34 +123,27 @@ public class ServiceInfo implements ServiceDescriptor, MarshallableMessage {
         return top;
     }
 
-    /**
-     * Returns service's configuration.
-     *
-     * @return Service configuration.
-     */
+    /** @return Service configuration. */
     public LazyServiceConfiguration configuration() {
+        if (cfg == null && cfgMsg != null)
+            cfg = cfgMsg.toConfiguration();
+
         return cfg;
     }
 
-    /**
-     * @return {@code true} if statically configured.
-     */
+    /** @return {@code true} if statically configured. */
     public boolean staticallyConfigured() {
         return staticCfg;
     }
 
-    /**
-     * Returns services id.
-     *
-     * @return Service id.
-     */
+    /** @return Service id. */
     public IgniteUuid serviceId() {
         return srvcId;
     }
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return cfg.getName();
+        return configuration().getName();
     }
 
     /** {@inheritDoc} */
@@ -161,7 +151,7 @@ public class ServiceInfo implements ServiceDescriptor, MarshallableMessage {
         if (srvcCls != null)
             return srvcCls;
 
-        String clsName = cfg.serviceClassName();
+        String clsName = configuration().serviceClassName();
 
         try {
             srvcCls = (Class<? extends Service>)Class.forName(clsName);
@@ -186,22 +176,22 @@ public class ServiceInfo implements ServiceDescriptor, MarshallableMessage {
 
     /** {@inheritDoc} */
     @Override public int totalCount() {
-        return cfg.getTotalCount();
+        return configuration().getTotalCount();
     }
 
     /** {@inheritDoc} */
     @Override public int maxPerNodeCount() {
-        return cfg.getMaxPerNodeCount();
+        return configuration().getMaxPerNodeCount();
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public String cacheName() {
-        return cfg.getCacheName();
+        return configuration().getCacheName();
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public <K> K affinityKey() {
-        return (K)cfg.getAffinityKey();
+        return (K)configuration().getAffinityKey();
     }
 
     /** {@inheritDoc} */
@@ -217,20 +207,5 @@ public class ServiceInfo implements ServiceDescriptor, MarshallableMessage {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(ServiceInfo.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (cfg != null)
-            cfgBytes = U.marshal(marsh, cfg);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (cfgBytes != null) {
-            cfg = U.unmarshal(marsh, cfgBytes, clsLdr);
-
-            cfgBytes = null;
-        }
     }
 }

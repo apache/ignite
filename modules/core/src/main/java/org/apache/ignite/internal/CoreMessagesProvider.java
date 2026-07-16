@@ -246,6 +246,7 @@ import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFe
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureSet;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgnitePluginFeatureSet;
 import org.apache.ignite.internal.processors.security.SecurityContextWrapper;
+import org.apache.ignite.internal.processors.service.LazyServiceConfigurationMessage;
 import org.apache.ignite.internal.processors.service.ServiceChangeBatchRequest;
 import org.apache.ignite.internal.processors.service.ServiceClusterDeploymentResult;
 import org.apache.ignite.internal.processors.service.ServiceClusterDeploymentResultBatch;
@@ -253,6 +254,7 @@ import org.apache.ignite.internal.processors.service.ServiceDeploymentProcessId;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentRequest;
 import org.apache.ignite.internal.processors.service.ServiceInfo;
 import org.apache.ignite.internal.processors.service.ServiceProcessorCommonDiscoveryData;
+import org.apache.ignite.internal.processors.service.ServiceProcessorJoinNodeDiscoveryData;
 import org.apache.ignite.internal.processors.service.ServiceSingleNodeDeploymentResult;
 import org.apache.ignite.internal.processors.service.ServiceSingleNodeDeploymentResultBatch;
 import org.apache.ignite.internal.processors.service.ServiceTopology;
@@ -435,8 +437,10 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(ServiceChangeBatchRequest.class);
         withNoSchema(ServiceSingleNodeDeploymentResultBatch.class);
         withNoSchema(ServiceProcessorCommonDiscoveryData.class);
+        withNoSchema(ServiceProcessorJoinNodeDiscoveryData.class);
         withNoSchema(ServiceInfo.class);
         withNoSchema(ServiceTopology.class);
+        withNoSchema(LazyServiceConfigurationMessage.class);
 
         // [6500 - 6700]: DiscoveryCustomMessage
         msgIdx = 6500;
