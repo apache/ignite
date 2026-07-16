@@ -26,7 +26,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteColocatedAggregateBase;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
@@ -203,7 +203,12 @@ public class JoinColocationPlannerTest extends AbstractPlannerTest {
         assertPlan("SELECT * FROM aff_tbl WHERE id IN (SELECT id FROM broadcast_tbl)", schema,
             nodeOrAnyChild(isInstanceOf(Join.class))
                 .and(hasChildThat(isTableScan("AFF_TBL")))
-                .and(hasChildThat(isInstanceOf(IgniteTrimExchange.class))
+                .and(hasChildThat(isInstanceOf(IgniteExchange.class))
+                    .and(hasChildThat(isInstanceOf(IgniteSort.class))
+                        .and(hasChildThat(isTableScan("AFF_TBL")))
+                    )
+                )
+                .and(hasChildThat(isInstanceOf(IgniteSort.class))
                     .and(hasChildThat(isInstanceOf(IgniteColocatedAggregateBase.class))
                         .and(hasChildThat(isTableScan("BROADCAST_TBL")))
                     )
