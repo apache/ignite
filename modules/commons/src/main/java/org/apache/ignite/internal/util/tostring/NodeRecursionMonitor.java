@@ -77,8 +77,9 @@ abstract class NodeRecursionMonitor extends GridToStringNode {
      * @return An optional containing the monitor if found.
      */
     static Optional<NodeRecursionMonitor> findRecursionMonitor(Object obj) {
-        return Optional.of(OBJECT_REGISTRY)
-                .map(ThreadLocal::get)
-                .map(map -> map.get(obj));
+        IdentityHashMap<Object, NodeRecursionMonitor> map = OBJECT_REGISTRY.get();
+        if (map == null)
+            return Optional.empty();
+        return Optional.ofNullable(map.get(obj));
     }
 }
