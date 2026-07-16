@@ -2053,10 +2053,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
     /**
      * Wraps {@code msg} into a marshalled {@link GridIoMessage} without sending it. Message marshalling is not
-     * idempotent (see {@code MessageMarshalOnceTest}), so a caller that retries transmission must prepare the
-     * message once and re-send it via {@link #sendPrepared} on each attempt.
+     * idempotent (see {@code MessageMarshalOnceTest}), so {@link #sendWithRetry} prepares the message once and
+     * re-sends it via {@link #sendPrepared} on each attempt.
      */
-    public GridIoMessage prepare(Object topic, Message msg, byte plc, boolean ordered, long timeout,
+    private GridIoMessage prepare(Object topic, Message msg, byte plc, boolean ordered, long timeout,
         boolean skipOnTimeout) throws IgniteCheckedException {
         assert !ordered || timeout > 0 || skipOnTimeout;
 
@@ -2090,6 +2090,53 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         try (TraceSurroundings ignored = support(null)) {
             sendMarshalled(node, ioMsg, null);
         }
+    }
+
+    /**
+     * Sends a message to a remote node, marshalling it once and retrying only the transmission: repeat failed
+     * attempts reuse the prepared message. Waits {@code IgniteConfiguration#getNetworkSendRetryDelay()} between
+     * attempts; {@code retryPlc} decides whether an attempt failure is retried.
+     *
+     * @param node Destination node.
+     * @param topic Topic to send the message to.
+     * @param msg Message to send.
+     * @param plc Type of processing.
+     * @param ordered Ordered flag.
+     * @param timeout Timeout to keep a message on receiving queue.
+     * @param skipOnTimeout Whether message can be skipped on timeout.
+     * @param retryPlc Failure policy.
+     */
+    public void sendWithRetry(ClusterNode node, Object topic, Message msg, byte plc, boolean ordered, long timeout,
+        boolean skipOnTimeout, SendRetryPolicy retryPlc) throws IgniteCheckedException {
+        GridIoMessage ioMsg = prepare(topic, msg, plc, ordered, timeout, skipOnTimeout);
+
+        for (int attempt = 1;; attempt++) {
+            try {
+                sendPrepared(node, ioMsg);
+
+                return;
+            }
+            catch (ClusterTopologyCheckedException e) {
+                throw e;
+            }
+            catch (IgniteCheckedException e) {
+                if (!retryPlc.onFailure(e, attempt))
+                    throw e;
+            }
+
+            U.sleep(ctx.config().getNetworkSendRetryDelay());
+        }
+    }
+
+    /** Failure policy for {@link #sendWithRetry}: decides whether a failed transmission attempt is retried. */
+    @FunctionalInterface public interface SendRetryPolicy {
+        /**
+         * @param e Transmission failure.
+         * @param attempt Failed attempt number, starting with {@code 1}.
+         * @return {@code true} to retry, {@code false} to rethrow {@code e}.
+         * @throws IgniteCheckedException To replace {@code e} with a more specific failure.
+         */
+        public boolean onFailure(IgniteCheckedException e, int attempt) throws IgniteCheckedException;
     }
 
     /**

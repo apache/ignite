@@ -37,7 +37,6 @@ import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -193,12 +192,6 @@ public class GridCacheIoManagerRetryTest extends GridCommonAbstractTest {
      */
     private void configureGridIoManager(GridTestKernalContext ctx, AtomicInteger sendCnt) {
         ctx.add(new GridIoManager(ctx) {
-            @Override public GridIoMessage prepare(Object topic, Message msg, byte plc, boolean ordered,
-                long timeout, boolean skipOnTimeout) {
-                // Transmission is mocked below, so the prepared message is not needed.
-                return null;
-            }
-
             @Override public void sendPrepared(ClusterNode node, GridIoMessage ioMsg) throws IgniteCheckedException {
                 sendCnt.incrementAndGet();
 

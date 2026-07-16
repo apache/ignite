@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
+import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.PluginProvider;
@@ -83,6 +84,7 @@ public class GridTestKernalContext extends GridKernalContextImpl {
 
         GridTestUtils.setFieldValue(grid(), "cfg", config());
         GridTestUtils.setFieldValue(grid(), "ctx", this);
+        GridTestUtils.setFieldValue(grid(), "operationCtxDispatcher", new OperationContextDispatcher());
 
         config().setGridLogger(log);
 

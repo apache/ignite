@@ -39,7 +39,6 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.communication.MessageMarshalling;
@@ -116,9 +115,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
     /** Common message handler identifier that does not correspond to any particular cache. */
     public static final int COMMON_MESSAGE_HANDLER_ID = 0;
-
-    /** Delay in milliseconds between retries. */
-    private long retryDelay;
 
     /** Number of retries using to send messages. */
     private int retryCnt;
@@ -491,7 +487,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
-        retryDelay = cctx.gridConfig().getNetworkSendRetryDelay();
         retryCnt = cctx.gridConfig().getNetworkSendRetryCount();
 
         depEnabled = cctx.gridDeploy().enabled();
@@ -1139,34 +1134,21 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         if (log.isDebugEnabled())
             log.debug("Sending cache message [msg=" + msg + ", node=" + U.toShortString(node) + ']');
 
-        GridIoMessage ioMsg = cctx.gridIO().prepare(TOPIC_CACHE, msg, plc, false, 0, false);
+        cctx.gridIO().sendWithRetry(node, TOPIC_CACHE, msg, plc, false, 0, false, (e, attempt) -> {
+            if (!cctx.discovery().alive(node.id()) || !cctx.discovery().pingNode(node.id()))
+                throw new ClusterTopologyCheckedException("Node left grid while sending message to: " + node.id(), e);
 
-        int cnt = 0;
+            if (attempt > retryCnt || cctx.kernalContext().isStopping())
+                return false;
 
-        while (true) {
-            try {
-                cctx.gridIO().sendPrepared(node, ioMsg);
+            if (log.isDebugEnabled())
+                log.debug("Failed to send message to node (will retry): " + node.id());
 
-                if (log.isDebugEnabled())
-                    log.debug("Sent cache message [msg=" + msg + ", node=" + U.toShortString(node) + ']');
+            return true;
+        });
 
-                return;
-            }
-            catch (ClusterTopologyCheckedException e) {
-                throw e;
-            }
-            catch (IgniteCheckedException e) {
-                if (!cctx.discovery().alive(node.id()) || !cctx.discovery().pingNode(node.id()))
-                    throw new ClusterTopologyCheckedException("Node left grid while sending message to: " + node.id(), e);
-
-                if (cnt++ >= retryCnt || cctx.kernalContext().isStopping())
-                    throw e;
-                else if (log.isDebugEnabled())
-                    log.debug("Failed to send message to node (will retry): " + node.id());
-            }
-
-            U.sleep(retryDelay);
-        }
+        if (log.isDebugEnabled())
+            log.debug("Sent cache message [msg=" + msg + ", node=" + U.toShortString(node) + ']');
     }
 
     /**
@@ -1208,35 +1190,21 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             return;
         }
 
-        GridIoMessage ioMsg = cctx.gridIO().prepare(topic, msg, plc, true, timeout, false);
+        cctx.gridIO().sendWithRetry(node, topic, msg, plc, true, timeout, false, (e, attempt) -> {
+            if (cctx.discovery().node(node.id()) == null)
+                throw new ClusterTopologyCheckedException("Node left grid while sending ordered message to: " + node.id(), e);
 
-        int cnt = 0;
+            if (attempt > retryCnt)
+                return false;
 
-        while (true) {
-            try {
-                cctx.gridIO().sendPrepared(node, ioMsg);
+            if (log.isDebugEnabled())
+                log.debug("Failed to send message to node (will retry): " + node.id());
 
-                if (log.isDebugEnabled())
-                    log.debug("Sent ordered cache message [topic=" + topic + ", msg=" + msg +
-                        ", nodeId=" + node.id() + ']');
+            return true;
+        });
 
-                return;
-            }
-            catch (ClusterTopologyCheckedException e) {
-                throw e;
-            }
-            catch (IgniteCheckedException e) {
-                if (cctx.discovery().node(node.id()) == null)
-                    throw new ClusterTopologyCheckedException("Node left grid while sending ordered message to: " + node.id(), e);
-
-                if (cnt++ >= retryCnt)
-                    throw e;
-                else if (log.isDebugEnabled())
-                    log.debug("Failed to send message to node (will retry): " + node.id());
-            }
-
-            U.sleep(retryDelay);
-        }
+        if (log.isDebugEnabled())
+            log.debug("Sent ordered cache message [topic=" + topic + ", msg=" + msg + ", nodeId=" + node.id() + ']');
     }
 
     /**
