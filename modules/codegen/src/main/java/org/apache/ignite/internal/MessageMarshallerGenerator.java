@@ -56,22 +56,22 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     private final TypeMirror marshallableMsgType;
 
     /** */
-    private final TypeMirror messageMirror;
+    private final TypeMirror msgType;
 
     /** */
-    private final TypeMirror cacheObjectMirror;
+    private final TypeMirror cacheObjType;
 
     /** */
-    private final TypeMirror nonMarshallableMirror;
+    private final TypeMirror nonMarshallableType;
 
     /** */
-    private final TypeMirror cacheGroupIdMsgMirror;
+    private final TypeMirror cacheGrpIdMsgType;
 
     /** */
-    private final TypeMirror mapMirror;
+    private final TypeMirror mapType;
 
     /** */
-    private final TypeMirror collectionMirror;
+    private final TypeMirror colType;
 
     /** */
     private boolean marshallable;
@@ -93,12 +93,12 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         super(env);
 
         marshallableMsgType = type(MARSHALLABLE_MESSAGE_INTERFACE);
-        messageMirror = type(MESSAGE_INTERFACE);
-        cacheObjectMirror = type("org.apache.ignite.internal.processors.cache.CacheObject");
-        nonMarshallableMirror = type(NON_MARSHALLABLE_MESSAGE_INTERFACE);
-        cacheGroupIdMsgMirror = type("org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage");
-        mapMirror = type("java.util.Map");
-        collectionMirror = type("java.util.Collection");
+        msgType = type(MESSAGE_INTERFACE);
+        cacheObjType = type("org.apache.ignite.internal.processors.cache.CacheObject");
+        nonMarshallableType = type(NON_MARSHALLABLE_MESSAGE_INTERFACE);
+        cacheGrpIdMsgType = type("org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage");
+        mapType = type("java.util.Map");
+        colType = type("java.util.Collection");
     }
 
     /** {@inheritDoc} */
@@ -540,16 +540,19 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
         for (VariableElement f : enclosed.values()) {
             MarshalledCollection colAnn = f.getAnnotation(MarshalledCollection.class);
+
             if (colAnn != null)
                 names.add(colAnn.value());
 
             MarshalledMap mapAnn = f.getAnnotation(MarshalledMap.class);
+
             if (mapAnn != null) {
                 names.add(mapAnn.keys());
                 names.add(mapAnn.values());
             }
 
             MarshalledObjects objAnn = f.getAnnotation(MarshalledObjects.class);
+
             if (objAnn != null)
                 names.add(objAnn.value());
         }
@@ -948,8 +951,8 @@ public class MessageMarshallerGenerator extends MessageGenerator {
      * Returns whether the {@code @Order} fields of {@code msgType} need a cache object context to unmarshal. Such a
      * message must not be a {@code @NioField}: its {@code unmarshalNio} runs on the NIO thread, which has no context.
      */
-    private boolean nestedNeedsCtx(TypeMirror msgType) {
-        Element el = env.getTypeUtils().asElement(msgType);
+    private boolean nestedNeedsCtx(TypeMirror type) {
+        Element el = env.getTypeUtils().asElement(type);
 
         if (!(el instanceof TypeElement))
             return false;
@@ -994,22 +997,22 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
     /** */
     private boolean isMessage(TypeMirror type) {
-        return assignableFrom(type, messageMirror);
+        return assignableFrom(type, msgType);
     }
 
     /** */
     private boolean isCacheObject(TypeMirror type) {
-        return assignableFrom(type, cacheObjectMirror);
+        return assignableFrom(type, cacheObjType);
     }
 
     /** Returns {@code true} if {@code type} (erased) is assignable to {@code java.util.Map}. */
     private boolean isMap(TypeMirror type) {
-        return assignableFrom(erasedType(type), mapMirror);
+        return assignableFrom(erasedType(type), mapType);
     }
 
     /** Returns {@code true} if {@code type} (erased) is assignable to {@code java.util.Collection}. */
     private boolean isCollection(TypeMirror type) {
-        return assignableFrom(erasedType(type), collectionMirror);
+        return assignableFrom(erasedType(type), colType);
     }
 
     /** */
@@ -1019,12 +1022,12 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
     /** Recursion skip for such fields is subtype-safe: subclasses inherit the {@code NonMarshallableMessage} marker. */
     private boolean isNonMarshallable(TypeMirror t) {
-        return assignableFrom(t, nonMarshallableMirror);
+        return assignableFrom(t, nonMarshallableType);
     }
 
     /** */
     private boolean isCacheGroupIdMessage(TypeElement te) {
-        return assignableFrom(te.asType(), cacheGroupIdMsgMirror);
+        return assignableFrom(te.asType(), cacheGrpIdMsgType);
     }
 
     /** */

@@ -284,6 +284,7 @@ public class MessageProcessor extends AbstractProcessor {
      */
     private void validateEnumFieldMapping(TypeElement type, Element el) {
         CustomMapper custMappAnn = el.getAnnotation(CustomMapper.class);
+
         if (enumType(processingEnv, el.asType())) {
             String enumClsFullName = el.asType().toString();
             String enumMapperClsName = custMappAnn != null ? custMappAnn.value() : DLFT_ENUM_MAPPER_CLS;

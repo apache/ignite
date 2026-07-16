@@ -83,18 +83,18 @@ public abstract class MessageGenerator {
     protected int indent;
 
     /** Dispatches cache-object-context resolution in both the marshaller and the deployment generators. */
-    protected final TypeMirror cacheIdAwareMirror;
+    protected final TypeMirror cacheIdAwareType;
 
     /** */
     MessageGenerator(ProcessingEnvironment env) {
         this.env = env;
 
-        cacheIdAwareMirror = type("org.apache.ignite.plugin.extensions.communication.CacheIdAware");
+        cacheIdAwareType = type("org.apache.ignite.plugin.extensions.communication.CacheIdAware");
     }
 
     /** */
     boolean isCacheIdAwareMessage(TypeElement te) {
-        return assignableFrom(te.asType(), cacheIdAwareMirror);
+        return assignableFrom(te.asType(), cacheIdAwareType);
     }
 
     /** Generates and writes the source file for {@code type}; skipped when {@link #shouldSkip} returns {@code true}. */
