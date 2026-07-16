@@ -2566,6 +2566,23 @@ public abstract class IgniteUtils extends CommonUtils {
     public static URL resolveSpringUrl(String springCfgPath) throws IgniteCheckedException {
         A.notNull(springCfgPath, "springCfgPath");
 
+        String prop = IgniteSystemProperties.IGNITE_ALLOW_REMOTE_SPRING_CFG_URL;
+
+        // Check always-blocked schemes against the raw string first, since java.net.URL
+        // does not support ftp/ftps natively and throws MalformedURLException before
+        // the scheme can be inspected, which would otherwise bypass this check.
+        String lowerPath = springCfgPath.toLowerCase(Locale.ROOT);
+
+        for (String blockedScheme : ALWAYS_BLOCKED_CFG_SCHEMES) {
+            if (lowerPath.startsWith(blockedScheme + "://"))
+                throw new IgniteCheckedException(
+                    "Spring configuration URLs with scheme '" + blockedScheme + "' are always blocked " +
+                    "due to security risk. Use a local file/classpath reference instead. " +
+                    "For remote HTTP/HTTPS set system property: -D" +
+                    prop + "=true."
+                );
+        }
+
         URL url;
 
         try {
@@ -2592,8 +2609,6 @@ public abstract class IgniteUtils extends CommonUtils {
                     break;
                 }
             }
-
-            String prop = IgniteSystemProperties.IGNITE_ALLOW_REMOTE_SPRING_CFG_URL;
 
             if (REMOTE_CFG_SCHEMES.contains(scheme)) {
                 if (ALWAYS_BLOCKED_CFG_SCHEMES.contains(scheme))
