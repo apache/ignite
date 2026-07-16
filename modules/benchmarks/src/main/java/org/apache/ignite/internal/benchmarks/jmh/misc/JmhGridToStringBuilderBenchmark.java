@@ -65,22 +65,22 @@ public class JmhGridToStringBuilderBenchmark {
     /* ── graph data ── */
 
     /** Deep chain: 100 levels of nesting. */
-    private Object deepGraph;
+    private Node deepGraph;
 
     /** Wide object: 1 object with 50 scalar fields (carried in a Map). */
-    private Object wideGraph;
+    private Node wideGraph;
 
     /** Deep + wide: 100 levels, each with 50 scalar fields. */
-    private Object deepWideGraph;
+    private Node deepWideGraph;
 
     /** Wide collection: single object containing a list of 1000 simple objects. */
-    private Object wideCollGraph;
+    private CollHolder wideCollGraph;
 
     /** Wide map: single object containing a map of 1000 simple entries. */
-    private Object wideMapGraph;
+    private MapHolder wideMapGraph;
 
     /** Self-referencing object (recursion detection path). */
-    private Object recursiveGraph;
+    private Node recursiveGraph;
 
     /**
      * Simple POJO with a single reference — used for deep/deep-wide graphs.
@@ -173,37 +173,37 @@ public class JmhGridToStringBuilderBenchmark {
     /** Deep graph: 100 levels of nesting. */
     @Benchmark
     public void deep(Blackhole bh) {
-        bh.consume(GridToStringBuilder.toString(deepGraph));
+        bh.consume(GridToStringBuilder.toString(Node.class, deepGraph));
     }
 
     /** Wide object: 50 scalar fields. */
     @Benchmark
     public void wide(Blackhole bh) {
-        bh.consume(GridToStringBuilder.toString(wideGraph));
+        bh.consume(GridToStringBuilder.toString(Node.class, wideGraph));
     }
 
     /** Deep + wide: 100 levels × 50 fields. */
     @Benchmark
     public void deepWide(Blackhole bh) {
-        bh.consume(GridToStringBuilder.toString(deepWideGraph));
+        bh.consume(GridToStringBuilder.toString(Node.class, deepWideGraph));
     }
 
     /** Wide collection: 1000-element list. */
     @Benchmark
     public void wideCollection(Blackhole bh) {
-        bh.consume(GridToStringBuilder.toString(wideCollGraph));
+        bh.consume(GridToStringBuilder.toString(CollHolder.class, wideCollGraph));
     }
 
     /** Wide map: 1000-entry map. */
     @Benchmark
     public void wideMap(Blackhole bh) {
-        bh.consume(GridToStringBuilder.toString(wideMapGraph));
+        bh.consume(GridToStringBuilder.toString(MapHolder.class, wideMapGraph));
     }
 
     /** Self-referencing object (recursion detection). */
     @Benchmark
     public void recursive(Blackhole bh) {
-        bh.consume(GridToStringBuilder.toString(recursiveGraph));
+        bh.consume(GridToStringBuilder.toString(Node.class, recursiveGraph));
     }
 
     /* ── main ── */
