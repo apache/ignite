@@ -129,7 +129,7 @@ public class GridCacheIoManagerRetryTest extends GridCommonAbstractTest {
 
         cacheIoMgr.start(cctx);
 
-        ((IgniteKernal)cacheIoMgr.context().kernalContext().grid()).initMessageFactory();
+        ((IgniteKernal)cacheIoMgr.context().kernalContext().grid()).initMessageFactoryForTest();
 
         return cacheIoMgr;
     }

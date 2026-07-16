@@ -32,8 +32,9 @@ import org.junit.Test;
  */
 public class MessageUnmarshalOnceTest extends GridCommonAbstractTest {
     /** The suite-wide guard must be on, so a silently-disabled check cannot pass every test without verifying anything. */
-    @Test
-    public void testCheckEnabled() {
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         assertTrue("IGNITE_MESSAGE_UNMARSHAL_ONCE_CHECK must be set for every test by GridAbstractTest",
             MessageUnmarshalOnceCheck.ENABLED);
     }
