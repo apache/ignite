@@ -694,6 +694,14 @@ public class CommandHandlerParsingTest {
 
         assertParseArgsThrows("String representation of \"java.util.UUID\" is exepected", IllegalArgumentException.class,
             "--kill", "continuous", UUID.randomUUID().toString(), "not_a_uuid");
+
+        // Kill all command format errors.
+        assertParseArgsThrows("Argument target_type required.", "--kill", "all");
+        assertParseArgsThrows("Can't parse value 'unknown'", "--kill", "all", "unknown");
+        assertParseArgsThrows("Argument is invalid: --min-duration", "--kill", "all", "sql", "--min-duration", "-1");
+        assertParseArgsThrows("Argument is invalid: --min-duration", "--kill", "all", "sql", "--min-duration", "0");
+        assertParseArgsThrows("Argument is invalid: --minDuration is not supported for CONTINUOUS queries",
+            "--kill", "all", "continuous", "--min-duration", "60");
     }
 
     /**
