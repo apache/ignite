@@ -85,7 +85,6 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
@@ -1643,7 +1642,7 @@ public class GridNioServer<T> {
                 else {
                     writer.setBuffer(buf);
 
-                    finished = MessageSerializer.writeTo(messageFactory(), msg, writer);
+                    finished = MessageSerialization.writeTo(messageFactory(), msg, writer);
                 }
 
                 span.addTag(SOCKET_WRITE_BYTES, () -> Integer.toString(buf.position() - startPos));
@@ -1842,7 +1841,7 @@ public class GridNioServer<T> {
                 else {
                     writer.setBuffer(buf);
 
-                    finished = MessageSerializer.writeTo(msgFactory, msg, writer);
+                    finished = MessageSerialization.writeTo(msgFactory, msg, writer);
                 }
 
                 span.addTag(SOCKET_WRITE_BYTES, () -> Integer.toString(buf.position() - startPos));

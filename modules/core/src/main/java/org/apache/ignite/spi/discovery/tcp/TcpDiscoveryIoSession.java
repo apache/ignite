@@ -38,6 +38,7 @@ import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.managers.communication.UnknownMessageException;
 import org.apache.ignite.internal.util.CommonUtils;
+import org.apache.ignite.internal.util.nio.MessageSerialization;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -180,7 +181,7 @@ public class TcpDiscoveryIoSession {
 
                 msgBuf.limit(read);
 
-                finished = MessageSerializer.readFrom(spi.messageFactory(), msg, msgReader);
+                finished = MessageSerialization.readFrom(spi.messageFactory(), msg, msgReader);
 
                 // Server Discovery only sends next message to next Server upon receiving a receipt for the previous one.
                 // This behaviour guarantees that we never read a next message from the buffer right after the end of
@@ -251,7 +252,7 @@ public class TcpDiscoveryIoSession {
             // Should be cleared before first operation.
             msgBuf.clear();
 
-            finished = MessageSerializer.writeTo(spi.messageFactory(), m, msgWriter);
+            finished = MessageSerialization.writeTo(spi.messageFactory(), m, msgWriter);
 
             out.write(msgBuf.array(), 0, msgBuf.position());
         }

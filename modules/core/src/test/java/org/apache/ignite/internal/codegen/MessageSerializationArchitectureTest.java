@@ -27,6 +27,7 @@ import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.lang.ArchRule;
 import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
+import org.apache.ignite.internal.util.nio.MessageSerialization;
 import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.junit.BeforeClass;
@@ -42,12 +43,8 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
  * serializers/marshallers/deployers and their hand-written wrappers). All other code must use the static
  * convenience methods:
  * <ul>
- *     <li>{@link MessageSerializer#writeTo(org.apache.ignite.plugin.extensions.communication.MessageFactory,
- *         org.apache.ignite.plugin.extensions.communication.Message,
- *         org.apache.ignite.plugin.extensions.communication.MessageWriter)}</li>
- *     <li>{@link MessageSerializer#readFrom(org.apache.ignite.plugin.extensions.communication.MessageFactory,
- *         org.apache.ignite.plugin.extensions.communication.Message,
- *         org.apache.ignite.plugin.extensions.communication.MessageReader)}</li>
+ *     <li>{@link MessageSerialization#writeTo}</li>
+ *     <li>{@link MessageSerialization#readFrom}</li>
  *     <li>{@link MessageMarshalling#marshal}</li>
  *     <li>{@code MessageMarshalling.unmarshal}</li>
  *     <li>static {@code GridCacheMessageDeployer.deploy(factory, msg, ctx)}</li>
@@ -81,28 +78,24 @@ public class MessageSerializationArchitectureTest {
     /**
      * Instance methods of {@link MessageSerializer} ({@code writeTo}, {@code readFrom}) must only be
      * called from within classes that themselves implement {@link MessageSerializer} — i.e. generated
-     * serializers and hand-written wrappers that delegate to the underlying serializer.
+     * serializers and hand-written wrappers that delegate to the underlying serializer — or the
+     * {@link MessageSerialization} dispatcher that resolves and calls them.
      *
-     * Everyone else must use
-     * {@link MessageSerializer#writeTo(org.apache.ignite.plugin.extensions.communication.MessageFactory,
-     *     org.apache.ignite.plugin.extensions.communication.Message,
-     *     org.apache.ignite.plugin.extensions.communication.MessageWriter)} and
-     * {@link MessageSerializer#readFrom(org.apache.ignite.plugin.extensions.communication.MessageFactory,
-     *     org.apache.ignite.plugin.extensions.communication.Message,
-     *     org.apache.ignite.plugin.extensions.communication.MessageReader)}.
+     * Everyone else must use the static {@link MessageSerialization} entry points.
      */
     @Test
     public void serializerInstanceMethodsOnlyCalledFromImplementations() {
         ArchRule rule = noClasses()
             .that()
-                // Exclude MessageSerializer itself and all its implementations (generated + wrappers).
+                // Exclude MessageSerializer implementations (generated + wrappers) and the dispatch facade.
                 .areNotAssignableTo(MessageSerializer.class)
+                .and().areNotAssignableTo(MessageSerialization.class)
             .should()
                 .callMethodWhere(TO_INSTANCE_METHOD
                         .and(target(HasOwner.Predicates.With.owner(assignableTo(MessageSerializer.class))))
                 )
-            .because("Use static MessageSerializer.writeTo(factory, msg, writer) and " +
-                "MessageSerializer.readFrom(factory, msg, reader) instead of calling instance methods directly.");
+            .because("Use static MessageSerialization.writeTo(factory, msg, writer) and " +
+                "MessageSerialization.readFrom(factory, msg, reader) instead of calling instance methods directly.");
 
         rule.check(classes);
     }

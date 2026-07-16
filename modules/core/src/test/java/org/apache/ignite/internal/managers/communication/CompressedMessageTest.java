@@ -34,11 +34,11 @@ import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GroupPartitionIdPair;
+import org.apache.ignite.internal.util.nio.MessageSerialization;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
-import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -134,7 +134,7 @@ public class CompressedMessageTest {
         reader.setBuffer(buf);
 
         GridTestUtils.assertThrows(null,
-            () -> MessageSerializer.readFrom(MSG_FACTORY, new CompressedMessage(), reader),
+            () -> MessageSerialization.readFrom(MSG_FACTORY, new CompressedMessage(), reader),
             IgniteException.class,
             "unexpected null chunk");
     }
@@ -157,7 +157,7 @@ public class CompressedMessageTest {
         reader.setBuffer(buf);
 
         GridTestUtils.assertThrows(null,
-            () -> MessageSerializer.readFrom(MSG_FACTORY, new CompressedMessage(), reader),
+            () -> MessageSerialization.readFrom(MSG_FACTORY, new CompressedMessage(), reader),
             IgniteException.class,
             "Invalid compressed message data size");
     }

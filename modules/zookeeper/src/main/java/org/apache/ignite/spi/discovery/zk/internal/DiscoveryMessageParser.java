@@ -31,6 +31,7 @@ import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.util.CommonUtils;
+import org.apache.ignite.internal.util.nio.MessageSerialization;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
@@ -104,7 +105,7 @@ public class DiscoveryMessageParser {
         do {
             msgBuf.clear();
 
-            finished = MessageSerializer.writeTo(msgFactory, m, msgWriter);
+            finished = MessageSerialization.writeTo(msgFactory, m, msgWriter);
 
             out.write(msgBuf.array(), 0, msgBuf.position());
         }
@@ -130,7 +131,7 @@ public class DiscoveryMessageParser {
                 msgBuf.rewind();
             }
 
-            finished = MessageSerializer.readFrom(msgFactory, msg, msgReader);
+            finished = MessageSerialization.readFrom(msgFactory, msg, msgReader);
 
             assert read != -1 || finished : "Stream closed before message was fully read.";
 

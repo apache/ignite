@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.util.nio.MessageSerialization;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -40,7 +41,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageMapType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage;
 import org.jetbrains.annotations.Nullable;
@@ -105,13 +105,13 @@ public abstract class AbstractMessageSerializationTest {
 
         initializeMessage(msg);
 
-        while (!MessageSerializer.writeTo(msgFactory, msg, writer)) {
+        while (!MessageSerialization.writeTo(msgFactory, msg, writer)) {
             // No-op.
         }
 
         msg = msgFactory.create(msgType);
 
-        while (!MessageSerializer.readFrom(msgFactory, msg, reader)) {
+        while (!MessageSerialization.readFrom(msgFactory, msg, reader)) {
             // No-op.
         }
 

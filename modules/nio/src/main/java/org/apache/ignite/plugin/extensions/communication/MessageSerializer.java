@@ -18,7 +18,8 @@
 package org.apache.ignite.plugin.extensions.communication;
 
 /**
- * Interface for message serialization logic.
+ * Interface for message serialization logic. Resolve-and-dispatch entry points that look the serializer up from the
+ * message factory live in {@code MessageSerialization}.
  */
 public interface MessageSerializer<M extends Message> {
     /**
@@ -38,36 +39,4 @@ public interface MessageSerializer<M extends Message> {
      * @return Whether message was fully read.
      */
     public boolean readFrom(M msg, MessageReader reader);
-
-    /**
-     * Writes the message using the serializer resolved from the factory.
-     *
-     * @param factory Message factory.
-     * @param msg Message instance.
-     * @param writer Writer.
-     * @param <M> Message type.
-     * @return Whether message was fully written.
-     */
-    public static <M extends Message> boolean writeTo(MessageFactory factory, M msg, MessageWriter writer) {
-        return resolve(factory, msg).writeTo(msg, writer);
-    }
-
-    /**
-     * Reads the message using the serializer resolved from the factory.
-     *
-     * @param factory Message factory.
-     * @param msg Message instance.
-     * @param reader Reader.
-     * @param <M> Message type.
-     * @return Whether message was fully read.
-     */
-    public static <M extends Message> boolean readFrom(MessageFactory factory, M msg, MessageReader reader) {
-        return resolve(factory, msg).readFrom(msg, reader);
-    }
-
-    /** @return the serializer registered for {@code msg}'s direct type. */
-    @SuppressWarnings("unchecked")
-    private static <M extends Message> MessageSerializer<M> resolve(MessageFactory factory, M msg) {
-        return (MessageSerializer<M>)factory.serializer(msg.directType());
-    }
 }

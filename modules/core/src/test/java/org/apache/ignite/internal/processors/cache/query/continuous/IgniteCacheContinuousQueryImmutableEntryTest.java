@@ -37,9 +37,9 @@ import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImp
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
+import org.apache.ignite.internal.util.nio.MessageSerialization;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
-import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -162,7 +162,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
 
         // Skip write class header.
         writer.onHeaderWritten();
-        MessageSerializer.writeTo(msgFactory, e0, writer);
+        MessageSerialization.writeTo(msgFactory, e0, writer);
 
         CacheContinuousQueryEntry e1 = new CacheContinuousQueryEntry();
 
@@ -170,7 +170,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
 
         reader.setBuffer(ByteBuffer.wrap(buf.array()));
 
-        MessageSerializer.readFrom(msgFactory, e1, reader);
+        MessageSerialization.readFrom(msgFactory, e1, reader);
 
         assertEquals(e0.cacheId(), e1.cacheId());
         assertEquals(e0.eventType(), e1.eventType());

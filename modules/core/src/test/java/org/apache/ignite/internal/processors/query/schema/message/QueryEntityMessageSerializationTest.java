@@ -37,12 +37,12 @@ import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
+import org.apache.ignite.internal.util.nio.MessageSerialization;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
-import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -135,7 +135,7 @@ public class QueryEntityMessageSerializationTest extends GridCommonAbstractTest 
         DirectMessageWriter writer = new DirectMessageWriter(msgFactory);
         writer.setBuffer(buf);
 
-        assertTrue(MessageSerializer.writeTo(msgFactory, msg, writer));
+        assertTrue(MessageSerialization.writeTo(msgFactory, msg, writer));
         assertEquals("Writes" + ERROR_SUFFIX,
             expReadsWritesCnt, writer.state());
 
@@ -146,7 +146,7 @@ public class QueryEntityMessageSerializationTest extends GridCommonAbstractTest 
 
         T res = (T)msgFactory.create(makeMessageType(buf.get(), buf.get()));
 
-        assertTrue(MessageSerializer.readFrom(msgFactory, res, reader));
+        assertTrue(MessageSerialization.readFrom(msgFactory, res, reader));
         assertEquals("Reads" + ERROR_SUFFIX,
             expReadsWritesCnt, reader.state());
 
