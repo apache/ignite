@@ -46,7 +46,7 @@ public interface Message {
     int DIRECT_TYPE_SIZE = 2;
 
     /** Registry of message class to direct type mappings, populated during factory initialization. */
-    Map<Class<?>, Short> REGISTRATIONS = new ConcurrentHashMap<>();
+    Map<Class<? extends Message>, Short> REGISTRATIONS = new ConcurrentHashMap<>();
 
     /** Per-class cache over {@link #REGISTRATIONS}; keeps {@link #directType()} off the map lookup done for every sent message. */
     ClassValue<Short> DIRECT_TYPES = new ClassValue<>() {
