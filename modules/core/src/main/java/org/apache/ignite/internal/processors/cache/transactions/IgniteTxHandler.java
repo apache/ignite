@@ -438,6 +438,18 @@ public class IgniteTxHandler {
             firstEntry = firstWrite != null ? firstWrite : firstRead;
         }
         catch (IgniteCheckedException e) {
+            // The failed-message response must be sent from here: the entry context binding moved from the
+            // message-level unmarshal into this handler, so errors like "cache recreated" surface past
+            // GridCacheIoManager's catch, and the near node would hang without a response (IgniteCacheRecreateTest).
+            try {
+                req.onClassError(e);
+
+                ctx.io().processFailedMessage(nearNode.id(), req, null, req.policy());
+            }
+            catch (IgniteCheckedException ex) {
+                throw new IgniteException(ex);
+            }
+
             return new GridFinishedFuture<>(e);
         }
 
