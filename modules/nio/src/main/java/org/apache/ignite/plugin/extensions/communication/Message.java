@@ -17,10 +17,7 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.managers.communication.UnknownMessageException;
 
 /**
  * Base type for all messages sent between nodes, both over the communication SPI and via discovery.
@@ -43,43 +40,24 @@ public interface Message {
     /** Direct type size in bytes. */
     int DIRECT_TYPE_SIZE = 2;
 
-    /** Registry of message class to direct type mappings, populated during factory initialization. */
-    Map<Class<? extends Message>, Short> REGISTRATIONS = new ConcurrentHashMap<>();
-
-    /** Per-class cache over {@link #REGISTRATIONS}; keeps {@link #directType()} off the map lookup done for every sent message. */
-    ClassValue<Short> DIRECT_TYPES = new ClassValue<>() {
-        @Override protected Short computeValue(Class<?> type) {
-            Short directType = REGISTRATIONS.get(type);
-
-            if (directType == null)
-                throw new UnknownMessageException(type.asSubclass(Message.class));
-
-            return directType;
-        }
-    };
-
     /**
      * Gets message type.
      *
      * @return Message type.
      */
     default short directType() {
-        return DIRECT_TYPES.get(getClass());
+        return MessageRegistry.directType(getClass());
     }
 
     /**
      * Registers the direct type for this message class. Called during message factory initialization
-     * to populate the {@link #REGISTRATIONS} map so that {@link #directType()} can resolve types
+     * to populate the {@link MessageRegistry} so that {@link #directType()} can resolve types
      * without requiring each message class to override it.
      *
      * @param directType Direct type to register.
      * @throws IgniteException If this message class is already registered with a different direct type.
      */
     default void registerAsDirectType(short directType) {
-        var clazz = getClass();
-        var type = REGISTRATIONS.putIfAbsent(clazz, directType);
-
-        if ((type != null) && (type != directType))
-            throw new IgniteException(clazz.getSimpleName() + " is already registered for direct type " + type);
+        MessageRegistry.register(getClass(), directType);
     }
 }
