@@ -948,6 +948,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.CLIENT_CONNECTIONS.TYPE.null",
                 "SYS.CLIENT_CONNECTIONS.USER.null",
                 "SYS.CLIENT_CONNECTIONS.VERSION.null",
+                "SYS.CLIENT_CONNECTIONS.DATA_CENTER_ID.null",
                 "SYS.CLIENT_CONNECTION_ATTRIBUTES.CONNECTION_ID.null",
                 "SYS.CLIENT_CONNECTION_ATTRIBUTES.NAME.null",
                 "SYS.CLIENT_CONNECTION_ATTRIBUTES.VALUE.null",

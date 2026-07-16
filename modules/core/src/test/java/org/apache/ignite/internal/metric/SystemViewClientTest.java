@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.metric;
 
 import java.sql.Connection;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Properties;
 import org.apache.ignite.IgniteJdbcThinDriver;
 import org.apache.ignite.Ignition;
@@ -35,8 +37,10 @@ import org.apache.ignite.spi.systemview.view.ClientConnectionView;
 import org.apache.ignite.spi.systemview.view.FiltrableSystemView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DATA_CENTER_ID;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_ATTR_VIEW;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_VIEW;
 import static org.apache.ignite.internal.util.lang.GridFunc.identity;
@@ -85,6 +89,48 @@ public class SystemViewClientTest extends SystemViewAbstractTest {
             boolean res = GridTestUtils.waitForCondition(() -> conns.size() == 0, 5_000);
 
             assertTrue(res);
+        }
+    }
+
+    /** */
+    @Test
+    @WithSystemProperty(key = IGNITE_DATA_CENTER_ID, value = "server-dc")
+    public void testClientConnectionDataCenterId() throws Exception {
+        try (IgniteEx g0 = startGrid(0)) {
+            assertEquals("server-dc", g0.localNode().dataCenterId());
+
+            System.clearProperty(IGNITE_DATA_CENTER_ID);
+
+            SystemView<ClientConnectionView> conns = g0.context().systemView().view(CLI_CONN_VIEW);
+
+            Map<String, String> userAttrs = Collections.singletonMap(IGNITE_DATA_CENTER_ID, "user-dc");
+
+            try (IgniteClient ignored = Ignition.startClient(
+                new ClientConfiguration()
+                    .setAddresses(Config.SERVER)
+                    .setUserAttributes(userAttrs))) {
+                assertEquals("user-dc", conns.iterator().next().dataCenterId());
+            }
+
+            assertTrue(GridTestUtils.waitForCondition(() -> conns.size() == 0, 5_000));
+
+            System.setProperty(IGNITE_DATA_CENTER_ID, "property-dc");
+
+            try (IgniteClient ignored = Ignition.startClient(
+                new ClientConfiguration()
+                    .setAddresses(Config.SERVER)
+                    .setUserAttributes(userAttrs))) {
+                System.clearProperty(IGNITE_DATA_CENTER_ID);
+
+                assertEquals("property-dc", conns.iterator().next().dataCenterId());
+                assertEquals("user-dc", userAttrs.get(IGNITE_DATA_CENTER_ID));
+            }
+
+            assertTrue(GridTestUtils.waitForCondition(() -> conns.size() == 0, 5_000));
+
+            try (IgniteClient ignored = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))) {
+                assertNull(conns.iterator().next().dataCenterId());
+            }
         }
     }
 
