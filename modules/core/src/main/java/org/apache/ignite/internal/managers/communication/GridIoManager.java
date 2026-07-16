@@ -1974,7 +1974,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             false
         );
 
-        MessageMarshalling.marshal(ioMsg, ctx, null);
+        marshal(ioMsg);
 
         try {
             return ((TcpCommunicationSpi)(CommunicationSpi)getSpi()).openChannel(node, ioMsg);
@@ -2044,7 +2044,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                     ackC.apply(null);
             }
             else {
-                MessageMarshalling.marshal(ioMsg, ctx, null);
+                marshal(ioMsg);
 
                 sendMarshalled(node, ioMsg, ackC);
             }
@@ -2062,11 +2062,21 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
         GridIoMessage ioMsg = createGridIoMessage(topic, msg, plc, ordered, timeout, skipOnTimeout);
 
-        MessageMarshalling.marshal(ioMsg, ctx, null);
-
-        ioMsg.markPrepared();
+        marshal(ioMsg);
 
         return ioMsg;
+    }
+
+    /**
+     * Marshals {@code ioMsg} enforcing the marshal-once contract: a wrap is marshalled exactly once before
+     * transmission (marshalling is not idempotent, see {@code MessageMarshalOnceTest}).
+     */
+    private void marshal(GridIoMessage ioMsg) throws IgniteCheckedException {
+        assert !ioMsg.marshalled() : "GridIoMessage is marshalled twice: " + ioMsg;
+
+        MessageMarshalling.marshal(ioMsg, ctx, null);
+
+        ioMsg.markMarshalled();
     }
 
     /**
@@ -2075,7 +2085,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
      */
     public void sendPrepared(ClusterNode node, GridIoMessage ioMsg) throws IgniteCheckedException {
         assert !locNodeId.equals(node.id()) : node;
-        assert ioMsg.prepared() : "Message must be prepared via prepare() before sendPrepared(): " + ioMsg;
+        assert ioMsg.marshalled() : "Message must be prepared via prepare() before sendPrepared(): " + ioMsg;
 
         try (TraceSurroundings ignored = support(null)) {
             sendMarshalled(node, ioMsg, null);
@@ -2127,7 +2137,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                         if (ioMsg == null) {
                             ioMsg = createGridIoMessage(topic, msg, plc, ordered, timeout, skipOnTimeout);
 
-                            MessageMarshalling.marshal(ioMsg, ctx, null);
+                            marshal(ioMsg);
                         }
 
                         sendMarshalled(node, ioMsg, null);

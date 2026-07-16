@@ -73,8 +73,8 @@ public class GridIoMessage implements Message, SpanTransport, MessageWrapper {
     @GridToStringInclude
     public @Nullable OperationContextMessage opCtxMsg;
 
-    /** Set by {@code GridIoManager#prepare} after marshalling; asserted by {@code sendPrepared}. Not on the wire. */
-    private transient boolean prepared;
+    /** Set once the payload is marshalled; guards double marshal and unmarshalled transmit. Not on the wire. */
+    private transient boolean marshalled;
 
     /**
      * Default constructor.
@@ -150,14 +150,14 @@ public class GridIoMessage implements Message, SpanTransport, MessageWrapper {
         return skipOnTimeout;
     }
 
-    /** Marks this message as marshalled by {@code GridIoManager#prepare}. */
-    void markPrepared() {
-        prepared = true;
+    /** Marks this message as marshalled. */
+    void markMarshalled() {
+        marshalled = true;
     }
 
-    /** @return {@code true} if this message has been marshalled by {@code GridIoManager#prepare}. */
-    boolean prepared() {
-        return prepared;
+    /** @return {@code true} if this message has been marshalled. */
+    boolean marshalled() {
+        return marshalled;
     }
 
     /**
