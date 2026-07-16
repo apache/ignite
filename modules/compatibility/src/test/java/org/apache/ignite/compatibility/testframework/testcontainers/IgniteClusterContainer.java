@@ -17,7 +17,6 @@
 
 package org.apache.ignite.compatibility.testframework.testcontainers;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -37,7 +36,7 @@ public class IgniteClusterContainer implements Startable {
      * @param commitHash Commit hash.
      * @param consistentIds Consistent ID's.
      */
-    public IgniteClusterContainer(String commitHash, List<String> consistentIds) throws IOException {
+    public IgniteClusterContainer(String commitHash, List<String> consistentIds) throws Exception {
         containers = new ArrayList<>(consistentIds.size());
 
         for (int i = 0; i < consistentIds.size(); i++) {

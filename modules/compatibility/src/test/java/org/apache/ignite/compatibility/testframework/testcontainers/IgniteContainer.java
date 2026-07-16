@@ -17,9 +17,11 @@
 
 package org.apache.ignite.compatibility.testframework.testcontainers;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -111,6 +113,9 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
         DisabledValidationProcessor.class.getName()
     );
 
+    /** Seconds to wait after SIGTERM before SIGKILL. */
+    private static final int SHUTDOWN_TIMEOUT_SEC = 120;
+
     /** Jar holding {@link #TEST_CLASSES}, injected so the old image can load it. */
     private static volatile File testClassesJar;
 
@@ -127,7 +132,7 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
      * Constructor with a commit hash (image tag).
      * Uses {@code apacheignite/ignite:<commitHash>} as the Docker image.
      */
-    public IgniteContainer(String commitHash, Network net, String hostname, String consistentId, int idx) throws IOException {
+    public IgniteContainer(String commitHash, Network net, String hostname, String consistentId, int idx) throws Exception {
         super(DockerImageName.parse("apacheignite/ignite:" + commitHash));
 
         this.hostname = hostname;
@@ -158,6 +163,18 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
         withEnv("JVM_OPTS", jvmOpts);
 
         withFileSystemBind(LOCAL_WORK_DIR_PATH, WORK_DIR_PATH, BindMode.READ_WRITE);
+
+        // On Linux, run as the host user so bind-mounted directories (work dir, etc.) are owned by
+        // the host user and can be cleaned up without root. Docker supports numeric UID:GID without
+        // the user existing in the container's /etc/passwd.
+        if (LINUX) {
+            String uidGid = hostUserUidGid();
+
+            LOGGER.info("Running container {} as host user uid/gid: {}", hostname, uidGid);
+
+            withCreateContainerCmdModifier(cmd -> cmd.withUser(uidGid));
+        }
+
         withCopyFileToContainer(forClasspathResource("docker/test-config.xml"), CFG_PATH);
         withCopyFileToContainer(forHostPath(testClassesJar().getAbsolutePath()), LIBS_DIR_PATH + "test-classes.jar");
 
@@ -196,7 +213,7 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
     public void upgradeAndRestart() throws Exception {
         LOGGER.info("Cleaning up old libs in container {}", hostname);
 
-        ExecResult result = execInContainer("sh", "-c", "rm -f " + LIBS_DIR_PATH + "*");
+        ExecResult result = execInContainer("sh", "-c", "rm -rf " + LIBS_DIR_PATH + "*");
 
         if (result.getExitCode() != 0)
             throw new IllegalStateException("Failed to clean libs: " + result.getStderr());
@@ -212,17 +229,20 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
      * Stop the container gracefully <b>without removing it</b> (container stays in "Exited" state).
      * Call this before {@link #restartWithTargetLibs(Path)}.
      *
-     * <p>Uses {@code docker stop} (SIGTERM + wait + SIGKILL after timeout) via the Docker API.
-     * This gives Ignite time to flush persistence data, and falls back to SIGKILL if needed.</p>
+     * <p>Sends SIGTERM via {@code docker stop} and waits up to {@value #SHUTDOWN_TIMEOUT_SEC} seconds
+     * before SIGKILL. The entrypoint {@code run.sh} uses {@code exec java}, so JVM receives SIGTERM directly
+     * and runs its shutdown hooks. The extended timeout ensures Ignite can leave the cluster properly
+     * (flush persistence, notify discovery neighbors, close socket connections) so that remaining nodes
+     * don't trigger spurious "Failed to check connection to previous node" warnings during teardown.</p>
      */
     private void stopGraceful() {
         if (!isRunning())
             return;
 
-        LOGGER.info("Graceful stop of node {}", hostname);
+        LOGGER.info("Graceful stop of node {} (timeout {}s)", hostname, SHUTDOWN_TIMEOUT_SEC);
 
         getDockerClient().stopContainerCmd(getContainerId())
-            .withTimeout(30)
+            .withTimeout(SHUTDOWN_TIMEOUT_SEC)
             .exec();
 
         LOGGER.info("Node {} stopped", hostname);
@@ -429,6 +449,33 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
             }
 
             return testClassesJar = jar;
+        }
+    }
+
+    /**
+     * Returns the "uid:gid" of the current host user.
+     * Runs {@code id -u}:{code id -g} via {@code sh} (portable across Linux/macOS/Windows Git Bash).
+     */
+    private static String hostUserUidGid() throws IOException, InterruptedException {
+        ProcessBuilder pb = new ProcessBuilder("sh", "-c", "id -u:id -g");
+        pb.redirectErrorStream(true);
+
+        Process p = pb.start();
+
+        boolean ok = p.waitFor(5, java.util.concurrent.TimeUnit.SECONDS);
+
+        p.destroy();
+
+        if (!ok)
+            throw new IOException("Timed out waiting for id command");
+
+        try (BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
+            String line = r.readLine();
+
+            if (line == null || line.trim().isEmpty())
+                throw new IOException("Empty output from 'id' command, exit code: " + p.exitValue());
+
+            return line.trim();
         }
     }
 }

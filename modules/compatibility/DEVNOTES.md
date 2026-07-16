@@ -85,7 +85,11 @@ The profile will automatically:
 2. If not, check for a distribution ZIP in `project/target/bin/`.
 3. If the ZIP is missing, build the project and distribution (`mvn install` + `mvn initialize -Prelease`).
 4. Extract the ZIP into `project/target/bin/` (the distribution lands in `project/target/bin/apache-ignite-*-bin/`).
-5. Create a symlink `project/target/ignite-target-libs` → `project/target/bin/apache-ignite-*-bin/libs/`.
+5. Create a symlink `project/target/ignite-target-libs` → `project/target/bin/apache-ignite-*-bin/libs/`:
+
+```bash
+ln -s "$(ls -d target/bin/apache-ignite-*-bin/libs)" target/ignite-target-libs
+```
 
 > **Note:** Subsequent runs will skip the build if the symlink or the distribution ZIP already exists.
 

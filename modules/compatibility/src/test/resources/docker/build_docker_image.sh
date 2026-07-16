@@ -150,6 +150,11 @@ for DF in $PATCHED_DOCKERFILES; do
             skip = 0
             next
         }
+        # Fix COPY directive: when multiple files match the wildcard,
+        # the destination must be a directory (end with /)
+        if (/COPY apache-ignite\* apache-ignite$/) {
+            sub(/COPY apache-ignite\* apache-ignite$/, "COPY apache-ignite* apache-ignite/")
+        }
         print
     }' "$DF" > "${DF}.tmp" && mv "${DF}.tmp" "$DF"
 done
