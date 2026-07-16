@@ -54,14 +54,20 @@ import org.apache.ignite.internal.processors.authentication.UserManagementOperat
 import org.apache.ignite.internal.processors.authentication.UserManagementOperationFinishedMessage;
 import org.apache.ignite.internal.processors.authentication.UserProposedMessage;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
+import org.apache.ignite.internal.processors.cache.CacheClientReconnectDiscoveryData;
 import org.apache.ignite.internal.processors.cache.CacheConfigurationEnrichment;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicateAdapter;
 import org.apache.ignite.internal.processors.cache.CacheEvictionEntry;
+import org.apache.ignite.internal.processors.cache.CacheGroupRecoveryState;
 import org.apache.ignite.internal.processors.cache.CacheInvokeDirectResult;
+import org.apache.ignite.internal.processors.cache.CacheJoinInfo;
+import org.apache.ignite.internal.processors.cache.CacheJoinNodeDiscoveryData;
+import org.apache.ignite.internal.processors.cache.CacheReconnectInfo;
 import org.apache.ignite.internal.processors.cache.CacheStatisticsClearMessage;
 import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessage;
 import org.apache.ignite.internal.processors.cache.ClientCacheChangeDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.ClientCacheChangeDummyDiscoveryMessage;
+import org.apache.ignite.internal.processors.cache.ClusterCacheGroupRecoveryData;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.ExchangeFailureMessage;
@@ -458,6 +464,12 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(CacheStatisticsClearMessage.class);
         withNoSchema(ClientCacheChangeDummyDiscoveryMessage.class);
         withNoSchema(DynamicCacheChangeBatch.class);
+        withNoSchemaResolvedClassLoader(CacheClientReconnectDiscoveryData.class);
+        withNoSchemaResolvedClassLoader(CacheGroupRecoveryState.class);
+        withNoSchemaResolvedClassLoader(CacheJoinInfo.class);
+        withNoSchemaResolvedClassLoader(CacheJoinNodeDiscoveryData.class);
+        withNoSchemaResolvedClassLoader(CacheReconnectInfo.class);
+        withNoSchemaResolvedClassLoader(ClusterCacheGroupRecoveryData.class);
 
         // [10000 - 10200]: Transaction and lock related messages. Most of them originally comes from Communication.
         msgIdx = 10000;
@@ -529,7 +541,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(StartRequestData.class);
         withNoSchema(StartRoutineAckDiscoveryMessage.class);
         withNoSchema(StartRoutineDiscoveryMessage.class);
-        withNoSchema(StoredCacheData.class);
+        withNoSchemaResolvedClassLoader(StoredCacheData.class);
 
         // [10600-10800]: Affinity & partition maps.
         msgIdx = 10600;
