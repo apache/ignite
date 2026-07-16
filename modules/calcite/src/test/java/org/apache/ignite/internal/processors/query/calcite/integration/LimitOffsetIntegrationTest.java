@@ -156,8 +156,8 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
     public void testBigDecimalLimitOffset() {
         String bigInt = BigDecimal.valueOf(10000000000L).toString();
 
-        // QueryChecker expects an active transaction for transactional test modes.
-        sql("SELECT 1");
+        if (sqlTxMode != SqlTransactionMode.NONE)
+            startTransaction(client);
 
         assertQuery("SELECT * FROM (VALUES (1)) OFFSET " + bigInt + " ROWS")
             .resultSize(0)
