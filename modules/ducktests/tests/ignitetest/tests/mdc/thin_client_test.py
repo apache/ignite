@@ -97,7 +97,8 @@ class MdcThinClientTest(IgniteTest):
                 f"DC-pinned thin client reads should be served locally " \
                 f"[avgMs={avg_cli_dc_1}, delayMs={cross_dc_latency_ms}]"
 
-            assert err_cnt_cli_dc_1 == 0, f"Expected 0 errors for DC-pinned thin client reads, but found {err_cnt_cli_dc_1}"
+            assert err_cnt_cli_dc_1 == 0, (f"Expected 0 errors for DC-pinned thin client reads, "
+                                           f"but found {err_cnt_cli_dc_1}")
 
             net.enable_network_partition(DC_1, DC_2)
 
