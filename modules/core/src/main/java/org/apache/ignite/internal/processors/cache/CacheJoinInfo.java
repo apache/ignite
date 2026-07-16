@@ -22,7 +22,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-/** */
+/** Cache information exchanged during node join. */
 public class CacheJoinInfo implements Message {
     /** */
     @Order(0)
