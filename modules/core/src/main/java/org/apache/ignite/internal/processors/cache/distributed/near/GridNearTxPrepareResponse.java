@@ -21,7 +21,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.ignite.internal.MarshalledMap;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -62,7 +62,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
 
     /** Map of owned values to set on near node. */
     @GridToStringInclude
-    @MarshalledMap(keys = "ownedValKeys", values = "ownedValVals")
+    @Marshalled(keys = "ownedValKeys", values = "ownedValVals")
     Map<IgniteTxKey, CacheVersionedValue> ownedVals;
 
     /** OwnedVals' keys for marshalling. */

@@ -40,6 +40,7 @@ import javax.lang.model.type.TypeVariable;
 import javax.lang.model.util.ElementFilter;
 import javax.tools.Diagnostic;
 import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.MessageProcessor.MARSHALLABLE_MESSAGE_INTERFACE;
 import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
@@ -115,8 +116,11 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     @Override void generateBody(List<VariableElement> fields) throws Exception {
         enclosed = enclosedFields();
         marshallable = marshallableMsgType != null && assignableFrom(type.asType(), marshallableMsgType);
-        hasMarshalled = enclosed.values().stream().anyMatch(f ->
-            f.getAnnotation(Marshalled.class) != null || f.getAnnotation(MarshalledObjects.class) != null);
+        hasMarshalled = enclosed.values().stream().anyMatch(f -> {
+            MarshalledKind kind = marshalledKind(f);
+
+            return kind == MarshalledKind.BLOB || kind == MarshalledKind.ELEMENT_BLOBS;
+        });
 
         generateMarshalMethod(fields);
         generateUnmarshalMethods(fields);
@@ -220,9 +224,8 @@ public class MessageMarshallerGenerator extends MessageGenerator {
             }
         }
 
-        // U is referenced only by @Marshalled/@MarshalledObjects/@MarshalledCollection/@MarshalledMap handling.
-        boolean usesU = hasMarshalled || enclosed.values().stream().anyMatch(f ->
-            f.getAnnotation(MarshalledCollection.class) != null || f.getAnnotation(MarshalledMap.class) != null);
+        // U is referenced only by @Marshalled handling.
+        boolean usesU = enclosed.values().stream().anyMatch(f -> f.getAnnotation(Marshalled.class) != null);
 
         if (usesU)
             imports.add("org.apache.ignite.internal.util.typedef.internal.U");
@@ -281,7 +284,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         return code;
     }
 
-    /** Generates logical→wire conversions for all {@code @MarshalledCollection} and {@code @MarshalledMap} fields. */
+    /** Generates logical→wire conversions for the element-, blob-list- and map-flavoured {@code @Marshalled} fields. */
     private void appendMarshalledFieldsPrepare(List<String> body) {
         for (VariableElement field : enclosed.values()) {
             appendCollectionPrepare(body, field);
@@ -290,12 +293,12 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         }
     }
 
-    /** Generates the {@code Collection<byte[]>} build-up for a {@code @MarshalledObjects} field in marshal. */
+    /** Generates the {@code Collection<byte[]>} build-up for a per-element-blobs {@code @Marshalled} field in marshal. */
     private void appendObjectsPrepare(List<String> body, VariableElement field) {
-        MarshalledObjects ann = field.getAnnotation(MarshalledObjects.class);
-
-        if (ann == null)
+        if (marshalledKind(field) != MarshalledKind.ELEMENT_BLOBS)
             return;
+
+        Marshalled ann = field.getAnnotation(Marshalled.class);
 
         String objField = "msg." + field.getSimpleName();
         String bytesField = "msg." + ann.value();
@@ -324,16 +327,16 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         appendBlock(body, code);
     }
 
-    /** Appends a {@code toArray} assignment for a {@code @MarshalledCollection} field, if present. */
+    /** Appends a {@code toArray} assignment for a per-element {@code @Marshalled} field, if present. */
     private void appendCollectionPrepare(List<String> body, VariableElement field) {
-        MarshalledCollection ann = field.getAnnotation(MarshalledCollection.class);
-
-        if (ann == null)
+        if (marshalledKind(field) != MarshalledKind.ELEMENTS)
             return;
+
+        Marshalled ann = field.getAnnotation(Marshalled.class);
 
         String colField = "msg." + field.getSimpleName();
         String arrField = "msg." + ann.value();
-        String compName = arrayComponentName(requireEnclosed(enclosed, ann.value(), "@MarshalledCollection"));
+        String compName = arrayComponentName(requireEnclosed(enclosed, ann.value(), "@Marshalled"));
 
         List<String> code = new ArrayList<>();
 
@@ -348,17 +351,17 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         appendBlock(body, code);
     }
 
-    /** Appends key/value array assignments for a {@code @MarshalledMap} field, if present. */
+    /** Appends key/value array assignments for a map-flavoured {@code @Marshalled} field, if present. */
     private void appendMapPrepare(List<String> body, VariableElement field) {
-        MarshalledMap ann = field.getAnnotation(MarshalledMap.class);
-
-        if (ann == null)
+        if (marshalledKind(field) != MarshalledKind.MAP)
             return;
+
+        Marshalled ann = field.getAnnotation(Marshalled.class);
 
         String mapField = "msg." + field.getSimpleName();
         String keysField = "msg." + ann.keys();
         String valuesField = "msg." + ann.values();
-        VariableElement keysEl = requireEnclosed(enclosed, ann.keys(), "@MarshalledMap");
+        VariableElement keysEl = requireEnclosed(enclosed, ann.keys(), "@Marshalled");
 
         List<String> code = new ArrayList<>();
 
@@ -418,17 +421,17 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         }, body);
     }
 
-    /** Generates Set reconstruction for all {@code @MarshalledCollection} fields. */
+    /** Generates Set reconstruction for all per-element {@code @Marshalled} fields. */
     private void appendMarshalledCollectionFinish(List<String> body) {
         for (VariableElement field : enclosed.values()) {
-            MarshalledCollection colAnn = field.getAnnotation(MarshalledCollection.class);
-
-            if (colAnn == null)
+            if (marshalledKind(field) != MarshalledKind.ELEMENTS)
                 continue;
+
+            Marshalled colAnn = field.getAnnotation(Marshalled.class);
 
             String colField = "msg." + field.getSimpleName();
             String arrField = "msg." + colAnn.value();
-            VariableElement wireField = requireEnclosed(enclosed, colAnn.value(), "@MarshalledCollection");
+            VariableElement wireField = requireEnclosed(enclosed, colAnn.value(), "@Marshalled");
 
             List<String> code = new ArrayList<>();
 
@@ -450,13 +453,13 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         }
     }
 
-    /** Generates Collection reconstruction for all {@code @MarshalledObjects} fields (cache-aware pass only). */
+    /** Generates Collection reconstruction for all per-element-blobs {@code @Marshalled} fields (cache-aware pass only). */
     private void appendMarshalledObjectsFinish(List<String> body) {
         for (VariableElement field : enclosed.values()) {
-            MarshalledObjects ann = field.getAnnotation(MarshalledObjects.class);
-
-            if (ann == null)
+            if (marshalledKind(field) != MarshalledKind.ELEMENT_BLOBS)
                 continue;
+
+            Marshalled ann = field.getAnnotation(Marshalled.class);
 
             String objField = "msg." + field.getSimpleName();
             String bytesField = "msg." + ann.value();
@@ -539,37 +542,34 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         Set<String> names = new HashSet<>();
 
         for (VariableElement f : enclosed.values()) {
-            MarshalledCollection colAnn = f.getAnnotation(MarshalledCollection.class);
+            MarshalledKind kind = marshalledKind(f);
 
-            if (colAnn != null)
-                names.add(colAnn.value());
+            if (kind == null || kind == MarshalledKind.BLOB)
+                continue;
 
-            MarshalledMap mapAnn = f.getAnnotation(MarshalledMap.class);
+            Marshalled ann = f.getAnnotation(Marshalled.class);
 
-            if (mapAnn != null) {
-                names.add(mapAnn.keys());
-                names.add(mapAnn.values());
+            if (kind == MarshalledKind.MAP) {
+                names.add(ann.keys());
+                names.add(ann.values());
             }
-
-            MarshalledObjects objAnn = f.getAnnotation(MarshalledObjects.class);
-
-            if (objAnn != null)
-                names.add(objAnn.value());
+            else
+                names.add(ann.value());
         }
 
         return names;
     }
 
-    /** Generates Map reconstruction for all {@code @MarshalledMap} fields. */
+    /** Generates Map reconstruction for all map-flavoured {@code @Marshalled} fields. */
     private void appendMarshalledMapFinish(List<String> body) {
         for (VariableElement field : enclosed.values()) {
-            MarshalledMap ann = field.getAnnotation(MarshalledMap.class);
-
-            if (ann == null)
+            if (marshalledKind(field) != MarshalledKind.MAP)
                 continue;
 
-            VariableElement keysEl = requireEnclosed(enclosed, ann.keys(), "@MarshalledMap");
-            VariableElement valsEl = requireEnclosed(enclosed, ann.values(), "@MarshalledMap");
+            Marshalled ann = field.getAnnotation(Marshalled.class);
+
+            VariableElement keysEl = requireEnclosed(enclosed, ann.keys(), "@Marshalled");
+            VariableElement valsEl = requireEnclosed(enclosed, ann.values(), "@Marshalled");
 
             String mapField = "msg." + field.getSimpleName();
             String keysField = "msg." + ann.keys();
@@ -583,7 +583,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         }
     }
 
-    /** Generates indexed-loop Map reconstruction for array-backed {@code @MarshalledMap} fields. */
+    /** Generates indexed-loop Map reconstruction for array-backed map-flavoured {@code @Marshalled} fields. */
     private List<String> mapFinishArrayBlock(VariableElement field, VariableElement keysEl, VariableElement valsEl, String mapField,
         String keysField, String valsField) {
         List<String> code = new ArrayList<>();
@@ -622,7 +622,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         return code;
     }
 
-    /** Generates iterator-based Map reconstruction for collection-backed {@code @MarshalledMap} fields. */
+    /** Generates iterator-based Map reconstruction for collection-backed map-flavoured {@code @Marshalled} fields. */
     private List<String> mapFinishCollectionBlock(VariableElement keysEl, VariableElement valsEl, String mapField,
         String keysField, String valsField) {
         TypeMirror keyCompType = ((DeclaredType)keysEl.asType()).getTypeArguments().get(0);
@@ -673,7 +673,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     }
 
     /**
-     * Generates the reconstruction-loop body shared by both {@code @MarshalledMap} layouts: k/v declarations,
+     * Generates the reconstruction-loop body shared by both map layouts: k/v declarations,
      * element unmarshal and {@code map.put}.
      */
     private List<String> mapPutBlock(TypeMirror keyCompType, TypeMirror valCompType, String kDecl, String vDecl, String mapField) {
@@ -702,9 +702,9 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     }
 
     /** Generates key/value array population from the map's entry set. */
-    private List<String> arrayMapBody(MarshalledMap ann, String mapField, String keysField, VariableElement keysEl, String valuesField) {
+    private List<String> arrayMapBody(Marshalled ann, String mapField, String keysField, VariableElement keysEl, String valuesField) {
         String compName = arrayComponentName(keysEl);
-        String valCompName = arrayComponentName(requireEnclosed(enclosed, ann.values(), "@MarshalledMap"));
+        String valCompName = arrayComponentName(requireEnclosed(enclosed, ann.values(), "@Marshalled"));
 
         List<String> inner = new ArrayList<>();
 
@@ -1036,6 +1036,52 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     }
 
     /** Returns the enclosed field named {@code name}, or throws if absent. */
+    /** Marshalling flavour of a {@code @Marshalled} field, told apart by the shape of its companion wire field(s). */
+    private enum MarshalledKind {
+        /** {@code byte[]} companion: the whole object is a single marshaller blob. */
+        BLOB,
+
+        /** {@code Message[]} companion: per-element {@code Message} serialization, the collection is rebuilt on unmarshal. */
+        ELEMENTS,
+
+        /** {@code Collection<byte[]>} companion: per-element marshaller blobs, each element keeping its own class loader. */
+        ELEMENT_BLOBS,
+
+        /** Two companions ({@code keys()}/{@code values()}): a {@code Map} serialized as parallel wire fields. */
+        MAP
+    }
+
+    /** @return the flavour of {@code field}'s {@code @Marshalled}, or {@code null} when the field is not annotated. */
+    private @Nullable MarshalledKind marshalledKind(VariableElement field) {
+        Marshalled ann = field.getAnnotation(Marshalled.class);
+
+        if (ann == null)
+            return null;
+
+        boolean map = !ann.keys().isEmpty() || !ann.values().isEmpty();
+
+        if (map == !ann.value().isEmpty() || (map && (ann.keys().isEmpty() || ann.values().isEmpty()))) {
+            env.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                "@Marshalled must set either value() or both keys() and values()", field);
+
+            return null;
+        }
+
+        if (map)
+            return MarshalledKind.MAP;
+
+        TypeMirror wire = requireEnclosed(enclosed, ann.value(), "@Marshalled").asType();
+
+        if (wire.getKind() == TypeKind.ARRAY) {
+            return ((ArrayType)wire).getComponentType().getKind() == TypeKind.BYTE
+                ? MarshalledKind.BLOB
+                : MarshalledKind.ELEMENTS;
+        }
+
+        return MarshalledKind.ELEMENT_BLOBS;
+    }
+
+    /** */
     private VariableElement requireEnclosed(Map<String, VariableElement> enclosed, String name, String annotationName) {
         VariableElement el = enclosed.get(name);
 
@@ -1048,10 +1094,10 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     /** Iterates all {@code @Marshalled} fields and applies {@code codeGen(bytesAccessor, objAccessor)} to each. */
     private void forEachMarshalled(BiFunction<String, String, List<String>> codeGen, List<String> body) {
         for (VariableElement field : enclosed.values()) {
-            Marshalled ann = field.getAnnotation(Marshalled.class);
-
-            if (ann == null)
+            if (marshalledKind(field) != MarshalledKind.BLOB)
                 continue;
+
+            Marshalled ann = field.getAnnotation(Marshalled.class);
 
             appendBlock(body, codeGen.apply("msg." + ann.value(), "msg." + field.getSimpleName()));
         }

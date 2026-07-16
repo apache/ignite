@@ -437,7 +437,7 @@ public class MessageProcessorTest {
             .hasSourceEquivalentTo(javaFile("TestMarshalledMessageMarshaller.java"));
     }
 
-    /** Verifies that {@code @MarshalledCollection} generates Set reconstruction in FINISH_CACHE mode. */
+    /** Verifies that {@code @Marshalled} generates Set reconstruction in FINISH_CACHE mode. */
     @Test
     public void testMarshalledCollectionMessage() {
         Compilation compilation = compile("TestMarshalledCollectionMessage.java");
@@ -455,7 +455,7 @@ public class MessageProcessorTest {
             .hasSourceEquivalentTo(javaFile("TestMarshalledCollectionMessageMarshaller.java"));
     }
 
-    /** Verifies that {@code @MarshalledMap} generates Map reconstruction in FINISH_CACHE mode. */
+    /** Verifies that {@code @Marshalled} generates Map reconstruction in FINISH_CACHE mode. */
     @Test
     public void testMarshalledMapMessage() {
         Compilation compilation = compile("TestMarshalledMapMessage.java");

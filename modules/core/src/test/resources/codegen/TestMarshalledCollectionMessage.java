@@ -22,7 +22,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 public class TestMarshalledCollectionMessage implements Message {
-    @MarshalledCollection("keysArr")
+    @Marshalled("keysArr")
     Set<GridCacheVersion> keys;
 
     @Order(0)

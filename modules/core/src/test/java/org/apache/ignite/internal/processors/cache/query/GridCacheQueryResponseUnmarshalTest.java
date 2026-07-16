@@ -32,7 +32,7 @@ import org.junit.Test;
 
 /**
  * Verifies that a query result row key arrives resolved from {@code GridCacheQueryResponse} unmarshalling: a
- * {@code KeyCacheObject} travels bytes-only and forbids lazy resolution (see {@code @MarshalledObjects}).
+ * {@code KeyCacheObject} travels bytes-only and forbids lazy resolution (see {@code @Marshalled}).
  */
 public class GridCacheQueryResponseUnmarshalTest extends GridCommonAbstractTest {
     /** An unresolved key (only its bytes present) must fail fast rather than resolve lazily. */

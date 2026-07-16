@@ -23,8 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.ignite.internal.MarshalledCollection;
-import org.apache.ignite.internal.MarshalledMap;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -41,12 +40,12 @@ public class TxLocksResponse extends GridCacheMessage {
 
     /** Locks for near txKeys of near transactions. */
     @GridToStringInclude
-    @MarshalledMap(keys = "nearTxKeysArr", values = "locksArr")
+    @Marshalled(keys = "nearTxKeysArr", values = "locksArr")
     final Map<IgniteTxKey, List<TxLock>> nearTxKeyLocks = new HashMap<>();
 
     /** Remote keys involved into transactions. Doesn't include near keys. */
     @GridToStringInclude
-    @MarshalledCollection("txKeysArr")
+    @Marshalled("txKeysArr")
     Set<IgniteTxKey> txKeys;
 
     /** Array of txKeys from {@link #nearTxKeyLocks}. Used during marshalling and unmarshalling. */

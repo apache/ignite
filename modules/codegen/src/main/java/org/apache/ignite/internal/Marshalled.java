@@ -23,13 +23,27 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Links a message field to its marshalled {@code byte[]} form, held in the field named by {@link #value()}.
+ * Links a message field to its wire form, held in the companion field(s) this annotation names. The marshalling
+ * flavour is derived from the companion's shape:
+ * <ul>
+ *     <li>{@code byte[]} — the whole object is a single marshaller blob;</li>
+ *     <li>{@code Message[]} — per-element {@code Message} serialization, the collection is rebuilt on unmarshal;</li>
+ *     <li>{@code Collection<byte[]>} — per-element marshaller blobs, each element keeping its own class loader;</li>
+ *     <li>{@link #keys()}/{@link #values()} instead of {@link #value()} — a {@code Map} serialized as two parallel
+ *         wire fields.</li>
+ * </ul>
  *
  * @see Order
  */
 @Retention(RetentionPolicy.CLASS)
 @Target(ElementType.FIELD)
 public @interface Marshalled {
-    /** Name of the linked marshalled {@code byte[]} field. */
-    String value();
+    /** Name of the companion wire field. Mutually exclusive with {@link #keys()}/{@link #values()}. */
+    String value() default "";
+
+    /** Name of the map-keys companion wire field; requires {@link #values()}. */
+    String keys() default "";
+
+    /** Name of the map-values companion wire field; requires {@link #keys()}. */
+    String values() default "";
 }

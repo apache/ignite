@@ -24,7 +24,7 @@ public class TestMarshalledObjectsMessage implements Message {
     @Order(0)
     Collection<byte[]> dataBytes;
 
-    @MarshalledObjects("dataBytes")
+    @Marshalled("dataBytes")
     Collection<Object> data;
 
     public short directType() {

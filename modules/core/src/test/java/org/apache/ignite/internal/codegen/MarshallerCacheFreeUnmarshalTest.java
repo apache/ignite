@@ -42,7 +42,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
  *
  * <p>The distinction is the side effect. A plain {@code @Marshalled} field unmarshals by <b>assignment</b>
  * ({@code msg.x = ...}); assigning the same value twice is a no-op, so it is idempotent and needs no guarding. A
- * {@code @MarshalledCollection} / {@code @MarshalledMap} field unmarshals by <b>mutation</b> ({@code collection.add} /
+ * {@code @Marshalled} / {@code @Marshalled} field unmarshals by <b>mutation</b> ({@code collection.add} /
  * {@code map.put}); running that twice appends the elements twice — a doubled, corrupt collection. So a collection/map
  * mutation is the one thing that must not run in both passes, and the generator keeps it in the cache-aware pass only.
  *
@@ -101,7 +101,7 @@ public class MarshallerCacheFreeUnmarshalTest {
                 .areAssignableTo(MessageMarshaller.class)
             .should()
                 .callMethodWhere(CACHE_FREE_UNMARSHAL_APPEND)
-            .because("@MarshalledCollection/@MarshalledMap appends are non-idempotent and run only in the cache-aware " +
+            .because("@Marshalled/@Marshalled appends are non-idempotent and run only in the cache-aware " +
                 "unmarshal pass; an append in the cache-free pass would double-add when both passes run, which " +
                 "the mode-aware unmarshal-once check (MessageMarshaller.Dedup) permits and cannot catch.");
 

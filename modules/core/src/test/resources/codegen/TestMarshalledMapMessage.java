@@ -23,7 +23,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 public class TestMarshalledMapMessage implements Message {
-    @MarshalledMap(keys = "mapKeys", values = "mapVals")
+    @Marshalled(keys = "mapKeys", values = "mapVals")
     Map<GridCacheVersion, GridCacheVersion> theMap;
 
     @Order(0)

@@ -33,12 +33,10 @@ import org.apache.ignite.internal.managers.communication.UnknownMessageException
  *     <li>{@ignitelink org.apache.ignite.internal.Compress @Compress} — compress the field's serialized form;</li>
  *     <li>{@ignitelink org.apache.ignite.internal.NioField @NioField} — a low-level NIO field;</li>
  *     <li>{@ignitelink org.apache.ignite.internal.CustomMapper @CustomMapper} — map the enum field via a custom mapper;</li>
- *     <li>{@ignitelink org.apache.ignite.internal.Marshalled @Marshalled} /
- *         {@ignitelink org.apache.ignite.internal.MarshalledMap @MarshalledMap} /
- *         {@ignitelink org.apache.ignite.internal.MarshalledCollection @MarshalledCollection} /
- *         {@ignitelink org.apache.ignite.internal.MarshalledObjects @MarshalledObjects} — for
+ *     <li>{@ignitelink org.apache.ignite.internal.Marshalled @Marshalled} — for
  *         {@ignitelink org.apache.ignite.internal.MarshallableMessage MarshallableMessage} payloads serialized via a
- *         {@link org.apache.ignite.marshaller.Marshaller}.</li>
+ *         {@link org.apache.ignite.marshaller.Marshaller}; the flavour (single blob, per-element messages or blobs,
+ *         map) is derived from the shape of the companion wire field(s) it names.</li>
  * </ul>
  */
 public interface Message {

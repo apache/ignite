@@ -23,7 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.MarshalledMap;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -99,7 +99,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
     /** DHT versions to verify. */
     @GridToStringInclude
-    @MarshalledMap(keys = "dhtVerKeys", values = "dhtVerVals")
+    @Marshalled(keys = "dhtVerKeys", values = "dhtVerVals")
     public Map<IgniteTxKey, GridCacheVersion> dhtVers;
 
     /** */

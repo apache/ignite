@@ -23,7 +23,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.MarshalledMap;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.DeployableMessage;
@@ -71,7 +71,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest imp
 
     /** Owned versions by key. */
     @GridToStringInclude
-    @MarshalledMap(keys = "ownedKeys", values = "ownedVals")
+    @Marshalled(keys = "ownedKeys", values = "ownedVals")
     Map<IgniteTxKey, GridCacheVersion> owned;
 
     /** Owned keys. */

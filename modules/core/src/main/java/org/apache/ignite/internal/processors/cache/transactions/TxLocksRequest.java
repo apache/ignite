@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Set;
-import org.apache.ignite.internal.MarshalledCollection;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -36,7 +36,7 @@ public class TxLocksRequest extends GridCacheMessage {
 
     /** Tx keys. */
     @GridToStringInclude
-    @MarshalledCollection("txKeysArr")
+    @Marshalled("txKeysArr")
     Set<IgniteTxKey> txKeys;
 
     /** Array of txKeys from {@link #txKeys}. Used during marshalling and unmarshalling. */

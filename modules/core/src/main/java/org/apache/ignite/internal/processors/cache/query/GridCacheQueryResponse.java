@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.query;
 import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.MarshalledObjects;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
@@ -62,7 +62,7 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
     Collection<byte[]> dataBytes;
 
     /** */
-    @MarshalledObjects("dataBytes")
+    @Marshalled("dataBytes")
     Collection<Object> data;
 
     /**

@@ -330,13 +330,10 @@ public class MessageProcessor extends AbstractProcessor {
         return processingEnv.getTypeUtils().isAssignable(clazz.asType(), t);
     }
 
-    /** @return {@code true} if {@code clazz} or any of its superclasses declares a {@code @Marshalled*} field. */
+    /** @return {@code true} if {@code clazz} or any of its superclasses declares a {@code @Marshalled} field. */
     private boolean hasMarshalledFields(TypeElement clazz) {
         return SystemViewRowAttributeWalkerProcessor.superclasses(processingEnv, clazz)
             .flatMap(c -> ElementFilter.fieldsIn(c.getEnclosedElements()).stream())
-            .anyMatch(f -> f.getAnnotation(Marshalled.class) != null
-                || f.getAnnotation(MarshalledCollection.class) != null
-                || f.getAnnotation(MarshalledMap.class) != null
-                || f.getAnnotation(MarshalledObjects.class) != null);
+            .anyMatch(f -> f.getAnnotation(Marshalled.class) != null);
     }
 }
