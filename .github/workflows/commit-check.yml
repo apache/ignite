@@ -129,6 +129,10 @@ jobs:
         run : |
           ./mvnw -DskipTests install -pl modules/tools,modules/codegen -B -V && ./mvnw initialize -Pjavadoc -B -V
 
+      - name: Documentation code snippets compilation check
+        run: |
+          ./mvnw compile -Pdocs -pl :code-snippets -am -B -V
+
   check-dotnet:
     name: Сheck .NET code
     runs-on: ubuntu-latest

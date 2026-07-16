@@ -16,13 +16,20 @@
  */
 package org.apache.ignite.snippets;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.sql.Blob;
+import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteJdbcThinDataSource;
+import org.apache.ignite.Ignition;
 
 public class JDBCThinDriver {
 
@@ -132,6 +139,61 @@ public class JDBCThinDriver {
         conn.close();
     }
 
+    void blobAndClob() throws ClassNotFoundException, SQLException {
+
+        Connection conn = getConnection();
+        // tag::blob-clob[]
+        // CLOB values are stored in VARCHAR columns, and BLOB values are stored in BINARY columns.
+        conn.createStatement().executeUpdate(
+                "CREATE TABLE IF NOT EXISTS DocumentStore (id INT PRIMARY KEY, payload BINARY, body VARCHAR)");
+
+        byte[] payload = "binary payload".getBytes(StandardCharsets.UTF_8);
+
+        PreparedStatement insert = conn.prepareStatement(
+                "INSERT INTO DocumentStore(id, payload, body) VALUES (?, ?, ?)");
+
+        Blob blob = conn.createBlob();
+        blob.setBytes(1, payload);
+
+        Clob clob = conn.createClob();
+        clob.setString(1, "large text body");
+
+        insert.setInt(1, 1);
+        insert.setBlob(2, blob);
+        insert.setClob(3, clob);
+        insert.executeUpdate();
+
+        PreparedStatement streamInsert = conn.prepareStatement(
+                "INSERT INTO DocumentStore(id, payload, body) VALUES (?, ?, ?)");
+
+        streamInsert.setInt(1, 2);
+        streamInsert.setBlob(2, new ByteArrayInputStream(payload), payload.length);
+        streamInsert.setString(3, "large text body");
+        streamInsert.executeUpdate();
+
+        PreparedStatement select = conn.prepareStatement("SELECT payload, body FROM DocumentStore WHERE id = ?");
+
+        select.setInt(1, 1);
+
+        ResultSet rs = select.executeQuery();
+
+        if (rs.next()) {
+            Blob selectedBlob = rs.getBlob("payload");
+            byte[] selectedPayload = selectedBlob.getBytes(1, (int)selectedBlob.length());
+
+            Clob selectedClob = rs.getClob("body");
+            String selectedBody = selectedClob.getSubString(1, (int)selectedClob.length());
+
+            InputStream selectedPayloadStream = rs.getBinaryStream("payload");
+
+            assert selectedPayload.length == payload.length;
+            assert selectedBody.equals("large text body");
+            assert selectedPayloadStream != null;
+        }
+        // end::blob-clob[]
+        conn.close();
+    }
+
     void handleException() throws ClassNotFoundException, SQLException {
 
         Connection conn = getConnection();
@@ -217,21 +279,16 @@ public class JDBCThinDriver {
     }
 
     public static void main(String[] args) throws Exception {
-        //        Ignite ignite = Util.startNode();
+        Ignite ignite = Ignition.start();
         try {
             JDBCThinDriver j = new JDBCThinDriver();
 
-            //            j.getConnection();
-            // j.multipleEndpoints();
-            // j.connectionFromDatasource();
-            // j.partitionAwareness();
-
-            j.ssl();
+            j.blobAndClob();
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(1);
         } finally {
-            // ignite.close();
+            ignite.close();
         }
     }
 }

@@ -206,14 +206,27 @@ public class IgniteFeatureSet implements Iterable<Integer>, Message, Externaliza
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(rangeStartInclusive);
         out.writeInt(rangeEndInclusive);
-        out.writeObject(sparseSuffix);
+
+        boolean hasSparseSuffix = sparseSuffix != null;
+
+        out.writeBoolean(hasSparseSuffix);
+
+        if (hasSparseSuffix)
+            sparseSuffix.writeExternal(out);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         rangeStartInclusive = in.readInt();
         rangeEndInclusive = in.readInt();
-        sparseSuffix = (GridIntList)in.readObject();
+
+        boolean hasSparseSuffix = in.readBoolean();
+
+        if (hasSparseSuffix) {
+            sparseSuffix = new GridIntList();
+
+            sparseSuffix.readExternal(in);
+        }
     }
 
     /** {@inheritDoc} */
