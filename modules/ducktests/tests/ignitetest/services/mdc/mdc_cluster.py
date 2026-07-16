@@ -34,7 +34,8 @@ from ignitetest.services.network_group.configuration import NetworkGroupStore, C
 from ignitetest.services.network_group.manager import NetworkGroupManager
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, TcpCommunicationSpi
-from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster, from_ignite_services
+from ignitetest.services.utils.ignite_configuration.discovery import TcpDiscoverySpi, from_ignite_cluster, \
+    from_ignite_services
 from ignitetest.services.utils.ssl.client_connector_configuration import ClientConnectorConfiguration
 from ignitetest.utils.version import IgniteVersion
 
@@ -100,8 +101,15 @@ class MdcCluster:
         self.test_context = test.test_context
         self.logger = test.logger
 
+        # A single discovery SPI (hence a single ip finder) shared by both DCs' server
+        # services is what makes the two DCs form ONE cluster: prepare_on_start()
+        # memoizes the addresses of the first started DC into the shared ip finder, so
+        # the second DC discovers through the first DC's nodes, and restart() re-joins
+        # the same way. Restarting the first started DC itself is the one case this
+        # breaks - see sync_service_discovery().
         cfg_kwargs = {
             "version": IgniteVersion(ignite_version),
+            "discovery_spi": TcpDiscoverySpi(),
             "network_timeout": network_timeout,
             "communication_spi": TcpCommunicationSpi(connect_timeout=tcp_connect_timeout)
         }
@@ -138,8 +146,11 @@ class MdcCluster:
 
     def sync_service_discovery(self):
         """
-        Points every server service at a discovery SPI covering all DCs (used to let a
-        stopped DC rejoin the full cluster on restart).
+        Points every server service at a discovery SPI covering all DCs.
+
+        Required before restarting the FIRST started DC: the shared ip finder holds only
+        that DC's addresses, so after a full stop its nodes would seed off themselves and
+        form a separate cluster instead of rejoining the surviving DC.
         """
         discovery_spi = from_ignite_services(list(self.servers.values()))
 

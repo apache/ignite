@@ -130,6 +130,9 @@ class MdcPartitionResilienceTest(IgniteTest):
             # ...but the surviving DC is read-only while the main DC is invisible.
             mdc.check_put_admissibility(DC_2, CACHE_NAME, False)
 
+            # The shared ip finder memoized only DC1's (first started) addresses, so a
+            # restarted DC1 would seed off itself and form a separate cluster. Point
+            # discovery at both DCs so it rejoins through the surviving DC2.
             mdc.sync_service_discovery()
 
             mdc.servers[DC_1].start(clean=False)
