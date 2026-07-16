@@ -14,8 +14,12 @@
 # limitations under the License.
 
 name: Code Style, Abandoned Tests, Javadocs
+
+# pull_request_target (not pull_request) so the checks also run when the PR conflicts with the base
+# branch. These jobs build and run untrusted PR code: keep the token read-only and add no secrets
+# here, otherwise a fork PR could read them.
 on:
-  pull_request:
+  pull_request_target:
   push:
     branches:
       - master
@@ -24,6 +28,9 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   check-java:
@@ -121,6 +128,10 @@ jobs:
       - name: Check javadocs.
         run : |
           ./mvnw -DskipTests install -pl modules/tools,modules/codegen -B -V && ./mvnw initialize -Pjavadoc -B -V
+
+      - name: Documentation code snippets compilation check
+        run: |
+          ./mvnw compile -Pdocs -pl :code-snippets -am -B -V
 
   check-dotnet:
     name: Сheck .NET code

@@ -928,6 +928,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param schemaOp Schema operation.
      */
+    @SuppressWarnings("unchecked")
     private void startSchemaChange(SchemaOperation schemaOp) {
         assert Thread.holdsLock(stateMux);
         assert !schemaOp.started();
@@ -985,6 +986,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         schemaOp.manager(mgr);
 
         mgr.start();
+
+        worker.future().listen(new IgniteInClosure<IgniteInternalFuture>() {
+            @Override public void apply(IgniteInternalFuture fut) {
+                synchronized (stateMux) {
+                    mgr.onLocalNodeFinished(fut);
+                }
+            }
+        });
 
         // Unwind pending IO messages.
         if (!ctx.clientNode() && coordinator().isLocal())
@@ -4383,5 +4392,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** @return Default query engine. */
     public QueryEngine defaultQueryEngine() {
         return dfltQryEngine;
+    }
+
+    /** */
+    public boolean isLockedByCurrentThread() {
+        return Thread.holdsLock(stateMux);
     }
 }

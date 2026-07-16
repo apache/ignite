@@ -118,7 +118,7 @@ The control script command:
 
 [source, shell]
 ----
-control.sh --cache reset_lost_partitions myCache
+control.sh --cache reset_lost_partitions myCacheGroup
 ----
 
 

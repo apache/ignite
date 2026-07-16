@@ -2237,7 +2237,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         throw e;
                     }
                     catch (Exception e) {
-                        curInvokeRes = CacheInvokeResult.fromError(e);
+                        curInvokeRes = CacheInvokeResult.fromError(CU.prepareEntryProcessorError(e));
 
                         updated = old;
 

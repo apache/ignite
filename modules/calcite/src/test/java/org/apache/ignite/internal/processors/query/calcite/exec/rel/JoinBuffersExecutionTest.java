@@ -25,13 +25,11 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
-import com.google.common.collect.ImmutableList;
+import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoinInfo;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -79,8 +77,7 @@ public class JoinBuffersExecutionTest extends AbstractExecutionTest {
     /** */
     @Test
     public void testHashJoinBuffers() throws Exception {
-        IgniteJoinInfo joinInfo = new IgniteJoinInfo(ImmutableIntList.of(0), ImmutableIntList.of(0),
-            ImmutableBitSet.of(), ImmutableList.of());
+        JoinInfo joinInfo = JoinInfo.of(ImmutableIntList.of(0), ImmutableIntList.of(0));
 
         JoinFactory joinFactory = (ctx, outType, leftType, rightType, joinType) ->
             HashJoinNode.create(ctx, outType, leftType, rightType, joinType, joinInfo, null);

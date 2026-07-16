@@ -206,14 +206,27 @@ public class IgniteFeatureSet implements Iterable<Integer>, Message, Externaliza
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(rangeStartInclusive);
         out.writeInt(rangeEndInclusive);
-        out.writeObject(sparseSuffix);
+
+        boolean hasSparseSuffix = sparseSuffix != null;
+
+        out.writeBoolean(hasSparseSuffix);
+
+        if (hasSparseSuffix)
+            sparseSuffix.writeExternal(out);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         rangeStartInclusive = in.readInt();
         rangeEndInclusive = in.readInt();
-        sparseSuffix = (GridIntList)in.readObject();
+
+        boolean hasSparseSuffix = in.readBoolean();
+
+        if (hasSparseSuffix) {
+            sparseSuffix = new GridIntList();
+
+            sparseSuffix.readExternal(in);
+        }
     }
 
     /** {@inheritDoc} */
@@ -252,10 +265,10 @@ public class IgniteFeatureSet implements Iterable<Integer>, Message, Externaliza
      * <p>{@link IgniteFeature} instances that are not present in the specified collection and whose IDs are lower than
      * the minimum ID among the specified {@link IgniteFeature}s are considered non-deactivatable.</p>
      */
-    public static IgniteFeatureSet buildFrom(Collection<? extends IgniteFeature> nodeFeatures) {
-        A.notEmpty(nodeFeatures, "node features");
+    public static IgniteFeatureSet buildFrom(Collection<? extends IgniteFeature> features) {
+        A.notEmpty(features, "features");
 
-        GridIntList featureIds = new GridIntList(nodeFeatures.stream().mapToInt(IgniteFeature::id).toArray());
+        GridIntList featureIds = new GridIntList(features.stream().mapToInt(IgniteFeature::id).toArray());
 
         featureIds.sort();
 
@@ -281,7 +294,7 @@ public class IgniteFeatureSet implements Iterable<Integer>, Message, Externaliza
     }
 
     /** */
-    static Collection<IgniteFeature> readDeclaredFeatures(Class<?> cls) {
+    public static Collection<IgniteFeature> readDeclaredFeatures(Class<?> cls) {
         A.notNull(cls, "cls");
 
         List<IgniteFeature> features = new ArrayList<>();

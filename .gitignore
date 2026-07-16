@@ -101,3 +101,4 @@ modules/ducktests/tests/build/**
 modules/ducktests/tests/dist/**
 /.gigaide/gigaide.properties
 *.bkp
+/.git
