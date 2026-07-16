@@ -213,6 +213,7 @@ public class GridEventStorageMessage implements MarshallableMessage {
      * @param marsh Marshaller.
      * @param filterClsLdr Class loader for filter.
      */
+    // TODO IGNITE-28901: revise the filters marshalling.
     public void finishUnmarshalFilters(Marshaller marsh, ClassLoader filterClsLdr) throws IgniteCheckedException {
         if (filterBytes != null && filter == null) {
             filter = U.unmarshal(marsh, filterBytes, filterClsLdr);
