@@ -1373,6 +1373,19 @@ public final class GridCacheMvcc {
     }
 
     /**
+     * @param dst Destination collection.
+     * @return Copied collection of local candidates.
+     */
+    public List<GridCacheMvccCandidate> localCandidatesCopy(List<GridCacheMvccCandidate> dst) {
+        List<GridCacheMvccCandidate> src = locs;
+
+        if (src == null)
+            return Collections.emptyList();
+
+        return candidatesCopy(src, dst, false);
+    }
+
+    /**
      * @param excludeVers Exclude versions.
      * @return Collection of local candidates.
      */
@@ -1417,13 +1430,30 @@ public final class GridCacheMvcc {
 
         List<GridCacheMvccCandidate> cands = new ArrayList<>(col.size());
 
-        for (GridCacheMvccCandidate c : col) {
+        return candidatesCopy(col, cands, reentries, excludeVers);
+    }
+
+    /**
+     * Copy candidates collection from {@code src} to {@code dst}.
+     * @param src Source collection.
+     * @param dst Destination collection.
+     * @param reentries Flag to include reentries.
+     * @param excludeVers Exclude versions.
+     * @return Copied collection of candidates.
+     */
+    private List<GridCacheMvccCandidate> candidatesCopy(
+        List<GridCacheMvccCandidate> src,
+        List<GridCacheMvccCandidate> dst,
+        boolean reentries,
+        GridCacheVersion... excludeVers
+    ) {
+        for (GridCacheMvccCandidate c : src) {
             // Don't include reentries.
             if ((reentries || !c.reentry()) && !U.containsObjectArray(excludeVers, c.version()))
-                cands.add(c);
+                dst.add(c);
         }
 
-        return cands;
+        return dst;
     }
 
     /**
