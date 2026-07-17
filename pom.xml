@@ -490,6 +490,13 @@
         </profile>
 
         <profile>
+            <id>docs</id>
+            <modules>
+                <module>docs/_docs/code-snippets/java</module>
+            </modules>
+        </profile>
+
+        <profile>
             <id>update-versions</id>
             <!-- updates versions -->
             <build>
@@ -507,14 +514,6 @@
                                 <configuration>
                                     <target>
                                         <echo message="Update ignite.version in docs" />
-
-                                        <replaceregexp byline="true" encoding="UTF-8">
-                                            <regexp pattern="(&lt;ignite\.version&gt;).+(&lt;/ignite\.version&gt;)" />
-                                            <substitution expression="\1${project.version}\2" />
-                                            <fileset dir="${project.basedir}/docs/">
-                                                <include name="_docs/code-snippets/java/pom.xml" />
-                                            </fileset>
-                                        </replaceregexp>
 
                                         <replaceregexp byline="true" encoding="UTF-8">
                                             <regexp pattern="(version: ).+" />
