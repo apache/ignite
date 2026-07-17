@@ -17,20 +17,31 @@
 
 package org.apache.ignite.internal.thread.context;
 
-import org.apache.ignite.internal.processors.security.SecurityContext;
-import org.apache.ignite.internal.processors.security.SecurityContextWrapper;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
-/** Ids of Ignite's known distributed operation context attributes. */
-public enum DistributedOperationContextAttribute {
-    /**
-     * Distributed {@link SecurityContext}.
-     *
-     * @see SecurityContextWrapper
-     */
-    SECURITY;
+/**
+ * Message for {@link OperationContext} distributed attributes.
+ *
+ * @see OperationContextDispatcher
+ */
+public class OperationContextMessage implements Message {
+    /** Values of operation context attributes. */
+    @Order(0)
+    Message[] attrs;
 
-    /** Cluster-wide id of distributed attribute. */
-    public byte id() {
-        return (byte)ordinal();
+    /** Bitmap of effective attributes ids. */
+    @Order(1)
+    byte idBitmap;
+
+    /** Empty constructor for serialization purposes. */
+    public OperationContextMessage() {
+        // No-op.
+    }
+
+    /** */
+    public OperationContextMessage(byte idBitmap, Message[] attrs) {
+        this.attrs = attrs;
+        this.idBitmap = idBitmap;
     }
 }
