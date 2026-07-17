@@ -77,21 +77,21 @@ class GridToStringNodeFactory {
                 yield getGridToStringNode(childPropName, () -> fd.objectValue(obj), fieldCls);
             }
             case GridToStringFieldDescriptor.FIELD_TYPE_BYTE ->
-                    getGridToStringNode(childPropName, () -> fd.byteValue(obj), byte.class);
+                getGridToStringNode(childPropName, () -> fd.byteValue(obj), byte.class);
             case GridToStringFieldDescriptor.FIELD_TYPE_BOOLEAN ->
-                    getGridToStringNode(childPropName, () -> fd.booleanValue(obj), boolean.class);
+                getGridToStringNode(childPropName, () -> fd.booleanValue(obj), boolean.class);
             case GridToStringFieldDescriptor.FIELD_TYPE_CHAR ->
-                    getGridToStringNode(childPropName, () -> fd.charValue(obj), char.class);
+                getGridToStringNode(childPropName, () -> fd.charValue(obj), char.class);
             case GridToStringFieldDescriptor.FIELD_TYPE_SHORT ->
-                    getGridToStringNode(childPropName, () -> fd.shortValue(obj), short.class);
+                getGridToStringNode(childPropName, () -> fd.shortValue(obj), short.class);
             case GridToStringFieldDescriptor.FIELD_TYPE_INT ->
-                    getGridToStringNode(childPropName, () -> fd.intField(obj), int.class);
+                getGridToStringNode(childPropName, () -> fd.intField(obj), int.class);
             case GridToStringFieldDescriptor.FIELD_TYPE_FLOAT ->
-                    getGridToStringNode(childPropName, () -> fd.floatField(obj), float.class);
+                getGridToStringNode(childPropName, () -> fd.floatField(obj), float.class);
             case GridToStringFieldDescriptor.FIELD_TYPE_LONG ->
-                    getGridToStringNode(childPropName, () -> fd.longField(obj), long.class);
+                getGridToStringNode(childPropName, () -> fd.longField(obj), long.class);
             case GridToStringFieldDescriptor.FIELD_TYPE_DOUBLE ->
-                    getGridToStringNode(childPropName, () -> fd.doubleField(obj), double.class);
+                getGridToStringNode(childPropName, () -> fd.doubleField(obj), double.class);
             default -> throw new IllegalStateException("Unexpected field descriptor type: " + fd.type());
         };
     }
