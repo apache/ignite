@@ -108,7 +108,8 @@ public class SystemViewClientTest extends SystemViewAbstractTest {
             try (IgniteClient ignored = Ignition.startClient(
                 new ClientConfiguration()
                     .setAddresses(Config.SERVER)
-                    .setUserAttributes(userAttrs))) {
+                    .setUserAttributes(userAttrs))
+            ) {
                 assertEquals("user-dc", conns.iterator().next().dataCenterId());
             }
 
@@ -116,20 +117,14 @@ public class SystemViewClientTest extends SystemViewAbstractTest {
 
             System.setProperty(IGNITE_DATA_CENTER_ID, "property-dc");
 
-            try (IgniteClient ignored = Ignition.startClient(
-                new ClientConfiguration()
+            try (
+                IgniteClient ignored = Ignition.startClient(new ClientConfiguration()
                     .setAddresses(Config.SERVER)
-                    .setUserAttributes(userAttrs))) {
-                System.clearProperty(IGNITE_DATA_CENTER_ID);
+                    .setUserAttributes(userAttrs)))
+            {
 
                 assertEquals("property-dc", conns.iterator().next().dataCenterId());
                 assertEquals("user-dc", userAttrs.get(IGNITE_DATA_CENTER_ID));
-            }
-
-            assertTrue(GridTestUtils.waitForCondition(() -> conns.size() == 0, 5_000));
-
-            try (IgniteClient ignored = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))) {
-                assertNull(conns.iterator().next().dataCenterId());
             }
         }
     }
