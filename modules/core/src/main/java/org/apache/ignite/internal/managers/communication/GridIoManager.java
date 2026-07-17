@@ -3948,7 +3948,17 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
                         MTC.span().addTag(SpanTags.MESSAGE, () -> traceName(fmc.message));
 
-                        unmarshalPayload(mc.message);
+                        try {
+                            unmarshalPayload(mc.message);
+                        }
+                        catch (IgniteException e) {
+                            // Skip the poisoned message: rethrowing would abandon the rest of the set until
+                            // the next message arrives on this topic.
+                            U.error(log, "Failed to unmarshal ordered message (will skip) [nodeId=" + nodeId +
+                                ", msg=" + mc.message + ']', e);
+
+                            continue;
+                        }
 
                         invokeListener(mc.message.policy(), lsnr, nodeId, mc.message.message());
                     }
