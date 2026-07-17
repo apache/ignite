@@ -466,7 +466,9 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.STATISTICS_CONFIGURATION",
                 "SYS.PAGES_TIMESTAMP_HISTOGRAM",
                 "SYS.SQL_PLANS_HISTORY",
-                "SYS.IGNITE_PLUGINS"
+                "SYS.IGNITE_PLUGINS",
+                "SYS.CACHE_EXPLICIT_LOCKS",
+                "SYS.CACHE_LOCKS"
             ))
         );
     }
@@ -955,6 +957,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.TRANSACTIONS.LOCAL_NODE_ID.null",
                 "SYS.TRANSACTIONS.STATE.null",
                 "SYS.TRANSACTIONS.XID.null",
+                "SYS.TRANSACTIONS.ORIGINATING_XID.null",
                 "SYS.TRANSACTIONS.LABEL.null",
                 "SYS.TRANSACTIONS.START_TIME.null",
                 "SYS.TRANSACTIONS.ISOLATION.null",
@@ -1178,8 +1181,21 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.IGNITE_PLUGINS.NAME.null",
                 "SYS.IGNITE_PLUGINS.INFO.null",
                 "SYS.IGNITE_PLUGINS.VERSION.null",
-                "SYS.IGNITE_PLUGINS.CLASS_NAME.null"
-                ));
+                "SYS.IGNITE_PLUGINS.CLASS_NAME.null",
+                "SYS.CACHE_EXPLICIT_LOCKS.CACHE_ID.null",
+                "SYS.CACHE_EXPLICIT_LOCKS.KEY.null",
+                "SYS.CACHE_EXPLICIT_LOCKS.THREAD_ID.null",
+                "SYS.CACHE_EXPLICIT_LOCKS.XID.null",
+                "SYS.CACHE_LOCKS.CACHE_ID.null",
+                "SYS.CACHE_LOCKS.KEY.null",
+                "SYS.CACHE_LOCKS.NODE_ID.null",
+                "SYS.CACHE_LOCKS.ORIGINATING_NODE_ID.null",
+                "SYS.CACHE_LOCKS.IS_OWNER.null",
+                "SYS.CACHE_LOCKS.IS_TX.null",
+                "SYS.CACHE_LOCKS.FLAGS.null",
+                "SYS.CACHE_LOCKS.XID.null",
+                "SYS.CACHE_LOCKS.ORIGINATING_XID.null"
+            ));
 
             Assert.assertEquals(expectedCols, actualSysCols);
         }

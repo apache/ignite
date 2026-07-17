@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidat
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteComponentFeatureSet;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteComponentFeatureSetProvider;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFeature;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFeatureSet;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeature;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureSet;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.TestIgniteReleaseFeatures_2_18_0;
@@ -64,6 +65,7 @@ import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.TestBlockingTcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jspecify.annotations.Nullable;
@@ -71,7 +73,6 @@ import org.jspecify.annotations.Nullable;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_NODE_VALIDATION_FAILED;
 import static org.apache.ignite.internal.IgniteVersionUtils.semanticVersion;
-import static org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFeature.COMPONENT_NAME;
 
 /**
  * Provides the ability to override a node's version and supported {@link IgniteFeature}s in order to
@@ -178,8 +179,7 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
 
         TestVersions testVersions = TestVersions.parse(ver);
 
-        IgniteComponentFeatureSet testCoreFeatures = new IgniteComponentFeatureSet(
-            COMPONENT_NAME,
+        IgniteCoreFeatureSet testCoreFeatures = new IgniteCoreFeatureSet(
             IgniteProductVersion.fromString(testVersions.coreVersion()),
             IgniteFeatureSet.buildFrom(readDeclaredCoreFeatures(testVersions.coreVersion()))
         );
@@ -207,13 +207,11 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
             }
         });
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi() {
+        TcpDiscoverySpi discoSpi = new TestBlockingTcpDiscoverySpi(cfg) {
             @Override public void setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ignored) {
                 super.setNodeAttributes(attrs, IgniteProductVersion.fromString(testVersions.coreVersion()));
             }
         };
-
-        discoSpi.setIpFinder(((TcpDiscoverySpi)cfg.getDiscoverySpi()).getIpFinder());
 
         cfg.setDiscoverySpi(discoSpi);
 
@@ -493,7 +491,7 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
 
     /** */
     String resolveNodeCompoundVersion(int nodeIdx) {
-        return ru(nodeIdx).features().localVersionFeatures().values().stream()
+        return Arrays.stream(ru(nodeIdx).features().localVersionFeatures().values())
             .sorted(Comparator.comparing(IgniteComponentFeatureSet::componentName))
             .map(f -> semanticVersion(f.version()))
             .collect(Collectors.joining("|"));
@@ -604,7 +602,7 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
         public static CountDownLatch nodeJoinValidationCompletedLatch;
 
         /** */
-        public TestRollingUpgradeProcessor(GridKernalContext ctx, IgniteComponentFeatureSet testCoreFeatures) {
+        public TestRollingUpgradeProcessor(GridKernalContext ctx, IgniteCoreFeatureSet testCoreFeatures) {
             super(ctx, testCoreFeatures);
 
             ctx.event().addLocalEventListener(new TestNodeValidationFailedEventListener(), EVT_NODE_VALIDATION_FAILED);

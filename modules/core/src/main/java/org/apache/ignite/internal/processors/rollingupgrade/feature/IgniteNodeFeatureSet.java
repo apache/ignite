@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.rollingupgrade.feature;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -38,7 +37,7 @@ public class IgniteNodeFeatureSet {
     private final Map<String, IgniteComponentFeatureSet> features;
 
     /** */
-    public IgniteNodeFeatureSet(Collection<IgniteComponentFeatureSet> features) {
+    public IgniteNodeFeatureSet(IgniteComponentFeatureSet... features) {
         this.features = indexByComponentName(features);
     }
 
@@ -48,8 +47,8 @@ public class IgniteNodeFeatureSet {
     }
 
     /** */
-    public Collection<IgniteComponentFeatureSet> values() {
-        return Collections.unmodifiableCollection(features.values());
+    public IgniteComponentFeatureSet[] values() {
+        return features.values().toArray(IgniteComponentFeatureSet[]::new);
     }
 
     /** */
@@ -98,7 +97,7 @@ public class IgniteNodeFeatureSet {
     }
 
     /** */
-    private static Map<String, IgniteComponentFeatureSet> indexByComponentName(Collection<IgniteComponentFeatureSet> features) {
+    private static Map<String, IgniteComponentFeatureSet> indexByComponentName(IgniteComponentFeatureSet... features) {
         Map<String, IgniteComponentFeatureSet> res = new HashMap<>();
 
         for (IgniteComponentFeatureSet compFeatures : features) {

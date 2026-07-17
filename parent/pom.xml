@@ -73,7 +73,7 @@
         <cron4j.version>2.2.5</cron4j.version>
         <curator.version>5.9.0</curator.version>
         <guava.version>33.5.0-jre</guava.version>
-        <failureaccess.version>1.0.1</failureaccess.version>
+        <failureaccess.version>1.0.3</failureaccess.version>
         <grpc-context.version>1.81.0</grpc-context.version>
         <h2.version>1.4.197</h2.version>
         <hamcrest.version>2.2</hamcrest.version>
