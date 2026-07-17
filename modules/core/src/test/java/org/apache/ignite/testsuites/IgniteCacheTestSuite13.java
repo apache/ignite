@@ -45,6 +45,7 @@ import org.apache.ignite.internal.metric.SystemViewComputeTaskTest;
 import org.apache.ignite.internal.metric.SystemViewConfigurationTest;
 import org.apache.ignite.internal.metric.SystemViewDSTest;
 import org.apache.ignite.internal.metric.SystemViewExecutorsTest;
+import org.apache.ignite.internal.metric.SystemViewLocksTest;
 import org.apache.ignite.internal.metric.SystemViewMetastorageTest;
 import org.apache.ignite.internal.metric.SystemViewNodesTest;
 import org.apache.ignite.internal.metric.SystemViewPageListsTest;
@@ -122,6 +123,7 @@ public class IgniteCacheTestSuite13 {
         GridTestUtils.addTestIfNeeded(suite, SystemViewConfigurationTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, SystemViewPluginTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, SystemViewQueriesTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, SystemViewLocksTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheMetricsAddRemoveTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheMetricsConflictResolverTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, JmxExporterSpiTest.class, ignoredTests);
