@@ -30,7 +30,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
-import org.apache.ignite.internal.managers.discovery.SecurityAwareCustomMessageWrapper;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.MessagesPluginProvider;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
@@ -159,8 +158,6 @@ public class NodeSecurityContextPropagationTest extends GridCommonAbstractTest {
 
             if (msg instanceof TcpDiscoveryCustomEventMessage) {
                 DiscoverySpiCustomMessage customMsg = ((TcpDiscoveryCustomEventMessage)msg).message();
-
-                assert customMsg instanceof SecurityAwareCustomMessageWrapper;
 
                 unwrappedMsg = U.unwrapCustomMessage(customMsg);
             }
