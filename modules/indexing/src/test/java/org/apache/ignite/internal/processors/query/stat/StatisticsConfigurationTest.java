@@ -31,7 +31,8 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander.RebalanceFuture;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsObjectData;
@@ -164,17 +165,25 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
 
             crdNode.cluster().setBaselineTopology(crdNode.cluster().topologyVersion());
 
-            // Wait for exchange to complete after baseline change.
+            // Wait for rebalancing to complete on all server nodes after baseline change.
             // setBaselineTopology triggers a FULL exchange with async rebalancing.
             // awaitPartitionMapExchange checks ownerNodesCnt against readyAffinityVersion,
             // but partition topology (MOVING) lags behind — causing infinite loop and timeout.
-            // We wait for affinityReadyFuture to guarantee the exchange is fully applied
-            // (including partition topology) on all nodes before proceeding.
-            IgniteEx crd = (IgniteEx)crdNode;
+            // We wait for rebalance future on every cache of every server node to guarantee
+            // that all rebalancing is done before proceeding to awaitPartitionMapExchange.
+            for (Ignite grid : G.allGrids()) {
+                IgniteEx ign = (IgniteEx)grid;
 
-            AffinityTopologyVersion topVer = crd.context().discovery().topologyVersionEx();
+                if (ign.cluster().localNode().isClient())
+                    continue;
 
-            crd.context().cache().context().exchange().affinityReadyFuture(topVer).get(getPartitionMapExchangeTimeout());
+                for (IgniteCacheProxy<?, ?> cacheProxy : ign.context().cache().jcaches()) {
+                    RebalanceFuture rebFut = (RebalanceFuture)cacheProxy.context().cache().preloader().rebalanceFuture();
+
+                    if (rebFut != null)
+                        rebFut.get(getPartitionMapExchangeTimeout());
+                }
+            }
         }
 
         try {
