@@ -54,12 +54,12 @@ Cluster health is a complex thing. Apache Ignite is capable of demonstrating gre
 It is important to understand that a healthy cluster may undergo planned topology changes or temporary load spikes.
 
 The key properties are:
-- The cluster serves operations allowed by its intended state.
-- Data remains consistent (`idle_verify` passes, meaning partitions are intact and there are no conflicts).
-- Expected nodes are present.
-- No pending transactions and no split brain.
-- No lost partitions.
-- Transient activity such as rebalancing or queue growth converges instead of accumulating.
+* The cluster serves operations allowed by its intended state.
+* Data remains consistent (`idle_verify` passes, meaning partitions are intact and there are no conflicts).
+* Expected nodes are present.
+* No pending transactions and no split brain.
+* No lost partitions.
+* Transient activity such as rebalancing or queue growth converges instead of accumulating.
 
 But the thing is, there is no universal single health metric.
 
@@ -229,7 +229,7 @@ FROM SYS.STRIPED_THREADPOOL_QUEUE
 ORDER BY STRIPE_INDEX, THREAD_NAME;
 ----
 
-As it was said, short non-zero queues are acceptable under load.
+As mentioned above, short non-zero queues are acceptable under load.
 
 On an idle node, queues usually return to zero.
 Investigate continuous growth, lack of drain after load stops, repeated `DetectStarvation=true`, or repeated starvation warnings in logs.
@@ -249,7 +249,7 @@ For JMX object names and SQL metric access, see link:monitoring-metrics/new-metr
 .JConsole view of node-local striped executor queue metrics
 image::perf-and-troubleshooting/images/healthy-cluster-queues-jconsole.png[JConsole MBeans view showing threadPools/StripedExecutor and queue-related attributes]
 
-=== Check transactions and SQL queries
+=== Check Transactions and SQL Queries
 
 A transaction or query is not unhealthy merely because it runs for some time.
 Investigate when the number or age of active operations continues to increase after the load drops, or when the same operations repeatedly block other work.
@@ -311,7 +311,7 @@ Applications must handle `TransactionRollbackException` and retry where appropri
 Do not use a universal timeout value.
 Choose a value above the normal duration of legitimate transactions with a justified safety margin, and test application behavior when rollback happens.
 
-=== Check checkpoint pressure when persistence is enabled
+=== Check Checkpoint Pressure When Persistence Is Enabled
 
 This check applies only to data regions with Native Persistence enabled.
 A pure in-memory cluster does not perform persistence checkpoints for its in-memory regions.
@@ -371,7 +371,7 @@ Open the same charts or attributes on each server node that owns persistent data
 .JConsole view of node-local persistence checkpoint metrics
 image::perf-and-troubleshooting/images/healthy-cluster-checkpoint-jconsole.png[JConsole MBeans view showing io/datastorage checkpoint attributes and a persistent dataregion bean]
 
-=== Check logs and optional features
+=== Check Logs and Optional Features
 
 Investigate logs and failure handling for:
 
