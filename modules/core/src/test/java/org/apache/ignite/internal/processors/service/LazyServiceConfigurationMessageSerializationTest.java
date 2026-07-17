@@ -21,22 +21,19 @@ import java.io.Externalizable;
 import java.io.Serializable;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
-import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.util.CommonUtils.gridClassLoader;
 import static org.apache.ignite.internal.util.CommonUtils.makeMessageType;
 import static org.apache.ignite.marshaller.Marshallers.jdk;
 import static org.junit.Assert.assertArrayEquals;
@@ -48,17 +45,15 @@ public class LazyServiceConfigurationMessageSerializationTest extends GridCommon
         "Has the number of fields in the `LazyServiceConfiguration` class changed?";
 
     /** */
-    private final Marshaller marsh = jdk();
-
-    /** */
     private final MessageFactory msgFactory = new IgniteMessageFactoryImpl(
-        new MessageFactoryProvider[] {new CoreMessagesProvider(marsh, marsh, U.gridClassLoader())});
+        new MessageFactoryProvider[] {new CoreMessagesProvider(jdk(), jdk(), gridClassLoader())});
 
     /**
-     * LazyServiceConfiguration marks {@code svc}, {@code nodeFilter}, {@code interceptors} as transient,
-     * so they are not serialized via MessageSerializer (replaced by byte[] counterparts).
+     * ServiceConfiguration declares {@code svc}, {@code nodeFilter}, {@code interceptors} as non-transient,
+     * so serializableFieldsCount includes them. Yet they are not serialized via MessageSerializer —
+     * LazyServiceConfiguration replaces them with byte[] counterparts (srvcBytes, nodeFilterBytes, interceptorsBytes).
      */
-    private static final long TRANSIENT_FIELD_PENALTY = 3;
+    private static final long SHADOWED_FIELD_COUNT = 3;
 
     /** */
     @Test
@@ -92,7 +87,7 @@ public class LazyServiceConfigurationMessageSerializationTest extends GridCommon
      * @return Configuration read during a full serde round-trip.
      */
     private LazyServiceConfiguration serializeAndDeserialize(LazyServiceConfiguration src) {
-        long expReadsWritesCnt = serializableFieldsCount(LazyServiceConfiguration.class) - TRANSIENT_FIELD_PENALTY;
+        long expReadsWritesCnt = serializableFieldsCount(LazyServiceConfiguration.class) - SHADOWED_FIELD_COUNT;
 
         return writeAndReadBack(new LazyServiceConfigurationMessage(src), expReadsWritesCnt).toConfiguration();
     }
@@ -126,8 +121,7 @@ public class LazyServiceConfigurationMessageSerializationTest extends GridCommon
         writer.setBuffer(buf);
 
         assertTrue(serde.writeTo(msg, writer));
-        assertEquals("Writes" + ERROR_SUFFIX,
-            expReadsWritesCnt, writer.state());
+        assertEquals("Writes" + ERROR_SUFFIX, expReadsWritesCnt, writer.state());
 
         buf.flip();
 
@@ -137,8 +131,7 @@ public class LazyServiceConfigurationMessageSerializationTest extends GridCommon
         T res = (T)msgFactory.create(makeMessageType(buf.get(), buf.get()));
 
         assertTrue(serde.readFrom(res, reader));
-        assertEquals("Reads" + ERROR_SUFFIX,
-            expReadsWritesCnt, reader.state());
+        assertEquals("Reads" + ERROR_SUFFIX, expReadsWritesCnt, reader.state());
 
         return res;
     }
@@ -157,19 +150,7 @@ public class LazyServiceConfigurationMessageSerializationTest extends GridCommon
 
     /** @return Lazy service configuration with all fields populated, including serialized byte arrays. */
     private LazyServiceConfiguration lazyServiceConfigurationWithBytes() {
-        return new LazyServiceConfiguration(
-            baseServiceConfiguration(),
-            "org.apache.ignite.TestService",
-            "service_bytes".getBytes(StandardCharsets.UTF_8),
-            "nodeFilter".getBytes(StandardCharsets.UTF_8),
-            "interceptors".getBytes(StandardCharsets.UTF_8),
-            new String[]{"method1", "method2"}
-        );
-    }
-
-    /** @return Base service configuration shared by both factory methods. */
-    private ServiceConfiguration baseServiceConfiguration() {
-        return new ServiceConfiguration()
+        LazyServiceConfiguration cfg = (LazyServiceConfiguration)new LazyServiceConfiguration()
             .setName("testService")
             .setTotalCount(5)
             .setMaxPerNodeCount(1)
@@ -177,5 +158,11 @@ public class LazyServiceConfigurationMessageSerializationTest extends GridCommon
             .setAffinityKey("affKey")
             .setStatisticsEnabled(true)
             .setLocalStartOrder(10);
+
+        return cfg.serviceClassName("org.apache.ignite.TestService")
+            .serviceBytes("service_bytes".getBytes())
+            .nodeFilterBytes("nodeFilter".getBytes())
+            .interceptorBytes("interceptors".getBytes())
+            .platformMtdNames(new String[]{"method1", "method2"});
     }
 }

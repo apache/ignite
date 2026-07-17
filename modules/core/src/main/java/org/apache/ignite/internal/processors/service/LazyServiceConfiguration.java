@@ -99,42 +99,17 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
     }
 
     /**
-     * Constructor for deserialization from network message (when service/filter/interceptors are only available as bytes).
-     *
-     * @param cfg Configuration with scalar fields (name, counts, cache, etc.).
-     * @param srvcClsName Service class name.
-     * @param srvcBytes Marshalled service.
-     * @param nodeFilterBytes Marshalled node filter.
-     * @param interceptorsBytes Marshalled interceptors.
-     * @param platformMtdNames Platform method names for statistics.
-     */
-    LazyServiceConfiguration(
-        ServiceConfiguration cfg,
-        String srvcClsName,
-        byte[] srvcBytes,
-        byte[] nodeFilterBytes,
-        byte[] interceptorsBytes,
-        String[] platformMtdNames
-    ) {
-        name = cfg.getName();
-        totalCnt = cfg.getTotalCount();
-        maxPerNodeCnt = cfg.getMaxPerNodeCount();
-        cacheName = cfg.getCacheName();
-        affKey = cfg.getAffinityKey();
-        isStatisticsEnabled = cfg.isStatisticsEnabled();
-        locStartOrder = cfg.getLocalStartOrder();
-        this.srvcClsName = srvcClsName;
-        this.srvcBytes = srvcBytes;
-        this.nodeFilterBytes = nodeFilterBytes;
-        this.interceptorsBytes = interceptorsBytes;
-        this.platformMtdNames = platformMtdNames;
-    }
-
-    /**
      * @return Node filter bytes.
      */
     public byte[] nodeFilterBytes() {
         return nodeFilterBytes;
+    }
+
+    /** */
+    public LazyServiceConfiguration nodeFilterBytes(byte[] nodeFilterBytes) {
+        this.nodeFilterBytes = nodeFilterBytes;
+
+        return this;
     }
 
     /**
@@ -144,11 +119,25 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
         return srvcBytes;
     }
 
+    /** */
+    public LazyServiceConfiguration serviceBytes(byte[] srvcBytes) {
+        this.srvcBytes = srvcBytes;
+
+        return this;
+    }
+
     /**
      * @return Service class name.
      */
     public String serviceClassName() {
         return srvcClsName;
+    }
+
+    /** */
+    public LazyServiceConfiguration serviceClassName(String srvcClsName) {
+        this.srvcClsName = srvcClsName;
+
+        return this;
     }
 
     /** {@inheritDoc} */
@@ -180,6 +169,13 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
      */
     public byte[] interceptorBytes() {
         return interceptorsBytes;
+    }
+
+    /** */
+    public LazyServiceConfiguration interceptorBytes(byte[] interceptorsBytes) {
+        this.interceptorsBytes = interceptorsBytes;
+
+        return this;
     }
 
     /** {@inheritDoc} */

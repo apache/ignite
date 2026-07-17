@@ -25,7 +25,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.services.ServiceConfiguration;
 
 /** Message for {@link LazyServiceConfiguration}. */
 public class LazyServiceConfigurationMessage implements MarshallableMessage {
@@ -106,7 +105,7 @@ public class LazyServiceConfigurationMessage implements MarshallableMessage {
 
     /** @return Service configuration. */
     public LazyServiceConfiguration toConfiguration() {
-        ServiceConfiguration cfg = new ServiceConfiguration()
+        LazyServiceConfiguration cfg = (LazyServiceConfiguration)new LazyServiceConfiguration()
             .setName(name)
             .setTotalCount(totalCnt)
             .setMaxPerNodeCount(maxPerNodeCnt)
@@ -115,7 +114,11 @@ public class LazyServiceConfigurationMessage implements MarshallableMessage {
             .setStatisticsEnabled(isStatisticsEnabled)
             .setLocalStartOrder(locStartOrder);
 
-        return new LazyServiceConfiguration(cfg, srvcClsName, srvcBytes, nodeFilterBytes, interceptorsBytes, platformMtdNames);
+        return cfg.serviceClassName(srvcClsName)
+            .serviceBytes(srvcBytes)
+            .nodeFilterBytes(nodeFilterBytes)
+            .interceptorBytes(interceptorsBytes)
+            .platformMtdNames(platformMtdNames);
     }
 
     /** {@inheritDoc} */
