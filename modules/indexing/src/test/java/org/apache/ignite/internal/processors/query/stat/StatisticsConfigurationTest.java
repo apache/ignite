@@ -25,14 +25,16 @@ import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander.RebalanceFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsObjectData;
@@ -165,12 +167,10 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
 
             crdNode.cluster().setBaselineTopology(crdNode.cluster().topologyVersion());
 
-            // Wait for rebalancing to complete on all server nodes after baseline change.
-            // setBaselineTopology triggers a FULL exchange with async rebalancing.
-            // awaitPartitionMapExchange checks ownerNodesCnt against readyAffinityVersion,
-            // but partition topology (MOVING) lags behind — causing infinite loop and timeout.
-            // We wait for rebalance future on every cache of every server node to guarantee
-            // that all rebalancing is done before proceeding to awaitPartitionMapExchange.
+            // Wait for partition topology to stabilize after baseline change.
+            // After setBaselineTopology with lost partitions, rebalanceFuture.get() may complete
+            // before lost partition recovery finishes (owners list is still empty for lost parts).
+            // We poll partition topology directly until each partition has at least one owner.
             for (Ignite grid : G.allGrids()) {
                 IgniteEx ign = (IgniteEx)grid;
 
@@ -178,10 +178,30 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
                     continue;
 
                 for (IgniteCacheProxy<?, ?> cacheProxy : ign.context().cache().jcaches()) {
-                    RebalanceFuture rebFut = (RebalanceFuture)cacheProxy.context().cache().preloader().rebalanceFuture();
+                    GridDhtPartitionTopology top = cacheProxy.context().topology();
 
-                    if (rebFut != null)
-                        rebFut.get(getPartitionMapExchangeTimeout());
+                    int partitions = cacheProxy.context().affinity().partitions();
+
+                    long timeout = U.currentTimeMillis() + getPartitionMapExchangeTimeout();
+
+                    while (U.currentTimeMillis() < timeout) {
+                        boolean stabilized = true;
+
+                        for (int p = 0; p < partitions; p++) {
+                            List<ClusterNode> owners = top.owners(p, AffinityTopologyVersion.NONE);
+
+                            if (owners.isEmpty()) {
+                                stabilized = false;
+
+                                break;
+                            }
+                        }
+
+                        if (stabilized)
+                            break;
+
+                        U.sleep(100);
+                    }
                 }
             }
         }
