@@ -31,7 +31,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsObjectData;
@@ -160,35 +160,27 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
         stopGrid(nodeIdx);
 
         if (persist) {
-            F.first(G.allGrids()).cluster().setBaselineTopology(F.first(G.allGrids()).cluster().topologyVersion());
+            Ignite crdNode = F.first(G.allGrids());
 
-            // Wait for rebalancing to finish on all nodes after baseline change.
-            // setBaselineTopology triggers a full exchange with async rebalancing.
+            crdNode.cluster().setBaselineTopology(crdNode.cluster().topologyVersion());
+
+            // Wait for exchange to complete after baseline change.
+            // setBaselineTopology triggers a FULL exchange with async rebalancing.
             // awaitPartitionMapExchange checks ownerNodesCnt against readyAffinityVersion,
             // but partition topology (MOVING) lags behind — causing infinite loop and timeout.
-            // We wait for the rebalance future to complete (blocking.get()) before proceeding.
-            for (Ignite grid : G.allGrids()) {
-                IgniteEx ign = (IgniteEx)grid;
+            // We wait for affinityReadyFuture to guarantee the exchange is fully applied
+            // (including partition topology) on all nodes before proceeding.
+            IgniteEx crd = (IgniteEx)crdNode;
 
-                if (ign.cluster().localNode().isClient())
-                    continue;
+            AffinityTopologyVersion topVer = crd.context().discovery().topologyVersionEx();
 
-                // Wait for ongoing rebalance to complete.
-                GridDhtPartitionDemander.RebalanceFuture rebFut = (GridDhtPartitionDemander.RebalanceFuture)ign
-                    .cachex("SMALLnull").context().preloader().rebalanceFuture();
-
-                // If rebalance was cancelled (false), a new one may have started — retry.
-                while (!rebFut.isInitial() && !rebFut.get()) {
-                    rebFut = (GridDhtPartitionDemander.RebalanceFuture)ign.cachex("SMALLnull")
-                        .context().preloader().rebalanceFuture();
-                }
-            }
+            crd.context().cache().context().exchange().affinityReadyFuture(topVer).get(getPartitionMapExchangeTimeout());
         }
 
         try {
             awaitPartitionMapExchange();
         }
-        catch (InterruptedException e) {
+        catch (InterruptedException ignored) {
             // No-op.
         }
     }
