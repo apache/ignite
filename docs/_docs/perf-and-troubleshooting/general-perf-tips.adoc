@@ -54,27 +54,29 @@ Cluster health is a complex thing. Apache Ignite is capable of demonstrating gre
 It is important to understand that a healthy cluster may undergo planned topology changes or temporary load spikes.
 
 The key properties are:
-* The cluster serves operations allowed by its intended state.
-* Data remains consistent (`idle_verify` passes, meaning partitions are intact and there are no conflicts).
-* Expected nodes are present.
-* No pending transactions and no split brain.
-* No lost partitions.
-* Transient activity such as rebalancing or queue growth converges instead of accumulating.
 
-But the thing is, there is no universal single health metric.
+* The cluster is in the intended link:monitoring-metrics/cluster-states[state] and serves only the operations allowed by that state.
+* Baseline topology, when it is used or managed manually, matches the expected data-bearing server nodes.
+* Data remains consistent: link:tools/control-script#verifying-partition-checksums[`idle_verify`] reports no partition conflicts when the cluster is idle.
+* Expected nodes are present, and no node segmentation or repeated membership churn is reported.
+* link:configuring-caches/partition-loss-policy[Lost partitions] are absent.
+* Long-running transactions, Partition Map Exchange (PME), rebalancing, checkpointing, and executor queues converge instead of accumulating.
+
+There is no single command or metric that proves cluster health for every deployment.
 
 Use several signals together.
-For example, `SELECT 1` can confirm that a client or SQL query path is reachable, but it does not check user partitions, backup consistency, baseline membership, or all server nodes.
-Similarly, `control.sh --cache idle_verify` is an important consistency check, but it is not a complete health check.
+A simple client connection or SQL liveness check can prove only that a particular client or query path is reachable; it does not check user partitions, backup consistency, baseline membership, or all server nodes.
+Similarly, `control.(sh|bat) --cache idle_verify` is an important consistency check, but it is still not a complete health check.
 
 === Check the Intended State and Node Membership
+
 Start with the link:monitoring-metrics/cluster-states[cluster state].
 
 Run:
 
 [source,shell]
 ----
-./control.sh --state
+control.(sh|bat) --state
 ----
 
 Relevant output:
@@ -93,13 +95,17 @@ Command [STATE] finished with code: 0
 `INACTIVE` is acceptable only when it matches the current operation, for example planned maintenance; an inactive cluster does not serve the data workload.
 The criterion is whether the actual state matches the state that was intentionally set for the deployment.
 
-If baseline topology is enabled, check the baseline as well:
+Check baseline topology when the cluster uses persistence, when baseline autoadjustment is disabled, or when you intentionally manage the set of data-bearing nodes.
+In pure in-memory clusters with the default immediate autoadjustment, baseline topology normally follows the current server topology automatically.
+If autoadjustment is disabled, the baseline changes only after an operator changes it.
+If autoadjustment is configured with a non-zero timeout, the baseline is updated only after the topology remains unchanged for that timeout.
+In both cases, run `control.(sh|bat) --baseline` and compare `Baseline nodes` and `Other nodes` with the expected set of server nodes.
 
 Run:
 
 [source,shell]
 ----
-./control.sh --baseline
+control.(sh|bat) --baseline
 ----
 
 Relevant output for a cluster where all baseline nodes are online:
@@ -122,6 +128,22 @@ Number of baseline nodes: 3
 Other nodes not found.
 ----
 
+Example: one baseline node is offline:
+
+[source,text]
+----
+Baseline nodes:
+    ConsistentId=node-1, State=ONLINE, Order=1
+    ConsistentId=node-2, State=OFFLINE, Order=2
+    ConsistentId=node-3, State=ONLINE, Order=3
+--------------------------------------------------------------------------------
+Number of baseline nodes: 3
+----
+
+If a baseline node is `OFFLINE`, an expected data-bearing server is missing.
+If other primary or backup copies are available, its absence does not cause partition loss.
+To check for partition loss, query the partition states as described in <<confirm-that-rebalancing-converges,Confirm That Rebalancing Converges>>.
+
 If an online server node has joined the cluster but is not in the baseline, the command shows it under `Other nodes`:
 
 [source,text]
@@ -134,14 +156,19 @@ Number of other nodes: 1
 The baseline contains server nodes that are intended to store data.
 Client nodes are not part of the baseline.
 An online server node in `Other nodes` is not always an error: the node may have been prepared intentionally but not yet introduced into the data topology.
-If the node is expected to store data, first check the link:clustering/baseline-topology#baseline-topology-autoadjustment[baseline auto-adjustment policy] and the deployment plan, then use the documented baseline change procedure.
-Changing the baseline can start link:data-rebalancing[rebalancing]. This is often not an easy procedure for a cluster with data in persistence storage.
+If the node is expected to store data, first check the link:clustering/baseline-topology#baseline-topology-autoadjustment[baseline auto-adjustment policy] and the current maintenance or scale-out procedure, then use the documented baseline change procedure.
+Changing the baseline can start link:data-rebalancing[rebalancing]: partitions are redistributed according to the new affinity assignment.
+Plan for the additional network, CPU, and storage load, especially in clusters with persistence.
 
-Frequent unexpected topology changes are not normal and usually indicate node instability, network issues, or misconfigured discovery. However, a temporary topology change does not make the cluster unhealthy by itself.
-Server `JOIN`, `LEFT`, and `FAIL` events change cluster membership and the major topology version.
-Cache start or stop, distributed cache creation, SQL table creation, and other affinity-changing events can change the minor affinity topology version without a node loss.
-Planned events are normal.
-Investigate unexpected repeated membership churn, node segmentation, network failures, or a partition map exchange that does not finish.
+Use topology changes to distinguish planned activity from instability.
+A server `JOIN`, `LEFT`, or `FAIL` event changes cluster membership and triggers PME.
+Cache or SQL schema changes can also trigger PME without server node loss.
+Therefore, a topology version or PME metric change is useful only when interpreted together with maintenance actions and node logs.
+
+Run `control.(sh|bat) --baseline` repeatedly or monitor topology metrics to confirm that membership is stable when no maintenance is in progress.
+In logs, look for repeated node join, left, fail, segmentation, and exchange-worker messages.
+Investigate unexpected repeated membership churn, node segmentation, network failures, or a PME that does not finish.
+For PME metrics and transaction checks, see <<check-transactions-and-sql-queries,Check Transactions and SQL Queries>>.
 
 === Verify Partition Consistency
 
@@ -149,7 +176,7 @@ When the cluster is expected to be idle, run:
 
 [source,shell]
 ----
-./control.sh --cache idle_verify
+control.(sh|bat) --cache idle_verify
 ----
 
 Successful result:
@@ -174,6 +201,7 @@ If updates are active, the command can report false conflicts because copies are
 Partitions in `MOVING` or `LOST` state may be skipped, so the result can be incomplete.
 A successful `idle_verify` result is an important confirmation of consistency, but it still does not prove overall cluster health check success.
 
+[#confirm-that-rebalancing-converges]
 === Confirm That Rebalancing Converges
 
 After a topology event, such as a new node join, transient rebalancing is expected, but it should converge. Rebalance progress should move toward completion.
@@ -197,6 +225,25 @@ ORDER BY STATE, CACHE_GROUP_ID, PARTITION_ID, NODE_ID;
 In steady state, this query usually should not return `MOVING`, `RENTING`, or `LOST` rows.
 `MOVING` and `RENTING` are expected right after an intended topology or cache event, but their count should decrease.
 `LOST` is not a normal transient state.
+
+Example: one partition is lost:
+
+[source,text]
+----
+CACHE_GROUP_ID | PARTITION_ID | NODE_ID                              | STATE | IS_PRIMARY
+1544803905     | 5            | 0f4d6f30-3e04-4f68-b6a2-6b89f1795c0d | LOST  | true
+----
+
+If the query returns `LOST`, follow the link:configuring-caches/partition-loss-policy[Partition Loss Policy] recovery procedure.
+If a failed node returns, its persistent data may become available again, but the affected partitions remain in the `LOST` state.
+If the required data is available again, reset the lost partitions:
+
+[source,shell]
+----
+control.(sh|bat) --cache reset_lost_partitions cacheName1,cacheName2,...
+----
+
+If data is still missing, resetting the partitions does not restore it; the command only clears the `LOST` state.
 
 === Check Execution Queues
 
@@ -249,6 +296,7 @@ For JMX object names and SQL metric access, see link:monitoring-metrics/new-metr
 .JConsole view of node-local striped executor queue metrics
 image::perf-and-troubleshooting/images/healthy-cluster-queues-jconsole.png[JConsole MBeans view showing threadPools/StripedExecutor and queue-related attributes]
 
+[#check-transactions-and-sql-queries]
 === Check Transactions and SQL Queries
 
 A transaction or query is not unhealthy merely because it runs for some time.
@@ -258,7 +306,7 @@ Use the transaction command to list long transactions:
 
 [source,shell]
 ----
-./control.sh --tx --min-duration 60 --servers --order DURATION
+control.(sh|bat) --tx --min-duration 60 --servers --order DURATION
 ----
 
 The value `60` is only an example diagnostic filter in seconds, not a universal production threshold.
@@ -362,7 +410,7 @@ If headroom is insufficient, use checks and changes that can be verified:
 * use faster production storage devices, as discussed in link:persistence/persistence-tuning#purchase-production-level-ssds[Purchase Production-Level SSDs];
 * place data files and WAL on separate physical devices, not just separate directories on the same disk; see link:persistence/persistence-tuning#keep-wals-separately[Keep WALs Separately];
 * review link:persistence/persistence-tuning#adjusting-checkpointing-buffer-size[checkpoint buffer] and link:persistence/persistence-tuning#pages-writes-throttling[page write throttling] configuration;
-* distribute write load or add server nodes when the deployment plan allows it;
+* distribute write load or add server nodes when operational constraints allow it;
 * check link:persistence/native-persistence#wal-archive[WAL archive] I/O contention.
 
 JMX checkpoint and data-region metrics are node-local.
