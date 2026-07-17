@@ -120,8 +120,8 @@ public class SystemViewClientTest extends SystemViewAbstractTest {
             try (
                 IgniteClient ignored = Ignition.startClient(new ClientConfiguration()
                     .setAddresses(Config.SERVER)
-                    .setUserAttributes(userAttrs)))
-            {
+                    .setUserAttributes(userAttrs))
+            ) {
 
                 assertEquals("property-dc", conns.iterator().next().dataCenterId());
                 assertEquals("user-dc", userAttrs.get(IGNITE_DATA_CENTER_ID));
