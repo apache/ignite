@@ -108,6 +108,12 @@ public final class BufferingWindowPartition<Row> extends WindowPartitionBase<Row
         FrameHolder holder;
         while ((holder = frames.poll()) != null)
             holder.release();
+
+        if (currFrame != null) {
+            currFrame.release();
+            currFrame = null;
+        }
+
         ready = 0;
     }
 
