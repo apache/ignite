@@ -242,12 +242,16 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
                 if (val == null || !val.equals(new IndexedDataRecord(key)))
                     throw new IgniteException("Read entry is missed or corrupted [dc=" + dcId() + ", key=" + key +
                         ", val=" + val + "]");
+
+                break;
             }
 
             case PUT: {
                 IndexedDataRecord val = new IndexedDataRecord(key);
 
                 timed(stats, () -> cache.put(key, val));
+
+                break;
             }
 
             case TX_PUT: {
@@ -260,12 +264,16 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
                         tx.commit();
                     }
                 });
+
+                break;
             }
 
             case SQL_PUT: {
                 SqlFieldsQuery qry = new SqlFieldsQuery(mergeSql).setArgs(key, key);
 
                 timed(stats, () -> sqlCache.query(qry).getAll());
+
+                break;
             }
 
             case SQL_SELECT: {
@@ -276,6 +284,8 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
                 if (rows.isEmpty() || !Objects.equals(rows.get(0).get(0), key))
                     throw new IgniteException("SQL row is missed or corrupted [dc=" + dcId() + ", key=" + key +
                         ", rows=" + rows + "]");
+
+                break;
             }
 
             default:
