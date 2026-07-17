@@ -2145,6 +2145,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
      */
     private void sendMarshalled(ClusterNode node, GridIoMessage ioMsg, IgniteInClosure<IgniteException> ackC)
         throws IgniteCheckedException {
+        assert ioMsg.marshalled() : "GridIoMessage is transmitted unmarshalled: " + ioMsg;
+
         try {
             if ((CommunicationSpi<?>)getSpi() instanceof TcpCommunicationSpi)
                 getTcpCommunicationSpi().sendMessage(node, ioMsg, ackC);
@@ -2181,11 +2183,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                     if (locNodeId.equals(node.id()))
                         send(node, topic, msg, plc, ordered, timeout, skipOnTimeout, null, false);
                     else {
-                        if (ioMsg == null) {
-                            ioMsg = createGridIoMessage(topic, msg, plc, ordered, timeout, skipOnTimeout);
-
-                            marshal(ioMsg);
-                        }
+                        if (ioMsg == null)
+                            ioMsg = prepare(topic, msg, plc, ordered, timeout, skipOnTimeout);
 
                         sendMarshalled(node, ioMsg, null);
                     }
