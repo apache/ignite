@@ -25,7 +25,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableSet;
@@ -76,8 +75,8 @@ import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilter
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -223,6 +222,32 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         String... disabledRules
     ) {
         return plannerCtx(sql, Collections.singleton(publicSchema), planLsnr, null, disabledRules);
+    }
+
+    /** */
+    private PlanningContext plannerCtx(
+        String sql,
+        Collection<IgniteSchema> schemas,
+        @Nullable RelOptListener planLsnr,
+        Collection<Object> params,
+        Collection<String> disabledRules
+    ) {
+        PlanningContext.Builder ctxBuilder = PlanningContext.builder()
+            .parentContext(Contexts.of(baseQueryContext(schemas), planLsnr))
+            .query(sql);
+
+        if (params != null)
+            ctxBuilder.parameters(params.toArray(Object[]::new));
+
+        PlanningContext ctx = ctxBuilder.build();
+
+        IgnitePlanner planner = ctx.planner();
+
+        assertNotNull(planner);
+
+        planner.addDisabledRules(disabledRules);
+
+        return ctx;
     }
 
     /** */
@@ -447,12 +472,29 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
     /** */
     protected <T extends RelNode> void assertPlan(
+        TestPlanningContextBuilder ctxBuilder
+    ) throws Exception {
+        assertPlan(ctxBuilder, rel -> true);
+    }
+
+    /** */
+    protected <T extends RelNode> void assertPlan(
+        TestPlanningContextBuilder ctxBuilder,
+        Predicate<T> predicate
+    ) throws Exception {
+        invalidatePlan(ctxBuilder, predicate);
+    }
+
+    /** */
+    protected <T extends RelNode> void assertPlan(
         String sql,
         IgniteSchema schema,
         Predicate<T> predicate,
         String... disabledRules
     ) throws Exception {
-        assertPlan(sql, schema, null, predicate, disabledRules);
+        TestPlanningContextBuilder builder = contextBuilder().query(sql).schema(schema).disabledRules(disabledRules);
+
+        assertPlan(builder, predicate);
     }
 
     /** */
@@ -462,20 +504,34 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         Predicate<T> predicate,
         String... disabledRules
     ) throws Exception {
-        assertPlan(sql, schemas, null, predicate, disabledRules);
+        TestPlanningContextBuilder builder = contextBuilder().query(sql).schemas(schemas).disabledRules(disabledRules);
+
+        assertPlan(builder, predicate);
     }
 
     /** */
     protected <T extends RelNode> void assertPlan(
         String sql,
-        Collection<IgniteSchema> schemas,
-        @Nullable RelOptListener planLsnr,
+        IgniteSchema schema,
+        RelOptListener planLsnr,
         Predicate<T> predicate,
         String... disabledRules
     ) throws Exception {
-        IgniteRel plan = physicalPlan(plannerCtx(sql, schemas, planLsnr, null, disabledRules));
+        TestPlanningContextBuilder builder = contextBuilder().query(sql).schema(schema).disabledRules(disabledRules)
+            .planListener(planLsnr);
 
-        checkSplitAndSerialization(plan, schemas);
+        assertPlan(builder, predicate);
+    }
+
+    /** */
+    private <T extends RelNode> void invalidatePlan(
+        TestPlanningContextBuilder ctxBuilder,
+        Predicate<T> predicate
+    ) throws Exception {
+        IgniteRel plan = physicalPlan(plannerCtx(ctxBuilder.query, ctxBuilder.schemas, ctxBuilder.planListener,
+            ctxBuilder.params, ctxBuilder.disabledRules));
+
+        checkSplitAndSerialization(plan, ctxBuilder.schemas);
 
         if (!predicate.test((T)plan)) {
             String invalidPlanMsg = "Invalid plan (" + lastErrorMsg + "):\n" +
@@ -483,17 +539,6 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
             fail(invalidPlanMsg);
         }
-    }
-
-    /** */
-    protected <T extends RelNode> void assertPlan(
-        String sql,
-        IgniteSchema schema,
-        @Nullable RelOptListener planLsnr,
-        Predicate<T> predicate,
-        String... disabledRules
-    ) throws Exception {
-        assertPlan(sql, Collections.singletonList(schema), planLsnr, predicate, disabledRules);
     }
 
     /**
@@ -813,48 +858,78 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         }
     }
 
-    /**
-     * Creates an instance of {@link StatementChecker statement checker} to test plans.
-     * <pre>
-     *     checkStatement().sql("SELECT 1").ok()
-     * </pre>
-     */
-    public StatementChecker checkStatement() {
-        return new PlanChecker();
-    }
-
-    /**
-     * Creates an instance of {@link PlanChecker statement checker} with the given setup.
-     * A shorthand for {@code checkStatement().setup(func)}.
-     */
-    public StatementChecker checkStatement(Consumer<StatementChecker> setup) {
-        return new PlanChecker().setup(setup);
-    }
-
-    /**
-     * An implementation of {@link PlanChecker} with initialized {@link SqlPrepare} to test plans.
-     */
-    public class PlanChecker extends StatementChecker {
+    /** Test planning context builder. */
+    public static class TestPlanningContextBuilder {
         /** */
-        PlanChecker() {
-            super((schema, sql, params, rulesToDisable) -> {
-                PlanningContext planningCtx = plannerCtx(sql, List.of(schema), null, params, rulesToDisable);
+        private String query;
 
-                IgnitePlanner planner = planningCtx.planner();
-                try {
-                    IgniteRel igniteRel = physicalPlan(planner, sql);
-                    return new T2<>(igniteRel, planner);
-                }
-                catch (Throwable t) {
-                    planner.close();
-                    throw t;
-                }
-            });
+        /** */
+        private Collection<IgniteSchema> schemas;
+
+        /** */
+        private Collection<Object> params = List.of();
+
+        /** */
+        private Collection<String> disabledRules = List.of();
+
+        /** */
+        @Nullable private RelOptListener planListener;
+
+        /** */
+        public TestPlanningContextBuilder query(String qry) {
+            query = qry;
+            return this;
         }
 
-        /** {@inheritDoc} */
-        @Override protected void checkRel(IgniteRel igniteRel, IgnitePlanner planner, IgniteSchema schema) {
-            checkSplitAndSerialization(igniteRel, schema);
+        /** */
+        public TestPlanningContextBuilder schema(IgniteSchema schemas) {
+            this.schemas = List.of(schemas);
+            return this;
         }
+
+        /** */
+        public TestPlanningContextBuilder schemas(Collection<IgniteSchema> schemas) {
+            this.schemas = List.copyOf(schemas);
+            return this;
+        }
+
+        /** */
+        public TestPlanningContextBuilder params(Collection<Object> params) {
+            this.params = List.copyOf(params);
+            return this;
+        }
+
+        /** */
+        public TestPlanningContextBuilder params(Object... params) {
+            this.params = Arrays.asList(params);
+            return this;
+        }
+
+        /** */
+        public TestPlanningContextBuilder disabledRules(String... rules) {
+            disabledRules = List.of(rules);
+            return this;
+        }
+
+        /** */
+        public TestPlanningContextBuilder planListener(@Nullable RelOptListener planListener) {
+            this.planListener = planListener;
+            return this;
+        }
+    }
+
+    /** */
+    public static TestPlanningContextBuilder contextBuilder() {
+        return new TestPlanningContextBuilder();
+    }
+
+    /** */
+    @SuppressWarnings("ThrowableNotThrown")
+    static void assertThrows(
+        RunnableX run,
+        Class<? extends Throwable> cls,
+        @Nullable String msg
+    ) {
+        GridTestUtils.assertThrows(null, run, cls, msg);
     }
 }

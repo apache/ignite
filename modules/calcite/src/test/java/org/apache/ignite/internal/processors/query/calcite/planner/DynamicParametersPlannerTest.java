@@ -18,55 +18,68 @@
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
 import java.math.BigInteger;
-import java.util.function.Consumer;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.single;
 
 /** */
 public class DynamicParametersPlannerTest extends AbstractPlannerTest {
     /** Dynamic parameters in LIMIT / OFFSET. */
     @Test
     public void testLimitOffset() throws Exception {
-        Consumer<StatementChecker> setup = (checker) -> {
-            checker.table("T1", "c1", Integer.class);
-        };
+        IgniteSchema schema = createSchema(createTable("T1", single(), "c1", Integer.class));
 
-        checkStatement(setup).sql("SELECT * FROM t1 LIMIT ?", Long.MAX_VALUE).ok();
+        TestPlanningContextBuilder builder = contextBuilder().query("SELECT * FROM t1 LIMIT ?").schema(schema);
 
-        // Strange case, count of dynamic parameters need to be invalidated. After fix this check need to be removed.
-        checkStatement(setup).sql("SELECT * FROM t1 LIMIT ?", Long.MAX_VALUE, -1).ok();
+        assertPlan(builder.params(Long.MAX_VALUE));
 
-        checkStatement(setup).sql("SELECT * FROM t1 LIMIT ?", "a").fails(
-            "Incorrect type of a dynamic parameter. Expected <BIGINT> but got <VARCHAR>");
+        // Count of dynamic parameters need to be invalidated, remove it after: IGNITE-28906
+        assertPlan(builder.params(Long.MAX_VALUE, -1));
 
-        checkStatement(setup).sql("SELECT * FROM t1 OFFSET ?", "a").fails(
+        assertThrows(() -> assertPlan(builder.params("a")), IgniteException.class,
             "Incorrect type of a dynamic parameter. Expected <BIGINT> but got <VARCHAR>");
 
         BigInteger moreThanMaxLong = BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.ONE);
 
-        checkStatement(setup).sql("SELECT * FROM t1 LIMIT ?", moreThanMaxLong).fails(
+        assertThrows(() -> assertPlan(builder.params(moreThanMaxLong)), IgniteException.class,
             "Illegal value of fetch / limit");
 
-        checkStatement(setup).sql("SELECT * FROM t1 OFFSET ?", moreThanMaxLong).fails(
-            "Illegal value of offset");
-
-        checkStatement(setup).sql("SELECT * FROM t1 OFFSET ? ROWS", moreThanMaxLong).fails(
-            "Illegal value of offset");
-
-        checkStatement(setup).sql("SELECT * FROM t1 LIMIT ?", -1).fails(
+        assertThrows(() -> assertPlan(builder.params(-1)), IgniteException.class,
             "Illegal value of fetch / limit");
 
-        checkStatement(setup).sql("SELECT * FROM t1 OFFSET ?", -1).fails(
+        assertThrows(() -> assertPlan(builder.params((Object)null)), IgniteException.class,
+            "Incorrect type of a dynamic parameter. Expected <BIGINT> but got <null>");
+
+        // OFFSET.
+        builder.query("SELECT * FROM t1 OFFSET ?");
+
+        assertThrows(() -> assertPlan(builder.params(moreThanMaxLong)), IgniteException.class,
             "Illegal value of offset");
 
-        checkStatement(setup).sql("SELECT * FROM t1 LIMIT ?", (Object)null).fails(
+        assertThrows(() -> assertPlan(builder.params(-1)), IgniteException.class,
+            "Illegal value of offset");
+
+        assertThrows(() -> assertPlan(builder.params((Object)null)), IgniteException.class,
             "Incorrect type of a dynamic parameter. Expected <BIGINT> but got <null>");
 
-        checkStatement(setup).sql("SELECT * FROM t1 OFFSET ?", (Object)null).fails(
+        // OFFSET Alternate syntax.
+        builder.query("SELECT * FROM t1 OFFSET ? ROWS");
+
+        assertThrows(() -> assertPlan(builder.params(moreThanMaxLong)), IgniteException.class,
+            "Illegal value of offset");
+
+        assertThrows(() -> assertPlan(builder.params(-1)), IgniteException.class,
+            "Illegal value of offset");
+
+        assertThrows(() -> assertPlan(builder.params((Object)null)), IgniteException.class,
             "Incorrect type of a dynamic parameter. Expected <BIGINT> but got <null>");
 
-        checkStatement(setup).sql("SELECT * FROM t1 OFFSET ? ROWS", (Object)null).fails(
-            "Incorrect type of a dynamic parameter. Expected <BIGINT> but got <null>");
+        // Expression.
+        builder.query("SELECT * FROM TEST_REPL OFFSET 2+? ROWS");
 
-        checkStatement(setup).sql("SELECT * FROM TEST_REPL OFFSET 2+? ROWS", 1).fails("Encountered \"+\"");
+        assertThrows(() -> assertPlan(builder), IgniteException.class,
+            "Encountered \" \"+\"");
     }
 }
