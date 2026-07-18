@@ -31,7 +31,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.junit.Test;
 
 import static org.apache.calcite.rel.RelFieldCollation.Direction.ASCENDING;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /** */
 public class HashJoinPlannerTest extends AbstractPlannerTest {
@@ -148,7 +147,7 @@ public class HashJoinPlannerTest extends AbstractPlannerTest {
                 if (canBePlanned)
                     assertPlan(sql0, schema, nodeOrAnyChild(isInstanceOf(IgniteHashJoin.class)), DISABLED_RULES);
                 else {
-                    assertThrows(null, () -> physicalPlan(sql0, schema, DISABLED_RULES), CannotPlanException.class,
+                    assertThrows(() -> physicalPlan(sql0, schema, DISABLED_RULES), CannotPlanException.class,
                         "There are not enough rules");
                 }
             }

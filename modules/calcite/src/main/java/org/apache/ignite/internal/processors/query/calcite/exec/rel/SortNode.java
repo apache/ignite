@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.PriorityQueue;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.util.IgniteMath;
 import org.apache.ignite.internal.util.GridBoundedPriorityQueue;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -69,8 +70,8 @@ public class SortNode<Row> extends MemoryTrackingNode<Row> implements SingleNode
         if (limit < 1 || limit > Integer.MAX_VALUE)
             rows = new PriorityQueue<>(comp);
         else {
-            rows = new GridBoundedPriorityQueue<>((int)limit, comp == null ? (Comparator<Row>)Comparator.reverseOrder()
-                : comp.reversed());
+            rows = new GridBoundedPriorityQueue<>(IgniteMath.convertToIntExact(limit), comp == null ?
+                (Comparator<Row>)Comparator.reverseOrder() : comp.reversed());
         }
     }
 
