@@ -269,6 +269,8 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
         startGrid(0, ver);
         startGrid(1, ver);
         startClientGrid(2, ver);
+
+        checkVersionUpgradeInactive(ver);
     }
 
     /** */
@@ -357,14 +359,19 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
     /** */
     protected void checkVersionUpgradeInactive(String expVer) throws Exception {
         checkVersionUpgradeEnabledStatus(false);
+        checkVersionUpgradeFutureCompleted();
         checkFeaturesActive(expVer);
     }
 
     /** */
-    protected void checkVersionUpgradeEnabledStatus(boolean enabled) {
-        List<Ignite> cluster = Ignition.allGrids();
+    protected void checkVersionUpgradeFutureCompleted() {
+        for (Ignite ignite : Ignition.allGrids())
+            assertTrue(ru(ignite).features().isLocalVersionFeaturesActive());
+    }
 
-        for (Ignite ignite : cluster)
+    /** */
+    protected void checkVersionUpgradeEnabledStatus(boolean enabled) {
+        for (Ignite ignite : Ignition.allGrids())
             assertEquals(enabled, ru(ignite).isVersionUpgradeEnabled());
     }
 
@@ -372,8 +379,7 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
     protected void checkFeaturesActive(String ver) throws Exception {
         TestVersions versions = TestVersions.parse(ver);
 
-        if (versions.coreVersion() != null)
-            checkFeaturesActive(readDeclaredCoreFeatures(versions.coreVersion()));
+        checkFeaturesActive(readDeclaredCoreFeatures(versions.coreVersion()));
 
         if (versions.containsPlugin())
             checkFeaturesActive(readDeclaredPluginFeatures(versions.pluginVersion()));

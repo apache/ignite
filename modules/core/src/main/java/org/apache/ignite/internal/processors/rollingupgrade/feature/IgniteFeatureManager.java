@@ -92,7 +92,11 @@ public class IgniteFeatureManager {
 
     /** */
     public void onGridDataReceived(IgniteNodeFeatureSet activeClusterFeatures) {
-        if (locVerFeatures.equals(activeClusterFeatures))
+        boolean hasSameFeatures = ctx.clientNode()
+            ? activeClusterFeatures.containsAll(locVerFeatures)
+            : locVerFeatures.equals(activeClusterFeatures);
+
+        if (hasSameFeatures)
             activateLocalVersionFeatures();
         else
             this.activeFeatures = activeClusterFeatures;
@@ -112,6 +116,11 @@ public class IgniteFeatureManager {
         activeFeatures = locVerFeatures;
 
         locVerFeaturesActivationFut.onDone();
+    }
+
+    /** */
+    public boolean isLocalVersionFeaturesActive() {
+        return locVerFeaturesActivationFut.isDone();
     }
 
     /** */
