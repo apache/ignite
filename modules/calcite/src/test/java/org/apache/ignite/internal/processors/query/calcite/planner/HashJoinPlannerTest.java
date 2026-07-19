@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.apache.calcite.rel.RelFieldCollation.Direction.ASCENDING;
@@ -147,7 +148,7 @@ public class HashJoinPlannerTest extends AbstractPlannerTest {
                 if (canBePlanned)
                     assertPlan(sql0, schema, nodeOrAnyChild(isInstanceOf(IgniteHashJoin.class)), DISABLED_RULES);
                 else {
-                    assertThrows(() -> physicalPlan(sql0, schema, DISABLED_RULES), CannotPlanException.class,
+                    GridTestUtils.assertThrows(null, () -> physicalPlan(sql0, schema, DISABLED_RULES), CannotPlanException.class,
                         "There are not enough rules");
                 }
             }
