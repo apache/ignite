@@ -98,6 +98,18 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
 
     /** */
     @Test
+    public void testLesserVersionsWithSameFeaturesAreNotCompatible() throws Exception {
+        startCluster("2.19.1");
+
+        ru(1).enableVersionUpgrade();
+
+        checkUpgradeFailed(1, "2.19.0", VER_INCOMPATIBLE_ERR);
+
+        finalizeClusterVersion(1, "2.19.1");
+    }
+
+    /** */
+    @Test
     public void testVersionUpgradeCommandsIdempotency() throws Exception {
         startCluster();
 
@@ -131,12 +143,12 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
 
         checkJoinFailed(5, "2.18.0", VER_INCOMPATIBLE_ERR);
 
-        upgradeNodeVersion(0, "2.19.1");
-        upgradeNodeVersion(2, "2.19.1");
+        upgradeNodeVersion(0, "2.19.2");
+        upgradeNodeVersion(2, "2.19.2");
 
-        checkVersionUpgradeInProgress(TEST_DEFAULT_VER, "2.19.1");
+        checkVersionUpgradeInProgress(TEST_DEFAULT_VER, "2.19.2");
 
-        checkJoinFailed(5, "2.19.2", VER_INCOMPATIBLE_ERR);
+        checkJoinFailed(5, "2.19.3", VER_INCOMPATIBLE_ERR);
 
         restartNode(3);
         restartNode(4);
@@ -144,11 +156,11 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
         restartNode(0);
         restartNode(2);
 
-        upgradeNodeVersion(1, "2.19.1");
-        upgradeNodeVersion(3, "2.19.1");
-        upgradeNodeVersion(4, "2.19.1");
+        upgradeNodeVersion(1, "2.19.2");
+        upgradeNodeVersion(3, "2.19.2");
+        upgradeNodeVersion(4, "2.19.2");
 
-        finalizeClusterVersion(1, "2.19.1");
+        finalizeClusterVersion(1, "2.19.2");
     }
 
     /** */
@@ -644,7 +656,7 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
 
         ru(1).enableVersionUpgrade();
 
-        forAllNodes(nodeIdx -> upgradeNodeVersion(nodeIdx, "2.19.1"));
+        forAllNodes(nodeIdx -> upgradeNodeVersion(nodeIdx, "2.19.2"));
 
         IgniteConfiguration cfg = getConfiguration(3, TEST_DEFAULT_VER)
             .setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(false));
@@ -656,7 +668,7 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
             "Local node's binary configuration is not equal to remote node's binary configuration"
         );
 
-        finalizeClusterVersion(2, "2.19.1");
+        finalizeClusterVersion(2, "2.19.2");
     }
 
     /** */
