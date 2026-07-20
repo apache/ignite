@@ -49,13 +49,9 @@ import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
-import org.apache.calcite.rex.RexSlot;
 import org.apache.calcite.rex.RexVisitor;
 import org.apache.calcite.rex.RexVisitorImpl;
-import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.calcite.util.ImmutableIntList;
-import org.apache.calcite.util.mapping.Mapping;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -67,8 +63,9 @@ import org.jetbrains.annotations.Nullable;
  */
 public class IgniteMdColumnOrigins implements MetadataHandler<BuiltInMetadata.ColumnOrigin> {
     /** */
-    public static final RelMetadataProvider SOURCE = ReflectiveRelMetadataProvider.reflectiveSource(
-            BuiltInMethod.COLUMN_ORIGIN.method, new IgniteMdColumnOrigins());
+    public static final RelMetadataProvider SOURCE =
+        ReflectiveRelMetadataProvider.reflectiveSource(
+            new IgniteMdColumnOrigins(), BuiltInMetadata.ColumnOrigin.Handler.class);
 
     /** {@inheritDoc} */
     @Override public MetadataDef<BuiltInMetadata.ColumnOrigin> getDef() {

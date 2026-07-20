@@ -78,8 +78,6 @@ public class IgniteHashJoin extends AbstractIgniteJoin {
         if (Double.isInfinite(leftRowCnt) || Double.isInfinite(rightRowCnt))
             return planner.getCostFactory().makeInfiniteCost();
 
-        double rowCnt = leftRowCnt + rightRowCnt;
-
         int rightKeysSize = joinInfo.rightKeys.size();
 
         double rightSize = rightRowCnt * IgniteCost.AVERAGE_FIELD_SIZE * getRight().getRowType().getFieldCount();
@@ -89,7 +87,7 @@ public class IgniteHashJoin extends AbstractIgniteJoin {
 
         rightSize += distRightRows * rightKeysSize * IgniteCost.AVERAGE_FIELD_SIZE;
 
-        rowCnt = mq.getRowCount(this);
+        Double rowCnt = mq.getRowCount(this);
 
         return costFactory.makeCost(rowCnt, rowCnt * IgniteCost.HASH_LOOKUP_COST, 0, rightSize, 0);
     }

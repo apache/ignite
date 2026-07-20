@@ -259,8 +259,6 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
         if (Double.isInfinite(rightCnt))
             return costFactory.makeInfiniteCost();
 
-        double rows = leftCnt + rightCnt;
-
         double rowCnt = mq.getRowCount(this);
 
         return costFactory.makeCost(rowCnt,

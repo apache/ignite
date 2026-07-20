@@ -30,6 +30,7 @@ import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.core.Minus;
 import org.apache.calcite.rel.core.Sort;
+import org.apache.calcite.rel.metadata.BuiltInMetadata;
 import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelColumnOrigin;
 import org.apache.calcite.rel.metadata.RelMdRowCount;
@@ -37,7 +38,6 @@ import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.mapping.IntPair;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
@@ -59,9 +59,11 @@ public class IgniteMdRowCount extends RelMdRowCount {
     private static final double NON_EQUI_COEFF = 0.7;
 
     /** */
+    private static final double EQUI_COEFF = 0.8;
+
+    /** */
     public static final RelMetadataProvider SOURCE =
-        ReflectiveRelMetadataProvider.reflectiveSource(
-            BuiltInMethod.ROW_COUNT.method, new IgniteMdRowCount());
+        ReflectiveRelMetadataProvider.reflectiveSource(new IgniteMdRowCount(), BuiltInMetadata.RowCount.Handler.class);
 
     /** {@inheritDoc} */
     @Override public Double getRowCount(Join rel, RelMetadataQuery mq) {
@@ -160,7 +162,7 @@ public class IgniteMdRowCount extends RelMdRowCount {
             return RelMdUtil.getJoinRowCount(mq, rel, rel.getCondition());
         }
 
-        double postFiltrationAdjustment = 0.8;
+        double postFiltrationAdjustment = EQUI_COEFF;
 
         switch (rel.getJoinType()) {
             case INNER:

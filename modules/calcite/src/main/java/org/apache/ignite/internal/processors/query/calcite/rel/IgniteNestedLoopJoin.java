@@ -88,8 +88,6 @@ public class IgniteNestedLoopJoin extends AbstractIgniteJoin {
         if (Double.isInfinite(rightCnt))
             return costFactory.makeInfiniteCost();
 
-        double rows = leftCnt * rightCnt;
-
         double rightSize = rightCnt * getRight().getRowType().getFieldCount() * IgniteCost.AVERAGE_FIELD_SIZE;
 
         double rowCnt = mq.getRowCount(this);

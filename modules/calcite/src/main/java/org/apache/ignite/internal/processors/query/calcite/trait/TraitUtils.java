@@ -120,9 +120,6 @@ public class TraitUtils {
 
         RelTraitDef converter = fromTrait.getTraitDef();
 
-        if (rel.getConvention() != IgniteConvention.INSTANCE)
-            assert false;
-
         if (converter == RelCollationTraitDef.INSTANCE)
             return convertCollation(planner, (RelCollation)toTrait, rel);
         else if (converter == DistributionTraitDef.INSTANCE)
@@ -160,10 +157,8 @@ public class TraitUtils {
 
         // right now we cannot create a multi-column affinity
         // key object, thus this conversion is impossible
-/*        if (toTrait.function().affinity() && toTrait.getKeys().size() > 1)
-            //assert false;
-            //return null;
-            System.err.println();*/
+        if (toTrait.function().affinity() && toTrait.getKeys().size() > 1)
+            return null;
 
         RelTraitSet traits = rel.getTraitSet().replace(toTrait);
         if (fromTrait.getType() == BROADCAST_DISTRIBUTED && toTrait.getType() == HASH_DISTRIBUTED)
