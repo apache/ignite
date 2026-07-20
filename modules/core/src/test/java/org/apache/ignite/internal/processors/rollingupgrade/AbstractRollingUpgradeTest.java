@@ -98,7 +98,7 @@ import static org.apache.ignite.internal.IgniteVersionUtils.semanticVersion;
  *   </tr>
  *   <tr>
  *     <td>2.19.1</td>
- *     <td>{@code IgniteFeatureSet [0, 1]}</td>
+ *     <td>{@code IgniteFeatureSet [0]}</td>
  *   </tr>
  *   <tr>
  *     <td>2.19.2</td>
@@ -474,7 +474,7 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
 
     /** */
     protected void restartNode(int nodeIdx) throws Exception {
-        String ver = resolveNodeCompoundVersion(nodeIdx);
+        String ver = resolveNodeCompoundVersions(nodeIdx);
         boolean isClient = grid(nodeIdx).context().clientNode();
 
         stopGrid(nodeIdx);
@@ -489,7 +489,7 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
 
     /** */
     protected void checkUpgradeFailed(int nodeIdx, String targetVer, String errMsg) throws Exception {
-        String srcVer = resolveNodeCompoundVersion(nodeIdx);
+        String srcVer = resolveNodeCompoundVersions(nodeIdx);
         boolean isClient = grid(nodeIdx).context().clientNode();
 
         stopGrid(nodeIdx);
@@ -500,7 +500,7 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
     }
 
     /** */
-    String resolveNodeCompoundVersion(int nodeIdx) {
+    String resolveNodeCompoundVersions(int nodeIdx) {
         return Arrays.stream(ru(nodeIdx).features().localVersionFeatures().values())
             .sorted(Comparator.comparing(IgniteComponentFeatureSet::componentName))
             .map(f -> semanticVersion(f.version()))
