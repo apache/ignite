@@ -1221,15 +1221,25 @@ public class IgniteTxHandler {
                     req.miniId(),
                     req.deployInfo() != null);
 
-                // Drop near entries of destroyed or recreated caches before the transactions see them, and report
-                // them back as evicted, so the near node drops its stale entries.
+                // Start near transaction first.
+                nearTx = !F.isEmpty(req.nearWrites()) ? startNearRemoteTx(ctx.deploy().globalLoader(), nodeId, req) : null;
+                dhtTx = startRemoteTx(nodeId, req, res);
+
+                // Set evicted keys from near transaction.
+                if (nearTx != null)
+                    res.nearEvicted(nearTx.evicted());
+
                 List<IgniteTxKey> writesCacheMissed = new ArrayList<>();
 
-                for (Iterator<IgniteTxEntry> it = req.nearWrites().iterator(); it.hasNext();) {
+                Collection<IgniteTxEntry> writes = req.nearWrites();
+
+                for (Iterator<IgniteTxEntry> it = writes.iterator(); it.hasNext();) {
                     IgniteTxEntry e = it.next();
 
                     GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(e.cacheId());
 
+                    // A missing cache or one recreated after the request was sent: report the key back as evicted,
+                    // so the near node drops its stale entry.
                     if (cacheCtx == null
                         || (req.topologyVersion() != null && req.topologyVersion().before(cacheCtx.startTopologyVersion()))) {
                         it.remove();
@@ -1243,15 +1253,14 @@ public class IgniteTxHandler {
                     }
                 }
 
-                // Start near transaction first.
-                nearTx = !F.isEmpty(req.nearWrites()) ? startNearRemoteTx(ctx.deploy().globalLoader(), nodeId, req) : null;
-                dhtTx = startRemoteTx(nodeId, req, res);
+                if (writesCacheMissed != null) {
+                    Collection<IgniteTxKey> evicted0 = res.nearEvicted();
 
-                // Set evicted keys from near transaction.
-                if (nearTx != null)
-                    writesCacheMissed.addAll(nearTx.evicted());
+                    if (evicted0 != null)
+                        writesCacheMissed.addAll(evicted0);
 
-                res.nearEvicted(writesCacheMissed);
+                    res.nearEvicted(writesCacheMissed);
+                }
 
                 if (dhtTx != null)
                     req.txState(dhtTx.txState());
