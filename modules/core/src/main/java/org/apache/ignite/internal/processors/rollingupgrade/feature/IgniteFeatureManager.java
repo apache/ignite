@@ -119,11 +119,6 @@ public class IgniteFeatureManager {
     }
 
     /** */
-    public boolean isLocalVersionFeaturesActive() {
-        return locVerFeaturesActivationFut.isDone();
-    }
-
-    /** */
     private void checkActiveFeaturesInitialized(IgniteNodeFeatureSet activeFeatures) {
         if (activeFeatures == null) {
             throw new IllegalStateException("Local node features are not yet initialized [locNodeId=" +

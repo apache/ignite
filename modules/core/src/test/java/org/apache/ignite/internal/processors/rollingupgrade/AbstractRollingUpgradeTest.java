@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.rollingupgrade.feature.TestIgniteRe
 import org.apache.ignite.internal.processors.rollingupgrade.feature.TestPluginComponentFeatureSetProvider;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.TestPluginFeature;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.TestPluginReleaseFeatures_1_0_0;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.ConsumerX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -365,8 +366,11 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
 
     /** */
     protected void checkVersionUpgradeFutureCompleted() {
-        for (Ignite ignite : Ignition.allGrids())
-            assertTrue(ru(ignite).features().isLocalVersionFeaturesActive());
+        for (Ignite ignite : Ignition.allGrids()) {
+            GridFutureAdapter<?> fut = U.field(ru(ignite).features(), "locVerFeaturesActivationFut");
+
+            assertTrue(fut.isDone());
+        }
     }
 
     /** */
