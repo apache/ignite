@@ -131,7 +131,7 @@
         <maven.install.plugin.version>3.1.4</maven.install.plugin.version>
         <maven.jar.plugin.version>3.5.0</maven.jar.plugin.version>
         <maven.resources.plugin.version>3.4.0</maven.resources.plugin.version>
-        <maven.site.plugin.version>3.21.0</maven.site.plugin.version>
+        <maven.site.plugin.version>3.22.0</maven.site.plugin.version>
         <maven.source.plugin.version>3.4.0</maven.source.plugin.version>
         <maven.assembly.plugin.version>3.8.0</maven.assembly.plugin.version>
         <maven.dependency.plugin.version>3.9.0</maven.dependency.plugin.version>
@@ -223,7 +223,7 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.12</version>
+            <version>4.13.1</version>
             <scope>test</scope>
         </dependency>
 
