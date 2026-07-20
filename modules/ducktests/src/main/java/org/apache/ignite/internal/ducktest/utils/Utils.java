@@ -59,7 +59,7 @@ public final class Utils {
         return String.format(Locale.US, "%.3f", ns < 0 ? -1.0 : ns / 1e6);
     }
 
-    /** Parses an optional enum-valued field.  Defaults only on missing/null. */
+    /** Parses an optional enum-valued field. Defaults only on missing/null. */
     public static <E extends Enum<E>> E getEnum(JsonNode jNode, String fieldName, E dfltVal) {
         JsonNode field = jNode.path(fieldName);
 
