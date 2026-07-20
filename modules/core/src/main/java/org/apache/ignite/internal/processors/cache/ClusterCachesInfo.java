@@ -1416,7 +1416,6 @@ public class ClusterCachesInfo {
                 grpDesc.startTopologyVersion(),
                 grpDesc.deploymentId(),
                 grpDesc.caches(),
-                0,
                 grpDesc.persistenceEnabled(),
                 grpDesc.walEnabled(),
                 grpDesc.walChangeRequests(),
@@ -1432,7 +1431,6 @@ public class ClusterCachesInfo {
             T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = cfgSplitter.split(desc);
 
             CacheData cacheData = new CacheData(splitCfg.get1(),
-                desc.cacheId(),
                 desc.groupId(),
                 desc.cacheType(),
                 desc.deploymentId(),
@@ -1441,7 +1439,6 @@ public class ClusterCachesInfo {
                 desc.staticallyConfigured(),
                 desc.sql(),
                 false,
-                0,
                 splitCfg.get2() != null ? desc.cacheConfigurationEnrichment() : null
             );
 
@@ -1456,7 +1453,6 @@ public class ClusterCachesInfo {
             CacheData cacheData = new CacheData(
                 splitCfg.get1(),
                 0,
-                0,
                 desc.cacheType(),
                 desc.deploymentId(),
                 desc.schema(),
@@ -1464,20 +1460,16 @@ public class ClusterCachesInfo {
                 desc.staticallyConfigured(),
                 false,
                 true,
-                0,
                 splitCfg.get2() != null ? desc.cacheConfigurationEnrichment() : null
             );
 
             templates.put(desc.cacheName(), cacheData);
         }
 
-        Collection<String> restarting = new HashSet<>(restartingCaches.keySet());
-
         return new CacheNodeCommonDiscoveryData(caches,
             templates,
             cacheGrps,
             ctx.discovery().clientNodesMap(),
-            restarting,
             clusterCacheGrpRecoveryData
         );
     }
