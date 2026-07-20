@@ -54,17 +54,17 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *         write modes advance sequentially from {@code keyFrom} on every success, so on
  *         completion the keys {@code [keyFrom, keyFrom + opsCnt)} are guaranteed written;</li>
  *     <li>{@code iterations} - number of operations; {@code 0} means "run until terminated";</li>
- *     <li>{@code expectAdmissible} - write modes only. {@code true}: writes must succeed
- *         (default); {@code false}: every write must be rejected by the topology validator
+ *     <li>{@code inadmissible} - write modes only. {@code false} (default): writes must
+ *         succeed; {@code true}: every write must be rejected by the topology validator
  *         (read-only DC), any success fails the application;</li>
- *     <li>{@code tolerateErrors} - if {@code true}, operation failures are counted instead of
- *         failing fast. Intended for background loads crossing a partition boundary, where a
- *         short transient error window is possible;</li>
  *     <li>{@code stopOnError} - if {@code true}, the load stops gracefully on the very first
  *         operation failure (rather than failing the application), records the number of
  *         successful operations and a {@code StoppedOnError} flag, and finishes. Takes precedence
- *         over {@code tolerateErrors}. Intended for a load that must be cut off by the first
+ *         over {@code continueOnError}. Intended for a load that must be cut off by the first
  *         exception a network partition triggers;</li>
+ *     <li>{@code continueOnError} - if {@code true}, operation failures are counted instead of
+ *         failing fast. Intended for background loads crossing a partition boundary, where a
+ *         short transient error window is possible;</li>
  *     <li>{@code opPauseMs} - pause between operations, default 0;</li>
  *     <li>{@code resultPrefix} - prefix for recorded results, so that several runs reusing one
  *         service produce uniquely named results;</li>
@@ -110,8 +110,8 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
         int keyTo = jNode.path("keyTo").asInt(Integer.MAX_VALUE);
         long iterations = jNode.path("iterations").asLong(0);
 
-        boolean expectAdmissible = jNode.path("expectAdmissible").asBoolean(true);
-        boolean tolerateErrors = jNode.path("tolerateErrors").asBoolean(false);
+        boolean inadmissible = jNode.path("inadmissible").asBoolean(false);
+        boolean continueOnError = jNode.path("continueOnError").asBoolean(false);
         boolean stopOnError = jNode.path("stopOnError").asBoolean(false);
 
         long opPauseMs = jNode.path("opPauseMs").asLong(0);
@@ -134,7 +134,7 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
 
         log.info("MDC load started [dc=" + dcId() + ", mode=" + mode + ", cache=" + cacheName +
             ", keyFrom=" + keyFrom + ", keyTo=" + keyTo + ", iterations=" + iterations +
-            ", expectAdmissible=" + expectAdmissible + ", tolerateErrors=" + tolerateErrors + "]");
+            ", inadmissible=" + inadmissible + ", continueOnError=" + continueOnError + "]");
 
         long opsCnt = 0;
         long errCnt = 0;
@@ -157,7 +157,7 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
             catch (CacheException | IgniteException e) {
                 ok = false;
 
-                if (!expectAdmissible)
+                if (inadmissible)
                     log.info("Write rejected as expected [dc=" + dcId() + ", key=" + key +
                         ", msg=" + e.getMessage() + "]");
                 else if (stopOnError) {
@@ -169,12 +169,12 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
 
                     break;
                 }
-                else if (!tolerateErrors)
-                    throw new IllegalStateException("Operation failed [dc=" + dcId() + ", mode=" + mode +
-                        ", key=" + key + "]", e);
-                else
+                else if (continueOnError)
                     log.warn("Operation failed, tolerated [dc=" + dcId() + ", mode=" + mode +
                         ", key=" + key + ", msg=" + e.getMessage() + "]");
+                else
+                    throw new IllegalStateException("Operation failed [dc=" + dcId() + ", mode=" + mode +
+                        ", key=" + key + "]", e);
             }
 
             if (ok) {
@@ -190,7 +190,7 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
 
             // Writes advance on success only, so [keyFrom, keyFrom + opsCnt) is guaranteed written.
             // The inadmissible-probe mode advances always to probe distinct keys. Reads cycle the range.
-            if (ok || (mode.isWrite() && !expectAdmissible)) {
+            if (ok || (mode.isWrite() && inadmissible)) {
                 key++;
 
                 if (key >= keyTo)
@@ -203,7 +203,7 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
 
         long durationMs = System.currentTimeMillis() - startTs;
 
-        if (mode.isWrite() && !expectAdmissible && opsCnt > 0) {
+        if (mode.isWrite() && inadmissible && opsCnt > 0) {
             throw new IllegalStateException("Write load is admissible while expected to be inadmissible [dc=" +
                 dcId() + ", mode=" + mode + ", succeeded=" + opsCnt + ", rejected=" + errCnt + "]");
         }

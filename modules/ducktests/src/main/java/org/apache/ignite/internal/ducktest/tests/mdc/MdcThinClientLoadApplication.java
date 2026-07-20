@@ -39,7 +39,7 @@ import static org.apache.ignite.internal.ducktest.utils.Utils.timed;
  * delay, DC-local routing yields a small average, cross-DC routing a large one.
  * <p>
  * Parameters: {@code mode} ({@code GET}/{@code PUT}), {@code cacheName}, {@code keyFrom},
- * {@code keyTo}, {@code iterations}, {@code expectAdmissible} (PUT only),
+ * {@code keyTo}, {@code iterations}, {@code inadmissible} (PUT only),
  * {@code resultPrefix}.
  * <p>
  */
@@ -58,7 +58,7 @@ public class MdcThinClientLoadApplication extends IgniteAwareApplication {
         long iterations = jNode.path("iterations").asLong(100);
 
         boolean put = mode == LoadMode.PUT;
-        boolean expectAdmissible = jNode.path("expectAdmissible").asBoolean(true);
+        boolean inadmissible = jNode.path("inadmissible").asBoolean(false);
 
         String pfx = jNode.path("resultPrefix").asText("");
 
@@ -68,7 +68,7 @@ public class MdcThinClientLoadApplication extends IgniteAwareApplication {
 
         log.info("MDC thin client load started [mode=" + mode + ", cache=" + cacheName +
             ", keyFrom=" + keyFrom + ", keyTo=" + keyTo + ", iterations=" + iterations +
-            ", expectAdmissible=" + expectAdmissible + "]");
+            ", inadmissible=" + inadmissible + "]");
 
         long opsCnt = 0;
         long errCnt = 0;
@@ -101,7 +101,7 @@ public class MdcThinClientLoadApplication extends IgniteAwareApplication {
             catch (ClientException | CacheException | IgniteException e) {
                 ok = false;
 
-                if (!expectAdmissible)
+                if (inadmissible)
                     log.info("Put rejected as expected [key=" + key + ", msg=" + e.getMessage() + "]");
                 else
                     throw new IllegalStateException("Operation failed [mode=" + mode + ", key=" + key + "]", e);
@@ -122,7 +122,7 @@ public class MdcThinClientLoadApplication extends IgniteAwareApplication {
 
         long durationMs = System.currentTimeMillis() - startTs;
 
-        if (put && !expectAdmissible && opsCnt > 0) {
+        if (put && inadmissible && opsCnt > 0) {
             throw new IllegalStateException("Put load is admissible while expected to be inadmissible " +
                 "[succeeded=" + opsCnt + ", rejected=" + errCnt + "]");
         }

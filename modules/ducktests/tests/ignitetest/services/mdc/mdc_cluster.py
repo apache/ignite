@@ -325,7 +325,7 @@ class MdcCluster:
 
         return self.run_load(dc, "PUT", cache_name, f"admCheck{self._adm_checks}",
                              keyFrom=key_offset, keyTo=key_offset + probes,
-                             iterations=probes, expectAdmissible=admissible)
+                             iterations=probes, inadmissible=not admissible)
 
     def run_load(self, dc: str, mode: str, cache_name: str, result_prefix: str,
                  runner: int = 0, **params) -> IgniteApplicationService:

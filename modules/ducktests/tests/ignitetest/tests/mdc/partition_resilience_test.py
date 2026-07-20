@@ -171,7 +171,7 @@ class MdcPartitionResilienceTest(IgniteTest):
             for dc in (DC_1, DC_2):
                 mdc.start_loader(dc, {"mode": "GET", "cacheName": CACHE_NAME,
                                       "keyFrom": 0, "keyTo": 200,
-                                      "tolerateErrors": True, "opPauseMs": 5,
+                                      "continueOnError": True, "opPauseMs": 5,
                                       "resultPrefix": f"bg{dc}"})
 
             for i in range(BLIPS):

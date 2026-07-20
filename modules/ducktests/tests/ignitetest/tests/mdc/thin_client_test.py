@@ -124,7 +124,7 @@ class MdcThinClientTest(IgniteTest):
             mdc.run_service(cli_dc2, {"mode": "PUT", "cacheName": CACHE_NAME,
                                       "keyFrom": OFFSET_REJECTED_PROBES,
                                       "keyTo": OFFSET_REJECTED_PROBES + PUT_ITERS,
-                                      "iterations": PUT_ITERS, "expectAdmissible": False,
+                                      "iterations": PUT_ITERS, "inadmissible": True,
                                       "resultPrefix": "roPut"})
 
             net.disable_network_partition(DC_1, DC_2)
