@@ -96,6 +96,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
@@ -1476,9 +1477,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
     /** */
     private void unmarshalPayload(GridIoMessage msg) {
-        // Cache messages are unmarshalled later by GridCacheIoManager with the peer-deployment loader; the generic
-        // pass here has only the config loader, which can't see peer classes.
-        if (msg.message() instanceof GridCacheMessage)
+        // Cache messages are unmarshalled later by GridCacheIoManager and data streamer entries by the update job,
+        // both with the peer-deployment loader and protocol-level error responses; the generic pass here has only
+        // the config loader, which can't see peer classes.
+        if (msg.message() instanceof GridCacheMessage || msg.message() instanceof DataStreamerRequest)
             return;
 
         try {
