@@ -64,10 +64,15 @@ public class FileTreeUtils {
     public static void removeTmpSnapshotFiles(SnapshotFileTree sft, boolean err, IgniteLogger log) {
         NodeFileTree tmpFt = sft.tempFileTree();
 
-        removeTmpDir(tmpFt.nodeStorage(), tmpFt.root(), err, log);
+        U.delete(tmpFt.nodeStorage());
 
-        for (File tmpDrStorage : tmpFt.extraStorages().values())
-            removeTmpDir(tmpDrStorage, tmpDrStorage.getParentFile(), err, log);
+        for (File tmpDrStorage : tmpFt.extraStorages().values()) {
+            U.delete(tmpDrStorage);
+
+            deleteSnapshotTempRoot(tmpDrStorage.getParentFile(), err, log);
+        }
+
+        deleteSnapshotTempRoot(tmpFt.root(), err, log);
     }
 
     /**
@@ -105,25 +110,20 @@ public class FileTreeUtils {
     }
 
     /**
-     * @param storage Temporary snapshot storage directory.
-     * @param root Snapshot temporary root directory.
+     * @param root Snapshot temporary root.
      * @param err {@code True} if snapshot processing finished with an error.
      * @param log Logger.
      */
-    private static void removeTmpDir(File storage, File root, boolean err, IgniteLogger log) {
-        U.delete(storage);
-
-        // Delete snapshot temporary root if no other files exist or snapshot cleanup is performed after an error.
+    private static void deleteSnapshotTempRoot(File root, boolean err, IgniteLogger log) {
         try {
             if (err || U.fileCount(root.toPath()) == 0)
                 U.delete(root.toPath());
         }
         catch (NoSuchFileException ignored) {
-            // Temporary snapshot root has already been removed.
+            // Snapshot temporary root has already been removed.
         }
         catch (IOException e) {
-            log.error("Failed to clean up snapshot temporary directory " +
-                "[snpName=" + root.getName() + ", dir=" + root + ']', e);
+            log.error("Failed to clean up snapshot temporary root [dir=" + root + ']', e);
         }
     }
 
