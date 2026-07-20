@@ -182,6 +182,7 @@ import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.mxbean.IgniteMBeanAware;
+import org.apache.ignite.platform.dotnet.PlatformDotNetAffinityFunction;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
@@ -4965,8 +4966,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private Iterable<Object> lifecycleAwares(CacheGroupContext grp, CacheConfiguration ccfg, Object... objs) {
         Collection<Object> ret = new ArrayList<>(7 + objs.length);
 
-        if (grp.affinityFunction() != ccfg.getAffinity())
-            ret.add(ccfg.getAffinity());
+        if (grp.affinityFunction() != ccfg.getAffinity()) {
+            // After MarshallableMessage deserialization CacheGroupData and CacheData produce
+            // separate affinity instances. For PlatformDotNetAffinityFunction, replace
+            // cache-level inner func with group-level (which has the started ptr/handle)
+            // so partition() delegation works correctly.
+            if (grp.affinityFunction() instanceof PlatformDotNetAffinityFunction grpDotNet &&
+                ccfg.getAffinity() instanceof PlatformDotNetAffinityFunction cacheDotNet)
+                cacheDotNet.init(grpDotNet.getFunc());
+            else if (grp.affinityFunction().getClass() != ccfg.getAffinity().getClass())
+                ret.add(ccfg.getAffinity());
+        }
 
         ret.add(ccfg.getAffinityMapper());
         ret.add(ccfg.getEvictionFilter());
