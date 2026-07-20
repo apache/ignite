@@ -554,8 +554,8 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(StartRoutineDiscoveryMessage.class);
         withNoSchemaResolvedClassLoader(StoredCacheData.class);
         withNoSchema(CacheNodeCommonDiscoveryData.class);
-        withNoSchema(CacheData.class);
-        withNoSchema(CacheGroupData.class);
+        withNoSchemaResolvedClassLoader(CacheData.class);
+        withNoSchemaResolvedClassLoader(CacheGroupData.class);
 
         // [10600-10800]: Affinity & partition maps.
         msgIdx = 10600;
