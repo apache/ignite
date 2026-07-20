@@ -63,10 +63,8 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
 
         checkVersionUpgradeInactive(TEST_DEFAULT_VER);
 
-        String msg = VER_NOT_EQUAL_ERR;
-
-        checkJoinFailed(3, "2.18.0", msg);
-        checkJoinFailed(3, "2.19.1", msg);
+        checkJoinFailed(3, "2.18.0", VER_NOT_EQUAL_ERR);
+        checkJoinFailed(3, "2.19.1", VER_NOT_EQUAL_ERR);
     }
 
     /** */
