@@ -81,7 +81,7 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
 
     /** */
     @Test
-    public void testVersionsFinalizationNoVersionUpgrade() throws Exception {
+    public void testVersionFinalizationNoVersionUpgrade() throws Exception {
         startCluster();
 
         ru(1).enableVersionUpgrade();
@@ -98,7 +98,7 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
 
     /** */
     @Test
-    public void testLesserVersionsWithSameFeaturesAreNotCompatible() throws Exception {
+    public void testSmallerVersionsWithSameFeaturesAreNotCompatible() throws Exception {
         startCluster("2.19.1");
 
         ru(1).enableVersionUpgrade();
