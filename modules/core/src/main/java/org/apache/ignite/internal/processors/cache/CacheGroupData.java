@@ -17,60 +17,76 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.MarshallableMessage;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
-/**
- *
- */
-public class CacheGroupData implements Serializable {
+/** */
+public class CacheGroupData implements MarshallableMessage {
     /** */
-    private static final long serialVersionUID = 0L;
+    @Order(0)
+    int grpId;
 
     /** */
-    private final int grpId;
+    @Order(1)
+    String grpName;
 
     /** */
-    private final String grpName;
+    @Order(2)
+    AffinityTopologyVersion startTopVer;
 
     /** */
-    private final AffinityTopologyVersion startTopVer;
+    @Order(3)
+    UUID rcvdFrom;
 
     /** */
-    private final UUID rcvdFrom;
+    @Order(4)
+    IgniteUuid deploymentId;
 
     /** */
-    private final IgniteUuid deploymentId;
+    private CacheConfiguration<?, ?> cacheCfg;
+
+    /** Serialized {@link #cacheCfg}. */
+    @Order(5)
+    byte[] cacheCfgBytes;
 
     /** */
-    private final CacheConfiguration<?, ?> cacheCfg;
-
-    /** */
+    @Order(6)
     @GridToStringInclude
-    private final Map<String, Integer> caches;
-
-    /** */
-    private long flags;
+    Map<String, Integer> caches;
 
     /** Persistence enabled flag. */
-    private final boolean persistenceEnabled;
+    @Order(7)
+    boolean persistenceEnabled;
 
     /** WAL state. */
-    private final boolean walEnabled;
+    @Order(8)
+    boolean walEnabled;
 
     /** WAL change requests. */
-    private final List<WalStateProposeMessage> walChangeReqs;
+    @Order(9)
+    List<WalStateProposeMessage> walChangeReqs;
 
     /** Cache configuration enrichment. */
-    private final CacheConfigurationEnrichment cacheCfgEnrichment;
+    @Order(10)
+    CacheConfigurationEnrichment cacheCfgEnrichment;
+
+    /** Default constructor for {@link MessageFactory}. */
+    public CacheGroupData() {
+        // No-op.
+    }
 
     /**
      * @param cacheCfg Cache configuration.
@@ -93,7 +109,6 @@ public class CacheGroupData implements Serializable {
         @Nullable AffinityTopologyVersion startTopVer,
         IgniteUuid deploymentId,
         Map<String, Integer> caches,
-        long flags,
         boolean persistenceEnabled,
         boolean walEnabled,
         List<WalStateProposeMessage> walChangeReqs,
@@ -110,88 +125,80 @@ public class CacheGroupData implements Serializable {
         this.startTopVer = startTopVer;
         this.deploymentId = deploymentId;
         this.caches = caches;
-        this.flags = flags;
         this.persistenceEnabled = persistenceEnabled;
         this.walEnabled = walEnabled;
         this.walChangeReqs = walChangeReqs;
         this.cacheCfgEnrichment = cacheCfgEnrichment;
     }
 
-    /**
-     * @return Start version for dynamically started group.
-     */
+    /** @return Start version for dynamically started group. */
     @Nullable public AffinityTopologyVersion startTopologyVersion() {
         return startTopVer;
     }
 
-    /**
-     * @return Node ID group was received from.
-     */
+    /** @return Node ID group was received from. */
     public UUID receivedFrom() {
         return rcvdFrom;
     }
 
-    /**
-     * @return Group name.
-     */
+    /** @return Group name. */
     @Nullable public String groupName() {
         return grpName;
     }
 
-    /**
-     * @return Group ID.
-     */
+    /** @return Group ID. */
     public int groupId() {
         return grpId;
     }
 
-    /**
-     * @return Deployment ID.
-     */
+    /** @return Deployment ID. */
     public IgniteUuid deploymentId() {
         return deploymentId;
     }
 
-    /**
-     * @return Configuration.
-     */
+    /** @return Configuration. */
     public CacheConfiguration<?, ?> config() {
         return cacheCfg;
     }
 
-    /**
-     * @return Group caches.
-     */
+    /** @return Group caches. */
     Map<String, Integer> caches() {
         return caches;
     }
 
-    /**
-     * @return Persistence enabled flag.
-     */
+    /** @return Persistence enabled flag. */
     public boolean persistenceEnabled() {
         return persistenceEnabled;
     }
 
-    /**
-     * @return {@code True} if WAL is enabled.
-     */
+    /** @return {@code True} if WAL is enabled. */
     public boolean walEnabled() {
         return walEnabled;
     }
 
-    /**
-     * @return WAL mode change requests.
-     */
+    /** @return WAL mode change requests. */
     public List<WalStateProposeMessage> walChangeRequests() {
         return walChangeReqs;
     }
 
-    /**
-     * @return Cache configuration enrichment.
-     */
+    /** @return Cache configuration enrichment. */
     public CacheConfigurationEnrichment cacheConfigurationEnrichment() {
         return cacheCfgEnrichment;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (cacheCfg != null)
+            cacheCfgBytes = U.marshal(marsh, cacheCfg);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (cacheCfgBytes != null) {
+            cacheCfg = U.unmarshal(marsh, cacheCfgBytes, clsLdr);
+
+            cacheCfgBytes = null;
+        }
     }
 
     /** {@inheritDoc} */

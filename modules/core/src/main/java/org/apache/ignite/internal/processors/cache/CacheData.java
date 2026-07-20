@@ -17,59 +17,69 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.Serializable;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.MarshallableMessage;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
-/**
- * Cache information sent in discovery data to joining node.
- */
-public class CacheData implements Serializable {
+/** Cache information sent in discovery data to joining node. */
+public class CacheData implements MarshallableMessage {
     /** */
-    private static final long serialVersionUID = 0L;
+    private CacheConfiguration cacheCfg;
 
-    /** */
-    private final CacheConfiguration cacheCfg;
-
-    /** */
-    private final int cacheId;
+    /** Serialized {@link #cacheCfg}. */
+    @Order(0)
+    byte[] cacheCfgBytes;
 
     /** */
-    private final int grpId;
+    @Order(1)
+    int grpId;
 
     /** */
-    private final CacheType cacheType;
+    @Order(2)
+    CacheType cacheType;
 
     /** */
-    private final IgniteUuid deploymentId;
+    @Order(3)
+    IgniteUuid deploymentId;
 
     /** */
-    private final QuerySchema schema;
+    private QuerySchema schema;
+
+    /** Serialized {@link #schema}. */
+    @Order(4)
+    byte[] schemaBytes;
 
     /** */
-    private final UUID rcvdFrom;
+    @Order(5)
+    UUID rcvdFrom;
 
     /** */
-    private final boolean staticCfg;
+    @Order(6)
+    boolean staticCfg;
 
     /** */
-    private final boolean sql;
-
-    /** */
-    private final boolean template;
-
-    /** Flags added for future usage. */
-    private final long flags;
+    @Order(7)
+    boolean sql;
 
     /** Cache configuration enrichment. */
-    private final CacheConfigurationEnrichment cacheCfgEnrichment;
+    @Order(8)
+    CacheConfigurationEnrichment cacheCfgEnrichment;
+
+    /** Default constructor for {@link MessageFactory}. */
+    public CacheData() {
+        // No-op.
+    }
 
     /**
      * @param cacheCfg Cache configuration.
-     * @param cacheId Cache ID.
      * @param grpId Cache group ID.
      * @param cacheType Cache ID.
      * @param deploymentId Cache deployment ID.
@@ -78,11 +88,9 @@ public class CacheData implements Serializable {
      * @param staticCfg {@code True} if cache was statically configured.
      * @param sql {@code True} if cache was created by an SQL command such as {@code CREATE TABLE}.
      * @param template {@code True} if this is cache template.
-     * @param flags Flags (added for future usage).
      * @param cacheCfgEnrichment Cache configuration enrichment.
      */
     CacheData(CacheConfiguration cacheCfg,
-        int cacheId,
         int grpId,
         CacheType cacheType,
         IgniteUuid deploymentId,
@@ -91,17 +99,14 @@ public class CacheData implements Serializable {
         boolean staticCfg,
         boolean sql,
         boolean template,
-        long flags,
         CacheConfigurationEnrichment cacheCfgEnrichment
     ) {
         assert cacheCfg != null;
         assert rcvdFrom != null : cacheCfg.getName();
         assert deploymentId != null : cacheCfg.getName();
-        assert template || cacheId != 0 : cacheCfg.getName();
         assert template || grpId != 0 : cacheCfg.getName();
 
         this.cacheCfg = cacheCfg;
-        this.cacheId = cacheId;
         this.grpId = grpId;
         this.cacheType = cacheType;
         this.deploymentId = deploymentId;
@@ -109,93 +114,76 @@ public class CacheData implements Serializable {
         this.rcvdFrom = rcvdFrom;
         this.staticCfg = staticCfg;
         this.sql = sql;
-        this.template = template;
-        this.flags = flags;
         this.cacheCfgEnrichment = cacheCfgEnrichment;
     }
 
-    /**
-     * @return Cache group ID.
-     */
+    /** @return Cache group ID. */
     public int groupId() {
         return grpId;
     }
 
-    /**
-     * @return Cache ID.
-     */
-    public int cacheId() {
-        return cacheId;
-    }
-
-    /**
-     * @return {@code True} if this is template configuration.
-     */
-    public boolean template() {
-        return template;
-    }
-
-    /**
-     * @return Cache type.
-     */
+    /** @return Cache type. */
     public CacheType cacheType() {
         return cacheType;
     }
 
-    /**
-     * @return Start ID.
-     */
+    /** @return Start ID. */
     public IgniteUuid deploymentId() {
         return deploymentId;
     }
 
-    /**
-     * @return {@code True} if statically configured.
-     */
+    /** @return {@code True} if statically configured. */
     public boolean staticallyConfigured() {
         return staticCfg;
     }
 
-    /**
-     * @return {@code True} if cache was created by an SQL command such as {@code CREATE TABLE}.
-     */
+    /** @return {@code True} if cache was created by an SQL command such as {@code CREATE TABLE}. */
     public boolean sql() {
         return sql;
     }
 
-    /**
-     * @return Cache configuration.
-     */
+    /** @return Cache configuration. */
     public CacheConfiguration cacheConfiguration() {
         return cacheCfg;
     }
 
-    /**
-     * @return Schema.
-     */
+    /** @return Schema. */
     public QuerySchema schema() {
         return schema.copy();
     }
 
-    /**
-     * @return ID of node provided cache configuration.
-     */
+    /** @return ID of node provided cache configuration. */
     public UUID receivedFrom() {
         return rcvdFrom;
     }
 
-    /**
-     * @return Flags.
-     */
-    public long flags() {
-        return flags;
-    }
-
-    /**
-     * @return Cache configuration enrichment.
-     */
+    /** @return Cache configuration enrichment. */
     public CacheConfigurationEnrichment cacheConfigurationEnrichment() {
         return cacheCfgEnrichment;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (cacheCfg != null)
+            cacheCfgBytes = U.marshal(marsh, cacheCfg);
+
+        if (schema != null)
+            schemaBytes = U.marshal(marsh, schema);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (cacheCfgBytes != null) {
+            cacheCfg = U.unmarshal(marsh, cacheCfgBytes, clsLdr);
+
+            cacheCfgBytes = null;
+        }
+
+        if (schemaBytes != null) {
+            schema = U.unmarshal(marsh, schemaBytes, clsLdr);
+
+            schemaBytes = null;
+        }
     }
 
     /** {@inheritDoc} */
