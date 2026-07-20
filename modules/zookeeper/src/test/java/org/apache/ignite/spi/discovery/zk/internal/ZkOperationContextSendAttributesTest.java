@@ -15,31 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management.cache;
+package org.apache.ignite.spi.discovery.zk.internal;
 
-import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.api.Argument;
-import org.apache.ignite.internal.management.api.Positional;
+import org.apache.ignite.internal.thread.context.OperationContextSendAttributesTest;
+
+import static org.junit.Assume.assumeTrue;
 
 /** */
-public class CacheResetLostPartitionsCommandArg extends IgniteDataTransferObject {
-    /** */
-    private static final long serialVersionUID = 0;
+public class ZkOperationContextSendAttributesTest extends OperationContextSendAttributesTest {
+    /** {@inheritDoc} */
+    @Override protected void doTestOperationContextAttributesPropagation(boolean discovery) throws Exception {
+        assumeTrue(discovery);
 
-    /** */
-    @Order(0)
-    @Positional
-    @Argument(example = "cacheGroupName1,...,cacheGroupNameN")
-    String[] cacheGroups;
-
-    /** */
-    public String[] cacheGroups() {
-        return cacheGroups;
-    }
-
-    /** */
-    public void cacheGroups(String[] cacheGroups) {
-        this.cacheGroups = cacheGroups;
+        super.doTestOperationContextAttributesPropagation(true);
     }
 }

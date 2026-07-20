@@ -15,63 +15,57 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.rollingupgrade.feature;
 
-import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.Collection;
-import java.util.Map;
-import java.util.stream.Collectors;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.lang.IgniteProductVersion;
 
-/** */
-public class ClusterCacheGroupRecoveryData implements Externalizable, Message {
+/**
+ * Represents the set of {@link IgniteFeature}s associated with a user plugin.
+ * Explicitly stores the name of the plugin to which the feature set belongs.
+ */
+public class IgnitePluginFeatureSet extends IgniteComponentFeatureSet {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
     @Order(0)
-    long clusterBaselineTopVer;
+    String compName;
 
     /** */
-    @Order(1)
-    Map<Integer, CacheGroupRecoveryState> grpStates;
-
-    /** */
-    public ClusterCacheGroupRecoveryData() {
+    public IgnitePluginFeatureSet() {
         // No-op.
     }
 
     /** */
-    public ClusterCacheGroupRecoveryData(long clusterBaselineTopVer, Collection<CacheGroupContext> grps) {
-        this.clusterBaselineTopVer = clusterBaselineTopVer;
-        grpStates = grps.stream().collect(Collectors.toMap(CacheGroupContext::groupId, CacheGroupRecoveryState::new));
+    public IgnitePluginFeatureSet(String compName, IgniteProductVersion compVer, IgniteFeatureSet features) {
+        super(compVer, features);
+
+        A.notNull(compName, "component name");
+
+        this.compName = compName;
     }
 
     /** */
-    public boolean isMoreRelevantThan(ClusterCacheGroupRecoveryData data) {
-        return clusterBaselineTopVer > data.clusterBaselineTopVer;
-    }
-
-    /** */
-    @Nullable public CacheGroupRecoveryState cacheGroupRecoveryState(int grpId) {
-        return grpStates.get(grpId);
+    public String componentName() {
+        return compName;
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeLong(clusterBaselineTopVer);
-        U.writeMap(out, grpStates);
+        out.writeUTF(compName);
+
+        super.writeExternal(out);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        clusterBaselineTopVer = in.readLong();
-        grpStates = U.readHashMap(in);
+        compName = in.readUTF();
+
+        super.readExternal(in);
     }
 }

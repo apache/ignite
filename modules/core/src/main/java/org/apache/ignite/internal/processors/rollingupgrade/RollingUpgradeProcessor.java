@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.rollingupgrade;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -34,16 +33,13 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteComponentFeatureSet;
-import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFeature;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFeatureSet;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeature;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureManager;
-import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureSet;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
-import org.apache.ignite.internal.processors.rollingupgrade.feature.SupportedFeatureRegistry;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -99,15 +95,11 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
     /** */
     public RollingUpgradeProcessor(GridKernalContext ctx) {
-        this(ctx, new IgniteComponentFeatureSet(
-            IgniteCoreFeature.COMPONENT_NAME,
-            IgniteVersionUtils.VER,
-            IgniteFeatureSet.buildFrom(SupportedFeatureRegistry.class))
-        );
+        this(ctx, IgniteCoreFeatureSet.local());
     }
 
     /** */
-    protected RollingUpgradeProcessor(GridKernalContext ctx, IgniteComponentFeatureSet coreFeatures) {
+    protected RollingUpgradeProcessor(GridKernalContext ctx, IgniteCoreFeatureSet coreFeatures) {
         super(ctx);
 
         enableProc = new ClusterVersionUpgradeEnableProcess();
@@ -192,7 +184,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
             ATTR_IGNITE_FEATURES,
             U.marshal(
                 ctx.marshallerContext().jdkMarshaller(),
-                featureMgr.localVersionFeatures().values().toArray(new IgniteComponentFeatureSet[0]))
+                featureMgr.localVersionFeatures().values())
         );
 
         ctx.event().addLocalEventListener(
@@ -417,7 +409,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
             attrVal,
             U.resolveClassLoader(ctx.config()));
 
-        return new IgniteNodeFeatureSet(List.of(nodeFeatures));
+        return new IgniteNodeFeatureSet(nodeFeatures);
     }
 
     /** */
