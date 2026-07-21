@@ -146,13 +146,16 @@ public class QueryEntityMessage implements MarshallableMessage {
 
     /** {@inheritDoc} */
     @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
-        if (!F.isEmpty(dfltFieldValues))
+        if (!F.isEmpty(dfltFieldValues) && dfltFieldValuesBytes == null)
             dfltFieldValuesBytes = U.marshal(marsh, dfltFieldValues);
     }
 
     /** {@inheritDoc} */
     @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (!F.isEmpty(dfltFieldValuesBytes))
+        if (!F.isEmpty(dfltFieldValuesBytes)) {
             dfltFieldValues = U.unmarshal(marsh, dfltFieldValuesBytes, clsLdr);
+
+            dfltFieldValuesBytes = null;
+        }
     }
 }
