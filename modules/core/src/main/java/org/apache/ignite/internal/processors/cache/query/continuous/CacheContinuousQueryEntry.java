@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import javax.cache.event.EventType;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -27,14 +29,14 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Continuous query entry.
  */
-public class CacheContinuousQueryEntry implements GridCacheDeployable, Message, CacheIdAware {
+public class CacheContinuousQueryEntry implements GridCacheDeployable, MarshallableMessage, CacheIdAware {
     /** */
     private static final byte BACKUP_ENTRY = 0b0001;
 
@@ -54,18 +56,27 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message, 
 
     /** Key. */
     @GridToStringInclude
-    @Order(2)
     KeyCacheObject key;
+
+    /** {@code null} for a filtered entry. */
+    @Order(2)
+    KeyCacheObject keyWire;
 
     /** New value. */
     @GridToStringInclude
-    @Order(3)
     CacheObject newVal;
+
+    /** {@code null} for a filtered entry. */
+    @Order(3)
+    CacheObject newValWire;
 
     /** Old value. */
     @GridToStringInclude
-    @Order(4)
     CacheObject oldVal;
+
+    /** {@code null} for a filtered entry. */
+    @Order(4)
+    CacheObject oldValWire;
 
     /** Cache name. */
     @Order(5)
@@ -222,9 +233,6 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message, 
     void markFiltered() {
         flags |= FILTERED_ENTRY;
         depInfo = null;
-        key = null;
-        newVal = null;
-        oldVal = null;
     }
 
     /**
@@ -315,7 +323,37 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message, 
     @Override public GridDeploymentInfo deployInfo() {
         return depInfo;
     }
-    
+
+    /** {@inheritDoc} */
+    @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
+        if (!isFiltered()) {
+            keyWire = key;
+            newValWire = newVal;
+            oldValWire = oldVal;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (keyWire != null) {
+            key = keyWire;
+
+            keyWire = null;
+        }
+
+        if (newValWire != null) {
+            newVal = newValWire;
+
+            newValWire = null;
+        }
+
+        if (oldValWire != null) {
+            oldVal = oldValWire;
+
+            oldValWire = null;
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheContinuousQueryEntry.class, this);

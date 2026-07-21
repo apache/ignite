@@ -135,7 +135,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
      *
      */
     @Test
-    public void testCacheContinuousQueryEntrySerialization() {
+    public void testCacheContinuousQueryEntrySerialization() throws Exception {
         CacheContinuousQueryEntry e0 = new CacheContinuousQueryEntry(
             1,
             EventType.UPDATED,
@@ -160,6 +160,10 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
 
         writer.setBuffer(buf);
 
+        // The marshal phase run by the send path before serialization: must not touch the wire fields of
+        // a filtered entry.
+        e0.marshal(jdk());
+
         // Skip write class header.
         writer.onHeaderWritten();
         MessageSerialization.writeTo(msgFactory, e0, writer);
@@ -172,6 +176,8 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
 
         MessageSerialization.readFrom(msgFactory, e1, reader);
 
+        e1.unmarshal(jdk(), U.gridClassLoader());
+
         assertEquals(e0.cacheId(), e1.cacheId());
         assertEquals(e0.eventType(), e1.eventType());
         assertEquals(e0.isFiltered(), e1.isFiltered());
@@ -182,11 +188,11 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
 
         // Key and value shouldn't be serialized in case an event is filtered.
         assertNull(e1.key());
-        assertNull(e0.key());
+        assertNotNull(e0.key());
         assertNull(e1.oldValue());
-        assertNull(e0.oldValue());
+        assertNotNull(e0.oldValue());
         assertNull(e1.newValue());
-        assertNull(e0.newValue());
+        assertNotNull(e0.newValue());
     }
 
     /**
@@ -207,7 +213,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
         @Override public boolean evaluate(CacheEntryEvent<?, ?> evt) {
             evts.add(evt);
 
-            return true;
+            return false;
         }
     }
 

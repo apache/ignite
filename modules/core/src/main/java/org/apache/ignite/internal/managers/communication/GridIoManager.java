@@ -96,6 +96,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.continuous.GridContinuousMessage;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
@@ -1477,10 +1478,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
     /** */
     private void unmarshalPayload(GridIoMessage msg) {
-        // Cache messages are unmarshalled later by GridCacheIoManager and data streamer entries by the update job,
-        // both with the peer-deployment loader and protocol-level error responses; the generic pass here has only
-        // the config loader, which can't see peer classes.
-        if (msg.message() instanceof GridCacheMessage || msg.message() instanceof DataStreamerRequest)
+        // Messages that carry cache objects are skipped here: their payload may reference user classes deployed
+        // over peer-class-loading, and this generic pass only has the configuration class loader, which cannot see
+        // them. Each is unmarshalled instead on its own path, which does have the peer-deployment loader (and can
+        // report a failure back to the sender): cache messages in GridCacheIoManager, data streamer entries in the
+        // update job, continuous-query entries in CacheContinuousQueryHandler.
+        if (msg.message() instanceof GridCacheMessage || msg.message() instanceof DataStreamerRequest
+            || msg.message() instanceof GridContinuousMessage)
             return;
 
         try {
