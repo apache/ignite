@@ -29,6 +29,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Message used to transfer {@link Throwable} objects.
  */
+// TODO IGNITE-28912: move to a common package.
 @SuppressWarnings({"NullableProblems", "unused"})
 public class ErrorMessage implements MarshallableMessage {
     /** Error bytes. */
