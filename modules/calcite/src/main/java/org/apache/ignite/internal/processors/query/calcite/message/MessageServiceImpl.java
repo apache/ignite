@@ -23,15 +23,18 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.DeferredUnmarshalMessage;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
@@ -39,6 +42,9 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  *
  */
 public class MessageServiceImpl extends AbstractService implements MessageService {
+    /** */
+    private final GridKernalContext kctx;
+
     /** */
     private final GridMessageListener msgLsnr;
 
@@ -58,6 +64,7 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     public MessageServiceImpl(GridKernalContext ctx) {
         super(ctx);
 
+        kctx = ctx;
         ioMgr = ctx.io();
         msgLsnr = this::onMessage;
     }
@@ -149,26 +156,47 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
 
     /** */
     protected void onMessage(UUID nodeId, Message msg) {
+        onMessage(nodeId, msg, false);
+    }
+
+    /**
+     * Listener for messages arriving from remote nodes. All Calcite messages are {@link DeferredUnmarshalMessage}s
+     * and the only ones on this topic: the generic {@code GridIoManager} payload pass skips them, so their payload
+     * is unmarshalled here, on the query task executor.
+     */
+    private void onMessage(UUID nodeId, Object msg, byte plc) {
+        if (msg instanceof DeferredUnmarshalMessage)
+            onMessage(nodeId, (Message)msg, true);
+    }
+
+    /** */
+    private void onMessage(UUID nodeId, Message msg, boolean unmarshal) {
         if (msg instanceof ExecutionContextAware) {
             ExecutionContextAware msg0 = (ExecutionContextAware)msg;
-            taskExecutor().execute(msg0.queryId(), msg0.fragmentId(), () -> onMessageInternal(nodeId, msg));
+            taskExecutor().execute(msg0.queryId(), msg0.fragmentId(), () -> onMessageInternal(nodeId, msg, unmarshal));
         }
         else
             taskExecutor().execute(
                 IgniteUuid.VM_ID,
                 ThreadLocalRandom.current().nextLong(1024),
-                () -> onMessageInternal(nodeId, msg)
+                () -> onMessageInternal(nodeId, msg, unmarshal)
             );
     }
 
-    /** Listener for messages arriving from remote nodes; unmarshalled by the generic {@code GridIoManager} payload pass. */
-    private void onMessage(UUID nodeId, Object msg, byte plc) {
-        if (msg instanceof Message && CalciteMessageFactory.isCalciteMessage((Message)msg))
-            onMessage(nodeId, (Message)msg);
-    }
+    /**
+     * @param unmarshal Whether to unmarshal the payload: {@code true} only for remotely received messages; locally
+     * delivered ones were never marshalled.
+     */
+    private void onMessageInternal(UUID nodeId, Message msg, boolean unmarshal) {
+        if (unmarshal) {
+            try {
+                MessageMarshalling.unmarshal(msg, kctx);
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
+        }
 
-    /** */
-    private void onMessageInternal(UUID nodeId, Message msg) {
         MessageListener lsnr = Objects.requireNonNull(lsnrs.get(msg.getClass()));
 
         lsnr.onMessage(nodeId, msg);

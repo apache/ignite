@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.DeferredUnmarshalMessage;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -30,7 +31,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
 
 /** Message sent to remote nodes to start a query fragment execution. */
-public class QueryStartRequest implements MarshallableMessage, ExecutionContextAware {
+public class QueryStartRequest implements MarshallableMessage, DeferredUnmarshalMessage, ExecutionContextAware {
     /** */
     @Order(0)
     String schema;

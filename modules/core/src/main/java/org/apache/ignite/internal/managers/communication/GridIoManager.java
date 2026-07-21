@@ -76,6 +76,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.DeferredUnmarshalMessage;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -91,13 +92,10 @@ import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.continuous.GridContinuousMessage;
-import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
@@ -1478,13 +1476,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
     /** */
     private void unmarshalPayload(GridIoMessage msg) {
-        // Messages that carry cache objects are skipped here: their payload may reference user classes deployed
-        // over peer-class-loading, and this generic pass only has the configuration class loader, which cannot see
-        // them. Each is unmarshalled instead on its own path, which does have the peer-deployment loader (and can
-        // report a failure back to the sender): cache messages in GridCacheIoManager, data streamer entries in the
-        // update job, continuous-query entries in CacheContinuousQueryHandler.
-        if (msg.message() instanceof GridCacheMessage || msg.message() instanceof DataStreamerRequest
-            || msg.message() instanceof GridContinuousMessage)
+        if (msg.message() instanceof DeferredUnmarshalMessage)
             return;
 
         try {

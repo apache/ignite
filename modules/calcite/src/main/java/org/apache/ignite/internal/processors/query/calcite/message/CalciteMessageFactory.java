@@ -22,36 +22,24 @@ import org.apache.ignite.internal.plugin.AbstractMarshallableMessageFactoryProvi
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
-import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Message factory.
  */
 public class CalciteMessageFactory extends AbstractMarshallableMessageFactoryProvider {
-    /** */
-    public static final short MIN_MESSAGE_TYPE = 300;
-
-    /** */
-    public static final short MAX_MESSAGE_TYPE = 311;
-
     /** {@inheritDoc} */
     @Override public void registerAll(IgniteMessageFactory factory) {
-        register(factory, QueryStartRequest.class, (short)300, schemaAwareMarsh);
-        register(factory, QueryStartResponse.class, (short)301, dfltMarsh);
-        register(factory, CalciteErrorMessage.class, (short)302, dfltMarsh);
-        register(factory, QueryBatchMessage.class, (short)303, dfltMarsh);
-        register(factory, QueryBatchAcknowledgeMessage.class, (short)304, dfltMarsh);
-        register(factory, QueryInboxCloseMessage.class, (short)305, dfltMarsh);
-        register(factory, QueryCloseMessage.class, (short)306, dfltMarsh);
-        register(factory, GenericValueMessage.class, (short)307, schemaAwareMarsh);
-        register(factory, FragmentMapping.class, (short)308, dfltMarsh);
-        register(factory, ColocationGroup.class, (short)309, dfltMarsh);
-        register(factory, FragmentDescription.class, (short)310, dfltMarsh);
-        register(factory, QueryTxEntry.class, (short)311, dfltMarsh);
-    }
-
-    /** */
-    public static boolean isCalciteMessage(Message msg) {
-        return msg.directType() >= MIN_MESSAGE_TYPE && msg.directType() <= MAX_MESSAGE_TYPE;
+        register(factory, QueryStartRequest.class, (short)300, QueryStartRequest::new, schemaAwareMarsh);
+        register(factory, QueryStartResponse.class, (short)301, QueryStartResponse::new, dfltMarsh);
+        register(factory, CalciteErrorMessage.class, (short)302, CalciteErrorMessage::new, dfltMarsh);
+        register(factory, QueryBatchMessage.class, (short)303, QueryBatchMessage::new, dfltMarsh);
+        register(factory, QueryBatchAcknowledgeMessage.class, (short)304, QueryBatchAcknowledgeMessage::new, dfltMarsh);
+        register(factory, QueryInboxCloseMessage.class, (short)305, QueryInboxCloseMessage::new, dfltMarsh);
+        register(factory, QueryCloseMessage.class, (short)306, QueryCloseMessage::new, dfltMarsh);
+        register(factory, GenericValueMessage.class, (short)307, GenericValueMessage::new, schemaAwareMarsh);
+        register(factory, FragmentMapping.class, (short)308, FragmentMapping::new, dfltMarsh);
+        register(factory, ColocationGroup.class, (short)309, ColocationGroup::new, dfltMarsh);
+        register(factory, FragmentDescription.class, (short)310, FragmentDescription::new, dfltMarsh);
+        register(factory, QueryTxEntry.class, (short)311, QueryTxEntry::new, dfltMarsh);
     }
 }
