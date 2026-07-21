@@ -25,8 +25,6 @@ import org.apache.ignite.internal.IgniteTransactionsEx;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.processors.tracing.MTC;
-import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -39,8 +37,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionMetrics;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.tracing.SpanType.TX;
-
 /**
  * Grid transactions implementation.
  */
@@ -51,25 +47,21 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     /** Label. */
     private String lb;
 
-    /** Tracing enabled flag. */
-    private boolean tracingEnabled;
-
     /** Application attributes. */
     private Map<String, String> appAttrs;
 
     /**
      * @param cctx Cache shared context.
      * @param lb Label.
+     * @param appAttrs Application attributes.
      */
     public IgniteTransactionsImpl(
         GridCacheSharedContext<K, V> cctx,
         @Nullable String lb,
-        boolean tracingEnabled,
         @Nullable Map<String, String> appAttrs
     ) {
         this.cctx = cctx;
         this.lb = lb;
-        this.tracingEnabled = tracingEnabled;
         this.appAttrs = appAttrs;
     }
 
@@ -176,17 +168,6 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     ) {
         cctx.kernalContext().gateway().readLock();
 
-        Span span = cctx.kernalContext().tracing().create(TX, null, lb);
-
-        MTC.supportInitial(span);
-
-        span.addTag("isolation", isolation::name);
-        span.addTag("concurrency", concurrency::name);
-        span.addTag("timeout", () -> String.valueOf(timeout));
-
-        if (lb != null)
-            span.addTag("label", () -> lb);
-
         try {
             GridNearTxLocal tx = cctx.tm().userTx(sysCacheCtx);
 
@@ -249,12 +230,13 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     @Override public IgniteTransactions withLabel(String lb) {
         A.notNull(lb, "label should not be empty.");
 
-        return new IgniteTransactionsImpl<>(cctx, lb, tracingEnabled, appAttrs);
+        return new IgniteTransactionsImpl<>(cctx, lb, appAttrs);
     }
 
     /** {@inheritDoc} */
+    @Deprecated(forRemoval = true)
     @Override public IgniteTransactions withTracing() {
-        return new IgniteTransactionsImpl<>(cctx, lb, true, appAttrs);
+        return this;
     }
 
     /**
@@ -265,7 +247,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     public IgniteTransactions withApplicationAttributes(Map<String, String> appAttrs) {
         A.notEmpty(appAttrs, "application attributes");
 
-        return new IgniteTransactionsImpl<>(cctx, lb, tracingEnabled, appAttrs);
+        return new IgniteTransactionsImpl<>(cctx, lb, appAttrs);
     }
 
     /**

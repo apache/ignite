@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.tracing;
 
-import org.apache.ignite.internal.tracing.TracingSpiType;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiConsistencyChecked;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -28,7 +27,11 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Noop and null-safe implementation of Tracing SPI.
+ *
+ * @deprecated The Ignite Tracing is deprecated and subject to removal in a future release. Ignite Tracing has been
+ * retired in favor of Ignite Performance Statistics and Ignite Metrics.
  */
+@Deprecated(forRemoval = true)
 @IgniteSpiNoop
 @IgniteSpiMultipleInstancesSupport(value = true)
 @IgniteSpiConsistencyChecked(optional = true)
@@ -65,7 +68,7 @@ public class NoopTracingSpi extends IgniteSpiAdapter implements TracingSpi<NoopS
 
     /** {@inheritDoc} */
     @Override public byte type() {
-        return TracingSpiType.NOOP_TRACING_SPI.index();
+        return (byte)0;
     }
 
     /** {@inheritDoc} */

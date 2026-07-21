@@ -25,8 +25,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
-import org.apache.ignite.internal.processors.tracing.MTC;
-import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -37,18 +35,12 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
-import static org.apache.ignite.internal.processors.tracing.SpanType.TX_NEAR_PREPARE;
-
 /**
  *
  */
 public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearTxPrepareFutureAdapter {
     /** */
     private static final long serialVersionUID = 7460376140787916619L;
-
-    /** Tracing span. */
-    protected Span span;
 
     /** */
     @GridToStringExclude
@@ -88,46 +80,41 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
 
     /** {@inheritDoc} */
     @Override public final void onNearTxLocalTimeout() {
-        try (TraceSurroundings ignored = MTC.support(span)) {
-            if (keyLockFut != null && !keyLockFut.isDone()) {
-                ERR_UPD.compareAndSet(this, null, new IgniteTxTimeoutCheckedException(
-                    "Failed to acquire lock within provided timeout for transaction [timeout=" + tx.timeout() +
-                        ", tx=" + tx + ']'));
+        if (keyLockFut != null && !keyLockFut.isDone()) {
+            ERR_UPD.compareAndSet(this, null, new IgniteTxTimeoutCheckedException(
+                "Failed to acquire lock within provided timeout for transaction [timeout=" + tx.timeout() +
+                    ", tx=" + tx + ']'));
 
-                keyLockFut.onDone();
-            }
+            keyLockFut.onDone();
         }
     }
 
     /** {@inheritDoc} */
     @Override public final void prepare() {
-        try (TraceSurroundings ignored =
-                 MTC.supportContinual(span = cctx.kernalContext().tracing().create(TX_NEAR_PREPARE, MTC.span()))) {
-            // Obtain the topology version to use.
-            long threadId = Thread.currentThread().getId();
+        // Obtain the topology version to use.
+        long threadId = Thread.currentThread().getId();
 
-            AffinityTopologyVersion topVer = cctx.mvcc().lastExplicitLockTopologyVersion(threadId);
+        AffinityTopologyVersion topVer = cctx.mvcc().lastExplicitLockTopologyVersion(threadId);
 
-            // If there is another system transaction in progress, use it's topology version to prevent deadlock.
-            if (topVer == null && tx.system()) {
-                topVer = cctx.tm().lockedTopologyVersion(threadId, tx);
+        // If there is another system transaction in progress, use it's topology version to prevent deadlock.
+        if (topVer == null && tx.system()) {
+            topVer = cctx.tm().lockedTopologyVersion(threadId, tx);
 
-                if (topVer == null)
-                    topVer = tx.topologyVersionSnapshot();
-            }
-
-            if (topVer != null) {
-                tx.topologyVersion(topVer);
-
-                cctx.mvcc().addFuture(this);
-
-                prepare0(false, true);
-
-                return;
-            }
-
-            prepareOnTopology(false, null);
+            if (topVer == null)
+                topVer = tx.topologyVersionSnapshot();
         }
+
+        if (topVer != null) {
+            tx.topologyVersion(topVer);
+
+            cctx.mvcc().addFuture(this);
+
+            prepare0(false, true);
+
+            return;
+        }
+
+        prepareOnTopology(false, null);
     }
 
     /**

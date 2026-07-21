@@ -22,7 +22,6 @@ import org.apache.ignite.internal.GridTopicMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
-import org.apache.ignite.internal.processors.tracing.messages.SpanTransport;
 import org.apache.ignite.internal.thread.context.OperationContextMessage;
 import org.apache.ignite.internal.util.nio.GridNioServer.MessageWrapper;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -33,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Wrapper for all grid messages.
  */
-public class GridIoMessage implements Message, SpanTransport, MessageWrapper {
+public class GridIoMessage implements Message, MessageWrapper {
     /** */
     public static final Integer STRIPE_DISABLED_PART = Integer.MIN_VALUE;
 
@@ -62,12 +61,8 @@ public class GridIoMessage implements Message, SpanTransport, MessageWrapper {
     @Order(5)
     Message msg;
 
-    /** Serialized span */
-    @Order(6)
-    byte[] span;
-
     /** Effective operation context attributes to propagate. */
-    @Order(7)
+    @Order(6)
     @GridToStringInclude
     public @Nullable OperationContextMessage opCtxMsg;
 
@@ -160,16 +155,6 @@ public class GridIoMessage implements Message, SpanTransport, MessageWrapper {
     /** {@inheritDoc} */
     @Override public int hashCode() {
         throw new AssertionError();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void span(byte[] span) {
-        this.span = span;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte[] span() {
-        return span;
     }
 
     /**

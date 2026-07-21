@@ -25,7 +25,11 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Allows to configure tracing, read the configuration and restore it to the defaults.
+ *
+ * @deprecated The Ignite Tracing is deprecated and subject to removal in a future release. Ignite Tracing has been
+ * retired in favor of Ignite Performance Statistics and Ignite Metrics.
  */
+@Deprecated(forRemoval = true)
 public interface TracingConfigurationManager {
     /** Default SQL tracing configuration. */
     static final TracingConfigurationParameters DEFAULT_SQL_CONFIGURATION =

@@ -19,7 +19,6 @@ package org.apache.ignite.spi.discovery;
 import java.util.Collection;
 import java.util.NavigableMap;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -44,9 +43,6 @@ public class DiscoveryNotification {
     /** Custom message. */
     private @Nullable DiscoverySpiCustomMessage customMsg;
 
-    /** Span container. */
-    private SpanContainer spanContainer;
-
     /**
      * @param eventType Event type.
      * @param topVer Topology version.
@@ -67,7 +63,6 @@ public class DiscoveryNotification {
      * @param topSnapshot Topology snapshot.
      * @param topHist Topology history.
      * @param customMsg Custom message.
-     * @param spanContainer Span container.
      */
     public DiscoveryNotification(
         int eventType,
@@ -75,8 +70,7 @@ public class DiscoveryNotification {
         ClusterNode node,
         Collection<ClusterNode> topSnapshot,
         @Nullable NavigableMap<Long, Collection<ClusterNode>> topHist,
-        @Nullable DiscoverySpiCustomMessage customMsg,
-        SpanContainer spanContainer
+        @Nullable DiscoverySpiCustomMessage customMsg
     ) {
         this.eventType = eventType;
         this.topVer = topVer;
@@ -84,7 +78,6 @@ public class DiscoveryNotification {
         this.topSnapshot = topSnapshot;
         this.topHist = topHist;
         this.customMsg = customMsg;
-        this.spanContainer = spanContainer;
     }
 
     /**
@@ -127,12 +120,5 @@ public class DiscoveryNotification {
      */
     public DiscoverySpiCustomMessage customMessage() {
         return customMsg;
-    }
-
-    /**
-     * @return Span container.
-     */
-    public SpanContainer getSpanContainer() {
-        return spanContainer;
     }
 }

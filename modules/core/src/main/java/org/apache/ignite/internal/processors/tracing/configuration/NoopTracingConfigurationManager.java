@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.tracing.configuration;
 
 import java.util.Collections;
 import java.util.Map;
-
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.spi.tracing.Scope;
 import org.apache.ignite.spi.tracing.TracingConfigurationCoordinates;
@@ -30,8 +29,11 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Noop tracing configuration manager.
- * To be used mainly with {@link org.apache.ignite.internal.processors.tracing.NoopTracing}.
+ *
+ * @deprecated The Ignite Tracing is deprecated and subject to removal in a future release. Ignite Tracing has been
+ * retired in favor of Ignite Performance Statistics and Ignite Metrics.
  */
+@Deprecated(forRemoval = true)
 public final class NoopTracingConfigurationManager implements TracingConfigurationManager {
     /** */
     public static final NoopTracingConfigurationManager INSTANCE = new NoopTracingConfigurationManager();
