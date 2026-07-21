@@ -48,6 +48,7 @@ import static org.apache.ignite.internal.thread.context.OperationContextAttribut
 import static org.apache.ignite.internal.thread.context.OperationContextAttributePropagationTest.TestIgniteComponent.DFLT_USR;
 import static org.apache.ignite.internal.thread.context.OperationContextAttributePropagationTest.TestIgniteComponent.PTR_ATTR;
 import static org.apache.ignite.internal.thread.context.OperationContextAttributePropagationTest.TestIgniteComponent.USR_ATTR;
+import static org.apache.ignite.internal.thread.context.OperationContextDispatcher.MAX_ATTRS_CNT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -248,13 +249,13 @@ public class OperationContextAttributePropagationTest extends GridCommonAbstract
         @Override public void start(PluginContext ctx) {
             GridKernalContext kctx = ((IgniteEx)ctx.grid()).context();
 
-            kctx.operationContextDispatcher().registerDistributedAttribute(1, USR_ATTR);
+            kctx.operationContextDispatcher().registerDistributedAttribute(MAX_ATTRS_CNT - 1, USR_ATTR);
             kctx.operationContextDispatcher().registerDistributedAttribute(0, PTR_ATTR);
 
             assertThrowsAnyCause(
                 log,
                 () -> {
-                    kctx.operationContextDispatcher().registerDistributedAttribute(1, PTR_ATTR);
+                    kctx.operationContextDispatcher().registerDistributedAttribute(MAX_ATTRS_CNT - 1, PTR_ATTR);
                     return null;
 
                 }, IgniteException.class,
