@@ -17,28 +17,24 @@
 
 package org.apache.ignite.internal.processors.service;
 
-import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.NotNull;
 
-/**
- * Service deployment request.
- */
-public class ServiceDeploymentRequest extends ServiceChangeAbstractRequest implements Message {
+/** Service deployment request. */
+public class ServiceDeploymentRequest extends ServiceChangeAbstractRequest {
     /** Service configuration. */
-    @Marshalled("cfgBytes")
-    LazyServiceConfiguration cfg;
+    private LazyServiceConfiguration cfg;
 
-    /** JDK serialization for {@link #cfg}. */
+    /** Service configuration message. */
     @Order(0)
-    byte[] cfgBytes;
+    LazyServiceConfigurationMessage cfgMsg;
 
     /** Default constructor for {@link MessageFactory}. */
     public ServiceDeploymentRequest() {
+        // No-op.
     }
 
     /**
@@ -48,12 +44,15 @@ public class ServiceDeploymentRequest extends ServiceChangeAbstractRequest imple
     public ServiceDeploymentRequest(@NotNull IgniteUuid srvcId, @NotNull LazyServiceConfiguration cfg) {
         this.srvcId = srvcId;
         this.cfg = cfg;
+
+        cfgMsg = new LazyServiceConfigurationMessage(cfg);
     }
 
-    /**
-     * @return Service configuration.
-     */
+    /** @return Service configuration. */
     public LazyServiceConfiguration configuration() {
+        if (cfg == null && cfgMsg != null)
+            cfg = cfgMsg.toConfiguration();
+
         return cfg;
     }
 
