@@ -69,7 +69,9 @@ public abstract class IgniteComponentFeatureSet implements Message, Externalizab
 
     /** */
     public boolean isUpgradableTo(IgniteComponentFeatureSet target) {
-        return Objects.equals(componentName(), target.componentName()) && features.isUpgradableTo(target.features);
+        return Objects.equals(componentName(), target.componentName())
+            && ver.compareTo(target.ver) <= 0
+            && features.isUpgradableTo(target.features);
     }
 
     /** {@inheritDoc} */
