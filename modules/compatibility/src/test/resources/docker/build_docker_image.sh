@@ -110,6 +110,9 @@ case "$ARCH" in
         ;;
 esac
 
+# Remove previously unpacked distribution directory (if any)
+rm -rf "$TARGET_DIR/apache-ignite-"*-bin
+
 # Check if archive exists
 if [ ! -f $(echo $SOURCE_ARCHIVE) ]; then
     echo -e "\nArchive not found: $SOURCE_ARCHIVE"

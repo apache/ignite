@@ -108,7 +108,7 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return super.getTestTimeout() * 2;
+        return super.getTestTimeout() * 3;
     }
 
     /** Basic RU test. */
@@ -176,9 +176,10 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
     private void upgradeCluster(IgniteClusterContainer srcCluster) throws Exception {
         List<IgniteContainer> srcContainers = srcCluster.containers();
 
-        if (UPGRADE_MODE == UpgradeMode.LOCAL)
+        if (UPGRADE_MODE == UpgradeMode.LOCAL) {
             for (IgniteContainer con : srcContainers)
                 addrs.put(con.consistentId(), con.discoveryAddress());
+        }
 
         for (int i = 0; i < srcContainers.size(); i++) {
             IgniteContainer con = srcContainers.get(i);
@@ -194,18 +195,36 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
 
     /** Stop container, start a local host-JVM node with the same consistent ID. */
     private void upgradeLocally(IgniteContainer con, int idx) throws Exception {
-        // Address containers use to reach this (host JVM) node: the Docker bridge gateway on Linux, the
-        // host.docker.internal alias on macOS.
+        // Address containers use to reach this (host JVM) node:
+        //   - Linux:   Docker bridge gateway IP (e.g. 172.24.0.1) — always reachable from containers,
+        //              and the host can bind to it. The host's LAN IP is unreliable (on Debian/Ubuntu
+        //              java.net.Inet4Address.getLocalHost() returns 127.0.1.1, which is loopback and
+        //              unreachable from inside containers).
+        //   - macOS:   host.docker.internal alias resolved inside the container — gives the macOS host's
+        //              LAN IP, reachable from the Docker VM.
         String hostIp = IgniteContainer.LINUX
             ? con.gatewayIp()
             : con.execInContainer("sh", "-c",
                 "getent ahostsv4 host.docker.internal | awk '{print $1}' | head -1").getStdout().trim();
 
+        // Snapshot remaining container addresses before stopping this one.
+        // Published ports (localhost:5050x) are used on all platforms because Docker bridge IPs
+        // (172.x.x.x) may be unroutable from the host due to firewall rules (nftables/iptables)
+        // on Linux, and are never routable on macOS/Windows Docker Desktop.
+        Collection<String> ipFinderAddrs = new ArrayList<>(addrs.size());
+
+        for (Map.Entry<String, String> entry : addrs.entrySet()) {
+            if (entry.getKey().equals(con.consistentId()))
+                continue;
+
+            ipFinderAddrs.add(entry.getValue());
+        }
+
         con.stop();
 
         addrs.remove(con.consistentId());
 
-        IgniteEx ignite = startGrid(configuration(con.consistentId(), con.localWorkDirectory(), addrs.values(), hostIp, idx));
+        IgniteEx ignite = startGrid(configuration(con.consistentId(), con.localWorkDirectory(), ipFinderAddrs, hostIp, idx));
 
         assertTrue("Upgraded node did not rejoin the full topology in time",
             waitForCondition(() -> CONSISTENT_IDS.size() == ignite.cluster().nodes().size(), DFLT_TEST_TIMEOUT));
@@ -224,6 +243,8 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
             .setPersistenceEnabled(true);
 
         TcpDiscoverySpi discoverySpi = new TcpDiscoverySpi()
+            // Bind to all interfaces. The AddressResolver (below) maps the node's addresses to the
+            // Docker bridge gateway IP so containers know where to reach this host node.
             .setLocalAddress("0.0.0.0")
             .setIpFinder(new TcpDiscoveryVmIpFinder().setAddresses(addrs0))
             // Short socket timeout: unreachable container-internal addresses must fail fast before the
@@ -260,8 +281,8 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
                 int port = addr.getPort();
 
                 // Each sequentially started host node binds the next port in the discovery (48500+) and
-                // communication (49100+) ranges; map them all to the Docker host address so the containers
-                // can reach every host JVM node.
+                // communication (49100+) ranges; map them all to the Docker bridge gateway IP so the
+                // containers can reach every host JVM node.
                 if ((port >= 48500 && port < 48600) || (port >= 49100 && port < 49200))
                     return Set.of(new InetSocketAddress(ip, port));
 

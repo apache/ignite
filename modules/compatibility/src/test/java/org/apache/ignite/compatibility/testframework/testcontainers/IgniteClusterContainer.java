@@ -39,13 +39,8 @@ public class IgniteClusterContainer implements Startable {
     public IgniteClusterContainer(String commitHash, List<String> consistentIds) throws Exception {
         containers = new ArrayList<>(consistentIds.size());
 
-        for (int i = 0; i < consistentIds.size(); i++) {
-            String hostname = "node" + (1 + i);
-
-            IgniteContainer ignite = new IgniteContainer(commitHash, net, hostname, consistentIds.get(i), i);
-
-            containers.add(ignite);
-        }
+        for (int i = 0; i < consistentIds.size(); i++)
+            containers.add(new IgniteContainer(commitHash, net, "node" + (1 + i), consistentIds.get(i), i));
     }
 
     /** {@inheritDoc} */
