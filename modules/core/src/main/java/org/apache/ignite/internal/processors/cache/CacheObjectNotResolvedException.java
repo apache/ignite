@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 /**
  * Thrown by {@link KeyCacheObjectImpl#hashCode()} when the object has not been deserialized yet,
- * which happens when the owning cache has been removed before {@code unmarshal} could complete.
+ * typically because the owning cache has been removed before {@code unmarshal} could complete.
  */
 public class CacheObjectNotResolvedException extends RuntimeException {
     /** */
@@ -27,6 +27,6 @@ public class CacheObjectNotResolvedException extends RuntimeException {
 
     /** */
     public CacheObjectNotResolvedException() {
-        super(null, null, true, false);
+        super("Cache object is not deserialized (likely the owning cache was concurrently removed).", null, true, false);
     }
 }
