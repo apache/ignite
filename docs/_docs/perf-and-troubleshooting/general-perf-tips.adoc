@@ -153,8 +153,8 @@ Other nodes:
 Number of other nodes: 1
 ----
 
-The baseline contains server nodes that are intended to store data.
-Client nodes are not part of the baseline.
+The baseline contains server nodes that are intended to store a data.
+Client nodes are not a part of the baseline.
 An online server node in `Other nodes` is not always an error: the node may have been prepared intentionally but not yet introduced into the data topology.
 If the node is expected to store data, first check the link:clustering/baseline-topology#baseline-topology-autoadjustment[baseline auto-adjustment policy] and the current maintenance or scale-out procedure, then use the documented baseline change procedure.
 Changing the baseline can start link:data-rebalancing[rebalancing]: partitions are redistributed according to the new affinity assignment.
