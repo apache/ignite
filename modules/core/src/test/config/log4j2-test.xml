@@ -53,9 +53,6 @@
         <!--
             Uncomment to enable Ignite query execution debugging.
         -->
-
-<!-- <Logger name="org.apache.calcite.plan.RelOptPlanner" level="DEBUG"/> -->
-
         <!--
             <Logger name="org.apache.ignite.internal.processors.query" level="DEBUG"/>
         -->

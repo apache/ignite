@@ -21,7 +21,6 @@ import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Objects;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Intersect;
@@ -38,7 +37,9 @@ import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
+import org.apache.calcite.util.Util;
 import org.apache.calcite.util.mapping.IntPair;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
@@ -46,11 +47,11 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndex
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.util.GridLeanMap;
+import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.calcite.util.NumberUtil.multiply;
-import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.broadcast;
-import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.random;
+
 
 /** */
 @SuppressWarnings("unused") // actually all methods are used by runtime generated classes
@@ -59,7 +60,7 @@ public class IgniteMdRowCount extends RelMdRowCount {
     private static final double NON_EQUI_COEFF = 0.7;
 
     /** */
-    private static final double EQUI_COEFF = 0.8;
+    public static final double EQUI_COEFF = 0.8;
 
     /** */
     public static final RelMetadataProvider SOURCE =
@@ -96,13 +97,13 @@ public class IgniteMdRowCount extends RelMdRowCount {
 
         // Row count estimates of 0 will be rounded up to 1.
         // So, use maxRowCount where the product is very small.
-        final Double leftRowCount = mq.getRowCount(rel.getLeft());
-        final Double rightRowCount = mq.getRowCount(rel.getRight());
+        final Double leftRowCnt = mq.getRowCount(rel.getLeft());
+        final Double rightRowCnt = mq.getRowCount(rel.getRight());
 
-        if (leftRowCount == null || rightRowCount == null)
+        if (leftRowCnt == null || rightRowCnt == null)
             return null;
 
-        if (leftRowCount <= 1D || rightRowCount <= 1D) {
+        if (leftRowCnt <= 1D || rightRowCnt <= 1D) {
             Double max = mq.getMaxRowCount(rel);
             if (max != null && max <= 1D)
                 return max;
@@ -111,7 +112,10 @@ public class IgniteMdRowCount extends RelMdRowCount {
         Map<Integer, KeyColumnOrigin> columnsFromLeft = resolveOrigins(mq, rel.getLeft(), joinInfo.leftKeys);
         Map<Integer, KeyColumnOrigin> columnsFromRight = resolveOrigins(mq, rel.getRight(), joinInfo.rightKeys);
 
-        Map<TablesPair, JoinContext> joinContexts = new HashMap<>();
+        if (columnsFromLeft.isEmpty() || columnsFromRight.isEmpty())
+            return crudeEstimation(mq, joinInfo, rel, leftRowCnt, rightRowCnt);
+
+        Map<TablesPair, JoinContext> joinCtxts = new HashMap<>();
         for (IntPair joinKeys : joinInfo.pairs()) {
             KeyColumnOrigin leftKey = columnsFromLeft.get(joinKeys.source);
             KeyColumnOrigin rightKey = columnsFromRight.get(joinKeys.target);
@@ -120,7 +124,7 @@ public class IgniteMdRowCount extends RelMdRowCount {
                 continue;
             }
 
-            joinContexts.computeIfAbsent(
+            joinCtxts.computeIfAbsent(
                 new TablesPair(
                     leftKey.origin.getOriginTable(),
                     rightKey.origin.getOriginTable()
@@ -139,37 +143,37 @@ public class IgniteMdRowCount extends RelMdRowCount {
             ).countKeys(leftKey, rightKey);
         }
 
-        if (joinContexts.isEmpty()) {
+        if (joinCtxts.isEmpty()) {
             // Fall-back to calcite's implementation.
             return RelMdUtil.getJoinRowCount(mq, rel, rel.getCondition());
         }
 
-        Iterator<JoinContext> it = joinContexts.values().iterator();
-        JoinContext context = it.next();
+        Iterator<JoinContext> it = joinCtxts.values().iterator();
+        JoinContext joinCtx = it.next();
         while (it.hasNext()) {
-            JoinContext nextContext = it.next();
-            if (nextContext.joinType().strength > context.joinType().strength) {
-                context = nextContext;
+            JoinContext nextCtx = it.next();
+            if (nextCtx.joinType().strength > joinCtx.joinType().strength) {
+                joinCtx = nextCtx;
             }
 
-            if (context.joinType().strength == JoiningRelationType.PK_ON_PK.strength) {
+            if (joinCtx.joinType().strength == JoiningRelationType.PK_ON_PK.strength) {
                 break;
             }
         }
 
-        if (context.joinType() == JoiningRelationType.UNKNOWN) {
+        if (joinCtx.joinType() == JoiningRelationType.UNKNOWN) {
             // Fall-back to calcite's implementation.
             return RelMdUtil.getJoinRowCount(mq, rel, rel.getCondition());
         }
 
-        double postFiltrationAdjustment = EQUI_COEFF;
+        double postFiltrationAdjustment = 1.0;
 
         switch (rel.getJoinType()) {
             case INNER:
             case SEMI:
                 // Extra join keys as well as non-equi conditions serves as post-filtration,
                 // therefore we need to adjust final result with a little factor.
-                if (joinContexts.size() != 1 || !joinInfo.isEqui())
+                if (joinCtxts.size() != 1 || !joinInfo.isEqui())
                     postFiltrationAdjustment = NON_EQUI_COEFF;
 
                 break;
@@ -177,9 +181,11 @@ public class IgniteMdRowCount extends RelMdRowCount {
                 break;
         }
 
-        double baseRowCount = 0.0;
+        double baseRowCnt = 0.0;
         Double percentageAdjustment = null;
-        if (context.joinType() == JoiningRelationType.PK_ON_PK) {
+        if (joinCtx.joinType() == JoiningRelationType.PK_ON_PK) {
+            postFiltrationAdjustment = EQUI_COEFF;
+
             if (rel.getJoinType() == JoinRelType.INNER || rel.getJoinType() == JoinRelType.SEMI) {
                 // Assume we have two fact tables SALES and RETURNS sharing the same primary key. Every item
                 // can be sold, but only items which were sold can be returned back, therefore
@@ -188,18 +194,22 @@ public class IgniteMdRowCount extends RelMdRowCount {
                 // adjusted by the percentage of rows of the biggest table (SALES in this case; percentage
                 // adjustment is required to account for predicates pushed down to the table, e.g. we are
                 // interested in returns of items with certain category)
-                if (leftRowCount > rightRowCount) {
-                    baseRowCount = rightRowCount;
+                if (leftRowCnt > rightRowCnt) {
+                    baseRowCnt = rightRowCnt;
                     percentageAdjustment = mq.getPercentageOriginalRows(rel.getLeft());
-                } else {
-                    baseRowCount = leftRowCount;
+                }
+                else {
+                    baseRowCnt = leftRowCnt;
                     percentageAdjustment = mq.getPercentageOriginalRows(rel.getRight());
                 }
-            } else if (rel.getJoinType() == JoinRelType.LEFT) {
-                baseRowCount = leftRowCount;
-            } else if (rel.getJoinType() == JoinRelType.RIGHT) {
-                baseRowCount = rightRowCount;
-            } else if (rel.getJoinType() == JoinRelType.FULL) {
+            }
+            else if (rel.getJoinType() == JoinRelType.LEFT) {
+                baseRowCnt = leftRowCnt;
+            }
+            else if (rel.getJoinType() == JoinRelType.RIGHT) {
+                baseRowCnt = rightRowCnt;
+            }
+            else if (rel.getJoinType() == JoinRelType.FULL) {
                 Double selectivity = mq.getSelectivity(rel, rel.getCondition());
 
                 // Fall-back to calcite's implementation.
@@ -207,17 +217,20 @@ public class IgniteMdRowCount extends RelMdRowCount {
                     return RelMdUtil.getJoinRowCount(mq, rel, rel.getCondition());
                 }
 
-                baseRowCount = rightRowCount + leftRowCount;
+                baseRowCnt = rightRowCnt + leftRowCnt;
                 percentageAdjustment = 1.0 - selectivity;
             }
-        } else if (context.joinType() == JoiningRelationType.FK_ON_PK) {
+        }
+        else if (joinCtx.joinType() == JoiningRelationType.FK_ON_PK) {
             // For foreign key joins the base table is the one which is joined by non-primary key columns.
             if (rel.getJoinType() == JoinRelType.INNER || rel.getJoinType() == JoinRelType.SEMI) {
-                baseRowCount = leftRowCount;
+                baseRowCnt = leftRowCnt;
                 percentageAdjustment = mq.getPercentageOriginalRows(rel.getRight());
-            } else if (rel.getJoinType() == JoinRelType.LEFT || rel.getJoinType() == JoinRelType.RIGHT) {
-                baseRowCount = leftRowCount;
-            } else if (rel.getJoinType() == JoinRelType.FULL) {
+            }
+            else if (rel.getJoinType() == JoinRelType.LEFT || rel.getJoinType() == JoinRelType.RIGHT) {
+                baseRowCnt = leftRowCnt;
+            }
+            else if (rel.getJoinType() == JoinRelType.FULL) {
                 Double selectivity = mq.getSelectivity(rel, rel.getCondition());
 
                 // Fall-back to calcite's implementation.
@@ -225,16 +238,19 @@ public class IgniteMdRowCount extends RelMdRowCount {
                     return RelMdUtil.getJoinRowCount(mq, rel, rel.getCondition());
                 }
 
-                baseRowCount = rightRowCount + leftRowCount;
+                baseRowCnt = rightRowCnt + leftRowCnt;
                 percentageAdjustment = 1.0 - selectivity;
             }
-        } else { // PK_ON_FK
+        }
+        else { // PK_ON_FK
             if (rel.getJoinType() == JoinRelType.INNER || rel.getJoinType() == JoinRelType.SEMI) {
-                baseRowCount = rightRowCount;
+                baseRowCnt = rightRowCnt;
                 percentageAdjustment = mq.getPercentageOriginalRows(rel.getLeft());
-            } else if (rel.getJoinType() == JoinRelType.RIGHT || rel.getJoinType() == JoinRelType.LEFT) {
-                baseRowCount = rightRowCount;
-            } else if (rel.getJoinType() == JoinRelType.FULL) {
+            }
+            else if (rel.getJoinType() == JoinRelType.RIGHT || rel.getJoinType() == JoinRelType.LEFT) {
+                baseRowCnt = rightRowCnt;
+            }
+            else if (rel.getJoinType() == JoinRelType.FULL) {
                 Double selectivity = mq.getSelectivity(rel, rel.getCondition());
 
                 // Fall-back to calcite's implementation.
@@ -242,18 +258,20 @@ public class IgniteMdRowCount extends RelMdRowCount {
                     return RelMdUtil.getJoinRowCount(mq, rel, rel.getCondition());
                 }
 
-                baseRowCount = rightRowCount + leftRowCount;
+                baseRowCnt = rightRowCnt + leftRowCnt;
                 percentageAdjustment = 1.0 - selectivity;
             }
         }
 
         if (percentageAdjustment == null) {
-            percentageAdjustment = 1.0; // No info, let's be conservative
+            // No info, let's be conservative.
+            percentageAdjustment = 1.0;
         }
 
-        return baseRowCount * percentageAdjustment * postFiltrationAdjustment;
+        return baseRowCnt * percentageAdjustment * postFiltrationAdjustment;
     }
 
+    /** */
     private static Map<Integer, KeyColumnOrigin> resolveOrigins(RelMetadataQuery mq, RelNode joinShoulder, ImmutableIntList keys) {
         GridLeanMap<Integer, KeyColumnOrigin> origins = new GridLeanMap<>();
 
@@ -268,19 +286,13 @@ public class IgniteMdRowCount extends RelMdRowCount {
             }
 
             IgniteTable table = origin.getOriginTable().unwrap(IgniteTable.class);
-            if (table == null || table.distribution() == random()) {
+            if (table == null || !table.distribution().function().affinity())
                 continue;
-            }
 
+            // Keys can relate to affinity not pk, just assumption here.
             ImmutableIntList distKeys = table.distribution().getKeys();
-            int idx;
 
-            if (table.distribution() == broadcast())
-                idx = origin.getOriginColumnOrdinal();
-            else
-                idx = distKeys.indexOf(origin.getOriginColumnOrdinal());
-
-            //assert idx >= 0 : "Unexpected key origin, keys=" + distKeys + ", ordinal = " + origin.getOriginColumnOrdinal();
+            int idx = distKeys.indexOf(origin.getOriginColumnOrdinal());
 
             origins.put(i, new KeyColumnOrigin(origin, idx));
         }
@@ -288,19 +300,42 @@ public class IgniteMdRowCount extends RelMdRowCount {
         return origins;
     }
 
-    /** */
-    private static class KeyColumnOrigin {
-        /** */
-        private final RelColumnOrigin origin;
+    /**
+     * @param origin
+     * @param positionInKey
+     */
+    private record KeyColumnOrigin(RelColumnOrigin origin, int positionInKey) { }
 
-        /** */
-        private final int positionInKey;
+    /** This part of estimation is applicable for distributions different from hash, i.e. broadcast, single. */
+    private static double crudeEstimation(RelMetadataQuery mq, JoinInfo joinInfo, Join rel, Double leftRowCnt, Double rightRowCnt) {
+        ImmutableIntList leftKeys = joinInfo.leftKeys;
+        ImmutableIntList rightKeys = joinInfo.rightKeys;
 
-        /** */
-        KeyColumnOrigin(RelColumnOrigin origin, int positionInKey) {
-            this.origin = origin;
-            this.positionInKey = positionInKey;
-        }
+        double selectivity = mq.getSelectivity(rel, rel.getCondition());
+
+        if (F.isEmpty(leftKeys) || F.isEmpty(rightKeys))
+            return leftRowCnt * rightRowCnt * selectivity;
+
+        double leftDistinct = Util.first(
+            mq.getDistinctRowCount(rel.getLeft(), ImmutableBitSet.of(leftKeys), null), leftRowCnt);
+        double rightDistinct = Util.first(
+            mq.getDistinctRowCount(rel.getRight(), ImmutableBitSet.of(rightKeys), null), rightRowCnt);
+
+        double leftCardinality = leftDistinct / leftRowCnt;
+        double rightCardinality = rightDistinct / rightRowCnt;
+
+        double rowsCnt = (Math.min(leftRowCnt, rightRowCnt) / (leftCardinality * rightCardinality)) * selectivity;
+
+        JoinRelType type = rel.getJoinType();
+
+        if (type == JoinRelType.LEFT)
+            rowsCnt += leftRowCnt;
+        else if (type == JoinRelType.RIGHT)
+            rowsCnt += rightRowCnt;
+        else if (type == JoinRelType.FULL)
+            rowsCnt += leftRowCnt + rightRowCnt;
+
+        return rowsCnt;
     }
 
     /**
@@ -343,37 +378,14 @@ public class IgniteMdRowCount extends RelMdRowCount {
         return rel.estimateRowCount(mq);
     }
 
-    private static class TablesPair {
-        private final RelOptTable left;
-        private final RelOptTable right;
+    /** */
+    private record TablesPair(RelOptTable left, RelOptTable right) { }
 
-        TablesPair(RelOptTable left, RelOptTable right) {
-            this.left = left;
-            this.right = right;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            TablesPair that = (TablesPair) o;
-            // Reference equality on purpose.
-            return left == that.left && right == that.right;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(left, right);
-        }
-    }
-
+    /** */
     private static class JoinContext {
         /** Used columns of primary key of table from left side. */
         private final BitSet leftKeys;
+
         /** Used columns of primary key of table from right side. */
         private final BitSet rightKeys;
 
@@ -391,10 +403,11 @@ public class IgniteMdRowCount extends RelMdRowCount {
          */
         private final @Nullable BitSet commonKeys;
 
+        /** */
         JoinContext(int leftPkSize, int rightPkSize) {
-            this.leftKeys = new BitSet();
-            this.rightKeys = new BitSet();
-            this.commonKeys = leftPkSize == rightPkSize ? new BitSet() : null;
+            leftKeys = new BitSet();
+            rightKeys = new BitSet();
+            commonKeys = leftPkSize == rightPkSize && leftPkSize != 0 ? new BitSet() : null;
 
             leftKeys.set(0, leftPkSize);
             rightKeys.set(0, rightPkSize);
@@ -406,6 +419,7 @@ public class IgniteMdRowCount extends RelMdRowCount {
             }
         }
 
+        /** */
         void countKeys(KeyColumnOrigin left, KeyColumnOrigin right) {
             if (left.positionInKey >= 0) {
                 leftKeys.clear(left.positionInKey);
@@ -420,6 +434,7 @@ public class IgniteMdRowCount extends RelMdRowCount {
             }
         }
 
+        /** */
         JoiningRelationType joinType() {
             if (commonKeys != null && commonKeys.isEmpty()) {
                 return JoiningRelationType.PK_ON_PK;
@@ -445,6 +460,7 @@ public class IgniteMdRowCount extends RelMdRowCount {
          * <p>Semantic is unknown.
          */
         UNKNOWN(0),
+
         /**
          * Join by primary keys on non-primary keys.
          *
@@ -452,6 +468,7 @@ public class IgniteMdRowCount extends RelMdRowCount {
          * as joins by foreign key.
          */
         PK_ON_FK(UNKNOWN.strength + 1),
+
         /**
          * Join by non-primary keys on primary keys.
          *
@@ -459,6 +476,7 @@ public class IgniteMdRowCount extends RelMdRowCount {
          * as joins by foreign key.
          */
         FK_ON_PK(PK_ON_FK.strength + 1),
+
         /**
          * Join of two tables which sharing the same primary key.
          *
@@ -467,9 +485,10 @@ public class IgniteMdRowCount extends RelMdRowCount {
          */
         PK_ON_PK(FK_ON_PK.strength + 1);
 
-        // The higher, the better.
+        /** The higher, the better. */
         private final int strength;
 
+        /** */
         JoiningRelationType(int strength) {
             this.strength = strength;
         }

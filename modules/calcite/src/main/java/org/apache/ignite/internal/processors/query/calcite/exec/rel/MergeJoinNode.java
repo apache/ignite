@@ -190,7 +190,7 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
         assert waitingRight > 0;
 
         waitingRight--;
-        
+
         rightInBuf.add(row);
 
         if (waitingRight == 0 && waitingLeft <= 0)

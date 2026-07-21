@@ -67,13 +67,13 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
     private static final double IS_NULL_SELECTIVITY = 0.1;
 
     /** Default selectivity for IS NOT NULL conditions. */
-    private static final double IS_NOT_NULL_SELECTIVITY = 1 - IS_NULL_SELECTIVITY;
+    public static final double IS_NOT_NULL_SELECTIVITY = 1 - IS_NULL_SELECTIVITY;
 
     /** Default selectivity for equals conditions. */
-    private static final double EQUALS_SELECTIVITY = 0.15;
+    public static final double EQUALS_SELECTIVITY = 0.15;
 
     /** Default selectivity for comparison conitions. */
-    private static final double COMPARISON_SELECTIVITY = 0.5;
+    public static final double COMPARISON_SELECTIVITY = 0.5;
 
     /** Default selectivity for other conditions. */
     private static final double OTHER_SELECTIVITY = 0.25;
@@ -81,7 +81,7 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
     /**
      * Math context to use in estimations calculations.
      */
-    private final MathContext MATH_CONTEXT = MathContext.DECIMAL64;
+    private static final MathContext MATH_CONTEXT = MathContext.DECIMAL64;
 
     /** */
     public static final RelMetadataProvider SOURCE =

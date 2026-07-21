@@ -17,25 +17,13 @@
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configurator;
-import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.junit.Test;
 
 import static org.apache.logging.log4j.Level.DEBUG;
 
 /** Calcite litmus related tests. */
 public class LitmusCheckIntegrationTest extends AbstractBasicIntegrationTest {
-/*    *//** {@inheritDoc} *//*
-    @Override protected void beforeTestsStarted() throws Exception {
-        startGrid(0);
-    }
-
-    *//** {@inheritDoc} *//*
-    @Override protected void afterTestsStopped() {
-        stopAllGrids();
-    }*/
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -48,6 +36,7 @@ public class LitmusCheckIntegrationTest extends AbstractBasicIntegrationTest {
         return 1;
     }
 
+    /** Check no calcite litmus exception is raised. */
     @Test
     public void testLitmusLowerCost() {
         sql("create table t11 (c1 int, c2 int, c3 int)");
