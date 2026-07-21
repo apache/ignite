@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +43,8 @@ import javax.tools.Diagnostic;
 import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.MessageProcessor.CACHE_OBJECT_CLS;
+import static org.apache.ignite.internal.MessageProcessor.KEY_CACHE_OBJECT_CLS;
 import static org.apache.ignite.internal.MessageProcessor.MARSHALLABLE_MESSAGE_INTERFACE;
 import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
 import static org.apache.ignite.internal.MessageProcessor.NON_MARSHALLABLE_MESSAGE_INTERFACE;
@@ -86,8 +89,14 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     /** Enclosed fields of the currently processed type. Computed once per {@link #generateBody} call. */
     private Map<String, VariableElement> enclosed;
 
+    /** {@link MarshalledKind} of each {@code @Marshalled} enclosed field. Computed once per {@link #generateBody} call. */
+    private final Map<VariableElement, MarshalledKind> kinds = new HashMap<>();
+
     /** Nesting depth of the current marshal for-loop; names loop variables {@code e}, {@code e1}, {@code e2}… */
     private int loopDepth;
+
+    /** Whether the currently generated method emitted a loop-nested facade call and so needs the {@code msgFactory} local. */
+    private boolean usesMsgFactory;
 
     /** */
     MessageMarshallerGenerator(ProcessingEnvironment env) {
@@ -95,7 +104,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
         marshallableMsgType = type(MARSHALLABLE_MESSAGE_INTERFACE);
         msgType = type(MESSAGE_INTERFACE);
-        cacheObjType = type("org.apache.ignite.internal.processors.cache.CacheObject");
+        cacheObjType = type(CACHE_OBJECT_CLS);
         nonMarshallableType = type(NON_MARSHALLABLE_MESSAGE_INTERFACE);
         cacheGrpIdMsgType = type("org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage");
         mapType = type("java.util.Map");
@@ -115,12 +124,16 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     /** {@inheritDoc} */
     @Override void generateBody(List<VariableElement> fields) throws Exception {
         enclosed = enclosedFields();
-        marshallable = marshallableMsgType != null && assignableFrom(type.asType(), marshallableMsgType);
-        hasMarshalled = enclosed.values().stream().anyMatch(f -> {
+
+        for (VariableElement f : enclosed.values()) {
             MarshalledKind kind = marshalledKind(f);
 
-            return kind == MarshalledKind.BLOB || kind == MarshalledKind.ELEMENT_BLOBS;
-        });
+            if (kind != null)
+                kinds.put(f, kind);
+        }
+
+        marshallable = marshallableMsgType != null && assignableFrom(type.asType(), marshallableMsgType);
+        hasMarshalled = kinds.values().stream().anyMatch(k -> k == MarshalledKind.BLOB || k == MarshalledKind.ELEMENT_BLOBS);
 
         generateMarshalMethod(fields);
         generateUnmarshalMethods(fields);
@@ -188,6 +201,8 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         String signature = "marshal(" + simpleNameWithGeneric(type) + " msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx)";
 
         hasStatements |= emitMethod(marshall, signature, body -> {
+            usesMsgFactory = false;
+
             if (needsCtx(orderedFields))
                 appendBlock(body, List.of(ctxResolutionLine()));
 
@@ -198,6 +213,8 @@ public class MessageMarshallerGenerator extends MessageGenerator {
                 appendBlock(body, List.of(indentedLine("msg.marshal(marshaller);")));
 
             appendFields(body, orderedFields, MarshalMode.MARSHAL);
+
+            prependMsgFactoryResolution(body);
         });
     }
 
@@ -241,6 +258,8 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     /** Generates the cache-aware {@code unmarshal} overload: the full field set, with cache context and deployment class loader. */
     private void generateUnmarshalMethod(String params, List<VariableElement> fields) {
         hasStatements |= emitMethod(marshall, "unmarshal(" + params + ")", body -> {
+            usesMsgFactory = false;
+
             Set<String> wireFieldSkip = marshalledWireFieldsToSkip();
 
             if (needsCtx(fields) || !wireFieldSkip.isEmpty())
@@ -253,9 +272,11 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
             appendMarshalledFinish(body);
 
-            appendMarshalledCollectionFinish(body);
+            appendMarshalledElementsFinish(body);
             appendMarshalledMapFinish(body);
-            appendMarshalledObjectsFinish(body);
+            appendMarshalledElementBlobsFinish(body);
+
+            prependMsgFactoryResolution(body);
         });
     }
 
@@ -295,7 +316,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
     /** Generates the {@code Collection<byte[]>} build-up for a per-element-blobs {@code @Marshalled} field in marshal. */
     private void appendObjectsPrepare(List<String> body, VariableElement field) {
-        if (marshalledKind(field) != MarshalledKind.ELEMENT_BLOBS)
+        if (kinds.get(field) != MarshalledKind.ELEMENT_BLOBS)
             return;
 
         Marshalled ann = field.getAnnotation(Marshalled.class);
@@ -329,7 +350,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
     /** Appends a {@code toArray} assignment for a per-element {@code @Marshalled} field, if present. */
     private void appendCollectionPrepare(List<String> body, VariableElement field) {
-        if (marshalledKind(field) != MarshalledKind.ELEMENTS)
+        if (kinds.get(field) != MarshalledKind.ELEMENTS)
             return;
 
         Marshalled ann = field.getAnnotation(Marshalled.class);
@@ -353,7 +374,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
     /** Appends key/value array assignments for a map-flavoured {@code @Marshalled} field, if present. */
     private void appendMapPrepare(List<String> body, VariableElement field) {
-        if (marshalledKind(field) != MarshalledKind.MAP)
+        if (kinds.get(field) != MarshalledKind.MAP)
             return;
 
         Marshalled ann = field.getAnnotation(Marshalled.class);
@@ -421,10 +442,10 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         }, body);
     }
 
-    /** Generates Set reconstruction for all per-element {@code @Marshalled} fields. */
-    private void appendMarshalledCollectionFinish(List<String> body) {
+    /** Generates Set reconstruction for all {@link MarshalledKind#ELEMENTS} {@code @Marshalled} fields. */
+    private void appendMarshalledElementsFinish(List<String> body) {
         for (VariableElement field : enclosed.values()) {
-            if (marshalledKind(field) != MarshalledKind.ELEMENTS)
+            if (kinds.get(field) != MarshalledKind.ELEMENTS)
                 continue;
 
             Marshalled colAnn = field.getAnnotation(Marshalled.class);
@@ -453,10 +474,10 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         }
     }
 
-    /** Generates Collection reconstruction for all per-element-blobs {@code @Marshalled} fields (cache-aware pass only). */
-    private void appendMarshalledObjectsFinish(List<String> body) {
+    /** Generates Collection reconstruction for {@link MarshalledKind#ELEMENT_BLOBS} {@code @Marshalled} fields (cache-aware pass only). */
+    private void appendMarshalledElementBlobsFinish(List<String> body) {
         for (VariableElement field : enclosed.values()) {
-            if (marshalledKind(field) != MarshalledKind.ELEMENT_BLOBS)
+            if (kinds.get(field) != MarshalledKind.ELEMENT_BLOBS)
                 continue;
 
             Marshalled ann = field.getAnnotation(Marshalled.class);
@@ -466,7 +487,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
             imports.add("java.util.ArrayList");
             imports.add("java.util.Map");
-            imports.add("org.apache.ignite.internal.processors.cache.KeyCacheObject");
+            imports.add(KEY_CACHE_OBJECT_CLS);
 
             List<String> code = new ArrayList<>();
 
@@ -542,7 +563,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         Set<String> names = new HashSet<>();
 
         for (VariableElement f : enclosed.values()) {
-            MarshalledKind kind = marshalledKind(f);
+            MarshalledKind kind = kinds.get(f);
 
             if (kind == null || kind == MarshalledKind.BLOB)
                 continue;
@@ -563,7 +584,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     /** Generates Map reconstruction for all map-flavoured {@code @Marshalled} fields. */
     private void appendMarshalledMapFinish(List<String> body) {
         for (VariableElement field : enclosed.values()) {
-            if (marshalledKind(field) != MarshalledKind.MAP)
+            if (kinds.get(field) != MarshalledKind.MAP)
                 continue;
 
             Marshalled ann = field.getAnnotation(Marshalled.class);
@@ -778,7 +799,11 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         return List.of();
     }
 
-    /** Generates a null-guarded {@code MessageMarshalling.marshal/unmarshal} call. */
+    /**
+     * Generates a null-guarded {@code MessageMarshalling.marshal/unmarshal} call. Loop-nested calls go through the
+     * overloads taking the pre-resolved {@code msgFactory} local (see {@link #prependMsgFactoryResolution}), so the
+     * factory is not re-resolved from the context on every element.
+     */
     private List<String> marshallMessage(String accessor, MarshalMode mode) {
         imports.add("org.apache.ignite.internal.managers.communication.MessageMarshalling");
 
@@ -788,9 +813,18 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
         indent++;
 
-        code.add(mode == MarshalMode.MARSHAL
-            ? indentedLine("MessageMarshalling.marshal(%s, kctx, ctx);", accessor)
-            : indentedLine("MessageMarshalling.unmarshal(%s, kctx, ctx, clsLdr);", accessor));
+        if (loopDepth > 0) {
+            usesMsgFactory = true;
+
+            code.add(mode == MarshalMode.MARSHAL
+                ? indentedLine("MessageMarshalling.marshal(msgFactory, %s, kctx, ctx);", accessor)
+                : indentedLine("MessageMarshalling.unmarshal(msgFactory, %s, kctx, ctx, clsLdr);", accessor));
+        }
+        else {
+            code.add(mode == MarshalMode.MARSHAL
+                ? indentedLine("MessageMarshalling.marshal(%s, kctx, ctx);", accessor)
+                : indentedLine("MessageMarshalling.unmarshal(%s, kctx, ctx, clsLdr);", accessor));
+        }
 
         indent--;
 
@@ -818,13 +852,14 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     private List<String> marshallArray(TypeMirror comp, String accessor, MarshalMode mode) {
         Element elem = ((DeclaredType)comp).asElement();
 
-        imports.add(((QualifiedNameable)elem).getQualifiedName().toString());
-
         indent++;
 
         List<String> loopCode = forLoop(elem.getSimpleName().toString(), comp, accessor, mode);
 
         indent--;
+
+        if (!loopCode.isEmpty())
+            imports.add(((QualifiedNameable)elem).getQualifiedName().toString());
 
         return wrapNullGuarded(accessor, loopCode);
     }
@@ -838,9 +873,6 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
         Element elem = element(arg);
 
-        imports.add(((QualifiedNameable)elem).getQualifiedName().toString());
-        imports.add("java.util.Collection");
-
         String typeName = elem.getSimpleName().toString();
 
         indent++;
@@ -848,6 +880,11 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         List<String> loopCode = forLoop(typeName, arg, "(Collection<? extends " + typeName + ">)" + accessor, mode);
 
         indent--;
+
+        if (!loopCode.isEmpty()) {
+            imports.add(((QualifiedNameable)elem).getQualifiedName().toString());
+            imports.add("java.util.Collection");
+        }
 
         return wrapNullGuarded(accessor, loopCode);
     }
@@ -868,14 +905,19 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
             Element elem = element(elemType);
 
-            imports.add(((QualifiedNameable)elem).getQualifiedName().toString());
-            imports.add("java.util.Collection");
-
             String typeName = elem.getSimpleName().toString();
             String collection = i == 0 ? "keySet" : "values";
             String iterable = "((Collection<? extends " + typeName + ">)" + accessor + "." + collection + "())";
 
-            combined.addAll(forLoop(typeName, elemType, iterable, mode));
+            List<String> loopCode = forLoop(typeName, elemType, iterable, mode);
+
+            if (loopCode.isEmpty())
+                continue;
+
+            imports.add(((QualifiedNameable)elem).getQualifiedName().toString());
+            imports.add("java.util.Collection");
+
+            combined.addAll(loopCode);
         }
 
         indent--;
@@ -907,6 +949,17 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         code.add(indentedLine("}"));
 
         return code;
+    }
+
+    /** Prefixes {@code body} with the {@code msgFactory} resolution line when a loop-nested facade call was emitted. */
+    private void prependMsgFactoryResolution(List<String> body) {
+        if (!usesMsgFactory)
+            return;
+
+        imports.add("org.apache.ignite.internal.managers.communication.IgniteMessageFactory");
+
+        body.add(0, EMPTY);
+        body.add(0, indentedLine("IgniteMessageFactory msgFactory = (IgniteMessageFactory)kctx.messageFactory();"));
     }
 
     /** Returns empty if {@code inner} is empty; otherwise wraps {@code inner} in a null-guard on {@code nullGuard}. */
@@ -950,23 +1003,18 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     /**
      * Returns whether the {@code @Order} fields of {@code msgType} need a cache object context to unmarshal. Such a
      * message must not be a {@code @NioField}: its {@code unmarshalNio} runs on the NIO thread, which has no context.
+     * A type with no fields to inspect (e.g. a type variable) is conservatively assumed to need the context.
      */
     private boolean nestedNeedsCtx(TypeMirror type) {
         Element el = env.getTypeUtils().asElement(type);
 
         if (!(el instanceof TypeElement))
-            return false;
+            return true;
 
-        List<VariableElement> ordered = new ArrayList<>();
-
-        SystemViewRowAttributeWalkerProcessor.superclasses(env, (TypeElement)el).forEach(c -> {
-            for (VariableElement f : ElementFilter.fieldsIn(c.getEnclosedElements())) {
-                if (f.getAnnotation(Order.class) != null)
-                    ordered.add(f);
-            }
-        });
-
-        return needsCtx(ordered);
+        return SystemViewRowAttributeWalkerProcessor.superclasses(env, (TypeElement)el)
+            .flatMap(c -> ElementFilter.fieldsIn(c.getEnclosedElements()).stream())
+            .filter(f -> f.getAnnotation(Order.class) != null)
+            .anyMatch(f -> needsCtxType(f.asType()));
     }
 
     /** Returns {@code true} if type {@code t} (or its element/key/value types) requires {@code ctx}. */
@@ -1035,7 +1083,6 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         return field.getAnnotation(NioField.class) != null;
     }
 
-    /** Returns the enclosed field named {@code name}, or throws if absent. */
     /** Marshalling flavour of a {@code @Marshalled} field, told apart by the shape of its companion wire field(s). */
     private enum MarshalledKind {
         /** {@code byte[]} companion: the whole object is a single marshaller blob. */
@@ -1051,7 +1098,10 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         MAP
     }
 
-    /** @return the flavour of {@code field}'s {@code @Marshalled}, or {@code null} when the field is not annotated. */
+    /**
+     * @return the flavour of {@code field}'s {@code @Marshalled}, or {@code null} when the field is not annotated.
+     * Called once per field when building {@link #kinds}; look the kind up there instead.
+     */
     private @Nullable MarshalledKind marshalledKind(VariableElement field) {
         Marshalled ann = field.getAnnotation(Marshalled.class);
 
@@ -1081,7 +1131,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         return MarshalledKind.ELEMENT_BLOBS;
     }
 
-    /** */
+    /** Returns the enclosed field named {@code name}, or throws if absent. */
     private VariableElement requireEnclosed(Map<String, VariableElement> enclosed, String name, String annotationName) {
         VariableElement el = enclosed.get(name);
 
@@ -1094,7 +1144,7 @@ public class MessageMarshallerGenerator extends MessageGenerator {
     /** Iterates all {@code @Marshalled} fields and applies {@code codeGen(bytesAccessor, objAccessor)} to each. */
     private void forEachMarshalled(BiFunction<String, String, List<String>> codeGen, List<String> body) {
         for (VariableElement field : enclosed.values()) {
-            if (marshalledKind(field) != MarshalledKind.BLOB)
+            if (kinds.get(field) != MarshalledKind.BLOB)
                 continue;
 
             Marshalled ann = field.getAnnotation(Marshalled.class);
@@ -1110,9 +1160,13 @@ public class MessageMarshallerGenerator extends MessageGenerator {
             ((DeclaredType)((TypeVariable)t).getUpperBound()).asElement();
     }
 
-    /** Returns the simple name of the array component type of {@code field}. */
-    private static String arrayComponentName(VariableElement field) {
-        return ((DeclaredType)((ArrayType)field.asType()).getComponentType()).asElement().getSimpleName().toString();
+    /** Returns the simple name of the array component type of {@code field}, registering its import. */
+    private String arrayComponentName(VariableElement field) {
+        Element comp = ((DeclaredType)((ArrayType)field.asType()).getComponentType()).asElement();
+
+        imports.add(((QualifiedNameable)comp).getQualifiedName().toString());
+
+        return comp.getSimpleName().toString();
     }
 
     /** Direction of the field code a generator pass emits: object→wire ({@link #MARSHAL}) or wire→object ({@link #UNMARSHAL}). */

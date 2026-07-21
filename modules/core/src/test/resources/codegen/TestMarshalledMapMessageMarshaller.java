@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import java.util.Collection;
 import java.util.Iterator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;

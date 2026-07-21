@@ -151,7 +151,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
         e0.markFiltered();
 
         IgniteMessageFactoryImpl msgFactory =
-            new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{new CoreMessagesProvider(jdk(), jdk(), U.gridClassLoader())});
+            new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{new CoreMessagesProvider(jdk(), jdk())});
 
         ByteBuffer buf = ByteBuffer.allocate(4096);
         DirectMessageWriter writer = new DirectMessageWriter(msgFactory);

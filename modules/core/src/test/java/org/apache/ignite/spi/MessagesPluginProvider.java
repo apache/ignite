@@ -76,6 +76,6 @@ public class MessagesPluginProvider extends AbstractTestPluginProvider {
         // Register messages into the discovery protocol.
         TestTcpDiscoverySpi discoSpi = (TestTcpDiscoverySpi)ctx.igniteConfiguration().getDiscoverySpi();
 
-        discoSpi.messageFactory(msgFactoryProvider, ctx.igniteConfiguration());
+        discoSpi.messageFactory(msgFactoryProvider);
     }
 }

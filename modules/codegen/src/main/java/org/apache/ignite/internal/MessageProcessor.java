@@ -85,6 +85,12 @@ public class MessageProcessor extends AbstractProcessor {
     static final String NON_MARSHALLABLE_MESSAGE_INTERFACE = "org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage";
 
     /** */
+    static final String CACHE_OBJECT_CLS = "org.apache.ignite.internal.processors.cache.CacheObject";
+
+    /** */
+    static final String KEY_CACHE_OBJECT_CLS = "org.apache.ignite.internal.processors.cache.KeyCacheObject";
+
+    /** */
     public static final String GRID_H2_NULL = "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Null";
 
     /** */
@@ -145,7 +151,7 @@ public class MessageProcessor extends AbstractProcessor {
             if (nonMarshallableEl != null && isAssignable(nonMarshallableEl.asType(), clazz)
                 && ((marshallableEl != null && isAssignable(marshallableEl.asType(), clazz)) || hasMarshalledFields(clazz))) {
                 processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
-                    "NonMarshallableMessage must not implement MarshallableMessage or declare @Marshalled* fields", clazz);
+                    "NonMarshallableMessage must not implement MarshallableMessage or declare @Marshalled fields", clazz);
             }
 
             if (clazz.getModifiers().contains(Modifier.ABSTRACT))

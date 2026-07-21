@@ -38,7 +38,6 @@ import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.PluginProvider;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 
@@ -48,9 +47,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.reader
  * Test context.
  */
 public class GridTestKernalContext extends GridKernalContextImpl {
-    /** Message factory override for tests; when non-null, replaces the default factory. */
-    public MessageFactory messageFactory;
-    
     /**
      * @param log Logger to use in context config.
      */
@@ -119,11 +115,6 @@ public class GridTestKernalContext extends GridKernalContextImpl {
 
             comp.stop(cancel);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public MessageFactory messageFactory() {
-        return messageFactory != null ? messageFactory : super.messageFactory();
     }
 
     /** {@inheritDoc} */

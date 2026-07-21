@@ -43,7 +43,9 @@ import javax.lang.model.type.TypeMirror;
 import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.MessageProcessor.CACHE_OBJECT_CLS;
 import static org.apache.ignite.internal.MessageProcessor.COMPRESSED_MESSAGE_CLASS;
+import static org.apache.ignite.internal.MessageProcessor.KEY_CACHE_OBJECT_CLS;
 import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
 
 /** Generates {@code *Serializer} classes for {@code Message} types. */
@@ -323,10 +325,10 @@ public class MessageSerializerGenerator extends MessageGenerator {
             if (assignableFrom(erasedType(type), type(Map.class.getName())))
                 return new FieldCall("Map", messageCollectionItemTypes(field, type), compress);
 
-            if (assignableFrom(type, type("org.apache.ignite.internal.processors.cache.KeyCacheObject")))
+            if (assignableFrom(type, type(KEY_CACHE_OBJECT_CLS)))
                 return new FieldCall("KeyCacheObject", null, false);
 
-            if (assignableFrom(type, type("org.apache.ignite.internal.processors.cache.CacheObject")))
+            if (assignableFrom(type, type(CACHE_OBJECT_CLS)))
                 return new FieldCall("CacheObject", null, false);
 
             if (assignableFrom(type, type("org.apache.ignite.internal.util.GridLongList")))
@@ -535,10 +537,10 @@ public class MessageSerializerGenerator extends MessageGenerator {
             if (sameType(type, "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion"))
                 return "AFFINITY_TOPOLOGY_VERSION";
 
-            if (sameType(type, "org.apache.ignite.internal.processors.cache.KeyCacheObject"))
+            if (sameType(type, KEY_CACHE_OBJECT_CLS))
                 return "KEY_CACHE_OBJECT";
 
-            if (sameType(type, "org.apache.ignite.internal.processors.cache.CacheObject"))
+            if (sameType(type, CACHE_OBJECT_CLS))
                 return "CACHE_OBJECT";
 
             if (sameType(type, "org.apache.ignite.internal.util.GridLongList"))

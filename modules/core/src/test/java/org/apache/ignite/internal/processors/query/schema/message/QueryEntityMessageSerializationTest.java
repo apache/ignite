@@ -43,6 +43,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -61,7 +62,7 @@ public class QueryEntityMessageSerializationTest extends GridCommonAbstractTest 
 
     /** */
     private final MessageFactory msgFactory = new IgniteMessageFactoryImpl(
-        new MessageFactoryProvider[] {new CoreMessagesProvider(marsh, marsh, U.gridClassLoader())});
+        new MessageFactoryProvider[] {new CoreMessagesProvider(marsh, marsh)});
 
     /** */
     @Test
@@ -125,8 +126,8 @@ public class QueryEntityMessageSerializationTest extends GridCommonAbstractTest 
      */
     private <T extends Message> T writeAndReadBack(T msg, long expReadsWritesCnt) throws IgniteCheckedException {
         GridTestKernalContext kctx = newContext();
-        
-        kctx.messageFactory = msgFactory;
+
+        GridTestUtils.setFieldValue(kctx.grid(), "msgFactory", msgFactory);
 
         MessageMarshalling.marshal(msg, kctx, null);
 

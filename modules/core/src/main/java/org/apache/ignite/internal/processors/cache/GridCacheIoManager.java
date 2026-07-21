@@ -39,6 +39,7 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.communication.GridIoManager.SendRetryPolicy;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.communication.MessageMarshalling;
@@ -118,6 +119,34 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
     /** Number of retries using to send messages. */
     private int retryCnt;
+
+    /** Retry policy of {@link #send(ClusterNode, GridCacheMessage, byte)}: pings the node and retries up to {@link #retryCnt} times. */
+    private final SendRetryPolicy sendRetryPlc = (node, e, attempt) -> {
+        if (!cctx.discovery().alive(node.id()) || !cctx.discovery().pingNode(node.id()))
+            throw new ClusterTopologyCheckedException("Node left grid while sending message to: " + node.id(), e);
+
+        if (attempt > retryCnt || cctx.kernalContext().isStopping())
+            return false;
+
+        if (log.isDebugEnabled())
+            log.debug("Failed to send message to node (will retry): " + node.id());
+
+        return true;
+    };
+
+    /** Retry policy of {@link #sendOrderedMessage}: retries up to {@link #retryCnt} times while the node stays in topology. */
+    private final SendRetryPolicy orderedSendRetryPlc = (node, e, attempt) -> {
+        if (cctx.discovery().node(node.id()) == null)
+            throw new ClusterTopologyCheckedException("Node left grid while sending ordered message to: " + node.id(), e);
+
+        if (attempt > retryCnt)
+            return false;
+
+        if (log.isDebugEnabled())
+            log.debug("Failed to send message to node (will retry): " + node.id());
+
+        return true;
+    };
 
     /** */
     private final MessageHandlers cacheHandlers = new MessageHandlers();
@@ -1134,18 +1163,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         if (log.isDebugEnabled())
             log.debug("Sending cache message [msg=" + msg + ", node=" + U.toShortString(node) + ']');
 
-        cctx.gridIO().sendWithRetry(node, TOPIC_CACHE, msg, plc, false, 0, false, (e, attempt) -> {
-            if (!cctx.discovery().alive(node.id()) || !cctx.discovery().pingNode(node.id()))
-                throw new ClusterTopologyCheckedException("Node left grid while sending message to: " + node.id(), e);
-
-            if (attempt > retryCnt || cctx.kernalContext().isStopping())
-                return false;
-
-            if (log.isDebugEnabled())
-                log.debug("Failed to send message to node (will retry): " + node.id());
-
-            return true;
-        });
+        cctx.gridIO().sendWithRetry(node, TOPIC_CACHE, msg, plc, false, 0, false, sendRetryPlc);
 
         if (log.isDebugEnabled())
             log.debug("Sent cache message [msg=" + msg + ", node=" + U.toShortString(node) + ']');
@@ -1190,18 +1208,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             return;
         }
 
-        cctx.gridIO().sendWithRetry(node, topic, msg, plc, true, timeout, false, (e, attempt) -> {
-            if (cctx.discovery().node(node.id()) == null)
-                throw new ClusterTopologyCheckedException("Node left grid while sending ordered message to: " + node.id(), e);
-
-            if (attempt > retryCnt)
-                return false;
-
-            if (log.isDebugEnabled())
-                log.debug("Failed to send message to node (will retry): " + node.id());
-
-            return true;
-        });
+        cctx.gridIO().sendWithRetry(node, topic, msg, plc, true, timeout, false, orderedSendRetryPlc);
 
         if (log.isDebugEnabled())
             log.debug("Sent ordered cache message [topic=" + topic + ", msg=" + msg + ", nodeId=" + node.id() + ']');

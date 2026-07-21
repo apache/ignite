@@ -528,7 +528,7 @@ public class MessageProcessorTest {
         assertThat(compilation).failed();
 
         assertThat(compilation)
-            .hadErrorContaining("NonMarshallableMessage must not implement MarshallableMessage or declare @Marshalled* fields");
+            .hadErrorContaining("NonMarshallableMessage must not implement MarshallableMessage or declare @Marshalled fields");
     }
 
     /** */

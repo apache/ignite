@@ -50,7 +50,7 @@ import static org.junit.Assert.assertTrue;
 public class CompressedMessageTest {
     /** */
     private static final MessageFactory MSG_FACTORY = new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{
-        new CoreMessagesProvider(jdk(), jdk(), U.gridClassLoader())});
+        new CoreMessagesProvider(jdk(), jdk())});
 
     /** */
     @Test

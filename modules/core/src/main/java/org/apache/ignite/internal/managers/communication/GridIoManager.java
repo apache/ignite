@@ -2126,7 +2126,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                 throw e;
             }
             catch (IgniteCheckedException e) {
-                if (!retryPlc.onFailure(e, attempt))
+                if (!retryPlc.onFailure(node, e, attempt))
                     throw e;
             }
 
@@ -2137,12 +2137,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
     /** Failure policy for {@link #sendWithRetry}: decides whether a failed transmission attempt is retried. */
     @FunctionalInterface public interface SendRetryPolicy {
         /**
+         * @param node Destination node of the failed attempt.
          * @param e Transmission failure.
          * @param attempt Failed attempt number, starting with {@code 1}.
          * @return {@code true} to retry, {@code false} to rethrow {@code e}.
          * @throws IgniteCheckedException To replace {@code e} with a more specific failure.
          */
-        public boolean onFailure(IgniteCheckedException e, int attempt) throws IgniteCheckedException;
+        public boolean onFailure(ClusterNode node, IgniteCheckedException e, int attempt) throws IgniteCheckedException;
     }
 
     /**

@@ -31,6 +31,8 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.WildcardType;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.MessageProcessor.CACHE_OBJECT_CLS;
+
 /**
  * Generates a {@code *Deployer} class for messages whose {@code @Order} fields have a type that indicates deployment
  * need: {@code CacheObject} subtypes, {@code Collection<? extends CacheObject>}, {@code Iterable<IgniteTxEntry>}, or a
@@ -70,7 +72,7 @@ public class MessageDeploymentGenerator extends MessageGenerator {
 
         gridCacheMsgType = type("org.apache.ignite.internal.processors.cache.GridCacheMessage");
         deployableMsgType = type("org.apache.ignite.internal.processors.cache.DeployableMessage");
-        cacheObjType = type("org.apache.ignite.internal.processors.cache.CacheObject");
+        cacheObjType = type(CACHE_OBJECT_CLS);
         txEntryType = type("org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry");
         colType = erasedType(type("java.util.Collection"));
         iterableType = erasedType(type("java.lang.Iterable"));

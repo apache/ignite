@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.cache.query.QueryIndexMessage;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta;
@@ -327,21 +326,20 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
     /**
      * Default plugin-purposes constructor.
      *
-     * @see #init(Marshaller, Marshaller, ClassLoader)
+     * @see #init(Marshaller, Marshaller)
      */
     public CoreMessagesProvider() {
         // No-op.
     }
 
     /**
-     * Constructor allowing not to call {@link #init(Marshaller, Marshaller, ClassLoader)}.
+     * Constructor allowing not to call {@link #init(Marshaller, Marshaller)}.
      *
      * @param dfltMarsh Schema-less marshaller like {@link JdkMarshaller}.
      * @param schemaAwareMarsh Schema-aware marshaller like {@link BinaryMarshaller}.
-     * @param resolvedClsLdr Resolved (configured) class loader like {@link IgniteConfiguration#setClassLoader(ClassLoader)}.
      */
-    public CoreMessagesProvider(Marshaller dfltMarsh, Marshaller schemaAwareMarsh, ClassLoader resolvedClsLdr) {
-        init(dfltMarsh, schemaAwareMarsh, resolvedClsLdr);
+    public CoreMessagesProvider(Marshaller dfltMarsh, Marshaller schemaAwareMarsh) {
+        init(dfltMarsh, schemaAwareMarsh);
     }
 
     /**

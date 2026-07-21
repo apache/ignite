@@ -43,7 +43,21 @@ public final class MessageMarshalling {
      */
     public static <M extends Message> void marshal(M msg, GridKernalContext kctx, @Nullable CacheObjectContext cacheObjCtx)
         throws IgniteCheckedException {
-        MessageMarshaller<M> m = resolve(kctx, msg);
+        marshal(factory(kctx), msg, kctx, cacheObjCtx);
+    }
+
+    /**
+     * Marshals {@code msg} through its registered marshaller; a no-op when none is registered. Callers marshalling
+     * many messages resolve {@code msgFactory} once and use this overload.
+     *
+     * @param msgFactory Message factory to resolve the marshaller from.
+     * @param msg Message to marshal.
+     * @param kctx Kernal context.
+     * @param cacheObjCtx Cache object context of the enclosing message, or {@code null} at the top level.
+     */
+    public static <M extends Message> void marshal(IgniteMessageFactory msgFactory, M msg, GridKernalContext kctx,
+        @Nullable CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
+        MessageMarshaller<M> m = resolve(msgFactory, msg);
 
         if (m != null)
             m.marshal(msg, kctx, cacheObjCtx);
@@ -59,10 +73,25 @@ public final class MessageMarshalling {
      */
     public static <M extends Message> void unmarshal(M msg, GridKernalContext kctx, @Nullable CacheObjectContext cacheObjCtx,
         ClassLoader clsLdr) throws IgniteCheckedException {
+        unmarshal(factory(kctx), msg, kctx, cacheObjCtx, clsLdr);
+    }
+
+    /**
+     * Unmarshals {@code msg} through its registered marshaller with full cache context; a no-op when none is
+     * registered. Callers unmarshalling many messages resolve {@code msgFactory} once and use this overload.
+     *
+     * @param msgFactory Message factory to resolve the marshaller from.
+     * @param msg Message to unmarshal.
+     * @param kctx Kernal context.
+     * @param cacheObjCtx Cache object context of the enclosing message, or {@code null} at the top level.
+     * @param clsLdr Class loader for unmarshalling.
+     */
+    public static <M extends Message> void unmarshal(IgniteMessageFactory msgFactory, M msg, GridKernalContext kctx,
+        @Nullable CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
         assert !MessageUnmarshalOnceCheck.ENABLED || MessageUnmarshalOnceCheck.firstUnmarshal(msg, true)
             : "Finish-unmarshalled more than once: " + msg.getClass().getName();
 
-        MessageMarshaller<M> m = resolve(kctx, msg);
+        MessageMarshaller<M> m = resolve(msgFactory, msg);
 
         if (m != null)
             m.unmarshal(msg, kctx, cacheObjCtx, clsLdr);
@@ -78,7 +107,7 @@ public final class MessageMarshalling {
         assert !MessageUnmarshalOnceCheck.ENABLED || MessageUnmarshalOnceCheck.firstUnmarshal(msg, false)
             : "Finish-unmarshalled more than once: " + msg.getClass().getName();
 
-        MessageMarshaller<M> m = resolve(kctx, msg);
+        MessageMarshaller<M> m = resolve(factory(kctx), msg);
 
         if (m != null)
             m.unmarshal(msg, kctx);
@@ -92,15 +121,20 @@ public final class MessageMarshalling {
      * @param kctx Kernal context.
      */
     public static <M extends Message> void unmarshalNio(M msg, GridKernalContext kctx) throws IgniteCheckedException {
-        MessageMarshaller<M> m = resolve(kctx, msg);
+        MessageMarshaller<M> m = resolve(factory(kctx), msg);
 
         if (m != null)
             m.unmarshalNio(msg, kctx);
     }
 
+    /** @return the message factory of {@code kctx}. */
+    private static IgniteMessageFactory factory(GridKernalContext kctx) {
+        return (IgniteMessageFactory)kctx.messageFactory();
+    }
+
     /** @return the marshaller registered for {@code msg}'s direct type, or {@code null} if none. */
     @SuppressWarnings("unchecked")
-    private static <M extends Message> @Nullable MessageMarshaller<M> resolve(GridKernalContext kctx, M msg) {
-        return (MessageMarshaller<M>)((IgniteMessageFactory)kctx.messageFactory()).marshaller(msg.directType());
+    private static <M extends Message> @Nullable MessageMarshaller<M> resolve(IgniteMessageFactory msgFactory, M msg) {
+        return (MessageMarshaller<M>)msgFactory.marshaller(msg.directType());
     }
 }

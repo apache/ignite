@@ -101,8 +101,8 @@ public class MessageFactoryMarshallerInitializationTest extends GridCommonAbstra
         }
 
         /** {@inheritDoc} */
-        @Override public void init(Marshaller dfltMarsh, Marshaller schemaAwareMarsh, ClassLoader resolvedClsLdr) {
-            super.init(dfltMarsh, schemaAwareMarsh, resolvedClsLdr);
+        @Override public void init(Marshaller dfltMarsh, Marshaller schemaAwareMarsh) {
+            super.init(dfltMarsh, schemaAwareMarsh);
 
             initCnt.incrementAndGet();
         }
