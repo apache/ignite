@@ -73,7 +73,7 @@
         <cron4j.version>2.2.5</cron4j.version>
         <curator.version>5.9.0</curator.version>
         <guava.version>33.5.0-jre</guava.version>
-        <failureaccess.version>1.0.1</failureaccess.version>
+        <failureaccess.version>1.0.3</failureaccess.version>
         <grpc-context.version>1.81.0</grpc-context.version>
         <h2.version>1.4.197</h2.version>
         <hamcrest.version>2.2</hamcrest.version>
@@ -132,7 +132,7 @@
         <maven.install.plugin.version>3.1.4</maven.install.plugin.version>
         <maven.jar.plugin.version>3.5.0</maven.jar.plugin.version>
         <maven.resources.plugin.version>3.4.0</maven.resources.plugin.version>
-        <maven.site.plugin.version>3.21.0</maven.site.plugin.version>
+        <maven.site.plugin.version>3.22.0</maven.site.plugin.version>
         <maven.source.plugin.version>3.4.0</maven.source.plugin.version>
         <maven.assembly.plugin.version>3.8.0</maven.assembly.plugin.version>
         <maven.dependency.plugin.version>3.9.0</maven.dependency.plugin.version>
@@ -224,7 +224,7 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.12</version>
+            <version>4.13.1</version>
             <scope>test</scope>
         </dependency>
 

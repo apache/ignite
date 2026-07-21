@@ -58,13 +58,17 @@ import org.apache.ignite.configuration.CommunicationFailureResolver;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.NodeValidationFailedEvent;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.OperationContextMessage;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -224,6 +228,9 @@ public class ZookeeperDiscoveryImpl {
     /** */
     private final DiscoveryMessageParser msgParser;
 
+    /** */
+    private final OperationContextDispatcher opCtxDispatcher;
+
     /**
      * @param spi Discovery SPI.
      * @param igniteInstanceName Instance name.
@@ -274,6 +281,8 @@ public class ZookeeperDiscoveryImpl {
         this.stats = stats;
 
         msgParser = new DiscoveryMessageParser(msgFactory);
+
+        opCtxDispatcher = ((IgniteEx)spi.ignite()).context().operationContextDispatcher();
     }
 
     /**
@@ -658,10 +667,20 @@ public class ZookeeperDiscoveryImpl {
         }
     }
 
+    /** */
+    public void sendCustomEvent(DiscoverySpiCustomMessage msg) {
+        OperationContextMessage opCtx = opCtxDispatcher.collectDistributedAttributes();
+
+        if (opCtx != null)
+            sendCustomMessage(new ZkOperationContextAwareCustomMessage(msg, opCtx));
+        else
+            sendCustomMessage(msg);
+    }
+
     /**
      * @param msg Message.
      */
-    public void sendCustomMessage(DiscoverySpiCustomMessage msg) {
+    void sendCustomMessage(DiscoverySpiCustomMessage msg) {
         assert msg != null;
 
         List<ClusterNode> nodes = rtState.top.topologySnapshot();
@@ -3503,10 +3522,19 @@ public class ZookeeperDiscoveryImpl {
     }
 
     /**
+     * Notifies the {@link DiscoverySpiListener} listener of a custom event. Is aware of {@link ZkOperationContextAwareCustomMessage}.
+     *
      * @param evtData Event data.
-     * @param msg Custom message.
+     * @param msg Custom message to process. Can be a {@link ZkOperationContextAwareCustomMessage}.
      */
-    private void notifyCustomEvent(final ZkDiscoveryCustomEventData evtData, final DiscoverySpiCustomMessage msg) {
+    private void notifyCustomEvent(final ZkDiscoveryCustomEventData evtData, DiscoverySpiCustomMessage msg) {
+        OperationContextMessage opCtxMsg = null;
+
+        if (msg instanceof ZkOperationContextAwareCustomMessage) {
+            opCtxMsg = ((ZkOperationContextAwareCustomMessage)msg).opCtxMsg;
+            msg = ((ZkOperationContextAwareCustomMessage)msg).delegate;
+        }
+
         assert !(msg instanceof ZkInternalMessage) : msg;
 
         if (log.isDebugEnabled())
@@ -3518,17 +3546,21 @@ public class ZookeeperDiscoveryImpl {
 
         final List<ClusterNode> topSnapshot = rtState.top.topologySnapshot();
 
-        IgniteFuture<?> fut = lsnr.onDiscovery(
-            new DiscoveryNotification(
-                DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
-                evtData.topologyVersion(),
-                sndNode,
-                topSnapshot,
-                Collections.emptyNavigableMap(),
-                msg,
-                null
-            )
-        );
+        IgniteFuture<?> fut;
+
+        try (Scope ignored = opCtxDispatcher.restoreDistributedAttributes(opCtxMsg)) {
+            fut = lsnr.onDiscovery(
+                new DiscoveryNotification(
+                    DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
+                    evtData.topologyVersion(),
+                    sndNode,
+                    topSnapshot,
+                    Collections.emptyNavigableMap(),
+                    msg,
+                    null
+                )
+            );
+        }
 
         if (msg != null && msg.isMutable())
             fut.get();

@@ -3291,7 +3291,7 @@ public class BinaryUtils {
      * @param ver Cache version.
      * @return Version represented as {@code IgniteUuid}.
      */
-    public static IgniteUuid asIgniteUuid(GridCacheVersion ver) {
-        return new IgniteUuid(new UUID(ver.topologyVersion(), ver.nodeOrderAndDrIdRaw()), ver.order());
+    public static @Nullable IgniteUuid asIgniteUuid(@Nullable GridCacheVersion ver) {
+        return ver == null ? null : new IgniteUuid(new UUID(ver.topologyVersion(), ver.nodeOrderAndDrIdRaw()), ver.order());
     }
 }
