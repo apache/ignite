@@ -202,7 +202,7 @@ public class BinaryClassDescriptor {
         initialSerializer = serializer;
 
         // If serializer is not defined at this point, then we have to use OptimizedMarshaller.
-        useOptMarshaller = serializer == null || isGeometryClass(cls);
+        useOptMarshaller = serializer == null || isGeometryClass(cls) || isRecord(cls);
 
         // Reset reflective serializer so that we rely on existing reflection-based serialization.
         if (serializer instanceof BinaryReflectiveSerializer)
@@ -1094,6 +1094,21 @@ public class BinaryClassDescriptor {
     /** */
     Constructor<?> ctor() {
         return ctor;
+    }
+
+    /**
+     * Checks whether a class is a Java record without requiring a Java 16 runtime at compile time.
+     *
+     * Records are immutable and the binary marshaller cannot restore their final fields. Java serialization,
+     * used by the optimized marshaller, supports serializable records starting with Java 16.
+     *
+     * @param cls Class to check.
+     * @return {@code True} if the class is a record.
+     */
+    private static boolean isRecord(Class<?> cls) {
+        Class<?> superCls = cls.getSuperclass();
+
+        return superCls != null && "java.lang.Record".equals(superCls.getName());
     }
 
     /**
