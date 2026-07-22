@@ -3802,8 +3802,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             assert reserved.get();
 
             for (OrderedMessageContainer mc = msgs.poll(); mc != null; mc = msgs.poll()) {
-                try (TraceSurroundings ignore = support(ctx.tracing().create(
-                    COMMUNICATION_ORDERED_PROCESS, mc.parentSpan))) {
+                try (
+                    Scope ignored0 = ctx.operationContextDispatcher().restoreRemoteAttributeValues(mc.message.opCtxMsg);
+                    TraceSurroundings ignore = support(ctx.tracing().create(COMMUNICATION_ORDERED_PROCESS, mc.parentSpan))
+                ) {
                     try {
                         OrderedMessageContainer fmc = mc;
 

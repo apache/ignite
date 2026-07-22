@@ -6313,8 +6313,11 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (joiningEmpty && isLocalNodeCoordinator()) {
                 TcpDiscoveryCustomEventMessage msg;
 
-                while ((msg = pollPendingCustomMessage()) != null)
-                    processCustomMessage(msg, true);
+                while ((msg = pollPendingCustomMessage()) != null) {
+                    try (Scope ignored = operationCtxDispatcher.restoreRemoteAttributeValues(msg.opCtxMsg)) {
+                        processCustomMessage(msg, true);
+                    }
+                }
             }
         }
 

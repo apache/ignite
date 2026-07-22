@@ -273,7 +273,7 @@ public class PoolProcessor extends GridProcessorAdapter {
                         throw new IgniteException("Failed to register IO executor pool because its ID as " +
                             "already used: " + id);
 
-                    extPools[id] = ctx.security().enabled() ? OperationContextAwareIoPool.wrap(ex) : ex;
+                    extPools[id] = OperationContextAwareIoPool.wrap(ex);
                 }
             }
         }
