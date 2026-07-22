@@ -451,7 +451,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                 try {
                     GridIoMessage msg0 = (GridIoMessage)msg;
 
-                    try (Scope ignored = ctx.operationContextDispatcher().restoreRemoteAttributeValues(msg0.opCtxMsg)) {
+                    try (Scope ignored = ctx.operationContextDispatcher().restoreSnapshot(msg0.opCtxSnp)) {
                         onMessage0(nodeId, msg0, msgC);
                     }
                 }
@@ -2027,13 +2027,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         long timeout,
         boolean skipOnTimeout
     ) {
-        GridIoMessage res;
-
-        res = new GridIoMessage(plc, topic, msg, ordered, timeout, skipOnTimeout);
-
-        res.opCtxMsg = ctx.operationContextDispatcher().collectDistributedAttributeValues();
-
-        return res;
+        return new GridIoMessage(plc, topic, msg, ordered, timeout, skipOnTimeout, ctx.operationContextDispatcher().createSnapshot());
     }
 
     /**
@@ -3782,12 +3776,14 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             assert reserved.get();
 
             for (OrderedMessageContainer mc = msgs.poll(); mc != null; mc = msgs.poll()) {
-                try {
-                    invokeListener(plc, lsnr, nodeId, mc.message.message());
-                }
-                finally {
-                    if (mc.closure != null)
-                        mc.closure.run();
+                try (Scope ignored0 = ctx.operationContextDispatcher().restoreSnapshot(mc.message.opCtxSnp)) {
+                    try {
+                        invokeListener(plc, lsnr, nodeId, mc.message.message());
+                    }
+                    finally {
+                        if (mc.closure != null)
+                            mc.closure.run();
+                    }
                 }
             }
         }

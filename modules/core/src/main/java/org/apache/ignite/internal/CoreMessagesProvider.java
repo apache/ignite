@@ -259,7 +259,7 @@ import org.apache.ignite.internal.processors.service.ServiceSingleNodeDeployment
 import org.apache.ignite.internal.processors.service.ServiceSingleNodeDeploymentResultBatch;
 import org.apache.ignite.internal.processors.service.ServiceTopology;
 import org.apache.ignite.internal.processors.service.ServiceUndeploymentRequest;
-import org.apache.ignite.internal.thread.context.OperationContextMessage;
+import org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage;
 import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
@@ -712,7 +712,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
 
         // [13400 - 13500]: Operation context messages.
         msgIdx = 13400;
-        withNoSchema(OperationContextMessage.class);
+        withNoSchema(OperationContextSnapshotMessage.class);
         withNoSchema(SecurityContextWrapper.class);
 
         // [13600 - 13700]: Rolling Upgrade messages.
