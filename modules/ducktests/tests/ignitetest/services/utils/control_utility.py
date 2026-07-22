@@ -213,8 +213,19 @@ class ControlUtility:
     def __parse_cache_distribution(output, user_attributes=None):
         group_pattern = re.compile(r"\[next group: id=(?P<group_id>-?\d+), name=(?P<name>[^\]]+)\]")
 
-        # Trailing attribute values appear after nodeAddresses, comma-separated,
-        # in the same order they were passed to --user-attributes.
+        # Column header, carrying the attribute names after nodeAddresses, e.g.
+        # [groupId,...,nodeAddresses,IGNITE_DATA_CENTER_ID].
+        header_pattern = re.compile(
+            r"^\[groupId,partition,nodeId,primary,state,updateCounter,partitionSize,nodeAddresses"
+            r"(?P<attr_names>(?:,[^,\]]*)*)\]$")
+
+        # Trailing attribute values appear after nodeAddresses, comma-separated, in the iteration
+        # order of the node's attribute map as deserialized in the control.sh JVM - which is
+        # neither the --user-attributes order nor alphabetical. CacheDistributionTaskResult#print()
+        # builds the header from the keys of that very map and each row from its values, so the
+        # header is the only reliable source of the names. Every requested attribute is always put
+        # (CacheDistributionTask), so a value missing on a node prints as an empty field rather
+        # than shifting the columns.
         row_pattern = re.compile(r"(?P<group_id>-?\d+),"
                                  r"(?P<partition>\d+),"
                                  r"(?P<node_id>[0-9a-fA-F]+),"
@@ -227,9 +238,20 @@ class ControlUtility:
 
         groups = {}
         cur_group = None
+        attr_names = []
 
         for line in output.splitlines():
             line = line.strip()
+
+            match = header_pattern.match(line)
+            if match:
+                attr_names = [name.strip() for name in match.group("attr_names").split(",") if name.strip()]
+
+                assert not user_attributes or sorted(attr_names) == sorted(user_attributes), \
+                    f"Requested user attributes are missing from the distribution output " \
+                    f"[requested={sorted(user_attributes)}, reported={sorted(attr_names)}]"
+
+                continue
 
             match = group_pattern.search(line)
             if match:
@@ -242,9 +264,9 @@ class ControlUtility:
             match = row_pattern.match(line)
             if match and cur_group is not None:
                 attrs = {}
-                if user_attributes and match.group("attr_values") is not None:
+                if attr_names and match.group("attr_values") is not None:
                     values = [v.strip() for v in match.group("attr_values").split(",")]
-                    attrs = dict(zip(sorted(user_attributes), values))
+                    attrs = dict(zip(attr_names, values))
 
                 copy = PartitionCopy(node_id=match.group("node_id"),
                                      primary=match.group("primary") == "P",
