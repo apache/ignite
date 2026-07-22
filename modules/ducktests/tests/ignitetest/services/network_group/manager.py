@@ -43,6 +43,10 @@ ACTION_DEPLOY = "deploy"
 # Upper bound on concurrent SSH sessions used to apply tc rules cluster-wide.
 MAX_PARALLEL_SSH_SESSIONS = 16
 
+# Separates the qdisc, filter and iptables sections in the output of the batched
+# network probe issued by _log_network.
+PROBE_SECTION_SEPARATOR = "=== ignitetest network probe section ==="
+
 # A rule spec: (src_group, dst_group, action, config).
 RuleSpec = Tuple[str, str, str, CrossNetworkGroupConfiguration]
 
@@ -234,6 +238,27 @@ class NetworkGroupManager:
 
         self.logger.debug(f"[{tag}] tc rules applied on {len(tasks)} node(s) in {monotonic() - started:.2f}s")
 
+    def _ssh_output_parallel(self, tasks: List[Tuple[object, str]], tag: str) -> List[str]:
+        """
+        Executes one command per node concurrently and returns the collected
+        outputs in task order.
+        """
+        if not tasks:
+            return []
+
+        started = monotonic()
+
+        def run(task):
+            node, cmd = task
+            return self._get_ssh_output(node, cmd)
+
+        with ThreadPoolExecutor(max_workers=min(MAX_PARALLEL_SSH_SESSIONS, len(tasks))) as pool:
+            outputs = list(pool.map(run, tasks))
+
+        self.logger.debug(f"[{tag}] probed {len(tasks)} node(s) in {monotonic() - started:.2f}s")
+
+        return outputs
+
     def _prefetch_network_interfaces(self):
         """
         Warms up the per-node network interface cache in parallel, so that
@@ -261,32 +286,41 @@ class NetworkGroupManager:
 
     def _log_network(self, log_tag: str):
         """
-        Logs a concise, structured overview of the active traffic control
-        queuing disciplines (qdiscs) and routing filters across all cluster nodes.
+        Logs a concise, structured overview of the active traffic control queuing
+        disciplines (qdiscs), routing filters and partition drops across all cluster nodes.
+
+        Every node is probed with a single batched command and all nodes are probed
+        concurrently. This runs right after a partition is toggled, so it has to cost
+        one round-trip cluster-wide: probing node by node stretches a partition well
+        past the outage the test asked for and can push a short blip over the failure
+        detection timeout it is meant to stay under.
         """
         self.logger.debug(f"Network State Overview: [START][{log_tag}]")
 
+        entries = [(group, svc, node)
+                   for group, services in self.network_group_registry.items()
+                   for svc in services
+                   for node in svc.nodes]
+
+        probes = self._ssh_output_parallel([(node, self._to_network_probe_cmd(node)) for _, _, node in entries],
+                                           tag="PROBE")
+
         node_statuses = []
 
-        for group, services in self.network_group_registry.items():
-            for svc in services:
-                for node in svc.nodes:
-                    qdisc_output = self._exec_tc_show_command(node, "qdisc")
-                    filter_output = self._exec_tc_show_command(node, "filter")
+        for (group, svc, node), probe in zip(entries, probes):
+            qdisc_lines, filter_lines, iptables_lines = self._split_probe_output(probe)
 
-                    dst_ips = self._parse_filter_destinations(filter_output)
-                    constraints = self._parse_qdisc_constraints(qdisc_output)
+            dst_ips = self._parse_filter_destinations(filter_lines)
+            constraints = self._parse_qdisc_constraints(qdisc_lines)
 
-                    targets_str = f" -> to [{', '.join(dst_ips)}]" if dst_ips and constraints != "noqueue" else ""
-                    node_ip = socket.gethostbyname(node.account.externally_routable_ip)
+            targets_str = f" -> to [{', '.join(dst_ips)}]" if dst_ips and constraints != "noqueue" else ""
+            node_ip = socket.gethostbyname(node.account.externally_routable_ip)
 
-                    iptables_lines = self._get_ssh_output(
-                        node, "sudo iptables -S 2>/dev/null || true").splitlines()
-                    partition_str = self._format_partition_drops(
-                        self._parse_partition_drops(iptables_lines))
+            partition_str = self._format_partition_drops(
+                self._parse_partition_drops(iptables_lines))
 
-                    node_statuses.append(f"[{group:<4}] {svc.who_am_i(node):<45}[{node_ip}] : "
-                                         f"{constraints}{targets_str}{partition_str}")
+            node_statuses.append(f"[{group:<4}] {svc.who_am_i(node):<45}[{node_ip}] : "
+                                 f"{constraints}{targets_str}{partition_str}")
 
         # The per-node SSH probes above flood the debug log with their own command output.
         # Collect first, print contiguously after: the overview must stay readable as one block.
@@ -295,18 +329,40 @@ class NetworkGroupManager:
 
         self.logger.debug(f"Network State Overview: [END][{log_tag}]")
 
-    def _exec_tc_show_command(self, node, sub_system: str) -> List[str]:
+    def _to_network_probe_cmd(self, node) -> str:
         """
-        Executes a 'tc show' shell query command on a remote node over SSH
-        and decodes the terminal response cleanly into strings.
+        Builds the single command that dumps everything the overview needs from a
+        node - the netem qdiscs, the u32 filters and the iptables rules - as three
+        PROBE_SECTION_SEPARATOR delimited sections.
+
+        The sections are chained unconditionally: this is a debug dump, so a node
+        that cannot answer one of the probes degrades to an incomplete overview
+        instead of failing the test around it.
         """
         interface = self._get_default_network_interface(node)
 
-        cmd = f"sudo tc {sub_system} show dev {interface}"
+        return " ; ".join([
+            f"sudo tc qdisc show dev {interface} 2>/dev/null",
+            f"echo '{PROBE_SECTION_SEPARATOR}'",
+            f"sudo tc filter show dev {interface} 2>/dev/null",
+            f"echo '{PROBE_SECTION_SEPARATOR}'",
+            "sudo iptables -S 2>/dev/null || true"
+        ])
 
-        raw_bytes = node.account.ssh_output(cmd, allow_fail=False)
+    @staticmethod
+    def _split_probe_output(probe_output: str) -> Tuple[List[str], List[str], List[str]]:
+        """
+        Splits a combined probe output back into its qdisc, filter and iptables line
+        lists. Sections a node did not answer with come back empty, rendering as a
+        plain 'noqueue' with no partition suffix.
+        """
+        sections = probe_output.split(PROBE_SECTION_SEPARATOR)
 
-        return raw_bytes.decode(sys.getdefaultencoding()).splitlines()
+        sections += [""] * (3 - len(sections))
+
+        qdisc_lines, filter_lines, iptables_lines = (section.strip().splitlines() for section in sections[:3])
+
+        return qdisc_lines, filter_lines, iptables_lines
 
     @staticmethod
     def _parse_filter_destinations(filter_lines: List[str]) -> List[str]:
