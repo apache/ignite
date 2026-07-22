@@ -18,7 +18,6 @@
 package org.apache.ignite.compatibility.testframework.testcontainers;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -30,6 +29,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -37,13 +37,12 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 import com.github.dockerjava.api.command.ExecCreateCmdResponse;
 import com.github.dockerjava.api.command.InspectExecResponse;
+import com.github.dockerjava.api.command.StopContainerCmd;
 import com.github.dockerjava.api.model.ContainerNetwork;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.compatibility.testframework.plugins.DisabledRollingUpgradeProcessor;
@@ -128,6 +127,12 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
     /** Jar holding {@link #TEST_CLASSES}, injected so the old image can load it. */
     private static volatile File testClassesJar;
 
+    /** Cached tar archive of {@link #TARGET_LIBS_DIR} + test-classes.jar, built once and reused for all containers. */
+    private static volatile Path targetLibsArchive;
+
+    /** Cached "uid:gid" of the host user. */
+    private static volatile String hostUidGid;
+
     /** Hostname. */
     private final String hostname;
 
@@ -205,8 +210,7 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
         addFixedExposedPort(commHostPort, TcpCommunicationSpi.DFLT_PORT);
         addFixedExposedPort(discoHostPort, TcpDiscoverySpi.DFLT_PORT);
 
-        waitingFor(Wait.forLogMessage(".*Node started.*", 1)
-            .withStartupTimeout(Duration.ofSeconds(600)));
+        waitingFor(Wait.forLogMessage(".*Node started.*", 1).withStartupTimeout(Duration.ofSeconds(600)));
     }
 
     /** {@inheritDoc} */
@@ -223,98 +227,38 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
         super.stop();
     }
 
-    /** In-place upgrade inside Docker: clean libs → graceful stop → swap libs → restart. */
+    /** In-place upgrade inside Docker: copy archive → clean+extract → graceful stop → restart. */
     public void upgradeAndRestart() throws Exception {
-        LOGGER.info("Cleaning up old libs in container {}", hostname);
+        LOGGER.info("Upgrading libs in container {}", hostname);
 
-        if (LINUX) {
-            // Container runs as host-UID:GID (see constructor), but libs/ files are owned by root
-            // inside the Docker image. Non-root cannot unlink root-owned files even with 777 on the
-            // parent directory (fs.protected_regular on Linux). Run rm as root via the low-level API.
-            ExecCreateCmdResponse execResp = getDockerClient().execCreateCmd(getContainerId())
-                .withUser("root")
-                .withAttachStdout(true)
-                .withAttachStderr(true)
-                .withCmd("sh", "-c", "rm -rf " + LIBS_DIR_PATH + "*")
-                .exec();
+        // Build/retrieve the cached tar archive (shared across all containers).
+        Path archivePath = libsArchive();
 
-            ByteArrayOutputStream err = new ByteArrayOutputStream();
+        String archivePathInContainer = "/tmp/target-libs.tar";
 
-            getDockerClient().execStartCmd(execResp.getId())
-                .exec(new ExecStartResultCallback(new ByteArrayOutputStream(), err))
-                .awaitCompletion(30, TimeUnit.SECONDS);
+        copyFileToContainer(forHostPath(archivePath.toAbsolutePath().toString()), archivePathInContainer);
 
-            InspectExecResponse resp = getDockerClient().inspectExecCmd(execResp.getId()).exec();
-
-            if (!Boolean.TRUE.equals(resp.isRunning()) && resp.getExitCodeLong() != null && resp.getExitCodeLong() != 0)
-                throw new IllegalStateException("Failed to clean libs: " + err);
-        }
-        else {
-            ExecResult result = execInContainer("sh", "-c", "rm -rf " + LIBS_DIR_PATH + "*");
-
-            if (result.getExitCode() != 0)
-                throw new IllegalStateException("Failed to clean libs: " + result.getStderr());
-        }
-
-        // Copy new libs BEFORE stopping — docker exec won't work on a stopped container.
-        // Files will be overwritten on restart; this ensures they're present in the container FS.
-        copyDirectoryToContainer(TARGET_LIBS_DIR, LIBS_DIR_PATH);
-
-        stopGraceful();
-
-        restartWithTargetLibs(TARGET_LIBS_DIR);
-
-        assertTrue("Upgraded Docker node is not running", isRunning());
-    }
-
-    /**
-     * Stop the container gracefully <b>without removing it</b> (container stays in "Exited" state).
-     * Call this before {@link #restartWithTargetLibs(Path)}.
-     *
-     * <p>Sends SIGTERM via {@code docker stop} and waits up to {@value #SHUTDOWN_TIMEOUT_SEC} seconds
-     * before SIGKILL. The entrypoint {@code run.sh} uses {@code exec java}, so JVM receives SIGTERM directly
-     * and runs its shutdown hooks. The extended timeout ensures Ignite can leave the cluster properly
-     * (flush persistence, notify discovery neighbors, close socket connections) so that remaining nodes
-     * don't trigger spurious "Failed to check connection to previous node" warnings during teardown.</p>
-     */
-    private void stopGraceful() {
-        if (!isRunning())
-            return;
-
-        LOGGER.info("Graceful stop of node {} (timeout {} s)", hostname, SHUTDOWN_TIMEOUT_SEC);
-
-        getDockerClient().stopContainerCmd(getContainerId())
-            .withTimeout(SHUTDOWN_TIMEOUT_SEC)
+        ExecCreateCmdResponse execResp = getDockerClient().execCreateCmd(getContainerId())
+            .withUser("root")
+            .withAttachStdout(true)
+            .withAttachStderr(true)
+            .withCmd("sh", "-c",
+                "rm -rf " + LIBS_DIR_PATH + "* && tar xf " + archivePathInContainer + " -C " + LIBS_DIR_PATH
+                + " && rm -f " + archivePathInContainer)
             .exec();
 
-        LOGGER.info("Node {} stopped", hostname);
-    }
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
 
-    /**
-     * Restart the stopped container after swapping its {@code libs/} directory.
-     * <p>
-     * Copies all jars and subdirectories from the provided host directory into the container's {@code /opt/ignite/apache-ignite/libs/},
-     * then re-injects the test-classes jar and starts the container.
-     * </p>
-     *
-     * @param targetLibsHostDir Host directory containing target-version jars.
-     */
-    private void restartWithTargetLibs(Path targetLibsHostDir) throws Exception {
-        LOGGER.info("Replacing libs in container {} with jars from {}", hostname, targetLibsHostDir);
+        getDockerClient().execStartCmd(execResp.getId())
+            .exec(new ExecStartResultCallback(new ByteArrayOutputStream(), err))
+            .awaitCompletion(60, TimeUnit.SECONDS);
 
-        try (Stream<Path> files = Files.list(targetLibsHostDir)) {
-            for (Path file : files.toArray(Path[]::new)) {
-                String destPath = LIBS_DIR_PATH + file.getFileName().toString();
+        InspectExecResponse resp = getDockerClient().inspectExecCmd(execResp.getId()).exec();
 
-                if (Files.isRegularFile(file))
-                    copyFileToContainer(forHostPath(file.toAbsolutePath().toString()), destPath);
-                else if (Files.isDirectory(file))
-                    copyDirectoryToContainerViaArchive(file, destPath);
-            }
-        }
+        if (!Boolean.TRUE.equals(resp.isRunning()) && resp.getExitCodeLong() != null && resp.getExitCodeLong() != 0)
+            throw new IllegalStateException("Failed to clean and extract libs: " + err);
 
-        // Re-inject the test-classes jar.
-        copyFileToContainer(forHostPath(testClassesJar().getAbsolutePath()), LIBS_DIR_PATH + "test-classes.jar");
+        stopGraceful();
 
         LOGGER.info("Starting container {} with target libraries...", hostname);
 
@@ -331,6 +275,8 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
         }, DFLT_TEST_TIMEOUT));
 
         LOGGER.info("Restarted node {} with target libraries", hostname);
+
+        assertTrue("Upgraded Docker node is not running", isRunning());
     }
 
     /** @return Consistent ID. */
@@ -378,7 +324,7 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
                 LOGGER.debug(">>> Baseline output={}", out);
 
                 return out.contains("Number of baseline nodes: " + nodeCnt);
-            }, 30_000, 5_000);
+            }, 30_000, 1_000);
 
             if (!success)
                 throw new IllegalStateException("Check cluster count failed");
@@ -398,22 +344,9 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
         return address(TcpDiscoverySpi.DFLT_PORT);
     }
 
-    /** @return Address the host JVM uses to reach this container's {@code port}. */
-    private String address(int port) {
-        // Always use published ports via Testcontainers port forwarding. This works on all platforms
-        // (Linux, macOS, Windows) because Docker Desktop / Docker-in-VM may not route container-internal
-        // bridge IPs (172.x) from the host.
-        return getHost() + ":" + getMappedPort(port);
-    }
-
     /** @return Gateway IP of the test Docker network — the address containers use to reach the host JVM on Linux. */
     public String gatewayIp() {
         return network().getGateway();
-    }
-
-    /** @return This container's attachment to the single test Docker network. */
-    private ContainerNetwork network() {
-        return getContainerInfo().getNetworkSettings().getNetworks().values().iterator().next();
     }
 
     /** */
@@ -498,141 +431,159 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
     }
 
     /**
-     * Copies a host directory recursively into the container using a gzipped tar archive.
+     * Returns a cached tar archive (plain, no gzip) containing all files from {@link #TARGET_LIBS_DIR}
+     * plus the test-classes jar. Built once and reused for all container upgrades.
      *
-     * @param sourceDir Host directory to copy.
-     * @param destPath  Destination path inside the container.
+     * @return Path to the tar file on the host.
      */
-    private void copyDirectoryToContainer(Path sourceDir, String destPath) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    private static Path libsArchive() throws IOException {
+        Path archive = targetLibsArchive;
 
-        try (TarArchiveOutputStream taos = new TarArchiveOutputStream(new GzipCompressorOutputStream(baos));
-             Stream<Path> files = Files.walk(sourceDir)) {
-            taos.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);
+        if (archive != null)
+            return archive;
 
-            files.forEach(srcFile -> {
-                String entryName = sourceDir.relativize(srcFile).toString();
+        synchronized (IgniteContainer.class) {
+            if (targetLibsArchive != null)
+                return targetLibsArchive;
 
-                try {
-                    TarArchiveEntry entry = new TarArchiveEntry(srcFile.toFile(), entryName);
+            File targetLibsFile = TARGET_LIBS_DIR.toFile();
+
+            LOGGER.info("Building libs archive from: {}", TARGET_LIBS_DIR);
+
+            File archiveFile = File.createTempFile("target-libs", ".tar");
+            archiveFile.deleteOnExit();
+
+            try (TarArchiveOutputStream taos = new TarArchiveOutputStream(new FileOutputStream(archiveFile))) {
+                taos.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);
+
+                List<File> allFiles = new ArrayList<>();
+
+                collectFiles(targetLibsFile, allFiles);
+
+                LOGGER.info("Found {} entries in {}", allFiles.size(), TARGET_LIBS_DIR);
+
+                for (File srcFile : allFiles) {
+                    String entryName = TARGET_LIBS_DIR.relativize(srcFile.toPath()).toString();
+
+                    if (entryName.isEmpty())
+                        continue;
+
+                    TarArchiveEntry entry = new TarArchiveEntry(srcFile, entryName);
                     taos.putArchiveEntry(entry);
 
                     if (entry.isFile())
-                        Files.copy(srcFile, taos);
+                        Files.copy(srcFile.toPath(), taos);
 
                     taos.closeArchiveEntry();
                 }
-                catch (IOException e) {
-                    throw new RuntimeException("Failed to add tar entry: " + entryName, e);
-                }
-            });
-        }
 
-        try {
-            ExecCreateCmdResponse execResp = getDockerClient().execCreateCmd(getContainerId())
-                .withUser("root")
-                .withAttachStdout(true)
-                .withAttachStderr(true)
-                .withAttachStdin(true)
-                .withCmd("sh", "-c", "mkdir -p " + destPath + " && tar xzf - -C " + destPath)
-                .exec();
+                File testJar = testClassesJar();
 
-            getDockerClient().execStartCmd(execResp.getId())
-                .withStdIn(new ByteArrayInputStream(baos.toByteArray()))
-                .exec(new ExecStartResultCallback(new ByteArrayOutputStream(), System.err))
-                .awaitCompletion(60, TimeUnit.SECONDS);
+                taos.putArchiveEntry(new TarArchiveEntry(testJar, "test-classes.jar"));
 
-            InspectExecResponse resp = getDockerClient().inspectExecCmd(execResp.getId()).exec();
+                Files.copy(testJar.toPath(), taos);
 
-            if (!Boolean.TRUE.equals(resp.isRunning()) && resp.getExitCodeLong() != null && resp.getExitCodeLong() != 0)
-                throw new IOException("Failed to copy directory " + sourceDir + " to " + destPath);
-        }
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+                taos.closeArchiveEntry();
+            }
 
-            throw new IOException("Interrupted while copying directory " + sourceDir, e);
+            LOGGER.info("Libs archive built: {} ({} bytes)", archiveFile, archiveFile.length());
+
+            return targetLibsArchive = archiveFile.toPath();
         }
     }
 
-    /**
-     * Copies a host directory into the container using Docker's {@code copyArchiveToContainer} API.
-     * Unlike {@link #copyDirectoryToContainer(Path, String)}, this method works on <b>stopped</b> containers
-     * because it uses the low-level Docker API instead of {@code docker exec}.
-     *
-     * <p>The tar entries include the directory name so extraction into {@code LIBS_DIR_PATH} produces the
-     * correct nested path (e.g. {@code ignite-control-utility/file.jar}).</p>
-     *
-     * @param sourceDir Host directory to copy.
-     * @param destPath  Destination path inside the container.
-     */
-    private void copyDirectoryToContainerViaArchive(Path sourceDir, String destPath) throws IOException {
-        // Extract the directory name (e.g. "ignite-control-utility") to include in tar entries.
-        String dirName = Path.of(destPath).getFileName().toString();
+    /** Recursively collects all files and directories under {@code root} into {@code result}. */
+    private static void collectFiles(File root, List<File> result) {
+        File[] children = root.listFiles();
 
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        if (children == null)
+            return;
 
-        try (TarArchiveOutputStream taos = new TarArchiveOutputStream(new GzipCompressorOutputStream(baos));
-             Stream<Path> files = Files.walk(sourceDir)) {
-            taos.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);
+        for (File child : children) {
+            result.add(child);
 
-            files.forEach(srcFile -> {
-                Path relativePath = sourceDir.relativize(srcFile);
-                // Include the directory name so extraction into LIBS_DIR_PATH produces the correct nested path.
-                String entryName = dirName + "/" + relativePath;
-
-                try {
-                    TarArchiveEntry entry = new TarArchiveEntry(srcFile.toFile(), entryName);
-                    taos.putArchiveEntry(entry);
-
-                    if (entry.isFile())
-                        Files.copy(srcFile, taos);
-
-                    taos.closeArchiveEntry();
-                }
-                catch (IOException e) {
-                    throw new RuntimeException("Failed to add tar entry: " + entryName, e);
-                }
-            });
+            if (child.isDirectory())
+                collectFiles(child, result);
         }
-
-        getDockerClient().copyArchiveToContainerCmd(getContainerId())
-            .withTarInputStream(new ByteArrayInputStream(baos.toByteArray()))
-            .withRemotePath(LIBS_DIR_PATH)
-            .exec();
     }
 
-    /**
-     * Returns the "uid:gid" of the current host user.
-     * Guaranteed to read the process stream before cleanup.
-     */
+    /** Returns the "uid:gid" of the current host user, cached after the first call. */
     private static String hostUserUidGid() throws IOException, InterruptedException {
-        // Corrected shell syntax to output "UID:GID" cleanly on a single line
-        ProcessBuilder pb = new ProcessBuilder("sh", "-c", "echo $(id -u):$(id -g)");
-        pb.redirectErrorStream(true);
+        String cached = hostUidGid;
 
-        Process p = pb.start();
-        String resultLine;
+        if (cached != null)
+            return cached;
 
-        // 1. Read the stream while the process is active or finishing
-        try (BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
-            resultLine = r.readLine();
+        synchronized (IgniteContainer.class) {
+            if (hostUidGid != null)
+                return hostUidGid;
+
+            ProcessBuilder pb = new ProcessBuilder("sh", "-c", "echo $(id -u):$(id -g)");
+            pb.redirectErrorStream(true);
+
+            Process p = pb.start();
+            String resultLine;
+
+            try (BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
+                resultLine = r.readLine();
+            }
+
+            if (!p.waitFor(5, TimeUnit.SECONDS)) {
+                p.destroyForcibly();
+
+                throw new IOException("Timed out waiting for id command");
+            }
+
+            if (p.exitValue() != 0)
+                throw new IOException("Command 'id' failed with exit code: " + p.exitValue() + ". Output: " + resultLine);
+
+            if (resultLine == null || resultLine.trim().isEmpty())
+                throw new IOException("Empty output from 'id' command");
+
+            return hostUidGid = resultLine.trim();
+        }
+    }
+
+    /**
+     * Stop the container gracefully <b>without removing it</b> (container stays in "Exited" state).
+     *
+     * <p>Sends SIGTERM via {@code docker stop} and waits up to {@value #SHUTDOWN_TIMEOUT_SEC} seconds
+     * before SIGKILL. The entrypoint {@code run.sh} uses {@code exec java}, so JVM receives SIGTERM directly
+     * and runs its shutdown hooks. The extended timeout ensures Ignite can leave the cluster properly
+     * (flush persistence, notify discovery neighbors, close socket connections) so that remaining nodes
+     * don't trigger spurious "Failed to check connection to previous node" warnings during teardown.</p>
+     */
+    private void stopGraceful() {
+        if (!isRunning())
+            return;
+
+        LOGGER.info("Graceful stop of node {} (timeout {} s)", hostname, SHUTDOWN_TIMEOUT_SEC);
+
+        try (StopContainerCmd cmd = getDockerClient().stopContainerCmd(getContainerId())) {
+            cmd.withTimeout(SHUTDOWN_TIMEOUT_SEC).exec();
+        }
+        catch (Exception e) {
+            LOGGER.warn("Graceful stop (SIGTERM) failed for node {}, attempting SIGKILL fallback. Error: {}",
+                hostname, e.getMessage());
+
+            try {
+                getDockerClient().killContainerCmd(getContainerId()).exec();
+            }
+            catch (Exception killEx) {
+                LOGGER.error("SIGKILL fallback also failed for node {}", hostname, killEx);
+            }
         }
 
-        // 2. Wait for the process to exit completely
-        boolean completed = p.waitFor(5, TimeUnit.SECONDS);
+        LOGGER.info("Node {} stopped", hostname);
+    }
 
-        if (!completed) {
-            p.destroyForcibly();
+    /** @return Address the host JVM uses to reach this container's {@code port}. */
+    private String address(int port) {
+        return getHost() + ":" + getMappedPort(port);
+    }
 
-            throw new IOException("Timed out waiting for id command");
-        }
-
-        if (p.exitValue() != 0)
-            throw new IOException("Command 'id' failed with exit code: " + p.exitValue() + ". Output: " + resultLine);
-
-        if (resultLine == null || resultLine.trim().isEmpty())
-            throw new IOException("Empty output from 'id' command");
-
-        return resultLine.trim();
+    /** @return This container's attachment to the single test Docker network. */
+    private ContainerNetwork network() {
+        return getContainerInfo().getNetworkSettings().getNetworks().values().iterator().next();
     }
 }
