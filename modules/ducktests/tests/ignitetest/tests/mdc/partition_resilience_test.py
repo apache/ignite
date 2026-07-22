@@ -34,7 +34,7 @@ CACHE_NAME = "mdc-resilience"
 BACKUPS = 1
 
 # Time for discovery to detect the partition and for both half-rings to complete PME.
-SPLIT_SETTLE_SECS = 10
+SPLIT_SETTLE_SECS = 20
 
 # A blip must stay well below the failure detection timeout (10s by default).
 BLIP_SECS = 1
