@@ -16,7 +16,10 @@
  */
 package org.apache.ignite.snippets;
 
+import java.io.File;
+import java.util.Collections;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -28,7 +31,8 @@ public class Snapshots {
         //tag::config[]
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        File exSnpDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "ex_snapshots", true);
+        // Any directory the Ignite process can write to (example value).
+        File exSnpDir = new File("work", "ex_snapshots");
 
         cfg.setSnapshotPath(exSnpDir.getAbsolutePath());
         //end::config[]

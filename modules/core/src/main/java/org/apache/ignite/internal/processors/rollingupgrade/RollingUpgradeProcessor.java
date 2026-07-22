@@ -17,334 +17,642 @@
 
 package org.apache.ignite.internal.processors.rollingupgrade;
 
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
-import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
-import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
-import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
-import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
-import org.apache.ignite.internal.util.lang.IgnitePair;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteComponentFeatureSet;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFeature;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeature;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureManager;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureSet;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.SupportedFeatureRegistry;
+import org.apache.ignite.internal.util.distributed.DistributedProcess;
+import org.apache.ignite.internal.util.distributed.InitMessage;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteProductVersion;
-import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
-import org.apache.ignite.spi.discovery.DiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNodesRing;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
-import static org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage.IGNITE_INTERNAL_KEY_PREFIX;
+import static org.apache.ignite.events.EventType.EVT_NODE_VALIDATION_FAILED;
+import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.ROLLING_UPGRADE_PROC;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_FEATURES;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RU_ABORT_VERSION_FINALIZATION;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RU_COMPLETE_VERSION_FINALIZATION;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RU_ENABLE;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RU_PREPARE_VERSION_FINALIZATION;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_ROLLING_UPGRADE;
 
-/** Rolling upgrade processor. Manages current and target versions of cluster. */
+/** */
 public class RollingUpgradeProcessor extends GridProcessorAdapter implements DiscoveryNodeValidationProcessor {
-    /** Key for the distributed property that holds current and target versions. */
-    private static final String ROLLING_UPGRADE_VERSIONS_KEY = IGNITE_INTERNAL_KEY_PREFIX + "rolling.upgrade.versions";
-
-    /** Metastorage with the write access. */
-    @Nullable private volatile DistributedMetaStorage metastorage;
-
-    /** TCP discovery nodes ring. */
-    private TcpDiscoveryNodesRing ring;
-
-    /** Last joining node. */
-    private ClusterNode lastJoiningNode;
-
-    /** Last joining node timestamp. */
-    private long lastJoiningNodeTimestamp;
-
-    /** Lock for synchronization between tcp-disco-msg-worker thread and management operations. */
-    private final Object lock = new Object();
+    /** */
+    private final IgniteFeatureManager featureMgr;
 
     /** */
-    private final CountDownLatch startLatch = new CountDownLatch(1);
+    private final ClusterVersionUpgradeEnableProcess enableProc;
 
-    /** Pair with current and target versions. {@code null} when rolling upgrade is disabled. */
-    @Nullable private volatile IgnitePair<IgniteProductVersion> rollUpVers;
+    /** */
+    private final ClusterVersionFinalizationProcess finalizeProc;
+
+    /** */
+    private final ClusterVersionFinalizationAbortProcess finalizeAbortProc;
+
+    /** */
+    private final Object topGuard = new Object();
+
+    /** */
+    private final Set<ClusterNode> joiningNodes = new HashSet<>();
+
+    /** */
+    private volatile boolean isVerUpgradeEnabled;
 
     /**
-     * @param ctx Context.
+     * We rely on the guarantee that this varable is only accessed from the Discovery thread.
+     * Therefore, synchronization is not required.
      */
+    @Nullable private volatile UUID curFinalizeProcId;
+
+    /** */
     public RollingUpgradeProcessor(GridKernalContext ctx) {
-        super(ctx);
+        this(ctx, new IgniteComponentFeatureSet(
+            IgniteCoreFeature.COMPONENT_NAME,
+            IgniteVersionUtils.VER,
+            IgniteFeatureSet.buildFrom(SupportedFeatureRegistry.class))
+        );
     }
 
-    /** {@inheritDoc} */
-    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
-        DiscoverySpi spi = ctx.config().getDiscoverySpi();
+    /** */
+    protected RollingUpgradeProcessor(GridKernalContext ctx, IgniteComponentFeatureSet coreFeatures) {
+        super(ctx);
 
-        if (spi instanceof TcpDiscoverySpi)
-            ring = ((TcpDiscoverySpi)spi).discoveryRing();
+        enableProc = new ClusterVersionUpgradeEnableProcess();
+        finalizeProc = new ClusterVersionFinalizationProcess();
+        finalizeAbortProc = new ClusterVersionFinalizationAbortProcess();
+        featureMgr = new IgniteFeatureManager(ctx, coreFeatures);
+    }
 
-        startLatch.countDown();
+    /** @return Whether nodes running a higher Ignite version are allowed to join the cluster. */
+    public boolean isVersionUpgradeEnabled() {
+        return isVerUpgradeEnabled;
+    }
+
+    /**
+     * Allows nodes running a higher Ignite version to join the cluster.
+     * Until the cluster version is finalized, nodes running a higher version operate in
+     * a compatibility mode that emulates the behavior of the current cluster version.
+     */
+    public void enableVersionUpgrade() throws IgniteCheckedException {
+        ctx.security().authorize(ADMIN_ROLLING_UPGRADE);
+
+        if (isVerUpgradeEnabled)
+            return;
+
+        enableProc.start().get();
+
+        if (log.isInfoEnabled())
+            log.info("Cluster version Rolling Upgrade was successfully enabled");
+    }
+
+    /**
+     * Tries to finalize the cluster version.
+     *
+     * <p>If all cluster nodes are running the same Ignite version, this method:</p>
+     * <ol>
+     *     <li>Prevents nodes running a higher Ignite version from joining the cluster.</li>
+     *     <li>Activates all {@link IgniteFeature}s supported by the finalized cluster version.</li>
+     * </ol>
+     *
+     * <p>If the cluster contains nodes running different Ignite versions, the operation fails.</p>
+     */
+    public void finalizeClusterVersion() throws IgniteCheckedException {
+        ctx.security().authorize(ADMIN_ROLLING_UPGRADE);
+
+        if (!isVerUpgradeEnabled)
+            return;
+
+        finalizeProc.start().get();
+
+        if (log.isInfoEnabled())
+            log.info("Cluster version was successfully finalized [componentVersions=" + featureMgr.activeFeatures() + ']');
+    }
+
+    /** */
+    public void abortClusterVersionFinalization() throws IgniteCheckedException {
+        ctx.security().authorize(ADMIN_ROLLING_UPGRADE);
+
+        if (!isVerUpgradeEnabled)
+            return;
+
+        finalizeAbortProc.start().get();
+
+        if (log.isInfoEnabled())
+            log.info("Cluster version finalization has been aborted");
+    }
+
+    /** */
+    public IgniteFeatureManager features() {
+        return featureMgr;
+    }
+
+    /** */
+    IgniteComponentUpgradeState state(String cmpName) {
+        synchronized (topGuard) {
+            return detectComponentUpgradeState(clusterFeatures(), cmpName);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        ctx.event().addLocalEventListener(new GridLocalEventListener() {
-            @Override public void onEvent(Event evt) {
-                UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
+        ctx.addNodeAttribute(
+            ATTR_IGNITE_FEATURES,
+            U.marshal(
+                ctx.marshallerContext().jdkMarshaller(),
+                featureMgr.localVersionFeatures().values().toArray(new IgniteComponentFeatureSet[0]))
+        );
 
-                synchronized (lock) {
-                    if (lastJoiningNode != null && lastJoiningNode.id().equals(nodeId))
-                        lastJoiningNode = null;
+        ctx.event().addLocalEventListener(
+            evt -> {
+                synchronized (topGuard) {
+                    joiningNodes.remove(((DiscoveryEvent)evt).eventNode());
                 }
-            }
-        }, EVT_NODE_JOINED, EVT_NODE_FAILED, EVT_NODE_LEFT);
-
-        ctx.internalSubscriptionProcessor().registerDistributedMetastorageListener(new DistributedMetastorageLifecycleListener() {
-            @Override public void onReadyForWrite(DistributedMetaStorage metastorage) {
-                RollingUpgradeProcessor.this.metastorage = metastorage;
-            }
-
-            @Override public void onReadyForRead(ReadableDistributedMetaStorage metastorage) {
-                try {
-                    rollUpVers = metastorage.read(ROLLING_UPGRADE_VERSIONS_KEY);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-
-                // Keep the current and target version pair in sync with metastorage updates, e.g., to handle coordinator changes.
-                metastorage.listen(ROLLING_UPGRADE_VERSIONS_KEY::equals, (key, oldVal, newVal) -> {
-                    rollUpVers = (IgnitePair<IgniteProductVersion>)newVal;
-                });
-            }
-        });
+            },
+            EVT_NODE_JOINED,
+            EVT_NODE_FAILED,
+            EVT_NODE_LEFT,
+            EVT_NODE_VALIDATION_FAILED
+        );
     }
 
-    /** {@inheritDoc} The joining node is stored to verify later whether it successfully connected to the ring or failed to join. */
-    @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode node) {
-        synchronized (lock) {
-            lastJoiningNode = node;
+    /** {@inheritDoc} */
+    @Override public DiscoveryDataExchangeType discoveryDataType() {
+        return ROLLING_UPGRADE_PROC;
+    }
 
-            lastJoiningNodeTimestamp = U.currentTimeMillis();
-        }
+    /** {@inheritDoc} */
+    @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
+        if (ctx.clientNode())
+            return;
 
-        ClusterNode locNode = ctx.discovery().localNode();
+        int cmpId = discoveryDataType().ordinal();
 
-        String locBuildVer = locNode.attribute(ATTR_BUILD_VER);
-        String rmtBuildVer = node.attribute(ATTR_BUILD_VER);
+        if (!dataBag.commonDataCollectedFor(cmpId))
+            dataBag.addGridCommonData(cmpId, collectRollingUpgradeClusterData());
+    }
 
-        IgniteProductVersion rmtVer = IgniteProductVersion.fromString(rmtBuildVer);
+    /** {@inheritDoc} */
+    @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
+        RollingUpgradeClusterData gridData = data.commonData();
 
-        IgnitePair<IgniteProductVersion> pair = rollUpVers;
+        isVerUpgradeEnabled = gridData.isVersionUpgradeEnabled;
+        curFinalizeProcId = gridData.curFinalizeProcId;
 
-        IgniteProductVersion curVer = pair == null ? IgniteProductVersion.fromString(locBuildVer) : pair.get1();
-        IgniteProductVersion targetVer = pair == null ? null : pair.get2();
+        featureMgr.onGridDataReceived(new IgniteNodeFeatureSet(gridData.activeFeatures));
+    }
 
-        if (Objects.equals(rmtVer, curVer) || Objects.equals(rmtVer, targetVer))
+    /** {@inheritDoc} */
+    @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode joiningNode) {
+        synchronized (topGuard) {
+            if (curFinalizeProcId != null) {
+                return new IgniteNodeValidationResult(
+                    joiningNode.id(),
+                    "Node joins are not allowed during cluster version finalization. Retry the node join procedure after" +
+                        " cluster version finalization process is complete [joiningNode=" + joiningNode + ']');
+            }
+
+            IgniteNodeFeatureSet joiningNodeFeatures;
+
+            try {
+                joiningNodeFeatures = extractNodeFeatures(joiningNode);
+            }
+            catch (IgniteCheckedException e) {
+                return new IgniteNodeValidationResult(
+                    joiningNode.id(),
+                    "Failed to resolve joining node features [joiningNode=" + joiningNode + ", errMsg=" + e.getMessage() + ']');
+            }
+
+            if (isVerUpgradeEnabled) {
+                if (!joiningNode.isClient() && !joiningNodeFeatures.components().containsAll(featureMgr.activeFeatures().components())) {
+                    return new IgniteNodeValidationResult(
+                        joiningNode.id(),
+                        "Some components active in the cluster are not configured on the joining server node" +
+                            " [clusterComponents=" + featureMgr.activeFeatures().components() +
+                            ", joiningNodeComponents=" + joiningNodeFeatures.components() +
+                            ", joiningNode=" + joiningNode + ']'
+                    );
+                }
+
+                Map<ClusterNode, IgniteNodeFeatureSet> clusterFeatures = clusterFeatures();
+
+                for (IgniteComponentFeatureSet rmtCmpFeatures : joiningNodeFeatures.values()) {
+                    IgniteComponentUpgradeState state = detectComponentUpgradeState(clusterFeatures, rmtCmpFeatures.componentName());
+
+                    if (!state.isCompatible(rmtCmpFeatures.version())) {
+                        return new IgniteNodeValidationResult(
+                            joiningNode.id(),
+                            "Joining node is not allowed to join the cluster because it is running a component with an" +
+                                " incompatible version. The Rolling Upgrade process supports at most two different versions " +
+                                " of each component in the cluster. Upgrade the joining node component versions and retry" +
+                                " the node join procedure" +
+                                " [componentName=" + rmtCmpFeatures.componentName() +
+                                ", allowedComponentVersions=" + state +
+                                ", joiningNodeComponentVersion=" + rmtCmpFeatures.version() +
+                                ", joiningNode=" + joiningNode + ']');
+                    }
+
+                    IgniteComponentFeatureSet locCmpFeatures = featureMgr.activeComponentFeatures(rmtCmpFeatures.componentName());
+
+                    if (locCmpFeatures != null && !locCmpFeatures.isUpgradableTo(rmtCmpFeatures)) {
+                        return new IgniteNodeValidationResult(
+                            joiningNode.id(),
+                            "Ignite component Rolling Upgrade is not supported between the component version active in the cluster " +
+                                "and the version running on the joining node. Refer to the documentation for supported Rolling Upgrade " +
+                                "version combinations, and then retry the node join operation" +
+                                " [componentName=" + locCmpFeatures.componentName() +
+                                ", clusterComponentVer=" + locCmpFeatures.version() +
+                                ", joiningNodeComponentVer=" + rmtCmpFeatures.version() +
+                                ", joiningNode=" + joiningNode + ']');
+                    }
+                }
+            }
+            else if (!joiningNodeComponentVersionsMatchCluster(joiningNode, joiningNodeFeatures)) {
+                return new IgniteNodeValidationResult(
+                    joiningNode.id(),
+                    "One or more component versions on the joining node differ from the corresponding versions active in the cluster" +
+                        " [clusterComponentVers=" + featureMgr.activeFeatures() +
+                        ", joiningNodeComponentVers=" + joiningNodeFeatures +
+                        ", joiningNode=" + joiningNode + ']');
+            }
+
+            joiningNodes.add(joiningNode);
+
             return null;
-
-        String errMsg = "Remote node rejected due to incompatible version for cluster join.\n"
-            + "Remote node info:\n"
-            + "  - Version     : " + rmtBuildVer + "\n"
-            + "  - Addresses   : " + U.addressesAsString(node) + "\n"
-            + "  - Node ID     : " + node.id() + "\n"
-            + "Local node info:\n"
-            + "  - Version     : " + locBuildVer + "\n"
-            + "  - Addresses   : " + U.addressesAsString(locNode) + "\n"
-            + "  - Node ID     : " + locNode.id() + "\n"
-            + "Allowed versions for joining: " + curVer + (targetVer == null ? "" : ", " + targetVer);
-
-        LT.warn(log, errMsg);
-
-        if (log.isDebugEnabled())
-            log.debug(errMsg);
-
-        return new IgniteNodeValidationResult(node.id(), errMsg);
+        }
     }
 
-    /**
-     * Enables rolling upgrade with specified target version.
-     * This method can only be called on coordinator node with {@link TcpDiscoverySpi}.
-     *
-     * @param target Target version.
-     * @param force If {@code true}, skips target version compatibility checks and forcibly enables rolling upgrade.
-     *              This flag does not override an already active upgrade configuration.
-     * @throws IgniteCheckedException If:
-     *     <ul>
-     *         <li>The current and target versions are incompatible;</li>
-     *         <li>The local node is not a coordinator;</li>
-     *         <li>The discovery SPI is not {@link TcpDiscoverySpi};</li>
-     *         <li>The distributed metastorage is not ready;</li>
-     *     </ul>
-     */
-    public void enable(IgniteProductVersion target, boolean force) throws IgniteCheckedException {
-        ctx.security().authorize(SecurityPermission.ADMIN_ROLLING_UPGRADE);
+    /** {@inheritDoc} */
+    @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
+        String errMsg = "Client node has disconnected";
 
-        if (startLatch.getCount() > 0)
-            throw new IgniteCheckedException("Cannot enable rolling upgrade: processor has not been started yet");
+        enableProc.abort(errMsg);
+        finalizeProc.abort(errMsg);
+        finalizeAbortProc.abort(errMsg);
+    }
 
-        if (!U.isLocalNodeCoordinator(ctx.discovery()))
-            throw new IgniteCheckedException("Rolling upgrade can be enabled only on coordinator node");
+    /** */
+    private IgniteComponentUpgradeState detectComponentUpgradeState(
+        Map<ClusterNode, IgniteNodeFeatureSet> clusterFeatures,
+        String cmpName
+    ) {
+        SortedSet<IgniteProductVersion> clusterCmpVersions = distinctClusterComponentVersions(clusterFeatures, cmpName);
 
-        if (metastorage == null)
-            throw new IgniteCheckedException("Metastorage is not ready yet. Try again later");
+        assert !clusterCmpVersions.isEmpty() && clusterCmpVersions.size() <= 2 : "Cluster nodes must run no more than" +
+            " two versions of the component [cmpName=" + cmpName + ", clusterCmpVersions=" + clusterCmpVersions.size() + "]";
 
-        if (!(ctx.config().getDiscoverySpi() instanceof TcpDiscoverySpi))
-            throw new IgniteCheckedException("Rolling upgrade is supported only with TCP discovery SPI");
+        IgniteProductVersion minCmpVer = clusterCmpVersions.first();
+        IgniteProductVersion maxCmpVer = clusterCmpVersions.last();
 
-        String curBuildVer = ctx.discovery().localNode().attribute(ATTR_BUILD_VER);
-        IgniteProductVersion curVer = IgniteProductVersion.fromString(curBuildVer);
+        if (!Objects.equals(minCmpVer, maxCmpVer))
+            return new IgniteComponentUpgradeState(minCmpVer, maxCmpVer, false);
 
-        if (!checkVersionsForEnabling(curVer, target, force))
-            return;
+        IgniteComponentFeatureSet activeCompFeatures = featureMgr.activeComponentFeatures(cmpName);
 
-        IgnitePair<IgniteProductVersion> newPair = F.pair(curVer, target);
+        IgniteProductVersion logicalCmpVer = activeCompFeatures == null ? null : activeCompFeatures.version();
 
-        if (!metastorage.compareAndSet(ROLLING_UPGRADE_VERSIONS_KEY, null, newPair)) {
-            IgnitePair<IgniteProductVersion> oldVerPair = metastorage.read(ROLLING_UPGRADE_VERSIONS_KEY);
+        return new IgniteComponentUpgradeState(
+            logicalCmpVer,
+            Objects.equals(logicalCmpVer, maxCmpVer) ? null : maxCmpVer,
+            true);
+    }
 
-            if (newPair.equals(oldVerPair))
-                return;
+    /** */
+    private SortedSet<IgniteProductVersion> distinctClusterComponentVersions(
+        Map<ClusterNode, IgniteNodeFeatureSet> clusterFeatures,
+        String cmpName
+    ) {
+        SortedSet<IgniteProductVersion> distinctCmpVersions = new TreeSet<>(Comparator.nullsFirst(Comparator.naturalOrder()));
 
-            if (oldVerPair == null)
-                throw new IgniteCheckedException("Could not enable rolling upgrade. Try again");
+        clusterFeatures.forEach((node, nodeFeatures) -> {
+            IgniteComponentFeatureSet cmpFeatures = nodeFeatures.componentFeatures(cmpName);
 
-            throw new IgniteCheckedException("Rolling upgrade is already enabled with a different current and target version: " +
-                oldVerPair.get1() + " , " + oldVerPair.get2());
+            if (node.isClient() && cmpFeatures == null)
+                return; // Components are optional on client nodes, even when they are configured on servers.
+
+            distinctCmpVersions.add(cmpFeatures == null ? null : cmpFeatures.version());
+        });
+
+        return distinctCmpVersions;
+    }
+
+    /** */
+    private boolean joiningNodeComponentVersionsMatchCluster(ClusterNode joiningNode, IgniteNodeFeatureSet joiningNodeFeatures) {
+        IgniteNodeFeatureSet locFeatures = featureMgr.localVersionFeatures();
+
+        return joiningNode.isClient()
+            ? locFeatures.containsAll(joiningNodeFeatures)
+            : locFeatures.equals(joiningNodeFeatures);
+    }
+
+    /** */
+    private boolean isReadyForVersionFinalization() {
+        Map<ClusterNode, IgniteNodeFeatureSet> clusterFeatures = clusterFeatures();
+
+        Set<IgniteNodeFeatureSet> distinctServerNodeFeatureSets = new HashSet<>();
+        Set<IgniteNodeFeatureSet> distinctClientNodeFeatureSets = new HashSet<>();
+
+        clusterFeatures.forEach((node, features) -> {
+            if (!node.isClient())
+                distinctServerNodeFeatureSets.add(features);
+            else
+                distinctClientNodeFeatureSets.add(features);
+        });
+
+        if (distinctServerNodeFeatureSets.size() != 1)
+            return false;
+
+        IgniteNodeFeatureSet srvFeatures = F.first(distinctServerNodeFeatureSets);
+
+        return distinctClientNodeFeatureSets.stream().allMatch(srvFeatures::containsAll);
+    }
+
+    /** */
+    private RollingUpgradeClusterData collectRollingUpgradeClusterData() {
+        return new RollingUpgradeClusterData(
+            isVerUpgradeEnabled,
+            curFinalizeProcId,
+            featureMgr.activeFeatures().values()
+        );
+    }
+
+    /** */
+    private IgniteNodeFeatureSet extractNodeFeatures(ClusterNode node) throws IgniteCheckedException {
+        byte[] attrVal = node.attribute(ATTR_IGNITE_FEATURES);
+
+        IgniteComponentFeatureSet[] nodeFeatures = U.unmarshal(
+            ctx.marshallerContext().jdkMarshaller(),
+            attrVal,
+            U.resolveClassLoader(ctx.config()));
+
+        return new IgniteNodeFeatureSet(List.of(nodeFeatures));
+    }
+
+    /** */
+    private static Throwable firstError(Map<UUID, Throwable> errors) {
+        return F.isEmpty(errors) ? null : F.firstValue(errors);
+    }
+
+    /** */
+    private Map<ClusterNode, IgniteNodeFeatureSet> clusterFeatures() {
+        assert Thread.holdsLock(topGuard);
+
+        try {
+            Map<ClusterNode, IgniteNodeFeatureSet> res = new HashMap<>();
+
+            for (ClusterNode node : clusterNodes())
+                res.put(node, extractNodeFeatures(node));
+
+            return res;
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to resolve cluster features", e);
+
+            throw new IgniteException("Failed to resolve cluster features", e);
+        }
+    }
+
+    /** */
+    private Set<ClusterNode> clusterNodes() {
+        assert Thread.holdsLock(topGuard);
+
+        Set<ClusterNode> clusterNodes = new HashSet<>(ctx.discovery().discoverySpiRemoteNodes());
+
+        clusterNodes.add(ctx.discovery().localNode());
+        clusterNodes.addAll(joiningNodes);
+
+        return clusterNodes;
+    }
+
+    /** */
+    private class ClusterVersionUpgradeEnableProcess extends AbstractProcess {
+        /** */
+        private final DistributedProcess<Message, Message> distributedProc;
+
+        /** */
+        public ClusterVersionUpgradeEnableProcess() {
+            distributedProc = new DistributedProcess<>(
+                ctx,
+                RU_ENABLE,
+                this::execute,
+                this::finish,
+                (reqId, req) -> new InitMessage<>(reqId, RU_ENABLE, req, true));
         }
 
-        rollUpVers = newPair;
+        /** {@inheritDoc} */
+        @Override protected UUID startInternal() {
+            UUID reqId = UUID.randomUUID();
 
-        if (log.isInfoEnabled())
-            log.info("Rolling upgrade enabled [current=" + curVer + ", target=" + target + ']');
-    }
+            distributedProc.start(reqId, null);
 
-    /**
-     * Disables rolling upgrade.
-     * This method can only be called on coordinator node.
-     *
-     * <p>May be blocked while a node with a different version is still joining or during metastorage operations.</p>
-     *
-     * @throws IgniteCheckedException If cluster has two or more nodes with different versions or if node is not coordinator
-     * or metastorage is not ready.
-     */
-    public void disable() throws IgniteCheckedException {
-        ctx.security().authorize(SecurityPermission.ADMIN_ROLLING_UPGRADE);
-
-        if (!U.isLocalNodeCoordinator(ctx.discovery()))
-            throw new IgniteCheckedException("Rolling upgrade can be disabled only on coordinator node");
-
-        if (metastorage == null)
-            throw new IgniteCheckedException("Meta storage is not ready. Try again");
-
-        if (rollUpVers == null)
-            return;
-
-        IgnitePair<IgniteProductVersion> minMaxVerPair = ring.minMaxNodeVersions();
-
-        if (!minMaxVerPair.get1().equals(minMaxVerPair.get2()))
-            throw new IgniteCheckedException("Can't disable rolling upgrade with different versions in cluster: "
-                + minMaxVerPair.get1() + ", " + minMaxVerPair.get2());
-
-        synchronized (lock) {
-            if (lastJoiningNode != null) {
-                // Use 3 * joinTimeout as an upper time bound for joining nodes that may drop during validation
-                // without sending NODE_LEFT / NODE_FAILED events.
-                long timeout = ((TcpDiscoverySpi)ctx.config().getDiscoverySpi()).getJoinTimeout() * 3;
-
-                if (ring.node(lastJoiningNode.id()) != null || (timeout > 0 && U.currentTimeMillis() - lastJoiningNodeTimestamp > timeout))
-                    lastJoiningNode = null;
-            }
-
-            if (lastJoiningNode != null) {
-                IgniteProductVersion lastJoiningNodeVer = IgniteProductVersion.fromString(lastJoiningNode.attribute(ATTR_BUILD_VER));
-
-                if (!minMaxVerPair.get1().equals(lastJoiningNodeVer))
-                    throw new IgniteCheckedException("Can't disable rolling upgrade with different versions in cluster: "
-                        + minMaxVerPair.get1() + ", " + lastJoiningNodeVer);
-            }
-
-            rollUpVers = null;
-        }
-
-        metastorage.remove(ROLLING_UPGRADE_VERSIONS_KEY);
-
-        if (log.isInfoEnabled())
-            log.info("Rolling upgrade disabled. Current version of nodes in cluster: " + minMaxVerPair.get1());
-    }
-
-    /**
-     * Returns a pair containing the current and target versions of the cluster.
-     * <p>
-     * This method returns {@code null} if rolling upgrade has not been enabled yet
-     * or if version information has not been read from the distributed metastorage.
-     *
-     * @return A pair where:
-     *     <ul>
-     *         <li><b>First element</b> — current version of the cluster.</li>
-     *         <li><b>Second element</b> — target version to which the cluster is being upgraded.</li>
-     *     </ul>
-     *     or {@code null} if rolling upgrade is not active.
-     */
-    @Nullable public IgnitePair<IgniteProductVersion> versions() {
-        return rollUpVers;
-    }
-
-    /** Checks whether the cluster is in the rolling upgrade mode. */
-    public boolean enabled() {
-        return versions() != null;
-    }
-
-    /**
-     * Checks cur and target versions.
-     *
-     * @param cur Current cluster version.
-     * @param target Target cluster version.
-     * @param force Force flag to skip version checks.
-     * @throws IgniteCheckedException If versions are incorrect.
-     */
-    private boolean checkVersionsForEnabling(
-        IgniteProductVersion cur,
-        IgniteProductVersion target,
-        boolean force
-    ) throws IgniteCheckedException {
-        IgnitePair<IgniteProductVersion> oldVerPair = rollUpVers;
-        if (oldVerPair != null) {
-            if (oldVerPair.get1().equals(cur) && oldVerPair.get2().equals(target))
-                return false;
-
-            throw new IgniteCheckedException("Rolling upgrade is already enabled with a different current and target version: " +
-                oldVerPair.get1() + " , " + oldVerPair.get2());
-        }
-
-        if (force) {
             if (log.isInfoEnabled())
-                log.info("Skipping version compatibility check for rolling upgrade due to force flag "
-                    + "[currentVer=" + cur + ", targetVer=" + target + ']');
+                log.info("Cluster version upgrade enable process has been started [procId=" + reqId + "]");
 
-            return true;
+            return reqId;
         }
 
-        if (cur.major() != target.major())
-            throw new IgniteCheckedException("Major versions are different");
+        /** */
+        private IgniteInternalFuture<Message> execute(UUID ignored, Message req) {
+            isVerUpgradeEnabled = true;
 
-        if (cur.minor() != target.minor()) {
-            if (target.minor() == cur.minor() + 1 && target.maintenance() == 0)
-                return true;
-
-            throw new IgniteCheckedException("Minor version can only be incremented by 1");
+            return new GridFinishedFuture<>();
         }
 
-        if (cur.maintenance() + 1 != target.maintenance())
-            throw new IgniteCheckedException("Patch version can only be incremented by 1");
+        /** */
+        private void finish(UUID reqId, Map<UUID, Message> responses, Map<UUID, Throwable> errors) {
+            finishProcess(reqId, firstError(errors));
+        }
+    }
 
-        return true;
+    /** */
+    private class ClusterVersionFinalizationProcess extends AbstractProcess {
+        /** */
+        private final DistributedProcess<Message, Message> preparePhase;
+
+        /** */
+        private final DistributedProcess<Message, Message> completePhase;
+
+        /** */
+        public ClusterVersionFinalizationProcess() {
+            preparePhase = new DistributedProcess<>(
+                ctx,
+                RU_PREPARE_VERSION_FINALIZATION,
+                this::executePreparePhase,
+                this::finishPreparePhase,
+                (reqId, req) -> new InitMessage<>(reqId, RU_PREPARE_VERSION_FINALIZATION, req, true));
+
+            completePhase = new DistributedProcess<>(
+                ctx,
+                RU_COMPLETE_VERSION_FINALIZATION,
+                this::executeCompletePhase,
+                this::finishCompletePhase,
+                (reqId, req) -> new InitMessage<>(reqId, RU_COMPLETE_VERSION_FINALIZATION, req, true));
+        }
+
+        /** {@inheritDoc} */
+        @Override protected UUID startInternal() {
+            UUID reqId = UUID.randomUUID();
+
+            preparePhase.start(reqId, null);
+
+            if (log.isInfoEnabled())
+                log.info("Cluster version finalization process has been started [procId=" + reqId + ']');
+
+            return reqId;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void finishProcess(UUID reqId, @Nullable Throwable err) {
+            if (err != null)
+                U.error(log, "Cluster version finalization process failed [procId=" + reqId + ']', err);
+
+            super.finishProcess(reqId, err);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void abort(String reason) {
+            U.warn(log, "Cluster version finalization process has been aborted [procId=" + curFinalizeProcId + ", reason=" + reason + ']');
+
+            curFinalizeProcId = null;
+
+            super.abort(reason);
+        }
+
+        /** */
+        boolean isInProgress() {
+            return isVerUpgradeEnabled && curFinalizeProcId != null;
+        }
+
+        /** */
+        private IgniteInternalFuture<Message> executePreparePhase(UUID reqId, Message req) {
+            synchronized (topGuard) {
+                if (curFinalizeProcId != null) {
+                    U.error(log, "Failed to handle cluster version finalization request. Another process is " +
+                        "already in progress [curProcId=" + reqId + ", activeProcId=" + curFinalizeProcId + ']');
+
+                    return new GridFinishedFuture<>(new IgniteException("Cluster version finalization process is already in progress"));
+                }
+
+                curFinalizeProcId = reqId;
+
+                if (!isReadyForVersionFinalization())
+                    return new GridFinishedFuture<>(new IgniteException(
+                    "Cluster version finalization failed. The cluster contains nodes running" +
+                        " different versions of one or more components. Retry the operation after upgrading" +
+                        " all cluster node components to the same version" +
+                        " [clusterFeatures=" + clusterFeatures().entrySet().stream().collect(
+                        Collectors.toMap(e -> e.getKey().id(), Map.Entry::getValue)) + ']'));
+
+                return new GridFinishedFuture<>();
+            }
+        }
+
+        /** */
+        private void finishPreparePhase(UUID reqId, Map<UUID, Message> responses, Map<UUID, Throwable> errors) {
+            if (!F.isEmpty(errors)) {
+                if (reqId.equals(curFinalizeProcId))
+                    curFinalizeProcId = null;
+
+                finishProcess(reqId, firstError(errors));
+            }
+            else if (reqId.equals(curFinalizeProcId) && U.isLocalNodeCoordinator(ctx.discovery()))
+                completePhase.start(reqId, null);
+        }
+
+        /** */
+        private IgniteInternalFuture<Message> executeCompletePhase(UUID reqId, Message req) {
+            if (!reqId.equals(curFinalizeProcId)) {
+                // This condition is guaranteed to occur only when cluster version finalization is aborted
+                // after the prepare phase has completed successfully but before the completion phase begins.
+                // Aborting cluster version finalization is mutually exclusive with the finalization completion
+                // phase and is applied consistently across all cluster nodes.
+                return new GridFinishedFuture<>(new IgniteException(
+                    "Failed to complete the cluster version finalization operation." +
+                        " The operation may have been aborted by an administrator. Retry the operation if possible"
+                ));
+            }
+
+            featureMgr.activateLocalVersionFeatures();
+
+            isVerUpgradeEnabled = false;
+            curFinalizeProcId = null;
+
+            return new GridFinishedFuture<>();
+        }
+
+        /** */
+        private void finishCompletePhase(UUID reqId, Map<UUID, Message> responses, Map<UUID, Throwable> errors) {
+            finishProcess(reqId, firstError(errors));
+        }
+    }
+
+    /** */
+    private class ClusterVersionFinalizationAbortProcess extends AbstractProcess {
+        /** */
+        private final DistributedProcess<Message, Message> distributedProc;
+
+        /** */
+        public ClusterVersionFinalizationAbortProcess() {
+            distributedProc = new DistributedProcess<>(
+                ctx,
+                RU_ABORT_VERSION_FINALIZATION,
+                this::execute,
+                this::finish,
+                (reqId, req) -> new InitMessage<>(reqId, RU_ABORT_VERSION_FINALIZATION, req, true));
+        }
+
+        /** {@inheritDoc} */
+        @Override protected UUID startInternal() {
+            UUID reqId = UUID.randomUUID();
+
+            distributedProc.start(reqId, null);
+
+            return reqId;
+        }
+
+        /** */
+        private IgniteInternalFuture<Message> execute(UUID ignored, Message req) {
+            if (finalizeProc.isInProgress())
+                finalizeProc.abort("Operation has been aborted by administrator");
+
+            return new GridFinishedFuture<>();
+        }
+
+        /** */
+        private void finish(UUID reqId, Map<UUID, Message> responses, Map<UUID, Throwable> errors) {
+            finishProcess(reqId, firstError(errors));
+        }
     }
 }

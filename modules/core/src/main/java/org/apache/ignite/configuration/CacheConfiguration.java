@@ -52,6 +52,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -79,7 +80,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DISK_PAGE_
  * can be configured from Spring XML files (or other DI frameworks). <p> Note that absolutely all configuration
  * properties are optional, so users should only change what they need.
  */
-public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
+public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> implements CacheConfigurationDefaults {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -1841,7 +1842,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Gets timeout in milliseconds after which long query warning will be printed.
      *
      * @return Timeout in milliseconds.
-     * @deprecated Use {@link IgniteConfiguration#getLongQueryWarningTimeout()} instead.
      */
     @Deprecated
     public long getLongQueryWarningTimeout() {
@@ -1853,7 +1853,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @param longQryWarnTimeout Timeout in milliseconds.
      * @return {@code this} for chaining.
-     * @deprecated Use {@link IgniteConfiguration#setLongQueryWarningTimeout(long)} instead.
      */
     @Deprecated
     public CacheConfiguration<K, V> setLongQueryWarningTimeout(long longQryWarnTimeout) {
@@ -2024,7 +2023,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
                 qryEntities.add(newEntity);
 
             // Set key configuration if needed.
-            String affFieldName = CU.affinityFieldName(keyCls);
+            String affFieldName = BinaryUtils.affinityFieldName(keyCls);
 
             if (affFieldName != null) {
                 CacheKeyConfiguration newKeyCfg = new CacheKeyConfiguration(newEntity.getKeyType(), affFieldName);

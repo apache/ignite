@@ -27,6 +27,7 @@ import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.lang.reflect.Array;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -62,9 +63,23 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCommonsSystemProperties;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.binary.*;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryCollectionFactory;
+import org.apache.ignite.binary.BinaryIdMapper;
+import org.apache.ignite.binary.BinaryInvalidTypeException;
+import org.apache.ignite.binary.BinaryMapFactory;
+import org.apache.ignite.binary.BinaryNameMapper;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinarySerializer;
+import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.IgniteUuidCache;
 import org.apache.ignite.internal.util.MutableSingletonList;
@@ -73,6 +88,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.platform.PlatformType;
 import org.jetbrains.annotations.Nullable;
@@ -161,6 +177,10 @@ public class BinaryUtils {
     /** Whether to sort field in binary objects (doesn't affect Binarylizable). */
     public static boolean FIELDS_SORTED_ORDER =
         IgniteCommonsSystemProperties.getBoolean(IgniteCommonsSystemProperties.IGNITE_BINARY_SORT_OBJECT_FIELDS);
+
+    /** For tests. */
+    @SuppressWarnings("PublicField")
+    public static boolean useTestBinaryCtx;
 
     /** Field type names. */
     private static final String[] FIELD_TYPE_NAMES;
@@ -602,7 +622,7 @@ public class BinaryUtils {
         if (type != null)
             return type;
 
-        if (CommonUtils.isEnum(cls))
+        if (CommonUtils.isEnum(cls) || cls == Enum.class)
             return GridBinaryMarshaller.ENUM;
 
         if (cls.isArray())
@@ -3088,27 +3108,191 @@ public class BinaryUtils {
     }
 
     /**
-     * Writes IgniteUuid to a writer.
-     *
-     * @param writer Writer.
-     * @param val Values.
+     * @param cls Class to get affinity field for.
+     * @return Affinity field name or {@code null} if field name was not found.
      */
-    public static void writeIgniteUuid(BinaryRawWriter writer, IgniteUuid val) {
-        if (val == null)
-            writer.writeUuid(null);
-        else {
-            writer.writeUuid(val.globalId());
-            writer.writeLong(val.localId());
+    public static String affinityFieldName(Class cls) {
+        for (; cls != Object.class && cls != null; cls = cls.getSuperclass()) {
+            for (Field f : cls.getDeclaredFields()) {
+                if (f.getAnnotation(AffinityKeyMapped.class) != null)
+                    return f.getName();
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Creates a binary context with default (empty) configuration for the given marshaller.
+     *
+     * @param marsh Binary marshaller (may be {@code null}).
+     * @return Binary context instance.
+     */
+    public static BinaryContext binaryContext(BinaryMarshaller marsh) {
+        return binaryContext(
+            cachingMetadataHandler(),
+            marsh,
+            null,
+            null,
+            new BinaryConfiguration(),
+            Collections.emptyMap(),
+            BinaryUtils::affinityFieldName,
+            NullLogger.INSTANCE
+        );
+    }
+
+    /**
+     * Creates a binary context from explicit values.
+     *
+     * @param metaHnd Binary metadata handler.
+     * @param marsh Binary marshaller.
+     * @param igniteInstanceName Ignite instance name.
+     * @param classLoader Class loader.
+     * @param binCfg Binary configuration.
+     * @param affFlds Affinity fields by type name.
+     * @param affFldNameProvider Affinity field name provider.
+     * @param log Logger.
+     * @return Binary context instance.
+     */
+    public static BinaryContext binaryContext(
+        BinaryMetadataHandler metaHnd,
+        BinaryMarshaller marsh,
+        @Nullable String igniteInstanceName,
+        @Nullable ClassLoader classLoader,
+        BinaryConfiguration binCfg,
+        Map<String, String> affFlds,
+        Function<Class<?>, String> affFldNameProvider,
+        IgniteLogger log
+    ) {
+        return useTestBinaryCtx
+            ? new TestBinaryContext(
+                metaHnd,
+                marsh,
+                igniteInstanceName,
+                classLoader,
+                binCfg.getSerializer(),
+                binCfg.getIdMapper(),
+                binCfg.getNameMapper(),
+                binCfg.getTypeConfigurations(),
+                affFlds,
+                binCfg.isCompactFooter(),
+                affFldNameProvider,
+                log
+            )
+            : new BinaryContext(
+                metaHnd,
+                marsh,
+                igniteInstanceName,
+                classLoader,
+                binCfg.getSerializer(),
+                binCfg.getIdMapper(),
+                binCfg.getNameMapper(),
+                binCfg.getTypeConfigurations(),
+                affFlds,
+                binCfg.isCompactFooter(),
+                affFldNameProvider,
+                log
+            );
+    }
+
+    /** */
+    @SuppressWarnings("PublicInnerClass")
+    public static class TestBinaryContext extends BinaryContext {
+        /** */
+        private List<TestBinaryContextListener> listeners;
+
+        /** */
+        public TestBinaryContext(
+            BinaryMetadataHandler metaHnd,
+            @Nullable BinaryMarshaller marsh,
+            @Nullable String igniteInstanceName,
+            @Nullable ClassLoader clsLdr,
+            @Nullable BinarySerializer dfltSerializer,
+            @Nullable BinaryIdMapper idMapper,
+            @Nullable BinaryNameMapper nameMapper,
+            @Nullable Collection<BinaryTypeConfiguration> typeCfgs,
+            Map<String, String> affFlds,
+            boolean compactFooter,
+            Function<Class<?>, String> affFldNameProvider,
+            IgniteLogger log
+        ) {
+            super(
+                metaHnd,
+                marsh,
+                igniteInstanceName,
+                clsLdr,
+                dfltSerializer,
+                idMapper,
+                nameMapper,
+                typeCfgs,
+                affFlds,
+                compactFooter,
+                affFldNameProvider,
+                log
+            );
+        }
+
+
+        /** {@inheritDoc} */
+        @Nullable @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
+            BinaryType metadata = super.metadata(typeId);
+
+            if (listeners != null) {
+                for (TestBinaryContextListener listener : listeners)
+                    listener.onAfterMetadataRequest(typeId, metadata);
+            }
+
+            return metadata;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void updateMetadata(int typeId, BinaryMetadata meta, boolean failIfUnregistered) throws BinaryObjectException {
+            if (listeners != null) {
+                for (TestBinaryContextListener listener : listeners)
+                    listener.onBeforeMetadataUpdate(typeId, meta);
+            }
+
+            super.updateMetadata(typeId, meta, failIfUnregistered);
+        }
+
+        /** */
+        public interface TestBinaryContextListener {
+            /**
+             * @param typeId Type id.
+             * @param type Type.
+             */
+            void onAfterMetadataRequest(int typeId, BinaryType type);
+
+            /**
+             * @param typeId Type id.
+             * @param metadata Metadata.
+             */
+            void onBeforeMetadataUpdate(int typeId, BinaryMetadata metadata);
+        }
+
+        /** @param lsnr Listener. */
+        public void addListener(TestBinaryContextListener lsnr) {
+            if (listeners == null)
+                listeners = new ArrayList<>();
+
+            if (!listeners.contains(lsnr))
+                listeners.add(lsnr);
+        }
+
+        /** */
+        public void clearAllListener() {
+            if (listeners != null)
+                listeners.clear();
         }
     }
 
-    public static IgniteUuid readIgniteUuid(BinaryRawReader in){
-        UUID globalId = in.readUuid();
-        if (globalId!=null) {
-            long locId = in.readLong();
-
-            return new IgniteUuid(globalId, locId);
-        }
-        return null;
+    /**
+     * Represents the given cache version as an {@link IgniteUuid}.
+     *
+     * @param ver Cache version.
+     * @return Version represented as {@code IgniteUuid}.
+     */
+    public static IgniteUuid asIgniteUuid(GridCacheVersion ver) {
+        return new IgniteUuid(new UUID(ver.topologyVersion(), ver.nodeOrderAndDrIdRaw()), ver.order());
     }
 }

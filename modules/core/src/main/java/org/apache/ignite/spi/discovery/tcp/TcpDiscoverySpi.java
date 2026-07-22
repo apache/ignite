@@ -97,7 +97,6 @@ import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
-import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNodesRing;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryStatistics;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
@@ -348,9 +347,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     protected long connRecoveryTimeout = DFLT_CONNECTION_RECOVERY_TIMEOUT;
 
     /** Grid discovery listener. */
+    @GridToStringExclude
     protected volatile DiscoverySpiListener lsnr;
 
     /** Data exchange. */
+    @GridToStringExclude
     protected DiscoverySpiDataExchange exchange;
 
     /** Metrics provider. */
@@ -381,6 +382,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     private Marshaller marsh;
 
     /** Statistics. */
+    @GridToStringExclude
     protected final TcpDiscoveryStatistics stats = new TcpDiscoveryStatistics();
 
     /** Local port which node uses. */
@@ -441,7 +443,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     protected IgniteLogger log;
 
     /** */
-    protected TcpDiscoveryImpl impl;
+    TcpDiscoveryImpl impl;
 
     /** */
     private boolean clientReconnectDisabled;
@@ -453,9 +455,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     private IgniteBiTuple<Collection<String>, Collection<String>> addrs;
 
     /** */
+    @GridToStringExclude
     protected IgniteSpiContext spiCtx;
 
     /** Discovery messages factory. */
+    @GridToStringExclude
     private MessageFactory msgFactory;
 
     /** For test purposes. */
@@ -511,16 +515,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             return ((ServerImpl)impl).getNode0(id);
 
         return getNode(id);
-    }
-
-    /**
-     * @return TCP discovery nodes ring.
-     */
-    @Nullable public TcpDiscoveryNodesRing discoveryRing() {
-        if (impl instanceof ServerImpl)
-            return ((ServerImpl)impl).ring();
-
-        return null;
     }
 
     /** {@inheritDoc} */
@@ -2072,21 +2066,14 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         assert dataPacket != null;
         assert dataPacket.joiningNodeId() != null;
 
-        //create data bag, pass it to exchange.collect
         DiscoveryDataBag dataBag = dataPacket.bagForDataCollection();
 
         exchange.collect(dataBag);
 
-        //marshall collected bag into packet, return packet
         if (dataPacket.joiningNodeId().equals(locNode.id()))
             dataPacket.addJoiningNodeData(dataBag);
         else
-            dataPacket.marshalGridNodeData(
-                dataBag,
-                locNode.id(),
-                marshaller(),
-                ignite.configuration().getNetworkCompressionLevel(),
-                log);
+            dataPacket.addNodeData(dataBag, locNode.id());
 
         return dataPacket;
     }
@@ -2101,22 +2088,21 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         DiscoveryDataBag dataBag;
 
-        if (dataPacket.joiningNodeId().equals(locNode.id())) {
-            try {
-                dataBag = dataPacket.unmarshalGridData(marshaller(), clsLdr, locNode.clientRouterNodeId() != null, log);
-            }
-            catch (IgniteCheckedException e) {
-                if (ignite() instanceof IgniteEx) {
-                    FailureProcessor failure = ((IgniteEx)ignite()).context().failure();
-
-                    failure.process(new FailureContext(CRITICAL_ERROR, e));
-                }
-
-                throw new IgniteException(e);
-            }
+        try {
+            if (dataPacket.joiningNodeId().equals(locNode.id()))
+                dataBag = dataPacket.bagWithNodeData(ignite.log(), ignite.configuration().isClientMode());
+            else
+                dataBag = dataPacket.bagWithJoiningNodeData(ignite.log(), ignite.configuration().isClientMode());
         }
-        else
-            dataBag = dataPacket.bagWithJoiningNodeData();
+        catch (IgniteCheckedException e) {
+            if (ignite() instanceof IgniteEx) {
+                FailureProcessor failure = ((IgniteEx)ignite()).context().failure();
+
+                failure.process(new FailureContext(CRITICAL_ERROR, e));
+            }
+
+            throw new IgniteException(e);
+        }
 
         exchange.onExchange(dataBag);
     }
@@ -2130,10 +2116,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         impl.spiStart(igniteInstanceName);
     }
 
-    /**
-     *
-     */
-    protected void initializeImpl() {
+    /** */
+    private void initializeImpl() {
         if (impl != null)
             return;
 
@@ -2159,7 +2143,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             if (sockTimeout == 0)
                 sockTimeout = DFLT_SOCK_TIMEOUT;
 
-            impl = new ServerImpl(this, DFLT_UTLITY_POOL_SIZE, DFLT_RMT_DC_PING_POOL_SIZE);
+            impl = createServerTcpDiscoveryImplementation();
         }
 
         metricsUpdateFreq = ignite.configuration().getMetricsUpdateFrequency();
@@ -2240,6 +2224,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         }
 
         cfgNodeId = ignite.configuration().getNodeId();
+    }
+
+    /** */
+    TcpDiscoveryImpl createServerTcpDiscoveryImplementation() {
+        return new ServerImpl(this, DFLT_UTLITY_POOL_SIZE, DFLT_RMT_DC_PING_POOL_SIZE);
     }
 
     /** {@inheritDoc} */
@@ -2478,6 +2467,15 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         catch (IgniteSpiException e) {
             throw new IgniteCheckedException("Failed to perform socket operation", e);
         }
+    }
+
+    /**
+     * Tries to restore the node's {@link IgniteProductVersion#stage()} field, since it is transient and is not
+     * automatically restored after Cluster Node deserialization.
+     */
+    protected void restoreRemoteNodeVersion(TcpDiscoveryNode rmtNode) {
+        if (locNodeVer.equals(rmtNode.version()))
+            rmtNode.version(locNodeVer);
     }
 
     /**

@@ -58,6 +58,8 @@ import static org.apache.ignite.cdc.AbstractCdcTest.KEYS_CNT;
 import static org.apache.ignite.cdc.CdcSelfTest.addData;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
+import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.stopThreads;
 import static org.apache.ignite.util.CdcCommandTest.CDC;
 import static org.apache.ignite.util.CdcCommandTest.RESEND;
@@ -195,6 +197,21 @@ public class CdcResendCommandTest extends GridCommandHandlerAbstractTest {
         assertEquals(0, ev2.key());
         assertEquals(1, ev2.value());
         assertNull(ev2.version().otherClusterVersion());
+    }
+
+    /** */
+    @Test
+    public void testResendCommandFailsOnInactiveCluster() throws Exception {
+        injectTestSystemOut();
+
+        IgniteEx ign = startGrid(0);
+
+        assertContains(log, executeCommand(EXIT_CODE_UNEXPECTED_ERROR, CDC, RESEND, CACHES, DEFAULT_CACHE_NAME),
+            "CDC resend command was cancelled because Ignite cluster is inactive.");
+
+        ign.cluster().state(ACTIVE);
+
+        executeCommand(EXIT_CODE_OK, CDC, RESEND, CACHES, DEFAULT_CACHE_NAME);
     }
 
     /** */

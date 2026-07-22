@@ -151,9 +151,16 @@ public class GridRedisSubscribeCommandHandler implements GridRedisCommandHandler
         }
         
         GridRedisCommand cmd = msg.command();
-        IgniteBiPredicate<UUID, ByteBuffer> p = ses.messageListener();
+
+		IgniteBiPredicate<UUID, ByteBuffer> p = (UUID nodeId,ByteBuffer buf) -> {
+			GridRedisMessage redisResp = new GridRedisMessage(buf.limit());
+			redisResp.setResponse(buf.duplicate());
+			ses.send(redisResp);
+			return true; // Return true to continue listening.
+		};
         
         if(cmd == SUBSCRIBE) {
+
         	List<String> topics = msg.auxMKeys();
         	Collection<Object[]> result = new ArrayList<>();
         	int n = 0;
@@ -270,8 +277,7 @@ public class GridRedisSubscribeCommandHandler implements GridRedisCommandHandler
         		}
                 msg.setResponse(GridRedisProtocolParser.toBulkList(result));
                 return new GridFinishedFuture<>(msg);
-        	}       	
-            
+        	}
         }
        
         msg.setResponse(GridRedisProtocolParser.nil());

@@ -178,8 +178,4 @@ public class MockNioSession extends GridMetadataAwareAdapter implements GridNioS
     @Override public void systemMessage(Object msg) {
         // No-op.
     }
-    
-    @Override public IgniteBiPredicate<UUID, ByteBuffer> messageListener(){
-    	return null;
-    }
 }

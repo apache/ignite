@@ -965,14 +965,16 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
-        if (data.commonData() instanceof DiscoveryDataClusterState) {
+        Serializable commonData = data.commonData();
+
+        if (commonData instanceof DiscoveryDataClusterState) {
             if (globalState != null && globalState.baselineTopology() != null)
                 //node with BaselineTopology is not allowed to join mixed cluster
                 // (where some nodes don't support BaselineTopology)
                 throw new IgniteException("Node with BaselineTopology cannot join" +
                     " mixed cluster running in compatibility mode");
 
-            globalState = (DiscoveryDataClusterState)data.commonData();
+            globalState = (DiscoveryDataClusterState)commonData;
 
             compatibilityMode = true;
 
@@ -981,7 +983,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             return;
         }
 
-        BaselineStateAndHistoryData stateDiscoData = (BaselineStateAndHistoryData)data.commonData();
+        BaselineStateAndHistoryData stateDiscoData = (BaselineStateAndHistoryData)commonData;
 
         if (stateDiscoData != null) {
             DiscoveryDataClusterState state = stateDiscoData.globalState;

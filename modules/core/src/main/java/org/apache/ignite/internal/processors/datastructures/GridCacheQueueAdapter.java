@@ -434,17 +434,10 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         if (opCtx != null && opCtx.isKeepBinary())
             return (GridCacheQueueAdapter<V1>)this;
 
-        opCtx = opCtx == null ? new CacheOperationContext(
-            false,
-            false,
-            true,
-            null,
-            false,
-            null,
-            false,
-            null,
-            null)
-            : opCtx.keepBinary();
+        if (opCtx == null)
+            opCtx = CacheOperationContext.builder().keepBinary(true).build();
+        else
+            opCtx = opCtx.withKeepBinary();
 
         cctx.operationContextPerCall(opCtx);
 

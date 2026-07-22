@@ -1482,10 +1482,9 @@ public class ClusterCachesInfo {
         if (data.commonData() == null)
             return;
 
-        assert joinDiscoData != null || disconnectedState();
-        assert data.commonData() instanceof CacheNodeCommonDiscoveryData : data;
+        CacheNodeCommonDiscoveryData cachesData = data.commonData();
 
-        CacheNodeCommonDiscoveryData cachesData = (CacheNodeCommonDiscoveryData)data.commonData();
+        assert joinDiscoData != null || disconnectedState();
 
         // CacheGroup configurations that were created from local node configuration.
         Map<Integer, CacheGroupDescriptor> locCacheGrps = new HashMap<>(registeredCacheGroups());

@@ -29,6 +29,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.math.BigDecimal;
 import java.net.DatagramSocket;
 import java.net.Socket;
 import java.net.SocketException;
@@ -36,26 +37,35 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+import java.nio.channels.SocketChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.security.ProtectionDomain;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -71,6 +81,7 @@ import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheClassLoaderMarker;
+import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -78,10 +89,12 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
 import org.apache.ignite.lang.IgniteFutureTimeoutException;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.thread.IgniteThread;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Objects.isNull;
@@ -91,6 +104,12 @@ import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_HOME;
  * Collection of utility methods used in 'ignite-commons' and throughout the system.
  */
 public abstract class CommonUtils {
+    /** Empty longs array. */
+    public static final long[] EMPTY_LONGS = new long[0];
+
+    /** Network packet header (corresponds to {@code 0x0149474E}). */
+    public static final byte[] IGNITE_HEADER = new byte[] {0x01, 0x49, 0x47, 0x4E};
+
     /** */
     public static final long KB = 1024L;
 
@@ -198,6 +217,24 @@ public abstract class CommonUtils {
     /** Ignite package. */
     public static final String IGNITE_PKG = "org.apache.ignite.";
 
+    /** Default data structures group name. */
+    public static final String DEFAULT_DS_GROUP_NAME = "default-ds-group";
+
+    /** Atomics system cache name. */
+    public static final String ATOMICS_CACHE_NAME = "ignite-sys-atomic-cache";
+
+    /** Thin client handshake (connection type) code. */
+    public static final byte THIN_CLIENT = 2;
+
+    /** Handshake request command code. */
+    public static final int HANDSHAKE = 1;
+
+    /** Default client connector port. */
+    public static final int DFLT_PORT = 10800;
+
+    /** Default client connector port range. */
+    public static final int DFLT_PORT_RANGE = 100;
+
     /**
      * Short date format pattern for log messages in "quiet" mode.
      * Only time is included since we don't expect "quiet" mode to be used
@@ -223,6 +260,21 @@ public abstract class CommonUtils {
     /** */
     private static final Class<?> GEOMETRY_CLASS = classForName("org.locationtech.jts.geom.Geometry", null);
 
+    /** Boxed class map. */
+    private static final Map<Class<?>, Class<?>> boxedClsMap = new HashMap<>(16, .5f);
+
+    /** Field name for key. */
+    public static final String KEY_FIELD_NAME = "_KEY";
+
+    /** Field name for value. */
+    public static final String VAL_FIELD_NAME = "_VAL";
+
+    /** Byte bit-mask. */
+    private static final int MASK = 0xf;
+
+    /** */
+    private static final Set<Class<?>> SQL_TYPES = createSqlTypes();
+
     static {
         primitiveMap.put("byte", byte.class);
         primitiveMap.put("short", short.class);
@@ -233,6 +285,16 @@ public abstract class CommonUtils {
         primitiveMap.put("char", char.class);
         primitiveMap.put("boolean", boolean.class);
         primitiveMap.put("void", void.class);
+
+        boxedClsMap.put(byte.class, Byte.class);
+        boxedClsMap.put(short.class, Short.class);
+        boxedClsMap.put(int.class, Integer.class);
+        boxedClsMap.put(long.class, Long.class);
+        boxedClsMap.put(float.class, Float.class);
+        boxedClsMap.put(double.class, Double.class);
+        boxedClsMap.put(char.class, Character.class);
+        boxedClsMap.put(boolean.class, Boolean.class);
+        boxedClsMap.put(void.class, Void.class);
 
         try {
             OBJECT_CTOR = Object.class.getConstructor();
@@ -1662,6 +1724,43 @@ public abstract class CommonUtils {
     }
 
     /**
+     * Writes byte array to output stream accounting for <tt>null</tt> values.
+     *
+     * @param out Output stream to write to.
+     * @param arr Array to write, possibly <tt>null</tt>.
+     * @throws java.io.IOException If write failed.
+     */
+    public static void writeByteArray(DataOutput out, @Nullable byte[] arr) throws IOException {
+        if (arr == null)
+            out.writeInt(-1);
+        else {
+            out.writeInt(arr.length);
+
+            out.write(arr);
+        }
+    }
+
+    /**
+     * Reads byte array from input stream accounting for <tt>null</tt> values.
+     *
+     * @param in Stream to read from.
+     * @return Read byte array, possibly <tt>null</tt>.
+     * @throws java.io.IOException If read failed.
+     */
+    @Nullable public static byte[] readByteArray(DataInput in) throws IOException {
+        int len = in.readInt();
+
+        if (len == -1)
+            return null; // Value "-1" indicates null.
+
+        byte[] res = new byte[len];
+
+        in.readFully(res);
+
+        return res;
+    }
+
+    /**
      * Get number of bytes for {@link DataOutput#writeUTF},
      * depending on character: <br/>
      *
@@ -2121,5 +2220,529 @@ public abstract class CommonUtils {
      */
     public static boolean isGeometryClass(Class<?> cls) {
         return GEOMETRY_CLASS != null && GEOMETRY_CLASS.isAssignableFrom(cls);
+    }
+
+    /**
+     * Gets wrapper class for a primitive type.
+     *
+     * @param cls Class. If {@code null}, method is no-op.
+     * @return Wrapper class or original class if it is non-primitive.
+     */
+    @Nullable public static Class<?> box(@Nullable Class<?> cls) {
+        if (cls == null)
+            return null;
+
+        if (!cls.isPrimitive())
+            return cls;
+
+        return boxedClsMap.get(cls);
+    }
+
+    /**
+     * Checks if the given class can be mapped to a simple SQL type.
+     *
+     * @param cls Class.
+     * @return {@code true} If can.
+     */
+    public static boolean isSqlType(Class<?> cls) {
+        cls = box(cls);
+
+        return SQL_TYPES.contains(cls) || isGeometryClass(cls);
+    }
+
+    /**
+     * @param timeout Timeout.
+     * @param timeUnit Time unit.
+     * @return Converted time.
+     */
+    public static int validateTimeout(int timeout, TimeUnit timeUnit) {
+        A.ensure(timeUnit != TimeUnit.MICROSECONDS && timeUnit != TimeUnit.NANOSECONDS,
+            "timeUnit minimal resolution is millisecond.");
+
+        A.ensure(timeout >= 0, "timeout value should be non-negative.");
+
+        long tmp = TimeUnit.MILLISECONDS.convert(timeout, timeUnit);
+
+        return (int)tmp;
+    }
+
+    /**
+     * Converts byte array to hex string.
+     *
+     * @param arr Array of bytes.
+     * @return Hex string.
+     */
+    public static String byteArray2HexString(byte[] arr) {
+        return byteArray2HexString(arr, true);
+    }
+
+    /**
+     * Converts byte array to hex string.
+     *
+     * @param arr Array of bytes.
+     * @param toUpper If {@code true} returns upper cased result.
+     * @return Hex string.
+     */
+    public static String byteArray2HexString(byte[] arr, boolean toUpper) {
+        StringBuilder sb = new StringBuilder(arr.length << 1);
+
+        for (byte b : arr)
+            addByteAsHex(sb, b);
+
+        return toUpper ? sb.toString().toUpperCase() : sb.toString();
+    }
+
+    /**
+     * @param sb String builder.
+     * @param b Byte to add in hexadecimal format.
+     */
+    protected static void addByteAsHex(StringBuilder sb, byte b) {
+        sb.append(Integer.toHexString(MASK & b >>> 4)).append(Integer.toHexString(MASK & b));
+    }
+
+    /**
+     * Converts an array of characters representing hexidecimal values into an
+     * array of bytes of those same values. The returned array will be half the
+     * length of the passed array, as it takes two characters to represent any
+     * given byte. An exception is thrown if the passed char array has an odd
+     * number of elements.
+     *
+     * @param data An array of characters containing hexidecimal digits
+     * @return A byte array containing binary data decoded from
+     *         the supplied char array.
+     * @throws IgniteCheckedException Thrown if an odd number or illegal of characters is supplied.
+     */
+    public static byte[] decodeHex(char[] data) throws IgniteCheckedException {
+        int len = data.length;
+
+        if ((len & 0x01) != 0)
+            throw new IgniteCheckedException("Odd number of characters.");
+
+        byte[] out = new byte[len >> 1];
+
+        // Two characters form the hex value.
+        for (int i = 0, j = 0; j < len; i++) {
+            int f = toDigit(data[j], j) << 4;
+
+            j++;
+
+            f |= toDigit(data[j], j);
+
+            j++;
+
+            out[i] = (byte)(f & 0xFF);
+        }
+
+        return out;
+    }
+
+    /**
+     * Converts a hexadecimal character to an integer.
+     *
+     * @param ch A character to convert to an integer digit
+     * @param idx The index of the character in the source
+     * @return An integer
+     * @throws IgniteCheckedException Thrown if ch is an illegal hex character
+     */
+    public static int toDigit(char ch, int idx) throws IgniteCheckedException {
+        int digit = Character.digit(ch, 16);
+
+        if (digit == -1)
+            throw new IgniteCheckedException("Illegal hexadecimal character " + ch + " at index " + idx);
+
+        return digit;
+    }
+
+    /**
+     * Creates SQL types set.
+     *
+     * @return SQL types set.
+     */
+    @NotNull private static Set<Class<?>> createSqlTypes() {
+        Set<Class<?>> sqlClasses = new HashSet<>(Arrays.<Class<?>>asList(
+            Integer.class,
+            Boolean.class,
+            Byte.class,
+            Short.class,
+            Long.class,
+            BigDecimal.class,
+            Double.class,
+            Float.class,
+            Time.class,
+            Timestamp.class,
+            Date.class,
+            java.sql.Date.class,
+            LocalTime.class,
+            LocalDate.class,
+            LocalDateTime.class,
+            String.class,
+            UUID.class,
+            byte[].class
+        ));
+
+        return sqlClasses;
+    }
+
+    /**
+     * Quietly closes given resource ignoring possible checked exception.
+     *
+     * @param rsrc Resource to close. If it's {@code null} - it's no-op.
+     */
+    public static void closeQuiet(@Nullable AutoCloseable rsrc) {
+        if (rsrc != null)
+            try {
+                rsrc.close();
+            }
+            catch (Exception ignored) {
+                // No-op.
+            }
+    }
+
+    /**
+     * Quietly closes given {@link Socket} ignoring possible checked exception.
+     *
+     * @param sock Socket to close. If it's {@code null} - it's no-op.
+     */
+    public static void closeQuiet(@Nullable Socket sock) {
+        if (sock == null)
+            return;
+
+        try {
+            // Avoid tls 1.3 incompatibility https://bugs.openjdk.java.net/browse/JDK-8208526
+            sock.shutdownOutput();
+            sock.shutdownInput();
+        }
+        catch (Exception ignored) {
+            // No-op.
+        }
+
+        try {
+            sock.close();
+        }
+        catch (Exception ignored) {
+            // No-op.
+        }
+    }
+
+    /**
+     * Utility method to add the given throwable error to the given throwable root error. If the given
+     * suppressed throwable is an {@code Error}, but the root error is not, will change the root to the {@code Error}.
+     *
+     * @param root Root error to add suppressed error to.
+     * @param err Error to add.
+     * @return New root error.
+     */
+    public static <T extends Throwable> T addSuppressed(T root, T err) {
+        assert err != null;
+
+        if (root == null)
+            return err;
+
+        if (err instanceof Error && !(root instanceof Error)) {
+            err.addSuppressed(root);
+
+            root = err;
+        }
+        else
+            root.addSuppressed(err);
+
+        return root;
+    }
+
+    /**
+     * Gets absolute value for integer. If integer is {@link Integer#MIN_VALUE}, then {@code 0} is returned.
+     *
+     * @param i Integer.
+     * @return Absolute value.
+     */
+    public static int safeAbs(int i) {
+        i = Math.abs(i);
+
+        return i < 0 ? 0 : i;
+    }
+
+    /**
+     * Gets absolute value for long. If argument is {@link Long#MIN_VALUE}, then {@code 0} is returned.
+     *
+     * @param i Argument.
+     * @return Absolute value.
+     */
+    public static long safeAbs(long i) {
+        i = Math.abs(i);
+
+        return i < 0 ? 0 : i;
+    }
+
+    /**
+     * Helper method to calculates mask.
+     *
+     * @param parts Number of partitions.
+     * @return Mask to use in calculation when partitions count is power of 2.
+     */
+    public static int calculateMask(int parts) {
+        return (parts & (parts - 1)) == 0 ? parts - 1 : -1;
+    }
+
+    /**
+     * Helper method to calculate partition.
+     *
+     * @param key Key to get partition for.
+     * @param mask Mask to use in calculation when partitions count is power of 2.
+     * @param parts Number of partitions.
+     * @return Partition number for a given key.
+     */
+    public static int calculatePartition(Object key, int mask, int parts) {
+        if (mask >= 0) {
+            int h;
+
+            return ((h = key.hashCode()) ^ (h >>> 16)) & mask;
+        }
+
+        return safeAbs(key.hashCode() % parts);
+    }
+
+    /**
+     * Unwraps closure exceptions.
+     *
+     * @param t Exception.
+     * @return Unwrapped exception.
+     */
+    public static Exception unwrap(Throwable t) {
+        assert t != null;
+
+        while (true) {
+            if (t instanceof Error)
+                throw (Error)t;
+
+            if (t instanceof GridClosureException) {
+                t = ((GridClosureException)t).unwrap();
+
+                continue;
+            }
+
+            return (Exception)t;
+        }
+    }
+
+    /**
+     * Casts the passed {@code Throwable t} to {@link IgniteCheckedException}.<br>
+     * If {@code t} is a {@link GridClosureException}, it is unwrapped and then cast to {@link IgniteCheckedException}.
+     * If {@code t} is an {@link IgniteCheckedException}, it is returned.
+     * If {@code t} is not a {@link IgniteCheckedException}, a new {@link IgniteCheckedException} caused by {@code t}
+     * is returned.
+     *
+     * @param t Throwable to cast.
+     * @return {@code t} cast to {@link IgniteCheckedException}.
+     */
+    public static IgniteCheckedException cast(Throwable t) {
+        assert t != null;
+
+        t = unwrap(t);
+
+        return t instanceof IgniteCheckedException
+            ? (IgniteCheckedException)t
+            : new IgniteCheckedException(t);
+    }
+
+    /**
+     * Gets type name by class name.
+     *
+     * @param clsName Class name.
+     * @return Type name.
+     */
+    public static String typeName(String clsName) {
+        int genericStart = clsName.indexOf('`');  // .NET generic, not valid for Java class name.
+
+        if (genericStart >= 0)
+            clsName = clsName.substring(0, genericStart);
+
+        int pkgEnd = clsName.lastIndexOf('.');
+
+        if (pkgEnd >= 0 && pkgEnd < clsName.length() - 1)
+            clsName = clsName.substring(pkgEnd + 1);
+
+        if (clsName.endsWith("[]"))
+            clsName = clsName.substring(0, clsName.length() - 2) + "_array";
+
+        int parentEnd = clsName.lastIndexOf('$');
+
+        if (parentEnd >= 0)
+            clsName = clsName.substring(parentEnd + 1);
+
+        parentEnd = clsName.lastIndexOf('+');   // .NET parent
+
+        if (parentEnd >= 0)
+            clsName = clsName.substring(parentEnd + 1);
+
+        return clsName;
+    }
+
+    /**
+     * Gets type name by class.
+     *
+     * @param cls Class.
+     * @return Type name.
+     */
+    public static String typeName(Class<?> cls) {
+        String typeName = cls.getSimpleName();
+
+        // To protect from failure on anonymous classes.
+        if (typeName.isEmpty()) {
+            String pkg = cls.getPackage().getName();
+
+            typeName = cls.getName().substring(pkg.length() + (pkg.isEmpty() ? 0 : 1));
+        }
+
+        if (cls.isArray()) {
+            assert typeName.endsWith("[]");
+
+            typeName = typeName.substring(0, typeName.length() - 2) + "_array";
+        }
+
+        return typeName;
+    }
+
+    /**
+     * Cancels given runnable.
+     *
+     * @param w Worker to cancel - it's no-op if runnable is {@code null}.
+     */
+    public static void cancel(@Nullable GridWorker w) {
+        if (w != null)
+            w.cancel();
+    }
+
+    /**
+     * Cancels collection of runnables.
+     *
+     * @param ws Collection of workers - it's no-op if collection is {@code null}.
+     */
+    public static void cancel(Iterable<? extends GridWorker> ws) {
+        if (ws != null)
+            for (GridWorker w : ws)
+                w.cancel();
+    }
+
+    /**
+     * Joins runnable.
+     *
+     * @param w Worker to join.
+     * @param log The logger to possible exception.
+     * @return {@code true} if worker has not been interrupted, {@code false} if it was interrupted.
+     */
+    public static boolean join(@Nullable GridWorker w, @Nullable IgniteLogger log) {
+        if (w != null)
+            try {
+                w.join();
+            }
+            catch (InterruptedException ignore) {
+                warn(log, "Got interrupted while waiting for completion of runnable: " + w);
+
+                Thread.currentThread().interrupt();
+
+                return false;
+            }
+
+        return true;
+    }
+
+    /**
+     * Joins given collection of runnables.
+     *
+     * @param ws Collection of workers to join.
+     * @param log The logger to possible exceptions.
+     * @return {@code true} if none of the worker have been interrupted,
+     *      {@code false} if at least one was interrupted.
+     */
+    public static boolean join(Iterable<? extends GridWorker> ws, IgniteLogger log) {
+        boolean retval = true;
+
+        if (ws != null)
+            for (GridWorker w : ws)
+                if (!join(w, log))
+                    retval = false;
+
+        return retval;
+    }
+
+    /**
+     * Creates thread with given worker.
+     *
+     * @param worker Runnable to create thread with.
+     */
+    public static IgniteThread newThread(GridWorker worker) {
+        return new IgniteThread(worker.igniteInstanceName(), worker.name(), worker);
+    }
+
+    /**
+     * Sleeps for given number of milliseconds.
+     *
+     * @param ms Time to sleep.
+     * @throws IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
+     */
+    public static void sleep(long ms) throws IgniteInterruptedCheckedException {
+        try {
+            Thread.sleep(ms);
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
+            throw new IgniteInterruptedCheckedException(e);
+        }
+    }
+
+    /**
+     * Safely write buffer fully to blocking socket channel.
+     * Will throw assert if non blocking channel passed.
+     *
+     * @param sockCh WritableByteChannel.
+     * @param buf Buffer.
+     * @throws IOException IOException.
+     */
+    public static void writeFully(SocketChannel sockCh, ByteBuffer buf) throws IOException {
+        int totalWritten = 0;
+
+        assert sockCh.isBlocking() : "SocketChannel should be in blocking mode " + sockCh;
+
+        while (buf.hasRemaining()) {
+            int written = sockCh.write(buf);
+
+            if (written < 0)
+                throw new IOException("Error writing buffer to channel " +
+                    "[written = " + written + ", buf " + buf + ", totalWritten = " + totalWritten + "]");
+
+            totalWritten += written;
+        }
+    }
+
+    /**
+     * @param a First byte array.
+     * @param aOff First byte array offset.
+     * @param b Second byte array.
+     * @param bOff Second byte array offset.
+     * @param len Number of bytes to compare.
+     * @return {@code True} if the specified sub-arrays are equal.
+     */
+    public static boolean bytesEqual(byte[] a, int aOff, byte[] b, int bOff, int len) {
+        if (aOff + len > a.length || bOff + len > b.length)
+            return false;
+        else {
+            for (int i = 0; i < len; i++)
+                if (a[aOff + i] != b[bOff + i])
+                    return false;
+
+            return true;
+        }
+    }
+
+    /**
+     * Concatenates the two parameter bytes to form a message type value.
+     *
+     * @param b0 The first byte.
+     * @param b1 The second byte.
+     * @return Message type.
+     */
+    public static short makeMessageType(byte b0, byte b1) {
+        return (short)((b1 & 0xFF) << 8 | b0 & 0xFF);
     }
 }

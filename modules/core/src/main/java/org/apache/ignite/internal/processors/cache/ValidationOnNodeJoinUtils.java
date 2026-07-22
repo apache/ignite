@@ -35,6 +35,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.affinity.rendezvous.ClusterNodeAttributeAffinityBackupFilter;
+import org.apache.ignite.cache.affinity.rendezvous.ClusterNodeAttributeColocatedBackupFilter;
+import org.apache.ignite.cache.affinity.rendezvous.MdcAffinityBackupFilter;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cluster.ClusterNode;
@@ -56,6 +60,7 @@ import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
@@ -70,6 +75,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_CHECK_SKIPPED;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_CENTER_ID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_AWARE_QUERIES_ENABLED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_SERIALIZABLE_ENABLED;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isDefaultDataRegionPersistent;
@@ -612,6 +618,34 @@ public class ValidationOnNodeJoinUtils {
         }
 
         return null;
+    }
+
+    /**
+     * Analyzes affinity settings of a provided {@link CacheConfiguration} to inspect if it provides guarantees
+     * that partitions of the cache will be spread across all datacenters presented in cluster.
+     *
+     * @return {@code true} if affinity settings guarantee spreading partitions across all datacenters and {@code false} otherwise.
+     */
+    static boolean isAffinityConfigurationMdcSafe(CacheConfiguration cc) {
+        if (cc.getCacheMode() == REPLICATED)
+            return true;
+
+        AffinityFunction affFunc = cc.getAffinity();
+
+        if (affFunc instanceof RendezvousAffinityFunction) {
+            IgniteBiPredicate<ClusterNode, List<ClusterNode>> filter = ((RendezvousAffinityFunction)affFunc).getAffinityBackupFilter();
+
+            if (filter instanceof ClusterNodeAttributeAffinityBackupFilter attrFilter) {
+                if (!F.asList(attrFilter.getAttributeNames()).contains(ATTR_DATA_CENTER_ID))
+                    return false;
+            }
+
+            return filter instanceof MdcAffinityBackupFilter
+                    || filter instanceof ClusterNodeAttributeColocatedBackupFilter
+                    || filter instanceof ClusterNodeAttributeAffinityBackupFilter;
+        }
+
+        return true;
     }
 
     /**

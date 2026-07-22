@@ -55,6 +55,7 @@ import static org.apache.ignite.internal.processors.datastructures.DataStructure
 import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VIEW;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl.DISTRIBUTED_METASTORE_VIEW;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_VIEW;
+import static org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor.PLUGINS_SYS_VIEW;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.STREAM_POOL_QUEUE_VIEW;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.SYS_POOL_QUEUE_VIEW;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
@@ -96,7 +97,8 @@ public class SystemViewClusterActivationTest extends GridCommonAbstractTest {
             STAMPED_VIEW,
             REFERENCES_VIEW,
             LONGS_VIEW,
-            SEQUENCES_VIEW
+            SEQUENCES_VIEW,
+            PLUGINS_SYS_VIEW
         ));
 
         IgniteEx ignite = startGrid(getConfiguration().setClusterStateOnStart(ClusterState.INACTIVE));

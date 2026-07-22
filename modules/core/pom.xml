@@ -77,6 +77,24 @@
 
         <dependency>
             <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-thin-client-api</artifactId>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-thin-client-impl</artifactId>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-nio</artifactId>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-codegen</artifactId>
             <scope>provided</scope>
         </dependency>
@@ -144,15 +162,15 @@
         </dependency>
 
         <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-servlets</artifactId>
+            <groupId>org.eclipse.jetty.ee10</groupId>
+            <artifactId>jetty-ee10-servlets</artifactId>
             <version>${jetty.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-webapp</artifactId>
+            <groupId>org.eclipse.jetty.ee10</groupId>
+            <artifactId>jetty-ee10-webapp</artifactId>
             <version>${jetty.version}</version>
             <scope>test</scope>
         </dependency>
@@ -286,10 +304,8 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.7.0</version>
+                <version>3.8.1</version>
                 <configuration>
-                    <source>11</source>
-                    <target>11</target>
                     <compilerArgs>
                         <arg>--add-exports</arg>
                         <arg>java.base/sun.nio.ch=ALL-UNNAMED</arg>
@@ -371,6 +387,9 @@
                                     <include>${project.groupId}:ignite-binary-api</include>
                                     <include>${project.groupId}:ignite-binary-impl</include>
                                     <include>${project.groupId}:ignite-grid-unsafe</include>
+                                    <include>${project.groupId}:ignite-thin-client-api</include>
+                                    <include>${project.groupId}:ignite-thin-client-impl</include>
+                                    <include>${project.groupId}:ignite-nio</include>
                                 </includes>
                             </artifactSet>
                         </configuration>
@@ -474,20 +493,11 @@
                                 <configuration>
                                     <failOnError>false</failOnError>
                                     <target>
-                                        <tstamp>
-                                            <format property="ignite.rel.date" pattern="ddMMyyyy" locale="en" />
-                                        </tstamp>
-
-                                        <property name="props.file" value="../../modules/core/target/classes/ignite.properties" />
+                                        <property name="props.file" value="../../modules/core/target/classes/ignite-build-info.properties" />
 
                                         <replaceregexp file="${props.file}" byline="true">
                                             <regexp pattern="ignite.update.notifier.enabled.by.default=.*" />
                                             <substitution expression="ignite.update.notifier.enabled.by.default=${update.notifier.enabled.by.default}" />
-                                        </replaceregexp>
-
-                                        <replaceregexp file="${props.file}" byline="true">
-                                            <regexp pattern="ignite.rel.date=.*" />
-                                            <substitution expression="ignite.rel.date=${ignite.rel.date}" />
                                         </replaceregexp>
 
                                         <replaceregexp file="${props.file}" byline="true">

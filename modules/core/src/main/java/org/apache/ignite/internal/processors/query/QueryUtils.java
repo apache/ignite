@@ -20,15 +20,8 @@ package org.apache.ignite.internal.processors.query;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.sql.SQLException;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -68,9 +61,9 @@ import org.apache.ignite.internal.processors.query.property.QueryMethodsAccessor
 import org.apache.ignite.internal.processors.query.property.QueryPropertyAccessor;
 import org.apache.ignite.internal.processors.query.property.QueryReadOnlyMethodsAccessor;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -113,10 +106,10 @@ public class QueryUtils {
     public static final String SCHEMA_INFORMATION = "INFORMATION_SCHEMA";
 
     /** Field name for key. */
-    public static final String KEY_FIELD_NAME = "_KEY";
+    public static final String KEY_FIELD_NAME = CommonUtils.KEY_FIELD_NAME;
 
     /** Field name for value. */
-    public static final String VAL_FIELD_NAME = "_VAL";
+    public static final String VAL_FIELD_NAME = CommonUtils.VAL_FIELD_NAME;
 
     /** Well-known template name for PARTITIONED cache. */
     public static final String TEMPLATE_PARTITIONED = "PARTITIONED";
@@ -130,9 +123,6 @@ public class QueryUtils {
     /** Discovery history size. */
     private static final int DISCO_HIST_SIZE =
         getInteger(IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE, DFLT_INDEXING_DISCOVERY_HISTORY_SIZE);
-
-    /** */
-    private static final Set<Class<?>> SQL_TYPES = createSqlTypes();
 
     /** Default SQL delimeter. */
     public static final char DEFAULT_DELIM = '\n';
@@ -156,36 +146,6 @@ public class QueryUtils {
      */
     public static final ThreadLocal<Boolean> INCLUDE_SENSITIVE_TL =
         ThreadLocal.withInitial(() -> DFLT_TO_STRING_INCLUDE_SENSITIVE);
-
-    /**
-     * Creates SQL types set.
-     *
-     * @return SQL types set.
-     */
-    @NotNull private static Set<Class<?>> createSqlTypes() {
-        Set<Class<?>> sqlClasses = new HashSet<>(Arrays.<Class<?>>asList(
-            Integer.class,
-            Boolean.class,
-            Byte.class,
-            Short.class,
-            Long.class,
-            BigDecimal.class,
-            Double.class,
-            Float.class,
-            Time.class,
-            Timestamp.class,
-            Date.class,
-            java.sql.Date.class,
-            LocalTime.class,
-            LocalDate.class,
-            LocalDateTime.class,
-            String.class,
-            UUID.class,
-            byte[].class
-        ));
-
-        return sqlClasses;
-    }
 
     /**
      * Get table name for entity.
@@ -1175,9 +1135,7 @@ public class QueryUtils {
      * @return {@code true} If can.
      */
     public static boolean isSqlType(Class<?> cls) {
-        cls = U.box(cls);
-
-        return SQL_TYPES.contains(cls) || U.isGeometryClass(cls);
+        return CommonUtils.isSqlType(cls);
     }
 
     /**
@@ -1187,30 +1145,7 @@ public class QueryUtils {
      * @return Type name.
      */
     public static String typeName(String clsName) {
-        int genericStart = clsName.indexOf('`');  // .NET generic, not valid for Java class name.
-
-        if (genericStart >= 0)
-            clsName = clsName.substring(0, genericStart);
-
-        int pkgEnd = clsName.lastIndexOf('.');
-
-        if (pkgEnd >= 0 && pkgEnd < clsName.length() - 1)
-            clsName = clsName.substring(pkgEnd + 1);
-
-        if (clsName.endsWith("[]"))
-            clsName = clsName.substring(0, clsName.length() - 2) + "_array";
-
-        int parentEnd = clsName.lastIndexOf('$');
-
-        if (parentEnd >= 0)
-            clsName = clsName.substring(parentEnd + 1);
-
-        parentEnd = clsName.lastIndexOf('+');   // .NET parent
-
-        if (parentEnd >= 0)
-            clsName = clsName.substring(parentEnd + 1);
-
-        return clsName;
+        return CommonUtils.typeName(clsName);
     }
 
     /**
@@ -1220,38 +1155,7 @@ public class QueryUtils {
      * @return Type name.
      */
     public static String typeName(Class<?> cls) {
-        String typeName = cls.getSimpleName();
-
-        // To protect from failure on anonymous classes.
-        if (F.isEmpty(typeName)) {
-            String pkg = cls.getPackage().getName();
-
-            typeName = cls.getName().substring(pkg.length() + (pkg.isEmpty() ? 0 : 1));
-        }
-
-        if (cls.isArray()) {
-            assert typeName.endsWith("[]");
-
-            typeName = typeName.substring(0, typeName.length() - 2) + "_array";
-        }
-
-        return typeName;
-    }
-
-    /**
-     * @param timeout Timeout.
-     * @param timeUnit Time unit.
-     * @return Converted time.
-     */
-    public static int validateTimeout(int timeout, TimeUnit timeUnit) {
-        A.ensure(timeUnit != TimeUnit.MICROSECONDS && timeUnit != TimeUnit.NANOSECONDS,
-            "timeUnit minimal resolution is millisecond.");
-
-        A.ensure(timeout >= 0, "timeout value should be non-negative.");
-
-        long tmp = TimeUnit.MILLISECONDS.convert(timeout, timeUnit);
-
-        return (int)tmp;
+        return CommonUtils.typeName(cls);
     }
 
     /**

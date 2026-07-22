@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.schema.operation;
 
-import java.io.Serializable;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -26,10 +25,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /**
  * Abstract operation on schema.
  */
-public abstract class SchemaAbstractOperation implements Serializable, Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public abstract class SchemaAbstractOperation implements Message {
     /** Operation ID. */
     @Order(0)
     UUID opId;

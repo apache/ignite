@@ -25,6 +25,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <ignite.version>2.19.0-SNAPSHOT</ignite.version>
+        <ignite.extensions.version>1.0.0</ignite.extensions.version>
     </properties>
     <dependencies>
         <dependency>
@@ -67,11 +68,47 @@
             <artifactId>ignite-zookeeper</artifactId>
             <version>${ignite.version}</version>
         </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-aws-ext</artifactId>
+            <version>${ignite.extensions.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-azure-ext</artifactId>
+            <version>${ignite.extensions.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <!-- ignite-cloud-ext is not published to Maven Central, so use the last released legacy artifact that still provides TcpDiscoveryCloudIpFinder. -->
+            <artifactId>ignite-cloud</artifactId>
+            <version>2.13.0</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-gce-ext</artifactId>
+            <version>${ignite.extensions.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-kubernetes</artifactId>
+            <version>${ignite.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-zookeeper-ip-finder-ext</artifactId>
+            <version>${ignite.extensions.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-opencensus</artifactId>
             <version>${ignite.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.opencensus</groupId>
+            <artifactId>opencensus-exporter-trace-zipkin</artifactId>
+            <version>0.31.1</version>
         </dependency>
 
         <dependency>
@@ -101,10 +138,10 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.14.1</version>
+                <version>3.8.1</version>
                 <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
+                    <source>17</source>
+                    <target>17</target>
                 </configuration>
             </plugin>
             <plugin>

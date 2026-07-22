@@ -754,8 +754,10 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             destId == null || destId.equals(ctx.localNodeId()) || replicatedCacheAvailable(cacheName);
 
         if (locExec) {
-            IgniteInternalCache<?, ?> prj = localCache(cacheName)
-                .setSkipStore(cacheFlags.contains(SKIP_STORE));
+            IgniteInternalCache<?, ?> prj = localCache(cacheName);
+
+            if (cacheFlags.contains(SKIP_STORE))
+                prj = prj.withSkipStore();
 
             if (cacheFlags.contains(KEEP_BINARIES))
                 prj = prj.keepBinary();
@@ -922,8 +924,10 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         /** {@inheritDoc} */
         @Override public GridRestResponse call() throws Exception {
-            IgniteInternalCache<?, ?> prj = cache(g, cacheName)
-                .setSkipStore(cacheFlags.contains(SKIP_STORE));
+            IgniteInternalCache<?, ?> prj = cache(g, cacheName);
+
+            if (cacheFlags.contains(SKIP_STORE))
+                prj = prj.withSkipStore();
 
             if (cacheFlags.contains(KEEP_BINARIES))
                 prj = prj.keepBinary();

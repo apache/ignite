@@ -270,6 +270,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private final Map<ClusterNode, GridDhtPartitionsFullMessage> fullMsgs = new ConcurrentHashMap<>();
 
     /** */
+    @SuppressWarnings("unused")
     @GridToStringInclude
     private volatile IgniteInternalFuture<?> partReleaseFut;
 
@@ -3658,6 +3659,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param sndResNodes Additional nodes to send finish message to.
      */
     private void onAllReceived(@Nullable Collection<ClusterNode> sndResNodes) {
+        if (!enterBusy())
+            return;
+
         try {
             initFut.get();
 
@@ -3710,6 +3714,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 onDone(new IgniteNeedReconnectException(cctx.localNode(), e));
             else
                 onDone(e);
+        }
+        finally {
+            leaveBusy();
         }
     }
 
@@ -3764,7 +3771,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     cctx.kernalContext().pools().getSystemExecutorService(),
                     cctx.affinity().cacheGroups().values(),
                     desc -> {
-                        partitionTopology(desc.groupId()).beforeExchange(this, true, true);
+                        if (!enterBusy())
+                            return null;
+
+                        try {
+                            partitionTopology(desc.groupId()).beforeExchange(this, true, true);
+                        }
+                        finally {
+                            leaveBusy();
+                        }
 
                         return null;
                     });
@@ -3781,7 +3796,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 cctx.kernalContext().pools().getSystemExecutorService(),
                 msgs.values(),
                 msg -> {
-                    processSingleMessageOnCrdFinish(msg, joinedNodeAff);
+                    if (!enterBusy())
+                        return null;
+
+                    try {
+                        processSingleMessageOnCrdFinish(msg, joinedNodeAff);
+                    }
+                    finally {
+                        leaveBusy();
+                    }
 
                     return null;
                 }

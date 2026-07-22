@@ -85,7 +85,7 @@ CREATE TABLE City (
 ) WITH "backups=1, CACHE_NAME=City";
 ----
 
-See the link:sql-reference/ddl#create-table[CREATE TABLE] page for more details.
+See the link:sql-reference/ddl#create-table[CREATE TABLE] page for more details, including creating a table on an existing cache.
 
 If you do not use this parameter, the cache name is defined in the following format (in capital letters):
 
