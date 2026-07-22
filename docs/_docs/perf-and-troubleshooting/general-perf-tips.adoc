@@ -58,15 +58,13 @@ The key properties are:
 * The cluster is in the intended link:monitoring-metrics/cluster-states[state] and serves only the operations allowed by that state.
 * Baseline topology, when it is used or managed manually, matches the expected data-bearing server nodes.
 * Data remains consistent: link:tools/control-script#verifying-partition-checksums[`idle_verify`] reports no partition conflicts when the cluster is idle.
-* Expected nodes are present, and no node segmentation or repeated membership churn is reported.
+* Expected nodes are present, and no unexpected repeated node `JOIN`, `LEFT`, or `FAIL` events or node segmentation are reported.
 * link:configuring-caches/partition-loss-policy[Lost partitions] are absent.
-* Long-running transactions, Partition Map Exchange (PME), rebalancing, checkpointing, and executor queues converge instead of accumulating.
-
+* The number and age of link:tools/control-script#transaction-management[long-running transactions] do not keep increasing; active link:data-modeling/data-partitioning#partition-map-exchange[Partition Map Exchanges (PMEs)] complete; link:monitoring-metrics/new-metrics-system#monitoring-rebalancing[rebalancing] finishes; link:monitoring-metrics/new-metrics-system#monitoring-checkpointing-operations[checkpoint-related metrics] and link:monitoring-metrics/new-metrics#thread-pools[executor queue sizes] return to their usual ranges after the link:monitoring-metrics/new-metrics-system#monitoring-topology[topology] has stabilized and the application workload has returned to its expected level.
 There is no single command or metric that proves cluster health for every deployment.
 
 Use several signals together.
 A simple client connection or SQL liveness check can prove only that a particular client or query path is reachable; it does not check user partitions, backup consistency, baseline membership, or all server nodes.
-Similarly, `control.(sh|bat) --cache idle_verify` is an important consistency check, but it is still not a complete health check.
 
 === Check the Intended State and Node Membership
 
@@ -161,13 +159,25 @@ Changing the baseline can start link:data-rebalancing[rebalancing]: partitions a
 Plan for the additional network, CPU, and storage load, especially in clusters with persistence.
 
 Use topology changes to distinguish planned activity from instability.
-A server `JOIN`, `LEFT`, or `FAIL` event changes cluster membership and triggers PME.
-Cache or SQL schema changes can also trigger PME without server node loss.
-Therefore, a topology version or PME metric change is useful only when interpreted together with maintenance actions and node logs.
+A server `JOIN`, `LEFT`, or `FAIL` event changes cluster membership and triggers link:data-modeling/data-partitioning#partition-map-exchange[Partition Map Exchanges (PME)].
+A dynamic cache start or stop can also trigger PME even when no server node joins, leaves, or fails.
+Therefore, a topology version or link:monitoring-metrics/new-metrics#partition-map-exchange[PME metric] PME metric change is useful only when interpreted together with maintenance actions and node logs.
+For example, these metrics should be used for historical distributions; there is no universal duration threshold.
+
+[source,sql]
+----
+SELECT NAME, VALUE
+FROM SYS.METRICS
+WHERE NAME IN (
+    'pme.Duration',
+    'pme.CacheOperationsBlockedDuration'
+)
+ORDER BY NAME;
+----
 
 Run `control.(sh|bat) --baseline` repeatedly or monitor topology metrics to confirm that membership is stable when no maintenance is in progress.
 In logs, look for repeated node join, left, fail, segmentation, and exchange-worker messages.
-Investigate unexpected repeated membership churn, node segmentation, network failures, or a PME that does not finish.
+Investigate unexpected repeated `JOIN`, `LEFT`, or `FAIL` events, node segmentation, network failures, or a PME that does not finish.
 For PME metrics and transaction checks, see <<check-transactions-and-sql-queries,Check Transactions and SQL Queries>>.
 
 === Verify Partition Consistency
@@ -204,7 +214,24 @@ A successful `idle_verify` result is an important confirmation of consistency, b
 [#confirm-that-rebalancing-converges]
 === Confirm That Rebalancing Converges
 
-After a topology event, such as a new node join, transient rebalancing is expected, but it should converge. Rebalance progress should move toward completion.
+Immediately after an intended topology or cache event, `MOVING` and `RENTING` counts can be non-zero.
+After the topology becomes stable, repeat the query and confirm that both counts decrease and eventually disappear.
+A `LOST` count greater than zero is not a normal transient rebalance state.
+
+[source,sql]
+----
+SELECT STATE, COUNT(*) AS PARTITION_COUNT
+FROM SYS.PARTITION_STATES
+WHERE STATE IN ('MOVING', 'RENTING', 'LOST')
+GROUP BY STATE
+ORDER BY STATE;
+----
+
+It is also possible to track some node-local cache-group metrics, such as:
+
+* LocalNodeMovingPartitionsCount;
+* LocalNodeRentingPartitionsCount;
+* LocalNodeRentingEntriesCount.
 
 Use the link:monitoring-metrics/system-views#partition_states[PARTITION_STATES] system view to check partition states:
 
@@ -236,15 +263,26 @@ CACHE_GROUP_ID | PARTITION_ID | NODE_ID                              | STATE | I
 
 If the query returns `LOST`, follow the link:configuring-caches/partition-loss-policy[Partition Loss Policy] recovery procedure.
 If a failed node returns, its persistent data may become available again, but the affected partitions remain in the `LOST` state.
-If the required data is available again, reset the lost partitions:
+If the required data is available again, reset the lost partitions.
+Before resetting lost partitions, ensure that at least one complete and up-to-date copy of each lost partition is available.
+
+For a persistent cluster, follow the link:configuring-caches/partition-loss-policy#clusters-with-persistence[recovery procedure for clusters with persistence].
+Return all nodes in the baseline topology before resetting lost partitions, or stop the cluster, start all nodes including the failed nodes, and activate the cluster.
+If some nodes cannot be returned, exclude them from the baseline topology only after determining whether their unavailable partition copies contain data that still has to be recovered.
+
+For example, assume that a partition has one primary and one backup copy on nodes A and B. If A leaves, B can continue accepting writes while it remains available.
+If B subsequently fails and only A returns, A can contain an older copy that does not include the writes accepted by B after A left.
+
+After restoring a complete and up-to-date partition copy, or after explicitly accepting that the unavailable updates cannot be recovered, reset the lost partitions:
 
 [source,shell]
 ----
 control.(sh|bat) --cache reset_lost_partitions cacheName1,cacheName2,...
 ----
 
-If data is still missing, resetting the partitions does not restore it; the command only clears the `LOST` state.
+`reset_lost_partitions` only clears the `LOST` state. It does not reconstruct updates that are absent from every currently available copy.
 
+[#check-execution-queues]
 === Check Execution Queues
 
 Ignite has several internal executors. A regular thread pool executes tasks from a shared queue. These queues may grow for a short time under load, but they should not grow continuously. Sustained queue growth means that a node is not keeping up with the workload or that message processing is impaired. The same logic applies to the striped executor.
@@ -345,9 +383,10 @@ ORDER BY NAME;
 
 Non-zero transaction counters are normal while work is running.
 The problem is sustained growth, increasing age of the oldest operations, and failure to return to the usual range after the workload drops.
-For view definitions and metrics, see link:monitoring-metrics/system-views#transactions[TRANSACTIONS], link:monitoring-metrics/system-views#sql_queries[SQL_QUERIES], link:monitoring-metrics/new-metrics#transactions[transaction metrics], and link:monitoring-metrics/new-metrics#partition-map-exchange[Partition Map Exchange metrics].
+For view definitions and metrics, see link:monitoring-metrics/system-views#transactions[TRANSACTIONS], link:monitoring-metrics/system-views#sql_queries[SQL_QUERIES], link:monitoring-metrics/new-metrics#transactions[transaction metrics], and link:data-modeling/data-partitioning#partition-map-exchange[Partition Map Exchange metrics].
 
-Partition Map Exchange (PME) synchronizes partition distribution after topology and cache changes.
+[#check-partition-map-exchange]
+llink:data-modeling/data-partitioning#partition-map-exchange[Partition Map Exchanges (PMEs)] synchronizes partition distribution after topology and cache changes.
 At one stage, PME waits for incomplete transactions to finish.
 A long transaction can delay a node join, cache start, and other operations that depend on exchange.
 
@@ -359,6 +398,7 @@ Applications must handle `TransactionRollbackException` and retry where appropri
 Do not use a universal timeout value.
 Choose a value above the normal duration of legitimate transactions with a justified safety margin, and test application behavior when rollback happens.
 
+[#check-checkpoint-pressure]
 === Check Checkpoint Pressure When Persistence Is Enabled
 
 This check applies only to data regions with Native Persistence enabled.
@@ -381,6 +421,14 @@ Monitor these metrics for persistent data regions and data storage:
 * `io.datastorage.LastCheckpointPagesWriteDuration`
 * `io.datastorage.LastCheckpointTotalPagesNumber`
 * `io.datastorage.LastCheckpointFsyncDuration`
+
+It looks like this in ignite.log
+
+[source,shell]
+----
+[INFO ][db-checkpoint-thread-#][org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkpointer] Checkpoint started [checkpointId=<uuid>, startPtr=<wal-pointer>, checkpointBeforeLockTime=28ms, checkpointLockWait=0ms, checkpointListenersExecuteTime=27ms, checkpointLockHoldTime=30ms, walCpRecordFsyncDuration=7ms, splitAndSortCpPagesDuration=5ms, writeRecoveryDataDuration=3ms, writeCheckpointEntryDuration=1ms, pages=7837, reason='timeout']
+[INFO ][db-checkpoint-thread-#][org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkpointer] Checkpoint finished [cpId=<uuid>, pages=7837, markPos=<wal-pointer>, walSegmentsCovered=[], markDuration=42ms, recoveryWrite=3ms, pagesWrite=41ms, fsync=31ms, total=147ms]
+----
 
 Planned checkpoints run according to `DataStorageConfiguration.checkpointFrequency`.
 Dirty-page pressure, checkpoint-buffer pressure, and some administrative operations can trigger an earlier checkpoint.
@@ -431,9 +479,26 @@ Investigate logs and failure handling for:
 * unexpected node restarts.
 
 Ignite reports critical failures to the configured failure handler; depending on the handler, the result can be node invalidation, failover handling, node stop, or JVM termination.
+On every server node, verify the configured `FailureHandler` and its `ignoredFailureTypes`.
+
+If no handler is configured explicitly, Ignite uses `StopNodeOrHaltFailureHandler`. `AbstractFailureHandler` ignores `SYSTEM_WORKER_BLOCKED` and `SYSTEM_CRITICAL_OPERATION_TIMEOUT` by default.
+If the operating policy requires the handler to react to these failures, remove the corresponding values from `ignoredFailureTypes`.
+
+Check node logs for the configured handler at startup and for critical failure
+or suppressed-failure messages.
+
 See link:perf-and-troubleshooting/handling-exceptions[Handling Exceptions] for failure-handler behavior.
 No single local command guarantees the absence of split brain.
 Monitor membership from all expected monitoring points, and use logs and failure handling to detect segmentation and discovery failures.
 
 CDC is a feature-specific check, not part of a universal cluster health definition.
-If CDC is enabled, monitor `ignite-cdc.log`, WAL gaps, and consumption lag.
+
+If CDC is enabled:
+
+* check `ignite-cdc.log` for startup failures, consumer failures, and missed WAL segment messages;
+* monitor `CurrentSegmentIndex`, `CommittedSegmentIndex`, `CommittedSegmentOffset`, `LastSegmentConsumptionTime`, and `SegmentConsumingTime`;
+* confirm that the current and committed segment positions continue to advance under write load;
+* alert on sustained growth of the CDC directory and its disk usage;
+* expose and monitor consumer-specific processing and delivery lag.
+
+See link:persistence/change-data-capture[Change Data Capture] for configuration, metrics, skipped-segment recovery, and cache-data resend procedures.
