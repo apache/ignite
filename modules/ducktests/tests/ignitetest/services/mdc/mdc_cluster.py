@@ -64,6 +64,9 @@ PME_FREEZE_PATTERN = "Failed to wait for partition map exchange"
 LOST_PARTITIONS_PATTERN = "Detected lost partitions"
 ASSERTION_ERROR_PATTERN = "AssertionError"
 
+# Every log of a server node, including the ones rotated by a restart.
+ALL_LOGS_GLOB = "ignite*.log*"
+
 
 def dc_jvm_opts(dc: str) -> List[str]:
     """
@@ -433,7 +436,7 @@ class MdcCluster:
         """
         for pattern in (LRT_PATTERN, PME_FREEZE_PATTERN, LOST_PARTITIONS_PATTERN, ASSERTION_ERROR_PATTERN):
             for svc in self.servers.values():
-                svc.check_event_absent(pattern)
+                svc.check_event_absent(pattern, log_file=ALL_LOGS_GLOB)
 
     def verify_no_hanging_txs(self, dc: str = DC_1):
         """
