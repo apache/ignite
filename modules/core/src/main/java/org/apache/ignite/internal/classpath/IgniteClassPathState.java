@@ -15,18 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util;
+package org.apache.ignite.internal.classpath;
 
-/**
- * Class cache.
- */
-public interface ClassCache {
-    /**
-     * Get class for the given name.
-     *
-     * @param clsName Class name.
-     * @return Class.
-     * @throws ClassNotFoundException If not found.
-     */
-    public Class<?> getFromCache(String clsName) throws ClassNotFoundException;
+/** State of {@link IgniteClassPath}. */
+public enum IgniteClassPathState {
+    /** Creationg process in progress. */
+    NEW,
+
+    /** Ready for usage. */
+    READY,
+
+    /** There are no nodes with ClassPath files. */
+    LOST,
+
+    /** Marked for removal. Newly started code can't use corresponding classpath. */
+    REMOVING
 }

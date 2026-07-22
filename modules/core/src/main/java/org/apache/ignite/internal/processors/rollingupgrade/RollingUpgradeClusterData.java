@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.rollingupgrade;
 
-import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteComponentFeatureSet;
@@ -35,7 +34,7 @@ public class RollingUpgradeClusterData implements Message {
 
     /** */
     @Order(2)
-    Collection<IgniteComponentFeatureSet> activeFeatures;
+    IgniteComponentFeatureSet[] activeFeatures;
 
     /** */
     public RollingUpgradeClusterData() {
@@ -46,7 +45,7 @@ public class RollingUpgradeClusterData implements Message {
     public RollingUpgradeClusterData(
         boolean isVersionUpgradeEnabled,
         UUID curFinalizeProcId,
-        Collection<IgniteComponentFeatureSet> activeFeatures
+        IgniteComponentFeatureSet[] activeFeatures
     ) {
         this.isVersionUpgradeEnabled = isVersionUpgradeEnabled;
         this.curFinalizeProcId = curFinalizeProcId;

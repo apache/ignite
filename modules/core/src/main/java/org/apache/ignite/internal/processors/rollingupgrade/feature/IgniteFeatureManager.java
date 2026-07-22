@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.processors.rollingupgrade.feature;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -43,9 +42,9 @@ public class IgniteFeatureManager {
     private volatile IgniteNodeFeatureSet activeFeatures;
 
     /** */
-    public IgniteFeatureManager(GridKernalContext ctx, IgniteComponentFeatureSet locCoreFeatures) {
+    public IgniteFeatureManager(GridKernalContext ctx, IgniteCoreFeatureSet coreFeatures) {
         this.ctx = ctx;
-        this.locVerFeatures = collectLocalVersionFeatures(ctx, locCoreFeatures);
+        this.locVerFeatures = collectLocalVersionFeatures(ctx, coreFeatures);
         locVerFeaturesActivationFut = new GridFutureAdapter<>();
     }
 
@@ -93,7 +92,11 @@ public class IgniteFeatureManager {
 
     /** */
     public void onGridDataReceived(IgniteNodeFeatureSet activeClusterFeatures) {
-        if (locVerFeatures.equals(activeClusterFeatures))
+        boolean hasSameFeatures = ctx.clientNode()
+            ? activeClusterFeatures.containsAll(locVerFeatures)
+            : locVerFeatures.equals(activeClusterFeatures);
+
+        if (hasSameFeatures)
             activateLocalVersionFeatures();
         else
             this.activeFeatures = activeClusterFeatures;
@@ -124,23 +127,23 @@ public class IgniteFeatureManager {
     }
 
     /** */
-    private IgniteNodeFeatureSet collectLocalVersionFeatures(GridKernalContext ctx, IgniteComponentFeatureSet locCoreFeatures) {
-        Set<IgniteComponentFeatureSet> features = new HashSet<>();
+    private IgniteNodeFeatureSet collectLocalVersionFeatures(GridKernalContext ctx, IgniteCoreFeatureSet coreFeatures) {
+        Collection<IgniteComponentFeatureSet> features = new ArrayList<>();
 
-        features.add(locCoreFeatures);
+        features.add(coreFeatures);
 
         IgniteComponentFeatureSetProvider[] components = ctx.plugins().extensions(IgniteComponentFeatureSetProvider.class);
 
         if (!F.isEmpty(components)) {
             for (IgniteComponentFeatureSetProvider component : components)
-                features.add(buildComponentFeatures(component));
+                features.add(buildPluginFeatureSet(component));
         }
 
-        return new IgniteNodeFeatureSet(features);
+        return new IgniteNodeFeatureSet(features.toArray(IgniteComponentFeatureSet[]::new));
     }
 
     /** */
-    private IgniteComponentFeatureSet buildComponentFeatures(IgniteComponentFeatureSetProvider cmpFeaturesProvider) {
+    private IgniteComponentFeatureSet buildPluginFeatureSet(IgniteComponentFeatureSetProvider cmpFeaturesProvider) {
         Collection<IgniteFeature> cmpFeatures = cmpFeaturesProvider.features();
 
         A.notEmpty(cmpFeatures, "component features");
@@ -154,7 +157,7 @@ public class IgniteFeatureManager {
                 " [componentName=" + cmpFeaturesProvider.componentName() + ']');
         }
 
-        return new IgniteComponentFeatureSet(
+        return new IgnitePluginFeatureSet(
             cmpFeaturesProvider.componentName(),
             cmpFeaturesProvider.componentVersion(),
             IgniteFeatureSet.buildFrom(cmpFeatures)

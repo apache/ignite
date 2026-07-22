@@ -502,7 +502,9 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
             "DS_QUEUES",
             "PAGES_TIMESTAMP_HISTOGRAM",
             "SQL_PLANS_HISTORY",
-            "IGNITE_PLUGINS"
+            "IGNITE_PLUGINS",
+            "CACHE_EXPLICIT_LOCKS",
+            "CACHE_LOCKS"
         ));
 
         Set<String> viewNames = new TreeSet<>();
@@ -599,7 +601,9 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
                 InetSocketAddress.class.getName()),
             asList("TYPE", "CLIENT_CONNECTIONS", SCHEMA_SYS, "null", "true", "-1", "-1", String.class.getName()),
             asList("USER", "CLIENT_CONNECTIONS", SCHEMA_SYS, "null", "true", "-1", "-1", String.class.getName()),
-            asList("VERSION", "CLIENT_CONNECTIONS", SCHEMA_SYS, "null", "true", "-1", "-1", String.class.getName())
+            asList("VERSION", "CLIENT_CONNECTIONS", SCHEMA_SYS, "null", "true", "-1", "-1", String.class.getName()),
+            asList("DATA_CENTER_ID", "CLIENT_CONNECTIONS", SCHEMA_SYS, "null", "true", "-1", "-1",
+                String.class.getName())
         ));
 
         Set<List<String>> sqlViewColumnsView = systemView(ignite0, SQL_VIEW_COLS_VIEW).stream()
