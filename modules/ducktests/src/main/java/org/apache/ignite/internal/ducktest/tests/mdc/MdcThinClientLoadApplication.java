@@ -101,7 +101,9 @@ public class MdcThinClientLoadApplication extends IgniteAwareApplication {
             catch (ClientException | CacheException | IgniteException e) {
                 ok = false;
 
-                if (inadmissible)
+                // A read reaching here is a missed or corrupted entry, never a rejected write:
+                // 'inadmissible' must not excuse it.
+                if (put && inadmissible)
                     log.info("Put rejected as expected [key=" + key + ", msg=" + e.getMessage() + "]");
                 else
                     throw new IllegalStateException("Operation failed [mode=" + mode + ", key=" + key + "]", e);

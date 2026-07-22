@@ -157,7 +157,9 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
             catch (CacheException | IgniteException e) {
                 ok = false;
 
-                if (inadmissible)
+                // A read reaching here is a missed or corrupted entry, never a rejected write:
+                // 'inadmissible' must not excuse it.
+                if (mode.isWrite() && inadmissible)
                     log.info("Write rejected as expected [dc=" + dcId() + ", key=" + key +
                         ", msg=" + e.getMessage() + "]");
                 else if (stopOnError) {
