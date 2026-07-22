@@ -18,7 +18,7 @@ MDC transactional load through a cross-DC network partition.
 
 A TRANSACTIONAL cache spans both data centers: with backups=1 and the
 MdcAffinityBackupFilter every partition owns exactly one copy per DC, so every
-implicit-transaction write (a plain put on a transactional cache) must reach a
+explicit-transaction write (a plain put on a transactional cache) must reach a
 node in the other DC. A continuous single-threaded insert load runs from the main
 DC; the instant the DCs are partitioned the next commit cannot reach all partition
 copies and fails with a cache exception. The load cuts itself off on that first
@@ -26,7 +26,7 @@ exception and records how many inserts had succeeded.
 
 After the split settles the test asserts that the cluster really split-brained,
 that the load stopped because of the partition (not because it ran out of work),
-and - the point of the scenario - that the aborted implicit transactions left
+and - the point of the scenario - that the aborted explicit transactions left
 nothing hanging on either half-ring and no suspicious entries in the server logs.
 
 Data accessibility during the split is deliberately NOT checked: a transactional
@@ -71,7 +71,7 @@ class MdcTransactionalPartitionTest(IgniteTest):
     @parametrize(cross_dc_latency_ms=100)
     def test_transactional_load_cut_on_partition(self, ignite_version, cross_dc_latency_ms):
         """
-        Continuous implicit-transaction insert load from the main DC is cut off by the first
+        Continuous explicit-transaction insert load from the main DC is cut off by the first
         cache exception the cross-DC partition triggers; afterwards no transaction is left
         hanging on either half-ring and the server logs are clean.
         """
@@ -81,7 +81,7 @@ class MdcTransactionalPartitionTest(IgniteTest):
         with cross_dc_network(self.logger, mdc, delay_ms=cross_dc_latency_ms) as net:
             mdc.start_servers()
 
-            # Continuous single-threaded implicit-transaction insert load from the main DC.
+            # Continuous single-threaded explicit-transaction insert load from the main DC.
             # It stops on the very first exception (stopOnError) instead of failing the app,
             # recording how many inserts had succeeded up to that point.
             for dc, offset_from, to in [(DC_1, LOAD_KEY_FROM_DC_1, LOAD_KEY_TO_DC_1),
@@ -121,7 +121,7 @@ class MdcTransactionalPartitionTest(IgniteTest):
 
                 assert inserts > 0, "The transactional load performed no successful inserts"
 
-            # The point of the scenario: the aborted implicit transactions leave nothing
+            # The point of the scenario: the aborted explicit transactions leave nothing
             # hanging on either half-ring...
             mdc.verify_no_hanging_txs(DC_1)
             mdc.verify_no_hanging_txs(DC_2)

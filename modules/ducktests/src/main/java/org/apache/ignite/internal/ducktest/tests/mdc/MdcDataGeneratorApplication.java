@@ -28,7 +28,7 @@ import org.apache.ignite.internal.ducktest.tests.dto.IndexedDataRecord;
 /**
  * Populates the MDC cache with a deterministic data set: keys in {@code [from, to)},
  * values {@code IndexedDataRecord(key)} (or the key itself in {@code sqlMode}).
- * Runs it until the network partition event.
+ * Run it to completion before enabling the network partition.
  */
 public class MdcDataGeneratorApplication extends MdcCacheAwareApplication {
     /** {@inheritDoc} */
