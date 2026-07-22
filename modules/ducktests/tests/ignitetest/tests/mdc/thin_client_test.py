@@ -18,7 +18,8 @@ Thin client data-center-aware routing.
 
 Every thin client is configured with the addresses of ALL server nodes of BOTH DCs.
 A client pinned to a data center must route partition-aware reads to nodes of its own DC:
-with a large cross-DC netem delay its average read latency stays small.
+with a large cross-DC netem delay its average read latency stays small. This is asserted
+from both DCs, so no routing that fixes on a single DC can satisfy it.
 
 The partition part verifies the thin client experience of a split-brain: a client
 pinned to the main-DC half keeps writing; a client pinned to the read-only half still
@@ -62,7 +63,7 @@ class MdcThinClientTest(IgniteTest):
     @parametrize(cross_dc_latency_ms=100)
     def test_thin_client_dc_aware_routing_and_partition(self, ignite_version, cross_dc_latency_ms):
         """
-        DC-pinned thin client reads locally (latency far below the cross-DC delay);
+        Each DC-pinned thin client reads locally (latency far below the cross-DC delay);
         through a partition the pinned clients behave like their half-ring: main half writes, read-only half reads
         but rejects writes, and writes resume after the heal.
         """
@@ -83,22 +84,23 @@ class MdcThinClientTest(IgniteTest):
 
             mdc.generate_data(DC_1, CACHE_NAME, 0, KEYS, backups=1)
 
-            svc = mdc.run_service(cli_dc1, {"mode": "GET", "cacheName": CACHE_NAME, "keyFrom": 0,
+            for dc, cli in [(DC_1, cli_dc1), (DC_2, cli_dc2)]:
+                svc = mdc.run_service(cli, {"mode": "GET", "cacheName": CACHE_NAME, "keyFrom": 0,
                                             "keyTo": KEYS, "iterations": PINNED_GET_ITERS,
-                                            "resultPrefix": "pinnedGet"})
+                                            "resultPrefix": f"pinnedGet{dc}"})
 
-            avg_cli_dc_1 = mdc.result_float(svc, "pinnedGetAvgOpMs")
-            err_cnt_cli_dc_1 = mdc.result_int(svc, "pinnedGetErrCnt")
+                avg_ms = mdc.result_float(svc, f"pinnedGet{dc}AvgOpMs")
+                err_cnt = mdc.result_int(svc, f"pinnedGet{dc}ErrCnt")
 
-            self.logger.info(f"Thin client routing latency [delayMs={cross_dc_latency_ms}, getAvgOpMs={avg_cli_dc_1}, "
-                             f"getErrCnt={err_cnt_cli_dc_1}]")
+                self.logger.info(f"Thin client routing latency [dc={dc}, delayMs={cross_dc_latency_ms}, "
+                                 f"getAvgOpMs={avg_ms}, getErrCnt={err_cnt}]")
 
-            assert avg_cli_dc_1 < cross_dc_latency_ms, \
-                f"DC-pinned thin client reads should be served locally " \
-                f"[avgMs={avg_cli_dc_1}, delayMs={cross_dc_latency_ms}]"
+                assert avg_ms < cross_dc_latency_ms, \
+                    f"DC-pinned thin client reads should be served locally " \
+                    f"[dc={dc}, avgMs={avg_ms}, delayMs={cross_dc_latency_ms}]"
 
-            assert err_cnt_cli_dc_1 == 0, (f"Expected 0 errors for DC-pinned thin client reads, "
-                                           f"but found {err_cnt_cli_dc_1}")
+                assert err_cnt == 0, \
+                    f"Expected 0 errors for DC-pinned thin client reads [dc={dc}, errCnt={err_cnt}]"
 
             net.enable_network_partition(DC_1, DC_2)
 
