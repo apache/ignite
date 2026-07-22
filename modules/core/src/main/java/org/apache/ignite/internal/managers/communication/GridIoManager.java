@@ -459,7 +459,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                 try {
                     GridIoMessage msg0 = (GridIoMessage)msg;
 
-                    try (Scope ignored = ctx.operationContextDispatcher().restoreDistributedAttributes(msg0.opCtxMsg)) {
+                    try (Scope ignored = ctx.operationContextDispatcher().restoreRemoteAttributeValues(msg0.opCtxMsg)) {
                         onMessage0(nodeId, msg0, msgC);
                     }
                 }
@@ -2051,7 +2051,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
         res = new GridIoMessage(plc, topic, msg, ordered, timeout, skipOnTimeout);
 
-        res.opCtxMsg = ctx.operationContextDispatcher().collectDistributedAttributes();
+        res.opCtxMsg = ctx.operationContextDispatcher().collectDistributedAttributeValues();
 
         return res;
     }

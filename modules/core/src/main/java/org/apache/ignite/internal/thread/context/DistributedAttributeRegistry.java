@@ -15,28 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.internal.thread.context;
 
-import org.apache.ignite.internal.thread.context.OperationContext;
-import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 
 /**
- * Message for {@link OperationContext} distributed attributes.
- *
- * @see OperationContextDispatcher
+ * Declares reserved distributed IDs used to consistently identify {@link OperationContext} attributes across
+ * all nodes in the cluster.
  */
-public class OperationContextMessage implements Message {
-    /** Values of operation context attributes. */
-    @Order(0)
-    public Message[] vals;
-
-    /** Bitmap of effective attributes ids. */
-    @Order(1)
-    public byte idBitmap;
-
-    /** Empty constructor for serialization purposes. */
-    public OperationContextMessage() {
-        // No-op.
-    }
+public class DistributedAttributeRegistry {
+    /** Reserved for {@link SecurityContext} propagation. */
+    public static final byte SECURITY = 0;
 }
