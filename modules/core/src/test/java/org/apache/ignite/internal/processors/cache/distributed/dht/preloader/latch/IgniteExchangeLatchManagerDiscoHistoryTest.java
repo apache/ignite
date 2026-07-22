@@ -16,7 +16,6 @@
  */
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch;
 
-
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
