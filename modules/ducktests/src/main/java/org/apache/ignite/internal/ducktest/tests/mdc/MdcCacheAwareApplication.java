@@ -50,7 +50,8 @@ import static org.apache.ignite.internal.ducktest.utils.Utils.getEnum;
  * <ul>
  *     <li>{@code cacheName} - cache name;</li>
  *     <li>{@code backups} - number of backups; {@code (backups + 1)} must be divisible by {@code dcsNum};</li>
- *     <li>{@code mainDc} - main data center for the topology validator (2 DC mode);</li>
+ *     <li>{@code mainDc} - main data center for the topology validator (2 DC mode); required, and must be
+ *         non-empty, unless {@code datacenters} is given;</li>
  *     <li>{@code datacenters} - full DC set for majority-based validation (odd DC count mode),
  *         takes precedence over {@code mainDc};</li>
  *     <li>{@code dcsNum} - number of data centers, default 2;</li>
@@ -137,8 +138,14 @@ public abstract class MdcCacheAwareApplication extends IgniteAwareApplication {
 
             topValidator.setDatacenters(dcs);
         }
-        else
-            topValidator.setMainDatacenter(jNode.path("mainDc").asText());
+        else {
+            String mainDc = jNode.hasNonNull("mainDc") ? jNode.get("mainDc").asText().trim() : "";
+
+            if (mainDc.isEmpty())
+                throw new IllegalArgumentException("Either 'datacenters' or a non-empty 'mainDc' must be specified.");
+
+            topValidator.setMainDatacenter(mainDc);
+        }
 
         return new CacheConfiguration<Integer, V>()
             .setName(cacheName)
