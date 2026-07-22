@@ -389,6 +389,8 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        super.prepareMarshal(ctx);
+
         if (!F.isEmpty(parts) && locParts == null)
             locParts = copyPartitionsMap(parts);
 
@@ -411,6 +413,8 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
+        super.finishUnmarshal(ctx, ldr);
+
         if (locParts != null && parts == null) {
             parts = copyPartitionsMap(locParts);
 
