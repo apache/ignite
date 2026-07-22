@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeClusterData;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -35,11 +36,19 @@ public class IgniteFeatureManager {
     /** */
     private final IgniteNodeFeatureSet locVerFeatures;
 
-    /** */
-    private final GridFutureAdapter<Void> locVerFeaturesActivationFut;
+    /**
+     * During the RU process, updated nodes operate in accordance with both the old logical version (prior to RU completion)
+     * and the new one (after RU completion). This variable stores the features of the previous version  under which this
+     * node operated. After all node versions are upgraded its value become consistent across all cluster nodes. And after
+     * version finalization completed it is propagated to the joining nodes.
+     */
+    @Nullable private volatile IgniteNodeFeatureSet prevActiveFeatures;
 
     /** */
     private volatile IgniteNodeFeatureSet activeFeatures;
+
+    /** */
+    private final GridFutureAdapter<Void> locVerFeaturesActivationFut;
 
     /** */
     public IgniteFeatureManager(GridKernalContext ctx, IgniteCoreFeatureSet coreFeatures) {
@@ -67,6 +76,11 @@ public class IgniteFeatureManager {
         return finalActiveFeatures;
     }
 
+    /** @return The feature set corresponding to the previous version under which this node operated. */
+    @Nullable public IgniteNodeFeatureSet previousActiveFeatures() {
+        return prevActiveFeatures;
+    }
+
     /** @return {@code true} if the specified {@link IgniteFeature} is active in the cluster; {@code false} otherwise. */
     public boolean isActive(IgniteFeature feature) {
         final IgniteNodeFeatureSet finalActiveFeatures = activeFeatures;
@@ -91,15 +105,22 @@ public class IgniteFeatureManager {
     }
 
     /** */
-    public void onGridDataReceived(IgniteNodeFeatureSet activeClusterFeatures) {
-        boolean hasSameFeatures = ctx.clientNode()
+    public void onGridDataReceived(RollingUpgradeClusterData clusterData) {
+        IgniteNodeFeatureSet activeClusterFeatures = clusterData.activeFeatures();
+
+        boolean hasSameFeaturesAsCluster = ctx.clientNode()
             ? activeClusterFeatures.containsAll(locVerFeatures)
             : locVerFeatures.equals(activeClusterFeatures);
 
-        if (hasSameFeatures)
+        if (hasSameFeaturesAsCluster) {
+            prevActiveFeatures = clusterData.previousActiveFeatures();
+
             activateLocalVersionFeatures();
-        else
-            this.activeFeatures = activeClusterFeatures;
+        }
+        else {
+            activeFeatures = activeClusterFeatures;
+            prevActiveFeatures = activeClusterFeatures;
+        }
     }
 
     /** */
