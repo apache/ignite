@@ -63,11 +63,11 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.OperationContextMessage;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
+import org.apache.ignite.internal.thread.context.OperationContextMessage;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.GridLongList;
@@ -669,7 +669,7 @@ public class ZookeeperDiscoveryImpl {
 
     /** */
     public void sendCustomEvent(DiscoverySpiCustomMessage msg) {
-        OperationContextMessage opCtx = opCtxDispatcher.collectDistributedAttributes();
+        OperationContextMessage opCtx = opCtxDispatcher.collectDistributedAttributeValues();
 
         if (opCtx != null)
             sendCustomMessage(new ZkOperationContextAwareCustomMessage(msg, opCtx));
@@ -3548,7 +3548,7 @@ public class ZookeeperDiscoveryImpl {
 
         IgniteFuture<?> fut;
 
-        try (Scope ignored = opCtxDispatcher.restoreDistributedAttributes(opCtxMsg)) {
+        try (Scope ignored = opCtxDispatcher.restoreRemoteAttributeValues(opCtxMsg)) {
             fut = lsnr.onDiscovery(
                 new DiscoveryNotification(
                     DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
