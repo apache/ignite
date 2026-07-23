@@ -54,6 +54,7 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
         startGrid(0);
 
         checkVersionUpgradeInactive("2.19.0");
+        checkPreviousClusterFeatures(null);
     }
 
     /** */
@@ -72,9 +73,7 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
     public void testVersionUpgradeDisabledFinalization() throws Exception {
         startCluster();
 
-        ru(1).finalizeClusterVersion();
-
-        checkVersionUpgradeInactive(TEST_DEFAULT_VER);
+        finalizeClusterVersion(1, TEST_DEFAULT_VER);
     }
 
     /** */
@@ -86,12 +85,12 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
 
         checkVersionUpgradeInProgress(TEST_DEFAULT_VER, null);
 
-        ru(1).finalizeClusterVersion();
-
-        checkVersionUpgradeInactive(TEST_DEFAULT_VER);
+        finalizeClusterVersion(1, TEST_DEFAULT_VER);
 
         restartNode(1);
         restartNode(2);
+
+        checkPreviousClusterFeatures(null);
     }
 
     /** */
@@ -198,6 +197,7 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
         checkJoinSuccess(4, "2.19.2", true);
 
         checkVersionUpgradeInactive("2.19.2");
+        checkPreviousClusterFeatures(TEST_DEFAULT_VER);
     }
 
     /** */
@@ -273,13 +273,22 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
         forAllNodes(nodeIdx -> upgradeNodeVersion(nodeIdx, "2.19.2"));
         finalizeClusterVersion(1, "2.19.2");
 
+        restartNode(0);
+        checkPreviousClusterFeatures(TEST_DEFAULT_VER);
+
         ru(1).enableVersionUpgrade();
         forAllNodes(nodeIdx -> upgradeNodeVersion(nodeIdx, "2.19.2", "2.20.0"));
         finalizeClusterVersion(1, "2.20.0");
 
+        restartNode(1);
+        checkPreviousClusterFeatures("2.19.2");
+
         ru(1).enableVersionUpgrade();
         forAllNodes(nodeIdx -> upgradeNodeVersion(nodeIdx, "2.20.0", "2.21.0"));
         finalizeClusterVersion(1, "2.21.0");
+
+        restartNode(2);
+        checkPreviousClusterFeatures("2.20.0");
     }
 
     /** */
@@ -439,7 +448,7 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
 
             blockingDiscovery(grid(0)).block();
 
-            IgniteInternalFuture<Object> finalizeFut = GridTestUtils.runAsync(() -> finalizeClusterVersion(1, TEST_DEFAULT_VER));
+            IgniteInternalFuture<Object> finalizeFut = GridTestUtils.runAsync(() -> ru(1).finalizeClusterVersion());
 
             waitForBlockedDiscoveryMessages(grid(0), 1, InitMessage.class);
 
@@ -482,7 +491,7 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
 
             assertTrue(TestRollingUpgradeProcessor.nodeJoinValidationCompletedLatch.await(getTestTimeout(), MILLISECONDS));
 
-            IgniteInternalFuture<Object> finalizeFut = GridTestUtils.runAsync(() -> finalizeClusterVersion(1, TEST_DEFAULT_VER));
+            IgniteInternalFuture<Object> finalizeFut = GridTestUtils.runAsync(() -> ru(1).finalizeClusterVersion());
 
             GridTestUtils.assertThrowsAnyCause(
                 log,
@@ -886,7 +895,7 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
 
             blockingDiscovery(grid(0)).block();
 
-            IgniteInternalFuture<Object> finalizeFut = GridTestUtils.runAsync(() -> finalizeClusterVersion(1, TEST_DEFAULT_VER));
+            IgniteInternalFuture<Object> finalizeFut = GridTestUtils.runAsync(() -> ru(1).finalizeClusterVersion());
 
             waitForBlockedDiscoveryMessages(grid(0), 1, InitMessage.class);
 

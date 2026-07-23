@@ -218,12 +218,12 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
-        RollingUpgradeClusterData gridData = data.commonData();
+        RollingUpgradeClusterData clusterData = data.commonData();
 
-        isVerUpgradeEnabled = gridData.isVersionUpgradeEnabled;
-        curFinalizeProcId = gridData.curFinalizeProcId;
+        isVerUpgradeEnabled = clusterData.isVersionUpgradeEnabled;
+        curFinalizeProcId = clusterData.curFinalizeProcId;
 
-        featureMgr.onGridDataReceived(new IgniteNodeFeatureSet(gridData.activeFeatures));
+        featureMgr.onGridDataReceived(clusterData);
     }
 
     /** {@inheritDoc} */
@@ -396,7 +396,8 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
         return new RollingUpgradeClusterData(
             isVerUpgradeEnabled,
             curFinalizeProcId,
-            featureMgr.activeFeatures().values()
+            featureMgr.activeFeatures(),
+            featureMgr.previousActiveFeatures()
         );
     }
 
