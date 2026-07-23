@@ -58,17 +58,18 @@ The key properties are:
 * The cluster is in the intended link:monitoring-metrics/cluster-states[state] and serves only the operations allowed by that state.
 * Baseline topology, when it is used or managed manually, matches the expected data-bearing server nodes.
 * Data remains consistent: link:tools/control-script#verifying-partition-checksums[`idle_verify`] reports no partition conflicts when the cluster is idle.
-* Expected nodes are present, and no unexpected repeated node `JOIN`, `LEFT`, or `FAIL` events or node segmentation are reported.
+* Expected nodes are present, with no unexpected or repeated node `JOIN`, `LEFT`, or `FAIL` events and no reported node segmentation.
 * link:configuring-caches/partition-loss-policy[Lost partitions] are absent.
-* The number and timeout of link:tools/control-script#transaction-management[long-running transactions] do not keep increasing; active link:data-modeling/data-partitioning#partition-map-exchange[Partition Map Exchanges (PMEs)] complete; link:monitoring-metrics/new-metrics-system#monitoring-rebalancing[rebalancing] finishes; link:monitoring-metrics/new-metrics-system#monitoring-checkpointing-operations[checkpoint-related metrics] and link:monitoring-metrics/new-metrics#thread-pools[executor queue sizes] return to their usual ranges after the link:monitoring-metrics/new-metrics-system#monitoring-topology[topology] has stabilized and the application workload has returned to its expected level.
-There is no single command or metric that proves cluster health for every deployment.
+* The number of link:tools/control-script#transaction-management[long-running transactions] and their durations do not keep increasing; active link:data-modeling/data-partitioning#partition-map-exchange[Partition Map Exchanges (PMEs)] complete; link:monitoring-metrics/new-metrics-system#monitoring-rebalancing[rebalancing] finishes; link:monitoring-metrics/new-metrics-system#monitoring-checkpointing-operations[checkpoint-related metrics] and link:monitoring-metrics/new-metrics#thread-pools[executor queue sizes] return to their usual ranges after the link:monitoring-metrics/new-metrics-system#monitoring-topology[topology] has stabilized.
 
-Use several signals together.
-A simple client connection or SQL liveness check can prove only that a particular client or query path is reachable; it does not check user partitions, backup consistency, baseline membership, or all server nodes.
+There is no single command or metric that proves cluster health for every deployment.
 
 === Check the Intended State and Node Membership
 
 Start with the link:monitoring-metrics/cluster-states[cluster state].
+
+In the examples below, `control.(sh|bat)` is documentation shorthand.
+Run `control.sh` on Unix-like systems or `control.bat` on Windows.
 
 Run:
 
@@ -89,8 +90,8 @@ Command [STATE] finished with code: 0
 ----
 
 `ACTIVE` is expected for normal read-write operation.
-`ACTIVE_READ_ONLY` is normal when read-only operation was intentionally enabled.
-`INACTIVE` is acceptable only when it matches the current operation, for example planned maintenance; an inactive cluster does not serve the data workload.
+`ACTIVE_READ_ONLY` is normal when the cluster has been intentionally placed in read-only mode.
+`INACTIVE` is acceptable only when it matches the current operation, for example, planned maintenance; an inactive cluster does not serve the data workload.
 The criterion is whether the actual state matches the state that was intentionally set for the deployment.
 
 Check baseline topology when the cluster uses persistence, when baseline autoadjustment is disabled, or when you intentionally manage the set of data-bearing nodes.
@@ -151,18 +152,18 @@ Other nodes:
 Number of other nodes: 1
 ----
 
-The baseline contains server nodes that are intended to store a data.
-Client nodes are not a part of the baseline.
+The baseline contains server nodes that are intended to store data.
+Client nodes are not part of the baseline.
 An online server node in `Other nodes` is not always an error: the node may have been prepared intentionally but not yet introduced into the data topology.
 If the node is expected to store data, first check the link:clustering/baseline-topology#baseline-topology-autoadjustment[baseline auto-adjustment policy] and the current maintenance or scale-out procedure, then use the documented baseline change procedure.
 Changing the baseline can start link:data-rebalancing[rebalancing]: partitions are redistributed according to the new affinity assignment.
 Plan for the additional network, CPU, and storage load, especially in clusters with persistence.
 
 Use topology changes to distinguish planned activity from instability.
-A server `JOIN`, `LEFT`, or `FAIL` event changes cluster membership and triggers link:data-modeling/data-partitioning#partition-map-exchange[Partition Map Exchanges (PME)].
+When a server node joins, leaves, or fails, cluster membership changes and triggers a link:data-modeling/data-partitioning#partition-map-exchange[Partition Map Exchange (PME)].
 A dynamic cache start or stop can also trigger PME even when no server node joins, leaves, or fails.
-Therefore, a topology version or link:monitoring-metrics/new-metrics#partition-map-exchange[PME metric] PME metric change is useful only when interpreted together with maintenance actions and node logs.
-For example, these metrics should be used for historical distributions; there is no universal duration threshold.
+Therefore, a topology version or link:monitoring-metrics/new-metrics#partition-map-exchange[PME metric] change is useful only when interpreted together with maintenance actions and node logs.
+Use these metrics to establish historical distributions; there is no universal duration threshold.
 
 [source,sql]
 ----
@@ -176,7 +177,7 @@ ORDER BY NAME;
 ----
 
 Run `control.(sh|bat) --baseline` repeatedly or monitor topology metrics to confirm that membership is stable when no maintenance is in progress.
-In logs, look for repeated node join, left, fail, segmentation, and exchange-worker messages.
+In logs, look for repeated `JOIN`, `LEFT`, `FAIL`, or segmentation events and exchange-worker messages.
 Investigate unexpected repeated `JOIN`, `LEFT`, or `FAIL` events, node segmentation, network failures, or a PME that does not finish.
 For PME metrics and transaction checks, see <<check-transactions-and-sql-queries,Check Transactions and SQL Queries>>.
 
@@ -207,9 +208,9 @@ Conflict partition: PartitionKey [grpId=1544803905, grpName=default, partId=5]
 
 The command compares partition update counters and partition hashes between primary and backup copies.
 Run it only when data updates are stopped.
-If updates are active, the command can report false positive conflicts because copies are changing while hashes are being calculated.
+If updates are active, the command can report false-positive conflicts because copies are changing while hashes are being calculated.
 Partitions in `MOVING` or `LOST` state may be skipped, so the result can be incomplete.
-A successful `idle_verify` result is an important confirmation of consistency, but it still does not prove overall cluster health check success.
+A successful `idle_verify` result is an important confirmation of consistency, but it still does not prove that the cluster is healthy overall.
 
 [#confirm-that-rebalancing-converges]
 === Confirm That Rebalancing Converges
@@ -227,11 +228,11 @@ GROUP BY STATE
 ORDER BY STATE;
 ----
 
-It is also possible to track some node-local cache-group metrics, such as:
+You can also track node-local cache-group metrics such as:
 
-* LocalNodeMovingPartitionsCount;
-* LocalNodeRentingPartitionsCount;
-* LocalNodeRentingEntriesCount.
+* `LocalNodeMovingPartitionsCount`
+* `LocalNodeRentingPartitionsCount`
+* `LocalNodeRentingEntriesCount`
 
 Use the link:monitoring-metrics/system-views#partition_states[PARTITION_STATES] system view to check partition states:
 
@@ -249,8 +250,8 @@ WHERE STATE IN ('MOVING', 'RENTING', 'LOST')
 ORDER BY STATE, CACHE_GROUP_ID, PARTITION_ID, NODE_ID;
 ----
 
-In stable cluster state, this query usually should not return `MOVING`, `RENTING`, or `LOST` rows.
-`MOVING` and `RENTING` are expected right after an intended topology or cache event, but their count should decrease.
+In a stable cluster, this query should not usually return `MOVING`, `RENTING`, or `LOST` rows.
+`MOVING` and `RENTING` are expected right after an intended topology or cache event, but their counts should decrease.
 `LOST` is not a normal transient state.
 
 Example: one partition is lost:
@@ -317,7 +318,7 @@ ORDER BY STRIPE_INDEX, THREAD_NAME;
 As mentioned above, short non-zero queues are acceptable under load.
 
 On an idle node, queues usually return to zero.
-Investigate continuous growth, lack of drain after load stops, repeated `DetectStarvation=true`, or repeated starvation warnings in logs.
+Investigate continuous growth, queues that do not drain after the load stops, repeated `DetectStarvation=true` values, or repeated starvation warnings in logs.
 There is no universal absolute threshold.
 Queue metrics are node-local, so collect them from all server nodes.
 
@@ -386,7 +387,9 @@ The problem is sustained growth, increasing age of the oldest operations, and fa
 For view definitions and metrics, see link:monitoring-metrics/system-views#transactions[TRANSACTIONS], link:monitoring-metrics/system-views#sql_queries[SQL_QUERIES], link:monitoring-metrics/new-metrics#transactions[transaction metrics], and link:data-modeling/data-partitioning#partition-map-exchange[Partition Map Exchange metrics].
 
 [#check-partition-map-exchange]
-llink:data-modeling/data-partitioning#partition-map-exchange[Partition Map Exchanges (PMEs)] synchronizes partition distribution after topology and cache changes.
+=== Check Partition Map Exchanges
+
+A link:data-modeling/data-partitioning#partition-map-exchange[Partition Map Exchange (PME)] synchronizes partition distribution after topology and cache changes.
 At one stage, PME waits for incomplete transactions to finish.
 A long transaction can delay a node join, cache start, and other operations that depend on exchange.
 
@@ -422,9 +425,9 @@ Monitor these metrics for persistent data regions and data storage:
 * `io.datastorage.LastCheckpointTotalPagesNumber`
 * `io.datastorage.LastCheckpointFsyncDuration`
 
-Corresponding records in <SOME_formatting ? bold ? italic ?>ignite.log looks like as follows:
+The following checkpoint records appear in `ignite.log`:
 
-[source,shell]
+[source,text]
 ----
 [INFO ][db-checkpoint-thread-#][org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkpointer] Checkpoint started [checkpointId=<uuid>, startPtr=<wal-pointer>, checkpointBeforeLockTime=28ms, checkpointLockWait=0ms, checkpointListenersExecuteTime=27ms, checkpointLockHoldTime=30ms, walCpRecordFsyncDuration=7ms, splitAndSortCpPagesDuration=5ms, writeRecoveryDataDuration=3ms, writeCheckpointEntryDuration=1ms, pages=7837, reason='timeout']
 [INFO ][db-checkpoint-thread-#][org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkpointer] Checkpoint finished [cpId=<uuid>, pages=7837, markPos=<wal-pointer>, walSegmentsCovered=[], markDuration=42ms, recoveryWrite=3ms, pagesWrite=41ms, fsync=31ms, total=147ms]
@@ -465,7 +468,7 @@ JMX checkpoint and data-region metrics are node-local.
 Open the same charts or attributes on each server node that owns persistent data.
 
 .JConsole view of node-local persistence checkpoint metrics
-image::perf-and-troubleshooting/images/healthy-cluster-checkpoint-jconsole.png[JConsole MBeans view showing io/datastorage checkpoint attributes and a persistent dataregion bean]
+image::perf-and-troubleshooting/images/healthy-cluster-checkpoint-jconsole.png[JConsole MBeans view showing io/datastorage checkpoint attributes and a persistent data-region bean]
 
 === Check Logs and Optional Features
 
@@ -478,7 +481,7 @@ Investigate logs and failure handling for:
 * repeated striped-pool starvation warnings;
 * unexpected node restarts.
 
-Ignite reports critical failures to the configured failure handler; depending on the handler, the result can be node invalidation, failover handling, node stop, or JVM termination.
+Ignite reports critical failures to the configured failure handler, which can invalidate the node, initiate failover handling, stop the node, or terminate the JVM.
 On every server node, verify the configured `FailureHandler` and its `ignoredFailureTypes`.
 
 If no handler is configured explicitly, Ignite uses `StopNodeOrHaltFailureHandler`. `AbstractFailureHandler` ignores `SYSTEM_WORKER_BLOCKED` and `SYSTEM_CRITICAL_OPERATION_TIMEOUT` by default.
