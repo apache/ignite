@@ -29,7 +29,7 @@ public class IgniteCoreFeatureSet extends IgniteComponentFeatureSet {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private static final IgniteCoreFeatureSet INSTANCE = new IgniteCoreFeatureSet(
+    static IgniteCoreFeatureSet INSTANCE = new IgniteCoreFeatureSet(
         IgniteVersionUtils.VER,
         IgniteFeatureSet.buildFrom(SupportedFeatureRegistry.class)
     );
