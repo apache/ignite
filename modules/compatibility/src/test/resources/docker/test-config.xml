@@ -27,6 +27,7 @@
         <property name="addressResolver">
             <bean class="org.apache.ignite.compatibility.testframework.testcontainers.ContainerAddressResolver"/>
         </property>
+        <property name="failureDetectionTimeout" value="#{5000L}"/>
         <property name="pluginProviders">
             <bean class="org.apache.ignite.compatibility.testframework.plugins.TestCompatibilityPluginProvider"/>
         </property>

@@ -249,8 +249,8 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
             .setIpFinder(new TcpDiscoveryVmIpFinder().setAddresses(addrs0))
             // Short socket timeout: unreachable container-internal addresses must fail fast before the
             // host-reachable 127.0.0.1:<published-port> (advertised by the containers) is tried.
-            .setSocketTimeout(1000)
-            .setNetworkTimeout(20000)
+            .setSocketTimeout(500)
+            .setNetworkTimeout(10000)
             .setJoinTimeout(30000)
             .setLocalPort(48500 + idx);
 
@@ -264,8 +264,8 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
             // Linux: bind to all interfaces so containers reach this host node at the Docker bridge gateway IP.
             .setLocalAddress(IgniteContainer.LINUX ? "0.0.0.0" : "127.0.0.1")
             .setLocalPort(49100 + idx)
-            .setConnectTimeout(1000)
-            .setMaxConnectTimeout(10000)
+            .setConnectTimeout(500)
+            .setMaxConnectTimeout(5000)
             // The NIO connect to a blackholed container-internal (172.x) address is not aborted by
             // connectTimeout on macOS (it hangs in SYN_SENT for the OS timeout, ~75s), stalling the exchange.
             // Pre-filter unreachable addresses so only the reachable 127.0.0.1:<published-port> is used.
@@ -276,6 +276,9 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
             .setConsistentId(nodeId)
             .setWorkDirectory(workDir)
             .setDataStorageConfiguration(new DataStorageConfiguration().setDefaultDataRegionConfiguration(dataRegionCfg))
+            // Failure detection timeout controls the connect/handshake timeout for each address.
+            // Default 10s per address × 6+ unreachable addresses = 60s+ stall. 5s cuts it to ~30s.
+            .setFailureDetectionTimeout(5000)
             .setDiscoverySpi(discoverySpi)
             .setAddressResolver(addr -> {
                 int port = addr.getPort();
