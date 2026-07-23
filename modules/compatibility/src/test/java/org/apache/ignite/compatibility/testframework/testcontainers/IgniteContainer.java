@@ -455,6 +455,7 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
 
             try (TarArchiveOutputStream taos = new TarArchiveOutputStream(new FileOutputStream(archiveFile))) {
                 taos.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);
+                taos.setBigNumberMode(TarArchiveOutputStream.BIGNUMBER_STAR);
 
                 List<File> allFiles = new ArrayList<>();
 

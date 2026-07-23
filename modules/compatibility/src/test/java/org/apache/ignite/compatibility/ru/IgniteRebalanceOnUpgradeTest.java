@@ -313,9 +313,10 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
 
     /** */
     private void stopLocalNodes() {
-        for (IgniteEx node : nodes)
+        for (IgniteEx node : nodes) {
             if (node != null)
                 Ignition.stop(node.name(), false);
+        }
 
         nodes.clear();
     }
