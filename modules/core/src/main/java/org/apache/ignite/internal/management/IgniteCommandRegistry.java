@@ -30,6 +30,7 @@ import org.apache.ignite.internal.management.defragmentation.DefragmentationComm
 import org.apache.ignite.internal.management.diagnostic.DiagnosticCommand;
 import org.apache.ignite.internal.management.encryption.EncryptionCommand;
 import org.apache.ignite.internal.management.event.EventCommand;
+import org.apache.ignite.internal.management.io.IoTestCommand;
 import org.apache.ignite.internal.management.kill.KillCommand;
 import org.apache.ignite.internal.management.meta.MetaCommand;
 import org.apache.ignite.internal.management.metric.MetricCommand;
@@ -77,7 +78,8 @@ public class IgniteCommandRegistry extends CommandRegistryImpl<NoArg, Void> {
             new PerformanceStatisticsCommand(),
             new CdcCommand(),
             new ConsistencyCommand(),
-            new EventCommand()
+            new EventCommand(),
+            new IoTestCommand()
         );
 
         U.loadService(CommandsProvider.class).forEach(p -> p.commands().forEach(this::register));

@@ -34,6 +34,8 @@ import org.apache.ignite.internal.managers.communication.SessionChannelMessage;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentResponse;
+import org.apache.ignite.internal.managers.discovery.IoTestDiscoveryAckMessage;
+import org.apache.ignite.internal.managers.discovery.IoTestDiscoveryMessage;
 import org.apache.ignite.internal.managers.encryption.ChangeCacheEncryptionRequest;
 import org.apache.ignite.internal.managers.encryption.EncryptionDataBagItem;
 import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyRequest;
@@ -479,6 +481,8 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchemaResolvedClassLoader(CacheJoinNodeDiscoveryData.class);
         withNoSchemaResolvedClassLoader(CacheReconnectInfo.class);
         withNoSchemaResolvedClassLoader(ClusterCacheGroupRecoveryData.class);
+        withNoSchema(IoTestDiscoveryMessage.class);
+        withNoSchema(IoTestDiscoveryAckMessage.class);
 
         // [10000 - 10200]: Transaction and lock related messages. Most of them originally comes from Communication.
         msgIdx = 10000;

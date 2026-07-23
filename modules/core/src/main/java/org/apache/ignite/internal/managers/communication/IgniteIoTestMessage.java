@@ -17,311 +17,187 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.marshaller.Marshaller;
 
-/**
- *
- */
+/** Communication SPI test message. */
 public class IgniteIoTestMessage implements MarshallableMessage {
-    /** */
-    private static final byte FLAG_PROC_FROM_NIO = 1;
-
-    /** */
+    /** Test ID. */
     @Order(0)
     long id;
 
-    /** */
+    /** Process message in NIO thread. */
     @Order(1)
-    byte flags;
+    boolean procFromNioThread;
 
-    /** */
+    /** Request flag. */
     @Order(2)
     boolean req;
 
-    /** */
+    /** Payload. */
     @Order(3)
     byte[] payload;
 
-    /** */
+    /** Request creation timestamp from the source node monotonic clock. */
     @Order(4)
     long reqCreateTs;
 
-    /** */
+    /** Request serialization-start timestamp from the source node monotonic clock. */
     @Order(5)
     long reqSndTs;
 
-    /** */
+    /** Request serialization-start timestamp from the source node wall clock. */
     @Order(6)
     long reqSndTsMillis;
 
-    /** */
+    /** Request deserialization-completion timestamp from the target node monotonic clock. */
     @Order(7)
     long reqRcvTs;
 
-    /** */
+    /** Request deserialization-completion timestamp from the target node wall clock. */
     @Order(8)
     long reqRcvTsMillis;
 
-    /** */
+    /** Request listener invocation timestamp from the target node monotonic clock. */
     @Order(9)
     long reqProcTs;
 
-    /** */
+    /** Response serialization-start timestamp from the target node monotonic clock. */
     @Order(10)
     long resSndTs;
 
-    /** */
+    /** Response serialization-start timestamp from the target node wall clock. */
     @Order(11)
     long resSndTsMillis;
 
-    /** */
-    @Order(12)
+    /** Response deserialization-completion timestamp from the source node monotonic clock. */
     long resRcvTs;
 
-    /** */
-    @Order(13)
+    /** Response deserialization-completion timestamp from the source node wall clock. */
     long resRcvTsMillis;
 
-    /** */
-    @Order(14)
+    /** Response listener invocation timestamp from the source node monotonic clock. */
     long resProcTs;
 
-    /** */
-    private UUID sndNodeId;
-
-    /**
-     *
-     */
+    /** Required by the message factory. */
     public IgniteIoTestMessage() {
         // No-op.
     }
 
-    /**
-     * @param id Message ID.
-     * @param req Request flag.
-     * @param payload Payload.
-     */
-    public IgniteIoTestMessage(long id, boolean req, byte[] payload) {
+    /** Request constructor. */
+    public IgniteIoTestMessage(long id, byte[] payload, boolean procFromNioThread) {
         this.id = id;
-        this.req = req;
         this.payload = payload;
+        this.procFromNioThread = procFromNioThread;
 
+        req = true;
         reqCreateTs = System.nanoTime();
     }
 
-    /**
-     * @return {@code True} if message should be processed from NIO thread
-     * (otherwise message is submitted to system pool).
-     */
+    /** Response constructor. */
+    public IgniteIoTestMessage(IgniteIoTestMessage req) {
+        id = req.id;
+        payload = req.payload;
+        procFromNioThread = req.procFromNioThread;
+        reqCreateTs = req.reqCreateTs;
+        reqSndTs = req.reqSndTs;
+        reqSndTsMillis = req.reqSndTsMillis;
+        reqRcvTs = req.reqRcvTs;
+        reqRcvTsMillis = req.reqRcvTsMillis;
+        reqProcTs = req.reqProcTs;
+    }
+
+    /** @return {@code True} to process this message in NIO thread. */
     public boolean processFromNioThread() {
-        return isFlag(FLAG_PROC_FROM_NIO);
+        return procFromNioThread;
     }
 
-    /**
-     * @param procFromNioThread {@code True} if message should be processed from NIO thread.
-     */
-    public void processFromNioThread(boolean procFromNioThread) {
-        setFlag(procFromNioThread, FLAG_PROC_FROM_NIO);
-    }
-
-    /**
-     * @param flags Flags.
-     */
-    public void flags(byte flags) {
-        this.flags = flags;
-    }
-
-    /**
-     * @return Flags.
-     */
-    public byte flags() {
-        return flags;
-    }
-
-    /**
-     * Sets flag mask.
-     *
-     * @param flag Set or clear.
-     * @param mask Mask.
-     */
-    private void setFlag(boolean flag, int mask) {
-        flags = flag ? (byte)(flags | mask) : (byte)(flags & ~mask);
-    }
-
-    /**
-     * Reads flag mask.
-     *
-     * @param mask Mask to read.
-     * @return Flag value.
-     */
-    private boolean isFlag(int mask) {
-        return (flags & mask) != 0;
-    }
-
-    /**
-     * @return {@code true} if this is request.
-     */
+    /** @return {@code True} if this is a request. */
     public boolean request() {
         return req;
     }
 
-    /**
-     * @return ID.
-     */
-    public long id() {
+    /** @return Test ID. */
+    public long testId() {
         return id;
     }
 
-    /**
-     * @return Request create timestamp.
-     */
-    public long requestCreateTs() {
-        return reqCreateTs;
+    /** Records request listener invocation. */
+    void onRequestProcessed() {
+        reqProcTs = System.nanoTime();
+    }
+
+    /** Records response listener invocation. */
+    void onResponseProcessed() {
+        resProcTs = System.nanoTime();
+    }
+
+    /** @return End-to-end RTT from request creation to response listener invocation, in nanoseconds. */
+    long roundTripNanos() {
+        return resProcTs - reqCreateTs;
+    }
+
+    /** @return Delay from request creation to request serialization start, in nanoseconds. */
+    long requestSendQueueNanos() {
+        return reqSndTs - reqCreateTs;
+    }
+
+    /** @return Delay from request deserialization completion to request listener invocation, in nanoseconds. */
+    long requestReceiveQueueNanos() {
+        return reqProcTs - reqRcvTs;
+    }
+
+    /** @return Delay from request listener invocation to response serialization start, in nanoseconds. */
+    long responseSendQueueNanos() {
+        return resSndTs - reqProcTs;
+    }
+
+    /** @return Delay from response deserialization completion to response listener invocation, in nanoseconds. */
+    long responseReceiveQueueNanos() {
+        return resProcTs - resRcvTs;
     }
 
     /**
-     * @return Request send timestamp.
+     * @return Estimated one-way request delay from serialization start on the source to deserialization completion on
+     *     the target, in milliseconds. Requires synchronized wall clocks.
      */
-    public long requestSendTs() {
-        return reqSndTs;
+    long requestWireTimeMillis() {
+        return reqRcvTsMillis - reqSndTsMillis;
     }
 
     /**
-     * @return Request receive timestamp.
+     * @return Estimated one-way response delay from serialization start on the target to deserialization completion on
+     *     the source, in milliseconds. Requires synchronized wall clocks.
      */
-    public long requestReceiveTs() {
-        return reqRcvTs;
+    long responseWireTimeMillis() {
+        return resRcvTsMillis - resSndTsMillis;
     }
 
-    /**
-     * @return Request process started timestamp.
-     */
-    public long requestProcessTs() {
-        return reqProcTs;
-    }
-
-    /**
-     * @return Response send timestamp.
-     */
-    public long responseSendTs() {
-        return resSndTs;
-    }
-
-    /**
-     * @return Response receive timestamp.
-     */
-    public long responseReceiveTs() {
-        return resRcvTs;
-    }
-
-    /**
-     * @return Request send timestamp (millis).
-     */
-    public long requestSendTsMillis() {
-        return reqSndTsMillis;
-    }
-
-    /**
-     * @return Request received timestamp (millis).
-     */
-    public long requestReceivedTsMillis() {
-        return reqRcvTsMillis;
-    }
-
-    /**
-     * @return Response received timestamp (millis).
-     */
-    public long responseReceivedTsMillis() {
-        return resRcvTsMillis;
-    }
-
-    /**
-     * This method is called to initialize tracing variables.
-     * TODO: introduce direct message lifecycle API?
-     */
-    public void onAfterRead() {
-        if (req && reqRcvTs == 0) {
-            reqRcvTs = System.nanoTime();
-
-            reqRcvTsMillis = System.currentTimeMillis();
-        }
-
-        if (!req && resRcvTs == 0) {
-            resRcvTs = System.nanoTime();
-
-            resRcvTsMillis = System.currentTimeMillis();
-        }
-    }
-
-    /**
-     * This method is called to initialize tracing variables.
-     * TODO: introduce direct message lifecycle API?
-     */
-    public void onBeforeWrite() {
+    /** Records the start of the first serialization attempt. */
+    void onBeforeWrite() {
         if (req && reqSndTs == 0) {
             reqSndTs = System.nanoTime();
-
             reqSndTsMillis = System.currentTimeMillis();
         }
-
-        if (!req && resSndTs == 0) {
+        else if (!req && resSndTs == 0) {
             resSndTs = System.nanoTime();
-
             resSndTsMillis = System.currentTimeMillis();
         }
     }
 
-    /**
-     *
-     */
-    public void copyDataFromRequest(IgniteIoTestMessage req) {
-        reqCreateTs = req.reqCreateTs;
-
-        reqSndTs = req.reqSndTs;
-        reqSndTsMillis = req.reqSndTsMillis;
-
-        reqRcvTs = req.reqRcvTs;
-        reqRcvTsMillis = req.reqRcvTsMillis;
-    }
-
-    /**
-     *
-     */
-    public void onRequestProcessed() {
-        reqProcTs = System.nanoTime();
-    }
-
-    /**
-     *
-     */
-    public void onResponseProcessed() {
-        resProcTs = System.nanoTime();
-    }
-
-    /**
-     * @return Response processed timestamp.
-     */
-    public long responseProcessedTs() {
-        return resProcTs;
-    }
-
-    /**
-     * @return Sender node ID.
-     */
-    public UUID senderNodeId() {
-        return sndNodeId;
-    }
-
-    /**
-     * @param sndNodeId Sender node ID.
-     */
-    public void senderNodeId(UUID sndNodeId) {
-        this.sndNodeId = sndNodeId;
+    /** Records the completion of deserialization. */
+    void onAfterRead() {
+        if (req && reqRcvTs == 0) {
+            reqRcvTs = System.nanoTime();
+            reqRcvTsMillis = System.currentTimeMillis();
+        }
+        else if (!req && resRcvTs == 0) {
+            resRcvTs = System.nanoTime();
+            resRcvTsMillis = System.currentTimeMillis();
+        }
     }
 
     /** {@inheritDoc} */

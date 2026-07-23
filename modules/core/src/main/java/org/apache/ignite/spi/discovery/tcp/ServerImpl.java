@@ -6182,8 +6182,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                         DiscoverySpiCustomMessage nextMsg = customMsg.ackMessage();
 
                         if (nextMsg != null) {
-                            TcpDiscoveryCustomEventMessage ackMsg = new TcpDiscoveryCustomEventMessage(
-                                getLocalNodeId(), nextMsg);
+                            TcpDiscoveryCustomEventMessage ackMsg = nextMsg instanceof DiscoveryServerOnlyCustomMessage
+                                ? new TcpDiscoveryServerOnlyCustomEventMessage(getLocalNodeId(), nextMsg)
+                                : new TcpDiscoveryCustomEventMessage(getLocalNodeId(), nextMsg);
 
                             ackMsg.topologyVersion(msg.topologyVersion());
                             ackMsg.opCtxMsg = operationCtxDispatcher.collectDistributedAttributeValues();
