@@ -56,7 +56,7 @@ It is important to understand that a healthy cluster may undergo planned topolog
 The key properties are:
 
 * The cluster is in the intended link:monitoring-metrics/cluster-states[state] and serves only the operations allowed by that state.
-* Baseline topology, when it is used or managed manually, matches the expected data-bearing server nodes.
+* link:clustering/baseline-topology[Baseline topology], when it is used or managed manually, matches the expected data-bearing server nodes.
 * Data remains consistent: link:tools/control-script#verifying-partition-checksums[`idle_verify`] reports no partition conflicts when the cluster is idle.
 * Expected nodes are present, with no unexpected or repeated node `JOIN`, `LEFT`, or `FAIL` events and no reported node segmentation.
 * link:configuring-caches/partition-loss-policy[Lost partitions] are absent.
@@ -71,7 +71,7 @@ Start with the link:monitoring-metrics/cluster-states[cluster state].
 In the examples below, `control.(sh|bat)` is documentation shorthand.
 Run `control.sh` on Unix-like systems or `control.bat` on Windows.
 
-Run:
+Run the link:tools/control-script#getting-cluster-state[cluster-state command]:
 
 [source,shell]
 ----
@@ -100,7 +100,7 @@ If autoadjustment is disabled, the baseline changes only after an operator chang
 If autoadjustment is configured with a non-zero timeout, the baseline is updated only after the topology remains unchanged for that timeout.
 In both cases, run `control.(sh|bat) --baseline` and compare `Baseline nodes` and `Other nodes` with the expected set of server nodes.
 
-Run:
+Run the link:tools/control-script#getting-nodes-registered-in-baseline-topology[baseline-topology command]:
 
 [source,shell]
 ----
@@ -228,7 +228,7 @@ GROUP BY STATE
 ORDER BY STATE;
 ----
 
-You can also track node-local cache-group metrics such as:
+You can also track link:monitoring-metrics/new-metrics#cache-groups[node-local cache-group metrics] such as:
 
 * `LocalNodeMovingPartitionsCount`
 * `LocalNodeRentingPartitionsCount`
@@ -274,7 +274,7 @@ If some nodes cannot be returned, exclude them from the baseline topology only a
 For example, assume that a partition has one primary and one backup copy on nodes A and B. If A leaves, B can continue accepting writes while it remains available.
 If B subsequently fails and only A returns, A can contain an older copy that does not include the writes accepted by B after A left.
 
-After restoring a complete and up-to-date partition copy, or after explicitly accepting that the unavailable updates cannot be recovered, reset the lost partitions:
+After restoring a complete and up-to-date partition copy, or after explicitly accepting that the unavailable updates cannot be recovered, use the link:tools/control-script#resetting-lost-partitions[reset-lost-partitions command]:
 
 [source,shell]
 ----
@@ -413,7 +413,7 @@ The problem starts when the application write rate exceeds the effective storage
 Under checkpoint-buffer or dirty-page pressure, Ignite can throttle update threads.
 If the checkpoint buffer is exhausted, update processing can stop until the checkpoint completes.
 
-Monitor these metrics for persistent data regions and data storage:
+Monitor the relevant link:monitoring-metrics/new-metrics#data-region-io[data-region] and link:monitoring-metrics/new-metrics#data-storage[data-storage] metrics:
 
 * `io.dataregion.<region>.DirtyPages`
 * `io.dataregion.<region>.CheckpointBufferSize`
@@ -451,7 +451,7 @@ LastCheckpointTotalPagesNumber
 ----
 
 Do not calculate this when `LastCheckpointPagesWriteDuration` is zero.
-Use the actually configured `DataStorageConfiguration.pageSize`; do not assume it is always 4 KiB.
+Use the actually configured link:perf-and-troubleshooting/persistence-tuning#adjusting-page-size[`DataStorageConfiguration.pageSize`]; do not assume it is always 4 KiB.
 This is an approximate estimate, not a full disk benchmark.
 Compare several checkpoints and check whether there is enough headroom for the normal write workload.
 
@@ -481,8 +481,8 @@ Investigate logs and failure handling for:
 * repeated striped-pool starvation warnings;
 * unexpected node restarts.
 
-Ignite reports critical failures to the configured failure handler, which can invalidate the node, initiate failover handling, stop the node, or terminate the JVM.
-On every server node, verify the configured `FailureHandler` and its `ignoredFailureTypes`.
+Ignite reports critical failures to the link:perf-and-troubleshooting/handling-exceptions#failures-handling[configured failure handler], which can invalidate the node, initiate failover handling, stop the node, or terminate the JVM.
+On every server node, verify the configured `FailureHandler` and its link:perf-and-troubleshooting/handling-exceptions#critical-workers-health-check[`ignoredFailureTypes`].
 
 If no handler is configured explicitly, Ignite uses `StopNodeOrHaltFailureHandler`. `AbstractFailureHandler` ignores `SYSTEM_WORKER_BLOCKED` and `SYSTEM_CRITICAL_OPERATION_TIMEOUT` by default.
 If the operating policy requires the handler to react to these failures, remove the corresponding values from `ignoredFailureTypes`.
@@ -490,7 +490,6 @@ If the operating policy requires the handler to react to these failures, remove 
 Check node logs for the configured handler at startup and for critical failure
 or suppressed-failure messages.
 
-See link:perf-and-troubleshooting/handling-exceptions[Handling Exceptions] for failure-handler behavior.
 No single local command guarantees the absence of split brain.
 Monitor membership from all expected monitoring points, and use logs and failure handling to detect segmentation and discovery failures.
 
