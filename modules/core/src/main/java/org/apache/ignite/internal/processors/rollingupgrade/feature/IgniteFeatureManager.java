@@ -38,9 +38,14 @@ public class IgniteFeatureManager {
 
     /**
      * During the RU process, updated nodes operate in accordance with both the old logical version (prior to RU completion)
-     * and the new one (after RU completion). This variable stores the features of the previous version  under which this
-     * node operated. After all node versions are upgraded its value become consistent across all cluster nodes. And after
-     * version finalization completed it is propagated to the joining nodes.
+     * and the new one (after RU completion). This variable stores the features of the previous version under which this
+     * node operated.
+     *
+     * <p>
+     *     If a node joins the cluster after the Rolling Upgrade has been finalized, this value is inherited from the
+     *     existing cluster nodes (after Rolling Upgrade finalization, all cluster nodes are guaranteed to hold the same
+     *     value for this field.
+     *</p>
      */
     @Nullable private volatile IgniteNodeFeatureSet prevActiveFeatures;
 
