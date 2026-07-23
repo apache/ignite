@@ -15,18 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util;
+package org.apache.ignite.internal.thread.context;
+
+import org.apache.ignite.internal.processors.security.SecurityContext;
 
 /**
- * Class cache.
+ * Declares reserved distributed IDs used to consistently identify {@link OperationContext} attributes across
+ * all nodes in the cluster.
  */
-public interface ClassCache {
-    /**
-     * Get class for the given name.
-     *
-     * @param clsName Class name.
-     * @return Class.
-     * @throws ClassNotFoundException If not found.
-     */
-    public Class<?> getFromCache(String clsName) throws ClassNotFoundException;
+public class DistributedAttributeRegistry {
+    /** Reserved for {@link SecurityContext} propagation. */
+    public static final byte SECURITY = 0;
 }
