@@ -49,7 +49,7 @@ queries with JOINs at massive scale and expect significant performance benefits.
 
 == How to assess cluster health
 
-Cluster health is a complex thing. Apache Ignite is capable of demonstrating great performance across different scenarios with varying loads. Therefore, in general terms, a healthy cluster is one whose behavior aligns with your expectations. However, there are some universal aspects that apply to all deployments and warrant attention.
+Cluster health is a complex set of metrics and states that need to be analyzed together. Apache Ignite is capable of demonstrating great performance across different scenarios with varying loads. Therefore, in general terms, a healthy cluster is one whose behavior aligns with your expectations. However, there are some universal aspects that apply to all deployments and warrant attention.
 
 It is important to understand that a healthy cluster may undergo planned topology changes or temporary load spikes.
 
@@ -60,7 +60,7 @@ The key properties are:
 * Data remains consistent: link:tools/control-script#verifying-partition-checksums[`idle_verify`] reports no partition conflicts when the cluster is idle.
 * Expected nodes are present, and no unexpected repeated node `JOIN`, `LEFT`, or `FAIL` events or node segmentation are reported.
 * link:configuring-caches/partition-loss-policy[Lost partitions] are absent.
-* The number and age of link:tools/control-script#transaction-management[long-running transactions] do not keep increasing; active link:data-modeling/data-partitioning#partition-map-exchange[Partition Map Exchanges (PMEs)] complete; link:monitoring-metrics/new-metrics-system#monitoring-rebalancing[rebalancing] finishes; link:monitoring-metrics/new-metrics-system#monitoring-checkpointing-operations[checkpoint-related metrics] and link:monitoring-metrics/new-metrics#thread-pools[executor queue sizes] return to their usual ranges after the link:monitoring-metrics/new-metrics-system#monitoring-topology[topology] has stabilized and the application workload has returned to its expected level.
+* The number and timeout of link:tools/control-script#transaction-management[long-running transactions] do not keep increasing; active link:data-modeling/data-partitioning#partition-map-exchange[Partition Map Exchanges (PMEs)] complete; link:monitoring-metrics/new-metrics-system#monitoring-rebalancing[rebalancing] finishes; link:monitoring-metrics/new-metrics-system#monitoring-checkpointing-operations[checkpoint-related metrics] and link:monitoring-metrics/new-metrics#thread-pools[executor queue sizes] return to their usual ranges after the link:monitoring-metrics/new-metrics-system#monitoring-topology[topology] has stabilized and the application workload has returned to its expected level.
 There is no single command or metric that proves cluster health for every deployment.
 
 Use several signals together.
@@ -207,7 +207,7 @@ Conflict partition: PartitionKey [grpId=1544803905, grpName=default, partId=5]
 
 The command compares partition update counters and partition hashes between primary and backup copies.
 Run it only when data updates are stopped.
-If updates are active, the command can report false conflicts because copies are changing while hashes are being calculated.
+If updates are active, the command can report false positive conflicts because copies are changing while hashes are being calculated.
 Partitions in `MOVING` or `LOST` state may be skipped, so the result can be incomplete.
 A successful `idle_verify` result is an important confirmation of consistency, but it still does not prove overall cluster health check success.
 
@@ -249,7 +249,7 @@ WHERE STATE IN ('MOVING', 'RENTING', 'LOST')
 ORDER BY STATE, CACHE_GROUP_ID, PARTITION_ID, NODE_ID;
 ----
 
-In steady state, this query usually should not return `MOVING`, `RENTING`, or `LOST` rows.
+In stable cluster state, this query usually should not return `MOVING`, `RENTING`, or `LOST` rows.
 `MOVING` and `RENTING` are expected right after an intended topology or cache event, but their count should decrease.
 `LOST` is not a normal transient state.
 
@@ -422,7 +422,7 @@ Monitor these metrics for persistent data regions and data storage:
 * `io.datastorage.LastCheckpointTotalPagesNumber`
 * `io.datastorage.LastCheckpointFsyncDuration`
 
-It looks like this in ignite.log
+Corresponding records in <SOME_formatting ? bold ? italic ?>ignite.log looks like as follows:
 
 [source,shell]
 ----
