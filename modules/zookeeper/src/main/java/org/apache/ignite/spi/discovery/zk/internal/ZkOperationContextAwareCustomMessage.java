@@ -17,10 +17,10 @@
 
 package org.apache.ignite.spi.discovery.zk.internal;
 
-import org.apache.ignite.internal.OperationContextMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
+import org.apache.ignite.internal.thread.context.OperationContextMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;

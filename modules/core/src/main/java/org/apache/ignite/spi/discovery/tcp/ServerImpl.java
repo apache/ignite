@@ -3021,7 +3021,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (!fromSocket)
-                msg.opCtxMsg = operationCtxDispatcher.collectDistributedAttributes();
+                msg.opCtxMsg = operationCtxDispatcher.collectDistributedAttributeValues();
 
             if (msg instanceof TraceableMessage tMsg) {
 
@@ -3293,7 +3293,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (msg == WAKEUP)
                 return;
 
-            try (Scope ignored = operationCtxDispatcher.restoreDistributedAttributes(msg.opCtxMsg)) {
+            try (Scope ignored = operationCtxDispatcher.restoreRemoteAttributeValues(msg.opCtxMsg)) {
                 processMessage0(msg);
             }
         }
@@ -6186,6 +6186,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 getLocalNodeId(), nextMsg);
 
                             ackMsg.topologyVersion(msg.topologyVersion());
+                            ackMsg.opCtxMsg = operationCtxDispatcher.collectDistributedAttributeValues();
 
                             processCustomMessage(ackMsg, waitForNotification);
                         }

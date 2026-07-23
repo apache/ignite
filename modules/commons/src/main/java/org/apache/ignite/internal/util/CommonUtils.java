@@ -855,9 +855,7 @@ public abstract class CommonUtils {
             return cls;
 
         if (ldr != null) {
-            if (ldr instanceof ClassCache)
-                return ((ClassCache)ldr).getFromCache(clsName);
-            else if (!useCache) {
+            if (!useCache) {
                 cls = Class.forName(clsName, true, ldr);
 
                 return cls;
