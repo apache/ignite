@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.security.TestDiscoveryAcknowledgeMessage;
 import org.apache.ignite.internal.processors.security.TestDiscoveryMessage;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.spi.MessagesPluginProvider;
@@ -56,6 +57,7 @@ import static org.apache.ignite.internal.thread.context.OperationContextAttribut
 import static org.apache.ignite.internal.thread.context.OperationContextAttributePropagationTest.TestIgniteComponent.DFLT_USR;
 import static org.apache.ignite.internal.thread.context.OperationContextAttributePropagationTest.TestIgniteComponent.PTR_ATTR;
 import static org.apache.ignite.internal.thread.context.OperationContextAttributePropagationTest.TestIgniteComponent.USR_ATTR;
+import static org.apache.ignite.internal.thread.context.OperationContextAttributePropagationTest.TestIgniteComponent.discoveryDataExchangeStartedLatch;
 import static org.apache.ignite.internal.thread.context.OperationContextAttributePropagationTest.TestIgniteComponent.discoveryDataExchangeUnblockedLatch;
 import static org.apache.ignite.internal.thread.context.OperationContextDispatcher.MAX_ATTRS_CNT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
@@ -119,10 +121,13 @@ public class OperationContextAttributePropagationTest extends GridCommonAbstract
         WALPointer ptrVal = new WALPointer(1, 1, 1);
         User usrVal = User.create("1", "1");
 
+        TestIgniteComponent.discoveryDataExchangeStartedLatch = new CountDownLatch(1);
         TestIgniteComponent.discoveryDataExchangeUnblockedLatch = new CountDownLatch(1);
 
         try {
             IgniteInternalFuture<?> startFut = GridTestUtils.runAsync(() -> startGrid(3));
+
+            assertTrue(discoveryDataExchangeStartedLatch.await(getTestTimeout(), MILLISECONDS));
 
             setLoggerDebugLevel();
 
@@ -177,14 +182,13 @@ public class OperationContextAttributePropagationTest extends GridCommonAbstract
                     }
                 };
 
-                User msg0 = User.create("0", "0");
-                User msg1 = User.create("1", "1");
+                User msg0 = User.create("1", "1");
+                User msg1 = User.create("2", "2");
 
                 to.context().io().removeMessageListener(TOPIC_IO_TEST);
                 to.context().io().addMessageListener(TOPIC_IO_TEST, lsnr);
 
                 try {
-
                     try (Scope ignored = OperationContext.set(USR_ATTR, msg0)) {
                         from.context().io().sendOrderedMessage(node(from, to), TOPIC_IO_TEST, msg0, SYSTEM_POOL, 5_000, false);
                     }
@@ -345,6 +349,9 @@ public class OperationContextAttributePropagationTest extends GridCommonAbstract
         public static CountDownLatch discoveryDataExchangeUnblockedLatch;
 
         /** */
+        public static CountDownLatch discoveryDataExchangeStartedLatch;
+
+        /** */
         public static final WALPointer DFLT_PTR = new WALPointer(0, 0, 0);
 
         /** */
@@ -356,6 +363,9 @@ public class OperationContextAttributePropagationTest extends GridCommonAbstract
         /** */
         public static final OperationContextAttribute<User> USR_ATTR = newInstance(DFLT_USR);
 
+        /** */
+        private GridKernalContext ctx;
+
         /** {@inheritDoc} */
         @Override public String name() {
             return "TestDistributedOperationContextAttributesRegistrator";
@@ -363,8 +373,13 @@ public class OperationContextAttributePropagationTest extends GridCommonAbstract
 
         /** {@inheritDoc} */
         @Override public @Nullable Serializable provideDiscoveryData(UUID nodeId) {
-            if (discoveryDataExchangeUnblockedLatch != null) {
+            if (discoveryDataExchangeStartedLatch != null
+                && !ctx.localNodeId().equals(nodeId)
+                && !U.isLocalNodeCoordinator(ctx.discovery())
+            ) {
                 try {
+                    discoveryDataExchangeStartedLatch.countDown();
+
                     assertTrue(discoveryDataExchangeUnblockedLatch.await(5_000, MILLISECONDS));
                 }
                 catch (InterruptedException e) {
@@ -377,15 +392,15 @@ public class OperationContextAttributePropagationTest extends GridCommonAbstract
 
         /** {@inheritDoc} */
         @Override public void start(PluginContext ctx) {
-            GridKernalContext kctx = ((IgniteEx)ctx.grid()).context();
+            this.ctx = ((IgniteEx)ctx.grid()).context();
 
-            kctx.operationContextDispatcher().registerDistributedAttribute(MAX_ATTRS_CNT - 1, USR_ATTR);
-            kctx.operationContextDispatcher().registerDistributedAttribute(0, PTR_ATTR);
+            this.ctx.operationContextDispatcher().registerDistributedAttribute(MAX_ATTRS_CNT - 1, USR_ATTR);
+            this.ctx.operationContextDispatcher().registerDistributedAttribute(0, PTR_ATTR);
 
             assertThrowsAnyCause(
                 log,
                 () -> {
-                    kctx.operationContextDispatcher().registerDistributedAttribute(MAX_ATTRS_CNT - 1, PTR_ATTR);
+                    this.ctx.operationContextDispatcher().registerDistributedAttribute(MAX_ATTRS_CNT - 1, PTR_ATTR);
                     return null;
 
                 }, IgniteException.class,
