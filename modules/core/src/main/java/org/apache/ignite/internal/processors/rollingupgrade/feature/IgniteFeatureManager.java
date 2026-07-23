@@ -44,7 +44,7 @@ public class IgniteFeatureManager {
      * <p>
      *     If a node joins the cluster after the Rolling Upgrade has been finalized, this value is inherited from the
      *     existing cluster nodes (after Rolling Upgrade finalization, all cluster nodes are guaranteed to hold the same
-     *     value for this field.
+     *     value for this field).
      *</p>
      */
     @Nullable private volatile IgniteNodeFeatureSet prevActiveFeatures;
