@@ -23,7 +23,7 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.processors.tracing.messages.SpanTransport;
-import org.apache.ignite.internal.thread.context.OperationContextMessage;
+import org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage;
 import org.apache.ignite.internal.util.nio.GridNioServer.MessageWrapper;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -69,7 +69,7 @@ public class GridIoMessage implements Message, SpanTransport, MessageWrapper {
     /** Effective operation context attributes to propagate. */
     @Order(7)
     @GridToStringInclude
-    public @Nullable OperationContextMessage opCtxMsg;
+    @Nullable OperationContextSnapshotMessage opCtxSnp;
 
     /**
      * Default constructor.
@@ -85,6 +85,7 @@ public class GridIoMessage implements Message, SpanTransport, MessageWrapper {
      * @param ordered Message ordered flag.
      * @param timeout Timeout.
      * @param skipOnTimeout Whether message can be skipped on timeout.
+     * @param opCtxSnp Operation Context snapshot.
      */
     public GridIoMessage(
         byte plc,
@@ -92,7 +93,8 @@ public class GridIoMessage implements Message, SpanTransport, MessageWrapper {
         Message msg,
         boolean ordered,
         long timeout,
-        boolean skipOnTimeout
+        boolean skipOnTimeout,
+        @Nullable OperationContextSnapshotMessage opCtxSnp
     ) {
         assert topic != null;
         assert msg != null;
@@ -103,6 +105,7 @@ public class GridIoMessage implements Message, SpanTransport, MessageWrapper {
         this.ordered = ordered;
         this.timeout = timeout;
         this.skipOnTimeout = skipOnTimeout;
+        this.opCtxSnp = opCtxSnp;
     }
 
     /**

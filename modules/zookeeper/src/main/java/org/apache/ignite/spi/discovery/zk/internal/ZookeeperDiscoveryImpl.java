@@ -67,7 +67,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
-import org.apache.ignite.internal.thread.context.OperationContextMessage;
+import org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.GridLongList;
@@ -669,10 +669,10 @@ public class ZookeeperDiscoveryImpl {
 
     /** */
     public void sendCustomEvent(DiscoverySpiCustomMessage msg) {
-        OperationContextMessage opCtx = opCtxDispatcher.collectDistributedAttributeValues();
+        OperationContextSnapshotMessage opCtxSnp = opCtxDispatcher.createSnapshot();
 
-        if (opCtx != null)
-            sendCustomMessage(new ZkOperationContextAwareCustomMessage(msg, opCtx));
+        if (opCtxSnp != null)
+            sendCustomMessage(new ZkOperationContextAwareCustomMessage(msg, opCtxSnp));
         else
             sendCustomMessage(msg);
     }
@@ -3528,10 +3528,10 @@ public class ZookeeperDiscoveryImpl {
      * @param msg Custom message to process. Can be a {@link ZkOperationContextAwareCustomMessage}.
      */
     private void notifyCustomEvent(final ZkDiscoveryCustomEventData evtData, DiscoverySpiCustomMessage msg) {
-        OperationContextMessage opCtxMsg = null;
+        OperationContextSnapshotMessage opCtxSnp = null;
 
         if (msg instanceof ZkOperationContextAwareCustomMessage) {
-            opCtxMsg = ((ZkOperationContextAwareCustomMessage)msg).opCtxMsg;
+            opCtxSnp = ((ZkOperationContextAwareCustomMessage)msg).opCtxSnp;
             msg = ((ZkOperationContextAwareCustomMessage)msg).delegate;
         }
 
@@ -3548,7 +3548,7 @@ public class ZookeeperDiscoveryImpl {
 
         IgniteFuture<?> fut;
 
-        try (Scope ignored = opCtxDispatcher.restoreRemoteAttributeValues(opCtxMsg)) {
+        try (Scope ignored = opCtxDispatcher.restoreSnapshot(opCtxSnp)) {
             fut = lsnr.onDiscovery(
                 new DiscoveryNotification(
                     DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,

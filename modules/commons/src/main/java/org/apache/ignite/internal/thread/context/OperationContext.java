@@ -113,7 +113,7 @@ public class OperationContext {
         OperationContextAttribute<T1> attr1, T1 val1,
         OperationContextAttribute<T2> attr2, T2 val2
     ) {
-        return ContextUpdater.create().set(attr1, val1).set(attr2, val2).apply();
+        return Updater.create().set(attr1, val1).set(attr2, val2).apply();
     }
 
     /**
@@ -136,7 +136,7 @@ public class OperationContext {
         OperationContextAttribute<T2> attr2, T2 val2,
         OperationContextAttribute<T3> attr3, T3 val3
     ) {
-        return ContextUpdater.create().set(attr1, val1).set(attr2, val2).set(attr3, val3).apply();
+        return Updater.create().set(attr1, val1).set(attr2, val2).set(attr3, val3).apply();
     }
 
     /**
@@ -322,49 +322,88 @@ public class OperationContext {
     }
 
     /** Allows to change multiple attribute values in a single update operation and skip updates that changes nothing. */
-    static class ContextUpdater {
+    static class Updater extends AttributeCollector {
         /** */
-        private static final int INIT_UPDATES_CAPACITY = 3;
-
-        /** */
-        private final OperationContext ctx;
-
-        /** */
-        private List<AttributeValueHolder<?>> updates;
-
-        /** */
-        private ContextUpdater(OperationContext ctx) {
-            this.ctx = ctx;
+        private Updater(OperationContext ctx) {
+            super(ctx);
         }
 
         /** */  
-        <T> ContextUpdater set(OperationContextAttribute<T> attr, T val) {
+        <T> Updater set(OperationContextAttribute<T> attr, T val) {
             if (ctx.getInternal(attr) == val)
                 return this;
 
-            if (updates == null)
-                updates = new ArrayList<>(INIT_UPDATES_CAPACITY);
-
-            updates.add(new AttributeValueHolder<>(attr, val));
+            add(attr, val);
 
             return this;
         }
 
         /** */
         Scope apply() {
-            if (F.isEmpty(updates))
-                return NOOP_SCOPE;
-
-            AttributeValueHolder<?>[] sealedUpdates = new AttributeValueHolder[updates.size()];
-
-            updates.toArray(sealedUpdates);
-
-            return ctx.applyAttributeUpdates(sealedUpdates);
+            return isEmpty() ? NOOP_SCOPE : ctx.applyAttributeUpdates(toArray());
         }
 
         /** */
-        static ContextUpdater create() {
-            return new ContextUpdater(INSTANCE.get());
+        static Updater create() {
+            return new Updater(INSTANCE.get());
+        }
+    }
+
+    /** */
+    static class Restorer extends AttributeCollector {
+        /** */
+        Restorer(OperationContext ctx) {
+            super(ctx);
+        }
+
+        /** */
+        Scope restore() {
+            return ctx.restoreSnapshotInternal(isEmpty() ? null : ctx.new Update(toArray(), null));
+        }
+
+        /** */
+        static Restorer create() {
+            return new Restorer(INSTANCE.get());
+        }
+
+        /** */
+        static Scope restoreEmpty() {
+            return new Restorer(INSTANCE.get()).restore();
+        }
+    }
+
+    /** */
+    private abstract static class AttributeCollector {
+        /** */
+        private static final int INIT_CAPACITY = 3;
+
+        /** */
+        protected final OperationContext ctx;
+
+        /** */
+        private List<AttributeValueHolder<?>> attrs;
+
+        /** */
+        protected AttributeCollector(OperationContext ctx) {
+            this.ctx = ctx;
+        }
+
+        /** */
+        <T> void add(OperationContextAttribute<T> attr, T val) {
+            if (attrs == null)
+                attrs = new ArrayList<>(INIT_CAPACITY);
+
+            attrs.add(new AttributeValueHolder<>(attr, val));
+        }
+
+        /** */
+        boolean isEmpty() {
+            return F.isEmpty(attrs);
+        }
+
+        /** */
+        protected AttributeValueHolder<?>[] toArray() {
+            return attrs.toArray(AttributeValueHolder<?>[]::new);
         }
     }
 }

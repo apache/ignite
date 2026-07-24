@@ -23,7 +23,7 @@ import org.apache.ignite.internal.processors.security.SecurityContext;
  * Declares reserved distributed IDs used to consistently identify {@link OperationContext} attributes across
  * all nodes in the cluster.
  */
-public class DistributedAttributeRegistry {
-    /** Reserved for {@link SecurityContext} propagation. */
+public class DistributedAttributeIdRegistry {
+    /** ID Reserved for {@link SecurityContext} propagation. */
     public static final byte SECURITY = 0;
 }
