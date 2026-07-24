@@ -66,26 +66,29 @@ public class ContinuousDataLoadApplication extends IgniteAwareApplication {
         int loaded = 0;
 
         while (active()) {
-            try (Transaction tx = cfg.transactional ? ignite.transactions().txStart() : null) {
-                for (int i = 0; i < cfg.range && active(); ++i) {
-                    if (skipDataKey(i))
-                        continue;
+            for (int i = 0; i < cfg.range && active(); ++i) {
+                if (skipDataKey(i))
+                    continue;
 
+                try (Transaction tx = cfg.transactional ? ignite.transactions().txStart() : null) {
                     cache.put(i, i);
 
                     ++loaded;
 
-                    if (notifyTime + TimeUnit.MILLISECONDS.toNanos(1500) < System.nanoTime())
+                    if (notifyTime + TimeUnit.MILLISECONDS.toNanos(1500) < System.nanoTime()) {
+                        log.debug("Put " + loaded + " entries into " + cache.getName());
+
                         notifyTime = System.nanoTime();
+                    }
 
                     // Delayed notify of the initialization to make sure the data load has completelly began and
                     // has produced some valuable amount of data.
                     if (!inited() && warmUpCnt == loaded)
                         markInitialized();
-                }
 
-                if (tx != null && active())
-                    tx.commit();
+                    if (tx != null && active())
+                        tx.commit();
+                }
             }
         }
 
