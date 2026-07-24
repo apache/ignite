@@ -167,8 +167,7 @@ public class IsolatedDiscoverySpi extends IgniteSpiAdapter implements IgniteDisc
                 locNode,
                 singleton(locNode),
                 null,
-                msg,
-                null));
+                msg));
 
             // Acknowledge message must be send after initial message processed.
             fut.listen((f) -> {
@@ -181,8 +180,7 @@ public class IsolatedDiscoverySpi extends IgniteSpiAdapter implements IgniteDisc
                         locNode,
                         singleton(locNode),
                         null,
-                        ack,
-                        null))
+                        ack))
                     );
                 }
             });

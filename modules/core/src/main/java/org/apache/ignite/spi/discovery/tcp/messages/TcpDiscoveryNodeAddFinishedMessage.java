@@ -20,6 +20,7 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -33,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
  */
 @TcpDiscoveryEnsureDelivery
 @TcpDiscoveryRedirectToClient
-public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTraceableMessage {
+public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractMessage implements MarshallableMessage {
     /** Added node ID. */
     @Order(0)
     UUID nodeId;

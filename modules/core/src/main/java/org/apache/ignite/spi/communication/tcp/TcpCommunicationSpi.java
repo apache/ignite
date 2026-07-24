@@ -46,7 +46,6 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
-import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
@@ -639,7 +638,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             log,
             cfg,
             attributeNames,
-            tracing,
             nodeGetter,
             locNodeSupplier,
             connectGate,
@@ -1122,8 +1120,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
      * @param msgC Closure to call when message processing finished.
      */
     protected void notifyListener(UUID sndId, Message msg, IgniteRunnable msgC) {
-        MTC.span().addLog(() -> "Communication listeners notified");
-
         if (this.lsnr != null)
             // Notify listener of a new message.
             this.lsnr.onMessage(sndId, msg, msgC);

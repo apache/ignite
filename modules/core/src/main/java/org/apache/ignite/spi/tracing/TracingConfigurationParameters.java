@@ -20,12 +20,19 @@ package org.apache.ignite.spi.tracing;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.Set;
-import org.apache.ignite.internal.processors.tracing.Span;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Set of tracing configuration parameters like sampling rate or included scopes.
+ *
+ * <p><b>WARNING:</b> This class MUST NOT be removed without considering PDS backward compatibility. Instances of this
+ * class were stored in the distributed MetaStorage under the {@code "tr.config"} key. Since distributed MetaStorage values
+ * can be written to the PDS, removing this class may prevent existing PDS from being deserialized.</p>
+ *
+ * @deprecated The Ignite Tracing is deprecated and subject to removal in a future release. Ignite Tracing has been
+ * retired in favor of Ignite Performance Statistics and Ignite Metrics.
  */
+@Deprecated(forRemoval = true)
 public class TracingConfigurationParameters implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -47,7 +54,6 @@ public class TracingConfigurationParameters implements Serializable {
      * In other words, if the child's span scope is equal to parent's scope
      * or it belongs to the parent's span included scopes, then the given child span will be attached to the current trace,
      * otherwise it'll be skipped.
-     * See {@link Span#isChainable(Scope)} for more details.
      */
     private final Set<Scope> includedScopes;
 
@@ -60,7 +66,6 @@ public class TracingConfigurationParameters implements Serializable {
      *  In other words, if child's span scope is equals to parent's scope
      *  or it belongs to the parent's span included scopes, then given child span will be attached to the current trace,
      *  otherwise it'll be skipped.
-     *  See {@link Span#isChainable(Scope)} for more details.
      */
     private TracingConfigurationParameters(double samplingRate,
         Set<Scope> includedScopes) {
@@ -71,7 +76,10 @@ public class TracingConfigurationParameters implements Serializable {
     /**
      * @return Number between 0 and 1 that more or less reflects the probability of sampling specific trace.
      * 0 and 1 have special meaning here, 0 means never 1 means always. Default value is 0 (never).
+     * @deprecated The Ignite Tracing is deprecated and subject to removal in a future release. Ignite Tracing has been
+     * retired in favor of Ignite Performance Statistics and Ignite Metrics.
      */
+    @Deprecated(forRemoval = true)
     public double samplingRate() {
         return samplingRate;
     }
@@ -81,9 +89,11 @@ public class TracingConfigurationParameters implements Serializable {
      * In other words, if child's span scope is equals to parent's scope
      * or it belongs to the parent's span included scopes, then given child span will be attached to the current trace,
      * otherwise it'll be skipped.
-     * See {@link Span#isChainable(Scope)} for more details.
      * If no scopes are specified, empty set will be returned.
+     * @deprecated The Ignite Tracing is deprecated and subject to removal in a future release. Ignite Tracing has been
+     * retired in favor of Ignite Performance Statistics and Ignite Metrics.
      */
+    @Deprecated(forRemoval = true)
     public @NotNull Set<Scope> includedScopes() {
         return Collections.unmodifiableSet(includedScopes);
     }
@@ -104,7 +114,10 @@ public class TracingConfigurationParameters implements Serializable {
 
     /**
      * {@code TracingConfigurationParameters} builder.
+     * @deprecated The Ignite Tracing is deprecated and subject to removal in a future release. Ignite Tracing has been
+     * retired in favor of Ignite Performance Statistics and Ignite Metrics.
      */
+    @Deprecated(forRemoval = true)
     @SuppressWarnings("PublicInnerClass") public static class Builder {
         /** Counterpart of {@code TracingConfigurationParameters} samplingRate. */
         private double samplingRate;
@@ -118,7 +131,10 @@ public class TracingConfigurationParameters implements Serializable {
          * @param samplingRate Number between 0 and 1 that more or less reflects the probability of sampling specific trace.
          * 0 and 1 have special meaning here, 0 means never 1 means always. Default value is 0 (never).
          * @return {@code TracingConfigurationParameters} instance.
+         * @deprecated The Ignite Tracing is deprecated and subject to removal in a future release. Ignite Tracing has been
+         * retired in favor of Ignite Performance Statistics and Ignite Metrics.
          */
+        @Deprecated(forRemoval = true)
         public @NotNull Builder withSamplingRate(double samplingRate) {
             if (samplingRate < SAMPLING_RATE_NEVER || samplingRate > SAMPLING_RATE_ALWAYS) {
                 throw new IllegalArgumentException("Specified sampling rate=[" + samplingRate + "] has invalid value." +
@@ -136,9 +152,11 @@ public class TracingConfigurationParameters implements Serializable {
          * In other words, if child's span scope is equals to parent's scope
          * or it belongs to the parent's span included scopes, then given child span will be attached to the current trace,
          * otherwise it'll be skipped.
-         * See {@link Span#isChainable(Scope)} for more details.
          * @return {@code TracingConfigurationParameters} instance.
+         * @deprecated The Ignite Tracing is deprecated and subject to removal in a future release. Ignite Tracing has been
+         * retired in favor of Ignite Performance Statistics and Ignite Metrics.
          */
+        @Deprecated(forRemoval = true)
         public @NotNull Builder withIncludedScopes(Set<Scope> includedScopes) {
             this.includedScopes = includedScopes == null ? Collections.emptySet() : includedScopes;
 
@@ -149,7 +167,10 @@ public class TracingConfigurationParameters implements Serializable {
          * Builder's build() method.
          *
          * @return {@code TracingConfigurationParameters} instance.
+         * @deprecated The Ignite Tracing is deprecated and subject to removal in a future release. Ignite Tracing has been
+         * retired in favor of Ignite Performance Statistics and Ignite Metrics.
          */
+        @Deprecated(forRemoval = true)
         public TracingConfigurationParameters build() {
             return new TracingConfigurationParameters(samplingRate, includedScopes);
         }

@@ -53,11 +53,8 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteTooManyOpenFilesException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
-import org.apache.ignite.internal.managers.GridManager;
-import org.apache.ignite.internal.managers.tracing.GridTracingManager;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
-import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.function.ThrowableBiFunction;
@@ -75,7 +72,6 @@ import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioServerListener;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
-import org.apache.ignite.internal.util.nio.GridNioTracerFilter;
 import org.apache.ignite.internal.util.nio.GridSelectorNioSessionImpl;
 import org.apache.ignite.internal.util.nio.GridTcpNioCommunicationClient;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
@@ -151,9 +147,6 @@ public class GridNioServerWrapper {
 
     /** Attribute names. */
     private final AttributeNames attrs;
-
-    /** Tracing. */
-    private final Tracing tracing;
 
     /** Node getter. */
     private final Function<UUID, ClusterNode> nodeGetter;
@@ -238,7 +231,6 @@ public class GridNioServerWrapper {
      * @param log Logger.
      * @param cfg Config.
      * @param attributeNames Attribute names.
-     * @param tracing Tracing.
      * @param nodeGetter Node getter.
      * @param locNodeSupplier Local node supplier.
      * @param connectGate Connect gate.
@@ -256,7 +248,6 @@ public class GridNioServerWrapper {
         IgniteLogger log,
         TcpCommunicationConfiguration cfg,
         AttributeNames attributeNames,
-        Tracing tracing,
         Function<UUID, ClusterNode> nodeGetter,
         Supplier<ClusterNode> locNodeSupplier,
         ConnectGateway connectGate,
@@ -275,7 +266,6 @@ public class GridNioServerWrapper {
         this.log = log;
         this.cfg = cfg;
         this.attrs = attributeNames;
-        this.tracing = tracing;
         this.nodeGetter = nodeGetter;
         this.locNodeSupplier = locNodeSupplier;
         this.connectGate = connectGate;
@@ -903,9 +893,6 @@ public class GridNioServerWrapper {
 
                 List<GridNioFilter> filters = new ArrayList<>();
 
-                if (tracing instanceof GridTracingManager && ((GridManager)tracing).enabled())
-                    filters.add(new GridNioTracerFilter(log, tracing));
-
                 filters.add(new GridNioCodecFilter(parser, log, true));
                 filters.add(new GridConnectionBytesVerifyFilter(log));
 
@@ -951,7 +938,6 @@ public class GridNioServerWrapper {
                     .writerFactory(writerFactory)
                     .skipRecoveryPredicate(skipRecoveryPred)
                     .messageQueueSizeListener(queueSizeMonitor)
-                    .tracing(tracing)
                     .readWriteSelectorsAssign(cfg.usePairedConnections())
                     .messageFactory(msgFactory);
 

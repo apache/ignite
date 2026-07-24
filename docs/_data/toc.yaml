@@ -450,8 +450,6 @@
       url: monitoring-metrics/system-views
     - title: Performance Statistics
       url: monitoring-metrics/performance-statistics
-    - title: Tracing
-      url: monitoring-metrics/tracing
 - title: Working with Events
   items:
     - title: Enabling and Listenting to Events

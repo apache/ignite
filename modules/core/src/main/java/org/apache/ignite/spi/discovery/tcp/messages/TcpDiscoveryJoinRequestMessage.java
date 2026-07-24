@@ -28,7 +28,7 @@ import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
  * Initial message sent by a node that wants to enter topology.
  * Sent to random node during SPI start. Then forwarded directly to coordinator.
  */
-public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceableMessage {
+public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractMessage {
     /** New node that wants to join the topology. */
     @Order(0)
     TcpDiscoveryNode node;

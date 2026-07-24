@@ -27,7 +27,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
  */
 @TcpDiscoveryEnsureDelivery
 @TcpDiscoveryRedirectToClient
-public class TcpDiscoveryNodeLeftMessage extends TcpDiscoveryAbstractTraceableMessage {
+public class TcpDiscoveryNodeLeftMessage extends TcpDiscoveryAbstractMessage {
     /** Constructor for {@link MessageFactory}. */
     public TcpDiscoveryNodeLeftMessage() {
         // No-op.

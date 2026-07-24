@@ -40,7 +40,6 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTx
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxMapping;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
-import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -59,7 +58,6 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteReducer;
 import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
-import static org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
 import static org.apache.ignite.transactions.TransactionState.PREPARING;
 
@@ -138,24 +136,22 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
      * @param e Error.
      */
     private void onError(@Nullable GridDistributedTxMapping m, Throwable e) {
-        try (TraceSurroundings ignored = MTC.support(span)) {
-            if (X.hasCause(e, ClusterTopologyCheckedException.class) || X.hasCause(e, ClusterTopologyException.class)) {
-                if (tx.onePhaseCommit()) {
-                    tx.markForBackupCheck();
+        if (X.hasCause(e, ClusterTopologyCheckedException.class) || X.hasCause(e, ClusterTopologyException.class)) {
+            if (tx.onePhaseCommit()) {
+                tx.markForBackupCheck();
 
-                    onComplete();
+                onComplete();
 
-                    return;
-                }
+                return;
             }
-
-            if (e instanceof IgniteTxOptimisticCheckedException) {
-                if (m != null)
-                    tx.removeMapping(m.primary().id());
-            }
-
-            prepareError(e);
         }
+
+        if (e instanceof IgniteTxOptimisticCheckedException) {
+            if (m != null)
+                tx.removeMapping(m.primary().id());
+        }
+
+        prepareError(e);
     }
 
     /**
@@ -180,19 +176,17 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
     /** {@inheritDoc} */
     @Override public boolean onDone(IgniteInternalTx t, Throwable err) {
-        try (TraceSurroundings ignored = MTC.support(span)) {
-            if (isDone())
-                return false;
+        if (isDone())
+            return false;
 
-            if (err != null) {
-                ERR_UPD.compareAndSet(this, null, err);
+        if (err != null) {
+            ERR_UPD.compareAndSet(this, null, err);
 
-                if (keyLockFut != null)
-                    keyLockFut.onDone(err);
-            }
-
-            return onComplete();
+            if (keyLockFut != null)
+                keyLockFut.onDone(err);
         }
+
+        return onComplete();
     }
 
     /**

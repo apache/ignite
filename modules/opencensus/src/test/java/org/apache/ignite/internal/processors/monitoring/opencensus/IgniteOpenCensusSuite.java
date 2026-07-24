@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.monitoring.opencensus;
 
-import org.apache.ignite.TracingConfigurationValidationTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -26,19 +25,7 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    OpenCensusMetricExporterSpiTest.class,
-    OpenCensusTracingSpiTest.class,
-    OpenCensusTxTracingTest.class,
-    MixedTracingSpiTest.class,
-    TracingConfigurationValidationTest.class,
-    OpenCensusTxTracingConfigurationTest.class,
-    OpenCensusTracingConfigurationGetTest.class,
-    OpenCensusTracingConfigurationGetAllTest.class,
-    OpenCensusTracingConfigurationResetTest.class,
-    OpenCensusTracingConfigurationResetAllTest.class,
-    OpenCensusDiscoveryTracingTest.class,
-    OpenCensusSqlJdbcTracingTest.class,
-    OpenCensusSqlNativeTracingTest.class
+    OpenCensusMetricExporterSpiTest.class
 })
 public class IgniteOpenCensusSuite {
 }

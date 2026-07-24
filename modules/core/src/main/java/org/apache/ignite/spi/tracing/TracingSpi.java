@@ -23,7 +23,11 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Tracing SPI interface.
+ *
+ * @deprecated The Ignite Tracing is deprecated and subject to removal in a future release. Ignite Tracing has been
+ * retired in favor of Ignite Performance Statistics and Ignite Metrics.
  */
+@Deprecated(forRemoval = true)
 public interface TracingSpi<S extends SpiSpecificSpan> extends IgniteSpi {
     /**
      * Creates Span given name and explicit parent.

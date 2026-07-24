@@ -19,7 +19,11 @@ package org.apache.ignite.spi.tracing;
 
 /**
  * Tracing span scope.
+ *
+ * @deprecated The Ignite Tracing is deprecated and subject to removal in a future release. Ignite Tracing has been
+ * retired in favor of Ignite Performance Statistics and Ignite Metrics.
  */
+@Deprecated(forRemoval = true)
 public enum Scope {
     /** Discovery scope. */
     DISCOVERY((short)1),

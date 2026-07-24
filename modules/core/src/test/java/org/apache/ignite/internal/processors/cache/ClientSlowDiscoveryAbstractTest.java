@@ -93,8 +93,6 @@ abstract class ClientSlowDiscoveryAbstractTest extends GridCommonAbstractTest {
             TcpDiscoveryCustomEventMessage cm = (TcpDiscoveryCustomEventMessage)msg;
 
             try {
-                cm.finishUnmarshal(marshaller(), U.resolveClassLoader(ignite().configuration()));
-
                 assertNotNull(cm.message());
             }
             catch (Throwable throwable) {

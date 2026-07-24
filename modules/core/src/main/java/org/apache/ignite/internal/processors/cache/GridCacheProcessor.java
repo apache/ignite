@@ -596,7 +596,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         locCfgMgr = new GridLocalConfigManager(this, ctx);
 
-        transactions = new IgniteTransactionsImpl(sharedCtx, null, false, null);
+        transactions = new IgniteTransactionsImpl(sharedCtx, null, null);
 
         // Start shared managers.
         for (GridCacheSharedManager mgr : sharedCtx.managers())
