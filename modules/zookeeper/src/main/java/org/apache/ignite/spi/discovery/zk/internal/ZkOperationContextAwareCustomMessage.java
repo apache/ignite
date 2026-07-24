@@ -20,7 +20,7 @@ package org.apache.ignite.spi.discovery.zk.internal;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
-import org.apache.ignite.internal.thread.context.OperationContextMessage;
+import org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -30,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * <p>A holder for effective attributes of distributed {@link OperationContext}. Analogue of
- * {@link TcpDiscoveryAbstractMessage#opCtxMsg} while we do not use a common base class for all the Zookeeper messages.</p>
+ * {@link TcpDiscoveryAbstractMessage#opCtxSnp} while we do not use a common base class for all the Zookeeper messages.</p>
  *
  * <p>NOTE: The difference is also the limitation on message type. In {@link TcpDiscoverySpi} we transfer distributed
  * {@link OperationContext} with all the messages. In {@link ZookeeperDiscoverySpi} with from-Ignite
@@ -46,7 +46,7 @@ public class ZkOperationContextAwareCustomMessage implements DiscoverySpiCustomM
 
     /** */
     @Order(1)
-    OperationContextMessage opCtxMsg;
+    OperationContextSnapshotMessage opCtxSnp;
 
     /** Default constructor for {@link MessageFactory}. */
     public ZkOperationContextAwareCustomMessage() {
@@ -55,21 +55,21 @@ public class ZkOperationContextAwareCustomMessage implements DiscoverySpiCustomM
 
     /**
      * @param delegate Original message.
-     * @param opCtxMsg Distributed operation context message.
+     * @param opCtxSnp Distributed operation context message.
      */
-    public ZkOperationContextAwareCustomMessage(DiscoverySpiCustomMessage delegate, OperationContextMessage opCtxMsg) {
+    public ZkOperationContextAwareCustomMessage(DiscoverySpiCustomMessage delegate, OperationContextSnapshotMessage opCtxSnp) {
         assert delegate != null;
-        assert opCtxMsg != null;
+        assert opCtxSnp != null;
         assert !(delegate instanceof ZkOperationContextAwareCustomMessage);
 
         this.delegate = delegate;
-        this.opCtxMsg = opCtxMsg;
+        this.opCtxSnp = opCtxSnp;
     }
 
     /** {@inheritDoc} */
     @Override public @Nullable DiscoverySpiCustomMessage ackMessage() {
         DiscoverySpiCustomMessage ack = delegate.ackMessage();
-        return ack == null ? null : new ZkOperationContextAwareCustomMessage(ack, opCtxMsg);
+        return ack == null ? null : new ZkOperationContextAwareCustomMessage(ack, opCtxSnp);
     }
 
     /** {@inheritDoc} */

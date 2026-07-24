@@ -80,6 +80,7 @@ public class OperationContextAttributePropagationTest extends GridCommonAbstract
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
+        TestIgniteComponent.discoveryDataExchangeStartedLatch = null;
         TestIgniteComponent.discoveryDataExchangeUnblockedLatch = null;
     }
 

@@ -3021,7 +3021,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (!fromSocket)
-                msg.opCtxMsg = operationCtxDispatcher.collectDistributedAttributeValues();
+                msg.attachOperationContextSnapshot(operationCtxDispatcher.createSnapshot());
 
             if (msg instanceof TraceableMessage tMsg) {
 
@@ -3293,7 +3293,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (msg == WAKEUP)
                 return;
 
-            try (Scope ignored = operationCtxDispatcher.restoreRemoteAttributeValues(msg.opCtxMsg)) {
+            try (Scope ignored = operationCtxDispatcher.restoreSnapshot(msg.opCtxSnp)) {
                 processMessage0(msg);
             }
         }
@@ -6186,7 +6186,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 getLocalNodeId(), nextMsg);
 
                             ackMsg.topologyVersion(msg.topologyVersion());
-                            ackMsg.opCtxMsg = operationCtxDispatcher.collectDistributedAttributeValues();
+                            ackMsg.attachOperationContextSnapshot(operationCtxDispatcher.createSnapshot());
 
                             processCustomMessage(ackMsg, waitForNotification);
                         }
@@ -6242,7 +6242,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (log.isDebugEnabled())
                     log.debug("Delay custom message processing, there are joining nodes [msg=" + msg +
                         ", joiningNodes=" + joiningNodes + ']');
-
 
                 return true;
             }
@@ -6315,7 +6314,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 TcpDiscoveryCustomEventMessage msg;
 
                 while ((msg = pollPendingCustomMessage()) != null) {
-                    try (Scope ignored = operationCtxDispatcher.restoreRemoteAttributeValues(msg.opCtxMsg)) {
+                    try (Scope ignored = operationCtxDispatcher.restoreSnapshot(msg.opCtxSnp)) {
                         processCustomMessage(msg, true);
                     }
                 }

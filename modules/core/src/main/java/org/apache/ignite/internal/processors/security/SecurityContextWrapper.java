@@ -27,7 +27,7 @@ import org.apache.ignite.plugin.security.SecuritySubject;
 /**
  * {@link SecurityContext} attribute value holder and message for {@link SecuritySubject}'s id.
  *
- * @see OperationContextDispatcher#collectDistributedAttributeValues()
+ * @see OperationContextDispatcher#createSnapshot()
  * @see DistributedAttributeRegistry#SECURITY
  */
 public class SecurityContextWrapper implements Message {
