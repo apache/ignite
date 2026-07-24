@@ -2624,7 +2624,7 @@ public abstract class IgniteUtils extends CommonUtils {
 
                 if (!allowRemote)
                     throw new IgniteCheckedException(
-                        "Remote Spring configuration URLs (http/https) are not allowed by default " +
+                        "Remote Spring configuration URL`s (http/https) are not allowed by default " +
                         "to prevent remote code execution via attacker-controlled Spring XML. " +
                         "Provided host: " + cfgUrl.getHost() + ". " +
                         "To allow remote URL`s set system property: -D" +
