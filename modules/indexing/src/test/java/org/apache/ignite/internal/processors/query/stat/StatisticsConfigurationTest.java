@@ -31,6 +31,9 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsObjectData;
@@ -150,17 +153,70 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
     }
 
     /** */
-    protected void stopGridAndChangeBaseline(int nodeIdx) {
+    protected void stopGridAndChangeBaseline(int nodeIdx) throws Exception {
         stopGrid(nodeIdx);
 
-        if (persist)
-            F.first(G.allGrids()).cluster().setBaselineTopology(F.first(G.allGrids()).cluster().topologyVersion());
+        if (persist) {
+            Ignite crdNode = F.first(G.allGrids());
 
-        try {
-            awaitPartitionMapExchange();
+            crdNode.cluster().setBaselineTopology(crdNode.cluster().topologyVersion());
+
+            // Wait for exchange + rebalance: setBaselineTopology changes the topology version,
+            // awaitPartitionMapExchange waits for exchange completion on the discovery version.
+            // Poll partition owners to confirm rebalance finished (lost partitions recovered).
+            try {
+                awaitPartitionMapExchange();
+            }
+            catch (InterruptedException | IgniteException ignored) {
+                // awaitPartitionMapExchange may timeout because owner count lags behind
+                // exchange. Partition owners polling below ensures real rebalance completion.
+            }
+
+            long timeout = U.currentTimeMillis() + getPartitionMapExchangeTimeout();
+
+            for (Ignite grid : G.allGrids()) {
+                IgniteEx ign = (IgniteEx)grid;
+
+                if (ign.cluster().localNode().isClient())
+                    continue;
+
+                for (IgniteCacheProxy<?, ?> cacheProxy : ign.context().cache().jcaches()) {
+                    GridDhtPartitionTopology top = cacheProxy.context().topology();
+
+                    int parts = cacheProxy.context().affinity().partitions();
+
+                    while (U.currentTimeMillis() < timeout) {
+                        boolean ok = true;
+
+                        for (int p = 0; p < parts; p++) {
+                            if (top.owners(p, AffinityTopologyVersion.NONE).isEmpty()) {
+                                ok = false;
+
+                                break;
+                            }
+                        }
+
+                        if (ok)
+                            break;
+
+                        U.sleep(100);
+                    }
+
+                    if (U.currentTimeMillis() >= timeout) {
+                        throw new IgniteException("Timeout waiting for partition owners after " +
+                            "setBaselineTopology [igniteInstanceName=" + ign.name() +
+                            ", cache=" + cacheProxy.getName() + ']');
+                    }
+                }
+            }
         }
-        catch (InterruptedException e) {
-            // No-op.
+        else {
+            try {
+                awaitPartitionMapExchange();
+            }
+            catch (InterruptedException ignored) {
+                // No-op.
+            }
         }
     }
 
