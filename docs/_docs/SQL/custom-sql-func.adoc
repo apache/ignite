@@ -68,4 +68,8 @@ NOTE: Creating custom functions in the system schema is forbidden. Creating a cu
 
 NOTE: The table functions and application attributes are currently available only with link:SQL/sql-calcite[Calcite, window=_blank].
 
+NOTE: With link:SQL/sql-calcite[Calcite, window=_blank], a custom SQL function can execute nested SQL queries through Ignite APIs such as `SqlFieldsQuery` only when the blocking query task executor is enabled with the `-DIGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR=true` system property. The default striped query task executor can lead to deadlocks for queries started from user-defined functions.
+
+NOTE: When nested SQL queries are executed from user-defined functions, configure `IgniteConfiguration.QueryThreadPoolSize` so it is greater than the maximum number of concurrent queries initiated from UDFs. Otherwise, nested queries can fail because of query thread pool starvation.
+
 NOTE: Classes registered with `CacheConfiguration.setSqlFunctionClasses(...)` must be added to the classpath of all the nodes where the defined custom functions might be executed. Otherwise, you will get a `ClassNotFoundException` error when trying to execute the custom function.
