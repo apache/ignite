@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.calcite.rel.type.RelDataType;
@@ -78,10 +77,10 @@ public class LimitExecutionTest extends AbstractExecutionTest {
 
         RootNode<Object[]> rootNode = new RootNode<>(ctx, rowType);
 
-        SortNode<Object[]> sortNode = new SortNode<>(ctx, rowType, F::compareArrays, () -> offset,
-            fetch == 0 ? null : () -> fetch);
+        SortNode<Object[]> sortNode = new SortNode<>(ctx, rowType, F::compareArrays, offset,
+            fetch == 0 ? -1 : fetch);
 
-        List<Object[]> data = IntStream.range(0, SourceNode.IN_BUFFER_SIZE + fetch + offset).boxed()
+        List<Object[]> data = IntStream.range(0, IN_BUFFER_SIZE + fetch + offset).boxed()
             .map(i -> new Object[] {i}).collect(Collectors.toList());
         Collections.shuffle(data);
 
@@ -109,56 +108,21 @@ public class LimitExecutionTest extends AbstractExecutionTest {
         RelDataType rowType = TypeUtils.createRowType(tf, int.class);
 
         RootNode<Object[]> rootNode = new RootNode<>(ctx, rowType);
-        LimitNode<Object[]> limitNode = new LimitNode<>(ctx, rowType, () -> offset, fetch == 0 ? null : () -> fetch);
-        SourceNode srcNode = new SourceNode(ctx, rowType);
+        LimitNode<Object[]> limitNode = new LimitNode<>(ctx, rowType, offset, fetch == 0 ? -1 : fetch);
+
+        List<Object[]> data = IntStream.range(0, IN_BUFFER_SIZE + fetch + offset).boxed()
+            .map(i -> new Object[] {i}).collect(Collectors.toList());
+
+        ScanNode<Object[]> srcNode = new ScanNode<>(ctx, rowType, data);
 
         rootNode.register(limitNode);
         limitNode.register(srcNode);
 
-        if (fetch > 0) {
-            for (int i = offset; i < offset + fetch; i++) {
-                assertTrue(rootNode.hasNext());
-                assertEquals(i, rootNode.next()[0]);
-            }
-
-            assertFalse(rootNode.hasNext());
-            assertEquals(srcNode.requested.get(), offset + fetch);
-        }
-        else {
+        for (int i = offset; i < offset + fetch; i++) {
             assertTrue(rootNode.hasNext());
-            assertEquals(offset, rootNode.next()[0]);
-            assertTrue(srcNode.requested.get() > offset);
-        }
-    }
-
-    /** */
-    private static class SourceNode extends AbstractNode<Object[]> {
-        /** */
-        AtomicInteger requested = new AtomicInteger();
-
-        /** */
-        public SourceNode(ExecutionContext<Object[]> ctx, RelDataType rowType) {
-            super(ctx, rowType);
+            assertEquals(i, rootNode.next()[0]);
         }
 
-        /** {@inheritDoc} */
-        @Override protected void rewindInternal() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override protected Downstream<Object[]> requestDownstream(int idx) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void request(int rowsCnt) {
-            int r = requested.getAndAdd(rowsCnt);
-
-            context().execute(() -> {
-                for (int i = 0; i < rowsCnt; i++)
-                    downstream().push(new Object[] {r + i});
-            }, this::onError);
-        }
+        assertEquals(fetch == 0, rootNode.hasNext());
     }
 }

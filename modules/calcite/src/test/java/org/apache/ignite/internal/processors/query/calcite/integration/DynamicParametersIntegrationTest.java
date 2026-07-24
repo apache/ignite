@@ -150,6 +150,9 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
         assertQuery("SELECT name LIKE '%' || ? || '%' FROM person where name is not null").withParams("go")
             .returns(true).returns(false).returns(false).returns(false).check();
 
+        assertQuery("SELECT id FROM person ORDER BY id LIMIT ?").withParams(1).returns(0).check();
+        assertQuery("SELECT id FROM person ORDER BY id LIMIT ?").withParams(new BigDecimal(1)).returns(0).check();
+
         assertQuery("SELECT id FROM person WHERE name LIKE ? ORDER BY id LIMIT ?").withParams("I%", 1)
             .returns(0).check();
 

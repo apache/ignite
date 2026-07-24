@@ -17,9 +17,47 @@ SELECT a FROM test ORDER BY a LIMIT 1
 ----
 11
 
-# LIMIT with non-scalar should fail
+# decimal limit
+query I
+SELECT a FROM test ORDER BY a FETCH FIRST 0 ROWS ONLY
+----
+
+# decimal limit
+query I
+SELECT a FROM test ORDER BY a LIMIT 1.2
+----
+11
+
+# decimal limit
+query I
+SELECT a FROM test ORDER BY a FETCH FIRST 1.2 ROWS ONLY
+----
+11
+
+# decimal offset/limit
+query I
+SELECT a FROM test ORDER BY a OFFSET 1.1 ROWS FETCH FIRST 1.1 ROWS ONLY
+----
+12
+
+# Unexpected literal
 statement error
-SELECT a FROM test LIMIT a
+SELECT a FROM test ORDER BY a FETCH FIRST '1'
+
+# More than max of big integer
+statement error
+SELECT a FROM test LIMIT 9223372036854775808
+
+# More than max of big integer
+statement error
+SELECT a FROM test ORDER BY a FETCH FIRST 9223372036854775808 ROWS ONLY
+
+# Unexpected operation
+statement error
+SELECT a FROM test ORDER BY a FETCH FIRST 1 + 1 ROWS ONLY
+
+statement error
+SELECT a FROM test ORDER BY a FETCH FIRST -1 ROWS ONLY
 
 # LIMIT with non-scalar operation should also fail
 statement error

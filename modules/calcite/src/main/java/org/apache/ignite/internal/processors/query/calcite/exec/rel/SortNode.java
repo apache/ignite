@@ -20,12 +20,11 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.PriorityQueue;
-import java.util.function.Supplier;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.util.IgniteMath;
 import org.apache.ignite.internal.util.GridBoundedPriorityQueue;
 import org.apache.ignite.internal.util.typedef.F;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Sort node.
@@ -44,7 +43,7 @@ public class SortNode<Row> extends MemoryTrackingNode<Row> implements SingleNode
     private final PriorityQueue<Row> rows;
 
     /** SQL select limit. Negative if disabled. */
-    private final int limit;
+    private final long limit;
 
     /** Reverse-ordered rows in case of limited sort. */
     private List<Row> reversed;
@@ -58,21 +57,21 @@ public class SortNode<Row> extends MemoryTrackingNode<Row> implements SingleNode
     public SortNode(
         ExecutionContext<Row> ctx, RelDataType rowType,
         Comparator<Row> comp,
-        @Nullable Supplier<Integer> offset,
-        @Nullable Supplier<Integer> fetch
+        long offset,
+        long fetch
     ) {
         super(ctx, rowType);
 
-        assert fetch == null || fetch.get() >= 0;
-        assert offset == null || offset.get() >= 0;
+        assert fetch == -1 || fetch >= 0;
+        assert offset >= 0;
 
-        limit = fetch == null ? -1 : fetch.get() + (offset == null ? 0 : offset.get());
+        limit = fetch == -1 ? -1 : (fetch > Long.MAX_VALUE - offset ? -1 : fetch + offset);
 
-        if (limit < 0)
+        if (limit < 1 || limit > Integer.MAX_VALUE)
             rows = new PriorityQueue<>(comp);
         else {
-            rows = new GridBoundedPriorityQueue<>(limit, comp == null ? (Comparator<Row>)Comparator.reverseOrder()
-                : comp.reversed());
+            rows = new GridBoundedPriorityQueue<>(IgniteMath.convertToIntExact(limit), comp == null ?
+                (Comparator<Row>)Comparator.reverseOrder() : comp.reversed());
         }
     }
 
@@ -81,7 +80,7 @@ public class SortNode<Row> extends MemoryTrackingNode<Row> implements SingleNode
      * @param comp Rows comparator.
      */
     public SortNode(ExecutionContext<Row> ctx, RelDataType rowType, Comparator<Row> comp) {
-        this(ctx, rowType, comp, null, null);
+        this(ctx, rowType, comp, 0, -1);
     }
 
     /** {@inheritDoc} */
@@ -150,7 +149,7 @@ public class SortNode<Row> extends MemoryTrackingNode<Row> implements SingleNode
 
         checkState();
 
-        waiting = -1;
+        waiting = NOT_WAITING;
 
         flush();
     }
@@ -160,7 +159,7 @@ public class SortNode<Row> extends MemoryTrackingNode<Row> implements SingleNode
         if (isClosed())
             return;
 
-        assert waiting == -1;
+        assert waiting == NOT_WAITING;
 
         int processed = 0;
 

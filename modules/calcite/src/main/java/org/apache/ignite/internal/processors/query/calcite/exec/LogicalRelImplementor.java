@@ -44,7 +44,9 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.mapping.IntPair;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
@@ -126,6 +128,8 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.util.IgniteMath;
+import org.apache.ignite.internal.processors.query.calcite.util.IgniteResource;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
@@ -567,8 +571,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
                 ctx,
                 rowType,
                 idxBndRel.first() ? cmp : cmp.reversed(),
-                null,
-                () -> 1
+                0,
+                1
             );
 
             sortNode.register(scanNode);
@@ -630,8 +634,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteLimit rel) {
-        Supplier<Integer> offset = (rel.offset() == null) ? null : expressionFactory.execute(rel.offset());
-        Supplier<Integer> fetch = (rel.fetch() == null) ? null : expressionFactory.execute(rel.fetch());
+        long offset = rel.offset() == null ? 0 : validateAndGetFetchOffsetParams(rel.offset(), "offset");
+        long fetch = rel.fetch() == null ? -1 : validateAndGetFetchOffsetParams(rel.fetch(), "fetch");
 
         LimitNode<Row> node = new LimitNode<>(ctx, rel.getRowType(), offset, fetch);
 
@@ -646,8 +650,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     @Override public Node<Row> visit(IgniteSort rel) {
         RelCollation collation = rel.getCollation();
 
-        Supplier<Integer> offset = (rel.offset == null) ? null : expressionFactory.execute(rel.offset);
-        Supplier<Integer> fetch = (rel.fetch == null) ? null : expressionFactory.execute(rel.fetch);
+        long offset = rel.offset == null ? 0 : validateAndGetFetchOffsetParams(rel.offset, "offset");
+        long fetch = rel.fetch == null ? -1 : validateAndGetFetchOffsetParams(rel.fetch, "fetch");
 
         SortNode<Row> node = new SortNode<>(ctx, rel.getRowType(), expressionFactory.comparator(collation), offset,
             fetch);
@@ -1049,5 +1053,34 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
             filterColMapping,
             otherColMapping
         );
+    }
+
+    /** */
+    private long validateAndGetFetchOffsetParams(RexNode node, String op) {
+        Supplier<Object> scalar = expressionFactory.execute(node);
+        Object param = scalar.get();
+
+        if (!(param instanceof Number)) {
+            String actual = param == null ? "null" : param.getClass().getSimpleName();
+            throw new IgniteSQLException(IgniteResource.INSTANCE.incorrectDynamicParameterType("BIGINT", actual).str(),
+                IgniteQueryErrorCode.UNEXPECTED_ELEMENT_TYPE);
+        }
+
+        long paramAsLong;
+
+        try {
+            paramAsLong = IgniteMath.convertToLongExact((Number)param);
+        }
+        catch (RuntimeException ex) {
+            throw new IgniteSQLException(IgniteResource.INSTANCE.illegalFetchLimit(op).str(),
+                IgniteQueryErrorCode.UNEXPECTED_ELEMENT_TYPE, ex);
+        }
+
+        if (paramAsLong < 0) {
+            throw new IgniteSQLException(IgniteResource.INSTANCE.illegalFetchLimit(op).str(),
+                IgniteQueryErrorCode.UNEXPECTED_ELEMENT_TYPE);
+        }
+
+        return paramAsLong;
     }
 }
