@@ -15,6 +15,9 @@
 
 name: Protected Classes
 
+# pull_request_target for the write token needed to comment/label the PR. The fork's changes are
+# read through the API as data and never checked out or executed, so no allow-unsafe-pr-checkout and
+# no working copy of the PR code on the runner. Do not add a step that builds or runs the PR code.
 on: pull_request_target
 
 concurrency:
@@ -30,122 +33,92 @@ jobs:
       pull-requests: write
       checks: write
     steps:
-      - uses: actions/checkout@v6
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 0
-
-      - name: Rolling Upgrade check
-        id: check
-        run: |
-          BASE_SHA=${{ github.event.pull_request.base.sha }}
-          HEAD_SHA=${{ github.event.pull_request.head.sha }}
-          ANNOTATION='org.apache.ignite.internal.Order'
-          HITS_FILE=/tmp/protected-hits.txt
-
-          # Added/deleted/modified .java files in the PR as "<status>\t<path>" lines.
-          changed_java_files() {
-            git diff --name-status --no-renames --diff-filter=ADM "$BASE_SHA"..."$HEAD_SHA" -- '*.java'
-          }
-
-          # A protected class carries the @Order annotation; an added file is
-          # defined by the new revision, a deleted/modified one by the base.
-          is_protected_class() {
-            local status=$1 file=$2 ref=$BASE_SHA
-            [ "$status" = A ] && ref=$HEAD_SHA
-            git show "$ref:$file" 2>/dev/null | grep -q "$ANNOTATION"
-          }
-
-          # Read "<status>\t<path>" lines, emit the paths that are protected.
-          filter_protected() {
-            while IFS=$'\t' read -r status file; do
-              if is_protected_class "$status" "$file"; then
-                echo "$file"
-              fi
-            done
-          }
-
-          changed_java_files | filter_protected > "$HITS_FILE"
-
-          if [ -s "$HITS_FILE" ]; then
-            echo "affected=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Comment on PR
-        if: steps.check.outputs.affected == 'true'
+      - name: Detect protected class changes and report
         uses: actions/github-script@v8
         with:
           script: |
-            const fs = require('fs');
-            const hits = fs.readFileSync('/tmp/protected-hits.txt', 'utf8').trim();
-            const body = [
-              '## Possible compatibility issues. Please, check rolling upgrade cases',
-              '',
+            const ANNOTATION = 'org.apache.ignite.internal.Order';
+            const MARKER = '<!-- ignite-rolling-upgrade-check -->';
+            const { owner, repo } = context.repo;
+            const pr = context.payload.pull_request;
+            const baseSha = pr.base.sha;
+            const headSha = pr.head.sha;
+
+            // Changed files are read from the API as data; the fork's code is never checked out or executed.
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner, repo, pull_number: pr.number, per_page: 100,
+            });
+
+            // Reproduce `git diff --no-renames --diff-filter=ADM`: a rename is a delete(old)+add(new) pair.
+            // A protected class carries the @Order annotation; an added file is defined by the head revision,
+            // a deleted/modified one by the base.
+            const revisions = [];
+            for (const f of files) {
+              if (f.status === 'added' || f.status === 'copied')
+                revisions.push([f.filename, headSha]);
+              else if (f.status === 'removed' || f.status === 'modified' || f.status === 'changed')
+                revisions.push([f.filename, baseSha]);
+              else if (f.status === 'renamed') {
+                revisions.push([f.previous_filename, baseSha]);
+                revisions.push([f.filename, headSha]);
+              }
+            }
+
+            const isProtected = async (path, ref) => {
+              let meta;
+              try {
+                ({ data: meta } = await github.rest.repos.getContent({ owner, repo, path, ref }));
+              } catch (e) {
+                if (e.status === 404) return false;
+                throw e;
+              }
+              if (Array.isArray(meta) || meta.type !== 'file') return false;
+              let content = meta.content ? Buffer.from(meta.content, 'base64').toString('utf8') : '';
+              if (!content && meta.sha) {
+                const { data: blob } = await github.rest.git.getBlob({ owner, repo, file_sha: meta.sha });
+                content = Buffer.from(blob.content, blob.encoding).toString('utf8');
+              }
+              return content.includes(ANNOTATION);
+            };
+
+            const hits = [];
+            for (const [path, ref] of revisions) {
+              if (path.endsWith('.java') && await isProtected(path, ref)) hits.push(path);
+            }
+
+            if (hits.length === 0) return;
+
+            // File names come from the fork; render them as inert inline code so they cannot inject
+            // markdown (backticks, @mentions, links) into content posted under the bot's write token.
+            const safe = f => '`' + String(f).replace(/[`\r\n]/g, '') + '`';
+            const list = hits.map(f => '- ' + safe(f)).join('\n');
+            const summary = [
               'This PR modifies protected classes (with **Order** annotation).',
               'Changes to these classes can break rolling upgrade compatibility.',
               '',
               '**Affected files:**',
-              hits.split('\n').map(f => '- `' + f.trim() + '`').join('\n'),
-              '',
+              list,
             ].join('\n');
+            const body = MARKER + '\n## Possible compatibility issues. Please, check rolling upgrade cases\n\n' + summary + '\n';
 
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner, repo, issue_number: pr.number,
             });
-
-            const existing = comments.find(c => c.body.includes('Possible compatibility issues. Please, check rolling upgrade cases'));
-
+            const existing = comments.find(c => c.body.includes(MARKER));
             if (existing) {
-              await github.rest.issues.deleteComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existing.id,
-              });
+              await github.rest.issues.deleteComment({ owner, repo, comment_id: existing.id });
             }
+            await github.rest.issues.createComment({ owner, repo, issue_number: pr.number, body });
 
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body,
-            });
-
-      - name: Add label
-        if: steps.check.outputs.affected == 'true'
-        uses: actions/github-script@v8
-        with:
-          script: |
             await github.rest.issues.addLabels({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              labels: ['compatibility'],
+              owner, repo, issue_number: pr.number, labels: ['compatibility'],
             });
 
-      - name: Warning check on affected
-        if: steps.check.outputs.affected == 'true'
-        uses: actions/github-script@v8
-        with:
-          script: |
-            const fs = require('fs');
-            const hits = fs.readFileSync('/tmp/protected-hits.txt', 'utf8').trim();
             await github.rest.checks.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
+              owner, repo,
               name: 'Rolling upgrade compatibility',
-              head_sha: context.payload.pull_request.head.sha,
+              head_sha: headSha,
               status: 'completed',
               conclusion: 'neutral',
-              output: {
-                title: 'Possible compatibility issues',
-                summary: [
-                  'This PR modifies protected classes (with **Order** annotation).',
-                  'Changes to these classes can break rolling upgrade compatibility.',
-                  '',
-                  '**Affected files:**',
-                  hits.split('\n').map(f => '- `' + f.trim() + '`').join('\n'),
-                ].join('\n'),
-              },
+              output: { title: 'Possible compatibility issues', summary },
             });

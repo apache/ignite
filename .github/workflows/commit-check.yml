@@ -15,11 +15,10 @@
 
 name: Code Style, Abandoned Tests, Javadocs
 
-# pull_request_target (not pull_request) so the checks also run when the PR conflicts with the base
-# branch. These jobs build and run untrusted PR code: keep the token read-only and add no secrets
-# here, otherwise a fork PR could read them.
+# pull_request (NOT pull_request_target): these jobs execute untrusted PR code, so they must stay on
+# the unprivileged fork-scoped token. Cost: PRs that conflict with the base branch are not checked.
 on:
-  pull_request_target:
+  pull_request:
   push:
     branches:
       - master

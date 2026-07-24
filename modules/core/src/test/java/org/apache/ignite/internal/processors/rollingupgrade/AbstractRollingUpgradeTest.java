@@ -39,6 +39,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
@@ -49,11 +50,15 @@ import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCompon
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFeature;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFeatureSet;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeature;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureManager;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureSet;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgnitePluginFeatureSet;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.TestIgniteReleaseFeatures_2_18_0;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.TestPluginComponentFeatureSetProvider;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.TestPluginFeature;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.TestPluginReleaseFeatures_1_0_0;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.ConsumerX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -73,6 +78,7 @@ import org.jspecify.annotations.Nullable;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_NODE_VALIDATION_FAILED;
 import static org.apache.ignite.internal.IgniteVersionUtils.semanticVersion;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Provides the ability to override a node's version and supported {@link IgniteFeature}s in order to
@@ -97,7 +103,7 @@ import static org.apache.ignite.internal.IgniteVersionUtils.semanticVersion;
  *   </tr>
  *   <tr>
  *     <td>2.19.1</td>
- *     <td>{@code IgniteFeatureSet [0, 1]}</td>
+ *     <td>{@code IgniteFeatureSet [0]}</td>
  *   </tr>
  *   <tr>
  *     <td>2.19.2</td>
@@ -164,6 +170,28 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
         super.afterTest();
 
         stopAllGrids();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void stopGrid(int idx) {
+        UUID stoppingNodeId = grid(idx).context().localNodeId();
+
+        super.stopGrid(idx);
+
+        // Rolling Upgrade tests are highly susceptible to the topology state. Since the node stop procedure is asynchronous,
+        // we explicitly wait for all nodes to handle the node-left event and update their local topology snapshots.
+        for (Ignite ignite : IgnitionEx.allGridsx()) {
+            try {
+                assertTrue(waitForCondition(
+                    () -> ((IgniteEx)ignite).context().discovery().node(stoppingNodeId) == null,
+                    getTestTimeout()));
+            }
+            catch (IgniteInterruptedCheckedException e) {
+                Thread.currentThread().interrupt();
+
+                throw new IgniteException(e);
+            }
+        }
     }
 
     /** */
@@ -269,6 +297,9 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
         startGrid(0, ver);
         startGrid(1, ver);
         startClientGrid(2, ver);
+
+        checkVersionUpgradeInactive(ver);
+        checkPreviousClusterFeatures(null);
     }
 
     /** */
@@ -355,16 +386,56 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
     }
 
     /** */
+    protected void checkPreviousClusterFeatures(@Nullable String expVer) throws Exception {
+        TestVersions expVersions = expVer == null ? null : TestVersions.parse(expVer);
+
+        IgniteCoreFeatureSet expPrevCoreFeatures = expVersions != null
+            ? new IgniteCoreFeatureSet(
+                IgniteProductVersion.fromString(expVersions.coreVersion()),
+                IgniteFeatureSet.buildFrom(readDeclaredCoreFeatures(expVersions.coreVersion())))
+            : null;
+
+        IgnitePluginFeatureSet expPrevPluginFeatures = expVersions != null && expVersions.containsPlugin()
+            ? new IgnitePluginFeatureSet(
+                TestPluginFeature.COMPONENT_NAME,
+                IgniteProductVersion.fromString(expVersions.pluginVersion()),
+                IgniteFeatureSet.buildFrom(readDeclaredPluginFeatures(expVersions.pluginVersion())))
+            : null;
+
+        for (Ignite ignite : Ignition.allGrids()) {
+            IgniteNodeFeatureSet prevFeatures = ru(ignite).features().previousActiveFeatures();
+
+            if (expVersions == null)
+                assertNull(prevFeatures);
+            else {
+                assertNotNull(prevFeatures);
+                assertEquals(expPrevCoreFeatures, prevFeatures.componentFeatures(IgniteCoreFeature.COMPONENT_NAME));
+
+                if (expVersions.containsPlugin())
+                    assertEquals(expPrevPluginFeatures, prevFeatures.componentFeatures(TestPluginFeature.COMPONENT_NAME));
+            }
+        }
+    }
+
+    /** */
     protected void checkVersionUpgradeInactive(String expVer) throws Exception {
         checkVersionUpgradeEnabledStatus(false);
+        checkVersionUpgradeFutureCompleted();
         checkFeaturesActive(expVer);
     }
 
     /** */
-    protected void checkVersionUpgradeEnabledStatus(boolean enabled) {
-        List<Ignite> cluster = Ignition.allGrids();
+    protected void checkVersionUpgradeFutureCompleted() {
+        for (Ignite ignite : Ignition.allGrids()) {
+            GridFutureAdapter<?> fut = U.field(ru(ignite).features(), "locVerFeaturesActivationFut");
 
-        for (Ignite ignite : cluster)
+            assertTrue(fut.isDone());
+        }
+    }
+
+    /** */
+    protected void checkVersionUpgradeEnabledStatus(boolean enabled) {
+        for (Ignite ignite : Ignition.allGrids())
             assertEquals(enabled, ru(ignite).isVersionUpgradeEnabled());
     }
 
@@ -372,8 +443,7 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
     protected void checkFeaturesActive(String ver) throws Exception {
         TestVersions versions = TestVersions.parse(ver);
 
-        if (versions.coreVersion() != null)
-            checkFeaturesActive(readDeclaredCoreFeatures(versions.coreVersion()));
+        checkFeaturesActive(readDeclaredCoreFeatures(versions.coreVersion()));
 
         if (versions.containsPlugin())
             checkFeaturesActive(readDeclaredPluginFeatures(versions.pluginVersion()));
@@ -457,14 +527,23 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
 
     /** */
     protected void finalizeClusterVersion(int nodeIdx, String expVer) throws Exception {
+        IgniteFeatureManager featureMgr = ru(nodeIdx).features();
+
+        String prevLogicalVer = featureMgr.localVersionFeatures().equals(featureMgr.activeFeatures())
+            ? null // No actual version upgrade was performed.
+            : resolveCompoundVersion(ru(nodeIdx).features().activeFeatures());
+
+        checkPreviousClusterFeatures(prevLogicalVer);
+
         ru(nodeIdx).finalizeClusterVersion();
 
         checkVersionUpgradeInactive(expVer);
+        checkPreviousClusterFeatures(prevLogicalVer);
     }
 
     /** */
     protected void restartNode(int nodeIdx) throws Exception {
-        String ver = resolveNodeCompoundVersion(nodeIdx);
+        String ver = resolveNodeLocalCompoundVersion(nodeIdx);
         boolean isClient = grid(nodeIdx).context().clientNode();
 
         stopGrid(nodeIdx);
@@ -479,7 +558,7 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
 
     /** */
     protected void checkUpgradeFailed(int nodeIdx, String targetVer, String errMsg) throws Exception {
-        String srcVer = resolveNodeCompoundVersion(nodeIdx);
+        String srcVer = resolveNodeLocalCompoundVersion(nodeIdx);
         boolean isClient = grid(nodeIdx).context().clientNode();
 
         stopGrid(nodeIdx);
@@ -490,11 +569,16 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
     }
 
     /** */
-    String resolveNodeCompoundVersion(int nodeIdx) {
-        return Arrays.stream(ru(nodeIdx).features().localVersionFeatures().values())
+    protected String resolveNodeLocalCompoundVersion(int nodeIdx) {
+        return resolveCompoundVersion(ru(nodeIdx).features().localVersionFeatures());
+    }
+
+    /** */
+    protected String resolveCompoundVersion(IgniteNodeFeatureSet features) {
+        return Arrays.stream(features.values())
             .sorted(Comparator.comparing(IgniteComponentFeatureSet::componentName))
             .map(f -> semanticVersion(f.version()))
-            .collect(Collectors.joining("|"));
+            .collect(Collectors.joining(" | "));
     }
 
     /** */
@@ -557,7 +641,7 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
 
         /** */
         public TestVersions(List<String> cmpVersions) {
-            assertTrue(!cmpVersions.isEmpty());
+            assertFalse(cmpVersions.isEmpty());
             assertTrue(cmpVersions.size() <= 2);
 
             this.cmpVersions.put(IgniteCoreFeature.COMPONENT_NAME, cmpVersions.get(0));

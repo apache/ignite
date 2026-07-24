@@ -1311,7 +1311,7 @@ class ClientImpl extends TcpDiscoveryImpl {
          * @param msg Message.
          */
         private void sendMessage(TcpDiscoveryAbstractMessage msg) {
-            msg.opCtxMsg = operationCtxDispatcher.collectDistributedAttributes();
+            msg.opCtxMsg = operationCtxDispatcher.collectDistributedAttributeValues();
 
             synchronized (mux) {
                 queue.add(msg);
@@ -1764,7 +1764,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         ? (TcpDiscoveryAbstractMessage)msg
                         : null;
 
-                    try (Scope ignored = operationCtxDispatcher.restoreDistributedAttributes(dm == null ? null : dm.opCtxMsg)) {
+                    try (Scope ignored = operationCtxDispatcher.restoreRemoteAttributeValues(dm == null ? null : dm.opCtxMsg)) {
                         if (msg instanceof JoinTimeout) {
                             int joinCnt0 = ((JoinTimeout)msg).joinCnt;
 
