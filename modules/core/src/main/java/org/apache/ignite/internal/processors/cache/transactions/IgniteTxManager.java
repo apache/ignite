@@ -959,9 +959,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @return Local transaction.
      */
     @Nullable public IgniteTxLocalAdapter localTx() {
-        IgniteTxLocalAdapter tx = tx();
+        IgniteInternalTx tx = tx();
 
-        return tx != null && tx.local() ? tx : null;
+        return tx instanceof IgniteTxLocalAdapter && tx.local() ? (IgniteTxLocalAdapter)tx : null;
     }
 
     /**
