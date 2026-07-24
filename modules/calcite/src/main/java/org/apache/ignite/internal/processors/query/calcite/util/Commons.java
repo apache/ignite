@@ -453,6 +453,23 @@ public final class Commons {
     }
 
     /**
+     * Creates mapping from given projection.
+     *
+     * <p>Projection is a list of integers representing an index of element from source
+     * at desired position.
+     *
+     * @param sourceSize Size of the source.
+     * @param bitSet Desired projection.
+     * @return Mapping for given projection.
+     */
+    public static Mappings.TargetMapping projectedMapping(ImmutableBitSet bitSet, int sourceSize) {
+        Mapping mapping = Mappings.create(MappingType.INVERSE_SURJECTION, sourceSize, bitSet.cardinality());
+        for (Ord<Integer> ord : Ord.zip(bitSet))
+            mapping.set(ord.e, ord.i);
+        return mapping;
+    }
+
+    /**
      * Checks if there is a such permutation of all {@code elems} that is prefix of
      * provided {@code seq}.
      *

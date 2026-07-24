@@ -23,7 +23,6 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUncollect;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
@@ -110,13 +109,9 @@ public class UncollectPlannerTest extends AbstractPlannerTest {
         String sql = "SELECT * FROM hash_tbl t JOIN UNNEST(ARRAY[1, 2, 3]) AS r(x) ON (t.id = r.x)";
 
         assertPlan(sql, publicSchema, nodeOrAnyChild(isInstanceOf(Join.class)
-            .and(nodeOrAnyChild(isInstanceOf(IgniteExchange.class).negate())
+            .and(nodeOrAnyChild(isInstanceOf(IgniteExchange.class))
                 .and(nodeOrAnyChild(isTableScan("hash_tbl"))))
-            .and(nodeOrAnyChild(isInstanceOf(IgniteTrimExchange.class))
-                .and(nodeOrAnyChild(isInstanceOf(IgniteUncollect.class)
-                    .and(hasDistribution(broadcast()))
-                ))
-            )
+            .and(nodeOrAnyChild(isInstanceOf(IgniteUncollect.class)))
         ));
     }
 

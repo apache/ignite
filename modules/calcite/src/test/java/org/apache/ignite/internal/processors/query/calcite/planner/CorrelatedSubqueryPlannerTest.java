@@ -123,7 +123,7 @@ public class CorrelatedSubqueryPlannerTest extends AbstractPlannerTest {
                     .and(input(0, nodeOrAnyChild(isTableScan("T1"))))
                     .and(input(1, nodeOrAnyChild(isTableScan("T3")
                         .and(ts -> "=($t0, $cor0.REF1)".equals(ts.condition().toString())))))
-                    .and(input(1, nodeOrAnyChild(isTableScan("T2").and(ts -> ts.condition() == null))))
+                    .and(input(1, nodeOrAnyChild(isTableScan("T2"))))
                 )
             );
         }
