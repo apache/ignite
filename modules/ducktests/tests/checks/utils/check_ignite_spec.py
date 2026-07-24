@@ -16,12 +16,14 @@
 """
 Checks Spec class that describes config and command line to start Ignite-aware service.
 """
+import os
 from unittest.mock import Mock
 
 import pytest
 
-from ignitetest.services.utils.ignite_spec import IgniteApplicationSpec
+from ignitetest.services.utils.ignite_spec import IgniteApplicationSpec, IgniteNodeSpec, DEV_BINARY_DISTRIBUTION
 from ignitetest.utils.ignite_test import JFR_ENABLED
+from ignitetest.utils.version import IgniteVersion
 
 
 @pytest.fixture
@@ -34,6 +36,19 @@ def service():
     service.persistent_root = ''
     service.context.globals = {"cluster_size": 1}
     service.log_config_file = ''
+
+    return service
+
+
+def with_version(service, version, install_root='/opt', modules=None):
+    """
+    Prepare the service mock for classpath (libs) resolution against the given version.
+    """
+    service.context.globals = {}
+    service.install_root = install_root
+    service.modules = modules
+    service.config.version = IgniteVersion(version)
+    service.product = str(service.config.version)
 
     return service
 
@@ -90,10 +105,74 @@ def check_boolean_options__go_after_default_ones_and_overwrite_them__if_passed_v
 
 def check_colon_options__go_after_default_ones_and_overwrite_them__if_passed_via_jvm_opt(service):
     service.log_dir = "/default-path"
+    default_opt = "-Xlog:gc*=debug,gc+stats*=debug,gc+ergo*=debug:%s:uptime,time,level,tags" \
+                  % os.path.join("/default-path", "gc.log")
     spec = IgniteApplicationSpec(service, jvm_opts=["-Xlog:gc:/some-non-default-path/gc.log"])
     assert "-Xlog:gc:/some-non-default-path/gc.log" in spec.jvm_opts
-    assert "-Xlog:gc*=debug,gc+stats*=debug,gc+ergo*=debug:/default-path/gc.log:uptime,time,level,tags" \
-           in spec.jvm_opts
-    assert spec.jvm_opts.index("-Xlog:gc:/some-non-default-path/gc.log") > \
-           spec.jvm_opts.index(
-               "-Xlog:gc*=debug,gc+stats*=debug,gc+ergo*=debug:/default-path/gc.log:uptime,time,level,tags")
+    assert default_opt in spec.jvm_opts
+    assert spec.jvm_opts.index("-Xlog:gc:/some-non-default-path/gc.log") > spec.jvm_opts.index(default_opt)
+
+
+"""
+Checks that libs() resolves module classpath according to the version layout and
+the 'dev_binary_distribution' global flag.
+"""
+
+
+def module_target(home, module_name):
+    """Source-tree layout classpath entry of a module."""
+    return os.path.join('/opt', home, 'modules', module_name, 'target', '*')
+
+
+def module_optional_libs(home, module_name):
+    """Binary-release layout classpath entry of a module."""
+    return os.path.join('/opt', home, 'libs', 'optional', 'ignite-%s' % module_name, '*')
+
+
+def check_libs__resolved_from_source_tree__if_dev_version(service):
+    libs = IgniteNodeSpec(with_version(service, 'dev')).libs()
+
+    assert module_target('ignite-dev', 'log4j2') in libs
+    assert module_target('ignite-dev', 'ducktests') in libs
+    assert not [lib for lib in libs if os.path.join('libs', 'optional') in lib]
+
+
+def check_libs__resolved_from_distribution__if_dev_version_and_binary_distribution(service):
+    with_version(service, 'dev').context.globals[DEV_BINARY_DISTRIBUTION] = True
+
+    libs = IgniteNodeSpec(service).libs()
+
+    assert module_optional_libs('ignite-dev', 'log4j2') in libs
+    assert module_optional_libs('ignite-dev', 'ducktests') in libs
+    assert not [lib for lib in libs if os.path.join('modules', '') in lib]
+
+
+def check_ducktests_libs__resolved_from_dev_source_tree__if_release_version(service):
+    libs = IgniteNodeSpec(with_version(service, '2.17.0')).libs()
+
+    assert module_optional_libs('ignite-2.17.0', 'log4j2') in libs
+    assert module_target('ignite-dev', 'ducktests') in libs
+
+
+def check_ducktests_libs__resolved_from_dev_distribution__if_release_version_and_binary_distribution(service):
+    with_version(service, '2.17.0').context.globals[DEV_BINARY_DISTRIBUTION] = True
+
+    libs = IgniteNodeSpec(service).libs()
+
+    assert module_optional_libs('ignite-2.17.0', 'log4j2') in libs
+    assert module_optional_libs('ignite-dev', 'ducktests') in libs
+
+
+def check_ext_libs__resolved_from_neighbouring_extensions__if_dev_version(service):
+    libs = IgniteNodeSpec(with_version(service, 'dev', modules=['cdc-ext'])).libs()
+
+    assert module_target('ignite-extensions', 'cdc-ext') in libs
+
+
+def check_ext_libs__resolved_from_distribution__if_dev_version_and_binary_distribution(service):
+    with_version(service, 'dev', modules=['cdc-ext']).context.globals[DEV_BINARY_DISTRIBUTION] = True
+
+    libs = IgniteNodeSpec(service).libs()
+
+    assert module_optional_libs('ignite-dev', 'cdc-ext') in libs
+    assert not [lib for lib in libs if 'ignite-extensions' in lib]

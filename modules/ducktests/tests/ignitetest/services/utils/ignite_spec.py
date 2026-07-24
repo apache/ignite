@@ -41,6 +41,8 @@ from ignitetest.utils.version import DEV_BRANCH
 
 SHARED_PREPARED_FILE = ".ignite_prepared"
 
+DEV_BINARY_DISTRIBUTION = "dev_binary_distribution"
+
 
 def resolve_spec(service, **kwargs):
     """
@@ -208,19 +210,30 @@ class IgniteSpec(metaclass=ABCMeta):
     def extensions_home(self):
         return os.path.join(self.service.install_root, "ignite-extensions")
 
+    def _is_binary_layout(self, version):
+        """
+        True if the home directory of the product for the given version has a binary release layout.
+        Dev versions are compiled source trees unless the 'dev_binary_distribution' global declares
+        the dev folder to be a complete binary distribution.
+        """
+        return not version.is_dev or self.service.context.globals.get(DEV_BINARY_DISTRIBUTION, False)
+
     def _module_libs(self, module_name):
         """
         Get list of paths to be added to classpath for the passed module for current spec.
         """
         if module_name == "ducktests":
-            return self.__get_module_libs(self.__home(str(DEV_BRANCH)), module_name, is_dev=True)
+            return self.__get_module_libs(self.__home(str(DEV_BRANCH)), module_name,
+                                          is_dev=not self._is_binary_layout(DEV_BRANCH))
 
-        if module_name.endswith("-ext") and self.service.config.version.is_dev:
+        is_dev = not self._is_binary_layout(self.service.config.version)
+
+        if module_name.endswith("-ext") and is_dev:
             home = self.extensions_home()
         else:
             home = self.__home()
 
-        return self.__get_module_libs(home, module_name, self.service.config.version.is_dev)
+        return self.__get_module_libs(home, module_name, is_dev)
 
     @abstractmethod
     def command(self, node):
