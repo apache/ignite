@@ -220,13 +220,13 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     @Override public CacheObject prepareForCache(CacheObjectValueContext ctx) {
         BinaryObjectImpl res = detached() ? this : detach(false);
 
-        res.prepareMarshal(ctx);
+        res.marshal(ctx);
 
         return res;
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(CacheObjectValueContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void unmarshal(CacheObjectValueContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         assert arr != null || valBytes != null;
 
         if (arr == null)
@@ -238,7 +238,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(CacheObjectValueContext ctx) {
+    @Override public void marshal(CacheObjectValueContext ctx) {
         assert arr != null || valBytes != null;
 
         if (valBytes == null)

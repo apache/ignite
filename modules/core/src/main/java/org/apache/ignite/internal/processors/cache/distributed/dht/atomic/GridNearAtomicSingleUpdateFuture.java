@@ -253,11 +253,11 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
 
                 if (op == TRANSFORM) {
                     if (ret != null) {
-                        assert ret.value() == null || ret.value() instanceof Map : ret.value();
+                        assert ret.value(cctx) == null || ret.value(cctx) instanceof Map : ret.value(cctx);
 
-                        if (ret.value() != null) {
+                        if (ret.value(cctx) != null) {
                             if (opRes != null)
-                                opRes.mergeEntryProcessResults(ret);
+                                opRes.mergeEntryProcessResults(cctx, ret);
                             else
                                 opRes = ret;
                         }

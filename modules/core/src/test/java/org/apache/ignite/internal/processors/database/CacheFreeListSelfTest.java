@@ -725,13 +725,13 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void finishUnmarshal(CacheObjectValueContext ctx, ClassLoader ldr)
+        @Override public void unmarshal(CacheObjectValueContext ctx, ClassLoader ldr)
             throws IgniteCheckedException {
             assert false;
         }
 
         /** {@inheritDoc} */
-        @Override public void prepareMarshal(CacheObjectValueContext ctx) throws IgniteCheckedException {
+        @Override public void marshal(CacheObjectValueContext ctx) throws IgniteCheckedException {
             assert false;
         }
     }

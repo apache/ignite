@@ -21,6 +21,7 @@ import java.lang.String;
 import java.util.UUID;
 import java.util.BitSet;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.GridTopicMessage;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -49,6 +50,10 @@ public class TestMessage implements Message {
 
     @Order(6)
     GridCacheVersion[] verArr;
+
+    @NioField
+    @Order(15)
+    GridTopicMessage nioMsg;
 
     @Order(7)
     UUID uuid;

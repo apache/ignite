@@ -18,7 +18,8 @@
 package org.apache.ignite.plugin.extensions.communication;
 
 /**
- * Interface for message serialization logic.
+ * Interface for message serialization logic. Resolve-and-dispatch entry points that look the serializer up from the
+ * message factory live in {@code MessageSerialization}.
  */
 public interface MessageSerializer<M extends Message> {
     /**

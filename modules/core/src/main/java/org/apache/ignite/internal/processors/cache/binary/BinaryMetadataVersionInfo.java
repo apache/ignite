@@ -17,12 +17,10 @@
 package org.apache.ignite.internal.processors.cache.binary;
 
 import java.io.Serializable;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.MarshallableMessage;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Wrapper for {@link BinaryMetadata} which is stored in metadata local cache on each node.
@@ -30,12 +28,13 @@ import org.apache.ignite.marshaller.Marshaller;
  * The version refers solely to the internal protocol for updating BinaryMetadata and is unknown externally.
  * It can be updated dynamically from different nodes and threads on the same node.
  */
-public final class BinaryMetadataVersionInfo implements Serializable, MarshallableMessage {
+public final class BinaryMetadataVersionInfo implements Serializable, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** The actual binary metadata. */
-    private BinaryMetadata metadata;
+    @Marshalled("metadataBytes")
+    BinaryMetadata metadata;
 
     /** Serialized binary metadata. */
     @Order(0)
@@ -127,22 +126,6 @@ public final class BinaryMetadataVersionInfo implements Serializable, Marshallab
      */
     boolean removing() {
         return removing;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (metadata != null)
-            metadataBytes = U.marshal(marsh, metadata);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (metadataBytes != null) {
-            metadata = U.unmarshal(marsh, metadataBytes, clsLdr);
-
-            // It is not required anymore.
-            metadataBytes = null;
-        }
     }
 
     /** {@inheritDoc} */

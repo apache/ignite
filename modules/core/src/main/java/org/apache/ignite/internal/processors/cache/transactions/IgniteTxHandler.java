@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -374,14 +375,15 @@ public class IgniteTxHandler {
      * @return First entry.
      * @throws IgniteCheckedException If failed.
      */
-    private IgniteTxEntry unmarshal(@Nullable Collection<IgniteTxEntry> entries) throws IgniteCheckedException {
+    private IgniteTxEntry initialize(@Nullable Collection<IgniteTxEntry> entries, AffinityTopologyVersion topVer)
+        throws IgniteCheckedException {
         if (entries == null)
             return null;
 
         IgniteTxEntry firstEntry = null;
 
         for (IgniteTxEntry e : entries) {
-            e.unmarshal(ctx, false, ctx.deploy().globalLoader());
+            e.initializeContext(ctx, topVer, false);
 
             if (firstEntry == null)
                 firstEntry = e;
@@ -430,12 +432,24 @@ public class IgniteTxHandler {
         IgniteTxEntry firstEntry;
 
         try {
-            IgniteTxEntry firstWrite = unmarshal(req.writes());
-            IgniteTxEntry firstRead = unmarshal(req.reads());
+            IgniteTxEntry firstWrite = initialize(req.writes(), req.topologyVersion());
+            IgniteTxEntry firstRead = initialize(req.reads(), req.topologyVersion());
 
             firstEntry = firstWrite != null ? firstWrite : firstRead;
         }
         catch (IgniteCheckedException e) {
+            // The failed-message response must be sent from here: the entry context binding moved from the
+            // message-level unmarshal into this handler, so errors like "cache recreated" surface past
+            // GridCacheIoManager's catch, and the near node would hang without a response (IgniteCacheRecreateTest).
+            try {
+                req.onClassError(e);
+
+                ctx.io().processFailedMessage(nearNode.id(), req, null, req.policy());
+            }
+            catch (IgniteCheckedException ex) {
+                throw new IgniteException(ex);
+            }
+
             return new GridFinishedFuture<>(e);
         }
 
@@ -1215,7 +1229,29 @@ public class IgniteTxHandler {
                 if (nearTx != null)
                     res.nearEvicted(nearTx.evicted());
 
-                List<IgniteTxKey> writesCacheMissed = req.nearWritesCacheMissed();
+                List<IgniteTxKey> writesCacheMissed = new ArrayList<>();
+
+                Collection<IgniteTxEntry> writes = req.nearWrites();
+
+                for (Iterator<IgniteTxEntry> it = writes.iterator(); it.hasNext();) {
+                    IgniteTxEntry e = it.next();
+
+                    GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(e.cacheId());
+
+                    // A missing cache or one recreated after the request was sent: report the key back as evicted,
+                    // so the near node drops its stale entry.
+                    if (cacheCtx == null
+                        || (req.topologyVersion() != null && req.topologyVersion().before(cacheCtx.startTopologyVersion()))) {
+                        it.remove();
+
+                        writesCacheMissed.add(e.txKey());
+                    }
+                    else {
+                        e.context(cacheCtx);
+
+                        e.initializeContext(ctx, req.topologyVersion(), true);
+                    }
+                }
 
                 if (writesCacheMissed != null) {
                     Collection<IgniteTxKey> evicted0 = res.nearEvicted();
@@ -1759,6 +1795,8 @@ public class IgniteTxHandler {
                     int idx = 0;
 
                     for (IgniteTxEntry entry : req.writes()) {
+                        entry.initializeContext(ctx, req.topologyVersion(), false);
+
                         GridCacheContext cacheCtx = entry.context();
 
                         int part = cacheCtx.affinity().partition(entry.key());

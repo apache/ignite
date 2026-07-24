@@ -27,6 +27,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
@@ -34,13 +35,16 @@ import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
+import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
+import org.apache.ignite.internal.util.nio.MessageSerialization;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
-import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -58,7 +62,7 @@ public class QueryEntityMessageSerializationTest extends GridCommonAbstractTest 
 
     /** */
     private final MessageFactory msgFactory = new IgniteMessageFactoryImpl(
-        new MessageFactoryProvider[] {new CoreMessagesProvider(marsh, marsh, U.gridClassLoader())});
+        new MessageFactoryProvider[] {new CoreMessagesProvider(marsh, marsh)});
 
     /** */
     @Test
@@ -91,7 +95,7 @@ public class QueryEntityMessageSerializationTest extends GridCommonAbstractTest 
      *
      * @return Entity read during a full serde round-trip.
      */
-    private QueryEntity serializeAndDeserialize(QueryEntity src, long expReadsWritesCnt) {
+    private QueryEntity serializeAndDeserialize(QueryEntity src, long expReadsWritesCnt) throws IgniteCheckedException {
         QueryEntityMessage msg = src instanceof QueryEntityEx
             ? new QueryEntityExMessage((QueryEntityEx)src) : new QueryEntityMessage(src);
 
@@ -120,15 +124,19 @@ public class QueryEntityMessageSerializationTest extends GridCommonAbstractTest 
      *
      * @return Restored message.
      */
-    private <T extends Message> T writeAndReadBack(T msg, long expReadsWritesCnt) {
-        ByteBuffer buf = ByteBuffer.allocate(64 * 1024);
+    private <T extends Message> T writeAndReadBack(T msg, long expReadsWritesCnt) throws IgniteCheckedException {
+        GridTestKernalContext kctx = newContext();
 
-        MessageSerializer<T> serde = (MessageSerializer<T>)msgFactory.serializer(msg.directType());
+        GridTestUtils.setFieldValue(kctx.grid(), "msgFactory", msgFactory);
+
+        MessageMarshalling.marshal(msg, kctx, null);
+
+        ByteBuffer buf = ByteBuffer.allocate(64 * 1024);
 
         DirectMessageWriter writer = new DirectMessageWriter(msgFactory);
         writer.setBuffer(buf);
 
-        assertTrue(serde.writeTo(msg, writer));
+        assertTrue(MessageSerialization.writeTo(msgFactory, msg, writer));
         assertEquals("Writes" + ERROR_SUFFIX,
             expReadsWritesCnt, writer.state());
 
@@ -139,9 +147,11 @@ public class QueryEntityMessageSerializationTest extends GridCommonAbstractTest 
 
         T res = (T)msgFactory.create(makeMessageType(buf.get(), buf.get()));
 
-        assertTrue(serde.readFrom(res, reader));
+        assertTrue(MessageSerialization.readFrom(msgFactory, res, reader));
         assertEquals("Reads" + ERROR_SUFFIX,
             expReadsWritesCnt, reader.state());
+
+        MessageMarshalling.unmarshal(res, kctx, null, U.gridClassLoader());
 
         return res;
     }

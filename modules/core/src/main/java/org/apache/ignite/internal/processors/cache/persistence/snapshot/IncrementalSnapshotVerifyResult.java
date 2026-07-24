@@ -64,7 +64,7 @@ public class IncrementalSnapshotVerifyResult implements Message {
         this.txHashRes = txHashRes;
         this.partHashRes = partHashRes;
         this.partiallyCommittedTxs = partiallyCommittedTxs;
-        this.exceptions = exceptions == null ? null : F.viewReadOnly(exceptions, ErrorMessage::new);
+        this.exceptions = exceptions == null ? null : F.transform(exceptions, ErrorMessage::new);
     }
 
     /** */

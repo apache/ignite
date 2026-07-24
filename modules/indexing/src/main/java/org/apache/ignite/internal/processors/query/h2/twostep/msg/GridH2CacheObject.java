@@ -47,14 +47,14 @@ public class GridH2CacheObject extends GridH2ValueMessage {
     public GridH2CacheObject(GridH2ValueCacheObject v) throws IgniteCheckedException {
         obj = v.getCacheObject();
 
-        obj.prepareMarshal(v.valueContext());
+        obj.marshal(v.valueContext());
     }
 
     /** {@inheritDoc} */
     @Override public Value value(GridKernalContext ctx) throws IgniteCheckedException {
         CacheObjectValueContext valCtx = ctx.query().objectContext();
 
-        obj.finishUnmarshal(valCtx, ctx.cache().context().deploy().globalLoader());
+        obj.unmarshal(valCtx, ctx.cache().context().deploy().globalLoader());
 
         return new GridH2ValueCacheObject(obj, valCtx);
     }

@@ -326,7 +326,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         assert ret != null;
 
         if (ret.invokeResult())
-            implicitRes.mergeEntryProcessResults(ret);
+            implicitRes.mergeEntryProcessResults(cctx.cacheContext(ret.cacheId()), ret);
         else
             implicitRes = ret;
     }
@@ -1229,7 +1229,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     }
                     else {
                         // Revert operation to previous. (if no - NOOP, so entry will be unlocked).
-                        txEntry.setAndMarkValid(txEntry.previousOperation(), cacheCtx.toCacheObject(ret.value()));
+                        txEntry.setAndMarkValid(txEntry.previousOperation(), cacheCtx.toCacheObject(ret.value(cacheCtx)));
                         txEntry.filters(CU.empty0());
                         txEntry.filtersSet(false);
 

@@ -365,7 +365,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
             ? null
             : (this.retval || op == TRANSFORM)
                 ? cctx.unwrapBinaryIfNeeded(
-                    ret.value(),
+                    ret.value(cctx),
                     keepBinary,
                     U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId))
                 : ret.success();

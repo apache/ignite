@@ -17,18 +17,15 @@
 package org.apache.ignite.internal.processors.cache.binary;
 
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.MarshallableMessage;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadataHandler;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -73,13 +70,14 @@ import org.jetbrains.annotations.Nullable;
  * it gets blocked until {@link MetadataUpdateAcceptedMessage} arrives with <b>accepted version</b>
  * equals to <b>pending version</b> of this metadata to the moment when is was initially read by the thread.
  */
-public final class MetadataUpdateProposedMessage extends DiscoveryCustomMessage implements MarshallableMessage {
+public final class MetadataUpdateProposedMessage extends DiscoveryCustomMessage {
     /** Node UUID which initiated metadata update. */
     @Order(0)
     UUID origNodeId;
 
     /** */
-    private BinaryMetadata metadata;
+    @Marshalled("metadataBytes")
+    BinaryMetadata metadata;
 
     /** Serialized {@link #metadata}. */
     @Order(1)
@@ -189,18 +187,6 @@ public final class MetadataUpdateProposedMessage extends DiscoveryCustomMessage 
     /** */
     public int typeId() {
         return typeId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (metadata != null)
-            metadataBytes = U.marshal(marsh, metadata);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader ldr) throws IgniteCheckedException {
-        if (metadataBytes != null)
-            metadata = U.unmarshal(marsh, metadataBytes, ldr);
     }
 
     /** {@inheritDoc} */

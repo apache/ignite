@@ -26,7 +26,6 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.PluginContext;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -97,13 +96,13 @@ public class MessageFactoryMarshallerInitializationTest extends GridCommonAbstra
     /** Message factory provider, which counts initializations. */
     private static class TestMessageFactoryProvider extends AbstractMarshallableMessageFactoryProvider {
         /** {@inheritDoc} */
-        @Override public void registerAll(MessageFactory factory) {
+        @Override public void registerAll(IgniteMessageFactory factory) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void init(Marshaller dfltMarsh, Marshaller schemaAwareMarsh, ClassLoader resolvedClsLdr) {
-            super.init(dfltMarsh, schemaAwareMarsh, resolvedClsLdr);
+        @Override public void init(Marshaller dfltMarsh, Marshaller schemaAwareMarsh) {
+            super.init(dfltMarsh, schemaAwareMarsh);
 
             initCnt.incrementAndGet();
         }

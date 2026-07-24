@@ -171,7 +171,7 @@ public class StartRequestData implements Message {
     }
 
     /** */
-    public void prepareMarshal(GridKernalContext ctx) throws IgniteCheckedException {
+    public void marshal(GridKernalContext ctx) throws IgniteCheckedException {
         if (hnd != null) {
             if (ctx.config().isPeerClassLoadingEnabled()) {
                 // Handle peer deployment for other handler-specific objects.
@@ -186,7 +186,7 @@ public class StartRequestData implements Message {
     }
 
     /** */
-    public void finishUnmarshal(GridKernalContext ctx, UUID sndId) throws IgniteCheckedException {
+    public void unmarshal(GridKernalContext ctx, UUID sndId) throws IgniteCheckedException {
         if (ctx.config().isPeerClassLoadingEnabled() && clsName != null) {
             GridDeployment dep = ctx.deploy().getGlobalDeployment(depInfo.deployMode(),
                 clsName,

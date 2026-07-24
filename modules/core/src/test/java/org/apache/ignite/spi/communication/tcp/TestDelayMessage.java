@@ -17,21 +17,12 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.MarshallableMessage;
-import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** Test message. */
-public class TestDelayMessage implements MarshallableMessage {
+public class TestDelayMessage implements Message {
     /** */
-    @Order(0)
-    int val;
-
-    /** */
-    private final int writeDelay;
+    final int writeDelay;
 
     /** */
     public TestDelayMessage(int writeDelay) {
@@ -41,22 +32,5 @@ public class TestDelayMessage implements MarshallableMessage {
     /** */
     public TestDelayMessage() {
         this(0);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (writeDelay > 0) {
-            try {
-                U.sleep(writeDelay);
-            }
-            catch (IgniteInterruptedCheckedException ignored) {
-                // No-op.
-            }
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        // No-op.
     }
 }

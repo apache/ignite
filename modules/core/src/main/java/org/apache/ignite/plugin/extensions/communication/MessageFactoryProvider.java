@@ -18,6 +18,7 @@
 package org.apache.ignite.plugin.extensions.communication;
 
 import org.apache.ignite.internal.CoreMessagesProvider;
+import org.apache.ignite.internal.managers.communication.IgniteMessageFactory;
 import org.apache.ignite.plugin.Extension;
 
 /**
@@ -34,5 +35,5 @@ public interface MessageFactoryProvider extends Extension {
      *
      * @param factory {@link CoreMessagesProvider} implementation.
      */
-    public void registerAll(MessageFactory factory);
+    public void registerAll(IgniteMessageFactory factory);
 }

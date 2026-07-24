@@ -161,7 +161,7 @@ public class CdcResendCommandTest extends GridCommandHandlerAbstractTest {
         // Override data from clusterId=2.
         KeyCacheObject key = new KeyCacheObjectImpl(0, null, cachex.affinity().partition(0));
         CacheObject val = new CacheObjectImpl(1, null);
-        val.prepareMarshal(cachex.context().cacheObjectContext());
+        val.marshal(cachex.context().cacheObjectContext());
 
         GridCacheVersion conflict = new GridCacheVersion(1, 0, 1, (byte)2);
 

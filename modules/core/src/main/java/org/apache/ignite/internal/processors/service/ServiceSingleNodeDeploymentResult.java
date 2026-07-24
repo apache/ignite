@@ -77,7 +77,7 @@ public class ServiceSingleNodeDeploymentResult implements Message, Serializable 
      */
     public void errors(@Nullable Collection<Throwable> errors) {
         if (!F.isEmpty(errors))
-            this.errors = F.viewReadOnly(errors, ErrorMessage::new);
+            this.errors = F.transform(errors, ErrorMessage::new);
     }
 
     /** {@inheritDoc} */

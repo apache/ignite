@@ -17,13 +17,9 @@
 
 package org.apache.ignite.internal.idto;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.io.PrintWriter;
 import java.io.Serializable;
 import java.io.StringWriter;
 import java.io.Writer;
@@ -61,10 +57,11 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 
-import static org.apache.ignite.internal.MessageSerializerGenerator.NL;
-import static org.apache.ignite.internal.MessageSerializerGenerator.TAB;
+import static org.apache.ignite.internal.MessageGenerator.NL;
+import static org.apache.ignite.internal.MessageGenerator.TAB;
+import static org.apache.ignite.internal.MessageGenerator.identicalFileIsAlreadyGenerated;
+import static org.apache.ignite.internal.MessageGenerator.writeLicense;
 import static org.apache.ignite.internal.MessageSerializerGenerator.enumType;
-import static org.apache.ignite.internal.MessageSerializerGenerator.identicalFileIsAlreadyGenerated;
 import static org.apache.ignite.internal.MessageSerializerGenerator.qualifiedClassName;
 import static org.apache.ignite.internal.idto.IgniteDataTransferObjectProcessor.DTO_CLASS;
 
@@ -293,16 +290,7 @@ public class IDTOSerializerGenerator {
      * @throws IOException  In case of error.
      */
     private void writeClassHeader(Writer writer) throws IOException {
-        try (InputStream in = getClass().getClassLoader().getResourceAsStream("license.txt");
-             BufferedReader reader = new BufferedReader(new InputStreamReader(in))) {
-
-            PrintWriter out = new PrintWriter(writer);
-
-            String line;
-
-            while ((line = reader.readLine()) != null)
-                out.println(line);
-        }
+        writeLicense(writer);
 
         writer.write(NL);
         writer.write("package " + env.getElementUtils().getPackageOf(type).toString() + ";" + NL + NL);

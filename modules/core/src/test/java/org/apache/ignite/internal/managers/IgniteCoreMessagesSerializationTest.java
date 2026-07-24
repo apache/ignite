@@ -21,7 +21,6 @@ import java.util.UUID;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -34,7 +33,7 @@ import static org.apache.ignite.marshaller.Marshallers.jdk;
 public class IgniteCoreMessagesSerializationTest extends AbstractMessageSerializationTest {
     /** {@inheritDoc} */
     @Override protected MessageFactoryProvider messageFactory() {
-        return new CoreMessagesProvider(jdk(), jdk(), U.gridClassLoader());
+        return new CoreMessagesProvider(jdk(), jdk());
     }
 
     /** {@inheritDoc} */

@@ -26,8 +26,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.GridTopic;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
@@ -36,7 +37,6 @@ import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -128,6 +128,8 @@ public class GridCacheIoManagerRetryTest extends GridCommonAbstractTest {
 
         cacheIoMgr.start(cctx);
 
+        ((IgniteKernal)cacheIoMgr.context().kernalContext().grid()).initMessageFactoryForTest();
+
         return cacheIoMgr;
     }
 
@@ -190,15 +192,7 @@ public class GridCacheIoManagerRetryTest extends GridCommonAbstractTest {
      */
     private void configureGridIoManager(GridTestKernalContext ctx, AtomicInteger sendCnt) {
         ctx.add(new GridIoManager(ctx) {
-            @Override public void sendToGridTopic(ClusterNode node, GridTopic topic, Message msg, byte plc)
-                throws IgniteCheckedException {
-                sendCnt.incrementAndGet();
-
-                throw new IgniteCheckedException("Test cause");
-            }
-
-            @Override public void sendOrderedMessage(ClusterNode node, Object topic, Message msg, byte plc,
-                long timeout, boolean skipOnTimeout) throws IgniteCheckedException {
+            @Override public void sendPrepared(ClusterNode node, GridIoMessage ioMsg) throws IgniteCheckedException {
                 sendCnt.incrementAndGet();
 
                 throw new IgniteCheckedException("Test cause");

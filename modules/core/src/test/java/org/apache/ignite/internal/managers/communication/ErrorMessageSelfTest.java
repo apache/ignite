@@ -40,7 +40,7 @@ public class ErrorMessageSelfTest {
 
         assertSame(e, msg0.error());
 
-        msg0.prepareMarshal(jdk());
+        msg0.marshal(jdk());
 
         byte[] errBytes = msg0.errBytes;
 
@@ -49,7 +49,7 @@ public class ErrorMessageSelfTest {
         ErrorMessage msg1 = new ErrorMessage();
         msg1.errBytes = errBytes;
 
-        msg1.finishUnmarshal(jdk(), U.gridClassLoader());
+        msg1.unmarshal(jdk(), U.gridClassLoader());
 
         Throwable t = msg1.error();
         

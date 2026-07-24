@@ -83,12 +83,12 @@ public abstract class TcpDiscoveryAbstractTraceableMessage extends TcpDiscoveryA
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+    @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
         spanContainerBytes = spanContainer == null ? null : spanContainer.serializedSpanBytes();
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         if (spanContainerBytes != null)
             spanContainer.serializedSpanBytes(spanContainerBytes);
     }

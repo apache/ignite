@@ -222,6 +222,7 @@ import org.apache.ignite.spi.tracing.TracingConfigurationManager;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.TestOnly;
 
 import static java.util.Collections.singleton;
 import static java.util.Optional.ofNullable;
@@ -1318,15 +1319,19 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         startTimer.finishGlobalStage("Await exchange");
     }
 
+    /** Test entry to {@link #initMessageFactory()}, which production reaches via {@link #start}. */
+    @TestOnly
+    public void initMessageFactoryForTest() throws IgniteCheckedException {
+        initMessageFactory();
+    }
+
     /** */
     private void initMessageFactory() throws IgniteCheckedException {
         MessageFactoryProvider[] msgs = ctx.plugins().extensions(MessageFactoryProvider.class);
 
         List<MessageFactoryProvider> compMsgs = new ArrayList<>();
 
-        ClassLoader resolvedClsLdr = U.resolveClassLoader(ctx.config());
-
-        compMsgs.add(new CoreMessagesProvider(ctx.marshallerContext().jdkMarshaller(), ctx.marshaller(), resolvedClsLdr));
+        compMsgs.add(new CoreMessagesProvider(ctx.marshallerContext().jdkMarshaller(), ctx.marshaller()));
 
         for (IgniteComponentType compType : IgniteComponentType.values()) {
             MessageFactoryProvider f = compType.messageFactory();
@@ -1348,21 +1353,20 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             msgs = F.concat(msgs, compMsgs.toArray(new MessageFactoryProvider[compMsgs.size()]));
 
         for (MessageFactoryProvider msg : msgs)
-            initProvider(msg, resolvedClsLdr);
+            initProvider(msg);
 
         msgFactory = new IgniteMessageFactoryImpl(msgs);
     }
 
     /**
-     * Re-init {@link AbstractMarshallableMessageFactoryProvider} with a proper marshaller and classloader.
+     * Re-init {@link AbstractMarshallableMessageFactoryProvider} with a proper marshaller.
      *
      * @param factoryProvider Message factory provider.
-     * @param clsLdr Class loader.
      */
-    private void initProvider(MessageFactoryProvider factoryProvider, ClassLoader clsLdr) {
+    private void initProvider(MessageFactoryProvider factoryProvider) {
         if (factoryProvider instanceof AbstractMarshallableMessageFactoryProvider) {
             ((AbstractMarshallableMessageFactoryProvider)factoryProvider).init(ctx.marshallerContext().jdkMarshaller(),
-                ctx.marshaller(), clsLdr);
+                ctx.marshaller());
         }
     }
 

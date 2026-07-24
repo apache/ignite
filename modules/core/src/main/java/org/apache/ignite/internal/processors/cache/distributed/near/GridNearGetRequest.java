@@ -22,13 +22,10 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionable;
@@ -43,8 +40,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Get request. Responsible for obtaining entry from primary node. 'Near' means 'Initiating node' here, not 'Near Cache'.
  */
-public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheDeployable,
-    GridCacheVersionable {
+public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheDeployable, GridCacheVersionable {
     /** */
     private static final int READ_THROUGH_FLAG_MASK = 0x01;
 
@@ -215,6 +211,18 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
      * @return Keys.
      */
     public LinkedHashMap<KeyCacheObject, Boolean> keyMap() {
+        if (keyMap == null && !F.isEmpty(keys)) {
+            keyMap = U.newLinkedHashMap(keys.size());
+
+            Iterator<KeyCacheObject> keysIt = keys.iterator();
+
+            for (int i = 0; i < keys.size(); i++) {
+                Boolean addRdr = readersFlags != null ? readersFlags.get(i) : Boolean.FALSE;
+
+                keyMap.put(keysIt.next(), addRdr);
+            }
+        }
+
         return keyMap;
     }
 
@@ -280,55 +288,10 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
         return txLbl;
     }
 
-    /**
-     * @param ctx Cache context.
-     * @throws IgniteCheckedException If failed.
-     */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        assert ctx != null;
-        assert !F.isEmpty(keys);
-        assert readersFlags == null || keys.size() == readersFlags.size();
-
-        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
-
-        prepareMarshalCacheObjects(keys, cctx);
-    }
-
-    /**
-     * @param ctx Context.
-     * @param ldr Loader.
-     * @throws IgniteCheckedException If failed.
-     */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
-
-        finishUnmarshalCacheObjects(keys, cctx, ldr);
-
-        assert !F.isEmpty(keys);
-        assert readersFlags == null || keys.size() == readersFlags.size();
-
-        if (keyMap == null) {
-            keyMap = U.newLinkedHashMap(keys.size());
-
-            Iterator<KeyCacheObject> keysIt = keys.iterator();
-
-            for (int i = 0; i < keys.size(); i++) {
-                Boolean addRdr = readersFlags != null ? readersFlags.get(i) : Boolean.FALSE;
-
-                keyMap.put(keysIt.next(), addRdr);
-            }
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return addDepInfo;
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

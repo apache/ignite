@@ -33,11 +33,11 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class TestMessageSerializer implements MessageSerializer<TestMessage> {
     /** */
-    private final static MessageArrayType intMatrixCollDesc = new MessageArrayType(new MessageItemType(MessageCollectionItemType.INT_ARR), int[].class);
+    private static final MessageArrayType intMatrixCollDesc = new MessageArrayType(new MessageItemType(MessageCollectionItemType.INT_ARR), int[].class);
     /** */
-    private final static MessageArrayType strArrCollDesc = new MessageArrayType(new MessageItemType(MessageCollectionItemType.STRING), String.class);
+    private static final MessageArrayType strArrCollDesc = new MessageArrayType(new MessageItemType(MessageCollectionItemType.STRING), String.class);
     /** */
-    private final static MessageArrayType verArrCollDesc = new MessageArrayType(new MessageItemType(MessageCollectionItemType.GRID_CACHE_VERSION), GridCacheVersion.class);
+    private static final MessageArrayType verArrCollDesc = new MessageArrayType(new MessageItemType(MessageCollectionItemType.GRID_CACHE_VERSION), GridCacheVersion.class);
 
     /** */
     @Override public boolean writeTo(TestMessage msg, MessageWriter writer) {
@@ -135,6 +135,12 @@ public class TestMessageSerializer implements MessageSerializer<TestMessage> {
 
             case 14:
                 if (!writer.writeGridLongList(msg.gridLongList))
+                    return false;
+
+                writer.incrementState();
+
+            case 15:
+                if (!writer.writeMessage(msg.nioMsg))
                     return false;
 
                 writer.incrementState();
@@ -260,6 +266,14 @@ public class TestMessageSerializer implements MessageSerializer<TestMessage> {
 
             case 14:
                 msg.gridLongList = reader.readGridLongList();
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 15:
+                msg.nioMsg = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;

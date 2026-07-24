@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.util.nio.MessageSerialization;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -104,13 +105,13 @@ public abstract class AbstractMessageSerializationTest {
 
         initializeMessage(msg);
 
-        while (!msgFactory.serializer(msgType).writeTo(msg, writer)) {
+        while (!MessageSerialization.writeTo(msgFactory, msg, writer)) {
             // No-op.
         }
 
         msg = msgFactory.create(msgType);
 
-        while (!msgFactory.serializer(msgType).readFrom(msg, reader)) {
+        while (!MessageSerialization.readFrom(msgFactory, msg, reader)) {
             // No-op.
         }
 

@@ -17,25 +17,26 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.internal.MarshallableMessage;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.DeployableMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -44,7 +45,8 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 /**
  *
  */
-public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingleUpdateRequest {
+public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingleUpdateRequest
+    implements MarshallableMessage, DeployableMessage {
     /** Optional arguments for entry processor. */
     private @Nullable Object[] invokeArgs;
 
@@ -53,7 +55,8 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
     @Nullable List<byte[]> invokeArgsBytes;
 
     /** Entry processors. */
-    private @Nullable EntryProcessor<Object, Object, Object> entryProc;
+    @Marshalled("entryProcBytes")
+    @Nullable EntryProcessor<Object, Object, Object> entryProc;
 
     /** Entry processors bytes. */
     @Order(1)
@@ -160,44 +163,38 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
-
-        // force addition of deployment info for entry processors if P2P is enabled globally.
-        if (!addDepInfo && ctx.deploymentEnabled())
-            addDepInfo = true;
-
-        if (entryProc != null && entryProcBytes == null) {
-            if (addDepInfo)
-                prepareObject(entryProc, cctx);
-
-            entryProcBytes = CU.marshal(cctx, entryProc);
-        }
-
-        if (!F.isEmpty(invokeArgs) && invokeArgsBytes == null)
-            invokeArgsBytes = Arrays.asList(marshalInvokeArguments(invokeArgs, cctx));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        if (entryProcBytes != null && entryProc == null)
-            entryProc = U.unmarshal(ctx, entryProcBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-
-        if (invokeArgsBytes != null && invokeArgs == null)
-            invokeArgs = unmarshalInvokeArguments(invokeArgsBytes.toArray(new byte[invokeArgsBytes.size()][]), ctx, ldr);
-    }
-
-    /** {@inheritDoc} */
     @Override public void cleanup(boolean clearKey) {
         super.cleanup(clearKey);
 
         entryProc = null;
     }
 
+    /** {@inheritDoc} */
+    @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
+        if (!F.isEmpty(invokeArgs) && invokeArgsBytes == null)
+            invokeArgsBytes = marshallInvokeArguments(invokeArgs, marsh);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (invokeArgsBytes != null && invokeArgs == null)
+            invokeArgs = unmarshalInvokeArguments(invokeArgsBytes, marsh, clsLdr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void deploy(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
+
+        forceDeploymentInfo(ctx);
+
+        if (entryProc != null && entryProcBytes == null) {
+            if (addDepInfo)
+                deployObject(entryProc, cctx);
+        }
+
+        if (!F.isEmpty(invokeArgs) && invokeArgsBytes == null)
+            deployInvokeArguments(invokeArgs, cctx);
+    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

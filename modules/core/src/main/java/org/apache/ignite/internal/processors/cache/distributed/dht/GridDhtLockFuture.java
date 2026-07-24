@@ -1033,9 +1033,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                                     }
 
                                     assert added.dhtLocal();
-
-                                    if (added.ownerVersion() != null)
-                                        req.owned(e.key(), added.ownerVersion());
                                 }
                                 catch (GridCacheEntryRemovedException ex) {
                                     if (log.isDebugEnabled()) {

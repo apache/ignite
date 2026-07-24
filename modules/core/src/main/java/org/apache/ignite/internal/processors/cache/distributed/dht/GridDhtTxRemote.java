@@ -271,7 +271,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
      * @throws IgniteCheckedException If failed.
      */
     public void addWrite(IgniteTxEntry entry, ClassLoader ldr) throws IgniteCheckedException {
-        entry.unmarshal(cctx, false, ldr);
+        entry.initializeContext(cctx, topVer, false);
 
         GridCacheContext cacheCtx = entry.context();
 

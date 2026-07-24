@@ -19,6 +19,7 @@ package org.apache.ignite.internal.managers.communication;
 
 import org.apache.ignite.internal.ExecutorAwareMessage;
 import org.apache.ignite.internal.GridTopicMessage;
+import org.apache.ignite.internal.NioField;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
@@ -42,6 +43,7 @@ public class GridIoMessage implements Message, SpanTransport, MessageWrapper {
     byte plc;
 
     /** Topic message. */
+    @NioField
     @Order(1)
     @GridToStringInclude
     GridTopicMessage topicMsg;
@@ -70,6 +72,9 @@ public class GridIoMessage implements Message, SpanTransport, MessageWrapper {
     @Order(7)
     @GridToStringInclude
     public @Nullable OperationContextMessage opCtxMsg;
+
+    /** Set once the payload is marshalled; guards double marshal and unmarshalled transmit. Not on the wire. */
+    private transient boolean marshalled;
 
     /**
      * Default constructor.
@@ -143,6 +148,16 @@ public class GridIoMessage implements Message, SpanTransport, MessageWrapper {
      */
     public boolean skipOnTimeout() {
         return skipOnTimeout;
+    }
+
+    /** Marks this message as marshalled. */
+    void markMarshalled() {
+        marshalled = true;
+    }
+
+    /** @return {@code true} if this message has been marshalled. */
+    boolean marshalled() {
+        return marshalled;
     }
 
     /**

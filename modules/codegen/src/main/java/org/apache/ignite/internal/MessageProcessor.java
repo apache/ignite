@@ -25,8 +25,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.processing.AbstractProcessor;
+import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.annotation.processing.SupportedSourceVersion;
@@ -37,13 +39,15 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
-import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.ElementFilter;
 import javax.tools.Diagnostic;
+import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 import static org.apache.ignite.internal.MessageSerializerGenerator.DLFT_ENUM_MAPPER_CLS;
+import static org.apache.ignite.internal.MessageSerializerGenerator.enumType;
 
 /**
  * Annotation processor that generates serialization and deserialization code for classes implementing the {@code Message} interface.
@@ -77,6 +81,15 @@ public class MessageProcessor extends AbstractProcessor {
     /** Externalizable message. */
     static final String MARSHALLABLE_MESSAGE_INTERFACE = "org.apache.ignite.internal.MarshallableMessage";
 
+    /** Marker of messages with no marshaller. */
+    static final String NON_MARSHALLABLE_MESSAGE_INTERFACE = "org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage";
+
+    /** */
+    static final String CACHE_OBJECT_CLS = "org.apache.ignite.internal.processors.cache.CacheObject";
+
+    /** */
+    static final String KEY_CACHE_OBJECT_CLS = "org.apache.ignite.internal.processors.cache.KeyCacheObject";
+
     /** */
     public static final String GRID_H2_NULL = "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Null";
 
@@ -97,20 +110,31 @@ public class MessageProcessor extends AbstractProcessor {
     static final String[] SKIP_MESSAGES = {
         "org.apache.ignite.internal.processors.odbc.ClientMessage",
         COMPRESSED_MESSAGE_CLASS,
-        "org.apache.ignite.loadtests.communication.GridTestMessage"
+        "org.apache.ignite.loadtests.communication.GridTestMessage",
+        "org.apache.ignite.spi.communication.tcp.TestDelayMessage"
     };
 
     /** */
     private final Map<String, IgniteBiTuple<String, String>> enumMappersInUse = new HashMap<>();
 
-    /**
-     * Processes all classes implementing the {@code Message} interface and generates corresponding serializer code.
-     */
+    /** Processes all classes implementing the {@code Message} interface and generates corresponding serializer code. */
     @Override public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        TypeMirror msgType = processingEnv.getElementUtils().getTypeElement(MESSAGE_INTERFACE).asType();
+        TypeElement msgEl = processingEnv.getElementUtils().getTypeElement(MESSAGE_INTERFACE);
+
+        if (msgEl == null) {
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                "Cannot resolve " + MESSAGE_INTERFACE + " on the annotation-processing classpath.");
+
+            return false;
+        }
+
+        TypeMirror msgType = msgEl.asType();
 
         List<TypeMirror> emptyMsgs = typesToTypeMirrors(EMPTY_MESSAGES);
         List<TypeMirror> skipMsgs = typesToTypeMirrors(SKIP_MESSAGES);
+
+        TypeElement marshallableEl = processingEnv.getElementUtils().getTypeElement(MARSHALLABLE_MESSAGE_INTERFACE);
+        TypeElement nonMarshallableEl = processingEnv.getElementUtils().getTypeElement(NON_MARSHALLABLE_MESSAGE_INTERFACE);
 
         Map<TypeElement, List<VariableElement>> msgFields = new HashMap<>();
 
@@ -122,6 +146,13 @@ public class MessageProcessor extends AbstractProcessor {
 
             if (!isAssignable(msgType, clazz))
                 continue;
+
+            // No marshaller is generated for a NonMarshallableMessage, so declared marshalling logic would silently never run.
+            if (nonMarshallableEl != null && isAssignable(nonMarshallableEl.asType(), clazz)
+                && ((marshallableEl != null && isAssignable(marshallableEl.asType(), clazz)) || hasMarshalledFields(clazz))) {
+                processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                    "NonMarshallableMessage must not implement MarshallableMessage or declare @Marshalled fields", clazz);
+            }
 
             if (clazz.getModifiers().contains(Modifier.ABSTRACT))
                 continue;
@@ -145,15 +176,20 @@ public class MessageProcessor extends AbstractProcessor {
             msgFields.put(clazz, fields);
         }
 
+        List<Function<ProcessingEnvironment, MessageGenerator>> generators = List.of(
+            MessageSerializerGenerator::new, MessageMarshallerGenerator::new, MessageDeploymentGenerator::new);
+
         for (Map.Entry<TypeElement, List<VariableElement>> type: msgFields.entrySet()) {
-            try {
-                new MessageSerializerGenerator(processingEnv).generate(type.getKey(), type.getValue());
-            }
-            catch (Exception e) {
-                processingEnv.getMessager().printMessage(
-                    Diagnostic.Kind.ERROR,
-                    "Failed to generate a message serializer:" + e.getMessage(),
-                    type.getKey());
+            for (Function<ProcessingEnvironment, MessageGenerator> factory : generators) {
+                MessageGenerator gen = factory.apply(processingEnv);
+
+                try {
+                    gen.generate(type.getKey(), type.getValue());
+                }
+                catch (Exception e) {
+                    processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                        "Failed to generate a message " + gen.typeSuffix().toLowerCase() + ":" + e.getMessage(), type.getKey());
+                }
             }
         }
 
@@ -192,7 +228,7 @@ public class MessageProcessor extends AbstractProcessor {
      * The resulting list is sorted in ascending order of the {@code @Order} value.
      *
      * @param type the {@code TypeElement} representing the class to inspect.
-     * @return a list of {@code VariableElement} objects representing all ordered fields, including those declared in superclasses.
+     * @return all ordered fields including those in superclasses, sorted by ascending {@code @Order} value.
      */
     private List<VariableElement> orderedFields(TypeElement type) {
         List<List<VariableElement>> hierList = hierarchicalOrderedFields(type);
@@ -246,7 +282,7 @@ public class MessageProcessor extends AbstractProcessor {
     }
 
     /**
-     * Validates consistency of enum field mappers configuration: the same mapper is used for the same enum in different messages,
+     * Validates consistency of enum field mappers configuration: the same mapper is used for the same enum across different messages,
      * CustomMapper annotation is used only for enum fields.
      *
      * @param type Type implementing Message interface.
@@ -254,7 +290,8 @@ public class MessageProcessor extends AbstractProcessor {
      */
     private void validateEnumFieldMapping(TypeElement type, Element el) {
         CustomMapper custMappAnn = el.getAnnotation(CustomMapper.class);
-        if (isEnumField(el)) {
+
+        if (enumType(processingEnv, el.asType())) {
             String enumClsFullName = el.asType().toString();
             String enumMapperClsName = custMappAnn != null ? custMappAnn.value() : DLFT_ENUM_MAPPER_CLS;
             String msgClsName = type.toString();
@@ -285,16 +322,6 @@ public class MessageProcessor extends AbstractProcessor {
         }
     }
 
-    /** */
-    private boolean isEnumField(Element el) {
-        TypeMirror elType = el.asType();
-
-        if (elType.getKind() != TypeKind.DECLARED)
-            return false;
-
-        return processingEnv.getTypeUtils().asElement(elType).getKind() == ElementKind.ENUM;
-    }
-
     /** Map class names to {@link TypeMirror} objects. */
     private List<TypeMirror> typesToTypeMirrors(String[] types) {
         return Arrays.stream(types)
@@ -307,5 +334,12 @@ public class MessageProcessor extends AbstractProcessor {
     /** */
     private boolean isAssignable(TypeMirror t, TypeElement clazz) {
         return processingEnv.getTypeUtils().isAssignable(clazz.asType(), t);
+    }
+
+    /** @return {@code true} if {@code clazz} or any of its superclasses declares a {@code @Marshalled} field. */
+    private boolean hasMarshalledFields(TypeElement clazz) {
+        return SystemViewRowAttributeWalkerProcessor.superclasses(processingEnv, clazz)
+            .flatMap(c -> ElementFilter.fieldsIn(c.getEnclosedElements()).stream())
+            .anyMatch(f -> f.getAnnotation(Marshalled.class) != null);
     }
 }

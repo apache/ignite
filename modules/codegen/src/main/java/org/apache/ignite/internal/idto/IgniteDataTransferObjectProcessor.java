@@ -17,11 +17,7 @@
 
 package org.apache.ignite.internal.idto;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.util.HashMap;
@@ -42,9 +38,10 @@ import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 
-import static org.apache.ignite.internal.MessageSerializerGenerator.NL;
-import static org.apache.ignite.internal.MessageSerializerGenerator.TAB;
-import static org.apache.ignite.internal.MessageSerializerGenerator.identicalFileIsAlreadyGenerated;
+import static org.apache.ignite.internal.MessageGenerator.NL;
+import static org.apache.ignite.internal.MessageGenerator.TAB;
+import static org.apache.ignite.internal.MessageGenerator.identicalFileIsAlreadyGenerated;
+import static org.apache.ignite.internal.MessageGenerator.writeLicense;
 import static org.apache.ignite.internal.idto.IDTOSerializerGenerator.CLS_JAVADOC;
 import static org.apache.ignite.internal.idto.IDTOSerializerGenerator.DTO_SERDES_INTERFACE;
 import static org.apache.ignite.internal.idto.IDTOSerializerGenerator.simpleName;
@@ -227,16 +224,7 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
      * @throws IOException In case of error.
      */
     private void writeClassHeader(Writer writer, Map<TypeElement, String> dtoClss) throws IOException {
-        try (InputStream in = getClass().getClassLoader().getResourceAsStream("license.txt");
-             BufferedReader reader = new BufferedReader(new InputStreamReader(in))) {
-
-            PrintWriter out = new PrintWriter(writer);
-
-            String line;
-
-            while ((line = reader.readLine()) != null)
-                out.println(line);
-        }
+        writeLicense(writer);
 
         writer.write(NL);
         writer.write("package " + FACTORY_PKG_NAME + ";" + NL + NL);

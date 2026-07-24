@@ -18,16 +18,14 @@
 package org.apache.ignite.internal.managers.communication;
 
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  *
  */
-public class IgniteIoTestMessage implements MarshallableMessage {
+public class IgniteIoTestMessage implements Message {
     /** */
     private static final byte FLAG_PROC_FROM_NIO = 1;
 
@@ -240,10 +238,7 @@ public class IgniteIoTestMessage implements MarshallableMessage {
         return resRcvTsMillis;
     }
 
-    /**
-     * This method is called to initialize tracing variables.
-     * TODO: introduce direct message lifecycle API?
-     */
+    /** Captures the received timestamp at the first call; later calls are no-ops. */
     public void onAfterRead() {
         if (req && reqRcvTs == 0) {
             reqRcvTs = System.nanoTime();
@@ -258,10 +253,7 @@ public class IgniteIoTestMessage implements MarshallableMessage {
         }
     }
 
-    /**
-     * This method is called to initialize tracing variables.
-     * TODO: introduce direct message lifecycle API?
-     */
+    /** Captures the sending timestamp at the first call; later calls are no-ops. */
     public void onBeforeWrite() {
         if (req && reqSndTs == 0) {
             reqSndTs = System.nanoTime();
@@ -322,16 +314,6 @@ public class IgniteIoTestMessage implements MarshallableMessage {
      */
     public void senderNodeId(UUID sndNodeId) {
         this.sndNodeId = sndNodeId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        onBeforeWrite();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        onAfterRead();
     }
 
     /** {@inheritDoc} */

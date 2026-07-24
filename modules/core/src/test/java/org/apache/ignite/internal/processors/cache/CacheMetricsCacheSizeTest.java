@@ -33,8 +33,8 @@ import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.processors.cluster.CacheMetricsMessage;
+import org.apache.ignite.internal.util.nio.MessageSerialization;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -106,7 +106,6 @@ public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
         msg.addServerCacheMetrics(srvrId, cacheMetrics);
 
         MessageFactory msgFactory = ((TcpDiscoverySpi)grid(0).context().discovery().getInjectedDiscoverySpi()).messageFactory();
-        MessageSerializer msgSerializer = msgFactory.serializer(msg.directType());
 
         // First time we write initial message type which is not read by the reader because the message type is known.
         // We have to skip this header at the further message reading.
@@ -123,7 +122,7 @@ public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
         // 2kb should be enough for an empty message even if it is a relatively large metrics message.
         msgWritter.setBuffer(ByteBuffer.allocate(2048));
 
-        assertTrue(msgSerializer.writeTo(msg, msgWritter));
+        assertTrue(MessageSerialization.writeTo(msgFactory, msg, msgWritter));
 
         assertTrue(msgWritter.getBuffer().hasRemaining());
 
@@ -135,7 +134,7 @@ public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
 
         TcpDiscoveryMetricsUpdateMessage msg2 = new TcpDiscoveryMetricsUpdateMessage();
 
-        assertTrue(msgSerializer.readFrom(msg2, msgReader));
+        assertTrue(MessageSerialization.readFrom(msgFactory, msg2, msgReader));
 
         Map<Integer, CacheMetricsMessage> cacheMetrics2 = msg2.serversFullMetricsMessages().values().iterator().next()
             .cachesMetricsMessages();

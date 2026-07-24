@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -126,9 +127,14 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
 
         if (writeEntries != null) {
             for (IgniteTxEntry entry : writeEntries) {
-                entry.unmarshal(ctx, true, ldr);
+                try {
+                    entry.initializeContext(ctx, topVer, true);
 
-                addEntry(entry);
+                    addEntry(entry);
+                }
+                catch (CacheInvalidStateException e) {
+                    // Cache was destroyed.
+                }
             }
         }
 
@@ -203,9 +209,14 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
      */
     public void addEntries(ClassLoader ldr, Iterable<IgniteTxEntry> entries) throws IgniteCheckedException {
         for (IgniteTxEntry entry : entries) {
-            entry.unmarshal(cctx, true, ldr);
+            try {
+                entry.initializeContext(cctx, topVer, true);
 
-            addEntry(entry);
+                addEntry(entry);
+            }
+            catch (CacheInvalidStateException e) {
+                // Cache was destroyed.
+            }
         }
     }
 

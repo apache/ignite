@@ -21,14 +21,14 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-/** A {@link Message} which still requires external custom pre-marshalling and post-unmarshalling. */
+/** A {@link Message} requiring a custom marshal/unmarshal step via {@link Marshaller}. */
 public interface MarshallableMessage extends Message {
-    /** @param marsh External custom marshaller. */
-    public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException;
+    /** @param marsh Marshaller for marshalling. */
+    public void marshal(Marshaller marsh) throws IgniteCheckedException;
 
     /**
-     * @param marsh External custom marshaller.
-     * @param clsLdr External class loader to post-unmarshall.
+     * @param marsh Marshaller for unmarshalling.
+     * @param clsLdr Class loader for unmarshalling.
      */
-    public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException;
+    public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException;
 }

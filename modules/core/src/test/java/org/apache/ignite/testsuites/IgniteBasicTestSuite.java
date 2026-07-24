@@ -36,10 +36,13 @@ import org.apache.ignite.internal.IgniteLocalNodeMapBeforeStartTest;
 import org.apache.ignite.internal.IgniteSlowClientDetectionSelfTest;
 import org.apache.ignite.internal.TransactionsMXBeanImplTest;
 import org.apache.ignite.internal.codegen.IgniteDataTransferObjectProcessorTest;
+import org.apache.ignite.internal.codegen.MarshallerCacheFreeUnmarshalTest;
 import org.apache.ignite.internal.codegen.MessageProcessorTest;
+import org.apache.ignite.internal.codegen.MessageSerializationArchitectureTest;
 import org.apache.ignite.internal.managers.communication.CompressedMessageTest;
 import org.apache.ignite.internal.managers.communication.DefaultEnumMapperTest;
 import org.apache.ignite.internal.managers.communication.ErrorMessageSelfTest;
+import org.apache.ignite.internal.managers.communication.GridIoManagerOrderedPoisonMessageTest;
 import org.apache.ignite.internal.managers.communication.MessageFactoryMarshallerInitializationTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2Test;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2TestNoOptimizations;
@@ -52,6 +55,7 @@ import org.apache.ignite.internal.processors.cache.SetTxTimeoutOnPartitionMapExc
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.EvictPartitionInLogTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.LogEvictionResultsTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionEvictionOrderTest;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponseUnmarshalTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.DiscoveryDataDeserializationFailureHanderTest;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessorRemoteTest;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessorSelfTest;
@@ -72,6 +76,8 @@ import org.apache.ignite.messaging.GridMessagingNoPeerClassLoadingSelfTest;
 import org.apache.ignite.messaging.GridMessagingSelfTest;
 import org.apache.ignite.messaging.IgniteMessagingSendAsyncTest;
 import org.apache.ignite.messaging.IgniteMessagingWithClientTest;
+import org.apache.ignite.plugin.extensions.communication.MessageMarshalOnceTest;
+import org.apache.ignite.plugin.extensions.communication.MessageUnmarshalOnceTest;
 import org.apache.ignite.spi.GridSpiLocalHostInjectionTest;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTestSelfTest;
 import org.apache.ignite.testframework.junits.multijvm.JavaVersionCommandParserTest;
@@ -153,6 +159,12 @@ import org.junit.runners.Suite;
     ClientSessionOutboundQueueLimitTest.class,
 
     MessageProcessorTest.class,
+    MessageMarshalOnceTest.class,
+    GridIoManagerOrderedPoisonMessageTest.class,
+    MessageUnmarshalOnceTest.class,
+    GridCacheQueryResponseUnmarshalTest.class,
+    MarshallerCacheFreeUnmarshalTest.class,
+    MessageSerializationArchitectureTest.class,
     ErrorMessageSelfTest.class,
     DefaultEnumMapperTest.class,
     IgniteDataTransferObjectProcessorTest.class,

@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.nio.MessageSerialization;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -927,7 +928,7 @@ public class DirectByteBufferStream {
     public void writeMessage(Message msg, MessageWriter writer) {
         if (msg != null) {
             if (buf.hasRemaining())
-                nestedWrite(writer, () -> msgFactory.serializer(msg.directType()).writeTo(msg, writer));
+                nestedWrite(writer, () -> MessageSerialization.writeTo(msgFactory, msg, writer));
             else
                 lastFinished = false;
         }
@@ -1573,7 +1574,7 @@ public class DirectByteBufferStream {
             try {
                 reader.beforeNestedRead();
 
-                lastFinished = msgFactory.serializer(msg.directType()).readFrom(msg, reader);
+                lastFinished = MessageSerialization.readFrom(msgFactory, msg, reader);
             }
             finally {
                 reader.afterNestedRead(lastFinished);
