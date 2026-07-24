@@ -20,12 +20,15 @@ package org.apache.ignite.internal.jdbc2;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
@@ -122,16 +125,16 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
         final String url = CFG_URL_PREFIX + "nodeId=" + wrongId + '@' + configURL();
 
         GridTestUtils.assertThrows(
-                log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        try (Connection conn = DriverManager.getConnection(url)) {
-                            return conn;
-                        }
+            log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    try (Connection conn = DriverManager.getConnection(url)) {
+                        return conn;
                     }
-                },
-                SQLException.class,
-                "Failed to establish connection with node (is it a server node?): " + wrongId
+                }
+            },
+            SQLException.class,
+            "Failed to establish connection with node (is it a server node?): " + wrongId
         );
     }
 
@@ -147,16 +150,16 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
         final String url = CFG_URL_PREFIX + "nodeId=" + clientId + '@' + configURL();
 
         GridTestUtils.assertThrows(
-                log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        try (Connection conn = DriverManager.getConnection(url)) {
-                            return conn;
-                        }
+            log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    try (Connection conn = DriverManager.getConnection(url)) {
+                        return conn;
                     }
-                },
-                SQLException.class,
-                "Failed to establish connection with node (is it a server node?): " + clientId
+                }
+            },
+            SQLException.class,
+            "Failed to establish connection with node (is it a server node?): " + clientId
         );
     }
 
@@ -295,5 +298,58 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
             assertFalse(((JdbcConnection)conn).isCollocatedQuery());
             assertTrue(((JdbcConnection)conn).skipReducerOnUpdate());
         }
+    }
+
+    /**
+     * Test that JDBC cfg:// URL with remote HTTP, HTTPS, and FTP location is blocked.
+     */
+    @Test
+    public void testRemoteCfgUrlsAreBlocked() {
+        for (String scheme : Arrays.asList("http", "https", "ftp", "ftps")) {
+            final String url = CFG_URL_PREFIX + scheme + "://attacker.example.com/evil.xml";
+            final String expMsg = scheme.startsWith("ftp") ? "always blocked" : "Remote Spring configuration URLs";
+
+            GridTestUtils.assertThrows(
+                log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        try (Connection conn = DriverManager.getConnection(url)) {
+                            return conn;
+                        }
+                    }
+                },
+                SQLException.class,
+                expMsg
+            );
+        }
+    }
+
+    /**
+     * Test that JDBC cfg:// URL with remote HTTP location is allowed when system property is set.
+     */
+    @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_ALLOW_REMOTE_SPRING_CFG_URL, value = "true")
+    public void testRemoteHttpCfgUrlAllowedWhenFlagSet() {
+        final String url = CFG_URL_PREFIX + "http://127.0.0.1:1/nonexistent.xml";
+
+        Throwable err = GridTestUtils.assertThrows(
+            log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    try (Connection conn = DriverManager.getConnection(url)) {
+                        return conn;
+                    }
+                }
+            },
+            SQLException.class,
+            null
+        );
+
+        String msg = err.getMessage();
+
+        assertFalse(
+            "Security exception should not be thrown when flag is enabled",
+            msg != null && msg.contains("Remote Spring configuration URLs")
+        );
     }
 }

@@ -375,6 +375,14 @@ public abstract class IgniteUtils extends CommonUtils {
     /** Ignite Work Directory. */
     public static final String IGNITE_WORK_DIR = System.getenv(IgniteSystemProperties.IGNITE_WORK_DIR);
 
+    /** URL schemes that load remote content and are blocked by default in Spring configuration. */
+    private static final Set<String> REMOTE_CFG_SCHEMES = Collections.unmodifiableSet(
+        new HashSet<>(Arrays.asList("http", "https", "ftp", "ftps")));
+
+    /** URL schemes that are always blocked regardless of system property due to security risk. */
+    private static final Set<String> ALWAYS_BLOCKED_CFG_SCHEMES = Collections.unmodifiableSet(
+        new HashSet<>(Arrays.asList("ftp", "ftps")));
+
     /** Random is used to get random server node to authentication from client node. */
     private static final Random RND = new Random(System.currentTimeMillis());
 
@@ -2558,10 +2566,71 @@ public abstract class IgniteUtils extends CommonUtils {
     public static URL resolveSpringUrl(String springCfgPath) throws IgniteCheckedException {
         A.notNull(springCfgPath, "springCfgPath");
 
+        String prop = IgniteSystemProperties.IGNITE_ALLOW_REMOTE_SPRING_CFG_URL;
+
+        // Check always-blocked schemes against the raw string first, since java.net.URL
+        // does not support ftp|ftps natively and throws MalformedURLException before
+        // the scheme can be inspected, which would otherwise bypass this check.
+        String lowerPath = springCfgPath.toLowerCase(Locale.ROOT);
+
+        for (String blockedScheme : ALWAYS_BLOCKED_CFG_SCHEMES) {
+            if (lowerPath.startsWith(blockedScheme + "://"))
+                throw new IgniteCheckedException(
+                    "Spring configuration URLs with scheme '" + blockedScheme + "' are always blocked " +
+                    "due to security risk. Use a local file/classpath reference instead. " +
+                    "For remote HTTP|HTTPS set system property: -D" +
+                    prop + "=true."
+                );
+        }
+
         URL url;
 
         try {
             url = new URL(springCfgPath);
+
+            URL cfgUrl = url;
+
+            String scheme = cfgUrl.getProtocol().toLowerCase(Locale.ROOT);
+
+            // Unwrap jar:<nested_url>!/path (potentially nested) to avoid bypassing remote-scheme checks.
+            while ("jar".equals(scheme)) {
+                String file = cfgUrl.getFile();
+
+                int sep = file.indexOf("!/");
+
+                if (sep <= 0)
+                    break;
+
+                try {
+                    cfgUrl = new URL(file.substring(0, sep));
+                    scheme = cfgUrl.getProtocol().toLowerCase(Locale.ROOT);
+                }
+                catch (MalformedURLException ignored) {
+                    break;
+                }
+            }
+
+            if (REMOTE_CFG_SCHEMES.contains(scheme)) {
+                if (ALWAYS_BLOCKED_CFG_SCHEMES.contains(scheme))
+                    throw new IgniteCheckedException(
+                        "Spring configuration URL`s with scheme '" + scheme + "' are always blocked " +
+                        "due to security risk. Use a local file or classpath reference instead. " +
+                        "For remote HTTP|HTTPS set system property: -D" +
+                        prop + "=true. " +
+                        "Provided host: " + cfgUrl.getHost()
+                    );
+
+                boolean allowRemote = IgniteSystemProperties.getBoolean(prop);
+
+                if (!allowRemote)
+                    throw new IgniteCheckedException(
+                        "Remote Spring configuration URL`s (http|https) are not allowed by default " +
+                        "to prevent remote code execution via attacker-controlled Spring XML. " +
+                        "Provided host: " + cfgUrl.getHost() + ". " +
+                        "To allow remote URL`s set system property: -D" +
+                        prop + "=true"
+                    );
+            }
         }
         catch (MalformedURLException e) {
             url = resolveIgniteUrl(springCfgPath);

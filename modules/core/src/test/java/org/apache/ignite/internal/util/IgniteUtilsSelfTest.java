@@ -38,6 +38,7 @@ import java.lang.annotation.Target;
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1613,6 +1614,78 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
             longToBytes(entry.getValue(), tmp, 0);
             Assert.assertArrayEquals(b, tmp);
         }
+    }
+
+    /**
+     * Test that remote HTTPS URL in Spring cfg is blocked by default.
+     */
+    @Test
+    public void testResolveSpringUrlBlocksHttpsByDefault() {
+        assertThrows(log, () -> {
+            IgniteUtils.resolveSpringUrl("https://attacker.example.com/evil.xml");
+            return null;
+        }, IgniteCheckedException.class, "Remote Spring configuration URLs");
+    }
+
+    /**
+     * Test that remote FTP URL in Spring cfg is blocked by default.
+     */
+    @Test
+    public void testResolveSpringUrlBlocksFtpByDefault() {
+        assertThrows(log, () -> {
+            IgniteUtils.resolveSpringUrl("ftp://attacker.example.com/evil.xml");
+            return null;
+        }, IgniteCheckedException.class, "always blocked");
+    }
+
+    /**
+     * Test that remote HTTP URL in Spring cfg is blocked by default
+     * and error message contains guidance on how to enable remote URLs.
+     */
+    @Test
+    public void testResolveSpringUrlBlocksHttpByDefault() {
+        try {
+            IgniteUtils.resolveSpringUrl("http://attacker.example.com/evil.xml");
+            fail("Expected IgniteCheckedException");
+        }
+        catch (IgniteCheckedException e) {
+            assertTrue(
+                "Error message should contain system property name",
+                e.getMessage().contains(IgniteSystemProperties.IGNITE_ALLOW_REMOTE_SPRING_CFG_URL)
+            );
+            assertFalse(
+                "Error message should not contain full URL to avoid credential leak",
+                e.getMessage().contains("http://attacker.example.com/evil.xml")
+            );
+            assertTrue(
+                "Error message should contain host",
+                e.getMessage().contains("attacker.example.com")
+            );
+        }
+    }
+
+    /**
+     * Test that remote HTTP URL is allowed when system property is set.
+     */
+    @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_ALLOW_REMOTE_SPRING_CFG_URL, value = "true")
+    public void testResolveSpringUrlAllowsHttpWhenPropertySet() throws IgniteCheckedException {
+        URL url = IgniteUtils.resolveSpringUrl("http://127.0.0.1:1/nonexistent.xml");
+
+        assertNotNull(url);
+        assertEquals("http", url.getProtocol());
+    }
+
+    /**
+     * Test that FTP is always blocked even when remote URL property is set.
+     */
+    @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_ALLOW_REMOTE_SPRING_CFG_URL, value = "true")
+    public void testResolveSpringUrlFtpAlwaysBlocked() {
+        assertThrows(log, () -> {
+            IgniteUtils.resolveSpringUrl("ftp://attacker.example.com/evil.xml");
+            return null;
+        }, IgniteCheckedException.class, "always blocked");
     }
 
     /** */
