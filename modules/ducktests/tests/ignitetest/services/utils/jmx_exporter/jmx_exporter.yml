@@ -15,12 +15,12 @@ rules:
   #   Attributes: heapMemoryUsage (CompositeData: used/init/max/committed)
   #               nonHeapMemoryUsage (CompositeData)
   # ------------------------------------------------------------------
-  - pattern: "java.lang<type=Memory><heapMemoryUsage>(\w+)"
+  - pattern: 'java.lang<type=Memory><heapMemoryUsage>(\\w+)'
     name: "jvm_memory_heap_bytes_$1"
     type: GAUGE
     help: "JVM heap memory — used / init / max / committed"
 
-  - pattern: "java.lang<type=Memory><nonHeapMemoryUsage>(\w+)"
+  - pattern: 'java.lang<type=Memory><nonHeapMemoryUsage>(\\w+)'
     name: "jvm_memory_nonheap_bytes_$1"
     type: GAUGE
     help: "JVM non-heap memory — used / init / max / committed"
@@ -30,7 +30,7 @@ rules:
   #   Attributes: usage (CompositeData: used/init/max/committed)
   #               collectionUsage (CompositeData, post-GC usage)
   # ------------------------------------------------------------------
-  - pattern: "java.lang<type=MemoryPool,name=(.*?)><usage>(\w+)"
+  - pattern: 'java.lang<type=MemoryPool,name=(.*?)><usage>(\\w+)'
     name: "jvm_memory_pool_usage_bytes"
     labels:
       pool: "$1"
@@ -38,7 +38,7 @@ rules:
     type: GAUGE
     help: "JVM memory pool usage — used / init / max / committed"
 
-  - pattern: "java.lang<type=MemoryPool,name=(.*?)><collectionUsage>(\w+)"
+  - pattern: 'java.lang<type=MemoryPool,name=(.*?)><collectionUsage>(\\w+)'
     name: "jvm_memory_pool_collection_bytes"
     labels:
       pool: "$1"

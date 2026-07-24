@@ -136,8 +136,10 @@ class IgniteSpec(metaclass=ABCMeta):
         if jmx_exp_cfg.enabled:
             # Конфиг jmx_exporter.yml будет создан в config_dir на ноде
             yml_on_node = os.path.join(self.service.config_dir, JMX_EXPORTER_YML_NAME)
+            # JMX Exporter jar is copied to persistent_root/jmx_exporter.jar in ignite_aware.py
+            jar_on_node = os.path.join(self.service.persistent_root, "jmx_exporter.jar")
             default_jvm_opts = merge_jvm_settings(default_jvm_opts,
-                                                  [jmx_agent_jvm_opt(jmx_exp_cfg.port, yml_on_node)])
+                                                  [jmx_agent_jvm_opt(jmx_exp_cfg.port, yml_on_node, jar_on_node)])
 
         return default_jvm_opts
 

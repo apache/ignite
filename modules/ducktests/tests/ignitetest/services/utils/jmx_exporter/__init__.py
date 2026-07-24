@@ -68,17 +68,23 @@ def get_jmx_exporter_yml_content() -> str:
     return file.read_text(encoding="utf-8")
 
 
-def jmx_agent_jvm_opt(port: int = 8083, config_path: str = None) -> str:
+def jmx_agent_jvm_opt(port: int = 8083, config_path: str = None, jar_path: str = None) -> str:
     """
     Build -javaagent JVM option for jmx_prometheus_javaagent.
 
     :param port: HTTP port for /metrics endpoint
     :param config_path: Absolute path to jmx_exporter.yml ON THE NODE
                         (e.g., /mnt/service/config/jmx_exporter.yml)
+    :param jar_path: Absolute path to jmx_exporter.jar ON THE NODE
+                     (e.g., /opt/jmx_exporter.jar or /mnt/service/jmx_exporter.jar)
+                     If None, uses default JMX_EXPORTER_JAR_PATH
     :return: JVM argument string, e.g.
              -javaagent:/opt/jmx_exporter.jar=8083:/mnt/service/config/jmx_exporter.yml
     """
     if config_path is None:
         config_path = JMX_EXPORTER_YML_NAME
 
-    return f"-javaagent:{JMX_EXPORTER_JAR_PATH}={port}:{config_path}"
+    if jar_path is None:
+        jar_path = JMX_EXPORTER_JAR_PATH
+
+    return f"-javaagent:{jar_path}={port}:{config_path}"

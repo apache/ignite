@@ -38,7 +38,7 @@ from ignitetest.services.utils.background_thread import BackgroundThreadService
 from ignitetest.services.utils.concurrent import CountDownLatch, AtomicValue
 from ignitetest.services.utils.ignite_spec import resolve_spec, SHARED_PREPARED_FILE
 from ignitetest.services.utils.jmx_exporter import is_jmx_exporter_enabled, get_jmx_exporter_yml_content, \
-    JMX_EXPORTER_JAR_PATH, JMX_EXPORTER_YML_NAME
+    JMX_EXPORTER_JAR_PATH, JMX_EXPORTER_YML_NAME, jmx_agent_jvm_opt
 from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin, JmxClient
 from ignitetest.services.utils.jvm_utils import JvmProcessMixin, JvmVersionMixin
 from ignitetest.services.utils.log_utils import monitor_log
@@ -179,12 +179,52 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
 
         node.account.ssh("rm -rf -- %s" % self.persistent_root, allow_fail=False)
 
+    def _copy_jmx_exporter_jar(self, node):
+        """
+        Copy jmx_exporter.jar to the node if JMX Exporter is enabled.
+        Locates the jar from Maven's target/libs directory.
+        
+        The jar is always built on the host machine in modules/ducktests/target/libs/
+        regardless of whether tests run in Docker or direct mode.
+        """
+        if not is_jmx_exporter_enabled(self.globals):
+            return
+
+        # Path to jar from Maven build (relative to project root)
+        # This path is the same for both Docker and non-Docker modes
+        # Project root is 5 levels up from this file:
+        # utils -> services -> ignitetest -> tests -> ducktests
+        root = __file__
+        for _ in range(5):
+            root = os.path.dirname(root)
+        jar_from = os.path.join(root, "target/libs/jmx_prometheus_javaagent-1.0.1.jar")
+
+        if not os.path.exists(jar_from):
+            self.logger.warning(
+                "JMX Exporter jar not found at %s. Skip copying. "
+                "JMX Exporter requires running 'mvn package' before tests.", jar_from
+            )
+            return
+
+        # Copy jar to persistent_root (universal path for both modes)
+        # In Docker: /mnt/service (default), in non-Docker: /mnt/service (default)
+        jar_to = os.path.join(self.persistent_root, "jmx_exporter.jar")
+        node.account.copy_to(jar_from, jar_to)
+        
+        self.logger.debug(
+            "Copied JMX Exporter jar from %s to %s on node %s",
+            jar_from, jar_to, node.account.hostname
+        )
+
     def init_persistent(self, node):
         """
         Init persistent directory.
         :param node: Ignite service node.
         """
         super().init_persistent(node)
+
+        # Copy jmx_exporter.jar if enabled
+        self._copy_jmx_exporter_jar(node)
 
         self._prepare_configs(node)
 
