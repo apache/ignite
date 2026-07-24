@@ -148,6 +148,10 @@ This flag is useful on some operating systems when messages take too long to be 
 
 |===
 
+You can also enable warnings for growing outbound communication queues with the `IGNITE_TCP_COMM_MSG_QUEUE_WARN_SIZE` system property.
+If the property is set to a positive value, Ignite prints a warning when the number of outbound messages waiting to be sent to a node exceeds the configured threshold.
+This can help diagnose short network unavailability, failed nodes, or slow links before the queue growth leads to memory pressure.
+
 
 == Connection Timeouts
 
