@@ -56,7 +56,7 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.IGNIT
 import static org.apache.ignite.internal.processors.security.SecurityUtils.MSG_SEC_PROC_CLS_IS_INVALID;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.hasSecurityManager;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
-import static org.apache.ignite.internal.thread.context.DistributedAttributeRegistry.SECURITY;
+import static org.apache.ignite.internal.thread.context.DistributedAttributeIdRegistry.SECURITY;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_USER_ACCESS;
 import static org.apache.ignite.plugin.security.SecurityPermission.JOIN_AS_SERVER;
 

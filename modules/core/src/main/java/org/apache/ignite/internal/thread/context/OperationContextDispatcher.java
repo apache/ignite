@@ -18,7 +18,6 @@ package org.apache.ignite.internal.thread.context;
 
 import java.util.Arrays;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.thread.context.OperationContext.Restorer;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
@@ -61,7 +60,7 @@ public class OperationContextDispatcher {
      * <p>Registered attribute value is automatically captured and propagated between cluster nodes
      * during the messages transmission.</p>
      *
-     * @see DistributedAttributeRegistry
+     * @see DistributedAttributeIdRegistry
      */
     public synchronized <T extends Message> void registerDistributedAttribute(int id, OperationContextAttribute<T> attr) {
         if (regFinished)
@@ -111,10 +110,10 @@ public class OperationContextDispatcher {
         return snpBuilder.isEmpty() ? null : snpBuilder.build();
     }
 
-    /** Restores distributed {@link OperationContextAttribute} values received from a remote node. */
+    /** Restores {@link OperationContextAttribute} values received from a remote node. */
     public Scope restoreSnapshot(@Nullable OperationContextSnapshotMessage snp) {
         if (snp == null)
-            return Restorer.restoreEmpty();
+            return OperationContext.Restorer.restoreEmpty();
 
         OperationContextAttribute<? extends Message>[] locRegisteredAttrs = registeredAttrs;
 
@@ -122,7 +121,7 @@ public class OperationContextDispatcher {
         assert !F.isEmpty(snp.attrs);
         assert snp.attrs.length <= MAX_ATTRS_CNT;
 
-        Restorer ctxRestorer = Restorer.create();
+        OperationContext.Restorer ctxRestorer = OperationContext.Restorer.create();
 
         for (byte valIdx = 0, attrId = 0; valIdx < snp.attrs.length; ++valIdx) {
             Message attrVal = snp.attrs[valIdx];
