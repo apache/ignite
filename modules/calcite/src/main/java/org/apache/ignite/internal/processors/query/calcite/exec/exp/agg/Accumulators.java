@@ -87,6 +87,8 @@ public class Accumulators {
                 return avgFactory(call, hnd);
             case "SUM":
                 return sumFactory(call, hnd);
+            case "SUM_WITH_KEEP":
+                return sumWithKeepFactory(call, ctx);
             case "$SUM0":
                 return sumEmptyIsZeroFactory(call, hnd);
             case "MIN":
@@ -219,6 +221,34 @@ public class Accumulators {
             case INTEGER:
             default:
                 return () -> new LongSumEmptyIsZero<>(call, hnd);
+        }
+    }
+
+    /** */
+    private static <Row> Supplier<Accumulator<Row>> sumWithKeepFactory(
+        AggregateCall call,
+        ExecutionContext<Row> ctx
+    ) {
+        assert call.getCollation() != null && !call.getCollation().getFieldCollations().isEmpty();
+
+        RowHandler<Row> hnd = ctx.rowHandler();
+        Comparator<Row> cmp = ctx.expressionFactory().comparator(call.getCollation());
+
+        switch (call.type.getSqlTypeName()) {
+            case BIGINT:
+            case DECIMAL:
+                return () -> new SumWithKeep<>(call, hnd, cmp, DECIMAL);
+
+            case DOUBLE:
+            case REAL:
+            case FLOAT:
+                return () -> new SumWithKeep<>(call, hnd, cmp, DOUBLE);
+
+            case TINYINT:
+            case SMALLINT:
+            case INTEGER:
+            default:
+                return () -> new SumWithKeep<>(call, hnd, cmp, BIGINT);
         }
     }
 
@@ -702,6 +732,131 @@ public class Accumulators {
         /** {@inheritDoc} */
         @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
             return acc.returnType(typeFactory);
+        }
+    }
+
+    /** SUM(value) over rows tied at the first or last ordering key. */
+    private static class SumWithKeep<Row> extends AbstractAccumulator<Row> implements StoringAccumulator {
+        /** Type used for intermediate sum. */
+        private final SqlTypeName sumType;
+
+        /** Comparator for WITHIN GROUP collation. */
+        private final transient Comparator<Row> cmp;
+
+        /** Row having the selected ordering key. */
+        private Row bestRow;
+
+        /** Intermediate sum. */
+        private Object sum;
+
+        /** Whether at least one row was seen. */
+        private boolean touched;
+
+        /** Whether the first ordering key should be kept. */
+        private boolean first;
+
+        /** */
+        SumWithKeep(AggregateCall aggCall, RowHandler<Row> hnd, Comparator<Row> cmp, SqlTypeName sumType) {
+            super(aggCall, hnd);
+
+            this.cmp = cmp;
+            this.sumType = sumType;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void add(Row row) {
+            boolean first0 = "FIRST".equalsIgnoreCase(get(1, row).toString());
+
+            if (!touched) {
+                touched = true;
+                first = first0;
+                bestRow = row;
+                sum = get(0, row);
+
+                return;
+            }
+
+            assert first == first0;
+
+            int cmp0 = cmp.compare(row, bestRow);
+
+            if ((first && cmp0 < 0) || (!first && cmp0 > 0)) {
+                bestRow = row;
+                sum = get(0, row);
+            }
+            else if (cmp0 == 0)
+                addToSum(get(0, row));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void apply(Accumulator<Row> other) {
+            SumWithKeep<Row> other0 = (SumWithKeep<Row>)other;
+
+            if (!other0.touched)
+                return;
+
+            if (!touched) {
+                touched = true;
+                first = other0.first;
+                bestRow = other0.bestRow;
+                sum = other0.sum;
+
+                return;
+            }
+
+            assert first == other0.first;
+
+            int cmp0 = cmp.compare(other0.bestRow, bestRow);
+
+            if ((first && cmp0 < 0) || (!first && cmp0 > 0)) {
+                bestRow = other0.bestRow;
+                sum = other0.sum;
+            }
+            else if (cmp0 == 0)
+                addToSum(other0.sum);
+        }
+
+        /** */
+        private void addToSum(Object val) {
+            if (val == null)
+                return;
+
+            if (sum == null) {
+                sum = val;
+
+                return;
+            }
+
+            switch (sumType) {
+                case DECIMAL:
+                    sum = ((BigDecimal)sum).add((BigDecimal)val);
+                    break;
+
+                case DOUBLE:
+                    sum = (Double)sum + (Double)val;
+                    break;
+
+                default:
+                    sum = (Long)sum + (Long)val;
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object end() {
+            return sum;
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory) {
+            return F.asList(
+                typeFactory.createTypeWithNullability(typeFactory.createSqlType(sumType), true),
+                typeFactory.createTypeWithNullability(typeFactory.createSqlType(VARCHAR), false)
+            );
+        }
+
+        /** {@inheritDoc} */
+        @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
+            return typeFactory.createTypeWithNullability(typeFactory.createSqlType(sumType), true);
         }
     }
 
