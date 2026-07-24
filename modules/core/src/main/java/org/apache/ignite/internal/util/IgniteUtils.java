@@ -2568,21 +2568,6 @@ public abstract class IgniteUtils extends CommonUtils {
 
         String prop = IgniteSystemProperties.IGNITE_ALLOW_REMOTE_SPRING_CFG_URL;
 
-        // Check always-blocked schemes against the raw string first, since java.net.URL
-        // does not support ftp|ftps natively and throws MalformedURLException before
-        // the scheme can be inspected, which would otherwise bypass this check.
-        String lowerPath = springCfgPath.toLowerCase(Locale.ROOT);
-
-        for (String blockedScheme : ALWAYS_BLOCKED_CFG_SCHEMES) {
-            if (lowerPath.startsWith(blockedScheme + "://"))
-                throw new IgniteCheckedException(
-                    "Spring configuration URLs with scheme '" + blockedScheme + "' are always blocked " +
-                    "due to security risk. Use a local file/classpath reference instead. " +
-                    "For remote HTTP|HTTPS set system property: -D" +
-                    prop + "=true."
-                );
-        }
-
         URL url;
 
         try {
@@ -2633,6 +2618,20 @@ public abstract class IgniteUtils extends CommonUtils {
             }
         }
         catch (MalformedURLException e) {
+            // "ftps" is not a recognized scheme for java.net.URL, so it lands here rather
+            // than being caught by the scheme check above. Block it explicitly with the
+            // same security message for a consistent user-facing error.
+            String lowerPath = springCfgPath.toLowerCase(Locale.ROOT);
+
+            for (String blockedScheme : ALWAYS_BLOCKED_CFG_SCHEMES) {
+                if (lowerPath.startsWith(blockedScheme + "://"))
+                    throw new IgniteCheckedException(
+                        "Spring configuration URL`s with scheme '" + blockedScheme + "' are always blocked " +
+                        "due to security risk. Use a local file or classpath reference instead. " +
+                        "For remote HTTP|HTTPS set system property: -D" +
+                        prop + "=true.", e
+                    );
+            }
             url = resolveIgniteUrl(springCfgPath);
 
             if (url == null)
