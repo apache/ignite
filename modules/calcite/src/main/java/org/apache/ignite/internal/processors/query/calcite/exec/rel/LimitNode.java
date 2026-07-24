@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
+import java.math.BigDecimal;
 import java.util.function.Supplier;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -26,19 +27,16 @@ import org.jetbrains.annotations.Nullable;
 /** Offset, fetch|limit support node. */
 public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
     /** Offset if its present, otherwise 0. */
-    private final int offset;
+    private final BigDecimal offset;
 
-    /** Fetch if its present, otherwise 0. */
-    private final int fetch;
+    /** Fetch if its present, otherwise all rows. */
+    private final @Nullable BigDecimal fetch;
 
     /** Already processed (pushed to upstream) rows count. */
-    private int rowsProcessed;
+    private BigDecimal rowsProcessed = BigDecimal.ZERO;
 
-    /** Fetch can be unset, in this case we need all rows. */
-    private @Nullable Supplier<Integer> fetchNode;
-
-    /** Waiting results counter. */
-    private int waiting;
+    /** Number of upstream rows that remain to be processed for the current downstream request. */
+    private BigDecimal waiting = BigDecimal.ZERO;
 
     /**
      * Constructor.
@@ -49,20 +47,19 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
     public LimitNode(
         ExecutionContext<Row> ctx,
         RelDataType rowType,
-        Supplier<Integer> offsetNode,
-        Supplier<Integer> fetchNode
+        @Nullable Supplier<BigDecimal> offsetNode,
+        @Nullable Supplier<BigDecimal> fetchNode
     ) {
         super(ctx, rowType);
 
-        offset = offsetNode == null ? 0 : offsetNode.get();
-        fetch = fetchNode == null ? 0 : fetchNode.get();
-        this.fetchNode = fetchNode;
+        offset = offsetNode == null ? BigDecimal.ZERO : offsetNode.get();
+        fetch = fetchNode == null ? null : fetchNode.get();
     }
 
     /** {@inheritDoc} */
     @Override public void request(int rowsCnt) throws Exception {
         assert !F.isEmpty(sources()) && sources().size() == 1;
-        assert rowsCnt > 0;
+        assert rowsCnt > 0 : rowsCnt;
 
         if (fetchNone()) {
             end();
@@ -70,54 +67,56 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
             return;
         }
 
-        if (offset > 0 && rowsProcessed == 0)
-            rowsCnt = offset + rowsCnt;
+        waiting = BigDecimal.valueOf(rowsCnt);
 
-        waiting = rowsCnt;
+        if (rowsProcessed.compareTo(offset) < 0)
+            waiting = waiting.add(offset.subtract(rowsProcessed));
 
-        if (fetch > 0)
-            rowsCnt = Math.min(rowsCnt, (fetch + offset) - rowsProcessed);
-
-        checkState();
-
-        source().request(rowsCnt);
+        requestNextBatch();
     }
 
     /** {@inheritDoc} */
     @Override public void push(Row row) throws Exception {
-        if (waiting == -1)
+        if (waiting.signum() < 0)
             return;
 
-        ++rowsProcessed;
+        rowsProcessed = rowsProcessed.add(BigDecimal.ONE);
 
-        --waiting;
+        waiting = waiting.subtract(BigDecimal.ONE);
 
         checkState();
 
-        if (rowsProcessed > offset) {
-            if (fetchNode == null || (fetchNode != null && rowsProcessed <= fetch + offset))
-                downstream().push(row);
+        boolean endAfterRow = fetchNone() && waiting.signum() > 0;
+        boolean reqNextAfterRow = !endAfterRow && waiting.signum() > 0
+            && rowsProcessed.remainder(BigDecimal.valueOf(IN_BUFFER_SIZE)).signum() == 0;
+
+        if (rowsProcessed.compareTo(offset) > 0
+            && (fetch == null || rowsProcessed.compareTo(offset.add(fetch)) <= 0)) {
+            downstream().push(row);
         }
 
-        if (fetch > 0 && rowsProcessed == fetch + offset && waiting > 0)
+        if (endAfterRow)
             end();
+        else if (reqNextAfterRow)
+            requestNextBatch();
     }
 
     /** {@inheritDoc} */
     @Override public void end() throws Exception {
-        if (waiting == -1)
+        if (waiting.signum() < 0)
             return;
 
         assert downstream() != null;
 
-        waiting = -1;
+        waiting = BigDecimal.ONE.negate();
 
         downstream().end();
     }
 
     /** {@inheritDoc} */
     @Override protected void rewindInternal() {
-        rowsProcessed = 0;
+        rowsProcessed = BigDecimal.ZERO;
+        waiting = BigDecimal.ZERO;
     }
 
     /** {@inheritDoc} */
@@ -130,6 +129,27 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
 
     /** {@code True} if requested 0 results, or all already processed. */
     private boolean fetchNone() {
-        return (fetchNode != null && fetch == 0) || (fetch > 0 && rowsProcessed == fetch + offset);
+        return fetch != null && (fetch.signum() == 0 || rowsProcessed.compareTo(offset.add(fetch)) >= 0);
+    }
+
+    /** Requests the next upstream batch, taking large decimal offsets into account. */
+    private void requestNextBatch() throws Exception {
+        BigDecimal bufSize = BigDecimal.valueOf(IN_BUFFER_SIZE);
+        BigDecimal rowsAvailable = waiting;
+
+        if (fetch != null)
+            rowsAvailable = rowsAvailable.min(offset.add(fetch).subtract(rowsProcessed));
+
+        BigDecimal rowsToReq = bufSize.subtract(rowsProcessed.remainder(bufSize)).min(rowsAvailable);
+
+        if (rowsToReq.signum() == 0) {
+            end();
+
+            return;
+        }
+
+        checkState();
+
+        source().request(rowsToReq.intValueExact());
     }
 }

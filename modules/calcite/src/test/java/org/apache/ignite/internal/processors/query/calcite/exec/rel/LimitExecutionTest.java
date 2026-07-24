@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
+import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -64,6 +65,59 @@ public class LimitExecutionTest extends AbstractExecutionTest {
         checkLimitSort(2000, 3000);
     }
 
+    /** Tests sort limit values greater than the integer range. */
+    @Test
+    public void testBigDecimalSortLimit() {
+        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+        IgniteTypeFactory tf = ctx.getTypeFactory();
+        RelDataType rowType = TypeUtils.createRowType(tf, int.class);
+
+        RootNode<Object[]> rootNode = new RootNode<>(ctx, rowType);
+        SortNode<Object[]> sortNode = new SortNode<>(ctx, rowType, F::compareArrays, null,
+            () -> BigDecimal.valueOf(Integer.MAX_VALUE).add(BigDecimal.ONE));
+
+        List<Object[]> data = IntStream.range(0, 10).boxed().map(i -> new Object[] {i}).collect(Collectors.toList());
+
+        Collections.reverse(data);
+
+        rootNode.register(sortNode);
+        sortNode.register(new ScanNode<>(ctx, rowType, data));
+
+        for (int i = 0; i < data.size(); i++) {
+            assertTrue(rootNode.hasNext());
+            assertEquals(i, rootNode.next()[0]);
+        }
+
+        assertFalse(rootNode.hasNext());
+    }
+
+    /** Tests a reentrant downstream request at an input buffer boundary. */
+    @Test
+    public void testReentrantRequestToLimit() {
+        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+        IgniteTypeFactory tf = ctx.getTypeFactory();
+        RelDataType rowType = TypeUtils.createRowType(tf, int.class);
+
+        RootNode<Object[]> rootNode = new RootNode<>(ctx, rowType);
+        SortNode<Object[]> sortNode = new SortNode<>(ctx, rowType, F::compareArrays);
+        LimitNode<Object[]> limitNode = new LimitNode<>(ctx, rowType, null,
+            () -> BigDecimal.valueOf(IN_BUFFER_SIZE * 2L));
+        List<Object[]> data = IntStream.range(0, IN_BUFFER_SIZE * 2).boxed()
+            .map(i -> new Object[] {i})
+            .collect(Collectors.toList());
+
+        rootNode.register(sortNode);
+        sortNode.register(limitNode);
+        limitNode.register(new ScanNode<>(ctx, rowType, data));
+
+        for (int i = 0; i < data.size(); i++) {
+            assertTrue(rootNode.hasNext());
+            assertEquals(i, rootNode.next()[0]);
+        }
+
+        assertFalse(rootNode.hasNext());
+    }
+
     /**
      * @param offset Rows offset.
      * @param fetch Fetch rows count (zero means unlimited).
@@ -78,8 +132,8 @@ public class LimitExecutionTest extends AbstractExecutionTest {
 
         RootNode<Object[]> rootNode = new RootNode<>(ctx, rowType);
 
-        SortNode<Object[]> sortNode = new SortNode<>(ctx, rowType, F::compareArrays, () -> offset,
-            fetch == 0 ? null : () -> fetch);
+        SortNode<Object[]> sortNode = new SortNode<>(ctx, rowType, F::compareArrays,
+            () -> BigDecimal.valueOf(offset), fetch == 0 ? null : () -> BigDecimal.valueOf(fetch));
 
         List<Object[]> data = IntStream.range(0, SourceNode.IN_BUFFER_SIZE + fetch + offset).boxed()
             .map(i -> new Object[] {i}).collect(Collectors.toList());
@@ -109,7 +163,8 @@ public class LimitExecutionTest extends AbstractExecutionTest {
         RelDataType rowType = TypeUtils.createRowType(tf, int.class);
 
         RootNode<Object[]> rootNode = new RootNode<>(ctx, rowType);
-        LimitNode<Object[]> limitNode = new LimitNode<>(ctx, rowType, () -> offset, fetch == 0 ? null : () -> fetch);
+        LimitNode<Object[]> limitNode = new LimitNode<>(ctx, rowType, () -> BigDecimal.valueOf(offset),
+            fetch == 0 ? null : () -> BigDecimal.valueOf(fetch));
         SourceNode srcNode = new SourceNode(ctx, rowType);
 
         rootNode.register(limitNode);

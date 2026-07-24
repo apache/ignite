@@ -16,9 +16,9 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.List;
 import java.util.PriorityQueue;
 import java.util.function.Supplier;
 import org.apache.calcite.rel.type.RelDataType;
@@ -43,11 +43,8 @@ public class SortNode<Row> extends MemoryTrackingNode<Row> implements SingleNode
     /** Rows buffer. */
     private final PriorityQueue<Row> rows;
 
-    /** SQL select limit. Negative if disabled. */
-    private final int limit;
-
     /** Reverse-ordered rows in case of limited sort. */
-    private List<Row> reversed;
+    private ArrayList<Row> reversed;
 
     /**
      * @param ctx Execution context.
@@ -58,21 +55,25 @@ public class SortNode<Row> extends MemoryTrackingNode<Row> implements SingleNode
     public SortNode(
         ExecutionContext<Row> ctx, RelDataType rowType,
         Comparator<Row> comp,
-        @Nullable Supplier<Integer> offset,
-        @Nullable Supplier<Integer> fetch
+        @Nullable Supplier<BigDecimal> offset,
+        @Nullable Supplier<BigDecimal> fetch
     ) {
         super(ctx, rowType);
 
-        assert fetch == null || fetch.get() >= 0;
-        assert offset == null || offset.get() >= 0;
+        BigDecimal offsetVal = offset == null ? BigDecimal.ZERO : offset.get();
+        BigDecimal fetchVal = fetch == null ? null : fetch.get();
 
-        limit = fetch == null ? -1 : fetch.get() + (offset == null ? 0 : offset.get());
+        BigDecimal rowsToKeep = fetchVal == null ? null : fetchVal.add(offsetVal);
 
-        if (limit < 0)
+        if (rowsToKeep == null || rowsToKeep.signum() == 0
+            || rowsToKeep.compareTo(BigDecimal.valueOf(Integer.MAX_VALUE)) > 0) {
             rows = new PriorityQueue<>(comp);
+        }
         else {
-            rows = new GridBoundedPriorityQueue<>(limit, comp == null ? (Comparator<Row>)Comparator.reverseOrder()
-                : comp.reversed());
+            rows = new GridBoundedPriorityQueue<>(rowsToKeep.intValueExact(),
+                comp == null ? (Comparator<Row>)Comparator.reverseOrder() : comp.reversed());
+
+            reversed = new ArrayList<>();
         }
     }
 
@@ -106,8 +107,8 @@ public class SortNode<Row> extends MemoryTrackingNode<Row> implements SingleNode
     /** {@inheritDoc} */
     @Override public void request(int rowsCnt) throws Exception {
         assert !F.isEmpty(sources()) && sources().size() == 1;
-        assert rowsCnt > 0 && requested == 0;
-        assert waiting <= 0;
+        assert rowsCnt > 0 && requested == 0 : "rowsCnt=" + rowsCnt + ", requested=" + requested;
+        assert waiting <= 0 : waiting;
 
         checkState();
 
@@ -122,8 +123,8 @@ public class SortNode<Row> extends MemoryTrackingNode<Row> implements SingleNode
     /** {@inheritDoc} */
     @Override public void push(Row row) throws Exception {
         assert downstream() != null;
-        assert waiting > 0;
-        assert reversed == null || reversed.isEmpty();
+        assert waiting > 0 : waiting;
+        assert reversed == null || reversed.isEmpty() : reversed.size();
 
         checkState();
 
@@ -146,7 +147,7 @@ public class SortNode<Row> extends MemoryTrackingNode<Row> implements SingleNode
     /** {@inheritDoc} */
     @Override public void end() throws Exception {
         assert downstream() != null;
-        assert waiting > 0;
+        assert waiting > 0 : waiting;
 
         checkState();
 
@@ -160,16 +161,15 @@ public class SortNode<Row> extends MemoryTrackingNode<Row> implements SingleNode
         if (isClosed())
             return;
 
-        assert waiting == -1;
+        assert waiting == -1 : waiting;
 
         int processed = 0;
 
         inLoop = true;
         try {
             // Prepare final order (reversed).
-            if (limit > 0 && !rows.isEmpty()) {
-                if (reversed == null)
-                    reversed = new ArrayList<>(rows.size());
+            if (reversed != null && !rows.isEmpty()) {
+                reversed.ensureCapacity(rows.size());
 
                 while (!rows.isEmpty()) {
                     reversed.add(rows.poll());

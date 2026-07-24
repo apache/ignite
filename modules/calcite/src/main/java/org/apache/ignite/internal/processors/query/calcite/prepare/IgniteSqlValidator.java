@@ -74,6 +74,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlDecimalLiteral;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.OtherType;
+import org.apache.ignite.internal.processors.query.calcite.util.IgniteMath;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteResource;
 import org.apache.ignite.internal.util.typedef.F;
 import org.immutables.value.Value;
@@ -84,9 +85,6 @@ import static org.apache.calcite.util.Static.RESOURCE;
 /** Validator. */
 @Value.Enclosing
 public class IgniteSqlValidator extends SqlValidatorImpl {
-    /** Decimal of Integer.MAX_VALUE for fetch/offset bounding. */
-    private static final BigDecimal DEC_INT_MAX = BigDecimal.valueOf(Integer.MAX_VALUE);
-
     /** **/
     private static final int MAX_LENGTH_OF_ALIASES = 256;
 
@@ -241,10 +239,21 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** {@inheritDoc} */
     @Override protected void validateSelect(SqlSelect select, RelDataType targetRowType) {
-        checkIntegerLimit(select.getFetch(), "fetch / limit");
-        checkIntegerLimit(select.getOffset(), "offset");
+        checkLimit(select.getFetch(), "fetch / limit");
+        checkLimit(select.getOffset(), "offset");
 
         super.validateSelect(select, targetRowType);
+
+        setFetchOffsetType(select.getFetch());
+        setFetchOffsetType(select.getOffset());
+    }
+
+    /** */
+    // TODO https://issues.apache.org/jira/browse/CALCITE-7624
+    //  Check SqlValidatorImpl#handleOffsetFetch and remove after update to Calcite 1.43.
+    private void setFetchOffsetType(@Nullable SqlNode node) {
+        if (node instanceof SqlDynamicParam)
+            setValidatedNodeType(node, typeFactory.createSqlType(SqlTypeName.DECIMAL));
     }
 
     /** {@inheritDoc} */
@@ -265,12 +274,12 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
      * @param n Node to check limit.
      * @param nodeName Node name.
      */
-    private void checkIntegerLimit(SqlNode n, String nodeName) {
+    private void checkLimit(SqlNode n, String nodeName) {
         if (n instanceof SqlLiteral) {
             BigDecimal offFetchLimit = ((SqlLiteral)n).bigDecimalValue();
 
-            if (offFetchLimit.compareTo(DEC_INT_MAX) > 0 || offFetchLimit.compareTo(BigDecimal.ZERO) < 0)
-                throw newValidationError(n, IgniteResource.INSTANCE.correctIntegerLimit(nodeName));
+            if (offFetchLimit.compareTo(BigDecimal.ZERO) < 0)
+                throw newValidationError(n, IgniteResource.INSTANCE.illegalLimit(nodeName));
         }
         else if (n instanceof SqlDynamicParam) {
             // will fail in params check.
@@ -281,9 +290,11 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
             if (idx < parameters.length) {
                 Object param = parameters[idx];
-                if (parameters[idx] instanceof Integer) {
-                    if ((Integer)param < 0)
-                        throw newValidationError(n, IgniteResource.INSTANCE.correctIntegerLimit(nodeName));
+                if (param instanceof Number) {
+                    BigDecimal val = IgniteMath.convertToBigDecimal((Number)param);
+
+                    if (val.compareTo(BigDecimal.ZERO) < 0)
+                        throw newValidationError(n, IgniteResource.INSTANCE.illegalLimit(nodeName));
                 }
             }
         }

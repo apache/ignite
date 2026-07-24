@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
+import org.apache.ignite.internal.util.GridBoundedPriorityQueue;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -196,7 +197,9 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
         node = relImplementor.visit(idxScan);
 
         assertTrue(node instanceof SortNode);
-        assertEquals(1, (int)U.field(node, "limit"));
+        Object rows = U.field(node, "rows");
+        assertTrue(rows instanceof GridBoundedPriorityQueue);
+        assertEquals(1, (int)U.field(rows, "maxCap"));
         assertTrue(node.sources() != null && node.sources().size() == 1);
         assertTrue(node.sources().get(0) instanceof ScanNode);
     }
