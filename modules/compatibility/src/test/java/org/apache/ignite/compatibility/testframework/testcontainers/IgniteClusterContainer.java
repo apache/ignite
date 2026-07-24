@@ -33,14 +33,14 @@ public class IgniteClusterContainer implements Startable {
     private final Network net = Network.newNetwork();
 
     /**
-     * @param commitHash Commit hash.
+     * @param imageName Image name.
      * @param consistentIds Consistent ID's.
      */
-    public IgniteClusterContainer(String commitHash, List<String> consistentIds) throws Exception {
+    public IgniteClusterContainer(String imageName, List<String> consistentIds) throws Exception {
         containers = new ArrayList<>(consistentIds.size());
 
         for (int i = 0; i < consistentIds.size(); i++)
-            containers.add(new IgniteContainer(commitHash, net, "node" + (1 + i), consistentIds.get(i), i));
+            containers.add(new IgniteContainer(imageName, net, "node" + (1 + i), consistentIds.get(i), i));
     }
 
     /** {@inheritDoc} */

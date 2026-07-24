@@ -17,6 +17,25 @@
 
 # Compatibility Module — Developer Notes
 
+## Docker Compatibility Tests
+
+This module contains tests that verify upgrade compatibility between Ignite versions using Docker containers.
+Docker compatibility tests (e.g. `IgniteRebalanceOnUpgradeTest`) require:
+- **Docker** installed and running
+- A pre-built Docker image of the source (old) Ignite version (see below)
+- The `-Dru.source.image.name` property pointing to that image
+- Maven profile `compatibility-docker` — activates Docker-specific build steps (only required for `DOCKER` upgrade mode; not needed in `LOCAL` mode)
+
+Example command:
+
+```bash
+export JAVA_TOOL_OPTIONS="-Djavax.net.ssl.trustStoreType=KeychainStore"
+./mvnw test -pl modules/compatibility -Pcompatibility-docker,surefire-fork-count-1 \
+    -DskipTests=false \
+    -Dtest=org.apache.ignite.compatibility.ru.IgniteRebalanceOnUpgradeTest#testRollingUpgrade \
+    -Dru.source.image.name=<image_name>
+```
+
 ## Prerequisites
 
 - [Docker](https://www.docker.com/get-started) (Docker Desktop or Docker Engine) must be installed and running.
@@ -50,11 +69,11 @@ The script will:
 
 ### Step 2. Run the test
 
-Run `IgniteRebalanceOnUpgradeTest` from your IDE or via Maven. The source version commit hash **must** be explicitly provided via `-Dru.source.commit.hash`:
+Run `IgniteRebalanceOnUpgradeTest` from your IDE or via Maven. The source version image name **must** be explicitly provided via `-Dru.source.image.name`:
 
 ```bash
 ./mvnw test -pl modules/compatibility -Dtest=IgniteRebalanceOnUpgradeTest \
-    -Dru.source.commit.hash=<commit_hash> \
+    -Dru.source.image.name=<image_name> \
     -Psurefire-fork-count-1
 ```
 
@@ -76,7 +95,7 @@ The target-version jars are provided from the host filesystem.
 
 ```bash
 ./mvnw test -pl modules/compatibility -Dtest=IgniteRebalanceOnUpgradeTest \
-    -Dru.source.commit.hash=0ad4656eef09acda288cbad96f80f0138732d94a \
+    -Dru.source.image.name=<image_name> \
     -Psurefire-fork-count-1,compatibility-docker
 ```
 
@@ -101,7 +120,7 @@ ln -s "$(ls -d target/bin/apache-ignite-*-bin/libs)" target/ignite-target-libs
 cd target/bin && unzip apache-ignite-*-bin.zip && cd ../..
 
 ./mvnw test -pl modules/compatibility -Dtest=IgniteRebalanceOnUpgradeTest \
-    -Dru.source.commit.hash=0ad4656eef09acda288cbad96f80f0138732d94a \
+    -Dru.source.image.name=<image_name> \
     -Dru.target.libs.dir=target/bin/apache-ignite-<version>-bin/libs \
     -Psurefire-fork-count-1
 ```
@@ -115,7 +134,7 @@ The source (old-version) cluster starts in Docker containers. During rolling upg
 ```bash
 ./mvnw test -pl modules/compatibility -Dtest=IgniteRebalanceOnUpgradeTest \
     -Dru.upgrade.mode=LOCAL \
-    -Dru.source.commit.hash=0ad4656eef09acda288cbad96f80f0138732d94a \
+    -Dru.source.image.name=<image_name> \
     -Psurefire-fork-count-1
 ```
 
@@ -123,9 +142,9 @@ The source (old-version) cluster starts in Docker containers. During rolling upg
 
 ## System Properties
 
-| Property | Default                                   | Class | Description |
-|----------|-------------------------------------------|-------|-------------|
-| `ru.upgrade.mode` | `DOCKER`                                  | `IgniteRebalanceOnUpgradeTest` | Upgrade mode: `LOCAL` or `DOCKER` |
-| `ru.source.commit.hash` | - | `IgniteRebalanceOnUpgradeTest` | Commit hash for the source (old-version) Docker image `apacheignite/ignite:<commit>` |
-| `ru.target.libs.dir` | `<project.dir>/target/ignite-target-libs` | `IgniteContainer` | Host directory with target-version jars (DOCKER mode only) |
-| `ru.local.work.dir` | `<project.dir>/target/test-ignite-work`   | `IgniteContainer` | Local directory bind-mounted as Ignite work directory (persists across container restarts) |
+| Property               | Default                                   | Class | Description                                                                                |
+|------------------------|-------------------------------------------|-------|--------------------------------------------------------------------------------------------|
+| `ru.upgrade.mode`      | `DOCKER`                                  | `IgniteRebalanceOnUpgradeTest` | Upgrade mode: `LOCAL` or `DOCKER`                                                          |
+| `ru.source.image.name` | - | `IgniteRebalanceOnUpgradeTest` | The source (old-version) Docker image name, e.g. `apacheignite/ignite:2.18.0`              |
+| `ru.target.libs.dir`   | `<project.dir>/target/ignite-target-libs` | `IgniteContainer` | Host directory with target-version jars (DOCKER mode only)                                 |
+| `ru.local.work.dir`    | `<project.dir>/target/test-ignite-work`   | `IgniteContainer` | Local directory bind-mounted as Ignite work directory (persists across container restarts) |

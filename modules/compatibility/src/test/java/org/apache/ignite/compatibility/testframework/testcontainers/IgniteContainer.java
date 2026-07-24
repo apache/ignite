@@ -143,11 +143,14 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
     private final String workDirPath;
 
     /**
-     * Constructor with a commit hash (image tag).
-     * Uses {@code apacheignite/ignite:<commitHash>} as the Docker image.
+     * @param imageName Image name.
+     * @param net Network.
+     * @param hostname Hostname.
+     * @param consistentId Consistent ID.
+     * param idx Node index.
      */
-    public IgniteContainer(String commitHash, Network net, String hostname, String consistentId, int idx) throws Exception {
-        super(DockerImageName.parse("apacheignite/ignite:" + commitHash));
+    public IgniteContainer(String imageName, Network net, String hostname, String consistentId, int idx) throws Exception {
+        super(DockerImageName.parse(imageName));
 
         this.hostname = hostname;
         this.consistentId = consistentId;

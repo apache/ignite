@@ -62,8 +62,8 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
         "7b880b69-8a9e-4b84-b555-250d365e2e67"
     );
 
-    /** Source version image tag, overridable via {@code -Dru.source.commit.hash}. */
-    private static final String SOURCE_COMMIT_HASH = System.getProperty("ru.source.commit.hash");
+    /** Source image name, overridable via {@code -Dru.source.image.name}. */
+    private static final String SOURCE_IMAGE_NAME = System.getProperty("ru.source.image.name");
 
     /** Upgrade mode. */
     private static final UpgradeMode UPGRADE_MODE = UpgradeMode.valueOf(System.getProperty("ru.upgrade.mode",
@@ -89,8 +89,8 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
     public static void beforeClass() {
         Assume.assumeTrue("Docker is required for this test", DockerClientFactory.instance().isDockerAvailable());
 
-        if (SOURCE_COMMIT_HASH == null)
-            throw new RuntimeException("Source version image tag must be specified via `-Dru.source.commit.hash`");
+        if (SOURCE_IMAGE_NAME == null)
+            throw new RuntimeException("Source image name must be specified via `-Dru.source.image.name`");
 
         U.delete(LOCAL_WORK_DIR);
     }
@@ -114,7 +114,7 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
     /** Basic RU test. */
     @Test
     public void testRollingUpgrade() throws Exception {
-        try (IgniteClusterContainer cluster = new IgniteClusterContainer(SOURCE_COMMIT_HASH, CONSISTENT_IDS)) {
+        try (IgniteClusterContainer cluster = new IgniteClusterContainer(SOURCE_IMAGE_NAME, CONSISTENT_IDS)) {
             cluster.start();
 
             ClientCacheConfiguration cfg = new ClientCacheConfiguration()
