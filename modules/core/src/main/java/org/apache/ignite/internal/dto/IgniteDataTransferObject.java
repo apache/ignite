@@ -35,7 +35,7 @@ public abstract class IgniteDataTransferObject implements Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** Magic number to detect correct transfer objects. */
-    private static final int MAGIC = 0x42BEEF00;
+    private static final int MAGIC = 0xBAA55F5E;
 
     /**
      * @param col Source collection.
@@ -50,9 +50,27 @@ public abstract class IgniteDataTransferObject implements Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
+    @Override public final void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(MAGIC);
 
+        writeIgniteDataTransferObject(out);
+    }
+
+    /** {@inheritDoc} */
+    @Override public final void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        int hdr = in.readInt();
+
+        if ((hdr & MAGIC) != MAGIC)
+            throw new IOException("Unexpected Ignite DTO message header. The input stream is malformed or was generated " +
+                "by an incompatible Ignite version [actual=" + Integer.toHexString(hdr) +
+                    ", expected=" + Integer.toHexString(MAGIC) + ']'
+            );
+
+        readIgniteDataTransferObject(in);
+    }
+
+    /** */
+    protected void writeIgniteDataTransferObject(ObjectOutput out) throws IOException {
         try (IgniteDataTransferObjectOutput dtout = new IgniteDataTransferObjectOutput(out)) {
             IgniteDataTransferObjectSerializer serializer = IDTOSerializerFactory.getInstance().serializer(getClass());
 
@@ -60,14 +78,8 @@ public abstract class IgniteDataTransferObject implements Externalizable {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        int hdr = in.readInt();
-
-        if ((hdr & MAGIC) != MAGIC)
-            throw new IOException("Unexpected IgniteDataTransferObject header " +
-                "[actual=" + Integer.toHexString(hdr) + ", expected=" + Integer.toHexString(MAGIC) + "]");
-
+    /** */
+    protected void readIgniteDataTransferObject(ObjectInput in) throws IOException, ClassNotFoundException {
         try (IgniteDataTransferObjectInput dtin = new IgniteDataTransferObjectInput(in)) {
             IgniteDataTransferObjectSerializer serializer = IDTOSerializerFactory.getInstance().serializer(getClass());
 

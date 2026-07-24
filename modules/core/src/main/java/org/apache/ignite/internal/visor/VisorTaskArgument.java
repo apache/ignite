@@ -17,12 +17,16 @@
 
 package org.apache.ignite.internal.visor;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFeatureSet;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -31,6 +35,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 public class VisorTaskArgument<A> extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    transient IgniteCoreFeatureSet cmdInitiatorFeatures = IgniteCoreFeatureSet.local();
 
     /** Node IDs task should be mapped to. */
     @Order(0)
@@ -117,6 +124,29 @@ public class VisorTaskArgument<A> extends IgniteDataTransferObject {
      */
     public boolean isDebug() {
         return debug;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeIgniteDataTransferObject(ObjectOutput out) throws IOException {
+        cmdInitiatorFeatures.writeExternal(out);
+
+        super.writeIgniteDataTransferObject(out);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readIgniteDataTransferObject(ObjectInput in) throws IOException, ClassNotFoundException {
+        cmdInitiatorFeatures = new IgniteCoreFeatureSet();
+        cmdInitiatorFeatures.readExternal(in);
+
+        if (!cmdInitiatorFeatures.isUpgradableTo(IgniteCoreFeatureSet.local())) {
+            throw new IOException("Failed to deserialize the Ignite Management API command argument. The data was " +
+                "serialized by an incompatible Ignite version " +
+                " [remoteVersion=" + cmdInitiatorFeatures.version() +
+                ", localVersion=" + IgniteCoreFeatureSet.local().version() + ']'
+            );
+        }
+
+        super.readIgniteDataTransferObject(in);
     }
 
     /** {@inheritDoc} */

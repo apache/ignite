@@ -389,11 +389,7 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
     protected void checkPreviousClusterFeatures(@Nullable String expVer) throws Exception {
         TestVersions expVersions = expVer == null ? null : TestVersions.parse(expVer);
 
-        IgniteCoreFeatureSet expPrevCoreFeatures = expVersions != null
-            ? new IgniteCoreFeatureSet(
-                IgniteProductVersion.fromString(expVersions.coreVersion()),
-                IgniteFeatureSet.buildFrom(readDeclaredCoreFeatures(expVersions.coreVersion())))
-            : null;
+        IgniteCoreFeatureSet expPrevCoreFeatures = expVersions != null ? createCoreFeatureSet(expVersions.coreVersion()) : null;
 
         IgnitePluginFeatureSet expPrevPluginFeatures = expVersions != null && expVersions.containsPlugin()
             ? new IgnitePluginFeatureSet(
@@ -415,6 +411,13 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
                     assertEquals(expPrevPluginFeatures, prevFeatures.componentFeatures(TestPluginFeature.COMPONENT_NAME));
             }
         }
+    }
+
+    /** */
+    public static IgniteCoreFeatureSet createCoreFeatureSet(String ver) throws Exception {
+        return new IgniteCoreFeatureSet(
+            IgniteProductVersion.fromString(ver),
+            IgniteFeatureSet.buildFrom(readDeclaredCoreFeatures(ver)));
     }
 
     /** */
