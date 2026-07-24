@@ -21,6 +21,10 @@ published: false
 :soft_name: Kubernetes
 :serviceName:
 
+//:configDir: /code-snippets/k8s
+//:script: /code-snippets/k8s/setup.sh
+//:javaFile: /{javaCodeDir}/k8s/K8s.java
+
 
 //tag::kube-version[]
 CAUTION: This guide was written using `kubectl` version 1.17.
@@ -166,11 +170,13 @@ Now we create a configuration for pods that use a link:https://kubernetes.io/doc
 --
 tab:Configuration without persistence[]
 
-Our Deployment configuration will deploy a ReplicaSet with two pods running Ignite {version}.
+Our non-persistent configuration deploys a ReplicaSet with two pods running GridGain Community Edition v. {version}.
+If you want to use Enterprise or Ultimate Edition, change the `spec.template.spec.containers.image` property in the configuration file.
 
-In the container's configuration, we will:
 
-* Enable the “ignite-kubernetes” and “ignite-rest-http” link:installation/installing-using-docker#enabling-modules[modules].
+In the container's configuration, we:
+
+* Enable the “ignite-kubernetes” and “ignite-rest-http” link:installation-guide/installing-using-docker#enabling-modules[modules].
 * Use the configuration file from the ConfigMap we created earlier.
 * Open a number of ports:
 ** 47100 — the communication port
@@ -178,13 +184,14 @@ In the container's configuration, we will:
 ** 49112 — the default JMX port
 ** 10800 — thin client/JDBC/ODBC port
 ** 8080 — REST API port
+* Create a volume for storing metadata.
 
 The configuration file might look like as follows:
 
 .deployment.yaml
 [source, yaml,subs="attributes,specialchars"]
 ----
-include::{configDir}/stateless/deployment-template.yaml[tag=config-block]
+include::{configDir}/stateless/deployment.yaml[]
 ----
 
 Create a deployment by running the following command:
