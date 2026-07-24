@@ -33,6 +33,7 @@ namespace Apache.Ignite.Core.Impl.Compute
     using Apache.Ignite.Core.Impl.Compute.Closure;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Resource;
+    using static ComputeTaskUtils;
 
     /// <summary>
     /// Compute task holder interface used to avoid generics.
@@ -79,6 +80,12 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="taskHandle">Task handle.</param>
         /// <param name="stream">Stream with serialized exception.</param>
         void CompleteWithError(long taskHandle, PlatformMemoryStream stream);
+
+        /// <summary>
+        /// Continuously add more job handles to this task.
+        /// </summary>
+        /// <param name="jobHandles"></param>
+        void AddJobs(ICollection<long> jobHandles);
     }
 
     /// <summary>
@@ -116,6 +123,7 @@ namespace Apache.Ignite.Core.Impl.Compute
 
         /** Handles for jobs which are not serialized right away. */
         private volatile List<long> _jobHandles;
+        private readonly object _jobHandlesLock = new object();
 
         /// <summary>
         /// Constructor.
@@ -156,8 +164,9 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             var ignite = (Ignite) prj.Ignite;
 
-            // 0. Inject session
+            // 0. Inject session and mapper
             _resDesc.InjectTaskSession(_task, taskSes);
+            _resDesc.InjectTaskMapper(_task, taskSes as IComputeTaskContinuousMapper);
 
             // 1. Unmarshal topology info if topology changed.
             var reader = prj.Marshaller.StartUnmarshal(stream);
@@ -260,57 +269,6 @@ namespace Apache.Ignite.Core.Impl.Compute
             {
                 prj.Marshaller.FinishMarshal(writer);
             }
-        }
-
-        /// <summary>
-        /// Writes job map.
-        /// </summary>
-        /// <param name="writer">Writer.</param>
-        /// <param name="map">Map</param>
-        /// <returns>Job handle list.</returns>
-        private static List<long> WriteJobs(BinaryWriter writer, IDictionary<IComputeJob<T>, IClusterNode> map)
-        {
-            Debug.Assert(writer != null && map != null);
-
-            writer.WriteInt(map.Count); // Amount of mapped jobs.
-
-            var jobHandles = new List<long>(map.Count);
-            var ignite = writer.Marshaller.Ignite;
-
-            try
-            {
-                foreach (KeyValuePair<IComputeJob<T>, IClusterNode> mapEntry in map)
-                {
-                    var job = new ComputeJobHolder(ignite, mapEntry.Key.ToNonGeneric());
-
-                    IClusterNode node = mapEntry.Value;
-
-                    var jobHandle = ignite.HandleRegistry.Allocate(job);
-
-                    jobHandles.Add(jobHandle);
-
-                    writer.WriteLong(jobHandle);
-
-                    if (node.IsLocal)
-                        writer.WriteBoolean(false); // Job is not serialized.
-                    else
-                    {
-                        writer.WriteBoolean(true); // Job is serialized.
-                        writer.WriteObject(job);
-                    }
-
-                    writer.WriteGuid(node.Id);
-                }
-            }
-            catch (Exception)
-            {
-                foreach (var handle in jobHandles)
-                    ignite.HandleRegistry.Release(handle);
-
-                throw;
-            }
-
-            return jobHandles;
         }
 
         /** <inheritDoc /> */
@@ -417,6 +375,22 @@ namespace Apache.Ignite.Core.Impl.Compute
             }
 
             CompleteWithError(taskHandle, err);
+        }
+
+        /// <inheritdoc />
+        public void AddJobs(ICollection<long> jobHandles)
+        {
+            lock (_jobHandlesLock)
+            {
+                if (_jobHandles != null)
+                {
+                    _jobHandles.AddRange(jobHandles);
+                }
+                else
+                {
+                    _jobHandles = new List<long>(jobHandles);
+                }
+            }
         }
 
         /// <summary>
