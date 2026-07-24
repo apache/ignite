@@ -115,6 +115,7 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.MARSHALLER_PROC;
 import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
 import static org.apache.ignite.spi.IgnitePortProtocol.UDP;
+import static org.junit.Assert.assertNotEquals;
 
 /**
  * Test for {@link TcpDiscoverySpi}.
@@ -2364,6 +2365,57 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Verifies that {@link TcpDiscoverySpi#getEffectiveNodeAddresses(TcpDiscoveryNode, boolean)}
+     * does not throw NPE when a far node has an unresolved {@link InetSocketAddress}
+     * (i.e., {@code getAddress() == null}) and that such addresses are filtered out.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testGetEffectiveNodeAddressesFiltersUnresolvedAddressWithoutNpe() throws Exception {
+        try {
+            IgniteEx ignite1 = startGrid(1);
+            IgniteEx ignite2 = startGrid(2);
+
+            TcpDiscoverySpi spi1 = (TcpDiscoverySpi)ignite1.configuration().getDiscoverySpi();
+
+            TcpDiscoveryNode realNode = (TcpDiscoveryNode)spi1.getNode(ignite2.localNode().id());
+
+            assertNotNull(realNode);
+
+            // Wrap real node so that socketAddresses() returns an unresolved InetSocketAddress.
+            TcpDiscoveryNode nodeWithUnresolvedAddr = new TestTcpDiscoveryNodeWithUnresolvedAddress(realNode);
+
+            // Ensure the wrapped node is considered different from the local node by UUID.
+            assertNotEquals(ignite1.localNode().id(), nodeWithUnresolvedAddr.id());
+
+            // Verify test node has at least one unresolved address.
+            boolean hasUnresolved = false;
+
+            for (InetSocketAddress addr : nodeWithUnresolvedAddr.socketAddresses()) {
+                if (addr.getAddress() == null) {
+                    hasUnresolved = true;
+
+                    break;
+                }
+            }
+
+            assertTrue("Test node should have at least one unresolved address", hasUnresolved);
+
+            // Should not throw NPE; unresolved addresses must be filtered out.
+            LinkedHashSet<InetSocketAddress> effAddrs = spi1.getEffectiveNodeAddresses(nodeWithUnresolvedAddr, false);
+
+            assertNotNull(effAddrs);
+
+            for (InetSocketAddress addr : effAddrs)
+                assertNotNull("Unresolved address (getAddress() == null) should have been filtered out", addr.getAddress());
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
      * @param nodeName Node name.
      * @throws Exception If failed.
      */
@@ -2916,5 +2968,28 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     private Ignite startGridNoOptimize(String igniteInstanceName) throws Exception {
         return G.start(getConfiguration(igniteInstanceName));
+    }
+
+    /** Test node wrapper that injects an unresolved {@link InetSocketAddress} into the addresses list. */
+    private static class TestTcpDiscoveryNodeWithUnresolvedAddress extends TcpDiscoveryNode {
+        /** */
+        public TestTcpDiscoveryNodeWithUnresolvedAddress() {
+            // No-op.
+        }
+
+        /** @param delegate Original node to delegate to. */
+        public TestTcpDiscoveryNodeWithUnresolvedAddress(TcpDiscoveryNode delegate) {
+            super(delegate);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<InetSocketAddress> socketAddresses() {
+            List<InetSocketAddress> addrs = new ArrayList<>(super.socketAddresses());
+
+            // Unresolved address: getAddress() returns null.
+            addrs.add(new InetSocketAddress("unresolved-host-name-that-does-not-resolve-xyz", 47500));
+
+            return addrs;
+        }
     }
 }
