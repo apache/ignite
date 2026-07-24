@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -42,6 +41,7 @@ import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.integration.CacheLoader;
 import javax.cache.integration.CacheWriter;
 import javax.cache.integration.CacheWriterException;
+import javax.cache.processor.EntryProcessorException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -53,7 +53,6 @@ import org.apache.ignite.cache.CachePartialUpdateException;
 import org.apache.ignite.cache.CacheServerNotFoundException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.AffinityFunction;
-import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
@@ -67,6 +66,8 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.UnregisteredBinaryTypeException;
+import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
@@ -176,6 +177,17 @@ public class GridCacheUtils {
     @Deprecated
     public static boolean cheatCache(int id) {
         return cheatCacheId != 0 && id == cheatCacheId;
+    }
+
+    /**
+     * Checks whether the separate lock wait timeout expires before the transaction timeout.
+     *
+     * @param waitTimeout Lock wait timeout. {@code 0} means that there is no separate lock wait timeout.
+     * @param timeout Transaction timeout. {@code 0} means that the transaction timeout is infinite.
+     * @return {@code True} if the separate lock wait timeout expires before the transaction timeout.
+     */
+    public static boolean isWaitTimeoutExpiresFirst(long waitTimeout, long timeout) {
+        return timeout >= 0 && waitTimeout != 0 && (timeout == 0 || timeout > waitTimeout);
     }
 
     /** System cache name. */
@@ -2206,18 +2218,23 @@ public class GridCacheUtils {
     }
 
     /**
-     * @param cls Class to get affinity field for.
-     * @return Affinity field name or {@code null} if field name was not found.
+     * Prepares an entry processor error so it can be stored in a {@link CacheInvokeResult} and rethrown
+     * as-is by {@link CacheInvokeResult#get()}: an {@link UnregisteredClassException} or
+     * {@link UnregisteredBinaryTypeException} (which must propagate unwrapped) and an existing
+     * {@link EntryProcessorException} are returned unchanged; any other error is wrapped in an
+     * {@link EntryProcessorException}.
+     *
+     * @param err Error thrown by the entry processor.
+     * @return Prepared error to store in the cache invoke result.
      */
-    public static String affinityFieldName(Class cls) {
-        for (; cls != Object.class && cls != null; cls = cls.getSuperclass()) {
-            for (Field f : cls.getDeclaredFields()) {
-                if (f.getAnnotation(AffinityKeyMapped.class) != null)
-                    return f.getName();
-            }
-        }
+    public static Throwable prepareEntryProcessorError(Throwable err) {
+        if (err instanceof UnregisteredClassException || err instanceof UnregisteredBinaryTypeException)
+            return err;
 
-        return null;
+        if (err instanceof EntryProcessorException)
+            return err;
+
+        return new EntryProcessorException(err);
     }
 
     /**

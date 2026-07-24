@@ -95,7 +95,6 @@ import org.apache.ignite.internal.processors.tracing.SpanTags;
 import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessage;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesTable;
-import org.apache.ignite.internal.thread.context.DistributedOperationContextManager;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.GridBoundedLinkedHashSet;
@@ -2583,36 +2582,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (addedMsg.gridDiscoveryData() != null)
                     addedMsg.clearDiscoveryData();
             }
-            else if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
-                TcpDiscoveryNodeAddFinishedMessage addFinishMsg = (TcpDiscoveryNodeAddFinishedMessage)msg;
-
-                if (addFinishMsg.clientDiscoData() != null) {
-                    addFinishMsg = new TcpDiscoveryNodeAddFinishedMessage(addFinishMsg);
-
-                    msg = addFinishMsg;
-
-                    DiscoveryDataPacket discoData = addFinishMsg.clientDiscoData();
-
-                    Set<Integer> mrgdCmnData = new HashSet<>();
-                    Set<UUID> mrgdSpecData = new HashSet<>();
-
-                    boolean allMerged = false;
-
-                    for (TcpDiscoveryAbstractMessage msg0 : msgs) {
-
-                        if (msg0 instanceof TcpDiscoveryNodeAddFinishedMessage) {
-                            DiscoveryDataPacket existingDiscoData =
-                                ((TcpDiscoveryNodeAddFinishedMessage)msg0).clientDiscoData();
-
-                            if (existingDiscoData != null)
-                                allMerged = discoData.mergeDataFrom(existingDiscoData, mrgdCmnData, mrgdSpecData);
-                        }
-
-                        if (allMerged)
-                            break;
-                    }
-                }
-            }
             else if (msg instanceof TcpDiscoveryNodeLeftMessage)
                 clearClientAddFinished(msg.creatorNodeId());
             else if (msg instanceof TcpDiscoveryNodeFailedMessage)
@@ -2980,11 +2949,14 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** Thread local variable indicates that discovery manager was notified after message processing. */
         private final ThreadLocal<Boolean> notifiedDiscovery = ThreadLocal.withInitial(() -> false);
 
-        /**
-         * @param log Logger.
-         */
-        protected RingMessageWorker(IgniteLogger log) {
-            super("tcp-disco-msg-worker-[]", log, 10, getWorkerRegistry(spi));
+        /** */
+        RingMessageWorker(IgniteLogger log) {
+            this(log, new LinkedBlockingDeque<>());
+        }
+
+        /** */
+        protected RingMessageWorker(IgniteLogger log, BlockingDeque<TcpDiscoveryAbstractMessage> queue) {
+            super("tcp-disco-msg-worker-[]", log, 10, getWorkerRegistry(spi), queue);
 
             setBeforeEachPollAction(() -> {
                 updateHeartbeat();
@@ -3049,7 +3021,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (!fromSocket)
-                msg.opCtxMsg = DistributedOperationContextManager.instance().collectDistributedAttributes();
+                msg.opCtxMsg = operationCtxDispatcher.collectDistributedAttributeValues();
 
             if (msg instanceof TraceableMessage tMsg) {
 
@@ -3321,7 +3293,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (msg == WAKEUP)
                 return;
 
-            try (Scope ignored = DistributedOperationContextManager.instance().restoreDistributedAttributes(msg.opCtxMsg)) {
+            try (Scope ignored = operationCtxDispatcher.restoreRemoteAttributeValues(msg.opCtxMsg)) {
                 processMessage0(msg);
             }
         }
@@ -4779,9 +4751,17 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** */
         private IgniteNodeValidationResult validateByIgniteComponentsWithJoiningNodeData(TcpDiscoveryJoinRequestMessage req) {
-            DiscoveryDataBag data = req.gridDiscoveryData().bagWithJoiningNodeData();
+            DiscoveryDataPacket packet = req.gridDiscoveryData();
 
-            return spi.getSpiContext().validateNode(req.node(), data);
+            try {
+                DiscoveryDataBag dataBag = packet.bagWithJoiningNodeData(spi.ignite().log(),
+                    spi.ignite().configuration().isClientMode());
+
+                return spi.getSpiContext().validateNode(req.node(), dataBag);
+            }
+            catch (IgniteCheckedException e) {
+                return new IgniteNodeValidationResult(req.node().id(), e.getMessage());
+            }
         }
 
         /** */
@@ -6206,6 +6186,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 getLocalNodeId(), nextMsg);
 
                             ackMsg.topologyVersion(msg.topologyVersion());
+                            ackMsg.opCtxMsg = operationCtxDispatcher.collectDistributedAttributeValues();
 
                             processCustomMessage(ackMsg, waitForNotification);
                         }
@@ -7798,9 +7779,15 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param log Logger.
          */
         private ClientMessageWorker(Socket sock, UUID clientNodeId, IgniteLogger log) {
-            super("tcp-disco-client-message-worker-[" + U.id8(clientNodeId)
-                + ' ' + sock.getInetAddress().getHostAddress()
-                + ":" + sock.getPort() + ']', log, Math.max(spi.metricsUpdateFreq, 10), null);
+            super(
+                "tcp-disco-client-message-worker-[" + U.id8(clientNodeId) +
+                    ' ' + sock.getInetAddress().getHostAddress() +
+                    ":" + sock.getPort() + ']',
+                log,
+                Math.max(spi.metricsUpdateFreq, 10),
+                null,
+                new LinkedBlockingDeque<>()
+            );
 
             this.sock = sock;
             this.clientNodeId = clientNodeId;
@@ -8127,7 +8114,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      */
     private abstract class MessageWorker<T> extends GridWorker {
         /** Message queue. */
-        protected final BlockingDeque<T> queue = new LinkedBlockingDeque<>();
+        protected final BlockingDeque<T> queue;
 
         /** Polling timeout. */
         private final long pollingTimeout;
@@ -8140,15 +8127,18 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param log Logger.
          * @param pollingTimeout Messages polling timeout.
          * @param lsnr Listener for life-cycle events.
+         * @param queue The queue used for holding messages and handing off to worker thread.
          */
         protected MessageWorker(
             String name,
             IgniteLogger log,
             long pollingTimeout,
-            @Nullable GridWorkerListener lsnr
+            @Nullable GridWorkerListener lsnr,
+            BlockingDeque<T> queue
         ) {
             super(spi.ignite().name(), name, log, lsnr);
 
+            this.queue = queue;
             this.pollingTimeout = pollingTimeout;
         }
 

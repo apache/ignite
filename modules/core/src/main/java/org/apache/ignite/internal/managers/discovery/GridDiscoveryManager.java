@@ -88,7 +88,6 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMess
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IGridClusterStateProcessor;
-import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
 import org.apache.ignite.internal.systemview.ClusterNodeViewWalker;
@@ -134,7 +133,6 @@ import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.DiscoveryNotification;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiDataExchange;
 import org.apache.ignite.spi.discovery.DiscoverySpiHistorySupport;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
@@ -226,7 +224,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     };
 
     /** Discovery cached history size. */
-    private final int DISCOVERY_HISTORY_SIZE = getInteger(IGNITE_DISCOVERY_HISTORY_SIZE, DFLT_DISCOVERY_HISTORY_SIZE);
+    private final int discoHistSz = getInteger(IGNITE_DISCOVERY_HISTORY_SIZE, DFLT_DISCOVERY_HISTORY_SIZE);
 
     /** */
     private final Object discoEvtMux = new Object();
@@ -254,7 +252,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
     /** Topology cache history. */
     private final GridBoundedConcurrentLinkedHashMap<AffinityTopologyVersion, DiscoCache> discoCacheHist =
-        new GridBoundedConcurrentLinkedHashMap<>(DISCOVERY_HISTORY_SIZE);
+        new GridBoundedConcurrentLinkedHashMap<>(discoHistSz);
 
     /** Topology snapshots history. */
     private volatile NavigableMap<Long, Collection<ClusterNode>> topHist = Collections.emptyNavigableMap();
@@ -558,9 +556,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             @Override public IgniteFuture<?> onDiscovery(DiscoveryNotification notification) {
                 GridFutureAdapter<?> notificationFut = new GridFutureAdapter<>();
 
-                discoMsgNotifier.submit(notificationFut, ctx.security().enabled()
-                    ? new SecurityAwareNotificationTask(notification)
-                    : new NotificationTask(notification));
+                discoMsgNotifier.submit(notificationFut, new NotificationTask(notification));
 
                 IgniteFuture<?> fut = new IgniteFutureImpl<>(notificationFut);
 
@@ -743,7 +739,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 }
 
                 if (type == EVT_DISCOVERY_CUSTOM_EVT) {
-                    for (Class cls = customMsg.getClass(); cls != null; cls = cls.getSuperclass()) {
+                    for (Class<?> cls = customMsg.getClass(); cls != null; cls = cls.getSuperclass()) {
                         List<CustomEventListener<DiscoveryCustomMessage>> list = customEvtLsnrs.get(cls);
 
                         if (list != null) {
@@ -782,7 +778,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     discoEvtHnd.discoCache = discoCache;
 
                     if (!ctx.clientDisconnected()) {
-                        // The security processor must be notified first, since {@link IgniteSecurity#onLocalJoin}
+                        // The Rolling Upgrade Feature Manager must be notified first, as {@link IgniteFeatureManager#onLocalJoin}
+                        // completes initialization of the local node's Active Feature Set based on data received from the cluster.
+                        // The Active Feature Set, in turn, determines the node's overall behavior.
+                        ctx.rollingUpgrade().features().onLocalJoin();
+
+                        // The security processor must be notified second, since {@link IgniteSecurity#onLocalJoin}
                         // finishes local node security context initialization that can be demanded by other Ignite
                         // components.
                         ctx.security().onLocalJoin();
@@ -912,43 +913,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     discoEvtHnd.awaitDisconnectEvent();
             }
 
-            /**
-             * Extends {@link NotificationTask} to run in a security context owned by the initiator of the
-             * discovery event.
-             */
-            class SecurityAwareNotificationTask extends NotificationTask {
-                /** */
-                public SecurityAwareNotificationTask(DiscoveryNotification notification) {
-                    super(notification);
-                }
-
-                /** */
-                @Override public void run() {
-                    DiscoverySpiCustomMessage customMsg = notification.customMessage();
-
-                    if (customMsg instanceof SecurityAwareCustomMessageWrapper) {
-                        UUID secSubjId = ((SecurityAwareCustomMessageWrapper)customMsg).securitySubjectId();
-
-                        try (Scope ignored = ctx.security().withContext(secSubjId)) {
-                            super.run();
-                        }
-                    }
-                    else {
-                        SecurityContext initiatorNodeSecCtx = nodeSecurityContext(
-                            marshaller,
-                            U.resolveClassLoader(ctx.config()),
-                            notification.getNode()
-                        );
-
-                        try (Scope ignored = ctx.security().withContext(initiatorNodeSecCtx)) {
-                            super.run();
-                        }
-                    }
-                }
-            }
-
             /** Represents task to handle discovery notification asynchronously. */
-            class NotificationTask implements Runnable {
+            private class NotificationTask implements Runnable {
                 /** */
                 protected final DiscoveryNotification notification;
 
@@ -960,8 +926,30 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 /** {@inheritDoc} */
                 @Override public void run() {
                     synchronized (discoEvtMux) {
-                        onDiscovery0(notification);
+                        try (Scope ignored = withRemoteSecurityContext(notification.getNode())) {
+                            onDiscovery0(notification);
+                        }
                     }
+                }
+
+                /** */
+                private Scope withRemoteSecurityContext(ClusterNode node) {
+                    if (ctx.security().enabled()) {
+                        if (ctx.security().isDefaultContext()) {
+                            SecurityContext initiatorNodeSecCtx = nodeSecurityContext(
+                                marshaller,
+                                U.resolveClassLoader(ctx.config()),
+                                node
+                            );
+
+                            return ctx.security().withContext(initiatorNodeSecCtx);
+                        }
+
+                        // Verify that the Security Context currently attached to the thread is valid.
+                        ctx.security().securityContext();
+                    }
+
+                    return Scope.NOOP_SCOPE;
                 }
             }
         });
@@ -1102,7 +1090,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             rcvdCustomMsgs.addLast(customMsg.id());
 
-            while (rcvdCustomMsgs.size() > DISCOVERY_HISTORY_SIZE)
+            while (rcvdCustomMsgs.size() > discoHistSz)
                 rcvdCustomMsgs.pollFirst();
         }
 
@@ -2335,11 +2323,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      */
     public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteCheckedException {
         try {
-            IgniteSecurity security = ctx.security();
-
-            getSpi().sendCustomEvent(security.enabled()
-                ? new SecurityAwareCustomMessageWrapper(msg, security.securityContext().subject().id())
-                : msg);
+            getSpi().sendCustomEvent(msg);
         }
         catch (IgniteClientDisconnectedException e) {
             IgniteFuture<?> reconnectFut = ctx.cluster().clientReconnectFuture();

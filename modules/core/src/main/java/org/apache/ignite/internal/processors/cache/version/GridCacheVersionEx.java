@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.cache.CacheEntryVersion;
-import org.apache.ignite.internal.Order;
 
 /**
  * Extended cache version which also has additional DR version.
@@ -32,7 +31,6 @@ public class GridCacheVersionEx extends GridCacheVersion {
     private static final long serialVersionUID = 0L;
 
     /** DR version. */
-    @Order(0)
     GridCacheVersion drVer;
 
     /**
@@ -86,6 +84,10 @@ public class GridCacheVersionEx extends GridCacheVersion {
         return conflictVersion();
     }
 
+    /** */
+    public void conflictVersion(GridCacheVersion drVer) {
+        this.drVer = drVer;
+    }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException {

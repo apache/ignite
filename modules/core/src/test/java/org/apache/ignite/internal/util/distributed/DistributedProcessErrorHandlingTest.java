@@ -80,7 +80,7 @@ public class DistributedProcessErrorHandlingTest extends GridCommonAbstractTest 
     public void testBackgroundExecFailureHandled() throws Exception {
         checkDistributedProcess((ign, latch) ->
             new DistributedProcess<>(ign.context(), TEST_PROCESS,
-                req -> runAsync(() -> {
+                (id, req) -> runAsync(() -> {
                     failOnNode(ign);  // Fails processing request in a spawned thread.
 
                     return null;
@@ -103,7 +103,7 @@ public class DistributedProcessErrorHandlingTest extends GridCommonAbstractTest 
     public void testExecFailureHandled() throws Exception {
         checkDistributedProcess((ign, latch) ->
             new DistributedProcess<>(ign.context(), TEST_PROCESS,
-                req -> {
+                (id, req) -> {
                     failOnNode(ign);  // Fails processing request in the discovery thread.
 
                     return new GridFinishedFuture<>();
@@ -126,7 +126,7 @@ public class DistributedProcessErrorHandlingTest extends GridCommonAbstractTest 
     public void testFinishFailureHandled() throws Exception {
         checkDistributedProcess((ign, latch) ->
             new DistributedProcess<>(ign.context(), TEST_PROCESS,
-                req -> new GridFinishedFuture<>(),
+                (uuid, req) -> new GridFinishedFuture<>(),
                 (uuid, res, err) -> {
                     assertEquals(SRV_NODES, res.values().size());
                     latch.countDown();

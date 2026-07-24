@@ -47,7 +47,6 @@ public interface ClientListenerRequestHandler {
      */
     void writeHandshake(BinaryWriterEx writer);
 
-
     /**
      * Checks whether query cancellation is supported within given version of protocol.
      *

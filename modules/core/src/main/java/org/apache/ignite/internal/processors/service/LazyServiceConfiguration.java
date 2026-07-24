@@ -105,6 +105,13 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
         return nodeFilterBytes;
     }
 
+    /** */
+    public LazyServiceConfiguration nodeFilterBytes(byte[] nodeFilterBytes) {
+        this.nodeFilterBytes = nodeFilterBytes;
+
+        return this;
+    }
+
     /**
      * @return Service bytes.
      */
@@ -112,11 +119,25 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
         return srvcBytes;
     }
 
+    /** */
+    public LazyServiceConfiguration serviceBytes(byte[] srvcBytes) {
+        this.srvcBytes = srvcBytes;
+
+        return this;
+    }
+
     /**
      * @return Service class name.
      */
     public String serviceClassName() {
         return srvcClsName;
+    }
+
+    /** */
+    public LazyServiceConfiguration serviceClassName(String srvcClsName) {
+        this.srvcClsName = srvcClsName;
+
+        return this;
     }
 
     /** {@inheritDoc} */
@@ -148,6 +169,13 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
      */
     public byte[] interceptorBytes() {
         return interceptorsBytes;
+    }
+
+    /** */
+    public LazyServiceConfiguration interceptorBytes(byte[] interceptorsBytes) {
+        this.interceptorsBytes = interceptorsBytes;
+
+        return this;
     }
 
     /** {@inheritDoc} */

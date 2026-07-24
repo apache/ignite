@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.cluster.NodeFullMetricsMessage;
 import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.processors.tracing.NoopTracing;
 import org.apache.ignite.internal.processors.tracing.Tracing;
+import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -139,6 +140,9 @@ abstract class TcpDiscoveryImpl {
     /** Tracing. */
     protected Tracing tracing;
 
+    /** Distributed operation context dispatcher. */
+    protected final OperationContextDispatcher operationCtxDispatcher;
+
     /**
      * @param spi Adapter.
      */
@@ -151,6 +155,8 @@ abstract class TcpDiscoveryImpl {
             tracing = ((IgniteEx)spi.ignite()).context().tracing();
         else
             tracing = new NoopTracing();
+
+        operationCtxDispatcher = ((IgniteEx)spi.ignite()).context().operationContextDispatcher();
     }
 
     /**

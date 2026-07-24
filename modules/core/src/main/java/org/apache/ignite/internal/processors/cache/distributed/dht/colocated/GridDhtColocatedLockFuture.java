@@ -142,8 +142,11 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     @GridToStringExclude
     private volatile LockTimeoutObject timeoutObj;
 
-    /** Lock timeout. */
+    /** Transaction timeout. */
     private final long timeout;
+
+    /** Lock wait timeout. */
+    private final long waitTimeout;
 
     /** Transaction. */
     @GridToStringExclude
@@ -197,7 +200,8 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      * @param tx Transaction.
      * @param read Read flag.
      * @param retval Flag to return value or not.
-     * @param timeout Lock acquisition timeout.
+     * @param timeout Transaction timeout.
+     * @param waitTimeout Lock wait timeout.
      * @param createTtl TTL for create operation.
      * @param accessTtl TTL for read operation.
      * @param skipStore Skip store flag.
@@ -211,6 +215,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         boolean read,
         boolean retval,
         long timeout,
+        long waitTimeout,
         long createTtl,
         long accessTtl,
         boolean skipStore,
@@ -229,6 +234,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         this.read = read;
         this.retval = retval;
         this.timeout = timeout;
+        this.waitTimeout = waitTimeout;
         this.createTtl = createTtl;
         this.accessTtl = accessTtl;
         this.skipStore = skipStore;
@@ -626,6 +632,9 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             if (err != null)
                 success = false;
 
+            if (!success && err == null && CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout))
+                return onComplete(false, true, false);
+
             return onComplete(success, true);
         }
     }
@@ -638,6 +647,18 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      * @return {@code True} if complete by this operation.
      */
     private boolean onComplete(boolean success, boolean distribute) {
+        return onComplete(success, distribute, !success);
+    }
+
+    /**
+     * Completeness callback.
+     *
+     * @param success {@code True} if lock was acquired.
+     * @param distribute {@code True} if need to distribute lock removal in case of failure.
+     * @param rollback {@code True} if should rollback tx on failure.
+     * @return {@code True} if complete by this operation.
+     */
+    private boolean onComplete(boolean success, boolean distribute, boolean rollback) {
         if (log.isDebugEnabled()) {
             log.debug("Received onComplete(..) callback [success=" + success + ", distribute=" + distribute +
                 ", fut=" + this + ']');
@@ -646,13 +667,13 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         if (!DONE_UPD.compareAndSet(this, 0, 1))
             return false;
 
-        if (!success)
+        if (!success && rollback)
             undoLocks(distribute, true);
 
         if (tx != null) {
             cctx.tm().txContext(tx);
 
-            if (success)
+            if (!rollback)
                 tx.clearLockFuture(this);
         }
 
@@ -768,7 +789,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             if (isDone()) // Possible due to async rollback.
                 return;
 
-            if (timeout > 0) {
+            if (lockTimeout() > 0) {
                 timeoutObj = new LockTimeoutObject();
 
                 cctx.time().addTimeoutObject(timeoutObj);
@@ -1083,6 +1104,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                                         isolation(),
                                         isInvalidate(),
                                         timeout,
+                                        waitTimeout,
                                         mappedKeys.size(),
                                         inTx() ? tx.size() : mappedKeys.size(),
                                         inTx() && tx.syncMode() == FULL_SYNC,
@@ -1258,6 +1280,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             read,
             retval,
             timeout,
+            waitTimeout,
             createTtl,
             accessTtl,
             skipStore,
@@ -1478,6 +1501,13 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     }
 
     /**
+     * @return Timeout value for this lock future.
+     */
+    private long lockTimeout() {
+        return CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout) ? waitTimeout : timeout;
+    }
+
+    /**
      * Lock request timeout object.
      */
     private class LockTimeoutObject extends GridTimeoutObjectAdapter {
@@ -1485,7 +1515,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
          * Default constructor.
          */
         LockTimeoutObject() {
-            super(timeout);
+            super(lockTimeout());
         }
 
         /** Requested keys. */
@@ -1495,6 +1525,20 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         @Override public void onTimeout() {
             if (log.isDebugEnabled())
                 log.debug("Timed out waiting for lock response: " + this);
+
+            if (CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout)) {
+                synchronized (GridDhtColocatedLockFuture.this) {
+                    requestedKeys = requestedKeys0();
+
+                    clear(); // Stop response processing.
+                }
+
+                synchronized (this) {
+                    onComplete(false, true, false);
+                }
+
+                return;
+            }
 
             if (inTx()) {
                 if (cctx.tm().deadlockDetectionEnabled()) {
@@ -1656,6 +1700,12 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                     onDone(false);
                 else
                     onDone(res.error());
+
+                return;
+            }
+
+            if (!res.lockAcquired()) {
+                onDone(false);
 
                 return;
             }
