@@ -58,10 +58,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         protected const string CACHE_TX_NO_BACKUP = "transactional_no_backup";
 
         /** Listener events. */
-        public static BlockingCollection<CallbackEvent> CB_EVTS = new BlockingCollection<CallbackEvent>();
+        private static BlockingCollection<ICacheEntryEvent<object, object>> CB_EVTS =
+            new BlockingCollection<ICacheEntryEvent<object, object>>();
 
         /** Listener events. */
-        public static BlockingCollection<FilterEvent> FILTER_EVTS = new BlockingCollection<FilterEvent>();
+        private static BlockingCollection<FilterEvent> FILTER_EVTS = new BlockingCollection<FilterEvent>();
 
         /** First node. */
         private IIgnite grid1;
@@ -131,7 +132,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         [SetUp]
         public void BeforeTest()
         {
-            CB_EVTS = new BlockingCollection<CallbackEvent>();
+            CB_EVTS = new BlockingCollection<ICacheEntryEvent<object, object>>();
             FILTER_EVTS = new BlockingCollection<FilterEvent>();
 
             AbstractFilter<BinarizableEntry>.res = true;
@@ -293,11 +294,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 cache[2] = Entry(2);
             }
 
-            var events = CB_EVTS.SelectMany(e => e.entries).ToList();
-            Assert.AreEqual(2, events.Count);
+            CB_EVTS.TryTake(out var event1, 500);
+            CB_EVTS.TryTake(out var event2, 500);
 
-            Assert.AreEqual(CacheEntryEventType.Created, events[0].EventType);
-            Assert.AreEqual(CacheEntryEventType.Created, events[1].EventType);
+            Assert.AreEqual(CacheEntryEventType.Created, event1.EventType);
+            Assert.AreEqual(CacheEntryEventType.Created, event2.EventType);
         }
 
         /// <summary>
@@ -323,20 +324,18 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             {
                 cache[1] = Entry(2);
 
-                TestUtils.WaitForTrueCondition(() => CB_EVTS.Count == 2, 5000);
+                CB_EVTS.TryTake(out var event1, 9000);
+                CB_EVTS.TryTake(out var event2, 9000);
+
+                Assert.AreEqual(CacheEntryEventType.Created, event1.EventType);
+                Assert.AreEqual(CacheEntryEventType.Expired, event2.EventType);
+
+                Assert.IsTrue(event2.HasValue);
+                Assert.IsTrue(event2.HasOldValue);
+                Assert.AreEqual(2, ((BinarizableEntry)event2.Value).val);
+                Assert.AreEqual(2, ((BinarizableEntry)event2.Value).val);
+                Assert.AreEqual(1, event2.Key);
             }
-
-            var events = CB_EVTS.SelectMany(e => e.entries).ToList();
-
-            Assert.AreEqual(2, events.Count);
-            Assert.AreEqual(CacheEntryEventType.Created, events[0].EventType);
-            Assert.AreEqual(CacheEntryEventType.Expired, events[1].EventType);
-
-            Assert.IsTrue(events[1].HasValue);
-            Assert.IsTrue(events[1].HasOldValue);
-            Assert.AreEqual(2, ((BinarizableEntry)events[1].Value).val);
-            Assert.AreEqual(2, ((BinarizableEntry)events[1].Value).val);
-            Assert.AreEqual(1, events[1].Key);
         }
 
         /// <summary>
@@ -648,21 +647,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 // 1. Local put.
                 cache1.GetAndPut(PrimaryKey(cache1), Entry(1));
 
-                CallbackEvent cbEvt;
-                FilterEvent filterEvt;
-
-                Assert.IsTrue(FILTER_EVTS.TryTake(out filterEvt, 500));
+                Assert.IsTrue(FILTER_EVTS.TryTake(out var filterEvt, 500));
                 Assert.AreEqual(PrimaryKey(cache1), filterEvt.entry.Key);
                 Assert.AreEqual(null, filterEvt.entry.OldValue);
                 Assert.AreEqual(Entry(1), (filterEvt.entry.Value as IBinaryObject)
                     .Deserialize<BinarizableEntry>());
 
-                Assert.IsTrue(CB_EVTS.TryTake(out cbEvt, 500));
-                Assert.AreEqual(1, cbEvt.entries.Count);
-                Assert.AreEqual(PrimaryKey(cache1), cbEvt.entries.First().Key);
-                Assert.AreEqual(null, cbEvt.entries.First().OldValue);
-                Assert.AreEqual(Entry(1), (cbEvt.entries.First().Value as IBinaryObject)
-                    .Deserialize<BinarizableEntry>());
+                Assert.IsTrue(CB_EVTS.TryTake(out var cbEvt, 500));
+                Assert.AreEqual(PrimaryKey(cache1), cbEvt.Key);
+                Assert.AreEqual(null, cbEvt.OldValue);
+                Assert.AreEqual(Entry(1), (cbEvt.Value as IBinaryObject).Deserialize<BinarizableEntry>());
 
                 // 2. Remote put.
                 ClearEvents();
@@ -675,13 +669,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                     .Deserialize<BinarizableEntry>());
 
                 Assert.IsTrue(CB_EVTS.TryTake(out cbEvt, 500));
-                Assert.AreEqual(1, cbEvt.entries.Count);
-                Assert.AreEqual(PrimaryKey(cache2), cbEvt.entries.First().Key);
-                Assert.AreEqual(null, cbEvt.entries.First().OldValue);
-                Assert.AreEqual(Entry(2),
-                    (cbEvt.entries.First().Value as IBinaryObject).Deserialize<BinarizableEntry>());
+                Assert.AreEqual(PrimaryKey(cache2), cbEvt.Key);
+                Assert.AreEqual(null, cbEvt.OldValue);
+                Assert.AreEqual(Entry(2), (cbEvt.Value as IBinaryObject).Deserialize<BinarizableEntry>());
             }
         }
+
         /// <summary>
         /// Test value types (special handling is required for nulls).
         /// </summary>
@@ -699,37 +692,32 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 // First update
                 cache.Put(key, 1);
 
-                CallbackEvent cbEvt;
-
-                Assert.IsTrue(CB_EVTS.TryTake(out cbEvt, 500));
-                var cbEntry = cbEvt.entries.Single();
-                Assert.IsFalse(cbEntry.HasOldValue);
-                Assert.IsTrue(cbEntry.HasValue);
-                Assert.AreEqual(key, cbEntry.Key);
-                Assert.AreEqual(null, cbEntry.OldValue);
-                Assert.AreEqual(1, cbEntry.Value);
+                Assert.IsTrue(CB_EVTS.TryTake(out var cbEvt, 500));
+                Assert.IsFalse(cbEvt.HasOldValue);
+                Assert.IsTrue(cbEvt.HasValue);
+                Assert.AreEqual(key, cbEvt.Key);
+                Assert.AreEqual(null, cbEvt.OldValue);
+                Assert.AreEqual(1, cbEvt.Value);
 
                 // Second update
                 cache.Put(key, 2);
 
                 Assert.IsTrue(CB_EVTS.TryTake(out cbEvt, 500));
-                cbEntry = cbEvt.entries.Single();
-                Assert.IsTrue(cbEntry.HasOldValue);
-                Assert.IsTrue(cbEntry.HasValue);
-                Assert.AreEqual(key, cbEntry.Key);
-                Assert.AreEqual(1, cbEntry.OldValue);
-                Assert.AreEqual(2, cbEntry.Value);
+                Assert.IsTrue(cbEvt.HasOldValue);
+                Assert.IsTrue(cbEvt.HasValue);
+                Assert.AreEqual(key, cbEvt.Key);
+                Assert.AreEqual(1, cbEvt.OldValue);
+                Assert.AreEqual(2, cbEvt.Value);
 
                 // Remove
                 cache.Remove(key);
 
                 Assert.IsTrue(CB_EVTS.TryTake(out cbEvt, 500));
-                cbEntry = cbEvt.entries.Single();
-                Assert.IsTrue(cbEntry.HasOldValue);
-                Assert.IsTrue(cbEntry.HasValue);
-                Assert.AreEqual(key, cbEntry.Key);
-                Assert.AreEqual(2, cbEntry.OldValue);
-                Assert.AreEqual(2, cbEntry.Value);
+                Assert.IsTrue(cbEvt.HasOldValue);
+                Assert.IsTrue(cbEvt.HasValue);
+                Assert.AreEqual(key, cbEvt.Key);
+                Assert.AreEqual(2, cbEvt.OldValue);
+                Assert.AreEqual(2, cbEvt.Value);
             }
         }
 
@@ -757,22 +745,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
                 cache1.GetAndPut(rmtKeys[1], Entry(rmtKeys[1]));
 
-                CallbackEvent evt;
+                Assert.IsTrue(CB_EVTS.TryTake(out var evt1, 1000));
+                Assert.IsTrue(CB_EVTS.TryTake(out var evt2, 1000));
 
-                Assert.IsTrue(CB_EVTS.TryTake(out evt, 1000));
+                Assert.AreEqual(rmtKeys[0], evt1.Key);
+                Assert.IsNull(evt1.OldValue);
+                Assert.AreEqual(Entry(rmtKeys[0]), evt1.Value);
 
-                Assert.AreEqual(2, evt.entries.Count);
-
-                var entryRmt0 = evt.entries.Single(entry => { return entry.Key.Equals(rmtKeys[0]); });
-                var entryRmt1 = evt.entries.Single(entry => { return entry.Key.Equals(rmtKeys[1]); });
-
-                Assert.AreEqual(rmtKeys[0], entryRmt0.Key);
-                Assert.IsNull(entryRmt0.OldValue);
-                Assert.AreEqual(Entry(rmtKeys[0]), entryRmt0.Value);
-
-                Assert.AreEqual(rmtKeys[1], entryRmt1.Key);
-                Assert.IsNull(entryRmt1.OldValue);
-                Assert.AreEqual(Entry(rmtKeys[1]), entryRmt1.Value);
+                Assert.AreEqual(rmtKeys[1], evt2.Key);
+                Assert.IsNull(evt2.OldValue);
+                Assert.AreEqual(Entry(rmtKeys[1]), evt2.Value);
             }
 
             cache1.Remove(rmtKeys[0]);
@@ -1053,8 +1035,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <param name="timeout">Timeout.</param>
         private static void CheckNoFilter(int timeout)
         {
-            FilterEvent _;
-
             Assert.IsFalse(FILTER_EVTS.TryTake(out _, timeout));
         }
 
@@ -1069,12 +1049,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         private static void CheckCallbackSingle(int expKey, BinarizableEntry expOldVal, BinarizableEntry expVal,
             CacheEntryEventType expType, int timeout = 1000)
         {
-            CallbackEvent evt;
-
-            Assert.IsTrue(CB_EVTS.TryTake(out evt, timeout));
+            Assert.IsTrue(CB_EVTS.TryTake(out var e, timeout));
             Assert.AreEqual(0, CB_EVTS.Count);
-
-            var e = evt.entries.Single();
 
             Assert.AreEqual(expKey, e.Key);
             Assert.AreEqual(expOldVal, e.OldValue);
@@ -1088,8 +1064,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <param name="timeout">Timeout.</param>
         private void CheckNoCallback(int timeout)
         {
-            CallbackEvent _;
-
             Assert.IsFalse(CB_EVTS.TryTake(out _, timeout));
         }
 
@@ -1291,7 +1265,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             /** <inheritDoc /> */
             public void OnEvent(IEnumerable<ICacheEntryEvent<int, TV>> evts)
             {
-                CB_EVTS.Add(new CallbackEvent(evts.Select(CreateEvent).ToList()));
+                foreach (var evt in evts)
+                {
+                    CB_EVTS.Add(CreateEvent(evt));
+                }
             }
         }
 
@@ -1338,24 +1315,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             {
                 this.ignite = ignite;
                 this.entry = entry;
-            }
-        }
-
-        /// <summary>
-        /// Callbakc event.
-        /// </summary>
-        public class CallbackEvent
-        {
-            /** Entries. */
-            public ICollection<ICacheEntryEvent<object, object>> entries;
-
-            /// <summary>
-            /// Constructor.
-            /// </summary>
-            /// <param name="entries">Entries.</param>
-            public CallbackEvent(ICollection<ICacheEntryEvent<object, object>> entries)
-            {
-                this.entries = entries;
             }
         }
 
