@@ -67,6 +67,8 @@ The script will:
 
 > **Note:** If a distribution archive already exists in `target/bin/`, the build steps will be skipped.
 
+> **Note:** If the Docker image `apacheignite/ignite:<commit_hash>` is already built (e.g. from a previous run), you can skip Step 1 entirely and go directly to Step 2.
+
 ### Step 2. Run the test
 
 Run `IgniteRebalanceOnUpgradeTest` from your IDE or via Maven. The source version image name **must** be explicitly provided via `-Dru.source.image.name`:
@@ -74,7 +76,7 @@ Run `IgniteRebalanceOnUpgradeTest` from your IDE or via Maven. The source versio
 ```bash
 ./mvnw test -pl modules/compatibility -Dtest=IgniteRebalanceOnUpgradeTest \
     -Dru.source.image.name=<image_name> \
-    -Psurefire-fork-count-1
+    -Pcompatibility-docker,surefire-fork-count-1
 ```
 
 ---
