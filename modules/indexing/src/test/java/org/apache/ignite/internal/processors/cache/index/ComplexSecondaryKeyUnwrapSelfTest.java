@@ -18,23 +18,20 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.internal.IgniteEx;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * Test of creating and using secondary indexes for tables created through SQL.
  */
-@Ignore("https://issues.apache.org/jira/browse/IGNITE-13723")
-@SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
+@SuppressWarnings({"ThrowableResultOfMethodCallIgnored"})
 public class ComplexSecondaryKeyUnwrapSelfTest extends AbstractIndexingCommonTest {
     /** Counter to generate unique table names. */
-    private static int tblCnt = 0;
+    private static int tblCnt;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -55,7 +52,8 @@ public class ComplexSecondaryKeyUnwrapSelfTest extends AbstractIndexingCommonTes
 
         executeSql("CREATE INDEX ON " + tblName + "(id, name, city)");
 
-        checkUsingIndexes(tblName, "'1'");
+        checkUsingIndexes(tblName, "'1'", 2, "Query should be splitted");
+        checkUsingIndexesWithTwoStepPlan(tblName, "Query should be splitted");
     }
 
     /**
@@ -63,7 +61,7 @@ public class ComplexSecondaryKeyUnwrapSelfTest extends AbstractIndexingCommonTes
      */
     @Test
     public void testSecondaryIndexSimplePk() {
-        HashMap<String, String> types = new HashMap() {
+        Map<String, String> types = new LinkedHashMap<String, String>() {
             {
                 put("boolean", "1");
                 put("char", "'1'");
@@ -97,7 +95,8 @@ public class ComplexSecondaryKeyUnwrapSelfTest extends AbstractIndexingCommonTes
 
             executeSql("CREATE INDEX ON " + tblName + "(id, name, city)");
 
-            checkUsingIndexes(tblName, val);
+            checkUsingIndexes(tblName, val, 1, "Query with type column: " + type);
+            checkUsingIndexesWithTwoStepPlan(tblName, "Query with type column: " + type + " should be splitted");
         }
     }
 
@@ -106,30 +105,45 @@ public class ComplexSecondaryKeyUnwrapSelfTest extends AbstractIndexingCommonTes
      *
      * @param tblName name of table which should be checked to using secondary indexes.
      * @param nameVal Value for name param.
+     * @param expResCnt Expected number of elements in result plan.
+     * @param assertLbl Assert label.
      */
-    private void checkUsingIndexes(String tblName, String nameVal) {
+    private void checkUsingIndexes(String tblName, String nameVal, int expResCnt, String assertLbl) {
+        String explainSQL = "explain SELECT * FROM " + tblName + " WHERE ";
+
+        List<List<?>> results = executeSql(explainSQL + "id=1 and name=" + nameVal);
+
+        assertUsingSecondaryIndex(results, expResCnt, assertLbl);
+
+        results = executeSql(explainSQL + "id=1 and name=" + nameVal + " and age=0");
+
+        assertUsingSecondaryIndex(results, expResCnt, assertLbl);
+    }
+
+    /**
+     * Check using secondary indexes with two-step plan.
+     *
+     * @param tblName name of table which should be checked to using secondary indexes.
+     * @param assertLbl Assert label.
+     */
+    private void checkUsingIndexesWithTwoStepPlan(String tblName, String assertLbl) {
         String explainSQL = "explain SELECT * FROM " + tblName + " WHERE ";
 
         List<List<?>> results = executeSql(explainSQL + "id=1");
 
-        assertUsingSecondaryIndex(results);
-
-        results = executeSql(explainSQL + "id=1 and name=" + nameVal);
-
-        assertUsingSecondaryIndex(results);
-
-        results = executeSql(explainSQL + "id=1 and name=" + nameVal + " and age=0");
-
-        assertUsingSecondaryIndex(results);
+        // Always used merge_scan for non key (or affinity) fields condition.
+        assertUsingSecondaryIndex(results, 2, assertLbl);
     }
 
     /**
      * Check that explain plan result shown using Secondary index and don't use scan.
      *
      * @param results result of execut explain plan query.
+     * @param expResCnt Expceted result count.
+     * @param assertLbl Assert label.
      */
-    private void assertUsingSecondaryIndex(List<List<?>> results) {
-        assertEquals(2, results.size());
+    private void assertUsingSecondaryIndex(List<List<?>> results, int expResCnt, String assertLbl) {
+        assertEquals(assertLbl, expResCnt, results.size());
 
         String explainPlan = (String)results.get(0).get(0);
 
@@ -176,73 +190,4 @@ public class ComplexSecondaryKeyUnwrapSelfTest extends AbstractIndexingCommonTes
     private IgniteEx node() {
         return grid(0);
     }
-
-    /**
-     *
-     */
-    static class TestKey {
-        /** */
-        @QuerySqlField
-        private int id;
-
-        /**
-         * @param id ID.
-         */
-        public TestKey(int id) {
-            this.id = id;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            TestKey testKey = (TestKey)o;
-
-            return id == testKey.id;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return id;
-        }
-    }
-
-    /**
-     *
-     */
-    static class TestValue {
-        /** */
-        @QuerySqlField()
-        private String name;
-
-        /** */
-        @QuerySqlField()
-        private String company;
-
-        /** */
-        @QuerySqlField()
-        private String city;
-
-        /** */
-        @QuerySqlField()
-        private int age;
-
-        /**
-         * @param age Age.
-         * @param name Name.
-         * @param company Company.
-         * @param city City.
-         */
-        public TestValue(int age, String name, String company, String city) {
-            this.age = age;
-            this.name = name;
-            this.company = company;
-            this.city = city;
-        }
-    }
-
 }
