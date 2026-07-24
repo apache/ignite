@@ -1,0 +1,10 @@
+IgniteSort(sort0=[$1], sort1=[$0], dir0=[DESC-nulls-last], dir1=[DESC-nulls-last]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=10.3, cpu=16.3, memory=23.675, io=2.0, network=14.0], id = {id}
+  IgniteColocatedHashAggregate(group=[{0}], CUSTDIST=[COUNT()]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=9.3, cpu=12.3, memory=15.675, io=2.0, network=14.0], id = {id}
+    IgniteProject(C_COUNT=[$1]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=8.3, cpu=11.3, memory=11.175, io=2.0, network=14.0], id = {id}
+      IgniteColocatedHashAggregate(group=[{0}], EXPR$1=[COUNT($1)]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=7.300000000000001, cpu=10.3, memory=11.175, io=2.0, network=14.0], id = {id}
+        IgniteProject(C_CUSTKEY=[$2], O_ORDERKEY=[$0]): rowcount = 1.15, cumulative cost = IgniteCost [rowCount=6.15, cpu=9.15, memory=6.0, io=2.0, network=14.0], id = {id}
+          IgniteNestedLoopJoin(condition=[=($2, $1)], joinType=[right], variablesSet=[[]]): rowcount = 1.15, cumulative cost = IgniteCost [rowCount=5.0, cpu=8.0, memory=6.0, io=2.0, network=14.0], id = {id}
+            IgniteExchange(distribution=[single]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=2.0, cpu=2.0, memory=1.0, io=1.0, network=9.0], id = {id}
+              IgniteTableScan(table=[[PUBLIC, ORDERS]], filters=[NOT(LIKE($t2, _UTF-8'%special%requests%'))], rowType=[RecordType(INTEGER O_ORDERKEY, INTEGER O_CUSTKEY)], projects=[[$t0, $t1]], requiredColumns=[{2, 3, 10}]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=1.0, cpu=1.0, memory=1.0, io=1.0, network=1.0], id = {id}
+            IgniteExchange(distribution=[single]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=2.0, cpu=2.0, memory=1.0, io=1.0, network=5.0], id = {id}
+              IgniteIndexScan(table=[[PUBLIC, CUSTOMER]], index=[{INDEX_CASE:_key_PK,_key_PK_proxy}], requiredColumns=[{2}], inlineScan=[true], collation=[[2 ASC-nulls-first]]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=1.0, cpu=1.0, memory=1.0, io=1.0, network=1.0], id = {id}
