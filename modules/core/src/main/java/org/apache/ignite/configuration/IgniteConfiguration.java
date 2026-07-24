@@ -416,14 +416,6 @@ public class IgniteConfiguration implements IgniteConfigurationDefaults {
     /** System view exporter SPI. */
     private SystemViewExporterSpi[] sysViewExporterSpi;
 
-    /**
-     * Tracing SPI.
-     * @deprecated The Ignite Tracing is deprecated and subject to removal in a future release. Ignite Tracing has been
-     * retired in favor of Ignite Performance Statistics and Ignite Metrics.
-     */
-    @Deprecated(forRemoval = true)
-    private TracingSpi tracingSpi = new NoopTracingSpi();
-
     /** Cache configurations. */
     private CacheConfiguration[] cacheCfg;
 
@@ -622,7 +614,6 @@ public class IgniteConfiguration implements IgniteConfigurationDefaults {
         encryptionSpi = cfg.getEncryptionSpi();
         metricExporterSpi = cfg.getMetricExporterSpi();
         sysViewExporterSpi = cfg.getSystemViewExporterSpi();
-        tracingSpi = cfg.getTracingSpi();
 
         commFailureRslvr = cfg.getCommunicationFailureResolver();
 
@@ -2443,8 +2434,6 @@ public class IgniteConfiguration implements IgniteConfigurationDefaults {
         U.warn(log, "Configured Tracing SPI is ignored. The Ignite Tracing is deprecated and subject to removal in a " +
             " future release. Ignite Tracing has been retired in favor of Ignite Performance Statistics and Ignite Metrics.");
 
-        this.tracingSpi = tracingSpi;
-
         return this;
     }
 
@@ -2456,7 +2445,7 @@ public class IgniteConfiguration implements IgniteConfigurationDefaults {
      * retired in favor of Ignite Performance Statistics and Ignite Metrics.
      */
     public TracingSpi getTracingSpi() {
-        return tracingSpi;
+        return NoopTracingSpi.INSTANCE;
     }
 
     /**

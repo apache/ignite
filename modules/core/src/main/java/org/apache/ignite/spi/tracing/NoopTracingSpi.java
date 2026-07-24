@@ -36,6 +36,9 @@ import org.jetbrains.annotations.Nullable;
 @IgniteSpiMultipleInstancesSupport(value = true)
 @IgniteSpiConsistencyChecked(optional = true)
 public class NoopTracingSpi extends IgniteSpiAdapter implements TracingSpi<NoopSpiSpecificSpan> {
+    /** */
+    public static NoopTracingSpi INSTANCE = new NoopTracingSpi();
+
     /** Noop serialized span. */
     private static final byte[] NOOP_SPI_SPECIFIC_SERIALIZED_SPAN = new byte[0];
 
