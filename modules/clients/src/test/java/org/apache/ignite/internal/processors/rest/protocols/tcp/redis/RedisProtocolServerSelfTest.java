@@ -31,7 +31,7 @@ public class RedisProtocolServerSelfTest extends RedisCommonAbstractTest {
      */
     @Test
     public void testDbSize() throws Exception {
-        try (Jedis jedis = pool.getResource()) {
+        try (Jedis jedis = redisClientFactory.getResource()) {
             Assert.assertEquals(0, (long)jedis.dbSize());
 
             jcache().putAll(new HashMap<Integer, Integer>() {
@@ -50,7 +50,7 @@ public class RedisProtocolServerSelfTest extends RedisCommonAbstractTest {
      */
     @Test
     public void testFlushDb() throws Exception {
-        try (Jedis jedis = pool.getResource()) {
+        try (Jedis jedis = redisClientFactory.getResource()) {
             Assert.assertEquals(0, (long)jedis.dbSize());
 
             jcache().putAll(new HashMap<Integer, Integer>() {
@@ -87,7 +87,7 @@ public class RedisProtocolServerSelfTest extends RedisCommonAbstractTest {
      */
     @Test
     public void testFlushAll() throws Exception {
-        try (Jedis jedis = pool.getResource()) {
+        try (Jedis jedis = redisClientFactory.getResource()) {
             Assert.assertEquals(0, (long)jedis.dbSize());
 
             for (int i = 0; i < 100; i++)
