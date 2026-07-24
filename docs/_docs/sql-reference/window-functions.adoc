@@ -1,0 +1,163 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Window Functions
+
+Window functions calculate a value for each row returned by a query. The value is calculated over a set of rows related
+to the current row. This set of rows is called a window.
+
+A window function is identified by the `OVER` clause. The `OVER` clause defines how rows are partitioned, ordered, and
+framed for the function. Unlike regular aggregate functions, aggregate window functions do not collapse rows into a
+single grouped result.
+
+[NOTE]
+====
+Window functions are supported by the Calcite-based SQL engine.
+====
+
+== Supported Window Functions
+
+Ignite supports aggregate, ranking, and value functions with the `OVER` clause.
+
+[cols="1,3",opts="stretch,header"]
+|===
+|Type |Functions
+
+|Aggregate
+|`AVG`, `COUNT`, `MAX`, `MIN`, `SUM`
+
+|Ranking
+|`CUME_DIST`, `DENSE_RANK`, `NTILE`, `PERCENT_RANK`, `RANK`, `ROW_NUMBER`
+
+|Value
+|`FIRST_VALUE`, `LAG`, `LAST_VALUE`, `LEAD`, `NTH_VALUE`
+
+|===
+
+== Syntax
+
+[source,sql]
+----
+windowFunction([expression[, expression]...]) OVER (
+    [PARTITION BY expression[, expression]...]
+    [ORDER BY expression [ASC | DESC] [NULLS FIRST | NULLS LAST][, expression ...]]
+    [{ROWS | RANGE} frameExtent]
+)
+----
+
+The frame extent can use one of the following forms:
+
+[source,sql]
+----
+frameStart
+BETWEEN frameStart AND frameEnd
+----
+
+`frameStart` and `frameEnd` can use the following boundaries:
+
+[source,sql]
+----
+UNBOUNDED PRECEDING
+offset PRECEDING
+CURRENT ROW
+offset FOLLOWING
+UNBOUNDED FOLLOWING
+----
+
+== Arguments
+
+[cols="1,3",opts="stretch,header"]
+|===
+|Clause |Description
+
+|`OVER`
+|Defines the window specification for the function. A query can use multiple window functions with the same or different
+window specifications.
+
+|`PARTITION BY`
+|Splits the query result into independent partitions. The window function is evaluated within the current row's
+partition. If this clause is omitted, the window function uses the whole query result as one partition.
+
+|`ORDER BY`
+|Defines row ordering inside each partition. This ordering belongs to the window specification and is independent from
+the query-level `ORDER BY` clause. Ranking functions and bounded frames use this ordering.
+
+|`ROWS`
+|Defines a frame by physical row offsets from the current row.
+
+|`RANGE`
+|Defines a frame by the ordered value range around the current row. Numeric offsets are supported for numeric ordering
+expressions. Interval offsets are supported for date and time ordering expressions.
+
+|`UNBOUNDED PRECEDING`
+|Starts the frame at the first row of the partition.
+
+|`offset PRECEDING`
+|Starts or ends the frame before the current row.
+
+|`CURRENT ROW`
+|Starts or ends the frame at the current row.
+
+|`offset FOLLOWING`
+|Starts or ends the frame after the current row.
+
+|`UNBOUNDED FOLLOWING`
+|Ends the frame at the last row of the partition.
+
+|===
+
+== Examples
+
+The following query calculates a rank and a department salary total for each employee row:
+
+[source,sql]
+----
+SELECT depname, empno, salary,
+       RANK() OVER (PARTITION BY depname ORDER BY salary) AS salary_rank,
+       SUM(salary) OVER (PARTITION BY depname) AS dep_salary
+FROM empsalary;
+----
+
+The following query counts rows in a physical frame around the current row:
+
+[source,sql]
+----
+SELECT depname,
+       COUNT(*) OVER (
+           PARTITION BY depname
+           ORDER BY empno
+           ROWS BETWEEN 2 PRECEDING AND 1 FOLLOWING
+       ) AS nearby_rows
+FROM empsalary;
+----
+
+The following query counts rows in a date range around the current row:
+
+[source,sql]
+----
+SELECT depname,
+       COUNT(*) OVER (
+           PARTITION BY depname
+           ORDER BY enroll_date
+           RANGE BETWEEN INTERVAL 730 DAYS PRECEDING AND INTERVAL 360 DAYS FOLLOWING
+       ) AS nearby_dates
+FROM empsalary;
+----
+
+== Usage Notes
+
+Window functions are evaluated after the `WHERE`, `GROUP BY`, and `HAVING` clauses. They can be used in the `SELECT`
+list and in the query-level `ORDER BY` clause.
+
+Aggregate functions become aggregate window functions when used with the `OVER` clause.

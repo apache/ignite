@@ -274,6 +274,10 @@ The Calcite-based SQL engine currently supports the following user-facing functi
 
 |===
 
+==== Window functions
+
+The Calcite-based SQL engine supports SQL window functions. See link:sql-reference/window-functions[Window Functions, window=_blank] for syntax, supported functions, and examples.
+
 ==== String functions and predicates
 
 [cols="1,2,4",opts="stretch,header"]
