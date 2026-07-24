@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageVersion;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFeatureSet;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -35,6 +36,16 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 public class VisorTaskArgument<A> extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /**
+     * Magic header used for Management API argument serialization.
+     *
+     * <p>This value differs from the magic header defined in the parent class because some {@link IgniteDataTransferObject}
+     * implementations (for example, {@link DistributedMetaStorageVersion}) are already stored in the PDS, which
+     * requires full backward compatibility. A separate magic header is required to distinguish Management API arguments
+     * serialized by pre-Rolling Upgrade clients and handle them correctly.</p>
+     */
+    private static final int MAGIC = 0xBAA55F5E;
 
     /** */
     transient IgniteCoreFeatureSet cmdInitiatorFeatures = IgniteCoreFeatureSet.local();
@@ -127,14 +138,25 @@ public class VisorTaskArgument<A> extends IgniteDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void writeIgniteDataTransferObject(ObjectOutput out) throws IOException {
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeInt(MAGIC);
+
         cmdInitiatorFeatures.writeExternal(out);
 
-        super.writeIgniteDataTransferObject(out);
+        writeIgniteDataTransferObject(out);
     }
 
     /** {@inheritDoc} */
-    @Override protected void readIgniteDataTransferObject(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        int hdr = in.readInt();
+
+        if ((hdr & MAGIC) != MAGIC) {
+            throw new IOException("Unexpected Ignite DTO message header. The input stream is malformed or was generated " +
+                "by an incompatible Ignite version [actual=" + Integer.toHexString(hdr) +
+                ", expected=" + Integer.toHexString(MAGIC) + ']'
+            );
+        }
+
         cmdInitiatorFeatures = new IgniteCoreFeatureSet();
         cmdInitiatorFeatures.readExternal(in);
 
@@ -146,7 +168,7 @@ public class VisorTaskArgument<A> extends IgniteDataTransferObject {
             );
         }
 
-        super.readIgniteDataTransferObject(in);
+        readIgniteDataTransferObject(in);
     }
 
     /** {@inheritDoc} */

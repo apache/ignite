@@ -35,7 +35,7 @@ public abstract class IgniteDataTransferObject implements Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** Magic number to detect correct transfer objects. */
-    private static final int MAGIC = 0xBAA55F5E;
+    private static final int MAGIC = 0x42BEEF00;
 
     /**
      * @param col Source collection.
@@ -50,21 +50,19 @@ public abstract class IgniteDataTransferObject implements Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public final void writeExternal(ObjectOutput out) throws IOException {
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(MAGIC);
 
         writeIgniteDataTransferObject(out);
     }
 
     /** {@inheritDoc} */
-    @Override public final void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         int hdr = in.readInt();
 
         if ((hdr & MAGIC) != MAGIC)
-            throw new IOException("Unexpected Ignite DTO message header. The input stream is malformed or was generated " +
-                "by an incompatible Ignite version [actual=" + Integer.toHexString(hdr) +
-                    ", expected=" + Integer.toHexString(MAGIC) + ']'
-            );
+            throw new IOException("Unexpected IgniteDataTransferObject header " +
+                "[actual=" + Integer.toHexString(hdr) + ", expected=" + Integer.toHexString(MAGIC) + "]");
 
         readIgniteDataTransferObject(in);
     }
