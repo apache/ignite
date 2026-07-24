@@ -43,8 +43,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
 import static org.apache.ignite.internal.processors.rollingupgrade.feature.TestIgniteReleaseFeatures_2_19_2.VER_2_19_2_ID_1_FEATURE;
-import static org.apache.ignite.internal.processors.security.NodeSecurityContextPropagationTest.discoveryRingMessageWorkerQueue;
-import static org.apache.ignite.internal.processors.security.NodeSecurityContextPropagationTest.wrapRingMessageWorkerQueue;
+import static org.apache.ignite.spi.discovery.tcp.TestBlockingTcpDiscoverySpi.blockingDiscovery;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
@@ -64,10 +63,8 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
 
         checkVersionUpgradeInactive(TEST_DEFAULT_VER);
 
-        String msg = VER_NOT_EQUAL_ERR;
-
-        checkJoinFailed(3, "2.18.0", msg);
-        checkJoinFailed(3, "2.19.1", msg);
+        checkJoinFailed(3, "2.18.0", VER_NOT_EQUAL_ERR);
+        checkJoinFailed(3, "2.19.1", VER_NOT_EQUAL_ERR);
     }
 
     /** */
@@ -82,7 +79,7 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
 
     /** */
     @Test
-    public void testVersionsFinalizationNoVersionUpgrade() throws Exception {
+    public void testVersionFinalizationNoVersionUpgrade() throws Exception {
         startCluster();
 
         ru(1).enableVersionUpgrade();
@@ -95,6 +92,18 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
 
         restartNode(1);
         restartNode(2);
+    }
+
+    /** */
+    @Test
+    public void testSmallerVersionsWithSameFeaturesAreNotCompatible() throws Exception {
+        startCluster("2.19.1");
+
+        ru(1).enableVersionUpgrade();
+
+        checkUpgradeFailed(1, "2.19.0", VER_INCOMPATIBLE_ERR);
+
+        finalizeClusterVersion(1, "2.19.1");
     }
 
     /** */
@@ -132,12 +141,12 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
 
         checkJoinFailed(5, "2.18.0", VER_INCOMPATIBLE_ERR);
 
-        upgradeNodeVersion(0, "2.19.1");
-        upgradeNodeVersion(2, "2.19.1");
+        upgradeNodeVersion(0, "2.19.2");
+        upgradeNodeVersion(2, "2.19.2");
 
-        checkVersionUpgradeInProgress(TEST_DEFAULT_VER, "2.19.1");
+        checkVersionUpgradeInProgress(TEST_DEFAULT_VER, "2.19.2");
 
-        checkJoinFailed(5, "2.19.2", VER_INCOMPATIBLE_ERR);
+        checkJoinFailed(5, "2.19.3", VER_INCOMPATIBLE_ERR);
 
         restartNode(3);
         restartNode(4);
@@ -145,11 +154,11 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
         restartNode(0);
         restartNode(2);
 
-        upgradeNodeVersion(1, "2.19.1");
-        upgradeNodeVersion(3, "2.19.1");
-        upgradeNodeVersion(4, "2.19.1");
+        upgradeNodeVersion(1, "2.19.2");
+        upgradeNodeVersion(3, "2.19.2");
+        upgradeNodeVersion(4, "2.19.2");
 
-        finalizeClusterVersion(1, "2.19.1");
+        finalizeClusterVersion(1, "2.19.2");
     }
 
     /** */
@@ -416,9 +425,7 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
     /** */
     @Test
     public void testValidatedJoiningNodesAccountedDuringFinalization() throws Exception {
-        wrapRingMessageWorkerQueue(startGrid(0, TEST_DEFAULT_VER));
-        startGrid(1, TEST_DEFAULT_VER);
-        startClientGrid(2, TEST_DEFAULT_VER);
+        startCluster();
 
         ru(1).enableVersionUpgrade();
 
@@ -430,7 +437,7 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
 
             assertTrue(TestRollingUpgradeProcessor.nodeJoinValidationCompletedLatch.await(getTestTimeout(), MILLISECONDS));
 
-            discoveryRingMessageWorkerQueue(grid(0)).block();
+            blockingDiscovery(grid(0)).block();
 
             IgniteInternalFuture<Object> finalizeFut = GridTestUtils.runAsync(() -> finalizeClusterVersion(1, TEST_DEFAULT_VER));
 
@@ -438,7 +445,7 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
 
             TestRollingUpgradeProcessor.nodeJoinUnblockedLatch.countDown();
 
-            discoveryRingMessageWorkerQueue(grid(0)).unblock();
+            blockingDiscovery(grid(0)).unblock();
 
             GridTestUtils.assertThrowsAnyCause(
                 log,
@@ -507,7 +514,7 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
     /** */
     @Test
     public void testConcurrentFinalizationErrorPreserveNodeFence() throws Exception {
-        wrapRingMessageWorkerQueue(startGrid(0, TEST_DEFAULT_VER));
+        startGrid(0, TEST_DEFAULT_VER);
         startGrid(1, TEST_DEFAULT_VER);
         startGrid(2, TEST_DEFAULT_VER);
 
@@ -515,7 +522,7 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
 
         ru(1).enableVersionUpgrade();
 
-        discoveryRingMessageWorkerQueue(grid(0)).block();
+        blockingDiscovery(grid(0)).block();
 
         try {
             IgniteInternalFuture<Object> firstFut = GridTestUtils.runAsync(() -> finalizeClusterVersion(1, TEST_DEFAULT_VER));
@@ -535,7 +542,7 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
                 return singleNodeMsg.processId().equals(startedFinalizeProcId);
             });
 
-            discoveryRingMessageWorkerQueue(grid(0)).unblock();
+            blockingDiscovery(grid(0)).unblock();
 
             spi(grid(2)).waitForBlocked();
 
@@ -553,7 +560,7 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
             firstFut.get(getTestTimeout(), MILLISECONDS);
         }
         finally {
-            discoveryRingMessageWorkerQueue(grid(0)).unblock();
+            blockingDiscovery(grid(0)).unblock();
             spi(grid(2)).stopBlock();
         }
     }
@@ -591,12 +598,12 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
     @Test
     public void testClientNodeClearsActiveFinalizationProcessOnDisconnect() throws Exception {
         startCluster();
-        wrapRingMessageWorkerQueue(startClientGrid(3, TEST_DEFAULT_VER));
+        startClientGrid(3, TEST_DEFAULT_VER);
 
-        CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch cliReconnectedLatch = new CountDownLatch(1);
 
         grid(3).events().localListen(evt -> {
-            latch.countDown();
+            cliReconnectedLatch.countDown();
 
             return true;
         }, EVT_CLIENT_NODE_RECONNECTED);
@@ -609,16 +616,31 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
 
         spi(grid(3)).waitForBlocked();
 
-        discoveryRingMessageWorkerQueue(grid(3)).block();
+        AtomicReference<TcpDiscoveryJoinRequestMessage> cliJoinReq = new AtomicReference<>();
+        CountDownLatch cliJoinReqReceivedLatch = new CountDownLatch(1);
+
+        blockingDiscovery(grid(0)).messageFilter(m -> {
+            if ((m instanceof TcpDiscoveryJoinRequestMessage joinReq) && joinReq.node().isClient()) {
+                cliJoinReq.set(joinReq);
+                cliJoinReqReceivedLatch.countDown();
+
+                return true;
+            }
+
+            return false;
+        });
 
         grid(0).context().discovery().failNode(grid(3).context().localNodeId(), "test");
 
         finalizeFut.get(getTestTimeout(), MILLISECONDS);
 
-        spi(grid(3)).stopBlock();
-        discoveryRingMessageWorkerQueue(grid(3)).unblock();
+        assertTrue(cliJoinReqReceivedLatch.await(getTestTimeout(), MILLISECONDS));
 
-        assertTrue(latch.await(getTestTimeout(), MILLISECONDS));
+        blockingDiscovery(grid(0)).messageQueue().addLast(cliJoinReq.get());
+
+        assertTrue(cliReconnectedLatch.await(getTestTimeout(), MILLISECONDS));
+
+        spi(grid(3)).stopBlock();
 
         ru(1).enableVersionUpgrade();
 
@@ -632,7 +654,7 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
 
         ru(1).enableVersionUpgrade();
 
-        forAllNodes(nodeIdx -> upgradeNodeVersion(nodeIdx, "2.19.1"));
+        forAllNodes(nodeIdx -> upgradeNodeVersion(nodeIdx, "2.19.2"));
 
         IgniteConfiguration cfg = getConfiguration(3, TEST_DEFAULT_VER)
             .setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(false));
@@ -644,7 +666,7 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
             "Local node's binary configuration is not equal to remote node's binary configuration"
         );
 
-        finalizeClusterVersion(2, "2.19.1");
+        finalizeClusterVersion(2, "2.19.2");
     }
 
     /** */
@@ -666,13 +688,11 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
     /** */
     @Test
     public void testConcurrentAbortAndPrepareFinalization() throws Exception {
-        wrapRingMessageWorkerQueue(startGrid(0, TEST_DEFAULT_VER));
-        startGrid(1, TEST_DEFAULT_VER);
-        startClientGrid(2, TEST_DEFAULT_VER);
+        startCluster();
 
         ru(2).enableVersionUpgrade();
 
-        discoveryRingMessageWorkerQueue(grid(0)).block();
+        blockingDiscovery(grid(0)).block();
 
         IgniteInternalFuture<Object> abortFut = GridTestUtils.runAsync(() -> ru(0).abortClusterVersionFinalization());
 
@@ -682,7 +702,7 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
 
         waitForBlockedDiscoveryMessages(grid(0), 2, InitMessage.class);
 
-        discoveryRingMessageWorkerQueue(grid(0)).unblock();
+        blockingDiscovery(grid(0)).unblock();
 
         abortFut.get(getTestTimeout(), MILLISECONDS);
         finalizeFut.get(getTestTimeout(), MILLISECONDS);
@@ -691,9 +711,7 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
     /** */
     @Test
     public void testAbortAfterFinalizationPrepare() throws Exception {
-        wrapRingMessageWorkerQueue(startGrid(0, TEST_DEFAULT_VER));
-        startGrid(1, TEST_DEFAULT_VER);
-        startClientGrid(2, TEST_DEFAULT_VER);
+        startCluster();
 
         ru(2).enableVersionUpgrade();
 
@@ -703,13 +721,13 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
 
         spi(grid(1)).waitForBlocked();
 
-        discoveryRingMessageWorkerQueue(grid(0)).block();
+        blockingDiscovery(grid(0)).block();
 
         IgniteInternalFuture<Object> abortFut = GridTestUtils.runAsync(() -> ru(2).abortClusterVersionFinalization());
 
         waitForBlockedDiscoveryMessages(grid(0), 1, InitMessage.class);
 
-        discoveryRingMessageWorkerQueue(grid(0)).unblock();
+        blockingDiscovery(grid(0)).unblock();
         spi(grid(1)).stopBlock();
 
         abortFut.get(getTestTimeout(), MILLISECONDS);
@@ -730,9 +748,7 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
     /** */
     @Test
     public void testAbortBeforeFinalizationComplete() throws Exception {
-        wrapRingMessageWorkerQueue(startGrid(0, TEST_DEFAULT_VER));
-        startGrid(1, TEST_DEFAULT_VER);
-        startClientGrid(2, TEST_DEFAULT_VER);
+        startCluster();
 
         ru(2).enableVersionUpgrade();
 
@@ -747,7 +763,7 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
         CountDownLatch finalizeCompleteStartedLatch = new CountDownLatch(1);
         AtomicReference<TcpDiscoveryAbstractMessage> finalizeCompleteStartMsg = new AtomicReference<>();
 
-        discoveryRingMessageWorkerQueue(grid(0)).startMessageIntercepting(m -> {
+        blockingDiscovery(grid(0)).messageFilter(m -> {
             if ((m instanceof TcpDiscoveryCustomEventMessage customMsg)
                 && (customMsg.message() instanceof InitMessage<?> initMsg)
                 && initMsg.processId().equals(startedFinalizeProcId)
@@ -755,25 +771,25 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
                 finalizeCompleteStartMsg.set(m);
                 finalizeCompleteStartedLatch.countDown();
 
-                return false;
+                return true;
             }
 
-            return true;
+            return false;
         });
 
         spi(grid(1)).stopBlock();
 
         assertTrue(finalizeCompleteStartedLatch.await(getTestTimeout(), MILLISECONDS));
 
-        discoveryRingMessageWorkerQueue(grid(0)).block();
+        blockingDiscovery(grid(0)).block();
 
         IgniteInternalFuture<Object> abortFut = GridTestUtils.runAsync(() -> ru(2).abortClusterVersionFinalization());
 
         waitForBlockedDiscoveryMessages(grid(0), 1, InitMessage.class);
 
-        discoveryRingMessageWorkerQueue(grid(0)).addLast(finalizeCompleteStartMsg.get());
+        blockingDiscovery(grid(0)).messageQueue().addLast(finalizeCompleteStartMsg.get());
 
-        discoveryRingMessageWorkerQueue(grid(0)).unblock();
+        blockingDiscovery(grid(0)).unblock();
 
         abortFut.get(getTestTimeout(), MILLISECONDS);
 
@@ -793,7 +809,7 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
     /** */
     @Test
     public void testAbortedAfterFinalizationComplete() throws Exception {
-        wrapRingMessageWorkerQueue(startGrid(0, TEST_DEFAULT_VER));
+        startGrid(0, TEST_DEFAULT_VER);
         startGrid(1, TEST_DEFAULT_VER);
         startGrid(2, TEST_DEFAULT_VER);
         startClientGrid(3, TEST_DEFAULT_VER);
@@ -806,7 +822,7 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
 
         spi(grid(1)).waitForBlocked();
 
-        discoveryRingMessageWorkerQueue(grid(0)).block();
+        blockingDiscovery(grid(0)).block();
 
         spi(grid(1)).stopBlock();
 
@@ -814,7 +830,7 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
 
         spi(grid(1)).blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
 
-        discoveryRingMessageWorkerQueue(grid(0)).unblock();
+        blockingDiscovery(grid(0)).unblock();
 
         spi(grid(1)).waitForBlocked();
 
@@ -856,9 +872,7 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
     /** */
     @Test
     public void testConcurrentNodeJoinAndFinalization() throws Exception {
-        wrapRingMessageWorkerQueue(startGrid(0, TEST_DEFAULT_VER));
-        startGrid(1, TEST_DEFAULT_VER);
-        startClientGrid(2, TEST_DEFAULT_VER);
+        startCluster();
 
         ru(1).enableVersionUpgrade();
 
@@ -870,7 +884,7 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
 
             assertTrue(TestRollingUpgradeProcessor.nodeJoinValidationCompletedLatch.await(getTestTimeout(), MILLISECONDS));
 
-            discoveryRingMessageWorkerQueue(grid(0)).block();
+            blockingDiscovery(grid(0)).block();
 
             IgniteInternalFuture<Object> finalizeFut = GridTestUtils.runAsync(() -> finalizeClusterVersion(1, TEST_DEFAULT_VER));
 
@@ -880,7 +894,7 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
 
             waitForBlockedDiscoveryMessages(grid(0), 1, TcpDiscoveryNodeAddedMessage.class);
 
-            discoveryRingMessageWorkerQueue(grid(0)).unblock();
+            blockingDiscovery(grid(0)).unblock();
 
             finalizeFut.get(getTestTimeout(), MILLISECONDS);
 
@@ -894,13 +908,11 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
     /** */
     @Test
     public void testConcurrentFinalizationAndNodeJoin() throws Exception {
-        wrapRingMessageWorkerQueue(startGrid(0, TEST_DEFAULT_VER));
-        startGrid(1, TEST_DEFAULT_VER);
-        startClientGrid(2, TEST_DEFAULT_VER);
+        startCluster();
 
         ru(1).enableVersionUpgrade();
 
-        discoveryRingMessageWorkerQueue(grid(0)).block();
+        blockingDiscovery(grid(0)).block();
 
         IgniteInternalFuture<Object> finalizeFut = GridTestUtils.runAsync(() -> ru(1).finalizeClusterVersion());
 
@@ -910,7 +922,7 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
 
         waitForBlockedDiscoveryMessages(grid(0), 1, TcpDiscoveryJoinRequestMessage.class);
 
-        discoveryRingMessageWorkerQueue(grid(0)).unblock();
+        blockingDiscovery(grid(0)).unblock();
 
         finalizeFut.get(getTestTimeout(), MILLISECONDS);
 
@@ -935,7 +947,7 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
     private boolean queuedDiscoveryMessageCountMatches(IgniteEx ignite, int expCnt, Class<?> msgCls) {
         int cnt = 0;
 
-        for (TcpDiscoveryAbstractMessage msg : discoveryRingMessageWorkerQueue(ignite)) {
+        for (TcpDiscoveryAbstractMessage msg : blockingDiscovery(ignite).messageQueue()) {
             Class<?> queuedMsgCls = (msg instanceof TcpDiscoveryCustomEventMessage customMsg)
                 ? customMsg.message().getClass()
                 : msg.getClass();

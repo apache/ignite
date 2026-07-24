@@ -423,10 +423,14 @@ public class WindowPlannerTest extends AbstractPlannerTest {
                 "A", Integer.class, "B", Integer.class, "C", Integer.class),
             createTable("TA2", IgniteDistributions.affinity(1, "cache2", "hash"),
                 "A", Integer.class, "B", Integer.class, "C", Integer.class),
+            // TODO: https://issues.apache.org/jira/browse/IGNITE-28881
+            // Test need to pass also without additional indexes.
             createTable("TH1", IgniteDistributions.hash(Arrays.asList(0, 1)),
-                "A", Integer.class, "B", Integer.class, "C", Integer.class),
+                "A", Integer.class, "B", Integer.class, "C", Integer.class)
+                .addIndex("TH1_IDX", 0, 1),
             createTable("TH2", IgniteDistributions.hash(Arrays.asList(1, 2)),
                 "A", Integer.class, "B", Integer.class, "C", Integer.class)
+                .addIndex("TH2_IDX", 0, 1)
         );
 
         Predicate<RelNode> colocatedPredicate = nodeOrAnyChild(isInstanceOf(IgniteColocatedAggregateBase.class)

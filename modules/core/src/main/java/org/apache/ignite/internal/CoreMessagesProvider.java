@@ -34,7 +34,6 @@ import org.apache.ignite.internal.managers.communication.SessionChannelMessage;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentResponse;
-import org.apache.ignite.internal.managers.discovery.SecurityAwareCustomMessageWrapper;
 import org.apache.ignite.internal.managers.encryption.ChangeCacheEncryptionRequest;
 import org.apache.ignite.internal.managers.encryption.EncryptionDataBagItem;
 import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyRequest;
@@ -54,14 +53,20 @@ import org.apache.ignite.internal.processors.authentication.UserManagementOperat
 import org.apache.ignite.internal.processors.authentication.UserManagementOperationFinishedMessage;
 import org.apache.ignite.internal.processors.authentication.UserProposedMessage;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
+import org.apache.ignite.internal.processors.cache.CacheClientReconnectDiscoveryData;
 import org.apache.ignite.internal.processors.cache.CacheConfigurationEnrichment;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicateAdapter;
 import org.apache.ignite.internal.processors.cache.CacheEvictionEntry;
+import org.apache.ignite.internal.processors.cache.CacheGroupRecoveryState;
 import org.apache.ignite.internal.processors.cache.CacheInvokeDirectResult;
+import org.apache.ignite.internal.processors.cache.CacheJoinInfo;
+import org.apache.ignite.internal.processors.cache.CacheJoinNodeDiscoveryData;
+import org.apache.ignite.internal.processors.cache.CacheReconnectInfo;
 import org.apache.ignite.internal.processors.cache.CacheStatisticsClearMessage;
 import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessage;
 import org.apache.ignite.internal.processors.cache.ClientCacheChangeDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.ClientCacheChangeDummyDiscoveryMessage;
+import org.apache.ignite.internal.processors.cache.ClusterCacheGroupRecoveryData;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.ExchangeFailureMessage;
@@ -237,16 +242,22 @@ import org.apache.ignite.internal.processors.query.stat.messages.StatisticsRespo
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultRequest;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultResponse;
 import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeClusterData;
-import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteComponentFeatureSet;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFeatureSet;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureSet;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgnitePluginFeatureSet;
 import org.apache.ignite.internal.processors.security.SecurityContextWrapper;
+import org.apache.ignite.internal.processors.service.LazyServiceConfigurationMessage;
 import org.apache.ignite.internal.processors.service.ServiceChangeBatchRequest;
 import org.apache.ignite.internal.processors.service.ServiceClusterDeploymentResult;
 import org.apache.ignite.internal.processors.service.ServiceClusterDeploymentResultBatch;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentProcessId;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentRequest;
+import org.apache.ignite.internal.processors.service.ServiceInfo;
+import org.apache.ignite.internal.processors.service.ServiceProcessorCommonDiscoveryData;
+import org.apache.ignite.internal.processors.service.ServiceProcessorJoinNodeDiscoveryData;
 import org.apache.ignite.internal.processors.service.ServiceSingleNodeDeploymentResult;
 import org.apache.ignite.internal.processors.service.ServiceSingleNodeDeploymentResultBatch;
+import org.apache.ignite.internal.processors.service.ServiceTopology;
 import org.apache.ignite.internal.processors.service.ServiceUndeploymentRequest;
 import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.GridIntList;
@@ -425,6 +436,11 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(ServiceClusterDeploymentResultBatch.class);
         withNoSchema(ServiceChangeBatchRequest.class);
         withNoSchema(ServiceSingleNodeDeploymentResultBatch.class);
+        withNoSchema(ServiceProcessorCommonDiscoveryData.class);
+        withNoSchema(ServiceProcessorJoinNodeDiscoveryData.class);
+        withNoSchema(ServiceInfo.class);
+        withNoSchema(ServiceTopology.class);
+        withNoSchema(LazyServiceConfigurationMessage.class);
 
         // [6500 - 6700]: DiscoveryCustomMessage
         msgIdx = 6500;
@@ -436,7 +452,6 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(FullMessage.class);
         withNoSchema(InitMessage.class);
         withNoSchema(CacheStatisticsModeChangeMessage.class);
-        withNoSchema(SecurityAwareCustomMessageWrapper.class);
         withNoSchema(MetadataRemoveAcceptedMessage.class);
         withNoSchema(MetadataRemoveProposedMessage.class);
         withNoSchema(WalStateFinishMessage.class);
@@ -457,6 +472,12 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(CacheStatisticsClearMessage.class);
         withNoSchema(ClientCacheChangeDummyDiscoveryMessage.class);
         withNoSchema(DynamicCacheChangeBatch.class);
+        withNoSchemaResolvedClassLoader(CacheClientReconnectDiscoveryData.class);
+        withNoSchemaResolvedClassLoader(CacheGroupRecoveryState.class);
+        withNoSchemaResolvedClassLoader(CacheJoinInfo.class);
+        withNoSchemaResolvedClassLoader(CacheJoinNodeDiscoveryData.class);
+        withNoSchemaResolvedClassLoader(CacheReconnectInfo.class);
+        withNoSchemaResolvedClassLoader(ClusterCacheGroupRecoveryData.class);
 
         // [10000 - 10200]: Transaction and lock related messages. Most of them originally comes from Communication.
         msgIdx = 10000;
@@ -528,7 +549,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(StartRequestData.class);
         withNoSchema(StartRoutineAckDiscoveryMessage.class);
         withNoSchema(StartRoutineDiscoveryMessage.class);
-        withNoSchema(StoredCacheData.class);
+        withNoSchemaResolvedClassLoader(StoredCacheData.class);
 
         // [10600-10800]: Affinity & partition maps.
         msgIdx = 10600;
@@ -696,7 +717,8 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         // [13600 - 13700]: Rolling Upgrade messages.
         msgIdx = 13600;
         withNoSchema(IgniteFeatureSet.class);
-        withNoSchema(IgniteComponentFeatureSet.class);
+        withNoSchema(IgniteCoreFeatureSet.class);
+        withNoSchema(IgnitePluginFeatureSet.class);
         withNoSchema(RollingUpgradeClusterData.class);
 
         assert msgIdx <= MAX_MESSAGE_ID;

@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentFail
 import org.apache.ignite.internal.processors.service.IgniteServiceDynamicCachesSelfTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceProxyTimeoutInitializedTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceReassignmentTest;
+import org.apache.ignite.internal.processors.service.LazyServiceConfigurationMessageSerializationTest;
 import org.apache.ignite.internal.processors.service.ServiceConcurrentUndeployTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentDiscoveryListenerNotificationOrderTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentNonSerializableStaticConfigurationTest;
@@ -126,7 +127,8 @@ import org.junit.runners.Suite;
     GridServiceMetricsTest.class,
     IgniteServiceCallInterceptorTest.class,
     ServiceRedeploymentOnNodeLeftTest.class,
-    ServiceLocalStartOrderTest.class
+    ServiceLocalStartOrderTest.class,
+    LazyServiceConfigurationMessageSerializationTest.class
 })
 public class IgniteServiceGridTestSuite {
     /** */

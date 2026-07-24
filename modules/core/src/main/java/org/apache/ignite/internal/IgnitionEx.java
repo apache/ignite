@@ -780,10 +780,10 @@ public class IgnitionEx {
      * @param springCfgPath Spring XML configuration file path or URL. This cannot be {@code null}.
      * @param igniteInstanceName Ignite instance name that will override default.
      * @param springCtx Optional Spring application context, possibly {@code null}.
-     * @param ldr Optional class loader that will be used by default.
      *      Spring bean definitions for bean injection are taken from this context.
      *      If provided, this context can be injected into grid tasks and grid jobs using
      *      {@link SpringApplicationContextResource @SpringApplicationContextResource} annotation.
+     * @param ldr Optional class loader that will be used by default.
      * @return Started grid. If Spring configuration contains multiple grid instances,
      *      then the 1st found instance is returned.
      * @throws IgniteCheckedException If grid could not be started or configuration
