@@ -42,9 +42,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     /** Custom cache name. */
     private static final String CUSTOM_CACHE_NAME = "custom-cache";
 
-    /**
-     * Grid count.
-     */
+    /** Grid count. */
     private static final int GRID_CNT = 2;
 
     /**
@@ -54,9 +52,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
         return "modules/clients/src/test/config/jdbc-config.xml";
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -78,9 +74,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(GRID_CNT);
     }

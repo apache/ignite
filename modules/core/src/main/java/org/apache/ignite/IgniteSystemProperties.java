@@ -1910,11 +1910,11 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
 
 
     /**
-     * System property to allow remote HTTP/HTTPS URLs when loading Spring XML configuration.
+     * System property to allow remote HTTP|HTTPS URLs when loading Spring XML configuration.
      * Remote URLs are blocked by default to prevent RCE via attacker-controlled Spring XML.
-     * FTP/FTPS are always blocked regardless of this property due to security risk.
+     * FTP|FTPS are always blocked regardless of this property due to security risk.
      */
-    @SystemProperty(value = "Allow remote HTTP/HTTPS URLs when loading Spring XML configuration")
+    @SystemProperty(value = "Allow remote HTTP|HTTPS URLs when loading Spring XML configuration")
     public static final String IGNITE_ALLOW_REMOTE_SPRING_CFG_URL = "ignite.spring.cfg.allowRemoteUrl";
 
     /**
