@@ -178,7 +178,7 @@ public class IgniteLogInfoProviderImpl implements IgniteLogInfoProvider {
                 "   __________  ________________ ",
                 "  /  _/ ___/ |/ /  _/_  __/ __/ ",
                 " _/ // (7 7    // /  / / / _/   ",
-                "/___/\\___/_/|_/___/ /_/ /x___/  ",
+                "/___/\\___/_/|_/___/ /_/ /___/  ",
                 "",
                 ver,
                 COPYRIGHT,

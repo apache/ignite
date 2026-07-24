@@ -133,7 +133,10 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
             NoOpIoTracker.INSTANCE,
             0,
             null,
-            null
+            null,
+            obj -> {
+                throw new UnsupportedOperationException("Unexpected method call.");
+            }
         ) {
             @Override public ColocationGroup group(long srcId) {
                 return ColocationGroup.forNodes(Collections.emptyList());

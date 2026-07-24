@@ -332,15 +332,18 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         assertThrows("SELECT * from raiseException(?, ?, ?)", RuntimeException.class, "Test exception",
             1, "test", true);
 
+        var empObj1 = new Employer("emp1", 1000d);
+        var empObj10 = new Employer("emp10", 10000d);
+
         // Object type.
-        assertQuery("SELECT * from withObjectType(1)")
-            .returns(1, new Employer("emp1", 1000d))
-            .returns(10, new Employer("emp10", 10000d))
+        assertQuery("SELECT * from withObjectType(1) ORDER BY ID")
+            .returns(1, client.binary().toBinary(empObj1))
+            .returns(10, client.binary().toBinary(empObj10))
             .check();
 
         assertQuery("SELECT * from withObjectType(1) where EMP=?")
-            .withParams(new Employer("emp10", 10000d))
-            .returns(10, new Employer("emp10", 10000d))
+            .withParams(empObj10)
+            .returns(10, client.binary().toBinary(empObj10))
             .check();
     }
 

@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 import java.util.Map;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexPlainRowImpl;
@@ -54,7 +54,7 @@ public class IndexWrappedKeyScan<Row> extends IndexScan<Row> {
     }
 
     /** */
-    @Override protected IndexRow row2indexRow(Row bound) {
+    @Override @Nullable protected IndexRow row2indexRow(Row bound) {
         if (bound == null)
             return null;
 
@@ -63,22 +63,29 @@ public class IndexWrappedKeyScan<Row> extends IndexScan<Row> {
         Object key = rowHnd.get(QueryUtils.KEY_COL, bound);
         assert key != null : String.format("idxName=%s, bound=%s", idx.name(), Commons.toString(rowHnd, bound));
 
-        if (key instanceof BinaryObject)
-            return binaryObject2indexRow((BinaryObject)key);
+        String idxTypeName = idx.indexDefinition().typeDescriptor().keyTypeName();
 
-        throw new IgniteException(String.format(
-            "Unsupported type for index boundary: [expected=%s, current=%s]",
-            BinaryObject.class.getName(), key.getClass().getName()
-        ));
+        if (key instanceof BinaryObject bo) {
+            try {
+                String searchTypeName = bo.type().typeName();
+
+                if (!idxTypeName.equals(searchTypeName))
+                    // The same behavior as for table scan.
+                    return null;
+            }
+            catch (BinaryObjectException ex) {
+                // The same behavior as for table scan.
+                return null;
+            }
+
+            return binaryObject2indexRow(bo);
+        }
+        else
+            throw new AssertionError("Invalid types for comparison: %s %s".formatted(idxTypeName, key.getClass().getName()));
     }
 
     /** */
     private IndexRow binaryObject2indexRow(BinaryObject o) {
-        assert o.type().typeName().equals(idx.indexDefinition().typeDescriptor().keyTypeName()) : String.format(
-            "idx=%s, o=%s, oType=%s, idxKeyType=%s",
-            idx.name(), o, o.type().typeName(), idx.indexDefinition().typeDescriptor().keyTypeName()
-        );
-
         InlineIndexRowHandler idxRowHnd = idx.segment(0).rowHandler();
         IndexKey[] keys = new IndexKey[idx.indexDefinition().indexKeyDefinitions().size()];
 
