@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
@@ -36,11 +38,14 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
+import org.apache.ignite.internal.processors.query.calcite.Query;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
+import org.apache.ignite.internal.processors.query.calcite.RootQuery;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
@@ -93,8 +98,33 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         // Wait for pending queries before destroying caches. If some error occurs during query execution, client code
         // can get control earlier than query leave the running queries registry (need some time for async message
         // exchange), but eventually, all queries should be closed.
-        assertTrue("Not finished queries found on client", waitForCondition(
-            () -> queryProcessor(client).queryRegistry().runningQueries().isEmpty(), 1_000L));
+        List<Query<?>> runningSnap = new ArrayList<>();
+
+        boolean res = waitForCondition(
+            () -> {
+                Collection<? extends Query<?>> activeQueries = queryProcessor(client).queryRegistry().runningQueries();
+
+                runningSnap.clear();
+
+                if (!activeQueries.isEmpty())
+                    runningSnap.addAll(activeQueries);
+
+                return activeQueries.isEmpty();
+            }, 1_000L);
+
+        if (!res) {
+            log.error("Not finished queries found on client: " + runningSnap.size());
+
+            for (Query<?> qry : runningSnap) {
+                if (qry instanceof RootQuery) {
+                    RootQuery<?> root = (RootQuery<?>)qry;
+                    String active = GridTestUtils.getFieldValue(root.planningContext(), PlanningContext.class, "qry");
+                    log.error("Not finished: query=[" + active + ']');
+                }
+            }
+        }
+
+        assertTrue(res);
 
         for (Ignite ign : G.allGrids()) {
             if (destroyCachesAfterTest()) {
