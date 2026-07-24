@@ -421,7 +421,7 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
     public void colocated() throws Exception {
         IgniteSchema schema = createSchema(
             createTable(
-                "EMP", IgniteDistributions.affinity(1, "emp", "hash"),
+                "EMP", 5, IgniteDistributions.affinity(1, "emp", "hash"),
                 "EMPID", Integer.class,
                 "DEPTID", Integer.class,
                 "NAME", String.class,
