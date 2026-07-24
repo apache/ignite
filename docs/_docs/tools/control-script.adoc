@@ -1688,3 +1688,24 @@ Examples:
 ----
 control.sh|bat --event list --enabled
 ----
+
+== TLS Certificate Hot Reload
+
+By default, TLS certificates are loaded once at node startup, so updating them requires a full node restart.
+The `--ssl reload` command reloads certificates at runtime on all server nodes without a restart: each node
+re-reads the key and trust stores from disk using its configured `SslContextFactory` and replaces the active
+SSL context. New connections use the updated certificates, while sessions that were already established are not
+interrupted.
+
+[source, shell]
+----
+control.sh|bat --ssl reload
+----
+
+The command applies to the communication, discovery, thin client (client connector) and binary (TCP) REST transports
+that have SSL enabled. Update the certificate files on disk (keeping the configured key and trust store paths) before
+running the command.
+
+NOTE: For the discovery transport, new outgoing connections use the reloaded certificates immediately, but the
+already-bound listening socket keeps serving the previously loaded certificate to incoming connections until it is
+recreated (for example, when the node re-enters the ring).

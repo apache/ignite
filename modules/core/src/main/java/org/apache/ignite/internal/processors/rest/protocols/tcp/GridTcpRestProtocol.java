@@ -51,6 +51,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.IgnitePortProtocol;
+import org.apache.ignite.ssl.AbstractSslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
@@ -61,6 +62,12 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
 public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     /** Server. */
     private GridNioServer<GridClientMessage> srv;
+
+    /** SSL filter of the current server, {@code null} if SSL is disabled. Used to hot-reload certificates. */
+    private volatile GridNioSslFilter sslFilter;
+
+    /** SSL context factory used to (re)create the SSL context, {@code null} if SSL is disabled. */
+    private volatile Factory<SSLContext> sslCtxFactory;
 
     /** NIO server listener. */
     private GridTcpRestNioListener lsnr;
@@ -104,10 +111,9 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
                     // Thrown SSL exception instead of IgniteCheckedException for writing correct warning message into log.
                     throw new SSLException("SSL is enabled, but SSL context factory is not specified.");
 
-                if (factory != null)
-                    sslCtx = factory.create();
-                else
-                    sslCtx = igniteFactory.create();
+                sslCtxFactory = factory != null ? factory : igniteFactory;
+
+                sslCtx = sslCtxFactory.create();
             }
             int startPort = cfg.getPort();
             int portRange = cfg.getPortRange();
@@ -174,6 +180,23 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
             log.info(stopInfo());
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean reloadSslContext() throws IgniteCheckedException {
+        GridNioSslFilter filter = sslFilter;
+
+        if (filter == null || sslCtxFactory == null)
+            return false;
+
+        try {
+            filter.updateSslContext(AbstractSslContextFactory.reload(sslCtxFactory));
+        }
+        catch (SSLException e) {
+            throw new IgniteCheckedException("Failed to reload SSL context for REST connections.", e);
+        }
+
+        return true;
+    }
+
     /**
      * Resolves host for REST TCP server using grid configuration.
      *
@@ -226,6 +249,8 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
                 sslFilter.wantClientAuth(auth);
 
                 sslFilter.needClientAuth(auth);
+
+                this.sslFilter = sslFilter;
 
                 filters = new GridNioFilter[] {
                     codec,

@@ -76,6 +76,8 @@ import org.apache.ignite.internal.processors.security.snapshot.SnapshotPermissio
 import org.apache.ignite.internal.thread.context.OperationContextAttributePropagationTest;
 import org.apache.ignite.internal.thread.context.OperationContextAttributesTest;
 import org.apache.ignite.ssl.MultipleSSLContextsTest;
+import org.apache.ignite.ssl.SslContextFactoryReloadTest;
+import org.apache.ignite.ssl.SslContextReloadNodeTest;
 import org.apache.ignite.tools.junit.JUnitTeamcityReporter;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
@@ -138,6 +140,8 @@ import org.junit.runners.Suite;
 
     IgniteSecurityProcessorTest.class,
     MultipleSSLContextsTest.class,
+    SslContextFactoryReloadTest.class,
+    SslContextReloadNodeTest.class,
     MaintenanceModeNodeSecurityTest.class,
     ServiceAuthorizationTest.class,
     ServiceStaticConfigTest.class,

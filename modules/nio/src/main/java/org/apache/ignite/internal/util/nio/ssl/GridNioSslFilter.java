@@ -68,8 +68,8 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     /** Array of enabled protocols. */
     private String[] enabledProtos;
 
-    /** SSL context to use. */
-    private SSLContext sslCtx;
+    /** SSL context to use. Volatile to support hot reload of certificates via {@link #updateSslContext(SSLContext)}. */
+    private volatile SSLContext sslCtx;
 
     /** Order. */
     private ByteOrder order;
@@ -115,6 +115,16 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
         this.order = order;
         this.handshakeDuration = handshakeDuration;
         this.rejectedSesCnt = rejectedSesCnt;
+    }
+
+    /**
+     * Replaces the SSL context used to create an {@link SSLEngine} for new sessions. Sessions that were already
+     * opened keep using their existing engines and are not affected. Used to hot-reload TLS certificates.
+     *
+     * @param sslCtx New SSL context.
+     */
+    public void updateSslContext(SSLContext sslCtx) {
+        this.sslCtx = sslCtx;
     }
 
     /**

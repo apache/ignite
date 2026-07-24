@@ -103,6 +103,7 @@ import org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessageSeri
 import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
 import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
+import org.apache.ignite.ssl.AbstractSslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolExecutor.newSingleThreadScheduledExecutor;
@@ -218,6 +219,9 @@ public class GridNioServerWrapper {
 
     /** NIO server. */
     private GridNioServer<Message> nioSrv;
+
+    /** SSL filter of the current NIO server, {@code null} if SSL is disabled. Used to hot-reload certificates. */
+    private volatile GridNioSslFilter sslFilter;
 
     /** Stopping flag (set to {@code true} when SPI gets stopping signal). */
     private volatile boolean stopping = false;
@@ -723,6 +727,30 @@ public class GridNioServerWrapper {
     }
 
     /**
+     * Reloads the SSL context used for communication connections, re-reading the certificates from the configured
+     * SSL context factory. New inbound connections use the updated certificates via the NIO SSL filter; new outbound
+     * connections pick up the reloaded context from the factory automatically. Established sessions are not affected.
+     *
+     * @return {@code true} if SSL is enabled and the context was reloaded, {@code false} otherwise.
+     * @throws IgniteCheckedException If the SSL context could not be reloaded.
+     */
+    public boolean reloadSslContext() throws IgniteCheckedException {
+        GridNioSslFilter filter = sslFilter;
+
+        if (!stateProvider.isSslEnabled() || filter == null)
+            return false;
+
+        try {
+            filter.updateSslContext(AbstractSslContextFactory.reload(igniteCfg.getSslContextFactory()));
+        }
+        catch (SSLException e) {
+            throw new IgniteCheckedException("Failed to reload SSL context for communication connections.", e);
+        }
+
+        return true;
+    }
+
+    /**
      * @param node Node.
      * @param key Connection key.
      * @return Recovery descriptor for incoming connection.
@@ -923,6 +951,8 @@ public class GridNioServerWrapper {
                     sslFilter.needClientAuth(true);
 
                     filters.add(sslFilter);
+
+                    this.sslFilter = sslFilter;
                 }
 
                 GridNioFilter[] filtersArr = filters.toArray(new GridNioFilter[filters.size()]);
