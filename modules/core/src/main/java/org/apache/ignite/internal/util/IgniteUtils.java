@@ -2614,7 +2614,7 @@ public abstract class IgniteUtils extends CommonUtils {
                 if (ALWAYS_BLOCKED_CFG_SCHEMES.contains(scheme))
                     throw new IgniteCheckedException(
                         "Spring configuration URLs with scheme '" + scheme + "' are always blocked " +
-                        "due to security risk. Use a local file/classpath reference instead. " +
+                        "due to security risk. Use a local file or classpath reference instead. " +
                         "For remote HTTP/HTTPS set system property: -D" +
                         prop + "=true. " +
                         "Provided host: " + cfgUrl.getHost()
