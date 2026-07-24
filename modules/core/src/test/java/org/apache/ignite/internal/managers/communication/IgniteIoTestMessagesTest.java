@@ -26,9 +26,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-/**
- *
- */
+/** Tests Communication SPI test messages. */
 public class IgniteIoTestMessagesTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -42,23 +40,23 @@ public class IgniteIoTestMessagesTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testIoTestMessages() {
+    public void testIoTestMessages() throws Exception {
+        byte[] payload = new byte[1024];
+
         for (Ignite node : G.allGrids()) {
             IgniteKernal ignite = (IgniteKernal)node;
-
+            IoTestHandler ioTest = ignite.context().io().ioTest();
             List<ClusterNode> rmts = new ArrayList<>(ignite.cluster().forRemotes().nodes());
 
             assertEquals(4, rmts.size());
 
             for (ClusterNode rmt : rmts) {
-                ignite.sendIoTest(rmt, new byte[1024], false);
-
-                ignite.sendIoTest(rmt, new byte[1024], true);
-
-                ignite.sendIoTest(rmts, new byte[1024], false);
-
-                ignite.sendIoTest(rmts, new byte[1024], true);
+                ioTest.sendIoTest(rmt, payload, false).get();
+                ioTest.sendIoTest(rmt, payload, true).get();
             }
+
+            ioTest.sendIoTest(rmts, payload, false).get();
+            ioTest.sendIoTest(rmts, payload, true).get();
         }
     }
 }

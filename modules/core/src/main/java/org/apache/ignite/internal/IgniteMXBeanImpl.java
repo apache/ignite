@@ -24,6 +24,7 @@ import java.util.UUID;
 import javax.management.JMException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -298,6 +299,7 @@ public class IgniteMXBeanImpl implements IgniteMXBean {
     }
 
     /** {@inheritDoc} */
+    @Deprecated
     @Override public void runIoTest(
         long warmup,
         long duration,
@@ -307,8 +309,30 @@ public class IgniteMXBeanImpl implements IgniteMXBean {
         int payLoadSize,
         boolean procFromNioThread
     ) {
-        ctx.io().runIoTest(warmup, duration, threads, maxLatency, rangesCnt, payLoadSize,
-            procFromNioThread, new ArrayList(ctx.cluster().get().forServers().forRemotes().nodes()));
+        IgniteInternalFuture<String> fut = ctx.io().ioTest().runIoTest(
+            warmup,
+            duration,
+            threads,
+            maxLatency,
+            rangesCnt,
+            payLoadSize,
+            procFromNioThread,
+            new ArrayList<>(ctx.cluster().get().forServers().forRemotes().nodes())
+        );
+
+        fut.listen(f -> {
+            IgniteLogger log = ctx.log(ctx.io().getClass());
+
+            try {
+                String res = f.get();
+
+                if (log.isInfoEnabled())
+                    log.info(res);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "IO test failed.", e);
+            }
+        });
     }
 
     /** {@inheritDoc} */

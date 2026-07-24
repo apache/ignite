@@ -100,7 +100,7 @@ public class IgniteTcpCommunicationHandshakeWaitTest extends GridCommonAbstractT
 
             assertEquals(3, nodes.size());
 
-            return ignite.context().io().sendIoTest(new ArrayList<>(nodes), null, true).get();
+            return ignite.context().io().ioTest().sendIoTest(new ArrayList<>(nodes), null, true).get();
         });
 
         startGrid("srv3");

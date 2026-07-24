@@ -25,7 +25,7 @@ import java.util.Map;
 public class IgniteIoTestSendAllBenchmark extends IgniteIoTestAbstractBenchmark {
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        ignite.sendIoTest(targetNodes, null, false).get();
+        ignite.context().io().ioTest().sendIoTest(targetNodes, null, false).get();
 
         return true;
     }
