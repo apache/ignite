@@ -46,12 +46,6 @@ from ignitetest.services.utils.path import IgnitePathAware
 from ignitetest.utils.enum import constructible
 
 
-JMX_EXPORTER_DOWNLOAD_URL = (
-    "https://github.com/prometheus/jmx_exporter/releases/download/v1.1.0/"
-    "jmx_prometheus_javaagent-1.1.0.jar"
-)
-
-
 class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMixin, JvmVersionMixin, metaclass=ABCMeta):
     """
     The base class to build services aware of Ignite.
@@ -192,23 +186,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
         """
         super().init_persistent(node)
 
-        # Ensure jmx_exporter.jar is available on the node
-        if is_jmx_exporter_enabled(self.globals):
-            self._ensure_jmx_exporter_jar(node)
-
         self._prepare_configs(node)
-
-    @staticmethod
-    def _ensure_jmx_exporter_jar(node):
-        """
-        Download jmx_exporter.jar to the node if it's not already present.
-        Uses curl and conditional execution — idempotent.
-        """
-        cmd = (
-            f"test -f {JMX_EXPORTER_JAR_PATH} || "
-            f"curl -sL {JMX_EXPORTER_DOWNLOAD_URL} -o {JMX_EXPORTER_JAR_PATH}"
-        )
-        node.account.ssh(cmd, allow_fail=False)
 
     def init_shared(self, node):
         """
