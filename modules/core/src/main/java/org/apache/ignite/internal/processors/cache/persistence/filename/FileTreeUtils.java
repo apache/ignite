@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -63,10 +64,15 @@ public class FileTreeUtils {
     public static void removeTmpSnapshotFiles(SnapshotFileTree sft, boolean err, IgniteLogger log) {
         NodeFileTree tmpFt = sft.tempFileTree();
 
-        removeTmpDir(tmpFt.root(), err, log);
+        U.delete(tmpFt.nodeStorage());
 
-        for (File tmpDrStorage : tmpFt.extraStorages().values())
-            removeTmpDir(tmpDrStorage.getParentFile(), err, log);
+        for (File tmpDrStorage : tmpFt.extraStorages().values()) {
+            U.delete(tmpDrStorage);
+
+            deleteSnapshotTempRoot(tmpDrStorage.getParentFile(), err, log);
+        }
+
+        deleteSnapshotTempRoot(tmpFt.root(), err, log);
     }
 
     /**
@@ -104,20 +110,20 @@ public class FileTreeUtils {
     }
 
     /**
-     * @param dir Directory to remove
-     * @param err If {@code true} then operation ends with error.
+     * @param root Snapshot temporary root.
+     * @param err {@code True} if snapshot processing finished with an error.
      * @param log Logger.
      */
-    private static void removeTmpDir(File dir, boolean err, IgniteLogger log) {
-        U.delete(dir);
-
-        // Delete snapshot directory if no other files exists.
+    private static void deleteSnapshotTempRoot(File root, boolean err, IgniteLogger log) {
         try {
-            if (U.fileCount(dir.toPath()) == 0 || err)
-                U.delete(dir.toPath());
+            if (err || U.fileCount(root.toPath()) == 0)
+                U.delete(root.toPath());
+        }
+        catch (NoSuchFileException ignored) {
+            // Snapshot temporary root has already been removed.
         }
         catch (IOException e) {
-            log.error("Snapshot directory doesn't exist [snpName=" + dir.getName() + ", dir=" + dir.getParentFile() + ']');
+            log.error("Failed to clean up snapshot temporary root [dir=" + root + ']', e);
         }
     }
 

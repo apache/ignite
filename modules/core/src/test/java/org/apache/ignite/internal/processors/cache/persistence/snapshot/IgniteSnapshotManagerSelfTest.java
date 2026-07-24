@@ -59,6 +59,8 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
@@ -645,6 +647,70 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         assertTrue(matchFullParams.check());
         assertTrue(matchIncParams.check());
         assertFalse(noMatchParams.check());
+    }
+
+    /**
+     * Tests that snapshot temporary root is not removed on successful cleanup if it still contains files after
+     * node-specific storage has been removed.
+     */
+    @Test
+    public void testSnapshotTmpRootIsNotRemovedIfNotEmptyOnSuccess() throws Exception {
+        IgniteEx ignite = startGridWithCache(dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        SnapshotFileTree sft = snapshotFileTree(ignite, SNAPSHOT_NAME);
+
+        NodeFileTree tmpFt = sft.tempFileTree();
+
+        File root = tmpFt.root();
+        File nodeStorage = tmpFt.nodeStorage();
+
+        assertTrue(nodeStorage.mkdirs());
+
+        File extraFile = new File(root, "unexpected-tmp-file");
+
+        assertTrue(extraFile.createNewFile());
+
+        try {
+            FileTreeUtils.removeTmpSnapshotFiles(sft, false, log);
+
+            assertFalse("Node-specific temporary storage must be removed: " + nodeStorage, nodeStorage.exists());
+
+            assertTrue("Snapshot temporary root must not be removed if it is not empty: " + root, root.exists());
+
+            assertTrue("Unexpected temporary file must not be removed on successful cleanup: " + extraFile,
+                extraFile.exists());
+        }
+        finally {
+            U.delete(root);
+        }
+    }
+
+    /**
+     * Tests that snapshot temporary root is removed on cleanup after an error even if it still contains files after
+     * node-specific storage has been removed.
+     */
+    @Test
+    public void testSnapshotTmpRootIsRemovedIfNotEmptyOnError() throws Exception {
+        IgniteEx ignite = startGridWithCache(dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        SnapshotFileTree sft = snapshotFileTree(ignite, SNAPSHOT_NAME);
+
+        NodeFileTree tmpFt = sft.tempFileTree();
+
+        File root = tmpFt.root();
+        File nodeStorage = tmpFt.nodeStorage();
+
+        assertTrue(nodeStorage.mkdirs());
+
+        File extraFile = new File(root, "unexpected-tmp-file");
+
+        assertTrue(extraFile.createNewFile());
+
+        FileTreeUtils.removeTmpSnapshotFiles(sft, true, log);
+
+        assertFalse("Node-specific temporary storage must be removed: " + nodeStorage, nodeStorage.exists());
+
+        assertFalse("Snapshot temporary root must be removed on error: " + root, root.exists());
     }
 
     /**
