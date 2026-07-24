@@ -336,7 +336,33 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         // This node should rebalance data from other nodes and shouldn't have WAL history.
         Ignite ignite = startGrid(2);
 
-        awaitPartitionMapExchange();
+        awaitPartitionMapExchange(true, true, null);
+
+        // Wait for WAL rebalance to complete. With ASYNC rebalance, rebalance completion triggers
+        // a minor exchange to update partition states (REBALANCING -> OWNED). We must wait for
+        // both rebalance AND the resulting minor exchange to finish, otherwise cache writes can
+        // race with the minor exchange and hit "Invalid version for inner update" errors.
+        for (Ignite ig : G.allGrids()) {
+            GridCachePreloader pld = ((IgniteEx)ig).cachex(CACHE_NAME).context().group().preloader();
+
+            if (pld.rebalanceFuture() != null)
+                pld.rebalanceFuture().get();
+        }
+
+        // Wait for minor exchanges triggered by rebalance completion to finish on all nodes.
+        // Since minor exchanges are created asynchronously, we poll until no pending exchanges exist.
+        assertTrue(GridTestUtils.waitForCondition(() -> {
+            for (Ignite ig : G.allGrids()) {
+                List<GridDhtPartitionsExchangeFuture> futs = ((IgniteEx)ig).context().cache().context().exchange().exchangeFutures();
+
+                for (GridDhtPartitionsExchangeFuture fut : futs) {
+                    if (!fut.isDone())
+                        return false;
+                }
+            }
+
+            return true;
+        }, getTestTimeout()));
 
         Set<Long> topVers = ((WalRebalanceCheckingCommunicationSpi)ignite.configuration().getCommunicationSpi())
             .walRebalanceVersions(grpId);
@@ -357,6 +383,12 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         stopGrid(0);
 
         stopGrid(1);
+
+        // Await exchange so that grid(2) finishes processing NODE_LEFT for the stopped
+        // nodes before grid(3) starts. Otherwise grid(2) may send near-atomic-update
+        // requests to already stopped nodes, causing CorruptedTreeException
+        // ("Invalid version for inner update").
+        awaitPartitionMapExchange();
 
         // Start new node which should rebalance all data from node(2) without using WAL,
         // because node(2) doesn't have full history for rebalance.
