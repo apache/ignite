@@ -527,7 +527,6 @@ public class ZookeeperDiscoveryImpl {
                     locNode,
                     rtState.top.topologySnapshot(),
                     Collections.emptyNavigableMap(),
-                    null,
                     null
                 )
             ).get();
@@ -600,7 +599,6 @@ public class ZookeeperDiscoveryImpl {
                 locNode,
                 nodes,
                 Collections.emptyNavigableMap(),
-                null,
                 null
             )
         ).get();
@@ -2374,7 +2372,6 @@ public class ZookeeperDiscoveryImpl {
                     locNode,
                     topSnapshot,
                     Collections.emptyNavigableMap(),
-                    null,
                     null
                 )
             ).get();
@@ -3072,7 +3069,6 @@ public class ZookeeperDiscoveryImpl {
                     locNode,
                     topSnapshot,
                     Collections.emptyNavigableMap(),
-                    null,
                     null
                 )
             ).get();
@@ -3085,7 +3081,6 @@ public class ZookeeperDiscoveryImpl {
                         locNode,
                         topSnapshot,
                         Collections.emptyNavigableMap(),
-                        null,
                         null
                     )
                 ).get();
@@ -3556,8 +3551,7 @@ public class ZookeeperDiscoveryImpl {
                     sndNode,
                     topSnapshot,
                     Collections.emptyNavigableMap(),
-                    msg,
-                    null
+                    msg
                 )
             );
         }
@@ -3587,7 +3581,6 @@ public class ZookeeperDiscoveryImpl {
                 joinedNode,
                 topSnapshot,
                 Collections.emptyNavigableMap(),
-                null,
                 null
             )
         ).get();
@@ -3637,7 +3630,6 @@ public class ZookeeperDiscoveryImpl {
                 leftNode,
                 topSnapshot,
                 Collections.emptyNavigableMap(),
-                null,
                 null
             )
         ).get();

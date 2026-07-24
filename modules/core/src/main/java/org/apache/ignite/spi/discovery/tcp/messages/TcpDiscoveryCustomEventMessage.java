@@ -30,7 +30,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
  */
 @TcpDiscoveryRedirectToClient
 @TcpDiscoveryEnsureDelivery
-public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceableMessage {
+public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractMessage {
     /** */
     @Order(0)
     DiscoverySpiCustomMessage msg;
