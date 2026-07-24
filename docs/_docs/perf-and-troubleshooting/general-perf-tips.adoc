@@ -12,7 +12,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-= Generic Performance Tips
+= General Performance Tips
 
 Ignite as distributed storages and platforms require certain optimization techniques. Before you dive
 into the more advanced techniques described in this and other articles, consider the following basic checklist:
@@ -47,3 +47,460 @@ queries with JOINs at massive scale and expect significant performance benefits.
 
 * Adjust link:data-rebalancing[data rebalancing settings] to ensure that rebalancing completes faster when your cluster topology changes.
 
+== How to assess cluster health
+
+Cluster health is a complex set of metrics and states that need to be analyzed together. Apache Ignite is capable of demonstrating great performance across different scenarios with varying loads. Therefore, in general terms, a healthy cluster is one whose behavior aligns with your expectations. However, there are some universal aspects that apply to all deployments and warrant attention.
+
+It is important to understand that a healthy cluster may undergo planned topology changes or temporary load spikes.
+
+The key properties are:
+
+* The cluster is in the intended link:monitoring-metrics/cluster-states[state] and serves only the operations allowed by that state.
+* link:clustering/baseline-topology[Baseline topology], when it is used or managed manually, matches the expected data-bearing server nodes.
+* Data remains consistent: link:tools/control-script#verifying-partition-checksums[`idle_verify`] reports no partition conflicts when the cluster is idle.
+* Expected nodes are present, with no unexpected or repeated node `JOIN`, `LEFT`, or `FAIL` events and no reported node segmentation.
+* link:configuring-caches/partition-loss-policy[Lost partitions] are absent.
+* The number of link:tools/control-script#transaction-management[long-running transactions] and their durations do not keep increasing; active link:data-modeling/data-partitioning#partition-map-exchange[Partition Map Exchanges (PMEs)] complete; link:monitoring-metrics/new-metrics-system#monitoring-rebalancing[rebalancing] finishes; link:monitoring-metrics/new-metrics-system#monitoring-checkpointing-operations[checkpoint-related metrics] and link:monitoring-metrics/new-metrics#thread-pools[executor queue sizes] return to their usual ranges after the link:monitoring-metrics/new-metrics-system#monitoring-topology[topology] has stabilized.
+
+There is no single command or metric that proves cluster health for every deployment.
+
+=== Check the Intended State and Node Membership
+
+Start with the link:monitoring-metrics/cluster-states[cluster state].
+
+In the examples below, `control.(sh|bat)` is documentation shorthand.
+Run `control.sh` on Unix-like systems or `control.bat` on Windows.
+
+Run the link:tools/control-script#getting-cluster-state[cluster-state command]:
+
+[source,shell]
+----
+control.(sh|bat) --state
+----
+
+Relevant output:
+
+[source,text]
+----
+Command [STATE] started
+Arguments: --state
+--------------------------------------------------------------------------------
+Cluster state: ACTIVE
+Command [STATE] finished with code: 0
+----
+
+`ACTIVE` is expected for normal read-write operation.
+`ACTIVE_READ_ONLY` is normal when the cluster has been intentionally placed in read-only mode.
+`INACTIVE` is acceptable only when it matches the current operation, for example, planned maintenance; an inactive cluster does not serve the data workload.
+The criterion is whether the actual state matches the state that was intentionally set for the deployment.
+
+Check baseline topology when the cluster uses persistence, when baseline autoadjustment is disabled, or when you intentionally manage the set of data-bearing nodes.
+In pure in-memory clusters with the default immediate autoadjustment, baseline topology normally follows the current server topology automatically.
+If autoadjustment is disabled, the baseline changes only after an operator changes it.
+If autoadjustment is configured with a non-zero timeout, the baseline is updated only after the topology remains unchanged for that timeout.
+In both cases, run `control.(sh|bat) --baseline` and compare `Baseline nodes` and `Other nodes` with the expected set of server nodes.
+
+Run the link:tools/control-script#getting-nodes-registered-in-baseline-topology[baseline-topology command]:
+
+[source,shell]
+----
+control.(sh|bat) --baseline
+----
+
+Relevant output for a cluster where all baseline nodes are online:
+
+[source,text]
+----
+Cluster state: ACTIVE
+Current topology version: 3
+Baseline auto adjustment disabled: softTimeout=300000
+
+Current topology version: 3 (Coordinator: ConsistentId=node-1, Order=1)
+
+Baseline nodes:
+    ConsistentId=node-1, State=ONLINE, Order=1
+    ConsistentId=node-2, State=ONLINE, Order=2
+    ConsistentId=node-3, State=ONLINE, Order=3
+--------------------------------------------------------------------------------
+Number of baseline nodes: 3
+
+Other nodes not found.
+----
+
+Example: one baseline node is offline:
+
+[source,text]
+----
+Baseline nodes:
+    ConsistentId=node-1, State=ONLINE, Order=1
+    ConsistentId=node-2, State=OFFLINE, Order=2
+    ConsistentId=node-3, State=ONLINE, Order=3
+--------------------------------------------------------------------------------
+Number of baseline nodes: 3
+----
+
+If a baseline node is `OFFLINE`, an expected data-bearing server is missing.
+If other primary or backup copies are available, its absence does not cause partition loss.
+To check for partition loss, query the partition states as described in <<confirm-that-rebalancing-converges,Confirm That Rebalancing Converges>>.
+
+If an online server node has joined the cluster but is not in the baseline, the command shows it under `Other nodes`:
+
+[source,text]
+----
+Other nodes:
+    ConsistentId=node-4, Order=4
+Number of other nodes: 1
+----
+
+The baseline contains server nodes that are intended to store data.
+Client nodes are not part of the baseline.
+An online server node in `Other nodes` is not always an error: the node may have been prepared intentionally but not yet introduced into the data topology.
+If the node is expected to store data, first check the link:clustering/baseline-topology#baseline-topology-autoadjustment[baseline auto-adjustment policy] and the current maintenance or scale-out procedure, then use the documented baseline change procedure.
+Changing the baseline can start link:data-rebalancing[rebalancing]: partitions are redistributed according to the new affinity assignment.
+Plan for the additional network, CPU, and storage load, especially in clusters with persistence.
+
+Use topology changes to distinguish planned activity from instability.
+When a server node joins, leaves, or fails, cluster membership changes and triggers a link:data-modeling/data-partitioning#partition-map-exchange[Partition Map Exchange (PME)].
+A dynamic cache start or stop can also trigger PME even when no server node joins, leaves, or fails.
+Therefore, a topology version or link:monitoring-metrics/new-metrics#partition-map-exchange[PME metric] change is useful only when interpreted together with maintenance actions and node logs.
+Use these metrics to establish historical distributions; there is no universal duration threshold.
+
+[source,sql]
+----
+SELECT NAME, VALUE
+FROM SYS.METRICS
+WHERE NAME IN (
+    'pme.Duration',
+    'pme.CacheOperationsBlockedDuration'
+)
+ORDER BY NAME;
+----
+
+Run `control.(sh|bat) --baseline` repeatedly or monitor topology metrics to confirm that membership is stable when no maintenance is in progress.
+In logs, look for repeated `JOIN`, `LEFT`, `FAIL`, or segmentation events and exchange-worker messages.
+Investigate unexpected repeated `JOIN`, `LEFT`, or `FAIL` events, node segmentation, network failures, or a PME that does not finish.
+For PME metrics and transaction checks, see <<check-transactions-and-sql-queries,Check Transactions and SQL Queries>>.
+
+=== Verify Partition Consistency
+
+When the cluster is expected to be idle, run:
+
+[source,shell]
+----
+control.(sh|bat) --cache idle_verify
+----
+
+Successful result:
+
+[source,text]
+----
+The check procedure has finished, no conflicts have been found.
+----
+
+The beginning of a conflict result uses this format:
+
+[source,text]
+----
+The check procedure has failed, conflict partitions has been found: [counterConflicts=1, hashConflicts=0]
+Update counter conflicts:
+Conflict partition: PartitionKey [grpId=1544803905, grpName=default, partId=5]
+----
+
+The command compares partition update counters and partition hashes between primary and backup copies.
+Run it only on idle cluster i.e. without active data updates.
+If updates are active, the command can report false-positive conflicts because copies are changing while hashes are being calculated.
+Partitions in `MOVING` or `LOST` state may be skipped, so the result can be incomplete.
+A successful `idle_verify` result is an important confirmation of consistency, but it still does not prove that the cluster is healthy overall.
+
+[#confirm-that-rebalancing-converges]
+=== Confirm That Rebalancing Converges
+
+Immediately after an intended topology or cache event, `MOVING` and `RENTING` counts can be non-zero.
+After the topology becomes stable, repeat the query and confirm that both counts decrease and eventually disappear.
+A `LOST` count greater than zero is not a normal transient rebalance state.
+
+[source,sql]
+----
+SELECT STATE, COUNT(*) AS PARTITION_COUNT
+FROM SYS.PARTITION_STATES
+WHERE STATE IN ('MOVING', 'RENTING', 'LOST')
+GROUP BY STATE
+ORDER BY STATE;
+----
+
+You can also track link:monitoring-metrics/new-metrics#cache-groups[node-local cache-group metrics] such as:
+
+* `LocalNodeMovingPartitionsCount`
+* `LocalNodeRentingPartitionsCount`
+* `LocalNodeRentingEntriesCount`
+
+Use the link:monitoring-metrics/system-views#partition_states[PARTITION_STATES] system view to check partition states:
+
+* `OWNING`: the node is the current primary or backup owner.
+* `MOVING`: a partition copy is being loaded on the node during rebalance.
+* `RENTING`: an old copy is being removed after ownership changes.
+* `EVICTED`: the partition is absent on a node that is no longer an owner; this is not an error by itself.
+* `LOST`: the partition is unavailable and must not be used; investigate immediately.
+
+[source,sql]
+----
+SELECT CACHE_GROUP_ID, PARTITION_ID, NODE_ID, STATE, IS_PRIMARY
+FROM SYS.PARTITION_STATES
+WHERE STATE IN ('MOVING', 'RENTING', 'LOST')
+ORDER BY STATE, CACHE_GROUP_ID, PARTITION_ID, NODE_ID;
+----
+
+In a stable cluster, this query should not usually return `MOVING`, `RENTING`, or `LOST` rows.
+`MOVING` and `RENTING` are expected right after an intended topology or cache event, but their counts should decrease.
+`LOST` is not a normal transient state.
+
+Example: one partition is lost:
+
+[source,text]
+----
+CACHE_GROUP_ID | PARTITION_ID | NODE_ID                              | STATE | IS_PRIMARY
+1544803905     | 5            | 0f4d6f30-3e04-4f68-b6a2-6b89f1795c0d | LOST  | true
+----
+
+If the query returns `LOST`, follow the link:configuring-caches/partition-loss-policy[Partition Loss Policy] recovery procedure.
+If a failed node returns, its persistent data may become available again, but the affected partitions remain in the `LOST` state.
+If the required data is available again, reset the lost partitions.
+Before resetting lost partitions, ensure that at least one complete and up-to-date copy of each lost partition is available.
+
+For a persistent cluster, follow the link:configuring-caches/partition-loss-policy#clusters-with-persistence[recovery procedure for clusters with persistence].
+Return all nodes in the baseline topology before resetting lost partitions, or stop the cluster, start all nodes including the failed nodes, and activate the cluster.
+If some nodes cannot be returned, exclude them from the baseline topology only after determining whether their unavailable partition copies contain data that still has to be recovered.
+
+For example, assume that a partition has one primary and one backup copy on nodes A and B. If A leaves, B can continue accepting writes while it remains available.
+If B subsequently fails and only A returns, A can contain an older copy that does not include the writes accepted by B after A left.
+
+After restoring a complete and up-to-date partition copy, or after explicitly accepting that the unavailable updates cannot be recovered, use the link:tools/control-script#resetting-lost-partitions[reset-lost-partitions command]:
+
+[source,shell]
+----
+control.(sh|bat) --cache reset_lost_partitions cacheName1,cacheName2,...
+----
+
+`reset_lost_partitions` only clears the `LOST` state. It does not reconstruct updates that are absent from every currently available copy.
+
+[#check-execution-queues]
+=== Check Execution Queues
+
+Ignite has several internal executors. A regular thread pool executes tasks from a shared queue. These queues may grow for a short time under load, but they should not grow continuously. Sustained queue growth means that a node is not keeping up with the workload or that message processing is impaired. The same logic applies to the striped executor.
+
+The striped executor divides internal cache and transaction tasks between independent stripes: tasks in the same stripe run sequentially, while different stripes can run in parallel.
+If a stripe is blocked, tasks related to that stripe can accumulate even when overall CPU usage does not look high.
+
+Check queue metrics on every server node:
+
+[source,sql]
+----
+SELECT NAME, VALUE
+FROM SYS.METRICS
+WHERE NAME IN ('io.communication.OutboundMessagesQueueSize'
+,'io.discovery.MessageWorkerQueueSize'
+,'threadPools.StripedExecutor.TotalQueueSize'
+,'threadPools.StripedExecutor.DetectStarvation'
+)
+   OR NAME LIKE 'threadPools.%.QueueSize'
+ORDER BY NAME;
+----
+
+Inspect queued striped tasks when the striped queue does not drain:
+
+[source,sql]
+----
+SELECT STRIPE_INDEX, THREAD_NAME, TASK_NAME, DESCRIPTION
+FROM SYS.STRIPED_THREADPOOL_QUEUE
+ORDER BY STRIPE_INDEX, THREAD_NAME;
+----
+
+As mentioned above, short non-zero queues are acceptable under load.
+
+On an idle node, queues usually return to zero.
+Investigate continuous growth, queues that do not drain after the load stops, repeated `DetectStarvation=true` values, or repeated starvation warnings in logs.
+There is no universal absolute threshold.
+Queue metrics are node-local, so collect them from all server nodes.
+
+JMX uses the metric registry name to build `group` and `name` in the MBean object name.
+The following mappings are useful for queue checks:
+
+* Registry `io.communication` is exposed as JMX group `io`, bean name `communication`; the attribute is `OutboundMessagesQueueSize`.
+* Registry `io.discovery` is exposed as JMX group `io`, bean name `discovery`; the attribute is `MessageWorkerQueueSize`.
+* Registry `threadPools.StripedExecutor` is exposed as JMX group `threadPools`, bean name `StripedExecutor`; the attributes include `TotalQueueSize`, `StripesQueueSizes`, and `DetectStarvation`.
+* Regular pools such as `threadPools.GridSystemExecutor` expose `QueueSize`.
+
+For JMX object names and SQL metric access, see link:monitoring-metrics/new-metrics-system#jmx[JMX] and link:monitoring-metrics/new-metrics-system#sql-view[SQL View].
+
+.JConsole view of node-local striped executor queue metrics
+image::perf-and-troubleshooting/images/healthy-cluster-queues-jconsole.png[JConsole MBeans view showing threadPools/StripedExecutor and queue-related attributes]
+
+[#check-transactions-and-sql-queries]
+=== Check Transactions and SQL Queries
+
+A transaction or query is not unhealthy merely because it runs for some time.
+Investigate when the number or age of active operations continues to increase after the load drops, or when the same operations repeatedly block other work.
+
+Use the transaction command to list long transactions:
+
+[source,shell]
+----
+control.(sh|bat) --tx --min-duration 60 --servers --order DURATION
+----
+
+The value `60` is only an example diagnostic filter in seconds, not a universal production threshold.
+
+Use the system views for current transactions and SQL queries:
+
+[source,sql]
+----
+SELECT XID, STATE, START_TIME, DURATION, KEYS_COUNT, LABEL
+FROM SYS.TRANSACTIONS
+ORDER BY DURATION DESC;
+----
+
+[source,sql]
+----
+SELECT QUERY_ID, START_TIME, DURATION, INITIATOR_ID, SQL
+FROM SYS.SQL_QUERIES
+ORDER BY DURATION DESC;
+----
+
+Track related metrics:
+
+[source,sql]
+----
+SELECT NAME, VALUE
+FROM SYS.METRICS
+WHERE NAME IN (
+    'tx.OwnerTransactionsNumber',
+    'tx.TransactionsHoldingLockNumber',
+    'tx.LockedKeysNumber',
+    'pme.Duration',
+    'pme.CacheOperationsBlockedDuration'
+)
+ORDER BY NAME;
+----
+
+Non-zero transaction counters are normal while work is running.
+The problem is sustained growth, increasing age of the oldest operations, and failure to return to the usual range after the workload drops.
+For view definitions and metrics, see link:monitoring-metrics/system-views#transactions[TRANSACTIONS], link:monitoring-metrics/system-views#sql_queries[SQL_QUERIES], link:monitoring-metrics/new-metrics#transactions[transaction metrics], and link:data-modeling/data-partitioning#partition-map-exchange[Partition Map Exchange metrics].
+
+[#check-partition-map-exchange]
+=== Check Partition Map Exchanges
+
+A link:data-modeling/data-partitioning#partition-map-exchange[Partition Map Exchange (PME)] synchronizes partition distribution after topology and cache changes.
+At one stage, PME waits for incomplete transactions to finish.
+A long transaction can delay a node join, cache start, and other operations that depend on exchange.
+
+`TransactionConfiguration.setTxTimeoutOnPartitionMapExchange(...)` is described in link:key-value-api/transactions#long-running-transactions-termination[Long Running Transactions Termination].
+The default is `0`, which means transactions are not rolled back because of a PME timeout.
+The timeout is applied only when PME starts.
+Incomplete transactions that exceed the configured value can be rolled back.
+Applications must handle `TransactionRollbackException` and retry where appropriate; see link:key-value-api/transactions#handling-failed-transactions[Handling Failed Transactions].
+Do not use a universal timeout value.
+Choose a value above the normal duration of legitimate transactions with a justified safety margin, and test application behavior when rollback happens.
+
+[#check-checkpoint-pressure]
+=== Check Checkpoint Pressure When Persistence Is Enabled
+
+This check applies only to data regions with Native Persistence enabled.
+A pure in-memory cluster does not perform persistence checkpoints for its in-memory regions.
+
+A link:persistence/native-persistence#checkpointing[checkpoint] writes dirty pages from RAM to partition files.
+Checkpointing itself is a normal background operation.
+The problem starts when the application write rate exceeds the effective storage write speed.
+Under checkpoint-buffer or dirty-page pressure, Ignite can throttle update threads.
+If the checkpoint buffer is exhausted, update processing can stop until the checkpoint completes.
+
+Monitor the relevant link:monitoring-metrics/new-metrics#data-region-io[data-region] and link:monitoring-metrics/new-metrics#data-storage[data-storage] metrics:
+
+* `io.dataregion.<region>.DirtyPages`
+* `io.dataregion.<region>.CheckpointBufferSize`
+* `io.dataregion.<region>.UsedCheckpointBufferSize`
+* `io.dataregion.<region>.TotalThrottlingTime`
+* `io.datastorage.LastCheckpointStart`
+* `io.datastorage.LastCheckpointDuration`
+* `io.datastorage.LastCheckpointPagesWriteDuration`
+* `io.datastorage.LastCheckpointTotalPagesNumber`
+* `io.datastorage.LastCheckpointFsyncDuration`
+
+The following checkpoint records appear in `ignite.log`:
+
+[source,text]
+----
+[INFO ][db-checkpoint-thread-#][org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkpointer] Checkpoint started [checkpointId=<uuid>, startPtr=<wal-pointer>, checkpointBeforeLockTime=28ms, checkpointLockWait=0ms, checkpointListenersExecuteTime=27ms, checkpointLockHoldTime=30ms, walCpRecordFsyncDuration=7ms, splitAndSortCpPagesDuration=5ms, writeRecoveryDataDuration=3ms, writeCheckpointEntryDuration=1ms, pages=7837, reason='timeout']
+[INFO ][db-checkpoint-thread-#][org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkpointer] Checkpoint finished [cpId=<uuid>, pages=7837, markPos=<wal-pointer>, walSegmentsCovered=[], markDuration=42ms, recoveryWrite=3ms, pagesWrite=41ms, fsync=31ms, total=147ms]
+----
+
+Planned checkpoints run according to `DataStorageConfiguration.checkpointFrequency`.
+Dirty-page pressure, checkpoint-buffer pressure, and some administrative operations can trigger an earlier checkpoint.
+Successive `LastCheckpointStart` values let you estimate the real interval.
+A single early checkpoint does not prove a problem.
+A regularly shortening interval together with high `DirtyPages`, high `UsedCheckpointBufferSize`, or growing `TotalThrottlingTime` indicates storage or write pressure.
+
+Approximate checkpoint page-write throughput in MiB/s:
+
+[source,text]
+----
+LastCheckpointTotalPagesNumber
+* configured DataStorageConfiguration.pageSize in bytes
+* 1000
+/ LastCheckpointPagesWriteDuration in milliseconds
+/ 1048576
+----
+
+Do not calculate this when `LastCheckpointPagesWriteDuration` is zero.
+Use the actually configured link:perf-and-troubleshooting/persistence-tuning#adjusting-page-size[`DataStorageConfiguration.pageSize`]; do not assume it is always 4 KiB.
+This is an approximate estimate, not a full disk benchmark.
+Compare several checkpoints and check whether there is enough headroom for the normal write workload.
+
+If headroom is insufficient, use checks and changes that can be verified:
+
+* check storage latency and saturation together with link:monitoring-metrics/new-metrics-system#monitoring-checkpointing-operations[checkpoint metrics];
+* use faster production storage devices, as discussed in link:persistence/persistence-tuning#purchase-production-level-ssds[Purchase Production-Level SSDs];
+* place data files and WAL on separate physical devices, not just separate directories on the same disk; see link:persistence/persistence-tuning#keep-wals-separately[Keep WALs Separately];
+* review link:persistence/persistence-tuning#adjusting-checkpointing-buffer-size[checkpoint buffer] and link:persistence/persistence-tuning#pages-writes-throttling[page write throttling] configuration;
+* distribute write load or add server nodes when operational constraints allow it;
+* check link:persistence/native-persistence#wal-archive[WAL archive] I/O contention.
+
+JMX checkpoint and data-region metrics are node-local.
+Open the same charts or attributes on each server node that owns persistent data.
+
+.JConsole view of node-local persistence checkpoint metrics
+image::perf-and-troubleshooting/images/healthy-cluster-checkpoint-jconsole.png[JConsole MBeans view showing io/datastorage checkpoint attributes and a persistent data-region bean]
+
+=== Check Logs and Optional Features
+
+Investigate logs and failure handling for:
+
+* node segmentation;
+* repeated system-worker blockage;
+* failure-handler activations;
+* `OutOfMemoryError` and `IgniteOutOfMemoryException`;
+* repeated striped-pool starvation warnings;
+* unexpected node restarts.
+
+Ignite reports critical failures to the link:perf-and-troubleshooting/handling-exceptions#failures-handling[configured failure handler], which can invalidate the node, initiate failover handling, stop the node, or terminate the JVM.
+On every server node, verify the configured `FailureHandler` and its link:perf-and-troubleshooting/handling-exceptions#critical-workers-health-check[`ignoredFailureTypes`].
+
+If no handler is configured explicitly, Ignite uses `StopNodeOrHaltFailureHandler`. `AbstractFailureHandler` ignores `SYSTEM_WORKER_BLOCKED` and `SYSTEM_CRITICAL_OPERATION_TIMEOUT` by default.
+If the operating policy requires the handler to react to these failures, remove the corresponding values from `ignoredFailureTypes`.
+
+Check node logs for the configured handler at startup and for critical failure
+or suppressed-failure messages.
+
+No single local command guarantees the absence of split brain.
+Monitor membership from all expected monitoring points, and use logs and failure handling to detect segmentation and discovery failures.
+
+CDC is a feature-specific check, not part of a universal cluster health definition.
+
+If CDC is enabled:
+
+* check `ignite-cdc.log` for startup failures, consumer failures, and missed WAL segment messages;
+* monitor `CurrentSegmentIndex`, `CommittedSegmentIndex`, `CommittedSegmentOffset`, `LastSegmentConsumptionTime`, and `SegmentConsumingTime`;
+* confirm that the current and committed segment positions continue to advance under write load;
+* alert on sustained growth of the CDC directory and its disk usage;
+* expose and monitor consumer-specific processing and delivery lag.
+
+See link:persistence/change-data-capture[Change Data Capture] for configuration, metrics, skipped-segment recovery, and cache-data resend procedures.
