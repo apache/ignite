@@ -36,6 +36,8 @@ from ignitetest.services.utils.ssl.ssl_params import is_ssl_enabled
 from ignitetest.services.utils.metrics.metrics import is_opencensus_metrics_enabled, configure_opencensus_metrics, \
     is_jmx_metrics_enabled, configure_jmx_metrics
 from ignitetest.services.utils.jmx_remote.jmx_remote_params import get_jmx_remote_params
+from ignitetest.services.utils.jmx_exporter import get_jmx_exporter_params, \
+    jmx_agent_jvm_opt, JMX_EXPORTER_YML_NAME
 from ignitetest.utils.ignite_test import JFR_ENABLED, SAFEPOINT_LOGS_ENABLED
 from ignitetest.utils.version import DEV_BRANCH
 
@@ -129,6 +131,15 @@ class IgniteSpec(metaclass=ABCMeta):
                                                    "-Dcom.sun.management.jmxremote.local.only=false",
                                                    "-Dcom.sun.management.jmxremote.authenticate=false",
                                                    "-Dcom.sun.management.jmxremote.ssl=false"])
+
+        jmx_exp_cfg = get_jmx_exporter_params(self.service.context.globals)
+        if jmx_exp_cfg.enabled:
+            # Конфиг jmx_exporter.yml будет создан в config_dir на ноде
+            yml_on_node = os.path.join(self.service.config_dir, JMX_EXPORTER_YML_NAME)
+            # JMX Exporter jar is copied to persistent_root/jmx_exporter.jar in ignite_aware.py
+            jar_on_node = os.path.join(self.service.persistent_root, "jmx_exporter.jar")
+            default_jvm_opts = merge_jvm_settings(default_jvm_opts,
+                                                  [jmx_agent_jvm_opt(jmx_exp_cfg.port, yml_on_node, jar_on_node)])
 
         return default_jvm_opts
 
