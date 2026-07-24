@@ -755,76 +755,78 @@ public interface IgniteSqlParserImplConstants {
   int ANALYZE = 749;
   int MAX_CHANGED_PARTITION_ROWS_PERCENT = 750;
   int TOTAL = 751;
-  int UNSIGNED_INTEGER_LITERAL = 752;
-  int APPROX_NUMERIC_LITERAL = 753;
-  int DECIMAL_NUMERIC_LITERAL = 754;
-  int EXPONENT = 755;
-  int HEXDIGIT = 756;
-  int WHITESPACE = 757;
-  int BINARY_STRING_LITERAL = 758;
-  int QUOTED_STRING = 759;
-  int PREFIXED_STRING_LITERAL = 760;
-  int UNICODE_STRING_LITERAL = 761;
-  int C_STYLE_ESCAPED_STRING_LITERAL = 762;
-  int CHARSETNAME = 763;
-  int BIG_QUERY_DOUBLE_QUOTED_STRING = 764;
-  int BIG_QUERY_QUOTED_STRING = 765;
-  int UNICODE_QUOTED_ESCAPE_CHAR = 766;
-  int LPAREN = 767;
-  int RPAREN = 768;
-  int LBRACE_D = 769;
-  int LBRACE_T = 770;
-  int LBRACE_TS = 771;
-  int LBRACE_FN = 772;
-  int LBRACE = 773;
-  int RBRACE = 774;
-  int LBRACKET = 775;
-  int RBRACKET = 776;
-  int SEMICOLON = 777;
-  int DOT = 778;
-  int COMMA = 779;
-  int EQ = 780;
-  int GT = 781;
-  int LT = 782;
-  int HOOK = 783;
-  int COLON = 784;
-  int LE = 785;
-  int GE = 786;
-  int NE = 787;
-  int NE2 = 788;
-  int PLUS = 789;
-  int MINUS = 790;
-  int LAMBDA = 791;
-  int STAR = 792;
-  int SLASH = 793;
-  int PERCENT_REMAINDER = 794;
-  int CONCAT = 795;
-  int NAMED_ARGUMENT_ASSIGNMENT = 796;
-  int DOUBLE_PERIOD = 797;
-  int QUOTE = 798;
-  int DOUBLE_QUOTE = 799;
-  int VERTICAL_BAR = 800;
-  int CARET = 801;
-  int AMPERSAND = 802;
-  int LEFTSHIFT = 803;
-  int DOLLAR = 804;
-  int INFIX_CAST = 805;
-  int HINT_BEG = 811;
-  int COMMENT_END = 812;
-  int SINGLE_LINE_COMMENT = 815;
-  int FORMAL_COMMENT = 816;
-  int MULTI_LINE_COMMENT = 817;
-  int BRACKET_QUOTED_IDENTIFIER = 819;
-  int QUOTED_IDENTIFIER = 820;
-  int BACK_QUOTED_IDENTIFIER = 821;
-  int BIG_QUERY_BACK_QUOTED_IDENTIFIER = 822;
-  int HYPHENATED_IDENTIFIER = 823;
-  int IDENTIFIER = 824;
-  int COLLATION_ID = 825;
-  int UNICODE_QUOTED_IDENTIFIER = 826;
-  int LETTER = 827;
-  int DIGIT = 828;
-  int BEL = 829;
+  int WAIT = 752;
+  int NOWAIT = 753;
+  int UNSIGNED_INTEGER_LITERAL = 754;
+  int APPROX_NUMERIC_LITERAL = 755;
+  int DECIMAL_NUMERIC_LITERAL = 756;
+  int EXPONENT = 757;
+  int HEXDIGIT = 758;
+  int WHITESPACE = 759;
+  int BINARY_STRING_LITERAL = 760;
+  int QUOTED_STRING = 761;
+  int PREFIXED_STRING_LITERAL = 762;
+  int UNICODE_STRING_LITERAL = 763;
+  int C_STYLE_ESCAPED_STRING_LITERAL = 764;
+  int CHARSETNAME = 765;
+  int BIG_QUERY_DOUBLE_QUOTED_STRING = 766;
+  int BIG_QUERY_QUOTED_STRING = 767;
+  int UNICODE_QUOTED_ESCAPE_CHAR = 768;
+  int LPAREN = 769;
+  int RPAREN = 770;
+  int LBRACE_D = 771;
+  int LBRACE_T = 772;
+  int LBRACE_TS = 773;
+  int LBRACE_FN = 774;
+  int LBRACE = 775;
+  int RBRACE = 776;
+  int LBRACKET = 777;
+  int RBRACKET = 778;
+  int SEMICOLON = 779;
+  int DOT = 780;
+  int COMMA = 781;
+  int EQ = 782;
+  int GT = 783;
+  int LT = 784;
+  int HOOK = 785;
+  int COLON = 786;
+  int LE = 787;
+  int GE = 788;
+  int NE = 789;
+  int NE2 = 790;
+  int PLUS = 791;
+  int MINUS = 792;
+  int LAMBDA = 793;
+  int STAR = 794;
+  int SLASH = 795;
+  int PERCENT_REMAINDER = 796;
+  int CONCAT = 797;
+  int NAMED_ARGUMENT_ASSIGNMENT = 798;
+  int DOUBLE_PERIOD = 799;
+  int QUOTE = 800;
+  int DOUBLE_QUOTE = 801;
+  int VERTICAL_BAR = 802;
+  int CARET = 803;
+  int AMPERSAND = 804;
+  int LEFTSHIFT = 805;
+  int DOLLAR = 806;
+  int INFIX_CAST = 807;
+  int HINT_BEG = 813;
+  int COMMENT_END = 814;
+  int SINGLE_LINE_COMMENT = 817;
+  int FORMAL_COMMENT = 818;
+  int MULTI_LINE_COMMENT = 819;
+  int BRACKET_QUOTED_IDENTIFIER = 821;
+  int QUOTED_IDENTIFIER = 822;
+  int BACK_QUOTED_IDENTIFIER = 823;
+  int BIG_QUERY_BACK_QUOTED_IDENTIFIER = 824;
+  int HYPHENATED_IDENTIFIER = 825;
+  int IDENTIFIER = 826;
+  int COLLATION_ID = 827;
+  int UNICODE_QUOTED_IDENTIFIER = 828;
+  int LETTER = 829;
+  int DIGIT = 830;
+  int BEL = 831;
 
   int DEFAULT = 0;
   int DQID = 1;
@@ -1587,6 +1589,8 @@ public interface IgniteSqlParserImplConstants {
     "\"ANALYZE\"",
     "\"MAX_CHANGED_PARTITION_ROWS_PERCENT\"",
     "\"TOTAL\"",
+    "\"WAIT\"",
+    "\"NOWAIT\"",
     "<UNSIGNED_INTEGER_LITERAL>",
     "<APPROX_NUMERIC_LITERAL>",
     "<DECIMAL_NUMERIC_LITERAL>",
@@ -1648,12 +1652,12 @@ public interface IgniteSqlParserImplConstants {
     "\"\\f\"",
     "\"/*+\"",
     "\"*/\"",
-    "<token of kind 813>",
+    "<token of kind 815>",
     "\"/*\"",
     "<SINGLE_LINE_COMMENT>",
     "<FORMAL_COMMENT>",
     "<MULTI_LINE_COMMENT>",
-    "<token of kind 818>",
+    "<token of kind 820>",
     "<BRACKET_QUOTED_IDENTIFIER>",
     "<QUOTED_IDENTIFIER>",
     "<BACK_QUOTED_IDENTIFIER>",

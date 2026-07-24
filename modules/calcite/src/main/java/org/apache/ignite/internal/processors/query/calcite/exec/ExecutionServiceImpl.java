@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -29,11 +32,13 @@ import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.core.TableModify;
+import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
@@ -45,16 +50,21 @@ import org.apache.ignite.internal.cache.context.SessionContextImpl;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheEntryImplEx;
 import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryProperties;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
@@ -98,6 +108,8 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan
 import org.apache.ignite.internal.processors.query.calcite.prepare.PrepareServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCache;
+import org.apache.ignite.internal.processors.query.calcite.prepare.SelectForUpdatePlan;
+import org.apache.ignite.internal.processors.query.calcite.prepare.SelectForUpdatePlan.LockTarget;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.CreateTableCommand;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexBound;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
@@ -105,12 +117,14 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.ConvertingClosableIterator;
+import org.apache.ignite.internal.processors.query.calcite.util.IgniteResource;
 import org.apache.ignite.internal.processors.query.calcite.util.ListFieldsQueryCursor;
 import org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
@@ -541,6 +555,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             case DDL:
                 return executeDdl(qry, (DdlPlan)plan);
 
+            case FOR_UPDATE:
+                return executeForUpdate(qry, (SelectForUpdatePlan)plan);
+
             default:
                 throw new AssertionError("Unexpected plan type: " + plan);
         }
@@ -579,6 +596,228 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
             return resCur;
         }
+    }
+
+    /**
+     * Executes a {@code SELECT ... FOR UPDATE} plan.
+     *
+     * <ol>
+     *   <li>Validates that the current transaction is PESSIMISTIC.</li>
+     *   <li>Runs the inner SELECT with hidden key, value, and version columns and materialises all rows.</li>
+     *   <li>Builds cache entries from the hidden columns.</li>
+     *   <li>Creates a savepoint, acquires pessimistic locks via {@code lockTxEntries()},
+     *       and releases the savepoint on success (or rolls back on failure).</li>
+     *   <li>Repeats the SELECT and lock attempt after a concurrent version change while the deadline permits.</li>
+     *   <li>Returns a cursor with only the user-visible columns (the appended _KEY is stripped).</li>
+     * </ol>
+     */
+    private FieldsQueryCursor<List<?>> executeForUpdate(RootQuery<Row> qry, SelectForUpdatePlan plan) {
+        GridNearTxLocal userTx = Commons.queryTransaction(qry.context(), ctx.cache().context());
+
+        if (userTx == null || !userTx.pessimistic())
+            throw new IgniteSQLException(
+                IgniteResource.INSTANCE.selectForUpdateRequiresPessimisticTx().str(),
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        // waitSeconds: null = use tx remaining time (0), 0 = NOWAIT (-1), positive = ms.
+        Long waitSeconds = plan.waitSeconds();
+        long waitMs;
+
+        if (waitSeconds == null)
+            waitMs = 0L;
+        else if (waitSeconds == 0L)
+            waitMs = -1L;
+        else
+            waitMs = waitSeconds * 1000L;
+
+        // Zero means that retries are limited only by the transaction or query timeout.
+        long deadline = waitMs > 0
+            ? U.currentTimeMillis() + waitMs
+            : waitMs < 0 ? U.currentTimeMillis() : 0L;
+
+        RootQuery<Row> selectQry = qry;
+
+        while (true) {
+            FieldsQueryCursor<List<?>> cursor = tryExecuteForUpdate(selectQry, plan, userTx, waitMs, deadline);
+
+            if (cursor != null)
+                return cursor;
+
+            if (deadline != 0 && U.currentTimeMillis() >= deadline) {
+                throw new IgniteSQLException(
+                    IgniteResource.INSTANCE.selectForUpdateLockFailed().str(),
+                    IgniteQueryErrorCode.CONCURRENT_UPDATE);
+            }
+
+            // The previous query has already been closed after materialisation, so retry with a fresh root query.
+            selectQry = qry.retryQuery();
+            qryReg.register(selectQry);
+        }
+    }
+
+    /**
+     * Executes the inner SELECT once and tries to lock the selected row versions.
+     *
+     * @return Result cursor when locking succeeds, or {@code null} when the SELECT must be executed again.
+     */
+    @Nullable private FieldsQueryCursor<List<?>> tryExecuteForUpdate(
+        RootQuery<Row> qry,
+        SelectForUpdatePlan plan,
+        GridNearTxLocal userTx,
+        long waitMs,
+        long deadline
+    ) {
+        // Run the inner SELECT (with _KEY, _VAL, _VER appended) and collect all rows.
+        ListFieldsQueryCursor<?> innerCursor = mapAndExecutePlan(qry, plan.innerPlan());
+        List<List<?>> rows = innerCursor.getAll();
+
+        int userColCnt = plan.userColumnCount();
+
+        if (rows.isEmpty()) {
+            // Nothing to lock – return an empty cursor with user-only field metadata.
+            QueryCursorImpl<List<?>> resCur = new QueryCursorImpl<>(Collections.emptyList(), null, false);
+
+            IgniteTypeFactory typeFactory = qry.context().typeFactory();
+            List<GridQueryFieldMetadata> meta = plan.innerPlan().fieldsMetadata().queryFieldsMetadata(typeFactory);
+
+            resCur.fieldsMeta(meta.subList(0, userColCnt));
+
+            return resCur;
+        }
+
+        Map<IgniteInternalCache<Object, Object>, Map<Object, CacheEntry<Object, Object>>> entriesByCache =
+            new LinkedHashMap<>();
+
+        for (LockTarget target : plan.lockTargets()) {
+            SchemaPlus schemaPlus = schemaHolder.schema(target.schemaName());
+
+            if (schemaPlus == null)
+                throw new IgniteSQLException("Schema not found: " + target.schemaName(),
+                    IgniteQueryErrorCode.SCHEMA_NOT_FOUND);
+
+            IgniteTable igniteTable = (IgniteTable)schemaPlus.getTable(target.tableName());
+
+            if (igniteTable == null)
+                throw new IgniteSQLException("Table not found: " + target.tableName(),
+                    IgniteQueryErrorCode.TABLE_NOT_FOUND);
+
+            GridCacheContext<Object, Object> cctx =
+                (GridCacheContext<Object, Object>)((CacheTableDescriptor)igniteTable.descriptor()).cacheContext();
+
+            IgniteInternalCache<Object, Object> cache = cctx.cache().keepBinary();
+            Map<Object, CacheEntry<Object, Object>> entries =
+                entriesByCache.computeIfAbsent(cache, key -> new LinkedHashMap<>());
+            int keyColumnIdx = target.keyColumnIndex();
+
+            for (List<?> row : rows) {
+                Object key = row.get(keyColumnIdx);
+
+                // An outer join has no row to lock on its non-matching side.
+                if (key == null)
+                    continue;
+
+                Object val = row.get(keyColumnIdx + 1);
+                GridCacheVersion ver = (GridCacheVersion)row.get(keyColumnIdx + 2);
+
+                // JOINs can repeat a row, but a transaction needs only one lock per cache key.
+                entries.put(key, new CacheEntryImplEx<>(key, val, ver));
+            }
+        }
+
+        List<Map.Entry<IgniteInternalCache<Object, Object>, Map<Object, CacheEntry<Object, Object>>>> lockBatches =
+            new ArrayList<>(entriesByCache.entrySet());
+
+        lockBatches.sort(Comparator.comparingInt(left -> left.getKey().context().cacheId()));
+
+        try {
+            // lockTxEntries() requires the transaction to be bound to the current thread
+            // (it checks cctx.tm().threadLocalTx()). Resume it here and suspend afterwards,
+            // following the same pattern as ModifyNode.invokeInsideTransaction().
+            userTx.resume();
+
+            try {
+                // Create a savepoint so that a failed lock attempt can be rolled back without aborting the whole tx.
+                String spName = "_for_update_" + UUID.randomUUID();
+
+                userTx.savepoint(spName, false);
+
+                boolean locked = true;
+
+                try {
+                    for (Map.Entry<IgniteInternalCache<Object, Object>, Map<Object, CacheEntry<Object, Object>>> batch :
+                        lockBatches) {
+                        if (batch.getValue().isEmpty())
+                            continue;
+
+                        long batchWaitMs = waitMs;
+
+                        if (deadline > 0) {
+                            batchWaitMs = deadline - U.currentTimeMillis();
+
+                            if (batchWaitMs <= 0)
+                                batchWaitMs = -1L;
+                        }
+
+                        if (!batch.getKey().lockTxEntries(batch.getValue().values(), batchWaitMs)) {
+                            locked = false;
+                            break;
+                        }
+                    }
+                }
+                catch (IgniteCheckedException e) {
+                    try {
+                        userTx.rollbackToSavepoint(spName);
+                    }
+                    catch (Exception rollbackEx) {
+                        e.addSuppressed(rollbackEx);
+                    }
+
+                    throw new IgniteSQLException("Failed to acquire locks for SELECT FOR UPDATE",
+                        IgniteQueryErrorCode.CONCURRENT_UPDATE, e);
+                }
+
+                if (!locked) {
+                    try {
+                        userTx.rollbackToSavepoint(spName);
+                    }
+                    catch (IgniteCheckedException rollbackEx) {
+                        throw new IgniteSQLException("Failed to rollback savepoint after lock failure",
+                            IgniteQueryErrorCode.UNKNOWN, rollbackEx);
+                    }
+
+                    return null;
+                }
+
+                try {
+                    userTx.releaseSavepoint(spName);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteSQLException("Failed to release savepoint after successful lock",
+                        IgniteQueryErrorCode.UNKNOWN, e);
+                }
+            }
+            finally {
+                userTx.suspend();
+            }
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteSQLException("Failed to get cache entries for SELECT FOR UPDATE",
+                IgniteQueryErrorCode.UNKNOWN, e);
+        }
+
+        List<List<?>> userRows = new ArrayList<>(rows.size());
+
+        for (List<?> row : rows)
+            userRows.add(row.subList(0, userColCnt));
+
+        QueryCursorImpl<List<?>> resCur = new QueryCursorImpl<>(userRows, null, false);
+
+        IgniteTypeFactory typeFactory = qry.context().typeFactory();
+        List<GridQueryFieldMetadata> meta = plan.innerPlan().fieldsMetadata().queryFieldsMetadata(typeFactory);
+
+        resCur.fieldsMeta(meta.subList(0, userColCnt));
+
+        return resCur;
     }
 
     /**
