@@ -287,7 +287,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     private ConcurrentMap<String, CachePredicate> registeredCaches = new ConcurrentHashMap<>();
 
     /** */
-    private Map<Integer, CacheGroupAffinity> registeredCacheGrps = new HashMap<>();
+    private ConcurrentMap<Integer, CacheGroupAffinity> registeredCacheGrps = new ConcurrentHashMap<>();
 
     /** */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
