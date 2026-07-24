@@ -207,7 +207,7 @@ Conflict partition: PartitionKey [grpId=1544803905, grpName=default, partId=5]
 ----
 
 The command compares partition update counters and partition hashes between primary and backup copies.
-Run it only when data updates are stopped.
+Run it only on idle cluster i.e. without active data updates.
 If updates are active, the command can report false-positive conflicts because copies are changing while hashes are being calculated.
 Partitions in `MOVING` or `LOST` state may be skipped, so the result can be incomplete.
 A successful `idle_verify` result is an important confirmation of consistency, but it still does not prove that the cluster is healthy overall.
