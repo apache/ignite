@@ -542,7 +542,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(GridCacheRawVersionedEntry.class);
         withSchema(CacheEvictionEntry.class);
         withSchema(CacheEntryPredicateAdapter.class);
-        withNoSchema(GridContinuousMessage.class);
+        withSchema(GridContinuousMessage.class);
         withNoSchema(ContinuousRoutineStartResultMessage.class);
         withSchema(UpdateErrors.class);
         withNoSchema(LatchAckMessage.class);

@@ -268,16 +268,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 else {
                     GridContinuousMessage msg = (GridContinuousMessage)obj;
 
-                    if (msg.data() == null && msg.dataBytes() != null) {
-                        try {
-                            msg.data(U.unmarshal(marsh, msg.dataBytes(), U.resolveClassLoader(ctx.config())));
-                        }
-                        catch (IgniteCheckedException e) {
-                            U.error(log, "Failed to process message (ignoring): " + msg, e);
-
-                            return;
-                        }
-                    }
+                    if (!msg.finishUnmarshal(marsh, U.resolveClassLoader(ctx.config()), log))
+                        return;
 
                     switch (msg.type()) {
                         case MSG_EVT_NOTIFICATION:
@@ -1001,16 +993,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     // Only notification can be ordered.
                     assert msg.type() == MSG_EVT_NOTIFICATION;
 
-                    if (msg.data() == null && msg.dataBytes() != null) {
-                        try {
-                            msg.data(U.unmarshal(marsh, msg.dataBytes(), U.resolveClassLoader(ctx.config())));
-                        }
-                        catch (IgniteCheckedException e) {
-                            U.error(log, "Failed to process message (ignoring): " + msg, e);
-
-                            return;
-                        }
-                    }
+                    if (!msg.finishUnmarshal(marsh, U.resolveClassLoader(ctx.config()), log))
+                        return;
 
                     processNotification(nodeId, msg);
                 }
@@ -1835,11 +1819,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         @Nullable Object orderedTopic, IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException {
         assert !F.isEmpty(nodes);
         assert msg != null;
-
-        if (!msg.messages() &&
-            msg.data() != null &&
-            (nodes.size() > 1 || !ctx.localNodeId().equals(F.first(nodes).id())))
-            msg.dataBytes(U.marshal(marsh, msg.data()));
 
         for (ClusterNode node : nodes) {
             int cnt = 0;
