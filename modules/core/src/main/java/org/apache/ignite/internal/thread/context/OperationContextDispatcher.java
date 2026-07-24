@@ -18,7 +18,7 @@ package org.apache.ignite.internal.thread.context;
 
 import java.util.Arrays;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.thread.context.OperationContext.ContextRestorer;
+import org.apache.ignite.internal.thread.context.OperationContext.Restorer;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
@@ -114,7 +114,7 @@ public class OperationContextDispatcher {
     /** Restores distributed {@link OperationContextAttribute} values received from a remote node. */
     public Scope restoreSnapshot(@Nullable OperationContextSnapshotMessage snp) {
         if (snp == null)
-            return Scope.NOOP_SCOPE;
+            return Restorer.restoreEmpty();
 
         OperationContextAttribute<? extends Message>[] locRegisteredAttrs = registeredAttrs;
 
@@ -122,7 +122,7 @@ public class OperationContextDispatcher {
         assert !F.isEmpty(snp.attrs);
         assert snp.attrs.length <= MAX_ATTRS_CNT;
 
-        ContextRestorer ctxRestorer = ContextRestorer.create();
+        Restorer ctxRestorer = Restorer.create();
 
         for (byte valIdx = 0, attrId = 0; valIdx < snp.attrs.length; ++valIdx) {
             Message attrVal = snp.attrs[valIdx];

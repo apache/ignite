@@ -113,7 +113,7 @@ public class OperationContext {
         OperationContextAttribute<T1> attr1, T1 val1,
         OperationContextAttribute<T2> attr2, T2 val2
     ) {
-        return ContextUpdater.create().set(attr1, val1).set(attr2, val2).apply();
+        return Updater.create().set(attr1, val1).set(attr2, val2).apply();
     }
 
     /**
@@ -136,7 +136,7 @@ public class OperationContext {
         OperationContextAttribute<T2> attr2, T2 val2,
         OperationContextAttribute<T3> attr3, T3 val3
     ) {
-        return ContextUpdater.create().set(attr1, val1).set(attr2, val2).set(attr3, val3).apply();
+        return Updater.create().set(attr1, val1).set(attr2, val2).set(attr3, val3).apply();
     }
 
     /**
@@ -322,14 +322,14 @@ public class OperationContext {
     }
 
     /** Allows to change multiple attribute values in a single update operation and skip updates that changes nothing. */
-    static class ContextUpdater extends AttributeCollector {
+    static class Updater extends AttributeCollector {
         /** */
-        private ContextUpdater(OperationContext ctx) {
+        private Updater(OperationContext ctx) {
             super(ctx);
         }
 
         /** */  
-        <T> ContextUpdater set(OperationContextAttribute<T> attr, T val) {
+        <T> Updater set(OperationContextAttribute<T> attr, T val) {
             if (ctx.getInternal(attr) == val)
                 return this;
 
@@ -344,26 +344,31 @@ public class OperationContext {
         }
 
         /** */
-        static ContextUpdater create() {
-            return new ContextUpdater(INSTANCE.get());
+        static Updater create() {
+            return new Updater(INSTANCE.get());
         }
     }
 
     /** */
-    static class ContextRestorer extends AttributeCollector {
+    static class Restorer extends AttributeCollector {
         /** */
-        ContextRestorer(OperationContext ctx) {
+        Restorer(OperationContext ctx) {
             super(ctx);
         }
 
         /** */
         Scope restore() {
-            return isEmpty() ? NOOP_SCOPE : ctx.restoreSnapshotInternal(ctx.new Update(toArray(), null));
+            return ctx.restoreSnapshotInternal(isEmpty() ? null : ctx.new Update(toArray(), null));
         }
 
         /** */
-        static ContextRestorer create() {
-            return new ContextRestorer(INSTANCE.get());
+        static Restorer create() {
+            return new Restorer(INSTANCE.get());
+        }
+
+        /** */
+        static Scope restoreEmpty() {
+            return new Restorer(INSTANCE.get()).restore();
         }
     }
 

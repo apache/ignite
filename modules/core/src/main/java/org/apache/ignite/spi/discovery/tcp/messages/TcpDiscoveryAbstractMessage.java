@@ -44,6 +44,9 @@ public abstract class TcpDiscoveryAbstractMessage implements Message {
     protected static final int CLIENT_RECON_SUCCESS_FLAG_POS = 2;
 
     /** */
+    protected static final int OP_CTX_ATTACHED_FLAG_POS = 3;
+
+    /** */
     protected static final int FORCE_FAIL_FLAG_POS = 4;
 
     /** Sender of the message. */
@@ -234,9 +237,12 @@ public abstract class TcpDiscoveryAbstractMessage implements Message {
     }
 
     /** @param opCtxSnp Operation context snapshot.  */
-    public void attachOperationContextSnapshot(OperationContextSnapshotMessage opCtxSnp) {
-        if (this.opCtxSnp == null)
+    public void attachOperationContextSnapshot(@Nullable OperationContextSnapshotMessage opCtxSnp) {
+        if (!getFlag(OP_CTX_ATTACHED_FLAG_POS)) {
             this.opCtxSnp = opCtxSnp;
+
+            setFlag(OP_CTX_ATTACHED_FLAG_POS, true);
+        }
     }
 
     /**
