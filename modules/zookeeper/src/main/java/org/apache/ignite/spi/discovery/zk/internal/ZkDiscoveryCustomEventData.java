@@ -40,7 +40,7 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
     /** Message (can be marshalled as part of ZkDiscoveryCustomEventData or stored in separate znode. */
     byte[] msgBytes;
 
-    /** Unmarshalled message. */
+    /** Unmarshalled custom message holder. Can be wrapped with {@link ZkOperationContextAwareCustomMessage}. */
     transient DiscoverySpiCustomMessage resolvedMsg;
 
     /**

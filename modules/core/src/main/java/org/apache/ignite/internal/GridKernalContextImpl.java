@@ -53,7 +53,6 @@ import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
-import org.apache.ignite.internal.managers.tracing.GridTracingManager;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
@@ -101,7 +100,6 @@ import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
-import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
 import org.apache.ignite.internal.thread.pool.IgniteForkJoinPool;
@@ -193,10 +191,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringExclude
     private IgniteDefragmentation defragMgr;
-
-    /** */
-    @GridToStringExclude
-    private GridTracingManager tracingMgr;
 
     /*
      * Processors.
@@ -523,9 +517,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             indexingMgr = (GridIndexingManager)comp;
         else if (comp instanceof GridEncryptionManager)
             encryptionMgr = (GridEncryptionManager)comp;
-        else if (comp instanceof GridTracingManager)
-            tracingMgr = (GridTracingManager)comp;
-
         /*
          * Processors.
          * ==========
@@ -751,11 +742,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public DistributedConfigurationProcessor distributedConfiguration() {
         return distributedConfigurationProcessor;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Tracing tracing() {
-        return tracingMgr;
     }
 
     /** {@inheritDoc} */

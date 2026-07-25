@@ -17,7 +17,9 @@
 
 package org.apache.ignite.spi.discovery.zk.internal;
 
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,7 +41,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.DataFormatException;
-import java.util.zip.Deflater;
+import java.util.zip.DeflaterOutputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 import org.apache.ignite.Ignite;
@@ -56,6 +58,7 @@ import org.apache.ignite.configuration.CommunicationFailureResolver;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.NodeValidationFailedEvent;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
@@ -63,6 +66,9 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
+import org.apache.ignite.internal.thread.context.OperationContextMessage;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -222,6 +228,9 @@ public class ZookeeperDiscoveryImpl {
     /** */
     private final DiscoveryMessageParser msgParser;
 
+    /** */
+    private final OperationContextDispatcher opCtxDispatcher;
+
     /**
      * @param spi Discovery SPI.
      * @param igniteInstanceName Instance name.
@@ -272,6 +281,8 @@ public class ZookeeperDiscoveryImpl {
         this.stats = stats;
 
         msgParser = new DiscoveryMessageParser(msgFactory);
+
+        opCtxDispatcher = ((IgniteEx)spi.ignite()).context().operationContextDispatcher();
     }
 
     /**
@@ -516,7 +527,6 @@ public class ZookeeperDiscoveryImpl {
                     locNode,
                     rtState.top.topologySnapshot(),
                     Collections.emptyNavigableMap(),
-                    null,
                     null
                 )
             ).get();
@@ -589,7 +599,6 @@ public class ZookeeperDiscoveryImpl {
                 locNode,
                 nodes,
                 Collections.emptyNavigableMap(),
-                null,
                 null
             )
         ).get();
@@ -656,10 +665,20 @@ public class ZookeeperDiscoveryImpl {
         }
     }
 
+    /** */
+    public void sendCustomEvent(DiscoverySpiCustomMessage msg) {
+        OperationContextMessage opCtx = opCtxDispatcher.collectDistributedAttributeValues();
+
+        if (opCtx != null)
+            sendCustomMessage(new ZkOperationContextAwareCustomMessage(msg, opCtx));
+        else
+            sendCustomMessage(msg);
+    }
+
     /**
      * @param msg Message.
      */
-    public void sendCustomMessage(DiscoverySpiCustomMessage msg) {
+    void sendCustomMessage(DiscoverySpiCustomMessage msg) {
         assert msg != null;
 
         List<ClusterNode> nodes = rtState.top.topologySnapshot();
@@ -2353,7 +2372,6 @@ public class ZookeeperDiscoveryImpl {
                     locNode,
                     topSnapshot,
                     Collections.emptyNavigableMap(),
-                    null,
                     null
                 )
             ).get();
@@ -3051,7 +3069,6 @@ public class ZookeeperDiscoveryImpl {
                     locNode,
                     topSnapshot,
                     Collections.emptyNavigableMap(),
-                    null,
                     null
                 )
             ).get();
@@ -3064,7 +3081,6 @@ public class ZookeeperDiscoveryImpl {
                         locNode,
                         topSnapshot,
                         Collections.emptyNavigableMap(),
-                        null,
                         null
                     )
                 ).get();
@@ -3501,10 +3517,19 @@ public class ZookeeperDiscoveryImpl {
     }
 
     /**
+     * Notifies the {@link DiscoverySpiListener} listener of a custom event. Is aware of {@link ZkOperationContextAwareCustomMessage}.
+     *
      * @param evtData Event data.
-     * @param msg Custom message.
+     * @param msg Custom message to process. Can be a {@link ZkOperationContextAwareCustomMessage}.
      */
-    private void notifyCustomEvent(final ZkDiscoveryCustomEventData evtData, final DiscoverySpiCustomMessage msg) {
+    private void notifyCustomEvent(final ZkDiscoveryCustomEventData evtData, DiscoverySpiCustomMessage msg) {
+        OperationContextMessage opCtxMsg = null;
+
+        if (msg instanceof ZkOperationContextAwareCustomMessage) {
+            opCtxMsg = ((ZkOperationContextAwareCustomMessage)msg).opCtxMsg;
+            msg = ((ZkOperationContextAwareCustomMessage)msg).delegate;
+        }
+
         assert !(msg instanceof ZkInternalMessage) : msg;
 
         if (log.isDebugEnabled())
@@ -3516,17 +3541,20 @@ public class ZookeeperDiscoveryImpl {
 
         final List<ClusterNode> topSnapshot = rtState.top.topologySnapshot();
 
-        IgniteFuture<?> fut = lsnr.onDiscovery(
-            new DiscoveryNotification(
-                DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
-                evtData.topologyVersion(),
-                sndNode,
-                topSnapshot,
-                Collections.emptyNavigableMap(),
-                msg,
-                null
-            )
-        );
+        IgniteFuture<?> fut;
+
+        try (Scope ignored = opCtxDispatcher.restoreRemoteAttributeValues(opCtxMsg)) {
+            fut = lsnr.onDiscovery(
+                new DiscoveryNotification(
+                    DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
+                    evtData.topologyVersion(),
+                    sndNode,
+                    topSnapshot,
+                    Collections.emptyNavigableMap(),
+                    msg
+                )
+            );
+        }
 
         if (msg != null && msg.isMutable())
             fut.get();
@@ -3553,7 +3581,6 @@ public class ZookeeperDiscoveryImpl {
                 joinedNode,
                 topSnapshot,
                 Collections.emptyNavigableMap(),
-                null,
                 null
             )
         ).get();
@@ -3603,7 +3630,6 @@ public class ZookeeperDiscoveryImpl {
                 leftNode,
                 topSnapshot,
                 Collections.emptyNavigableMap(),
-                null,
                 null
             )
         ).get();
@@ -4064,33 +4090,21 @@ public class ZookeeperDiscoveryImpl {
 
     /**
      * @param obj Object.
-     * @return Bytes.
+     * @return Zip-compressed marshalled bytes.
      * @throws IgniteCheckedException If failed.
      */
     byte[] marshalZip(Object obj) throws IgniteCheckedException {
         assert obj != null;
 
-        return zip(U.marshal(marsh, obj));
-    }
+        GridByteArrayOutputStream out = new GridByteArrayOutputStream();
 
-    /**
-     * @param bytes Bytes to compress.
-     * @return Zip-compressed bytes.
-     */
-    private static byte[] zip(byte[] bytes) {
-        Deflater deflater = new Deflater();
-
-        deflater.setInput(bytes);
-        deflater.finish();
-
-        GridByteArrayOutputStream out = new GridByteArrayOutputStream(bytes.length);
-
-        final byte[] buf = new byte[bytes.length];
-
-        while (!deflater.finished()) {
-            int cnt = deflater.deflate(buf);
-
-            out.write(buf, 0, cnt);
+        // BufferedOutputStream's 8 KB buffer coalesces JdkMarshaller's ~1 KB ObjectOutputStream
+        // block-data writes into fewer Deflater JNI calls.
+        try (BufferedOutputStream zipOut = new BufferedOutputStream(new DeflaterOutputStream(out))) {
+            U.marshal(marsh, obj, zipOut);
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException("Failed to marshal object: " + obj, e);
         }
 
         return out.toByteArray();

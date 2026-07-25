@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.rollingupgrade.feature;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeClusterData;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -36,16 +36,29 @@ public class IgniteFeatureManager {
     /** */
     private final IgniteNodeFeatureSet locVerFeatures;
 
-    /** */
-    private final GridFutureAdapter<Void> locVerFeaturesActivationFut;
+    /**
+     * During the RU process, updated nodes operate in accordance with both the old logical version (prior to RU completion)
+     * and the new one (after RU completion). This variable stores the features of the previous version under which this
+     * node operated.
+     *
+     * <p>
+     *     If a node joins the cluster after the Rolling Upgrade has been finalized, this value is inherited from the
+     *     existing cluster nodes (after Rolling Upgrade finalization, all cluster nodes are guaranteed to hold the same
+     *     value for this field).
+     *</p>
+     */
+    @Nullable private volatile IgniteNodeFeatureSet prevActiveFeatures;
 
     /** */
     private volatile IgniteNodeFeatureSet activeFeatures;
 
     /** */
-    public IgniteFeatureManager(GridKernalContext ctx, IgniteComponentFeatureSet locCoreFeatures) {
+    private final GridFutureAdapter<Void> locVerFeaturesActivationFut;
+
+    /** */
+    public IgniteFeatureManager(GridKernalContext ctx, IgniteCoreFeatureSet coreFeatures) {
         this.ctx = ctx;
-        this.locVerFeatures = collectLocalVersionFeatures(ctx, locCoreFeatures);
+        this.locVerFeatures = collectLocalVersionFeatures(ctx, coreFeatures);
         locVerFeaturesActivationFut = new GridFutureAdapter<>();
     }
 
@@ -66,6 +79,11 @@ public class IgniteFeatureManager {
         checkActiveFeaturesInitialized(finalActiveFeatures);
 
         return finalActiveFeatures;
+    }
+
+    /** @return The feature set corresponding to the previous version under which this node operated. */
+    @Nullable public IgniteNodeFeatureSet previousActiveFeatures() {
+        return prevActiveFeatures;
     }
 
     /** @return {@code true} if the specified {@link IgniteFeature} is active in the cluster; {@code false} otherwise. */
@@ -92,11 +110,22 @@ public class IgniteFeatureManager {
     }
 
     /** */
-    public void onGridDataReceived(IgniteNodeFeatureSet activeClusterFeatures) {
-        if (locVerFeatures.equals(activeClusterFeatures))
+    public void onGridDataReceived(RollingUpgradeClusterData clusterData) {
+        IgniteNodeFeatureSet activeClusterFeatures = clusterData.activeFeatures();
+
+        boolean hasSameFeaturesAsCluster = ctx.clientNode()
+            ? activeClusterFeatures.containsAll(locVerFeatures)
+            : locVerFeatures.equals(activeClusterFeatures);
+
+        if (hasSameFeaturesAsCluster) {
+            prevActiveFeatures = clusterData.previousActiveFeatures();
+
             activateLocalVersionFeatures();
-        else
-            this.activeFeatures = activeClusterFeatures;
+        }
+        else {
+            activeFeatures = activeClusterFeatures;
+            prevActiveFeatures = activeClusterFeatures;
+        }
     }
 
     /** */
@@ -124,23 +153,23 @@ public class IgniteFeatureManager {
     }
 
     /** */
-    private IgniteNodeFeatureSet collectLocalVersionFeatures(GridKernalContext ctx, IgniteComponentFeatureSet locCoreFeatures) {
-        Set<IgniteComponentFeatureSet> features = new HashSet<>();
+    private IgniteNodeFeatureSet collectLocalVersionFeatures(GridKernalContext ctx, IgniteCoreFeatureSet coreFeatures) {
+        Collection<IgniteComponentFeatureSet> features = new ArrayList<>();
 
-        features.add(locCoreFeatures);
+        features.add(coreFeatures);
 
         IgniteComponentFeatureSetProvider[] components = ctx.plugins().extensions(IgniteComponentFeatureSetProvider.class);
 
         if (!F.isEmpty(components)) {
             for (IgniteComponentFeatureSetProvider component : components)
-                features.add(buildComponentFeatures(component));
+                features.add(buildPluginFeatureSet(component));
         }
 
-        return new IgniteNodeFeatureSet(features);
+        return new IgniteNodeFeatureSet(features.toArray(IgniteComponentFeatureSet[]::new));
     }
 
     /** */
-    private IgniteComponentFeatureSet buildComponentFeatures(IgniteComponentFeatureSetProvider cmpFeaturesProvider) {
+    private IgniteComponentFeatureSet buildPluginFeatureSet(IgniteComponentFeatureSetProvider cmpFeaturesProvider) {
         Collection<IgniteFeature> cmpFeatures = cmpFeaturesProvider.features();
 
         A.notEmpty(cmpFeatures, "component features");
@@ -154,7 +183,7 @@ public class IgniteFeatureManager {
                 " [componentName=" + cmpFeaturesProvider.componentName() + ']');
         }
 
-        return new IgniteComponentFeatureSet(
+        return new IgnitePluginFeatureSet(
             cmpFeaturesProvider.componentName(),
             cmpFeaturesProvider.componentVersion(),
             IgniteFeatureSet.buildFrom(cmpFeatures)

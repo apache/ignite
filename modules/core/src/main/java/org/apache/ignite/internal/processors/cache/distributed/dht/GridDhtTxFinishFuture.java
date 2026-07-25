@@ -37,8 +37,6 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.tracing.MTC;
-import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -51,8 +49,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import static java.util.Objects.isNull;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
-import static org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
-import static org.apache.ignite.internal.processors.tracing.SpanType.TX_DHT_FINISH;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 
 /**
@@ -62,9 +58,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
     implements IgniteDiagnosticAware {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Tracing span. */
-    private Span span;
 
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
@@ -227,58 +220,56 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
 
     /** {@inheritDoc} */
     @Override public boolean onDone(IgniteInternalTx tx, Throwable err) {
-        try (TraceSurroundings ignored = MTC.support(span)) {
-            if (initialized() || err != null) {
-                Throwable e = this.err;
+        if (initialized() || err != null) {
+            Throwable e = this.err;
 
-                if (this.tx.onePhaseCommit() && (this.tx.state() == COMMITTING)) {
-                    try {
-                        boolean nodeStopping = X.hasCause(err, NodeStoppingException.class);
+            if (this.tx.onePhaseCommit() && (this.tx.state() == COMMITTING)) {
+                try {
+                    boolean nodeStopping = X.hasCause(err, NodeStoppingException.class);
 
-                        this.tx.tmFinish(err == null, nodeStopping || cctx.kernalContext().failure().nodeStopping(), false);
-                    }
-                    catch (IgniteCheckedException finishErr) {
-                        U.error(log, "Failed to finish tx: " + tx, e);
-
-                        if (e == null)
-                            e = finishErr;
-                    }
+                    this.tx.tmFinish(err == null, nodeStopping || cctx.kernalContext().failure().nodeStopping(), false);
                 }
+                catch (IgniteCheckedException finishErr) {
+                    U.error(log, "Failed to finish tx: " + tx, e);
 
-                if (commit && e == null)
-                    e = this.tx.commitError();
-
-                Throwable finishErr = e != null ? e : err;
-
-                if (super.onDone(tx, finishErr)) {
-                    if (finishErr == null)
-                        finishErr = this.tx.commitError();
-
-                    if (this.tx.syncMode() != PRIMARY_SYNC)
-                        this.tx.sendFinishReply(finishErr);
-
-                    if (!commit && shouldApplyCountersOnRollbackError(finishErr)) {
-                        TxCounters txCounters = this.tx.txCounters(false);
-
-                        if (txCounters != null) {
-                            try {
-                                cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCounters.updateCounters(), true, true);
-                            }
-                            catch (IgniteCheckedException e0) {
-                                throw new IgniteException(e0);
-                            }
-                        }
-                    }
-
-                    // Don't forget to clean up.
-                    cctx.mvcc().removeFuture(futId);
-
-                    return true;
+                    if (e == null)
+                        e = finishErr;
                 }
             }
 
-            return false;
+            if (commit && e == null)
+                e = this.tx.commitError();
+
+            Throwable finishErr = e != null ? e : err;
+
+            if (super.onDone(tx, finishErr)) {
+                if (finishErr == null)
+                    finishErr = this.tx.commitError();
+
+                if (this.tx.syncMode() != PRIMARY_SYNC)
+                    this.tx.sendFinishReply(finishErr);
+
+                if (!commit && shouldApplyCountersOnRollbackError(finishErr)) {
+                    TxCounters txCounters = this.tx.txCounters(false);
+
+                    if (txCounters != null) {
+                        try {
+                            cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCounters.updateCounters(), true, true);
+                        }
+                        catch (IgniteCheckedException e0) {
+                            throw new IgniteException(e0);
+                        }
+                    }
+                }
+
+                // Don't forget to clean up.
+                cctx.mvcc().removeFuture(futId);
+
+                return true;
+            }
         }
+
+        return false;
     }
 
     /**
@@ -311,23 +302,20 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
      * @param commit Commit flag.
      */
     public void finish(boolean commit) {
-        try (MTC.TraceSurroundings ignored =
-                 MTC.supportContinual(span = cctx.kernalContext().tracing().create(TX_DHT_FINISH, MTC.span()))) {
-            boolean sync;
+        boolean sync;
 
-            if (!F.isEmpty(dhtMap) || !F.isEmpty(nearMap))
-                sync = finish(commit, dhtMap, nearMap);
-            else if (!commit && !F.isEmpty(tx.lockTransactionNodes()))
-                sync = rollbackLockTransactions(tx.lockTransactionNodes());
-            else
-                // No backup or near nodes to send commit message to (just complete then).
-                sync = false;
+        if (!F.isEmpty(dhtMap) || !F.isEmpty(nearMap))
+            sync = finish(commit, dhtMap, nearMap);
+        else if (!commit && !F.isEmpty(tx.lockTransactionNodes()))
+            sync = rollbackLockTransactions(tx.lockTransactionNodes());
+        else
+            // No backup or near nodes to send commit message to (just complete then).
+            sync = false;
 
-            markInitialized();
+        markInitialized();
 
-            if (!sync)
-                onComplete();
-        }
+        if (!sync)
+            onComplete();
     }
 
     /**

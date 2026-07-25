@@ -106,13 +106,6 @@ public enum IgniteComponentType {
         "ignite-compress"
     ),
 
-    /** OpenCensus tracing implementation. */
-    TRACING(
-        null,
-        "org.apache.ignite.spi.tracing.opencensus.OpenCensusTracingSpi",
-        "ignite-opencensus"
-    ),
-
     /** Calcite based query engine. */
     QUERY_ENGINE(
         NoOpQueryEngine.class.getName(),

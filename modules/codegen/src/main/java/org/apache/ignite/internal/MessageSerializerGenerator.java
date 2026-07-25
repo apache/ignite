@@ -1159,4 +1159,27 @@ public class MessageSerializerGenerator {
 
         throw new IllegalArgumentException("Compress annotation is used for an unsupported type: " + type);
     }
+
+    /** */
+    public static String simpleClassName(TypeMirror type) {
+        if (type.getKind() == TypeKind.DECLARED) {
+            DeclaredType declaredType = (DeclaredType)type;
+
+            return declaredType.asElement().getSimpleName().toString();
+        }
+
+        return type.toString();
+    }
+
+    /** */
+    public static String qualifiedClassName(TypeMirror type) {
+        if (type.getKind() == TypeKind.DECLARED) {
+            DeclaredType declaredType = (DeclaredType)type;
+            TypeElement el = (TypeElement)declaredType.asElement();
+
+            return el.getQualifiedName().toString();
+        }
+
+        return type.toString();
+    }
 }
