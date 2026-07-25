@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
  */
 @TcpDiscoveryEnsureDelivery
 @TcpDiscoveryRedirectToClient
-public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTraceableMessage {
+public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractMessage {
     /** Added node ID. */
     @Order(0)
     UUID nodeId;

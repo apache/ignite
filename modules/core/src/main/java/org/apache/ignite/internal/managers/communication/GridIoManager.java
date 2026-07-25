@@ -99,10 +99,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccess
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
-import org.apache.ignite.internal.processors.tracing.MTC;
-import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
-import org.apache.ignite.internal.processors.tracing.Span;
-import org.apache.ignite.internal.processors.tracing.SpanTags;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -160,10 +156,6 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UTILITY_CACHE_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.isReservedGridIoPolicy;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
-import static org.apache.ignite.internal.processors.tracing.MTC.support;
-import static org.apache.ignite.internal.processors.tracing.SpanType.COMMUNICATION_ORDERED_PROCESS;
-import static org.apache.ignite.internal.processors.tracing.SpanType.COMMUNICATION_REGULAR_PROCESS;
-import static org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesTable.traceName;
 import static org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor.newCachedThreadPool;
 import static org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor.newFixedThreadPool;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.localNode;
@@ -1370,11 +1362,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         final byte plc,
         final IgniteRunnable msgC
     ) throws IgniteCheckedException {
-        Runnable c = new TraceRunnable(ctx.tracing(), COMMUNICATION_REGULAR_PROCESS) {
-            @Override public void execute() {
+        Runnable c = new Runnable() {
+            @Override public void run() {
                 try {
-                    MTC.span().addTag(SpanTags.MESSAGE, () -> traceName(msg));
-
                     threadProcessingMessage(true, msgC);
 
                     processRegularMessage0(msg, nodeId);
@@ -1390,8 +1380,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                 return "Message closure [msg=" + msg + ']';
             }
         };
-
-        MTC.span().addLog(() -> "Regular process queued");
 
         if (msg.topicOrdinal() == TOPIC_IO_TEST.ordinal()) {
             IgniteIoTestMessage msg0 = (IgniteIoTestMessage)msg.message();
@@ -1794,8 +1782,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         };
 
         try {
-            MTC.span().addLog(() -> "Ordered process queued");
-
             pools.poolForPolicy(plc).execute(c);
         }
         catch (RejectedExecutionException e) {
@@ -1850,8 +1836,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
      * @param msg Message.
      */
     private void invokeListener(Byte plc, GridMessageListener lsnr, UUID nodeId, Object msg) {
-        MTC.span().addLog(() -> "Invoke listener");
-
         Byte oldPlc = CUR_PLC.get();
 
         boolean change = !Objects.equals(oldPlc, plc);
@@ -2018,34 +2002,31 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         assert msg != null;
         assert !async || msg instanceof GridIoUserMessage : msg; // Async execution was added only for IgniteMessaging.
 
-        try (TraceSurroundings ignored = support(null)) {
-            MTC.span().addLog(() -> "Create communication msg - " + traceName(msg));
+        GridIoMessage ioMsg = createGridIoMessage(topic, msg, plc, ordered, timeout, skipOnTimeout);
 
-            GridIoMessage ioMsg = createGridIoMessage(topic, msg, plc, ordered, timeout, skipOnTimeout);
+        if (locNodeId.equals(node.id())) {
 
-            if (locNodeId.equals(node.id())) {
-                assert plc != P2P_POOL;
+            assert plc != P2P_POOL;
 
-                CommunicationListener commLsnr = this.commLsnr;
+            CommunicationListener commLsnr = this.commLsnr;
 
-                if (commLsnr == null)
-                    throw new IgniteCheckedException("Trying to send message when grid is not fully started.");
+            if (commLsnr == null)
+                throw new IgniteCheckedException("Trying to send message when grid is not fully started.");
 
-                if (ordered)
-                    processOrderedMessage(locNodeId, ioMsg, plc, null);
-                else if (async)
-                    processRegularMessage(locNodeId, ioMsg, plc, NOOP);
-                else
-                    processRegularMessage0(ioMsg, locNodeId);
+            if (ordered)
+                processOrderedMessage(locNodeId, ioMsg, plc, null);
+            else if (async)
+                processRegularMessage(locNodeId, ioMsg, plc, NOOP);
+            else
+                processRegularMessage0(ioMsg, locNodeId);
 
-                if (ackC != null)
-                    ackC.apply(null);
-            }
-            else {
-                marshal(ioMsg);
+            if (ackC != null)
+                ackC.apply(null);
+        }
+        else {
+            marshal(ioMsg);
 
-                sendMarshalled(node, ioMsg, ackC);
-            }
+            sendMarshalled(node, ioMsg, ackC);
         }
     }
 
@@ -2085,9 +2066,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         assert !locNodeId.equals(node.id()) : node;
         assert ioMsg.marshalled() : "Message must be prepared via prepare() before sendPrepared(): " + ioMsg;
 
-        try (TraceSurroundings ignored = support(null)) {
-            sendMarshalled(node, ioMsg, null);
-        }
+        sendMarshalled(node, ioMsg, null);
     }
 
     /**
@@ -2172,33 +2151,31 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
      */
     private void sendToMany(Collection<? extends ClusterNode> nodes, Object topic, Message msg, byte plc,
         boolean ordered, long timeout, boolean skipOnTimeout) throws IgniteCheckedException {
-        try (TraceSurroundings ignored = support(null)) {
-            GridIoMessage ioMsg = null;
+        GridIoMessage ioMsg = null;
 
-            IgniteCheckedException err = null;
+        IgniteCheckedException err = null;
 
-            for (ClusterNode node : nodes) {
-                try {
-                    if (locNodeId.equals(node.id()))
-                        send(node, topic, msg, plc, ordered, timeout, skipOnTimeout, null, false);
-                    else {
-                        if (ioMsg == null)
-                            ioMsg = prepare(topic, msg, plc, ordered, timeout, skipOnTimeout);
+        for (ClusterNode node : nodes) {
+            try {
+                if (locNodeId.equals(node.id()))
+                    send(node, topic, msg, plc, ordered, timeout, skipOnTimeout, null, false);
+                else {
+                    if (ioMsg == null)
+                        ioMsg = prepare(topic, msg, plc, ordered, timeout, skipOnTimeout);
 
-                        sendMarshalled(node, ioMsg, null);
-                    }
-                }
-                catch (IgniteCheckedException e) {
-                    if (err == null)
-                        err = e;
-                    else
-                        err.addSuppressed(e);
+                    sendMarshalled(node, ioMsg, null);
                 }
             }
-
-            if (err != null)
-                throw err;
+            catch (IgniteCheckedException e) {
+                if (err == null)
+                    err = e;
+                else
+                    err.addSuppressed(e);
+            }
         }
+
+        if (err != null)
+            throw err;
     }
 
     /** */
@@ -3822,7 +3799,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
             lastTs = U.currentTimeMillis();
 
-            msgs.add(new OrderedMessageContainer(msg, lastTs, msgC, MTC.span()));
+            msgs.add(new OrderedMessageContainer(msg, lastTs, msgC));
         }
 
         /** {@inheritDoc} */
@@ -3940,31 +3917,24 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             assert reserved.get();
 
             for (OrderedMessageContainer mc = msgs.poll(); mc != null; mc = msgs.poll()) {
-                try (TraceSurroundings ignore = support(ctx.tracing().create(
-                    COMMUNICATION_ORDERED_PROCESS, mc.parentSpan))) {
+                try {
                     try {
-                        OrderedMessageContainer fmc = mc;
-
-                        MTC.span().addTag(SpanTags.MESSAGE, () -> traceName(fmc.message));
-
-                        try {
-                            unmarshalPayload(mc.message);
-                        }
-                        catch (IgniteException e) {
-                            // Skip the poisoned message: rethrowing would abandon the rest of the set until
-                            // the next message arrives on this topic.
-                            U.error(log, "Failed to unmarshal ordered message (will skip) [nodeId=" + nodeId +
-                                ", msg=" + mc.message + ']', e);
-
-                            continue;
-                        }
-
-                        invokeListener(mc.message.policy(), lsnr, nodeId, mc.message.message());
+                        unmarshalPayload(mc.message);
                     }
-                    finally {
-                        if (mc.closure != null)
-                            mc.closure.run();
+                    catch (IgniteException e) {
+                        // Skip the poisoned message: rethrowing would abandon the rest of the set until
+                        // the next message arrives on this topic.
+                        U.error(log, "Failed to unmarshal ordered message (will skip) [nodeId=" + nodeId +
+                            ", msg=" + mc.message + ']', e);
+
+                        continue;
                     }
+
+                    invokeListener(mc.message.policy(), lsnr, nodeId, mc.message.message());
+                }
+                finally {
+                    if (mc.closure != null)
+                        mc.closure.run();
                 }
             }
         }
@@ -3977,7 +3947,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             GridIoMessage msg,
             @Nullable IgniteRunnable msgC
         ) {
-            msgs.add(new OrderedMessageContainer(msg, U.currentTimeMillis(), msgC, MTC.span()));
+            msgs.add(new OrderedMessageContainer(msg, U.currentTimeMillis(), msgC));
         }
 
         /**
@@ -4022,21 +3992,16 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         /** */
         IgniteRunnable closure;
 
-        /** */
-        Span parentSpan;
-
         /**
          *
          * @param msg Received message.
          * @param addedTime Time of added to queue.
          * @param c Message closure.
-         * @param parentSpan Span of process which added this message.
          */
-        private OrderedMessageContainer(GridIoMessage msg, Long addedTime, IgniteRunnable c, Span parentSpan) {
+        private OrderedMessageContainer(GridIoMessage msg, Long addedTime, IgniteRunnable c) {
             this.message = msg;
             this.addedTime = addedTime;
             this.closure = c;
-            this.parentSpan = parentSpan;
         }
     }
 

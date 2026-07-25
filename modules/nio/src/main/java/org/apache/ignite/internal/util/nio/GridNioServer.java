@@ -55,14 +55,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.odbc.ClientMessage;
-import org.apache.ignite.internal.processors.tracing.MTC;
-import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
-import org.apache.ignite.internal.processors.tracing.NoopSpan;
-import org.apache.ignite.internal.processors.tracing.NoopSpanManager;
-import org.apache.ignite.internal.processors.tracing.Span;
-import org.apache.ignite.internal.processors.tracing.SpanManager;
-import org.apache.ignite.internal.processors.tracing.SpanTags;
-import org.apache.ignite.internal.processors.tracing.SpanType;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -91,8 +83,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
-import static org.apache.ignite.internal.processors.tracing.SpanTags.SOCKET_WRITE_BYTES;
-import static org.apache.ignite.internal.processors.tracing.SpanType.COMMUNICATION_SOCKET_WRITE;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MSG_WRITER;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.NIO_OPERATION;
 
@@ -290,9 +280,6 @@ public class GridNioServer<T> {
      */
     private final boolean readWriteSelectorsAssign;
 
-    /** Span manager. */
-    private SpanManager tracing;
-
     /** Message factory. */
     private final MessageFactory msgFactory;
 
@@ -353,7 +340,6 @@ public class GridNioServer<T> {
         @Nullable LongConsumer sentBytesCntMetric,
         @Nullable LongConsumer outboundMessagesQueueSizeMetric,
         @Nullable LongConsumer maxMessagesQueueSizeMetric,
-        SpanManager tracing,
         MessageFactory msgFactory,
         GridNioFilter... filters
     ) throws IgniteCheckedException {
@@ -385,7 +371,6 @@ public class GridNioServer<T> {
         this.sentBytesCntMetric = sentBytesCntMetric;
         this.outboundMessagesQueueSizeMetric = outboundMessagesQueueSizeMetric;
         this.maxMessagesQueueSizeMetric = maxMessagesQueueSizeMetric;
-        this.tracing = tracing == null ? new NoopSpanManager() : tracing;
         this.msgFactory = msgFactory;
 
         filterChain = new GridNioFilterChain<>(log, lsnr, new HeadFilter(), filters);
@@ -1297,21 +1282,15 @@ public class GridNioServer<T> {
                 }
 
                 if (!skipWrite) {
-                    Span span = tracing.create(COMMUNICATION_SOCKET_WRITE, req.span());
+                    int cnt = sockCh.write(buf);
 
-                    try (TraceSurroundings ignore = span.equals(NoopSpan.INSTANCE) ? null : MTC.support(span)) {
-                        int cnt = sockCh.write(buf);
+                    if (log.isTraceEnabled())
+                        log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
 
-                        if (log.isTraceEnabled())
-                            log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
+                    if (sentBytesCntMetric != null)
+                        sentBytesCntMetric.accept(cnt);
 
-                        span.addTag(SOCKET_WRITE_BYTES, () -> Integer.toString(cnt));
-
-                        if (sentBytesCntMetric != null)
-                            sentBytesCntMetric.accept(cnt);
-
-                        ses.bytesSent(cnt);
-                    }
+                    ses.bytesSent(cnt);
                 }
                 else {
                     // For test purposes only (skipWrite is set to true in tests only).
@@ -1625,37 +1604,27 @@ public class GridNioServer<T> {
             boolean finished;
             msg = (Message)req.message();
 
-            Span span = tracing.create(SpanType.COMMUNICATION_SOCKET_WRITE, req.span());
+            assert msg != null;
 
-            try (TraceSurroundings ignore = span.equals(NoopSpan.INSTANCE) ? null : MTC.support(span)) {
-                span.addTag(SpanTags.MESSAGE, () -> tracing.traceName(msg));
+            if (messageFactory() == null) {
+                assert msg instanceof ClientMessage;  // TODO: Will refactor in IGNITE-26554.
 
-                assert msg != null;
-
-                int startPos = buf.position();
-
-                if (messageFactory() == null) {
-                    assert msg instanceof ClientMessage;  // TODO: Will refactor in IGNITE-26554.
-
-                    finished = ((ClientMessage)msg).writeTo(buf);
-                }
-                else {
-                    writer.setBuffer(buf);
-
-                    finished = MessageSerialization.writeTo(messageFactory(), msg, writer);
-                }
-
-                span.addTag(SOCKET_WRITE_BYTES, () -> Integer.toString(buf.position() - startPos));
-
-                if (finished) {
-                    pendingRequests.add(req);
-
-                    if (writer != null)
-                        writer.reset();
-                }
-
-                return finished;
+                finished = ((ClientMessage)msg).writeTo(buf);
             }
+            else {
+                writer.setBuffer(buf);
+
+                finished = MessageSerialization.writeTo(messageFactory(), msg, writer);
+            }
+
+            if (finished) {
+                pendingRequests.add(req);
+
+                if (writer != null)
+                    writer.reset();
+            }
+
+            return finished;
         }
 
         /**
@@ -1826,35 +1795,25 @@ public class GridNioServer<T> {
 
             assert msg != null : req;
 
-            Span span = tracing.create(SpanType.COMMUNICATION_SOCKET_WRITE, req.span());
+            if (msgFactory == null) {
+                assert msg instanceof ClientMessage;  // TODO: Will refactor in IGNITE-26554.
 
-            try (TraceSurroundings ignore = span.equals(NoopSpan.INSTANCE) ? null : MTC.support(span)) {
-                span.addTag(SpanTags.MESSAGE, () -> tracing.traceName(msg));
-
-                int startPos = buf.position();
-
-                if (msgFactory == null) {
-                    assert msg instanceof ClientMessage;  // TODO: Will refactor in IGNITE-26554.
-
-                    finished = ((ClientMessage)msg).writeTo(buf);
-                }
-                else {
-                    writer.setBuffer(buf);
-
-                    finished = MessageSerialization.writeTo(msgFactory, msg, writer);
-                }
-
-                span.addTag(SOCKET_WRITE_BYTES, () -> Integer.toString(buf.position() - startPos));
-
-                if (finished) {
-                    onMessageWritten(ses, msg);
-
-                    if (writer != null)
-                        writer.reset();
-                }
-
-                return finished;
+                finished = ((ClientMessage)msg).writeTo(buf);
             }
+            else {
+                writer.setBuffer(buf);
+
+                finished = MessageSerialization.writeTo(msgFactory, msg, writer);
+            }
+
+            if (finished) {
+                onMessageWritten(ses, msg);
+
+                if (writer != null)
+                    writer.reset();
+            }
+
+            return finished;
         }
 
         /** {@inheritDoc} */
@@ -2772,7 +2731,6 @@ public class GridNioServer<T> {
                     sndQueueLimit,
                     outboundMessagesQueueSizeMetric,
                     maxMessagesQueueSizeMetric,
-                    tracing,
                     writeBuf,
                     readBuf);
 
@@ -3304,9 +3262,6 @@ public class GridNioServer<T> {
         /** */
         private final GridNioSession ses;
 
-        /** */
-        private Span span;
-
         /** @param ses Session. */
         WriteRequestSystemImpl(GridNioSession ses) {
             this(ses, null);
@@ -3319,7 +3274,6 @@ public class GridNioServer<T> {
         WriteRequestSystemImpl(GridNioSession ses, Object msg) {
             this.ses = ses;
             this.msg = msg;
-            this.span = MTC.span();
         }
 
         /** {@inheritDoc} */
@@ -3373,11 +3327,6 @@ public class GridNioServer<T> {
         }
 
         /** {@inheritDoc} */
-        @Override public Span span() {
-            return span;
-        }
-
-        /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(WriteRequestSystemImpl.class, this);
         }
@@ -3402,9 +3351,6 @@ public class GridNioServer<T> {
         /** */
         private final IgniteInClosure<IgniteException> ackC;
 
-        /** Span for tracing. */
-        private Span span;
-
         /**
          * @param ses Session.
          * @param msg Message.
@@ -3419,7 +3365,6 @@ public class GridNioServer<T> {
             this.msg = msg;
             this.skipRecovery = skipRecovery;
             this.ackC = ackC;
-            this.span = MTC.span();
         }
 
         /** {@inheritDoc} */
@@ -3473,11 +3418,6 @@ public class GridNioServer<T> {
         }
 
         /** {@inheritDoc} */
-        @Override public Span span() {
-            return span;
-        }
-
-        /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(WriteRequestImpl.class, this);
         }
@@ -3515,9 +3455,6 @@ public class GridNioServer<T> {
         private boolean skipRecovery;
 
         /** */
-        private Span span;
-
-        /** */
         private boolean msgThread;
 
         /** */
@@ -3538,7 +3475,6 @@ public class GridNioServer<T> {
             this.sockCh = sockCh;
             this.accepted = accepted;
             this.meta = meta;
-            this.span = MTC.span();
         }
 
         /**
@@ -3554,7 +3490,6 @@ public class GridNioServer<T> {
 
             this.ses = ses;
             this.op = op;
-            this.span = MTC.span();
         }
 
         /**
@@ -3577,7 +3512,6 @@ public class GridNioServer<T> {
             this.ses = ses;
             this.op = op;
             this.msg = msg;
-            this.span = MTC.span();
             this.ackC = ackC;
         }
 
@@ -3604,7 +3538,6 @@ public class GridNioServer<T> {
             this.op = op;
             this.msg = commMsg;
             this.skipRecovery = skipRecovery;
-            this.span = MTC.span();
             this.ackC = ackC;
         }
 
@@ -3616,11 +3549,6 @@ public class GridNioServer<T> {
         /** {@inheritDoc} */
         @Override public NioOperation operation() {
             return op;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Span span() {
-            return span;
         }
 
         /** {@inheritDoc} */
@@ -3936,9 +3864,6 @@ public class GridNioServer<T> {
         /** Per-session maximum outbound messages queue size metric. */
         private LongConsumer maxMessagesQueueSizeMetric;
 
-        /** Span manager */
-        private SpanManager tracing;
-
         /** Message factory. */
         private MessageFactory msgFactory;
 
@@ -3975,7 +3900,6 @@ public class GridNioServer<T> {
                 sentBytesCntMetric,
                 outboundMessagesQueueSizeMetric,
                 maxMessagesQueueSizeMetric,
-                tracing,
                 msgFactory,
                 filters != null ? Arrays.copyOf(filters, filters.length) : EMPTY_FILTERS
             );
@@ -3995,16 +3919,6 @@ public class GridNioServer<T> {
          */
         public Builder<T> readWriteSelectorsAssign(boolean readWriteSelectorsAssign) {
             this.readWriteSelectorsAssign = readWriteSelectorsAssign;
-
-            return this;
-        }
-
-        /**
-         * @param tracing Span manager.
-         * @return This for chaining.
-         */
-        public Builder<T> tracing(SpanManager tracing) {
-            this.tracing = tracing;
 
             return this;
         }
