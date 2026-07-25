@@ -222,7 +222,6 @@ import org.apache.ignite.spi.tracing.TracingConfigurationManager;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.TestOnly;
 
 import static java.util.Collections.singleton;
 import static java.util.Optional.ofNullable;
@@ -1317,12 +1316,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             EventType.EVT_NODE_JOINED, localNode());
 
         startTimer.finishGlobalStage("Await exchange");
-    }
-
-    /** Test entry to {@link #initMessageFactory()}, which production reaches via {@link #start}. */
-    @TestOnly
-    public void initMessageFactoryForTest() throws IgniteCheckedException {
-        initMessageFactory();
     }
 
     /** */

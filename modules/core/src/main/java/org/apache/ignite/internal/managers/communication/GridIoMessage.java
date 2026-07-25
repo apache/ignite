@@ -74,7 +74,7 @@ public class GridIoMessage implements Message, SpanTransport, MessageWrapper {
     public @Nullable OperationContextMessage opCtxMsg;
 
     /** Set once the payload is marshalled; guards double marshal and unmarshalled transmit. Not on the wire. */
-    private transient boolean marshalled;
+    private boolean marshalled;
 
     /**
      * Default constructor.

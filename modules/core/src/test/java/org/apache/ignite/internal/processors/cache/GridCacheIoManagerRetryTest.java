@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
@@ -128,7 +129,7 @@ public class GridCacheIoManagerRetryTest extends GridCommonAbstractTest {
 
         cacheIoMgr.start(cctx);
 
-        ((IgniteKernal)cacheIoMgr.context().kernalContext().grid()).initMessageFactoryForTest();
+        U.invoke(IgniteKernal.class, cacheIoMgr.context().kernalContext().grid(), "initMessageFactory");
 
         return cacheIoMgr;
     }

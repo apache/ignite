@@ -28,7 +28,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.task.AbstractQue
 import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest;
 import org.junit.Test;
 
-import static java.util.stream.Collectors.toList;
 
 /**
  * Verifies that payload of calcite messages is unmarshalled on the query task executor, not on a NIO thread: probe
@@ -63,12 +62,12 @@ public class CalciteMessageUnmarshalThreadIntegrationTest extends AbstractBasicI
 
         assertFalse("No probe deserialization recorded", unmarshalThreads.isEmpty());
 
-        List<String> nioThreads = unmarshalThreads.stream().filter(t -> t.contains("nio")).collect(toList());
+        List<String> nioThreads = unmarshalThreads.stream().filter(t -> t.contains("nio")).toList();
 
         assertTrue("Message payload unmarshalled on NIO threads: " + nioThreads, nioThreads.isEmpty());
 
         assertTrue("No probe deserialization on the query task executor: " + unmarshalThreads,
-            unmarshalThreads.stream().anyMatch(t -> t.startsWith(AbstractQueryTaskExecutor.THREAD_PREFIX)));
+            unmarshalThreads.stream().allMatch(t -> t.startsWith(AbstractQueryTaskExecutor.THREAD_PREFIX)));
     }
 
     /**

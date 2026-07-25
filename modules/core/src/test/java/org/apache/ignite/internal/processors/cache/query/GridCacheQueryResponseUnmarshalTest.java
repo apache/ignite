@@ -35,19 +35,19 @@ import org.junit.Test;
  * {@code KeyCacheObject} travels bytes-only and forbids lazy resolution (see {@code @Marshalled}).
  */
 public class GridCacheQueryResponseUnmarshalTest extends GridCommonAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
+    }
+
     /** An unresolved key (only its bytes present) must fail fast rather than resolve lazily. */
     @Test
     public void testUnresolvedKeyThrows() {
         KeyCacheObject unresolved = new KeyCacheObjectImpl(null, new byte[] {1, 2, 3}, -1);
 
         GridTestUtils.assertThrows(log, unresolved::hashCode, CacheObjectNotResolvedException.class, null);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
-        stopAllGrids();
     }
 
     /** */
