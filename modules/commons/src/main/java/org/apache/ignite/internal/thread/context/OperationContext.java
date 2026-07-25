@@ -349,10 +349,18 @@ public class OperationContext {
         }
     }
 
-    /** */
+    /**
+     * Provides the ability to restore the {@link OperationContext} state from the collected attribute values.
+     * Attributes that are not specified are treated as unset.
+     *
+     * <p>Internally, this class constructs compressed {@link OperationContextSnapshot} and restores it for the calling
+     * thread when {@link #restore()} or {@link #restoreEmpty()} is invoked.</p>
+     *
+     * @see OperationContext#restoreSnapshot(OperationContextSnapshot)
+     */
     static class Restorer extends AttributeCollector {
         /** */
-        Restorer(OperationContext ctx) {
+        private Restorer(OperationContext ctx) {
             super(ctx);
         }
 
@@ -397,7 +405,7 @@ public class OperationContext {
         }
 
         /** */
-        boolean isEmpty() {
+        protected boolean isEmpty() {
             return F.isEmpty(attrs);
         }
 

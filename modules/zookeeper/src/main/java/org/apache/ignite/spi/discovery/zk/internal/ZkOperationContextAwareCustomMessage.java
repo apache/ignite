@@ -55,7 +55,7 @@ public class ZkOperationContextAwareCustomMessage implements DiscoverySpiCustomM
 
     /**
      * @param delegate Original message.
-     * @param opCtxSnp Distributed operation context message.
+     * @param opCtxSnp Operation context snapshot message.
      */
     public ZkOperationContextAwareCustomMessage(DiscoverySpiCustomMessage delegate, OperationContextSnapshotMessage opCtxSnp) {
         assert delegate != null;

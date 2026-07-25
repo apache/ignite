@@ -58,6 +58,11 @@ public class OperationContextSnapshotMessage implements Message {
         private List<Message> vals;
 
         /** */
+        private Builder() {
+            // No-op.
+        }
+
+        /** */
         public void add(int attrId, Message attrVal) {
             if (vals == null)
                 vals = new ArrayList<>(MAX_ATTRS_CNT / 2);
