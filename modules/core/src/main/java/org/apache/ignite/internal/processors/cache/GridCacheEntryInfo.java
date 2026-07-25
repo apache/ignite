@@ -191,6 +191,7 @@ public class GridCacheEntryInfo implements MarshallableMessage, CacheIdAware {
         return SIZE_OVERHEAD + size;
     }
 
+    // TODO IGNITE-28920: move the expireTime rebase out of the marshalling hooks.
     /** {@inheritDoc} */
     @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
         if (expireTime == 0)
