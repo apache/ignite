@@ -473,6 +473,24 @@ public class MessageProcessorTest {
             .hasSourceEquivalentTo(javaFile("TestMarshalledMapMessageMarshaller.java"));
     }
 
+    /** Verifies array-backed Map reconstruction of {@code @Marshalled} fields, both rebuilt and final maps. */
+    @Test
+    public void testMarshalledArrayMapMessage() {
+        Compilation compilation = compile("TestMarshalledArrayMapMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertEquals(2, compilation.generatedSourceFiles().size());
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestMarshalledArrayMapMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("TestMarshalledArrayMapMessageSerializer.java"));
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestMarshalledArrayMapMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("TestMarshalledArrayMapMessageMarshaller.java"));
+    }
+
     /** Verifies a deployable {@link GridCacheIdMessage} gets a generated deployer that bridges cache-object fields. */
     @Test
     public void testDeployerGeneration() {

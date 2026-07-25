@@ -28,7 +28,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.task.AbstractQue
 import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest;
 import org.junit.Test;
 
-
 /**
  * Verifies that payload of calcite messages is unmarshalled on the query task executor, not on a NIO thread: probe
  * objects travel as {@code QueryStartRequest} parameters and as {@code QueryBatchMessage} rows, and record the thread
