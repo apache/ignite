@@ -1,0 +1,9 @@
+
+
+span(ng-if='$ctrl.count')
+    i(
+        translate='gridItemSelectedComponent.someSelected'
+        translate-values='{selected: $ctrl.selected, count: $ctrl.count}'
+    )
+span(ng-if='!$ctrl.count')
+    i(translate='gridItemSelectedComponent.noneSelected')

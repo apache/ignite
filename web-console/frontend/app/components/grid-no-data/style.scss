@@ -1,0 +1,16 @@
+
+
+grid-no-data {
+    position: relative;
+    display: block;
+    padding: 0 51px;
+
+    border-radius: 0 0 4px 4px;
+    
+    font-style: italic;
+    line-height: 16px;
+
+    [ng-transclude] {
+    	padding: 16px 0;
+    }
+}

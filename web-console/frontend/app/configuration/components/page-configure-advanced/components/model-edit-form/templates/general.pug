@@ -1,0 +1,75 @@
+
+
+include /app/helpers/jade/mixins
+include /app/configuration/mixins
+
+-var form = 'general'
+-var model = 'backupItem'
+-var generatePojo = `${model}.generatePojo`
+
+panel-collapsible(opened=`::true` ng-form=form)
+    panel-title General
+    panel-description
+        | Domain model properties common for Query and Store. 
+        a.link-success(href="#cache" ng-click='$ctrl.goCacheEdit()') More info about cache configuration.
+        
+    panel-content.pca-form-row
+        .pca-form-column-6.pc-form-grid-row
+            .pc-form-grid-col-60
+                +form-field__checkbox({
+                    label: 'Generate POJO classes',
+                    model: generatePojo,
+                    name: '"generatePojo"',
+                    tip: 'If selected then POJO classes will be generated from database tables'
+                })
+            .pc-form-grid-col-30
+                +form-field__dropdown({
+                    label: 'Caches:',
+                    model: `${model}.caches`,
+                    name: '"caches"',
+                    multiple: true,
+                    placeholder: 'Choose caches',
+                    placeholderEmpty: 'No valid caches configured',
+                    options: '$ctrl.cachesMenu',
+                    tip: 'Select caches to describe types in cache'
+                })
+            .pc-form-grid-col-30
+                +form-field__dropdown({
+                    label: 'Query metadata:',
+                    model: `${model}.queryMetadata`,
+                    name: '"queryMetadata"',
+                    required: 'true',
+                    placeholder: '',
+                    options: '::$ctrl.Models.queryMetadata.values',
+                    tip: 'Query metadata configured with:\
+                          <ul>\
+                            <li>Java annotations like @QuerySqlField</li>\
+                            <li>Configuration via QueryEntity class</li>\
+                          </ul>'
+                })
+
+            .pc-form-grid-col-60
+                +form-field__java-class--typeahead({
+                    label: 'Key type:',
+                    model: `${model}.keyType`,
+                    name: '"keyType"',
+                    options: '$ctrl.javaBuiltInClassesBase',
+                    required: 'true',
+                    placeholder: '{{ ' + generatePojo + ' ? "Full class name for Key" : "Key type name" }}',
+                    tip: 'Key class used to store key in cache',
+                    validationActive: generatePojo
+                })
+            .pc-form-grid-col-60
+                +form-field__java-class({
+                    label: 'Value type:',
+                    model: `${model}.valueType`,
+                    name: '"valueType"',
+                    placeholder: '{{ ' + generatePojo +' ? "Enter fully qualified class name" : "Value type name" }}',
+                    tip: 'Value class used to store value in cache',
+                    validationActive: generatePojo
+                })(
+                    ignite-form-field-input-autofocus=autofocus
+                )
+
+        .pca-form-column-6
+            +preview-xml-java(model, 'domainModelGeneral')

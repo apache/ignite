@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cache.query.index.Index;
@@ -41,7 +40,6 @@ import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
-import static org.apache.ignite.util.GridCommandHandlerIndexingCheckSizeTest.CACHE;
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.CACHE_NAME;
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.GROUP_NAME;
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.createAndFillCache;
@@ -102,7 +100,7 @@ public class GridCommandHandlerBrokenIndexTest extends GridCommandHandlerCluster
 
         addBadIndex();
 
-        assertEquals(EXIT_CODE_OK, execute(CACHE, "validate_indexes", CACHE_NAME));
+        assertEquals(EXIT_CODE_OK, execute("--cache", "validate_indexes", CACHE_NAME));
 
         assertTrue(!lsnrs.isEmpty());
 
@@ -126,7 +124,7 @@ public class GridCommandHandlerBrokenIndexTest extends GridCommandHandlerCluster
     private void prepareGridForTest() throws Exception {
         Ignite ignite = startGrids(2);
 
-        ignite.cluster().state(ClusterState.ACTIVE);
+        ignite.cluster().active(true);
 
         Ignite client = startGrid(CLIENT_NODE_NAME_PREFIX);
 

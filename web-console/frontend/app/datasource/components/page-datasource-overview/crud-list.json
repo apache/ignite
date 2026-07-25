@@ -1,0 +1,243 @@
+{
+  "type": "page",
+  "title": "列表",
+  "remark": null,
+  "name": "page-demo",
+  "toolbar": [
+    {
+      "type": "button",
+      "actionType": "drawer",
+      "icon": "fa fa-plus pull-left",
+      "_link": "/datasource/new",
+      "label": "新增数据源",
+      "drawer": {
+          "title": "新增数据源",
+          "size": "lg",
+          "body": {        
+            "type": "form",
+            "name": "data-source-form",
+            "api": "put:/api/v1/datasource",
+            "body": [
+              {
+                "type": "select",
+                "name": "driverCls",
+                "label": "驱动类",
+                "source": "${drivers}",
+                "required": true
+              },
+              {
+                "type": "divider"
+              },
+              {
+                "type": "input-text",
+                "name": "jdbcUrl",
+                "label": "连接串",
+                "description": "jdbc:dbtype://[host]:[port]/[database]",
+                "validations": {
+                   "minLength":10 
+                },
+                "required": true
+              },
+              {
+                "type": "divider"
+              },              
+              {
+                "type": "input-text",
+                "name": "jndiName",
+                "label": "JNDI名",
+                "description": "数据源JNDI名称，要求全局唯一",
+                "required": true
+              },
+              {
+                "type": "divider"
+              },
+              {
+                "type": "input-text",
+                "name": "schemaName",
+                "label": "模式名"
+              },             
+              {
+                "type": "divider"
+              },
+              {
+                "type": "input-text",
+                "name": "userName",
+                "label": "用户名"
+              },              
+              {
+                "type": "divider"
+              },
+              {
+                "type": "input-password",
+                "name": "password",
+                "label": "密码"
+              }
+            ]
+          }
+       },
+      "primary": true
+    }
+  ],
+  "body": [
+    {
+      "type": "crud",
+      "name": "sample",
+      "api": "api/v1/datasource",
+      "filter": {
+        "title": "",
+        "mode": "inline",
+        "wrapWithPanel": false,
+        "submitText": "",
+        "controls": [
+          {
+            "type": "text",
+            "name": "keywords",
+            "placeholder": "通过关键字搜索",
+            "addOn": {
+              "label": "搜索",
+              "type": "submit",
+              "className": "btn-success"
+            },
+            "clearable": true
+          }
+        ],
+        "className": "m-b-sm"
+      },
+      
+      "columns": [        
+        {
+          "name": "jndiName",
+          "label": "JNDI", 
+          "sortable": true
+        },
+        {
+          "name": "jdbcUrl",
+          "label": "jdbcUrl",
+          "sortable": true
+        },        
+        {
+          "name": "schemaName",
+          "label": "schemaName",
+          "sortable": true
+        },
+        {
+          "name": "userName",
+          "label": "userName"
+        },        
+        {
+          "type": "operation",
+          "label": "操作",
+          "width": "120",
+          "buttons": [            
+                {
+                  "type": "button",
+                  "icon": "fa fa-eye",
+                  "label": "查看",
+                  "level": "primary",
+                  "actionType": "link",
+                  "link": "/datasource/${id}/basic"
+                },
+                {
+                   "type": "button",
+                   "label": "修改",   
+                   "level": "info",
+                   "icon": "fa fa-pencil",
+                   "tooltip": "编辑",
+                   "actionType": "drawer",
+                   "drawer": {
+                        "title": "修改数据源",
+                        "size": "lg",
+                        "body": {        
+                          "type": "form",
+                          "name": "data-source-form",
+                          "api": "put:/api/v1/datasource",
+                          "body": [
+                            {
+                              "type": "hidden",
+                              "name": "id"                             
+                            },
+                            {
+                              "type": "input-text",
+                              "name": "driverCls",
+                              "label": "驱动类",
+                              "disabled": true,
+                              "required": true
+                            },
+                            {
+                              "type": "divider"
+                            },
+                            {
+                              "type": "input-text",
+                              "name": "jdbcUrl",
+                              "label": "连接串",
+                              "description": "jdbc:dbtype://[host]:[port]/[database]",
+                              "validations": {
+                                 "minLength":10 
+                              },
+                              "required": true
+                            },
+                            {
+                              "type": "divider"
+                            },              
+                            {
+                              "type": "input-text",
+                              "name": "jndiName",
+                              "label": "JNDI名称",
+                              "required": true
+                            },
+                            {
+                              "type": "divider"
+                            },
+                            {
+                              "type": "input-text",
+                              "name": "schemaName",
+                              "label": "模式名"
+                            },             
+                            {
+                              "type": "divider"
+                            },
+                            {
+                              "type": "input-text",
+                              "name": "userName",
+                              "label": "用户名"
+                            },              
+                            {
+                              "type": "divider"
+                            },
+                            {
+                              "type": "input-password",
+                              "name": "password",
+                              "label": "密码"
+                            }
+                          ]
+                        }                     
+                
+                  }
+                },
+                {
+                  "type": "button",
+                  "label": "删除",
+                  "icon": "fa fa-times text-danger",
+                  "level": "danger",
+                  "actionType": "ajax",
+                  "confirmText": "您确认要删除?",
+                  "api": "delete:api/v1/datasource/$id"
+                }
+              
+          ],
+          "placeholder": "-",
+          "fixed": "right"
+        }
+      ],
+      "affixHeader": true,
+      "columnsTogglable": "auto",
+      "placeholder": "暂无数据",
+      "tableClassName": "table-db table-striped",
+      "headerClassName": "crud-table-header",
+      "footerClassName": "crud-table-footer",
+      "toolbarClassName": "crud-table-toolbar",
+      "combineNum": 0,
+      "bodyClassName": "panel-default"
+    }
+  ]
+}

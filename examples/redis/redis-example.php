@@ -1,5 +1,4 @@
 #!/bin/php
-
 <?php
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -24,16 +23,20 @@
  */
 
 // Load the library.
-require 'predis/autoload.php';
-Predis\Autoloader::register();
+require 'credis/Client.php';
+require 'credis/Cluster.php';
 
+$start = microtime();
+for($c=0;$c<500;$c++){
 // Connect.
 try {
-    $redis = new Predis\Client(array(
+    $redis = new Credis_Cluster([array(
         "host" => "localhost",
-        "port" => 11211));
+        "port" => 11211),array(
+        "host" => "localhost",
+        "port" => 11211)],2);
 
-    echo ">>> Successfully connected to Redis. \n";
+    
 
     // Put entry to cache.
     if ($redis->set('k1', '1'))
@@ -77,4 +80,22 @@ catch (Exception $e) {
     echo ">>> Couldn't connected to Redis.";
     echo $e->getMessage();
 }
+
+}
+
+$end = microtime();
+
+
+
+print 'start:'.$start;
+print 'end:'.$end;
+
+list($usec, $sec) = explode(' ', $start);
+$start = (float)$usec + (float)$sec;
+
+list($usec, $sec) = explode(' ', $end);
+$end = (float)$usec + (float)$sec;
+print "\nspend:"; 
+print $end-$start;
+
 ?>

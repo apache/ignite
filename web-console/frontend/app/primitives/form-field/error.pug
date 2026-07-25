@@ -1,0 +1,16 @@
+
+
+mixin form-field__error({ error, message })
+    .form-field__error(ng-message=error)
+        div #{ message }
+        div(
+            bs-tooltip=''
+            data-title=message
+            data-placement='top'
+            data-template=`
+                <div class="tooltip tooltip--error in" ng-show="title">
+                    <div class="tooltip-arrow"></div>
+                    <div class="tooltip-inner" ng-bind-html="title"></div>
+                </div>`
+        )
+        svg(ignite-icon='exclamation')

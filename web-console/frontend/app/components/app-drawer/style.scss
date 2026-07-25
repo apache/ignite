@@ -1,0 +1,93 @@
+
+
+app-drawer {
+/* app-drawer.component.css */
+.app-drawer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.app-drawer-overlay--visible {
+  opacity: 1;
+}
+
+.app-drawer {
+  position: fixed;
+  top: 0;  
+  height: 100vh;
+  background: white;
+  box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+  z-index: 1000;
+  overflow-y: auto;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end; /* 使内容靠右 */
+}
+
+.app-drawer--right {
+  right: 0;
+  transform: translateX(100%);
+}
+
+.app-drawer--left {
+  left: 0;
+  transform: translateX(-100%);
+}
+
+.app-drawer--open.app-drawer--right {
+  transform: translateX(0);
+}
+
+.app-drawer--open.app-drawer--left {
+  transform: translateX(0);
+}
+
+.app-drawer__header {
+  background: rgb(101, 131, 212);
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.app-drawer__title {
+  margin: 0;
+}
+
+.app-drawer__close-button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0 10px;
+}
+
+.app-drawer__content {
+  padding: 15px;
+}
+
+.app-drawer__header,
+.app-drawer__content {
+  width: 100%; /* 确保头部和内容区域仍然全宽 */
+  box-sizing: border-box; /* 包含padding在内计算宽度 */
+}
+
+/* 如果需要特定元素右对齐 */
+.app-drawer__close-button {
+  margin-left: auto; /* 使关闭按钮靠右 */
+}
+
+.no-scroll {
+  overflow: hidden;
+}
+}

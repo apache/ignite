@@ -36,7 +36,7 @@ import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_ALL;
-import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.MGET;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.*;
 
 /**
  * Redis MGET command handler.
@@ -66,7 +66,6 @@ public class GridRedisMGetCommandHandler extends GridRedisRestCommandHandler {
     /** {@inheritDoc} */
     @Override public GridRestRequest asRestRequest(GridRedisMessage msg) throws IgniteCheckedException {
         assert msg != null;
-
         if (msg.messageSize() < 2)
             throw new GridRedisGenericException("Wrong number of arguments");
 
@@ -78,13 +77,14 @@ public class GridRedisMGetCommandHandler extends GridRedisRestCommandHandler {
         restReq.cacheName(msg.cacheName());
 
         List<String> keys = msg.auxMKeys();
-
-        Map<Object, Object> mget = U.newHashMap(keys.size());
-
-        for (String key : keys)
-            mget.put(key, null);
-
-        restReq.values(mget);
+        if(keys!=null) {
+	        Map<Object, Object> mget = U.newHashMap(keys.size());
+	
+	        for (String key : keys)
+	            mget.put(key, null);
+	
+	        restReq.values(mget);
+        }
 
         return restReq;
     }

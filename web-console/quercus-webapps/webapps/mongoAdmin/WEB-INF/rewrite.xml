@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_12_0.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Ref refid="rewrite">
+    <Call name="addRule">
+      <Arg>
+        <New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
+          <Set name="pattern">*</Set>
+          <Set name="name">X-Forwarded-Host</Set>
+          <Set name="value">${jetty.hostname}</Set>
+        </New>
+      </Arg>
+    </Call>
+    
+    <!-- 重定向规则：/old-path -> /new-path -->
+    <Call name="addRule">
+      <Arg>
+        <New class="org.eclipse.jetty.rewrite.handler.RewritePatternRule">
+          <Set name="pattern">/old-path/*</Set>
+          <Set name="replacement">/new-path/$1</Set>
+        </New>
+      </Arg>
+    </Call>
+    
+    <!-- 301 重定向 -->
+    <Call name="addRule">
+      <Arg>
+        <New class="org.eclipse.jetty.rewrite.handler.RedirectPatternRule">
+          <Set name="pattern">/old-page</Set>
+          <Set name="location">/new-page</Set>
+          <Set name="code">301</Set>
+        </New>
+      </Arg>
+    </Call>
+  </Ref>
+</Configure>

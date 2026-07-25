@@ -243,25 +243,27 @@ public class GridTcpRestParser implements GridNioParser {
         }
     }
 
+
     /**
      * Parses redis protocol message.
      *
-     * @param buf Buffer containing not parsed bytes.
+     * @param buf0 Buffer containing not parsed bytes.
      * @param state Current parser state.
      * @return Parsed packet(s)
      * @throws IOException If packet cannot be parsed.
      * @throws IgniteCheckedException If deserialization error occurred.
      */
     static GridClientMessage parseRedisPacket(
-        ByteBuffer buf,
+        ByteBuffer buf0,
         ParserState state
     ) throws IOException, IgniteCheckedException {
         assert state.packetType() == GridClientPacketType.REDIS;
-
+        ByteBuffer buf = buf0;
+        int tailLen = 0;
         // If previous data exists add it to buf.
         if (state.buffer().size() > 0) {
             byte[] tail = state.buffer().toByteArray();
-
+            tailLen = tail.length;
             buf = ByteBuffer.allocate(tail.length + buf.remaining())
                 .put(tail)
                 .put(buf);
@@ -318,7 +320,18 @@ public class GridTcpRestParser implements GridNioParser {
 
             msg.append(str);
         }
-
+        // add@byron
+        if(buf.hasRemaining()) {
+            msg.setPipeline(true);
+            if(buf.position()>=tailLen){
+                if(tailLen>0)
+                    buf0.position(buf.position()-tailLen);
+            }
+            else{
+                saveTail(state.buffer(), buf);
+            }
+        }
+        // end@
         return msg;
     }
 

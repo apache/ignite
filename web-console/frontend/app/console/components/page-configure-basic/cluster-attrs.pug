@@ -1,0 +1,29 @@
+
+panel-collapsible
+    panel-title Attributes of cluster node
+    panel-description 
+        | Fetch node properties from your cluster.
+    panel-content
+        +form-field__dropdown({
+            label: 'Nodes:',
+            model: 'currentNode',
+            name: '"currentNode"',               
+            placeholder: 'Choose node',
+            options: '$ctrl.nodeList',                    
+            tip: 'Allows to switch remote nodes in grid'
+        })(
+            ng-change='$ctrl.onNodeSelect(currentNode)'
+        )
+
+        .pc-form-grid__break
+        .pco-relative-root    
+            ignite-grid-table(
+                tab-name='node-attrs'
+                max-rows-to-show='10'
+                one-way-selection='true'
+                items='$ctrl.nodeAttrs'
+                column-defs='$ctrl.kvColumnDefs'
+                grid-thin='true'
+            )   
+
+

@@ -25,4 +25,5 @@ interface BinaryLazyValue extends BinaryBuilderSerializationAware {
      * @return Value.
      */
     public Object value();
+
 }

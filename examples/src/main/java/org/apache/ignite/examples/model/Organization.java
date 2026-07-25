@@ -37,9 +37,11 @@ public class Organization {
     private String name;
 
     /** Address. */
+    @QuerySqlField(index = true)
     private Address addr;
 
     /** Type. */
+    @QuerySqlField(index = true)
     private OrganizationType type;
 
     /** Last update time. */

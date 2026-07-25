@@ -1,0 +1,52 @@
+
+.pca-form-row
+    .pca-form-column-6.pc-form-grid-row        
+
+        .pc-form-grid-col-30
+            +form-field__text({
+                label: 'Catalog Name:',
+                model: `${model}.name`,
+                name: '"name"',
+                disabled: 'true',
+                placeholder: ''
+            })
+
+        .pc-form-grid-col-30
+            +form-field__text({
+                label: 'Default schema:',
+                model: `${model}.schemaName`,
+                name: '"schemaName"',
+                placeholder: 'public'
+            })
+        
+        .pc-form-grid-col-30
+            +form-field__text({
+                label: 'Mongo URL:',
+                model: `${model}.jdbcUrl`,
+                name: '"jdbcUrl"',                    
+                placeholder: 'mongodb://127.0.0.1:27017/admin'
+            })    
+          
+        .pc-form-grid-col-30
+            +form-field__text({
+                label: 'Mongo Admin URL:',
+                model: `${model}.crudui_web_url`,
+                name: '"crudui_web_url"',                        
+                placeholder: '/mongoAdmin/queryDocuments#admin'
+            })         
+            
+        .pc-form-grid-col-30
+            +form-field__text({
+                label: 'User name:',
+                model: `${model}.userName`,
+                name: '"userName"',
+                placeholder: 'empty'
+            })
+            
+        .pc-form-grid-col-30
+            +form-field__password({
+                label: 'Password:',
+                model: `${model}.password`,
+                name: '"password"',
+                placeholder: 'empty'
+            })

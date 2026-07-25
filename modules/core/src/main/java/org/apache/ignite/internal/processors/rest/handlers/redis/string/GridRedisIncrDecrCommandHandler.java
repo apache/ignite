@@ -43,7 +43,7 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_R
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.DECR;
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.DECRBY;
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.INCR;
-import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.INCRBY;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.*;
 
 /**
  * Redis INCR/DECR command handler.
@@ -153,13 +153,11 @@ public class GridRedisIncrDecrCommandHandler extends GridRedisRestCommandHandler
             case INCR:
             case INCRBY:
                 restReq.command(ATOMIC_INCREMENT);
-
                 break;
 
             case DECR:
             case DECRBY:
                 restReq.command(ATOMIC_DECREMENT);
-
                 break;
 
             default:

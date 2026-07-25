@@ -1,0 +1,59 @@
+
+# Use logger settings for Spring same as for Ignite.
+logging.config: classpath:log4j2.xml
+
+# Uncomment for migration of user data from MongoDB.
+#migration.mongo.db.url: mongodb://localhost:27018/console
+
+# Uncomment for HTTPS:
+server:
+  port: 3000
+#  port: 443
+#  ssl:
+#    key-store-type: JKS
+#    key-store: certificates/server.jks
+#    key-store-password: change_me
+
+  error:
+    whitelabel:
+      enabled: true
+
+  servlet:
+    session:
+      timeout: 6000m
+
+####Jetty properties########
+  jetty:
+    acceptors: 1 # acceptor线程数
+    selectors: 8 # selector线程数
+    max-http-post-size: 1073741824 # put或post方法最大字节数    
+    max-threads: 128
+    work-directory: .
+
+websocket:
+  idle-timeout: 300000  # 增加到5分钟
+  connection-timeout: 10000
+
+spring:
+  main:
+    web-application-type: servlet  # 强制设置为 servlet 类型
+    allow-bean-definition-overriding: true
+  mvc:
+    pathmatch:
+      matching-strategy: ANT_PATH_MATCHER
+
+  mail:
+    defaultTemplatePath: templates/mail/base.html
+
+  ai:
+    dashscope:
+      api-key: sk-c255b2d0e7954c479f78d7c146248305
+    mcp:
+      server:
+        enabled: true
+        name: ignite—admin-server
+        type: SYNC
+        protocol: STREAMABLE
+        request-timeout: 120s
+
+

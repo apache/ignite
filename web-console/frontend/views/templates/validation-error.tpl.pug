@@ -1,0 +1,10 @@
+
+.popover.validation-error
+    .arrow
+    .popover-content
+        table
+            tr
+                td
+                    label#popover-validation-message {{content}}
+                td
+                    button.close(id='popover-btn-close' ng-click='$hide()') &times;

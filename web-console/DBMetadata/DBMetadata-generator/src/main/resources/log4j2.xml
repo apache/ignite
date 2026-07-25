@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<configuration status="WARN">
+    <!--全局参数-->
+    <Properties>
+        <Property name="pattern">%d{yyyy-MM-dd HH:mm:ss,SSS} %5p %pid %t %c:%L - %m%n</Property>
+        <Property name="root_path">${sys:user.dir}/logs</Property>
+    </Properties>
+
+    <!--日志输出设置-->
+    <Appenders>
+        <!--控制台输出-->
+        <Console name="console" target="SYSTEM_OUT" follow="true">
+            <PatternLayout>
+                <Pattern>${pattern}</Pattern>
+            </PatternLayout>
+        </Console>
+
+        <!--普通日志-->
+        <RollingFile name="common_log" fileName="${root_path}/common.log"
+                     filePattern="${root_path}/common_%d{yyyy-MM-dd}.log">
+            <PatternLayout>
+                <Pattern>${pattern}</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/>
+            </Policies>
+        </RollingFile>
+
+        <!--错误日志-->
+        <RollingFile name="error_log" fileName="${root_path}/error.log"
+                     filePattern="${root_path}/error_%d{yyyy-MM-dd}.log">
+            <PatternLayout>
+                <Pattern>${pattern}</Pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/>
+            </Policies>
+        </RollingFile>
+    </Appenders>
+
+    <Loggers>
+        <Logger name="com.vrv.ccp" level="INFO" additivity="false">
+            <AppenderRef ref="console"></AppenderRef>
+            <AppenderRef ref="common_log">
+                <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="DENY"></ThresholdFilter>
+            </AppenderRef>
+
+            <AppenderRef ref="error_log">
+                <ThresholdFilter level="ERROR" onMatch="ACCEPT" onMismatch="DENY"></ThresholdFilter>
+            </AppenderRef>
+        </Logger>
+
+        <Root level="INFO">
+            <AppenderRef ref="console"></AppenderRef>
+            <AppenderRef ref="common_log"></AppenderRef>
+        </Root>
+    </Loggers>
+</configuration>

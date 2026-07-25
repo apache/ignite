@@ -1,0 +1,8 @@
+
+
+datasource-edit-form(
+    is-new='$ctrl.isNew$|async:this'
+    cluster='$ctrl.originalCluster$|async:this'   
+    on-save='$ctrl.save($event)'
+    ng-class='{"pca-form-blocked": !($ctrl.isBlocked$|async:this)}'    
+)

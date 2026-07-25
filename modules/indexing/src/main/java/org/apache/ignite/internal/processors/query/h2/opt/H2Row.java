@@ -33,7 +33,8 @@ public abstract class H2Row implements Row {
 
     /** {@inheritDoc} */
     @Override public int getVersion() {
-        throw new UnsupportedOperationException();
+    	return 0;
+        //throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -48,7 +49,8 @@ public abstract class H2Row implements Row {
 
     /** {@inheritDoc} */
     @Override public int getMemory() {
-        throw new UnsupportedOperationException();
+    	return this.getColumnCount()*8;
+        //throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -73,6 +75,7 @@ public abstract class H2Row implements Row {
 
     /** {@inheritDoc} */
     @Override public void setDeleted(boolean deleted) {
+    	if(deleted) //add@byron
         throw new UnsupportedOperationException();
     }
 
@@ -93,7 +96,8 @@ public abstract class H2Row implements Row {
 
     /** {@inheritDoc} */
     @Override public boolean isDeleted() {
-        throw new UnsupportedOperationException();
+    	return false;
+        //throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */

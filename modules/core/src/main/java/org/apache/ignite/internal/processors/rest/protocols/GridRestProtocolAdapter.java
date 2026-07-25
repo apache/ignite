@@ -155,8 +155,8 @@ public abstract class GridRestProtocolAdapter implements GridRestProtocol {
             // All addresses for wildcard endpoint, `null` without.
             IgniteBiTuple<Collection<String>, Collection<String>> addrs = host != null ?
                 U.resolveLocalAddresses(host) : null;
-
-            return port > 0 ?
+            //add@byron addrs!=null
+            return port > 0 && addrs!=null ?
                 Arrays.asList(
                     F.<String, Object>t(getAddressPropertyName(), addrs.get1()),
                     F.<String, Object>t(getHostNamePropertyName(), addrs.get2()),

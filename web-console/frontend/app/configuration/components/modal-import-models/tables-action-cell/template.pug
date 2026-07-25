@@ -1,0 +1,29 @@
+
+
+include /app/helpers/jade/mixins
+
+button.table-action-cell__edit-button.btn-ignite(
+    type='button'
+    b_s-tooltip=''
+    d_ata-title='Click to edit'
+    title='Click to edit'
+    data-placement='top'
+    ng-click='$ctrl.onEditStart({$event: $ctrl.table})'
+    ng-if='!$ctrl.table.edit'
+)
+    | {{ $ctrl.tableActionView($ctrl.table) }}
+.table-action-cell__edit-form(ng-if='$ctrl.table.edit')
+    .table-action-cell__action-select
+        +form-field__dropdown({
+            model: '$ctrl.table.action',
+            options: '$ctrl.importActions',
+            optionLabel: 'shortLabel'
+        })
+
+    .table-action-cell__cache-select
+        +form-field__dropdown({
+            model: '$ctrl.table.cacheOrTemplate',
+            options: '$ctrl.table.cachesOrTemplates'
+        })(
+            ng-change='$ctrl.onCacheSelect({$event: $ctrl.table.cacheOrTemplate})'
+        )
