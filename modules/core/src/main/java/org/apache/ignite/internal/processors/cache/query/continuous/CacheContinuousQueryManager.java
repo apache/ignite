@@ -32,7 +32,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
 import javax.cache.Cache;
 import javax.cache.configuration.CacheEntryListenerConfiguration;
@@ -122,9 +121,6 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
 
     /** Internal listeners count. */
     private final AtomicInteger intLsnrCnt = new AtomicInteger();
-
-    /** Query sequence number for message topic. */
-    private final AtomicLong seq = new AtomicLong();
 
     /** JCache listeners. */
     private final ConcurrentMap<CacheEntryListenerConfiguration, JCacheQuery> jCacheLsnrs =
@@ -539,7 +535,7 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
                 @Override public CacheContinuousQueryHandler apply() {
                     return new CacheContinuousQueryHandler(
                         cctx.name(),
-                        TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
+                        nextRoutineTopic(),
                         locTransLsnr,
                         securityAwareFilterFactory(rmtFilterFactory),
                         securityAwareTransformerFactory(rmtTransFactory),
@@ -555,7 +551,7 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
                 @Override public CacheContinuousQueryHandler apply() {
                     return new CacheContinuousQueryHandler(
                         cctx.name(),
-                        TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
+                        nextRoutineTopic(),
                         locLsnr,
                         securityAwareFilterFactory(rmtFilterFactory),
                         true,
@@ -573,7 +569,7 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
 
                     return new CacheContinuousQueryHandler(
                         cctx.name(),
-                        TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
+                        nextRoutineTopic(),
                         locLsnr,
                         securityAwareFilter(rmtFilter),
                         true,
@@ -619,7 +615,7 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
                 @Override public CacheContinuousQueryHandler apply() {
                     return new CacheContinuousQueryHandler(
                         cctx.name(),
-                        TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
+                        nextRoutineTopic(),
                         locLsnr,
                         rmtFilter,
                         true,
@@ -649,6 +645,12 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
             if (log.isDebugEnabled())
                 log.debug("Failed to stop internal continuous query: " + e.getMessage());
         }
+    }
+
+    /** @return Ordered-notifications topic for a new routine, unique within the lifetime of this node. */
+    private Object nextRoutineTopic() {
+        return TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(),
+            cctx.kernalContext().continuous().nextRoutineTopicSequence());
     }
 
     /**
@@ -1119,7 +1121,7 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
                         if (rmtFilterFactory != null)
                             hnd = new CacheContinuousQueryHandler(
                                 cctx.name(),
-                                TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
+                                nextRoutineTopic(),
                                 locLsnr,
                                 securityAwareFilterFactory(rmtFilterFactory),
                                 cfg.isOldValueRequired(),
@@ -1145,7 +1147,7 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
 
                             hnd = new CacheContinuousQueryHandler(
                                 cctx.name(),
-                                TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
+                                nextRoutineTopic(),
                                 locLsnr,
                                 securityAwareFilter(jCacheFilter),
                                 cfg.isOldValueRequired(),

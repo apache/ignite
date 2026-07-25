@@ -167,6 +167,12 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     private boolean processorStopped;
 
     /** Query sequence number for message topic. */
+    /**
+     * Sequence number of a routine message topic. The topic identifies the routine's message listener in
+     * {@link org.apache.ignite.internal.managers.communication.GridIoManager}, so the number must stay unique for
+     * the whole lifetime of this node: a counter restarting at zero makes a routine of a newly created cache share
+     * the topic with the leftover listener of the destroyed one, and every notification is then delivered twice.
+     */
     private final AtomicLong seq = new AtomicLong();
 
     /** */
@@ -987,6 +993,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         }
         else
             return new StartRoutineDiscoveryMessage(routineId, reqData, Mode.IMMUTABLE);
+    }
+
+    /** @return Next sequence number for a routine message topic, unique within the lifetime of this node. */
+    public long nextRoutineTopicSequence() {
+        return seq.incrementAndGet();
     }
 
     /**
