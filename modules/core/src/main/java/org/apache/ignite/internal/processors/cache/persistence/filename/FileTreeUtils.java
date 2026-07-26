@@ -66,11 +66,8 @@ public class FileTreeUtils {
 
         U.delete(tmpFt.nodeStorage());
 
-        for (File tmpDrStorage : tmpFt.extraStorages().values()) {
+        for (File tmpDrStorage : tmpFt.extraStorages().values())
             U.delete(tmpDrStorage);
-
-            deleteSnapshotTempRoot(tmpDrStorage.getParentFile(), err, log);
-        }
 
         deleteSnapshotTempRoot(tmpFt.root(), err, log);
     }
