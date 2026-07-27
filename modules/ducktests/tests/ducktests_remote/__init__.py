@@ -13,6 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-recursive-include ignitetest **.j2
-recursive-include ducktests_remote/templates *.tmpl
-recursive-include ducktests_remote/examples *.yaml
+"""
+ducktests-remote: run Apache Ignite ducktests against a real VM cluster.
+
+This package deliberately never imports ``ducktape``.  The CLI is a coordinator-side
+orchestrator: it renders artifacts and drives the ``ducktape`` process that lives on the
+runner.  Keeping the dependency out means the CLI stays installable on a laptop that has
+no ducktape at all, and lets the two be upgraded independently.
+"""
+
+__version__ = "0.1.0"

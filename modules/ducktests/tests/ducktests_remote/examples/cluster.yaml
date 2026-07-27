@@ -1,0 +1,67 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Example cluster inventory. Copy to ~/.ducktests-remote/config.yaml and edit.
+# Everything here is a placeholder: this file lives in a public repository, so it
+# contains no real hostnames, addresses, accounts or secrets.
+
+cluster:
+  name: example
+
+  # SSH account used on every worker. Defaults to your own $USER when omitted.
+  # There is no dedicated test account on a real VM cluster unless your site created
+  # one; nothing in this tool assumes one exists.
+  user: ${env:DTR_SSH_USER}
+
+  # Path to the private key AS THE RUNNER SEES IT, not as this machine sees it.
+  # `ducktests-remote keys push` installs it there.
+  identity_file: ~/.ssh/id_rsa
+
+  port: 22
+
+  # Where distributions live on the workers. ignitetest resolves a home directory as
+  # <install_root>/<product>, product being str(IgniteVersion(version)).
+  install_root: /opt
+
+  # Host that runs the ducktape process. "local" runs it on this machine.
+  runner: ${env:DTR_RUNNER}
+
+  # Run state (run dirs, logs, the venv) lives here on the runner.
+  state_root: ~/.ducktests-remote
+
+  # Any number of workers: 2, 12, 49. Ranges expand, and a bare string is shorthand
+  # for {host: ...}.
+  nodes:
+    - host: worker[01-12].example.invalid
+    - host: worker13.example.invalid
+      ip: 203.0.113.13            # optional -> externally_routable_ip
+    - host: worker14.example.invalid
+      user: someone-else          # per-host override for mixed clusters
+
+  # Hosts that provision/deploy/clean/doctor should also target, but that ducktape
+  # must not schedule Ignite nodes onto - typically the runner itself.
+  extra_hosts: []
+
+runner:
+  # Leave unset to use <state_root>/venv, created on first run with the pinned
+  # requirements from modules/ducktests/tests/docker/requirements.txt.
+  venv: null
+  python: python3
+  create_venv: true
+
+deploy:
+  dist_dir: ./dist
+
+jobs: 16

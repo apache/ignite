@@ -16,3 +16,6 @@
 filelock==3.8.2
 ducktape==0.13.0
 looseversion==1.3.0
+# ducktests_remote (the `ducktests-remote` CLI) parses YAML config and profiles.
+# It is the only runtime dependency that package has beyond the standard library.
+PyYAML==6.0.2

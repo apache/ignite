@@ -13,6 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-recursive-include ignitetest **.j2
-recursive-include ducktests_remote/templates *.tmpl
-recursive-include ducktests_remote/examples *.yaml
+"""Entry point for ``python -m ducktests_remote``."""
+
+import sys
+
+from ducktests_remote.cli import main
+
+if __name__ == "__main__":
+    sys.exit(main())

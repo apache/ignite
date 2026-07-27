@@ -13,6 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-recursive-include ignitetest **.j2
-recursive-include ducktests_remote/templates *.tmpl
-recursive-include ducktests_remote/examples *.yaml
+# Smallest useful profile: the smoke suite against the locally built master.
+#
+#   ducktests-remote --profile smoke run ./modules/ducktests/tests/ignitetest/tests/smoke_test.py
+#
+globals:
+  ignite_versions: ["dev"]

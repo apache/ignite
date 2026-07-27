@@ -31,4 +31,11 @@ setup(name="ignitetest",
       packages=find_packages(exclude=["ignitetest.tests", "ignitetest.tests.*"]),
       include_package_data=True,
       install_requires=open('docker/requirements.txt').read(),
+      entry_points={
+          "console_scripts": [
+              # Coordinator-side CLI for running ducktests on a real VM cluster.
+              # It never imports ducktape; see ducktests_remote/README.md.
+              "ducktests-remote = ducktests_remote.cli:main",
+          ],
+      },
       tests_require=["pytest==6.2.5"])

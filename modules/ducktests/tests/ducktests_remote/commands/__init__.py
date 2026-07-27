@@ -13,6 +13,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-recursive-include ignitetest **.j2
-recursive-include ducktests_remote/templates *.tmpl
-recursive-include ducktests_remote/examples *.yaml
+"""CLI subcommands. Each module exposes ``register(subparsers, common)``."""

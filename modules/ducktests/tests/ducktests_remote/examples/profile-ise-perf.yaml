@@ -1,0 +1,51 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# A fork profile: what the long Jenkins --globals blob becomes once it is split up.
+# Every value that would identify a real environment is an ${env:...} placeholder,
+# because this file is committed to a public Apache repository.
+#
+#   export ISE_USER=... ISE_PASSWORD=...
+#   ducktests-remote --profile ise-perf run <test paths>
+#
+# ${file:PATH} is also available and reads a trimmed single-line file, which is what
+# you want for a password kept outside the environment.
+
+globals:
+  project: ${env:DTR_PROJECT}
+
+  ignite_versions:
+    - ${env:DTR_IGNITE_VERSION}
+
+  ssl:
+    enabled: true
+
+  authentication:
+    enabled: true
+    username: ${env:ISE_USER}
+    password: ${env:ISE_PASSWORD}
+
+  # Fork spec override; resolve_spec() in ignitetest/services/utils/ignite_spec.py
+  # reads these from globals to swap in the fork's node startup.
+  NodeSpec: ${env:DTR_NODE_SPEC}
+
+  # ignitetest defaults: persistent_root /mnt/service, install_root /opt.
+  # Override them here when the site layout differs.
+  # persistent_root: /data/ducktests
+  # install_root: /opt
+
+# Injected into the tests themselves, mapped to ducktape's --parameters.
+# Only emitted when non-empty, matching run_tests.sh.
+parameters: {}
