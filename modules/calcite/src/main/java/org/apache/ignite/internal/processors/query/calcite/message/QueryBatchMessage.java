@@ -45,9 +45,6 @@ public class QueryBatchMessage implements DeferredUnmarshalMessage, ExecutionCon
     @Order(4)
     boolean last;
 
-    /** Rows as passed by the sender, or unwrapped from {@link #mRows} on receive. */
-    private List<Object> rows;
-
     /** {@code null} for a locally delivered message. */
     @Order(5)
     List<GenericValueMessage> mRows;
@@ -57,23 +54,18 @@ public class QueryBatchMessage implements DeferredUnmarshalMessage, ExecutionCon
         // No-op.
     }
 
-    /** @param loc {@code True} to keep the rows as is: a locally delivered message is never marshalled. */
-    public QueryBatchMessage(UUID qryId, long fragmentId, long exchangeId, int batchId, boolean last,
-        List<Object> rows, boolean loc) {
+    /** */
+    public QueryBatchMessage(UUID qryId, long fragmentId, long exchangeId, int batchId, boolean last, List<Object> rows) {
         this.qryId = qryId;
         this.fragmentId = fragmentId;
         this.exchangeId = exchangeId;
         this.batchId = batchId;
         this.last = last;
 
-        if (loc)
-            this.rows = rows;
-        else {
-            mRows = new ArrayList<>(rows.size());
+        mRows = new ArrayList<>(rows.size());
 
-            for (Object row : rows)
-                mRows.add(row == null ? null : new GenericValueMessage(row));
-        }
+        for (Object row : rows)
+            mRows.add(row == null ? null : new GenericValueMessage(row));
     }
 
     /** {@inheritDoc} */
@@ -111,14 +103,10 @@ public class QueryBatchMessage implements DeferredUnmarshalMessage, ExecutionCon
      * @return Rows.
      */
     public List<Object> rows() {
-        if (rows == null) {
-            List<Object> rows0 = new ArrayList<>(mRows.size());
+        List<Object> rows = new ArrayList<>(mRows.size());
 
-            for (GenericValueMessage mRow : mRows)
-                rows0.add(mRow == null ? null : mRow.value());
-
-            rows = rows0;
-        }
+        for (GenericValueMessage mRow : mRows)
+            rows.add(mRow == null ? null : mRow.value());
 
         return rows;
     }

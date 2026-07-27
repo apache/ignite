@@ -76,8 +76,10 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
         this.locNodeId = locNodeId;
     }
 
-    /** {@inheritDoc} */
-    @Override public UUID localNodeId() {
+    /**
+     * @return Local node ID.
+     */
+    public UUID localNodeId() {
         return locNodeId;
     }
 
