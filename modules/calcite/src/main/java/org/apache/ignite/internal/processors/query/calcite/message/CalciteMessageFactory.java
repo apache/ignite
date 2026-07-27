@@ -22,11 +22,18 @@ import org.apache.ignite.internal.plugin.AbstractMarshallableMessageFactoryProvi
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Message factory.
  */
 public class CalciteMessageFactory extends AbstractMarshallableMessageFactoryProvider {
+    /** */
+    public static final short MIN_MESSAGE_TYPE = 300;
+
+    /** */
+    public static final short MAX_MESSAGE_TYPE = 311;
+
     /** {@inheritDoc} */
     @Override public void registerAll(IgniteMessageFactory factory) {
         register(factory, QueryStartRequest.class, (short)300, QueryStartRequest::new, schemaAwareMarsh);
@@ -41,5 +48,10 @@ public class CalciteMessageFactory extends AbstractMarshallableMessageFactoryPro
         register(factory, ColocationGroup.class, (short)309, ColocationGroup::new, dfltMarsh);
         register(factory, FragmentDescription.class, (short)310, FragmentDescription::new, dfltMarsh);
         register(factory, QueryTxEntry.class, (short)311, QueryTxEntry::new, dfltMarsh);
+    }
+
+    /** */
+    public static boolean isCalciteMessage(Message msg) {
+        return msg.directType() >= MIN_MESSAGE_TYPE && msg.directType() <= MAX_MESSAGE_TYPE;
     }
 }

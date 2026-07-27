@@ -27,6 +27,11 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  */
 public interface MessageService extends Service {
     /**
+     * @return ID of the node this service sends from, the one {@link #send(UUID, Message)} short-circuits delivery to.
+     */
+    UUID localNodeId();
+
+    /**
      * Sends a message to given node.
      *
      * @param nodeId Node ID.

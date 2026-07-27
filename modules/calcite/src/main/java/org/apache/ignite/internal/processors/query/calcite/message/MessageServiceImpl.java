@@ -76,10 +76,8 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
         this.locNodeId = locNodeId;
     }
 
-    /**
-     * @return Local node ID.
-     */
-    public UUID localNodeId() {
+    /** {@inheritDoc} */
+    @Override public UUID localNodeId() {
         return locNodeId;
     }
 
@@ -159,14 +157,10 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
         onMessage(nodeId, msg, false);
     }
 
-    /**
-     * Listener for messages arriving from remote nodes. All Calcite messages are {@link DeferredUnmarshalMessage}s
-     * and the only ones on this topic: the generic {@code GridIoManager} payload pass skips them, so their payload
-     * is unmarshalled here, on the query task executor.
-     */
+    /** Listener for messages arriving from remote nodes. The topic is shared with other query engines. */
     private void onMessage(UUID nodeId, Object msg, byte plc) {
-        if (msg instanceof DeferredUnmarshalMessage)
-            onMessage(nodeId, (Message)msg, true);
+        if (msg instanceof Message && CalciteMessageFactory.isCalciteMessage((Message)msg))
+            onMessage(nodeId, (Message)msg, msg instanceof DeferredUnmarshalMessage);
     }
 
     /** */
@@ -183,10 +177,7 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
             );
     }
 
-    /**
-     * @param unmarshal Whether to unmarshal the payload: {@code true} only for remotely received messages; locally
-     * delivered ones were never marshalled.
-     */
+    /** @param unmarshal {@code True} for a remotely received {@link DeferredUnmarshalMessage}, skipped by the generic pass. */
     private void onMessageInternal(UUID nodeId, Message msg, boolean unmarshal) {
         if (unmarshal) {
             try {

@@ -21,12 +21,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.internal.DeferredUnmarshalMessage;
-import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.marshaller.Marshaller;
 
 /** */
-public class QueryBatchMessage implements MarshallableMessage, DeferredUnmarshalMessage, ExecutionContextAware {
+public class QueryBatchMessage implements DeferredUnmarshalMessage, ExecutionContextAware {
     /** */
     @Order(0)
     UUID qryId;
@@ -47,10 +45,10 @@ public class QueryBatchMessage implements MarshallableMessage, DeferredUnmarshal
     @Order(4)
     boolean last;
 
-    /** */
+    /** Rows as passed by the sender, or unwrapped from {@link #mRows} on receive. */
     private List<Object> rows;
 
-    /** */
+    /** {@code null} for a locally delivered message. */
     @Order(5)
     List<GenericValueMessage> mRows;
 
@@ -59,14 +57,23 @@ public class QueryBatchMessage implements MarshallableMessage, DeferredUnmarshal
         // No-op.
     }
 
-    /** */
-    public QueryBatchMessage(UUID qryId, long fragmentId, long exchangeId, int batchId, boolean last, List<Object> rows) {
+    /** @param loc {@code True} to keep the rows as is: a locally delivered message is never marshalled. */
+    public QueryBatchMessage(UUID qryId, long fragmentId, long exchangeId, int batchId, boolean last,
+        List<Object> rows, boolean loc) {
         this.qryId = qryId;
         this.fragmentId = fragmentId;
         this.exchangeId = exchangeId;
         this.batchId = batchId;
         this.last = last;
-        this.rows = rows;
+
+        if (loc)
+            this.rows = rows;
+        else {
+            mRows = new ArrayList<>(rows.size());
+
+            for (Object row : rows)
+                mRows.add(row == null ? null : new GenericValueMessage(row));
+        }
     }
 
     /** {@inheritDoc} */
@@ -104,29 +111,15 @@ public class QueryBatchMessage implements MarshallableMessage, DeferredUnmarshal
      * @return Rows.
      */
     public List<Object> rows() {
-        return rows;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void marshal(Marshaller marsh) {
-        if (mRows != null || rows == null)
-            return;
-
-        mRows = new ArrayList<>(rows.size());
-
-        for (Object row : rows)
-            mRows.add(row == null ? null : new GenericValueMessage(row));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) {
-        if (rows == null && mRows != null) {
-            rows = new ArrayList<>(mRows.size());
+        if (rows == null) {
+            List<Object> rows0 = new ArrayList<>(mRows.size());
 
             for (GenericValueMessage mRow : mRows)
-                rows.add(mRow == null ? null : mRow.value());
+                rows0.add(mRow == null ? null : mRow.value());
+
+            rows = rows0;
         }
 
-        mRows = null;
+        return rows;
     }
 }

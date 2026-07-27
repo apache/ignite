@@ -20,13 +20,9 @@ package org.apache.ignite.internal;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
- * A {@link Message} whose payload is unmarshalled by the consumer on its own execution path instead of the generic
- * inbound pass of {@code GridIoManager}. The consumer is responsible for unmarshalling every remotely received
- * message exactly once, and gains what the generic pass cannot offer: the proper thread pool instead of a NIO
- * thread (Calcite messages in the query task executor), the peer-deployment class loader able to see user classes
- * instead of the configuration one, and a protocol-level failure response to the sender (cache messages in
- * {@code GridCacheIoManager}, data streamer entries in the update job, continuous-query entries in
- * {@code CacheContinuousQueryHandler}).
+ * A {@link Message} whose payload the consumer unmarshals itself, exactly once per remotely received message, instead
+ * of the generic inbound pass of {@code GridIoManager}. Deferring it buys what that pass cannot offer: the consumer's
+ * own thread pool, the peer-deployment class loader, and a protocol-level failure response to the sender.
  */
 public interface DeferredUnmarshalMessage extends Message {
 }

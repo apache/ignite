@@ -51,7 +51,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
     public static final long INBOX_INITIALIZATION_TIMEOUT = 1_000L;
 
     /** */
-    private final UUID locaNodeId;
+    private final UUID locNodeId;
 
     /** */
     private QueryTaskExecutor taskExecutor;
@@ -74,7 +74,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
     public ExchangeServiceImpl(GridKernalContext ctx) {
         super(ctx);
 
-        locaNodeId = ctx.localNodeId();
+        locNodeId = ctx.localNodeId();
     }
 
     /**
@@ -141,7 +141,8 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
     /** {@inheritDoc} */
     @Override public <Row> void sendBatch(UUID nodeId, UUID qryId, long fragmentId, long exchangeId, int batchId,
         boolean last, List<Row> rows) throws IgniteCheckedException {
-        messageService().send(nodeId, new QueryBatchMessage(qryId, fragmentId, exchangeId, batchId, last, Commons.cast(rows)));
+        messageService().send(nodeId, new QueryBatchMessage(qryId, fragmentId, exchangeId, batchId, last,
+            Commons.cast(rows), messageService().localNodeId().equals(nodeId)));
 
         if (batchId == 0) {
             Query<?> qry = qryRegistry.query(qryId);
@@ -216,7 +217,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
 
     /** {@inheritDoc} */
     @Override public UUID localNodeId() {
-        return locaNodeId;
+        return locNodeId;
     }
 
     /** */
@@ -347,7 +348,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
             taskExecutor(),
             null,
             qryId,
-            locaNodeId,
+            locNodeId,
             nodeId,
             null,
             new FragmentDescription(

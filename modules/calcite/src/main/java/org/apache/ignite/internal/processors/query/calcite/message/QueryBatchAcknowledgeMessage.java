@@ -18,13 +18,12 @@
 package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.util.UUID;
-import org.apache.ignite.internal.DeferredUnmarshalMessage;
 import org.apache.ignite.internal.Order;
 
 /**
  *
  */
-public class QueryBatchAcknowledgeMessage implements DeferredUnmarshalMessage, ExecutionContextAware {
+public class QueryBatchAcknowledgeMessage implements ExecutionContextAware {
     /** */
     @Order(0)
     UUID qryId;
