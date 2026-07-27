@@ -77,7 +77,7 @@ import org.apache.ignite.messaging.GridMessagingSelfTest;
 import org.apache.ignite.messaging.IgniteMessagingSendAsyncTest;
 import org.apache.ignite.messaging.IgniteMessagingWithClientTest;
 import org.apache.ignite.plugin.extensions.communication.MessageMarshalOnceTest;
-import org.apache.ignite.plugin.extensions.communication.MessageUnmarshalOnceTest;
+import org.apache.ignite.plugin.extensions.communication.MessageUnmarshalOnceCheckTest;
 import org.apache.ignite.spi.GridSpiLocalHostInjectionTest;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTestSelfTest;
 import org.apache.ignite.testframework.junits.multijvm.JavaVersionCommandParserTest;
@@ -161,7 +161,7 @@ import org.junit.runners.Suite;
     MessageProcessorTest.class,
     MessageMarshalOnceTest.class,
     GridIoManagerOrderedPoisonMessageTest.class,
-    MessageUnmarshalOnceTest.class,
+    MessageUnmarshalOnceCheckTest.class,
     GridCacheQueryResponseUnmarshalTest.class,
     MarshallerCacheFreeUnmarshalTest.class,
     MessageSerializationArchitectureTest.class,

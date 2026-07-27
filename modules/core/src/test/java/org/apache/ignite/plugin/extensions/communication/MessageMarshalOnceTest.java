@@ -47,7 +47,8 @@ import org.junit.Test;
  * nodes is marshalled <b>exactly once</b> (prepared before the fan-out and reused for every destination), not once per
  * destination. A counting marshaller is registered for a test message; broadcasting it to {@link #RMT_CNT} remote nodes
  * must produce {@code RMT_CNT} sends but a single {@code marshal}. Counting the sends keeps the check honest (a
- * lone send would also marshal once). The unmarshal-once counterpart lives in {@link MessageUnmarshalOnceTest}.
+ * lone send would also marshal once). The test-only detector of a double unmarshal is covered by
+ * {@link MessageUnmarshalOnceCheckTest}.
  *
  * <p>The second scenario covers the send-retry path: a cache message whose first send attempt fails is retried,
  * and the retry must not re-marshal the payload (it is prepared once by {@code GridCacheIoManager} before the

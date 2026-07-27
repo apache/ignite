@@ -30,7 +30,7 @@ import org.junit.Test;
  * silently turn off and pass every test vacuously. The actual coverage (no real receive path unmarshals an instance
  * twice in the same pass) comes from running the check across the whole suite via {@code GridAbstractTest}.
  */
-public class MessageUnmarshalOnceTest extends GridCommonAbstractTest {
+public class MessageUnmarshalOnceCheckTest extends GridCommonAbstractTest {
     /** The suite-wide guard must be on, so a silently-disabled check cannot pass every test without verifying anything. */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();

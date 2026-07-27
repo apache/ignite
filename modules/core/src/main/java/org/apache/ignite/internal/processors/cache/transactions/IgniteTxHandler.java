@@ -1215,14 +1215,11 @@ public class IgniteTxHandler {
 
                     writesCacheMissed.add(e.txKey());
                 }
-                else {
+                else
                     e.context(cacheCtx);
-
-                    e.initializeContext(ctx, req.topologyVersion(), true);
-                }
             }
 
-            if (writesCacheMissed != null) {
+            if (!writesCacheMissed.isEmpty()) {
                 Collection<IgniteTxKey> evicted0 = res.nearEvicted();
 
                 if (evicted0 != null)

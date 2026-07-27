@@ -324,6 +324,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Marshalla
         return depInfo;
     }
 
+    // TODO IGNITE-28922: get rid of the wire-companion field pairs.
     /** {@inheritDoc} */
     @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
         if (!isFiltered()) {
