@@ -45,7 +45,7 @@ public class QueryBatchMessage implements DeferredUnmarshalMessage, ExecutionCon
     @Order(4)
     boolean last;
 
-    /** {@code null} for a locally delivered message. */
+    /** */
     @Order(5)
     List<GenericValueMessage> mRows;
 
