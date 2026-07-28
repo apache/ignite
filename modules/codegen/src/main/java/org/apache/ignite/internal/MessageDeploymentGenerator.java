@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.TypeElement;
@@ -32,6 +33,7 @@ import javax.lang.model.type.WildcardType;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.MessageProcessor.CACHE_OBJECT_CLS;
+import static org.apache.ignite.internal.MessageProcessor.IGNITE_CHECKED_EXCEPTION_CLS;
 
 /**
  * Generates a {@code *Deployer} class for messages whose {@code @Order} fields have a type that indicates deployment
@@ -42,6 +44,24 @@ import static org.apache.ignite.internal.MessageProcessor.CACHE_OBJECT_CLS;
  * the generated deployer then also delegates to its {@code deploy}, mirroring {@code marshal}.
  */
 public class MessageDeploymentGenerator extends MessageCompanionGenerator {
+    /** */
+    private static final String GRID_CACHE_MESSAGE_CLS = "org.apache.ignite.internal.processors.cache.GridCacheMessage";
+
+    /** */
+    private static final String DEPLOYABLE_MESSAGE_CLS = "org.apache.ignite.internal.processors.cache.DeployableMessage";
+
+    /** */
+    private static final String IGNITE_TX_ENTRY_CLS = "org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry";
+
+    /** Interface the generated deployers implement. */
+    private static final String GRID_CACHE_MESSAGE_DEPLOYER_CLS = "org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer";
+
+    /** */
+    private static final String GRID_CACHE_SHARED_CONTEXT_CLS = "org.apache.ignite.internal.processors.cache.GridCacheSharedContext";
+
+    /** */
+    private static final String GRID_CACHE_CONTEXT_CLS = "org.apache.ignite.internal.processors.cache.GridCacheContext";
+
     /** */
     private final TypeMirror gridCacheMsgType;
 
@@ -70,12 +90,12 @@ public class MessageDeploymentGenerator extends MessageCompanionGenerator {
     MessageDeploymentGenerator(ProcessingEnvironment env) {
         super(env);
 
-        gridCacheMsgType = type("org.apache.ignite.internal.processors.cache.GridCacheMessage");
-        deployableMsgType = type("org.apache.ignite.internal.processors.cache.DeployableMessage");
+        gridCacheMsgType = type(GRID_CACHE_MESSAGE_CLS);
+        deployableMsgType = type(DEPLOYABLE_MESSAGE_CLS);
         cacheObjType = type(CACHE_OBJECT_CLS);
-        txEntryType = type("org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry");
-        colType = erasedType(type("java.util.Collection"));
-        iterableType = erasedType(type("java.lang.Iterable"));
+        txEntryType = type(IGNITE_TX_ENTRY_CLS);
+        colType = erasedType(type(Collection.class.getName()));
+        iterableType = erasedType(type(Iterable.class.getName()));
     }
 
     /** {@inheritDoc} */
@@ -143,12 +163,12 @@ public class MessageDeploymentGenerator extends MessageCompanionGenerator {
     @Override String buildClassCode(String deployerClsName) throws IOException {
         try (Writer writer = new StringWriter()) {
             imports.add(type.toString());
-            imports.add("org.apache.ignite.IgniteCheckedException");
-            imports.add("org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer");
-            imports.add("org.apache.ignite.internal.processors.cache.GridCacheSharedContext");
+            imports.add(IGNITE_CHECKED_EXCEPTION_CLS);
+            imports.add(GRID_CACHE_MESSAGE_DEPLOYER_CLS);
+            imports.add(GRID_CACHE_SHARED_CONTEXT_CLS);
 
             if (needsCctx)
-                imports.add("org.apache.ignite.internal.processors.cache.GridCacheContext");
+                imports.add(GRID_CACHE_CONTEXT_CLS);
 
             writeClassHeader(writer, "GridCacheMessageDeployer", deployerClsName);
 

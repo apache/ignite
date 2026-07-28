@@ -21,8 +21,10 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -44,6 +46,7 @@ import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcess
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.MessageProcessor.CACHE_OBJECT_CLS;
+import static org.apache.ignite.internal.MessageProcessor.IGNITE_CHECKED_EXCEPTION_CLS;
 import static org.apache.ignite.internal.MessageProcessor.KEY_CACHE_OBJECT_CLS;
 import static org.apache.ignite.internal.MessageProcessor.MARSHALLABLE_MESSAGE_INTERFACE;
 import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
@@ -53,6 +56,30 @@ import static org.apache.ignite.internal.MessageProcessor.NON_MARSHALLABLE_MESSA
  * Generates {@code *Marshaller} classes for {@code Message} types that are not {@code NonMarshallableMessage}.
  */
 public class MessageMarshallerGenerator extends MessageCompanionGenerator {
+    /** Interface the generated marshallers implement. */
+    private static final String MESSAGE_MARSHALLER_CLS = "org.apache.ignite.plugin.extensions.communication.MessageMarshaller";
+
+    /** */
+    private static final String MARSHALLER_CLS = "org.apache.ignite.marshaller.Marshaller";
+
+    /** */
+    private static final String GRID_KERNAL_CONTEXT_CLS = "org.apache.ignite.internal.GridKernalContext";
+
+    /** */
+    private static final String CACHE_OBJECT_CONTEXT_CLS = "org.apache.ignite.internal.processors.cache.CacheObjectContext";
+
+    /** */
+    private static final String GRID_CACHE_GROUP_ID_MESSAGE_CLS = "org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage";
+
+    /** Facade the generated code calls to marshal and unmarshal nested messages. */
+    private static final String MESSAGE_MARSHALLING_CLS = "org.apache.ignite.internal.managers.communication.MessageMarshalling";
+
+    /** */
+    private static final String IGNITE_MESSAGE_FACTORY_CLS = "org.apache.ignite.internal.managers.communication.IgniteMessageFactory";
+
+    /** {@code IgniteUtils} shortcut used by the generated {@code @Marshalled} handling. */
+    private static final String U_CLS = "org.apache.ignite.internal.util.typedef.internal.U";
+
     /** Accumulated source lines for all generated marshal/unmarshal methods. */
     private final List<String> marshall = new ArrayList<>();
 
@@ -106,9 +133,9 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
         msgType = type(MESSAGE_INTERFACE);
         cacheObjType = type(CACHE_OBJECT_CLS);
         nonMarshallableType = type(NON_MARSHALLABLE_MESSAGE_INTERFACE);
-        cacheGrpIdMsgType = type("org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage");
-        mapType = type("java.util.Map");
-        colType = type("java.util.Collection");
+        cacheGrpIdMsgType = type(GRID_CACHE_GROUP_ID_MESSAGE_CLS);
+        mapType = type(Map.class.getName());
+        colType = type(Collection.class.getName());
     }
 
     /** {@inheritDoc} */
@@ -146,10 +173,10 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
         try (Writer writer = new StringWriter()) {
             imports.add(type.toString());
-            imports.add("org.apache.ignite.plugin.extensions.communication.MessageMarshaller");
+            imports.add(MESSAGE_MARSHALLER_CLS);
 
             if (marshallable || hasMarshalled)
-                imports.add("org.apache.ignite.marshaller.Marshaller");
+                imports.add(MARSHALLER_CLS);
 
             writeClassHeader(writer, "MessageMarshaller", marshallerClsName);
 
@@ -194,9 +221,9 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
     /** Generates the {@code marshal} method body and appends it to {@link #marshall}. */
     private void generateMarshalMethod(List<VariableElement> orderedFields) {
-        imports.add("org.apache.ignite.IgniteCheckedException");
-        imports.add("org.apache.ignite.internal.GridKernalContext");
-        imports.add("org.apache.ignite.internal.processors.cache.CacheObjectContext");
+        imports.add(IGNITE_CHECKED_EXCEPTION_CLS);
+        imports.add(GRID_KERNAL_CONTEXT_CLS);
+        imports.add(CACHE_OBJECT_CONTEXT_CLS);
 
         String signature = "marshal(" + simpleNameWithGeneric(type) + " msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx)";
 
@@ -247,7 +274,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
         boolean usesU = enclosed.values().stream().anyMatch(f -> f.getAnnotation(Marshalled.class) != null);
 
         if (usesU)
-            imports.add("org.apache.ignite.internal.util.typedef.internal.U");
+            imports.add(U_CLS);
 
         String msgParam = simpleNameWithGeneric(type) + " msg, GridKernalContext kctx";
 
@@ -292,7 +319,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
     /** Cache-free unmarshal of a {@code @NioField} message field on the NIO thread (no cache context available). */
     private List<String> unmarshalNioField(String accessor) {
-        imports.add("org.apache.ignite.internal.managers.communication.MessageMarshalling");
+        imports.add(MESSAGE_MARSHALLING_CLS);
 
         List<String> code = new ArrayList<>();
 
@@ -326,7 +353,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
         String objField = "msg." + field.getSimpleName();
         String bytesField = "msg." + ann.value();
 
-        imports.add("java.util.ArrayList");
+        imports.add(ArrayList.class.getName());
 
         List<String> code = new ArrayList<>();
 
@@ -487,8 +514,8 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
             String objField = "msg." + field.getSimpleName();
             String bytesField = "msg." + ann.value();
 
-            imports.add("java.util.ArrayList");
-            imports.add("java.util.Map");
+            imports.add(ArrayList.class.getName());
+            imports.add(Map.class.getName());
             imports.add(KEY_CACHE_OBJECT_CLS);
 
             List<String> code = new ArrayList<>();
@@ -659,7 +686,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
         imports.add(((QualifiedNameable)keyElem).getQualifiedName().toString());
         imports.add(((QualifiedNameable)valElem).getQualifiedName().toString());
-        imports.add("java.util.Iterator");
+        imports.add(Iterator.class.getName());
 
         List<String> code = new ArrayList<>();
 
@@ -731,7 +758,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
         List<String> inner = new ArrayList<>();
 
-        imports.add("java.util.Map");
+        imports.add(Map.class.getName());
 
         inner.add(indentedLine("%s = new %s[%s.size()];", keysField, compName, mapField));
         inner.add(indentedLine("%s = new %s[%s.length];", valuesField, valCompName, keysField));
@@ -807,7 +834,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
      * factory is not re-resolved from the context on every element.
      */
     private List<String> marshallMessage(String accessor, MarshalMode mode) {
-        imports.add("org.apache.ignite.internal.managers.communication.MessageMarshalling");
+        imports.add(MESSAGE_MARSHALLING_CLS);
 
         List<String> code = new ArrayList<>();
 
@@ -885,7 +912,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
         if (!loopCode.isEmpty()) {
             imports.add(((QualifiedNameable)elem).getQualifiedName().toString());
-            imports.add("java.util.Collection");
+            imports.add(Collection.class.getName());
         }
 
         return wrapNullGuarded(accessor, loopCode);
@@ -917,7 +944,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
                 continue;
 
             imports.add(((QualifiedNameable)elem).getQualifiedName().toString());
-            imports.add("java.util.Collection");
+            imports.add(Collection.class.getName());
 
             combined.addAll(loopCode);
         }
@@ -958,7 +985,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
         if (!usesMsgFactory)
             return;
 
-        imports.add("org.apache.ignite.internal.managers.communication.IgniteMessageFactory");
+        imports.add(IGNITE_MESSAGE_FACTORY_CLS);
 
         body.add(0, EMPTY);
         body.add(0, indentedLine("IgniteMessageFactory msgFactory = (IgniteMessageFactory)kctx.messageFactory();"));

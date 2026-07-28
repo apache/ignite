@@ -56,6 +56,49 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
     /** */
     static final String DLFT_ENUM_MAPPER_CLS = "org.apache.ignite.plugin.extensions.communication.mappers.DefaultEnumMapper";
 
+    /** Interface the generated serializers implement. */
+    private static final String MESSAGE_SERIALIZER_CLS = "org.apache.ignite.plugin.extensions.communication.MessageSerializer";
+
+    /** */
+    private static final String MESSAGE_WRITER_CLS = "org.apache.ignite.plugin.extensions.communication.MessageWriter";
+
+    /** */
+    private static final String MESSAGE_READER_CLS = "org.apache.ignite.plugin.extensions.communication.MessageReader";
+
+    /** */
+    private static final String ENUM_MAPPER_CLS = "org.apache.ignite.plugin.extensions.communication.mappers.EnumMapper";
+
+    /** */
+    private static final String MESSAGE_COLLECTION_ITEM_TYPE_CLS =
+        "org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType";
+
+    /** */
+    private static final String MESSAGE_ITEM_TYPE_CLS = "org.apache.ignite.plugin.extensions.communication.MessageItemType";
+
+    /** */
+    private static final String MESSAGE_ARRAY_TYPE_CLS = "org.apache.ignite.plugin.extensions.communication.MessageArrayType";
+
+    /** */
+    private static final String MESSAGE_MAP_TYPE_CLS = "org.apache.ignite.plugin.extensions.communication.MessageMapType";
+
+    /** */
+    private static final String MESSAGE_COLLECTION_TYPE_CLS = "org.apache.ignite.plugin.extensions.communication.MessageCollectionType";
+
+    /** */
+    private static final String IGNITE_UUID_CLS = "org.apache.ignite.lang.IgniteUuid";
+
+    /** */
+    private static final String IGNITE_PRODUCT_VERSION_CLS = "org.apache.ignite.lang.IgniteProductVersion";
+
+    /** */
+    private static final String AFFINITY_TOPOLOGY_VERSION_CLS = "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion";
+
+    /** */
+    private static final String GRID_CACHE_VERSION_CLS = "org.apache.ignite.internal.processors.cache.version.GridCacheVersion";
+
+    /** */
+    private static final String GRID_LONG_LIST_CLS = "org.apache.ignite.internal.util.GridLongList";
+
     /** */
     private static final String COMPRESSED_MSG_ERROR = "CompressedMessage should not be used explicitly. " +
         "To compress the required field use the @Compress annotation.";
@@ -91,9 +134,9 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
     @Override String buildClassCode(String serClsName) throws IOException {
         try (Writer writer = new StringWriter()) {
             imports.add(type.toString());
-            imports.add("org.apache.ignite.plugin.extensions.communication.MessageSerializer");
-            imports.add("org.apache.ignite.plugin.extensions.communication.MessageWriter");
-            imports.add("org.apache.ignite.plugin.extensions.communication.MessageReader");
+            imports.add(MESSAGE_SERIALIZER_CLS);
+            imports.add(MESSAGE_WRITER_CLS);
+            imports.add(MESSAGE_READER_CLS);
 
             writeClassHeader(writer, "MessageSerializer", serClsName);
 
@@ -316,10 +359,10 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
             if (sameType(type, UUID.class))
                 return new FieldCall("Uuid", null, false);
 
-            if (sameType(type, "org.apache.ignite.lang.IgniteUuid"))
+            if (sameType(type, IGNITE_UUID_CLS))
                 return new FieldCall("IgniteUuid", null, false);
 
-            if (sameType(type, "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion"))
+            if (sameType(type, AFFINITY_TOPOLOGY_VERSION_CLS))
                 return new FieldCall("AffinityTopologyVersion", null, false);
 
             if (assignableFrom(erasedType(type), type(Map.class.getName())))
@@ -331,13 +374,13 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
             if (assignableFrom(type, type(CACHE_OBJECT_CLS)))
                 return new FieldCall("CacheObject", null, false);
 
-            if (assignableFrom(type, type("org.apache.ignite.internal.util.GridLongList")))
+            if (assignableFrom(type, type(GRID_LONG_LIST_CLS)))
                 return new FieldCall("GridLongList", null, false);
 
-            if (assignableFrom(type, type("org.apache.ignite.lang.IgniteProductVersion")))
+            if (assignableFrom(type, type(IGNITE_PRODUCT_VERSION_CLS)))
                 return new FieldCall("IgniteProductVersion", null, false);
 
-            if (assignableFrom(type, type("org.apache.ignite.internal.processors.cache.version.GridCacheVersion")))
+            if (assignableFrom(type, type(GRID_CACHE_VERSION_CLS)))
                 return new FieldCall("GridCacheVersion", null, false);
 
             if (assignableFrom(type, type(MESSAGE_INTERFACE))) {
@@ -377,7 +420,7 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
             if (fullMapperName == null || fullMapperName.isEmpty())
                 throw new IllegalArgumentException("Please specify a not-null not-empty EnumMapper class name");
 
-            imports.add("org.apache.ignite.plugin.extensions.communication.mappers.EnumMapper");
+            imports.add(ENUM_MAPPER_CLS);
             imports.add(fullMapperName);
 
             String simpleName = fullMapperName.substring(fullMapperName.lastIndexOf('.') + 1);
@@ -435,7 +478,7 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
 
     /** */
     private String messageCollectionItemTypeDescriptor(TypeMirror type) throws Exception {
-        imports.add("org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType");
+        imports.add(MESSAGE_COLLECTION_ITEM_TYPE_CLS);
 
         if (type.getKind() == TypeKind.ARRAY) {
             ArrayType arrType = (ArrayType)type;
@@ -456,17 +499,17 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
             else {
                 assert componentType.getKind().isPrimitive();
 
-                imports.add("org.apache.ignite.plugin.extensions.communication.MessageItemType");
+                imports.add(MESSAGE_ITEM_TYPE_CLS);
 
                 return "new MessageItemType(MessageCollectionItemType." + messageCollectionItemType(componentType) + "_ARR)";
             }
 
-            imports.add("org.apache.ignite.plugin.extensions.communication.MessageArrayType");
+            imports.add(MESSAGE_ARRAY_TYPE_CLS);
 
             return "new MessageArrayType(" + messageCollectionItemTypeDescriptor(componentType) + ", " + clazz + ")";
         }
         else if (assignableFrom(erasedType(type), type(Map.class.getName()))) {
-            imports.add("org.apache.ignite.plugin.extensions.communication.MessageMapType");
+            imports.add(MESSAGE_MAP_TYPE_CLS);
 
             List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
 
@@ -478,7 +521,7 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
                 assignableFrom(erasedType(type), type(LinkedHashMap.class.getName())) + ")";
         }
         else if (assignableFrom(erasedType(type), type(Collection.class.getName()))) {
-            imports.add("org.apache.ignite.plugin.extensions.communication.MessageCollectionType");
+            imports.add(MESSAGE_COLLECTION_TYPE_CLS);
 
             List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
 
@@ -489,7 +532,7 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
                 assignableFrom(erasedType(type), type(Set.class.getName())) + ")";
         }
         else {
-            imports.add("org.apache.ignite.plugin.extensions.communication.MessageItemType");
+            imports.add(MESSAGE_ITEM_TYPE_CLS);
 
             return "new MessageItemType(MessageCollectionItemType." + messageCollectionItemType(type) + ")";
         }
@@ -528,13 +571,13 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
             if (sameType(type, BitSet.class))
                 return "BIT_SET";
 
-            if (sameType(type, "org.apache.ignite.lang.IgniteUuid"))
+            if (sameType(type, IGNITE_UUID_CLS))
                 return "IGNITE_UUID";
 
-            if (sameType(type, "org.apache.ignite.internal.processors.cache.version.GridCacheVersion"))
+            if (sameType(type, GRID_CACHE_VERSION_CLS))
                 return "GRID_CACHE_VERSION";
 
-            if (sameType(type, "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion"))
+            if (sameType(type, AFFINITY_TOPOLOGY_VERSION_CLS))
                 return "AFFINITY_TOPOLOGY_VERSION";
 
             if (sameType(type, KEY_CACHE_OBJECT_CLS))
@@ -543,7 +586,7 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
             if (sameType(type, CACHE_OBJECT_CLS))
                 return "CACHE_OBJECT";
 
-            if (sameType(type, "org.apache.ignite.internal.util.GridLongList"))
+            if (sameType(type, GRID_LONG_LIST_CLS))
                 return "GRID_LONG_LIST";
 
             PrimitiveType primitiveType = unboxedType(type);

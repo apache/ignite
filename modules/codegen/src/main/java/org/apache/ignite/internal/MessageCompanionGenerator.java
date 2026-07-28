@@ -71,6 +71,9 @@ public abstract class MessageCompanionGenerator {
         " */";
 
     /** */
+    private static final String CACHE_ID_AWARE_CLS = "org.apache.ignite.plugin.extensions.communication.CacheIdAware";
+
+    /** */
     protected final ProcessingEnvironment env;
 
     /** */
@@ -89,7 +92,7 @@ public abstract class MessageCompanionGenerator {
     MessageCompanionGenerator(ProcessingEnvironment env) {
         this.env = env;
 
-        cacheIdAwareType = type("org.apache.ignite.plugin.extensions.communication.CacheIdAware");
+        cacheIdAwareType = type(CACHE_ID_AWARE_CLS);
     }
 
     /** */

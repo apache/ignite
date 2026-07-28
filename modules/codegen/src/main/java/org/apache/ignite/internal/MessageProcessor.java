@@ -90,6 +90,9 @@ public class MessageProcessor extends AbstractProcessor {
     /** */
     static final String KEY_CACHE_OBJECT_CLS = "org.apache.ignite.internal.processors.cache.KeyCacheObject";
 
+    /** Checked exception declared by the generated methods. */
+    static final String IGNITE_CHECKED_EXCEPTION_CLS = "org.apache.ignite.IgniteCheckedException";
+
     /** */
     public static final String GRID_H2_NULL = "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Null";
 
