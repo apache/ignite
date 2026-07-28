@@ -71,6 +71,19 @@ the cause. `doctor` runs an N-way resolution probe from one worker.
 ducktests-remote provision --sudo --write-hosts   # escape hatch when cluster DNS cannot be fixed
 ```
 
+### `deploy` wants to send a gigabyte of `ignite-dev`
+
+The distribution is a link to a checkout and nothing is being filtered. The workers need
+`modules/*/target/*.jar`, `modules/*/target/libs/*.jar`, `bin/` and
+`modules/ducktests/tests/certs`; `.git` and every `src` tree are ballast. Set
+`deploy.exclude` (or `--exclude`, or a `.ducktests-deploy.ignore` at the root of the
+distribution) and confirm with `--dry-run`, which prints the payload size and how many
+files the patterns dropped. The recipe is in
+[commands.md](commands.md#ignite-dev-from-your-own-checkout).
+
+Do not reach for `.ducktestsignore` here — that file is the *source sync* list and its
+patterns are the opposite ones.
+
 ### "source payload is N MB, above the limit"
 
 A build directory leaked into the sync. Distributions go through `deploy`, never through

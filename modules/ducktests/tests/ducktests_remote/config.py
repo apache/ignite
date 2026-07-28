@@ -128,6 +128,10 @@ DEFAULTS = {
         "owner": None,
         "staging_dir": "/tmp/ducktests-remote-staging",
         "checksum": False,
+        # rsync-style patterns left out of every distribution.  Empty by default: a
+        # release directory is shipped whole.  The list matters when ignite-dev is a link
+        # to a source checkout, where only the built jars are wanted on the workers.
+        "exclude": [],
     },
     "clean": {
         # pgrep -f patterns; see IGNITE_MAIN_CLASSES above.

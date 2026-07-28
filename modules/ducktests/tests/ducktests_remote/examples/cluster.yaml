@@ -86,6 +86,16 @@ java:
   bashrc: true                     # and a marked block at the top of ~/.bashrc
 
 deploy:
+  # One subdirectory per distribution. `ignite-dev` is usually a symlink to a checkout:
+  #   ln -sfn ~/dev/ignite ./dist/ignite-dev
   dist_dir: ./dist
+
+  # Patterns left out of every distribution, rsync-style. Empty by default, so a release
+  # directory is shipped whole. The list below is for the symlinked-checkout case: the
+  # workers need modules/*/target/*.jar, modules/*/target/libs/*.jar, bin/ and the
+  # ducktests certs, and nothing else in the tree.
+  # exclude: [.git, .idea, src, docs, assembly, classes, test-classes,
+  #           generated-sources, generated-test-sources, maven-status, maven-archiver,
+  #           surefire-reports, javadoc, "*.tar.gz", "*.zip", __pycache__, "*.pyc"]
 
 jobs: 16

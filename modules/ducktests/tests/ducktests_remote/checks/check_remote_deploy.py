@@ -17,6 +17,7 @@
 
 import json
 import os
+import tarfile
 import time
 
 import pytest
@@ -26,6 +27,7 @@ from ducktests_remote.commands import clean as clean_cmd
 from ducktests_remote.commands import deploy, provision
 from ducktests_remote.config import DEFAULTS, ConfigError
 from ducktests_remote.fanout import CHANGED, FAILED, OK, HostResult, fanout, summarise
+from ducktests_remote.transport import make_tarball
 
 
 def _dist(tmp_path, name="ignite-dev", body="binary"):
@@ -230,3 +232,100 @@ class CheckFanout:
 
     def check_empty_inventory_is_not_an_error(self):
         assert fanout([], lambda h: None) == []
+
+
+class CheckExcludes:
+    """``ignite-dev`` is normally a link to a checkout; only the built jars are wanted."""
+
+    @staticmethod
+    def _checkout(tmp_path):
+        """A tree shaped like an Ignite source root after a build."""
+        root = tmp_path / "ignite-dev"
+        for rel in ("bin/ignite.sh",
+                    "modules/core/src/main/java/Ignite.java",
+                    "modules/core/target/classes/Ignite.class",
+                    "modules/core/target/ignite-core.jar",
+                    "modules/core/target/libs/dep.jar",
+                    "modules/ducktests/tests/certs/truststore.jks"):
+            path = root / rel
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(rel, encoding="utf-8")
+        return root
+
+    @staticmethod
+    def _ctx(tmp_path, exclude=None, config_exclude=None):
+        class _Args:  # pylint: disable=too-few-public-methods
+            pass
+
+        class _Ctx:  # pylint: disable=too-few-public-methods
+            pass
+
+        ctx = _Ctx()
+        ctx.args = _Args()
+        ctx.args.exclude = list(exclude or [])
+        ctx.config = {"deploy": {**DEFAULTS["deploy"], "exclude": list(config_exclude or [])}}
+        ctx.dist_dir = tmp_path
+        return ctx
+
+    def check_manifest_leaves_out_excluded_files(self, tmp_path):
+        root = self._checkout(tmp_path)
+        whole = deploy.build_manifest(root)
+        filtered = deploy.build_manifest(root, excludes=["src", "classes"])
+        assert filtered["files"] == whole["files"] - 2
+        assert filtered["excluded"] == 2
+        assert filtered["bytes"] < whole["bytes"]
+        assert filtered["hash"] != whole["hash"]
+
+    def check_the_tarball_holds_exactly_what_the_manifest_counted(self, tmp_path):
+        root = self._checkout(tmp_path)
+        excludes = ["src", "classes"]
+        archive = tmp_path / "payload.tar.gz"
+        make_tarball(root, archive, excludes=excludes)
+        with tarfile.open(archive) as tar:
+            names = sorted(m.name for m in tar.getmembers())
+        assert names == ["bin/ignite.sh",
+                         "modules/core/target/ignite-core.jar",
+                         "modules/core/target/libs/dep.jar",
+                         "modules/ducktests/tests/certs/truststore.jks"]
+        assert len(names) == deploy.build_manifest(root, excludes=excludes)["files"], \
+            "a host called up to date must hold the same files the tarball carries"
+
+    def check_no_excludes_ships_the_tree_whole(self, tmp_path):
+        root = self._checkout(tmp_path)
+        manifest = deploy.build_manifest(root)
+        assert manifest["excluded"] == 0 and manifest["files"] == 6
+
+    def check_command_line_beats_the_ignore_file_and_the_config(self, tmp_path):
+        root = self._checkout(tmp_path)
+        (root / deploy.IGNORE_NAME).write_text("classes\n", encoding="utf-8")
+        ctx = self._ctx(tmp_path, exclude=["src"], config_exclude=["target"])
+        assert deploy.resolve_excludes(ctx, root) == ["src", deploy.IGNORE_NAME]
+
+    def check_the_ignore_file_beats_the_config(self, tmp_path):
+        root = self._checkout(tmp_path)
+        (root / deploy.IGNORE_NAME).write_text(
+            "# only the jars are wanted on the workers\n"
+            "src\n"
+            "\n"
+            "classes\n", encoding="utf-8")
+        ctx = self._ctx(tmp_path, config_exclude=["target"])
+        assert deploy.resolve_excludes(ctx, root) == ["src", "classes", deploy.IGNORE_NAME]
+
+    def check_the_ignore_file_is_never_shipped(self, tmp_path):
+        root = self._checkout(tmp_path)
+        (root / deploy.IGNORE_NAME).write_text("src\n", encoding="utf-8")
+        ctx = self._ctx(tmp_path)
+        excludes = deploy.resolve_excludes(ctx, root)
+        archive = tmp_path / "payload.tar.gz"
+        make_tarball(root, archive, excludes=excludes)
+        with tarfile.open(archive) as tar:
+            assert deploy.IGNORE_NAME not in [m.name for m in tar.getmembers()]
+
+    def check_the_config_applies_when_nothing_more_specific_exists(self, tmp_path):
+        root = self._checkout(tmp_path)
+        ctx = self._ctx(tmp_path, config_exclude=["src", "classes"])
+        assert deploy.resolve_excludes(ctx, root) == ["src", "classes"]
+
+    def check_the_default_is_no_filtering(self, tmp_path):
+        assert deploy.resolve_excludes(self._ctx(tmp_path), self._checkout(tmp_path)) == []
+        assert DEFAULTS["deploy"]["exclude"] == []

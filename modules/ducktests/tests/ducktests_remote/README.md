@@ -246,6 +246,47 @@ place, because a half-copied distribution that looks present is worse than an ab
 On a twelve-host cluster a 300 MB distribution is 3.7 GB over the wire from a laptop.
 `deploy` prints that total before it starts, and suggests `--via`.
 
+### `ignite-dev` from your own checkout
+
+`ignite-dev` must look like a *built source tree* on the worker, not like a release:
+`IgniteSpec` classpaths `modules/<module>/target` and `modules/<module>/target/libs`,
+`bin/ignite.sh` is run from the same home, and SSL tests read
+`modules/ducktests/tests/certs`. Everything else in a checkout is ballast — a bare copy
+of a built repository is well over a gigabyte, most of it `.git` and sources the workers
+never open.
+
+Link the distribution to your checkout, and trim it with excludes:
+
+```bash
+mkdir -p ~/dist
+ln -sfn ~/dev/ignite ~/dist/ignite-dev             # relink any time; deploy follows it
+```
+
+```yaml
+deploy:
+  dist_dir: ~/dist
+  exclude: [.git, .idea, src, docs, assembly, classes, test-classes,
+            generated-sources, generated-test-sources, maven-status, maven-archiver,
+            surefire-reports, javadoc, "*.tar.gz", "*.zip", __pycache__, "*.pyc"]
+```
+
+```bash
+mvn package -pl :ignite-ducktests -am -DskipTests   # you build, however you like
+ducktests-remote deploy --only ignite-dev --dry-run # payload size + files dropped
+ducktests-remote deploy --only ignite-dev
+```
+
+Excludes are the same rsync-style patterns the source sync uses, and default to nothing.
+Three sources, most specific first: `--exclude PATTERN`, a `.ducktests-deploy.ignore` file
+at the root of one distribution, then `deploy.exclude`. That file is deliberately *not*
+named `.ducktestsignore`: when `ignite-dev` links to a checkout, the distribution root and
+the source root are the same directory, and the two lists are opposites — the source sync
+drops `target`, `deploy` keeps little else. The manifest is built from the filtered list,
+so an `already at <hash>` skip always means the host holds what was actually sent.
+
+Symlinks *inside* a distribution are not followed: they are shipped as links and arrive
+dangling. Only the top-level link is resolved.
+
 ### Where the directory names come from
 
 `ignitetest` resolves a distribution home as `<install_root>/<product>`, where `product`

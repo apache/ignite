@@ -195,6 +195,13 @@ source root replaces the built-in list; `--exclude` replaces both.
 | `owner` | `null` | `chown -R` the extracted tree |
 | `staging_dir` | `/tmp/ducktests-remote-staging` | where `--via` parks the payload |
 | `checksum` | `false` | hash file contents for the manifest instead of size+mtime |
+| `exclude` | `[]` | rsync-style patterns left out of every distribution |
+
+`exclude` is empty by default, so a release directory is shipped whole. It earns its keep
+when `ignite-dev` is a link to a source checkout, where only the built jars are wanted on
+the workers; `--exclude` and a `.ducktests-deploy.ignore` file at the root of one
+distribution override it, in that order. See
+[commands.md](commands.md#ignite-dev-from-your-own-checkout) for the full recipe.
 
 ### `provision`
 

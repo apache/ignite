@@ -224,8 +224,8 @@ assumption; a doctor FAIL makes it exit 2.
 ## `deploy`
 
 ```
-deploy [--dist-dir PATH] [--only NAME]... [--install-root PATH] [--via HOST]
-       [--sudo] [--owner USER] [--force] [--checksum] [-n N] [--json]
+deploy [--dist-dir PATH] [--only NAME]... [--exclude PATTERN]... [--install-root PATH]
+       [--via HOST] [--sudo] [--owner USER] [--force] [--checksum] [-n N] [--json]
 ```
 
 Each subdirectory of `--dist-dir` is copied verbatim to `<install_root>/<name>`. The name
@@ -246,6 +246,82 @@ Per distribution, per host:
 `--via HOST` uploads the payload once to an intermediate host and fans out from there.
 `deploy` prints the total bytes before it starts — on a twelve-host cluster a 300 MB
 distribution is 3.7 GB from a laptop — and suggests `--via` when that total is large.
+
+### Leaving files out
+
+Excludes are rsync-style patterns, matched against paths relative to the distribution
+root: a pattern matches the whole relative path, a path prefix, or any single path
+component. So `src` drops every `modules/*/src`, `*.jar` drops jars anywhere, and
+`modules/indexing` drops that one subtree — but `target/libs` matches only a `target/libs`
+directly at the root, not `modules/core/target/libs`. They default to nothing: a
+distribution without them is shipped byte for byte. Three sources, most specific winning:
+
+| Source | Scope |
+| --- | --- |
+| `--exclude PATTERN` (repeatable) | every distribution in this invocation |
+| `.ducktests-deploy.ignore` at the root of a distribution | that distribution |
+| `deploy.exclude` in the configuration | every distribution |
+
+The list is read from one source as a whole; sources are never merged. The ignore file is
+one pattern per line, `#` comments allowed, and is itself never shipped.
+
+It is **not** called `.ducktestsignore`: when `ignite-dev` links to a checkout, the
+distribution root and the source root are the same directory, and the two lists are
+opposites — the source sync drops `target`, `deploy` keeps almost nothing else.
+
+The manifest is built from the same filtered file list, so a host reported as up to date
+holds exactly the files the tarball carried. Change the excludes and every host is
+redeployed, as it should be.
+
+### `ignite-dev` from your own checkout
+
+`ignite-dev` is the distribution the tests resolve `DEV_BRANCH` to, and on a worker it
+must have the layout of a *built source tree*, not of a release: `IgniteSpec` puts
+`modules/<module>/target` and `modules/<module>/target/libs` on the classpath for every
+module a test asks for (`ignitetest/services/utils/ignite_spec.py`), `path.py` runs
+`bin/ignite.sh` from the same home and reads certificates from
+`modules/ducktests/tests/certs`. Everything else in a checkout is ballast for a worker.
+
+So link the distribution to your checkout and let the excludes do the trimming:
+
+```bash
+mkdir -p ~/dist
+ln -sfn ~/Development/vanilla/ignite ~/dist/ignite-dev     # relink any time
+```
+
+`deploy` follows that link: `is_dir()` accepts it as a distribution, the tree is walked
+through it, and the workers receive ordinary files. Symlinks *inside* a distribution are
+a different matter — they are stored as links and arrive dangling, so keep real files
+below the top level.
+
+Then, in your configuration:
+
+```yaml
+deploy:
+  dist_dir: ~/dist
+  exclude: [.git, .idea, src, docs, assembly, classes, test-classes,
+            generated-sources, generated-test-sources, maven-status, maven-archiver,
+            surefire-reports, javadoc, "*.tar.gz", "*.zip", __pycache__, "*.pyc"]
+```
+
+`src` as a pattern drops every `modules/*/src`, `classes` drops the exploded output Java
+never reads off a classpath directory, and `target/*.jar` plus `target/libs/*.jar`
+survive. The daily loop is then two commands:
+
+```bash
+mvn package -pl :ignite-ducktests -am -DskipTests   # in the checkout, however you build
+ducktests-remote deploy --only ignite-dev
+```
+
+Check the damage before the first real transfer — `--dry-run` prints the payload size and
+how many files the patterns dropped, and transfers nothing:
+
+```bash
+ducktests-remote deploy --only ignite-dev --dry-run
+```
+
+Note that a distribution is all-or-nothing: rebuild one module and the whole distribution
+is re-tarred and re-uploaded, because the manifest hash covers the tree.
 
 ### Where the directory names come from
 
