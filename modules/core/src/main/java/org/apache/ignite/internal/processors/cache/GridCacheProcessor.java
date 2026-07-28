@@ -4968,14 +4968,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (grp.affinityFunction() != ccfg.getAffinity()) {
             // After MarshallableMessage deserialization CacheGroupData and CacheData produce
-            // separate affinity instances. For PlatformDotNetAffinityFunction, replace
-            // cache-level inner func with group-level (which has the started ptr/handle)
-            // so partition() delegation works correctly.
+            // separate affinity instances.
             if (grp.affinityFunction() instanceof PlatformDotNetAffinityFunction grpDotNet &&
-                ccfg.getAffinity() instanceof PlatformDotNetAffinityFunction cacheDotNet)
+                ccfg.getAffinity() instanceof PlatformDotNetAffinityFunction cacheDotNet) {
+                // For PlatformDotNetAffinityFunction, group-level has the started ptr/handle.
+                // Replace cache-level inner func with group-level so partition() delegation works correctly.
                 cacheDotNet.init(grpDotNet.getFunc());
-            else if (grp.affinityFunction().getClass() != ccfg.getAffinity().getClass())
+            }
+            else {
+                // For other affinity functions (including direct PlatformAffinityFunction from .NET code),
+                // the cache-level instance needs to be started (LifecycleAware.start will set up the ptr).
                 ret.add(ccfg.getAffinity());
+            }
         }
 
         ret.add(ccfg.getAffinityMapper());
