@@ -96,12 +96,12 @@ public abstract class MessageCompanionGenerator {
     }
 
     /** */
-    boolean isCacheIdAwareMessage(TypeElement te) {
+    protected boolean isCacheIdAwareMessage(TypeElement te) {
         return assignableFrom(te.asType(), cacheIdAwareType);
     }
 
     /** Generates and writes the source file for {@code type}; skipped when {@link #shouldSkip} returns {@code true}. */
-    final void generate(TypeElement type, List<VariableElement> fields) throws Exception {
+    protected final void generate(TypeElement type, List<VariableElement> fields) throws Exception {
         assert this.type == null : "Message" + typeSuffix() + " generator isn't stateless and is supposed to be single-use.";
 
         if (shouldSkip(type, fields))
@@ -139,18 +139,18 @@ public abstract class MessageCompanionGenerator {
     }
 
     /** @return Class name suffix: {@code "Serializer"} or {@code "Marshaller"}. */
-    abstract String typeSuffix();
+    protected abstract String typeSuffix();
 
     /** @return {@code true} if no file should be generated for this type; default is {@code false}. */
-    boolean shouldSkip(TypeElement type, List<VariableElement> fields) {
+    protected boolean shouldSkip(TypeElement type, List<VariableElement> fields) {
         return false;
     }
 
     /** Populates internal state (method body lines etc.) from {@code fields}; called before {@link #buildClassCode}. */
-    abstract void generateBody(List<VariableElement> fields) throws Exception;
+    protected abstract void generateBody(List<VariableElement> fields) throws Exception;
 
     /** Generates and returns the complete source code for the generated class, or {@code null} to skip the class. */
-    abstract String buildClassCode(String clsName) throws IOException;
+    protected abstract String buildClassCode(String clsName) throws IOException;
 
     /** */
     public static void writeLicense(Writer writer) throws IOException {
@@ -166,7 +166,7 @@ public abstract class MessageCompanionGenerator {
     }
 
     /** Writes license, package, imports, javadoc, and class declaration; {@link #imports} must be populated before calling. */
-    void writeClassHeader(Writer writer, String interfaceName, String clsName) throws IOException {
+    protected void writeClassHeader(Writer writer, String interfaceName, String clsName) throws IOException {
         writeLicense(writer);
 
         writer.write(NL);
@@ -182,12 +182,12 @@ public abstract class MessageCompanionGenerator {
     }
 
     /** @return {@code format} formatted with {@code args}, prefixed with {@link #indent} tabs. */
-    String indentedLine(String format, Object... args) {
+    protected String indentedLine(String format, Object... args) {
         return TAB.repeat(indent) + String.format(format, args);
     }
 
     /** @return simple name of {@code te} with {@code <?, ?>} wildcard type arguments appended when parameterised. */
-    String simpleNameWithGeneric(TypeElement te) {
+    protected String simpleNameWithGeneric(TypeElement te) {
         int paramsCnt = te.getTypeParameters().size();
 
         return paramsCnt == 0
@@ -196,24 +196,24 @@ public abstract class MessageCompanionGenerator {
     }
 
     /** */
-    boolean assignableFrom(TypeMirror type, TypeMirror superType) {
+    protected boolean assignableFrom(TypeMirror type, TypeMirror superType) {
         return superType != null && env.getTypeUtils().isAssignable(type, superType);
     }
 
     /** @return the {@link TypeMirror} for the fully-qualified {@code clazz}, or {@code null} if not on classpath. */
-    TypeMirror type(String clazz) {
+    protected TypeMirror type(String clazz) {
         Elements elementUtils = env.getElementUtils();
         TypeElement typeElement = elementUtils.getTypeElement(clazz);
         return typeElement != null ? typeElement.asType() : null;
     }
 
     /** */
-    TypeMirror erasedType(TypeMirror type) {
+    protected TypeMirror erasedType(TypeMirror type) {
         return env.getTypeUtils().erasure(type);
     }
 
     /** @return {@code "msg.<fieldName>"} accessor expression for {@code field}. */
-    String fieldAccessor(VariableElement field) {
+    protected String fieldAccessor(VariableElement field) {
         return "msg." + field.getSimpleName().toString();
     }
 

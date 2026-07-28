@@ -118,12 +118,12 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
     }
 
     /** {@inheritDoc} */
-    @Override String typeSuffix() {
+    @Override protected String typeSuffix() {
         return "Serializer";
     }
 
     /** {@inheritDoc} */
-    @Override void generateBody(List<VariableElement> fields) throws Exception {
+    @Override protected void generateBody(List<VariableElement> fields) throws Exception {
         generateMethods(fields);
 
         // Include superclass types in imports so generated code can cast to them for inherited fields.
@@ -131,7 +131,7 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
     }
 
     /** {@inheritDoc} */
-    @Override String buildClassCode(String serClsName) throws IOException {
+    @Override protected String buildClassCode(String serClsName) throws IOException {
         try (Writer writer = new StringWriter()) {
             imports.add(type.toString());
             imports.add(MESSAGE_SERIALIZER_CLS);

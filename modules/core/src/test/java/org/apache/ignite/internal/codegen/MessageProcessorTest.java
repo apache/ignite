@@ -437,7 +437,7 @@ public class MessageProcessorTest {
             .hasSourceEquivalentTo(javaFile("TestMarshalledMessageMarshaller.java"));
     }
 
-    /** Verifies that {@code @Marshalled} generates Set reconstruction in FINISH_CACHE mode. */
+    /** Verifies the companions generated for a {@code @Marshalled} field whose logical form is a Set. */
     @Test
     public void testMarshalledCollectionMessage() {
         Compilation compilation = compile("TestMarshalledCollectionMessage.java");
@@ -455,7 +455,7 @@ public class MessageProcessorTest {
             .hasSourceEquivalentTo(javaFile("TestMarshalledCollectionMessageMarshaller.java"));
     }
 
-    /** Verifies that {@code @Marshalled} generates Map reconstruction in FINISH_CACHE mode. */
+    /** Verifies the companions generated for a {@code @Marshalled} field whose logical form is a Map. */
     @Test
     public void testMarshalledMapMessage() {
         Compilation compilation = compile("TestMarshalledMapMessage.java");

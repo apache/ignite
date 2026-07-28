@@ -95,15 +95,18 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
         // absence is a build problem. For the rest the generator skips statement-free marshallers, so absence
         // legitimately means "nothing to marshal"; the message and its companions ship in the same jar, hence
         // a missing class cannot be a packaging accident that spares the (required) serializer.
-        MessageMarshaller<T> marshaller = NonMarshallableMessage.class.isAssignableFrom(cls)
-            ? null
-            : MarshallableMessage.class.isAssignableFrom(cls)
-            ? requireGenerated(cls, "Marshaller", marsh)
-            : loadGenerated(cls, "Marshaller", marsh);
+        MessageMarshaller<T> marshaller;
+
+        if (NonMarshallableMessage.class.isAssignableFrom(cls))
+            marshaller = null;
+        else if (MarshallableMessage.class.isAssignableFrom(cls))
+            marshaller = requireGenerated(cls, "Marshaller", marsh);
+        else
+            marshaller = loadGenerated(cls, "Marshaller", marsh);
 
         // Deployers are generated for GridCacheMessage subclasses only, so the class lookup is skipped for the rest;
         // a DeployableMessage left without a deployer is then rejected at registration.
-        GridCacheMessageDeployer deployer = GridCacheMessage.class.isAssignableFrom(cls)
+        GridCacheMessageDeployer<?> deployer = GridCacheMessage.class.isAssignableFrom(cls)
             ? loadGenerated(cls, "Deployer", marsh)
             : null;
 

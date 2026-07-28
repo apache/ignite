@@ -99,12 +99,12 @@ public class MessageDeploymentGenerator extends MessageCompanionGenerator {
     }
 
     /** {@inheritDoc} */
-    @Override String typeSuffix() {
+    @Override protected String typeSuffix() {
         return "Deployer";
     }
 
     /** {@inheritDoc} */
-    @Override boolean shouldSkip(TypeElement type, List<VariableElement> fields) {
+    @Override protected boolean shouldSkip(TypeElement type, List<VariableElement> fields) {
         if (gridCacheMsgType == null || !assignableFrom(type.asType(), gridCacheMsgType))
             return true;
 
@@ -127,7 +127,7 @@ public class MessageDeploymentGenerator extends MessageCompanionGenerator {
     }
 
     /** {@inheritDoc} */
-    @Override void generateBody(List<VariableElement> fields) {
+    @Override protected void generateBody(List<VariableElement> fields) {
         emitMethod(deploy, "deploy(" + simpleNameWithGeneric(type) + " msg, GridCacheSharedContext<?, ?> ctx)", body -> {
             List<String> fieldStmts = new ArrayList<>();
 
@@ -160,7 +160,7 @@ public class MessageDeploymentGenerator extends MessageCompanionGenerator {
     }
 
     /** {@inheritDoc} */
-    @Override String buildClassCode(String deployerClsName) throws IOException {
+    @Override protected String buildClassCode(String deployerClsName) throws IOException {
         try (Writer writer = new StringWriter()) {
             imports.add(type.toString());
             imports.add(IGNITE_CHECKED_EXCEPTION_CLS);

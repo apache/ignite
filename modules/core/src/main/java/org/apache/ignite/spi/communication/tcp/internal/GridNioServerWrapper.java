@@ -859,10 +859,10 @@ public class GridNioServerWrapper {
                         throws IgniteCheckedException {
                         final IgniteSpiContext ctx = stateProvider.getSpiContextWithoutInitialLatch();
 
-                        if (formatter == null || this.spiCtx != ctx) {
-                            this.spiCtx = ctx;
+                        if (formatter == null || spiCtx != ctx) {
+                            spiCtx = ctx;
 
-                            formatter = this.spiCtx.messageFormatter();
+                            formatter = spiCtx.messageFormatter();
                         }
 
                         assert formatter != null;

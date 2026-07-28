@@ -139,17 +139,17 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
     }
 
     /** {@inheritDoc} */
-    @Override String typeSuffix() {
+    @Override protected String typeSuffix() {
         return "Marshaller";
     }
 
     /** {@inheritDoc} */
-    @Override boolean shouldSkip(TypeElement type, List<VariableElement> fields) {
+    @Override protected boolean shouldSkip(TypeElement type, List<VariableElement> fields) {
         return isNonMarshallable(type.asType());
     }
 
     /** {@inheritDoc} */
-    @Override void generateBody(List<VariableElement> fields) {
+    @Override protected void generateBody(List<VariableElement> fields) {
         enclosed = enclosedFields();
 
         for (VariableElement f : enclosed.values()) {
@@ -167,7 +167,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
     }
 
     /** {@inheritDoc} */
-    @Override String buildClassCode(String marshallerClsName) throws IOException {
+    @Override protected String buildClassCode(String marshallerClsName) throws IOException {
         if (!hasStatements)
             return null;
 
