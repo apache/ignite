@@ -209,17 +209,62 @@ class CheckArchivePlan:
         assert plan.name == "jdk-17.0.11+9", "the target directory takes the JDK's own name"
         assert plan.bytes == 8
 
-    def check_an_archive_without_bin_java_is_refused(self, tmp_path):
-        # A macOS build has Contents/Home in between and is worth catching here rather
-        # than on twelve hosts at once.
+    def check_a_macos_build_is_refused_by_name(self, tmp_path):
+        # It unpacks perfectly well and then fails on every worker, so it has to be
+        # caught here rather than on twelve hosts at once.
         with pytest.raises(ConfigError) as ex:
             java.archive_plan(_tarball(tmp_path, ["Contents/Home/bin/java"]))
-        assert "bin/java" in str(ex.value)
+        assert "macOS" in str(ex.value) and "Linux x64" in str(ex.value)
+
+    def check_an_archive_without_any_java_is_refused(self, tmp_path):
+        with pytest.raises(ConfigError) as ex:
+            java.archive_plan(_tarball(tmp_path, ["lib/modules", "release"]))
+        assert "does not contain bin/java" in str(ex.value)
 
     def check_a_flat_archive_is_not_stripped(self, tmp_path):
         plan = java.archive_plan(_tarball(tmp_path, ["bin/java", "lib/modules"], top=""))
         assert plan.strip == 0 and plan.top_level is None
         assert plan.name == "jdk"
+
+    def check_a_deeper_layout_is_stripped_to_the_java_home(self, tmp_path):
+        # `tar czf` of a directory that itself holds the unpacked JDK. The wrapper is
+        # not a reason to refuse the archive; it is a reason to strip one level more.
+        plan = java.archive_plan(
+            _tarball(tmp_path, ["jdk-17.0.11+9/bin/java", "jdk-17.0.11+9/lib/modules"],
+                     top="openjdk-17"))
+        assert plan.strip == 2 and plan.top_level == "openjdk-17/jdk-17.0.11+9"
+        assert plan.name == "jdk-17.0.11+9", "the target takes the JDK's own name"
+
+    def check_extra_entries_beside_the_jdk_do_not_confuse_the_plan(self, tmp_path):
+        # AppleDouble junk, a stray LICENSE, a second top-level file: none of it changes
+        # where bin/java is.
+        path = tmp_path / "jdk.tar.gz"
+        with tarfile.open(path, "w:gz") as tar:
+            for name in ("._jdk-17.0.11", "LICENSE", "jdk-17.0.11/bin/java"):
+                info = tarfile.TarInfo(name)
+                info.size = 4
+                tar.addfile(info, io.BytesIO(b"data"))
+        plan = java.archive_plan(str(path))
+        assert plan.strip == 1 and plan.top_level == "jdk-17.0.11"
+
+    def check_the_shallowest_java_wins(self, tmp_path):
+        # A bundled JRE deeper in the tree must not drag the strip depth with it.
+        plan = java.archive_plan(
+            _tarball(tmp_path, ["bin/java", "legal/jre/bin/java"], top="jdk-17"))
+        assert plan.strip == 1 and plan.top_level == "jdk-17"
+
+    def check_the_tar_flag_follows_the_suffix(self, tmp_path):
+        # The worker-side `tar` is told how to decompress; guessing gzip for an .xz
+        # archive passes every coordinator-side check and fails on every host.
+        gz = java.archive_plan(_tarball(tmp_path, ["bin/java"]))
+        assert gz.tar_flag == "z"
+
+        xz_path = tmp_path / "jdk.tar.xz"
+        with tarfile.open(xz_path, "w:xz") as tar:
+            info = tarfile.TarInfo("jdk-17/bin/java")
+            info.size = 4
+            tar.addfile(info, io.BytesIO(b"data"))
+        assert java.archive_plan(str(xz_path)).tar_flag == "J"
 
     def check_a_directory_source_is_accepted(self, tmp_path):
         home = tmp_path / "jdk-17"
@@ -297,8 +342,8 @@ class CheckDelivery:
         ctx, fake = _context(PROBE, major=21, archive=str(archive), install_root="/opt")
         cfg = java.config_of(ctx)
         plan = java.archive_plan(cfg.archive)
-        result = provision._jdk_on_host(ctx, NODE, cfg, plan,  # noqa: SLF001
-                                        java.discovery_script(cfg))
+        result = provision._jdk_on_host(  # noqa: SLF001
+            ctx, NODE, cfg, provision.JdkPayload(plan), java.discovery_script(cfg))
 
         assert result.status == provision.CHANGED
         assert fake.uploads, "the archive has to reach the host"
@@ -317,8 +362,8 @@ class CheckDelivery:
         digest = provision._tar_manifest(plan)["hash"]  # noqa: SLF001
         fake.when("cat", json.dumps({"hash": digest}))
 
-        result = provision._jdk_on_host(ctx, NODE, cfg, plan,  # noqa: SLF001
-                                        java.discovery_script(cfg))
+        result = provision._jdk_on_host(  # noqa: SLF001
+            ctx, NODE, cfg, provision.JdkPayload(plan), java.discovery_script(cfg))
         assert result.status == provision.OK and not fake.uploads
 
     def check_no_archive_and_no_match_fails_with_the_config_keys(self):
@@ -334,9 +379,9 @@ class CheckDelivery:
         archive = _tarball(tmp_path, ["bin/java"])
         ctx, fake = _context(PROBE, home="/opt/vendor-jdk", archive=str(archive))
         cfg = java.config_of(ctx)
-        result = provision._jdk_on_host(ctx, NODE, cfg,  # noqa: SLF001
-                                        java.archive_plan(cfg.archive),
-                                        java.discovery_script(cfg))
+        result = provision._jdk_on_host(  # noqa: SLF001
+            ctx, NODE, cfg, provision.JdkPayload(java.archive_plan(cfg.archive)),
+            java.discovery_script(cfg))
         assert result.status == provision.FAILED and "/opt/vendor-jdk" in result.message
         assert not fake.uploads
 

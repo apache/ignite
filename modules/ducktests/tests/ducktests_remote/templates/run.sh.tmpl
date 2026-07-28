@@ -19,7 +19,7 @@
 # host and execute this exact script to reproduce the run by hand.
 set -euo pipefail
 
-cd {{work_dir}}
+cd {{cwd}}
 {{venv_activate}}
 exec ducktape \
   --results-root {{results_root}} \

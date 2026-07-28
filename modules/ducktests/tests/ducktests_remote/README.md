@@ -127,8 +127,12 @@ line to append to `authorized_keys`.
 ### 3. Run
 
 ```bash
-ducktests-remote run ./modules/ducktests/tests/ignitetest/tests/smoke_test.py
+ducktests-remote run ./ignitetest/tests/smoke_test.py
 ```
+
+Test paths are the ones you already use with `docker/run_tests.sh`: relative to
+`modules/ducktests/tests`. Run the command from anywhere inside the checkout - the
+repository root is found by walking up, and paths relative to it work too.
 
 ## The three coordinators
 
@@ -139,7 +143,7 @@ dies with it.
 ```bash
 ducktests-remote keys push          # installs the identity on the runner, authorises it on the workers
 ducktests-remote doctor
-ducktests-remote run -t ./modules/ducktests/tests/ignitetest/tests/smoke_test.py --detach
+ducktests-remote run -t ./ignitetest/tests/smoke_test.py --detach
 ducktests-remote logs -f            # reattach later, from anywhere
 ```
 
@@ -148,7 +152,7 @@ ducktests-remote logs -f            # reattach later, from anywhere
 
 ```bash
 ducktests-remote --runner local doctor
-ducktests-remote --runner local run ./modules/ducktests/tests/ignitetest/
+ducktests-remote --runner local run ./ignitetest/
 ```
 
 **Jenkins agent.** Use `--detach` plus `status --json`, and read the exit code.
@@ -333,10 +337,11 @@ java:
 3. **a JDK under `search_paths`** — `/opt/jdk-17.0.11`, `/usr/lib/jvm/java-17-openjdk`.
    Highest patch level wins, compared numerically, so `17.0.11` beats `17.0.9`.
 4. **`java.archive`**, delivered from the coordinator to the hosts that got this far —
-   and only to those. A `.tar.gz`, `.tgz`, `.tar` or an unpacked directory; a single
-   top-level directory is stripped, so a stock Temurin tarball lands as
-   `/opt/jdk-17.0.11+9`. Bad archives (no `bin/java`, a macOS build with `Contents/Home`,
-   a zip) fail on the coordinator, before anything is copied to twelve machines.
+   and only to those. A JDK tarball (`.tar.gz`, `.tgz`, `.tar`, `.tar.bz2`, `.tar.xz`) or
+   an unpacked directory. Whatever wraps the JDK home inside the archive is stripped, so
+   both a stock Temurin tarball and a hand-repacked one land as `/opt/jdk-17.0.11+9`. Bad
+   archives (no `bin/java` anywhere, a macOS build with `Contents/Home`, a zip) fail on
+   the coordinator, before anything is copied to twelve machines.
 5. otherwise a failure listing every JDK that *was* found. `--install-jdk` (with `--sudo`)
    adds the distribution's own package as a last rung.
 

@@ -162,9 +162,9 @@ Read by `provision` (`jdk`, `ssh-env`) and by `doctor`. Full treatment in
 | `major` | `17` | Java major version the tests need. Derived from the Dockerfile's `ARG jdk_version="eclipse-temurin:17"`; the Dockerfile wins if they ever disagree |
 | `home` | `null` | an explicit JDK home on the workers. Set means *exactly this*: no search, and a host without it fails |
 | `search_paths` | `[/opt, /usr/lib/jvm, /usr/java]` | where to look for an existing JDK. Each entry may be a directory *of* JDK homes or a JDK home itself |
-| `archive` | `null` | coordinator-side `.tar.gz`/`.tgz`/`.tar` or an unpacked directory, delivered to hosts that have no matching JDK |
+| `archive` | `null` | coordinator-side JDK tarball (`.tar.gz`/`.tgz`/`.tar`/`.tar.bz2`/`.tar.xz`) or an unpacked directory, delivered to hosts that have no matching JDK |
 | `install_root` | `null` | where a delivered JDK is unpacked; unset means `cluster.install_root` |
-| `name` | `null` | target directory name; unset means the archive's own top-level directory name |
+| `name` | `null` | target directory name; unset means the name of the JDK home found inside the archive |
 | `ssh_environment` | `true` | write `~/.ssh/environment` |
 | `bashrc` | `true` | write a marked block at the top of `~/.bashrc` |
 
@@ -175,8 +175,8 @@ put the JDK on the workers' non-interactive `PATH`.
 
 | Key | Default | Meaning |
 | --- | --- | --- |
-| `source_root` | `null` | directory synced to the runner; unset means the current directory |
-| `work_dir` | `null` | runner-side working directory for ducktape; unset means the synced source directory |
+| `source_root` | `null` | Ignite checkout synced to the runner; unset means the checkout containing the current directory, found by walking up |
+| `work_dir` | `null` | runner-side Ignite checkout to run from; ducktape itself runs in its `modules/ducktests/tests`; unset means the synced source directory |
 | `exclude` | `[]` | extra sync exclusions, appended to the built-in list |
 | `max_payload_mb` | `200` | refuse to sync more than this. A build directory leaking into the payload is the usual cause |
 | `install_sources` | `false` | `pip install -e` the synced sources. Not needed for discovery: ducktape's loader walks up from each test file while `__init__.py` exists and puts the resulting top-level directory on `sys.path` |

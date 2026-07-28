@@ -28,6 +28,7 @@ import json
 import posixpath
 import shlex
 import tempfile
+import threading
 import uuid
 from pathlib import Path
 
@@ -249,6 +250,7 @@ def _run_jdk_step(ctx, nodes):
                              % deploy.human(plan.bytes * len(nodes)))
 
     script = java.discovery_script(cfg)
+    payload = JdkPayload(plan) if plan else None
 
     def operation(node):
         if ctx.dry_run:
@@ -256,13 +258,70 @@ def _run_jdk_step(ctx, nodes):
                             % (node.host, cfg.major or "any"))
             ctx.console.detail(script)
             return HostResult(node.host, SKIPPED, "dry-run")
-        return _jdk_on_host(ctx, node, cfg, plan, script)
+        return _jdk_on_host(ctx, node, cfg, payload, script)
 
-    return fanout(nodes, operation, jobs=ctx.jobs,
-                  fail_fast=getattr(ctx.args, "fail_fast", False))
+    try:
+        return fanout(nodes, operation, jobs=ctx.jobs,
+                      fail_fast=getattr(ctx.args, "fail_fast", False))
+    finally:
+        if payload:
+            payload.close()
 
 
-def _jdk_on_host(ctx, node, cfg, plan, script):
+class JdkPayload:
+    """
+    The bytes to upload for one :class:`~ducktests_remote.java.ArchivePlan`, prepared once.
+
+    A tarball is uploaded as it is, so there is nothing to prepare.  A directory has to be
+    packed first, and packing it inside the per-host operation meant gzipping the same JDK
+    once per worker, in parallel, on the coordinator.  Both the tarball and the manifest
+    are therefore built on first use and shared by every host after that.
+    """
+
+    def __init__(self, plan):
+        self.plan = plan
+        self._lock = threading.Lock()
+        self._tmp = None
+        self._archive = None
+        self._manifest = None
+
+    def archive(self):
+        """:return: the coordinator-side path of the tarball to upload."""
+        if self.plan.kind == "tar":
+            return self.plan.path
+        with self._lock:
+            if self._archive is None:
+                self._tmp = tempfile.TemporaryDirectory()
+                packed = Path(self._tmp.name) / "jdk.tar.gz"
+                make_tarball(self.plan.path, packed)
+                self._archive = packed
+            return self._archive
+
+    def manifest(self):
+        """:return: the manifest that decides whether a host already has this JDK."""
+        with self._lock:
+            if self._manifest is None:
+                self._manifest = (deploy.build_manifest(self.plan.path)
+                                  if self.plan.kind == "dir" else _tar_manifest(self.plan))
+            return self._manifest
+
+    def strip(self):
+        """:return: ``--strip-components`` depth; a packed directory is already flat."""
+        return 0 if self.plan.kind == "dir" else self.plan.strip
+
+    def tar_flag(self):
+        """:return: the ``tar`` decompression flag; a packed directory is always gzip."""
+        return "z" if self.plan.kind == "dir" else self.plan.tar_flag
+
+    def close(self):
+        """Remove the packed tarball, if one was made."""
+        if self._tmp is not None:
+            self._tmp.cleanup()
+            self._tmp = None
+            self._archive = None
+
+
+def _jdk_on_host(ctx, node, cfg, payload, script):
     transport = ctx.worker(node)
     probe = transport.run_script(script, check=False)
     if not probe.ok:
@@ -280,8 +339,8 @@ def _jdk_on_host(ctx, node, cfg, plan, script):
                           "java.home %s has no usable bin/java on this host" % cfg.home,
                           detail=_found(res))
 
-    if plan is not None:
-        return _deliver_jdk(ctx, node, cfg, plan)
+    if payload is not None:
+        return _deliver_jdk(ctx, node, cfg, payload)
 
     if ctx.args.install_jdk:
         return _install_jdk(ctx, node, cfg)
@@ -299,16 +358,17 @@ def _found(res):
                                  for home, major, _ in res.candidates)
 
 
-def _deliver_jdk(ctx, node, cfg, plan):
+def _deliver_jdk(ctx, node, cfg, payload):
     """
     Copy the JDK to one worker, reusing ``deploy``'s staging and atomic swap.
 
     A half-extracted JDK that looks present is exactly as bad as a half-extracted
     distribution, which is why this does not extract in place.
     """
+    plan = payload.plan
     transport = ctx.worker(node)
     target = java.target_dir(cfg, plan)
-    manifest = deploy.build_manifest(plan.path) if plan.kind == "dir" else _tar_manifest(plan)
+    manifest = payload.manifest()
 
     if not ctx.args.force:
         existing = transport.read_file(posixpath.join(target, JAVA_MANIFEST_NAME))
@@ -330,21 +390,13 @@ def _deliver_jdk(ctx, node, cfg, plan):
                                  uuid.uuid4().hex[:8])
     transport.run_script(deploy.prepare_script(staging, ctx.args.sudo)).check()
 
-    with tempfile.TemporaryDirectory() as tmp:
-        if plan.kind == "dir":
-            archive = Path(tmp) / "jdk.tar.gz"
-            make_tarball(plan.path, archive)
-            strip = 0
-        else:
-            archive = plan.path
-            strip = plan.strip
-        remote = "%s/.payload.tar.gz" % staging
-        transport.upload(archive, remote)
-        transport.run_script(
-            "set -eu\ntar -xzf %s -C %s%s\nrm -f -- %s\n"
-            % (shlex.quote(remote), shlex.quote(staging),
-               " --strip-components=%d" % strip if strip else "",
-               shlex.quote(remote))).check()
+    remote = "%s/.payload.tar" % staging
+    transport.upload(payload.archive(), remote)
+    transport.run_script(
+        "set -eu\ntar -x%sf %s -C %s%s\nrm -f -- %s\n"
+        % (payload.tar_flag(), shlex.quote(remote), shlex.quote(staging),
+           " --strip-components=%d" % payload.strip() if payload.strip() else "",
+           shlex.quote(remote))).check()
 
     check = transport.run(["test", "-x", "%s/bin/java" % staging], check=False)
     if not check.ok:

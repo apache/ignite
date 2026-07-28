@@ -36,8 +36,15 @@ DEFAULT_EXCLUDES = [".git", "target", "results", "__pycache__", "*.pyc", ".idea"
 
 IGNITE_IGNORE_FILE = ".ducktestsignore"
 
+# Where the ducktests live inside an Ignite checkout, and the file that proves it is one.
+TESTS_SUBDIR = ("modules", "ducktests", "tests")
+CHECKOUT_MARKER = ("docker", "requirements.txt")
+
 FOLLOW_POLL_SEC = 1.5
 DOUBLE_INTERRUPT_SEC = 3.0
+
+# run.sh exits with this when the requirements file it would install from is absent.
+MISSING_REQUIREMENTS_EXIT = 3
 
 
 def register(subparsers, common):
@@ -47,7 +54,9 @@ def register(subparsers, common):
         description="Compose the configuration, generate cluster.json / globals.json / "
                     "run.sh on the runner, and launch ducktape detached.")
     parser.add_argument("test_paths", nargs="*", metavar="TEST_PATH",
-                        help="test paths, as ducktape understands them")
+                        help="test paths, relative to modules/ducktests/tests as in the "
+                             "Docker flow (./ignitetest/tests/smoke_test.py::Cls.method); "
+                             "paths relative to the checkout root also work")
     parser.add_argument("-t", "--tc-path", action="append", default=[], metavar="PATH",
                         help="test path; repeatable, equivalent to a positional argument")
     parser.add_argument("-g", "--global", action="append", default=[], dest="globals_kv",
@@ -65,13 +74,15 @@ def register(subparsers, common):
     parser.add_argument("-n", "--num-nodes", type=int, default=None, metavar="N",
                         help="use the first N inventory hosts (default: all)")
     parser.add_argument("--source-root", metavar="PATH",
-                        help="directory synced to the runner (default: the current directory)")
+                        help="Ignite checkout synced to the runner (default: the checkout "
+                             "containing the current directory)")
     parser.add_argument("--no-sync", action="store_true",
                         help="assume the sources are already on the runner")
     parser.add_argument("--exclude", action="append", default=[], metavar="PATTERN",
                         help="extra sync exclusion; repeatable")
     parser.add_argument("--work-dir", metavar="PATH",
-                        help="runner-side working directory for ducktape "
+                        help="runner-side Ignite checkout to run from; ducktape itself "
+                             "runs in its modules/ducktests/tests directory "
                              "(default: the synced source root)")
     parser.add_argument("--install-sources", action="store_true",
                         help="pip install the synced sources into the runner venv. Not needed "
@@ -105,15 +116,18 @@ def execute(ctx):  # pylint: disable=too-many-return-statements
     args = ctx.args
     console = ctx.console
 
-    test_paths = list(args.test_paths) + list(args.tc_path)
-    if not test_paths:
+    raw_test_paths = list(args.test_paths) + list(args.tc_path)
+    if not raw_test_paths:
         raise ConfigError("no tests given; pass a path positionally or with -t/--tc-path")
+
+    source_root = _source_root(ctx)
+    _check_source_root(ctx, source_root)
 
     composed, params = _compose_payloads(ctx)
 
     nodes = ctx.nodes
     cluster_payload, cluster_source, cluster_text = _cluster_payload(ctx, nodes)
-    _warn_about_topology(ctx, nodes, test_paths)
+    _warn_about_topology(ctx, nodes, raw_test_paths)
 
     if not args.skip_preflight and not ctx.dry_run:
         console.heading("PREFLIGHT")
@@ -127,14 +141,14 @@ def execute(ctx):  # pylint: disable=too-many-return-statements
     state_root = ctx.runner.expand(ctx.state_root)
     paths = runs.RunPaths(state_root, run_id)
 
-    source_root = _source_root(ctx)
     work_dir = _work_dir(ctx, paths, source_root)
     results_root = args.results_root or paths.results_dir
+    test_paths = _test_paths(ctx, raw_test_paths, source_root, work_dir)
 
     run_sh = runs.render_run_script(
         version=__version__, timestamp=runs.utc_now_iso(),
         author="%s@%s" % (_coordinator_user(), socket.gethostname()),
-        work_dir=work_dir, results_root=results_root,
+        cwd=_tests_dir(work_dir), results_root=results_root,
         cluster_file=paths.cluster_file, globals_file=paths.globals_file,
         test_paths=test_paths, venv=_venv_path(ctx),
         parameters_file=paths.parameters_file if params else None,
@@ -259,8 +273,106 @@ def _versions(composed):
 
 
 def _source_root(ctx):
+    """
+    :return: the Ignite checkout to sync, as a coordinator-side path.
+
+    An explicit ``--source-root`` / ``run.source_root`` is taken as given.  Otherwise the
+    current directory is walked upwards until a checkout is found, so the command works
+    from ``modules/ducktests/tests`` - where ``./docker/run_tests.sh`` is run from - as
+    well as from the repository root.
+    """
     configured = ctx.args.source_root or ctx.config["run"].get("source_root")
-    return Path(expand_path(configured) or os.getcwd()).resolve()
+    if configured:
+        return Path(expand_path(configured)).resolve()
+    cwd = Path(os.getcwd()).resolve()
+    for candidate in (cwd,) + tuple(cwd.parents):
+        if is_ignite_checkout(candidate):
+            return candidate
+    return cwd
+
+
+def is_ignite_checkout(path):
+    """:return: True when ``path`` is the root of an Ignite source tree."""
+    return Path(path).joinpath(*TESTS_SUBDIR).joinpath(*CHECKOUT_MARKER).is_file()
+
+
+def _check_source_root(ctx, source_root):
+    """
+    Reject a source root that is not an Ignite checkout, before anything is uploaded.
+
+    Getting this wrong is easy - the state root and the tests directory are both plausible
+    places to stand - and every symptom of it appears much later, as a missing
+    requirements file or as ducktape finding no tests.
+    """
+    if is_ignite_checkout(source_root):
+        return
+    if ctx.args.no_sync and not source_root.exists():
+        return          # a runner-side path that this machine cannot see; nothing to check
+    raise ConfigError(
+        "%s is not an Ignite checkout: it has no %s.\nThe whole source tree is synced to "
+        "the runner and ducktape is run from its %s directory, so this must be the "
+        "repository root (the directory that contains `modules/`). Run the command from "
+        "anywhere inside the checkout, or pass --source-root / set run.source_root."
+        % (source_root, posixpath.join(*TESTS_SUBDIR, *CHECKOUT_MARKER),
+           posixpath.join(*TESTS_SUBDIR)))
+
+
+def _tests_dir(work_dir):
+    """:return: the runner-side directory ducktape runs from."""
+    return posixpath.join(work_dir, *TESTS_SUBDIR)
+
+
+def _test_paths(ctx, raw_paths, source_root, work_dir):
+    """
+    Rewrite the given test paths into the form ducktape sees on the runner.
+
+    ducktape's working directory is the tests directory, the same one
+    ``./docker/run_tests.sh`` uses, so ``./ignitetest/tests/smoke_test.py`` means here
+    what it means locally.  A path is accepted in whatever form resolves on the
+    coordinator - relative to the current directory, to the tests directory, or to the
+    checkout root - and is rewritten from there.
+    """
+    tests_local = source_root.joinpath(*TESTS_SUBDIR)
+    return [_one_test_path(ctx, raw, source_root, tests_local, work_dir)
+            for raw in raw_paths]
+
+
+def _one_test_path(ctx, raw, source_root, tests_local, work_dir):
+    body, sep, suffix = raw.partition("::")
+    resolved = _resolve_test_file(body, source_root, tests_local)
+
+    if resolved is None:
+        # Legitimate under --no-sync against a checkout this machine does not have, and
+        # ducktape gives a better message than a guess would.
+        ctx.console.warn("test path %s does not exist on this machine; passing it to "
+                         "ducktape unchanged" % body)
+        return raw
+
+    try:
+        return "./%s%s%s" % (resolved.relative_to(tests_local).as_posix(), sep, suffix)
+    except ValueError:
+        pass
+
+    try:
+        rel = resolved.relative_to(source_root)
+    except ValueError:
+        ctx.console.warn("test path %s is outside the source root %s, so it is not synced; "
+                         "it will only run if that exact path exists on the runner"
+                         % (resolved, source_root))
+        return raw
+    return "%s%s%s" % (posixpath.join(work_dir, rel.as_posix()), sep, suffix)
+
+
+def _resolve_test_file(body, source_root, tests_local):
+    """:return: the coordinator-side file ``body`` names, or None if it names none."""
+    expanded = Path(expand_path(body))
+    if expanded.is_absolute():
+        return expanded.resolve() if expanded.exists() else None
+    for base in (Path(os.getcwd()), tests_local, source_root):
+        candidate = base / expanded
+        if candidate.exists():
+            return candidate.resolve()
+    return None
 
 
 def _work_dir(ctx, paths, source_root):
@@ -337,7 +449,7 @@ def _ensure_venv(ctx, work_dir):
         return
     python = ctx.config["runner"].get("python", "python3")
     requirements = ctx.config["runner"].get("requirements") or posixpath.join(
-        work_dir, "modules", "ducktests", "tests", "docker", "requirements.txt")
+        _tests_dir(work_dir), *CHECKOUT_MARKER)
     index_arg = pipconf.pip_args_str(ctx.config)
 
     script = """set -eu
@@ -362,20 +474,28 @@ fi
        "python": shlex.quote(python), "index": index_arg}
 
     result = ctx.runner.run_script(script, check=False)
+    if result.returncode == MISSING_REQUIREMENTS_EXIT:
+        # Nothing was installed and nothing was reached: the file simply is not there.
+        raise ConfigError(
+            "the runner venv at %s has no ducktape, and the requirements file to install "
+            "it from does not exist on the runner:\n  %s\nThat is <source root>/%s, so it "
+            "normally means the synced tree is not an Ignite checkout. Check --source-root, "
+            "or set runner.requirements to a file the runner does have."
+            % (venv, requirements, posixpath.join(*TESTS_SUBDIR, *CHECKOUT_MARKER)))
     if not result.ok:
         raise ConfigError(
-            "could not prepare the runner venv at %s:\n%s\nInstalling from: %s.\nEither "
-            "point runner.venv at an existing environment, make %s reachable on the "
-            "runner, or set pip.index_url to an index the runner can reach."
-            % (venv, (result.stderr or result.stdout).strip(),
-               pipconf.describe(ctx.config, ctx.console.redactor), requirements))
+            "could not prepare the runner venv at %s:\n%s\nInstalling %s from: %s.\nEither "
+            "point runner.venv at an existing environment, or set pip.index_url to an "
+            "index the runner can reach."
+            % (venv, (result.stderr or result.stdout).strip(), requirements,
+               pipconf.describe(ctx.config, ctx.console.redactor)))
     ctx.console.info(result.out.splitlines()[-1] if result.out else "venv ready")
 
 
 def _install_sources(ctx, work_dir):
     venv = _venv_path(ctx)
     pip = posixpath.join(venv, "bin", "pip3") if venv else "pip3"
-    tests_dir = posixpath.join(work_dir, "modules", "ducktests", "tests")
+    tests_dir = _tests_dir(work_dir)
     ctx.console.info("installing sources from %s" % tests_dir)
     ctx.runner.run([pip, "install", "--disable-pip-version-check"]
                    + pipconf.pip_args(ctx.config) + ["-e", tests_dir]).check()

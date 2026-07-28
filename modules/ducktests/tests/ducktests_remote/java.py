@@ -66,6 +66,11 @@ NONE = "none"
 
 _TAR_SUFFIXES = (".tar.gz", ".tgz", ".tar", ".tar.bz2", ".tbz2", ".tar.xz", ".txz")
 
+# `tar` decompression flag per suffix. Explicit rather than relying on GNU tar's
+# auto-detection, so the worker-side command does not depend on which tar is installed.
+_TAR_FLAGS = ((".tar.gz", "z"), (".tgz", "z"), (".tar.bz2", "j"), (".tbz2", "j"),
+              (".tar.xz", "J"), (".txz", "J"), (".tar", ""))
+
 
 @dataclass
 class JavaConfig:
@@ -469,10 +474,11 @@ class ArchivePlan:
 
     path: Path
     kind: str                       # "tar" or "dir"
-    top_level: Optional[str]        # single top-level directory inside a tarball
+    top_level: Optional[str]        # directory prefix holding the JDK home, if any
     strip: int                      # --strip-components for tar
     bytes: int
     name: str                       # default target directory name
+    tar_flag: str = "z"             # tar decompression flag matching the suffix
 
 
 def archive_plan(archive, name=None):
@@ -480,9 +486,11 @@ def archive_plan(archive, name=None):
     Inspect ``java.archive`` on the coordinator.
 
     Reading the member list with :mod:`tarfile` rather than guessing in the shell is what
-    lets a bad archive fail *before* it is copied to every host: a Temurin tarball unpacks
-    into a single ``jdk-17.0.11+9/`` directory, and an archive with no ``bin/java`` under
-    it (a macOS build, with ``Contents/Home``) is worth catching here.
+    lets a bad archive fail *before* it is copied to every host.  The JDK home is located
+    by finding ``bin/java`` and stripping whatever wraps it, so a Temurin tarball
+    (``jdk-17.0.11+9/bin/java``), a flat one (``bin/java``) and a doubly wrapped one all
+    work.  A macOS build is still refused: ``Contents/Home`` unpacks fine and then fails
+    on every worker, which is a far worse place to find out.
     """
     path = Path(expand_path(archive))
     if not path.exists():
@@ -494,7 +502,7 @@ def archive_plan(archive, name=None):
                               % path)
         total = sum(f.stat().st_size for f in path.rglob("*") if f.is_file())
         return ArchivePlan(path=path, kind="dir", top_level=None, strip=0, bytes=total,
-                           name=name or path.name)
+                           name=name or path.name, tar_flag="z")
 
     lowered = path.name.lower()
     if lowered.endswith(".zip"):
@@ -512,28 +520,58 @@ def archive_plan(archive, name=None):
     except (tarfile.TarError, OSError) as ex:
         raise ConfigError("java.archive %s could not be read: %s" % (path, ex)) from ex
 
-    names = [m.name.lstrip("./") for m in members if m.name not in (".", "./")]
+    names = [_member_name(m) for m in members if m.name not in (".", "./")]
+    names = [n for n in names if n]
     if not names:
         raise ConfigError("java.archive %s is empty" % path)
     total = sum(m.size for m in members if m.isfile())
-    tops = {n.split("/", 1)[0] for n in names if n}
 
-    if len(tops) == 1:
-        top = tops.pop()
-        _require_java(names, "%s/bin/java" % top, path)
-        return ArchivePlan(path=path, kind="tar", top_level=top, strip=1, bytes=total,
-                           name=name or top)
-    _require_java(names, "bin/java", path)
-    return ArchivePlan(path=path, kind="tar", top_level=None, strip=0, bytes=total,
-                       name=name or _strip_suffix(path.name))
+    prefix = _java_home_prefix(names, path)
+    strip = prefix.count("/") + 1 if prefix else 0
+    return ArchivePlan(path=path, kind="tar", top_level=prefix or None, strip=strip,
+                       bytes=total, name=name or (posixpath.basename(prefix) if prefix
+                                                  else _strip_suffix(path.name)),
+                       tar_flag=_tar_flag(path.name))
 
 
-def _require_java(names, expected, path):
-    if expected not in names:
+def _member_name(member):
+    """:return: ``member``'s path with a leading ``./`` removed, and nothing else."""
+    name = member.name
+    while name.startswith("./"):
+        name = name[2:]
+    return name.rstrip("/")
+
+
+def _java_home_prefix(names, path):
+    """
+    :return: the directory prefix inside the tarball that *is* the JDK home ("" if flat).
+
+    The shallowest ``bin/java`` wins, so a JDK that happens to ship a second one deeper
+    down (a bundled JRE, a jmod staging directory) cannot pull the strip depth with it.
+    """
+    best = None
+    for name in names:
+        if name == "bin/java":
+            return ""
+        if name.endswith("/bin/java"):
+            candidate = name[: -len("/bin/java")]
+            if best is None or candidate.count("/") < best.count("/"):
+                best = candidate
+    if best is None:
         raise ConfigError(
-            "java.archive %s does not contain %s. A JDK for Linux unpacks with bin/java "
-            "directly under its top-level directory; a macOS build has Contents/Home in "
-            "between and cannot be used here." % (path, expected))
+            "java.archive %s does not contain bin/java anywhere. Point it at a JDK "
+            "tarball or at an unpacked JDK home." % path)
+    if _is_macos_layout(best):
+        raise ConfigError(
+            "java.archive %s is a macOS JDK: bin/java sits under %s/bin/java, with "
+            "Contents/Home in between. It cannot run on the Linux workers - download the "
+            "Linux x64 build instead." % (path, best))
+    return best
+
+
+def _is_macos_layout(prefix):
+    parts = prefix.split("/")
+    return "Contents" in parts and "Home" in parts
 
 
 def target_dir(cfg: JavaConfig, plan: ArchivePlan):
@@ -546,6 +584,15 @@ def _strip_suffix(filename):
         if filename.lower().endswith(suffix):
             return filename[: -len(suffix)]
     return filename
+
+
+def _tar_flag(filename):
+    """:return: the ``tar`` decompression flag for ``filename``'s suffix."""
+    lowered = filename.lower()
+    for suffix, flag in _TAR_FLAGS:
+        if lowered.endswith(suffix):
+            return flag
+    return "z"
 
 
 def _home_of(java_binary):

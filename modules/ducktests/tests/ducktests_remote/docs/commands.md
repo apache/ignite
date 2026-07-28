@@ -71,6 +71,28 @@ run [TEST_PATH...] [-t PATH]... [-g KEY=VALUE]... [-p KEY=VALUE]...
 
 At least one test path is required, positionally or with `-t`.
 
+### Where you run it from, and what a test path means
+
+The whole Ignite checkout is synced to the runner, and ducktape is started in its
+`modules/ducktests/tests` directory — the same working directory `docker/run_tests.sh`
+uses. So a test path is written exactly as it is locally:
+
+```
+ducktests-remote run ./ignitetest/tests/smoke_test.py::SmokeServicesTest.test_ignite_start_stop
+```
+
+The checkout is found by walking up from the current directory, so the command works from
+`modules/ducktests/tests`, from the repository root, or from anywhere in between.
+`--source-root` / `run.source_root` overrides the search. A directory that is not a
+checkout — no `modules/ducktests/tests/docker/requirements.txt` under it — is refused
+before anything is uploaded.
+
+Test paths are accepted in any form that resolves on the coordinator (relative to the
+current directory, to the tests directory, or to the checkout root) and are rewritten
+into the tests-relative form ducktape sees. A path inside the checkout but outside the
+tests directory becomes a runner-side absolute path; one that resolves nowhere is passed
+to ducktape unchanged, with a warning.
+
 ### Order of operations
 
 1. **Compose `globals`**: `--globals-json`/`--globals-file` (the raw layer), then config
@@ -84,7 +106,7 @@ At least one test path is required, positionally or with `-t`.
 4. **Preflight**: the full `doctor` check set, unless `--skip-preflight` or `--dry-run`.
    Any FAIL stops here with exit 2, before anything is created.
 5. **Allocate the run id** — `max-20260727-141233-9f2a` — and derive the run directory,
-   work directory and results root.
+   work directory and results root, and normalise the test paths against the checkout.
 6. **Render `run.sh`** and, with `--dry-run` or `-v`, print it along with `cluster.json`
    and a redacted `globals.json`. **`--dry-run` returns here.**
 7. **Create** the run and results directories on the runner.
@@ -95,6 +117,7 @@ At least one test path is required, positionally or with `-t`.
 9. **Ensure the venv**: create `<state_root>/venv` when missing, and install
    `docker/requirements.txt` into it when `import ducktape` fails. This is where `pip.*`
    applies. Runs after the sync because the requirements file comes from the synced tree.
+   A missing requirements file is reported as such, separately from an unreachable index.
 10. **`--install-sources`** (opt-in): `pip install -e <work_dir>/modules/ducktests/tests`,
     with the same `pip.*` flags.
 11. **Write the artifacts**: `cluster.json`, `globals.json` (`0600`), `parameters.json`

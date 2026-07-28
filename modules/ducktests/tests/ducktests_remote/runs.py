@@ -269,12 +269,16 @@ def render_template(name, mapping):
     return text
 
 
-def render_run_script(*, version, timestamp, author, work_dir, results_root, cluster_file,
+def render_run_script(*, version, timestamp, author, cwd, results_root, cluster_file,
                       globals_file, test_paths, venv=None, parameters_file=None,
                       repeat=None, max_parallel=None, test_runner_timeout=None,
                       extra_args=()):
     """
     Render the ``run.sh`` that the runner executes.
+
+    ``cwd`` is the directory ducktape is started in - the checkout's
+    ``modules/ducktests/tests``, matching ``docker/run_tests.sh`` - so the test paths in
+    the generated script read the same as they do in a local Docker run.
 
     ducktape 0.13 accepts a *file path* for ``--globals`` (``command_line/main.py``
     checks ``os.path.isfile`` before parsing the argument as JSON), so the composed
@@ -309,7 +313,7 @@ def render_run_script(*, version, timestamp, author, work_dir, results_root, clu
         "version": version,
         "timestamp": timestamp,
         "author": author,
-        "work_dir": shlex.quote(str(work_dir)),
+        "cwd": shlex.quote(str(cwd)),
         "venv_activate": venv_activate,
         "results_root": shlex.quote(str(results_root)),
         "cluster_file": shlex.quote(str(cluster_file)),

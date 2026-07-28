@@ -23,7 +23,7 @@ from ducktests_remote import runs
 
 GOLDEN_RUN_SH = """set -euo pipefail
 
-cd '/opt/my sources/ignite'
+cd '/opt/my sources/ignite/modules/ducktests/tests'
 # activate the runner venv; `set +u` because older activate
 # scripts read unset variables
 set +u
@@ -124,7 +124,7 @@ class CheckRunScript:
     def _render(self):
         return runs.render_run_script(
             version="0.1.0", timestamp="2026-07-27T00:00:00+00:00", author="max@laptop",
-            work_dir="/opt/my sources/ignite",
+            cwd="/opt/my sources/ignite/modules/ducktests/tests",
             results_root="/state/runs/r/results",
             cluster_file="/state/runs/r/cluster.json",
             globals_file="/state/runs/r/globals.json",
@@ -154,7 +154,7 @@ class CheckRunScript:
 
     def check_optional_flags_are_omitted_when_unset(self):
         rendered = runs.render_run_script(
-            version="0.1.0", timestamp="t", author="a", work_dir="/w",
+            version="0.1.0", timestamp="t", author="a", cwd="/w",
             results_root="/r", cluster_file="/c", globals_file="/g",
             test_paths=["./t.py"], venv=None)
         assert "--parameters" not in rendered
@@ -164,7 +164,7 @@ class CheckRunScript:
 
     def check_a_json_like_test_path_is_quoted(self):
         rendered = runs.render_run_script(
-            version="0.1.0", timestamp="t", author="a", work_dir="/w",
+            version="0.1.0", timestamp="t", author="a", cwd="/w",
             results_root="/r", cluster_file="/c", globals_file="/g",
             test_paths=['./t.py::C.m@{"x": 1}'], venv=None)
         assert """'./t.py::C.m@{"x": 1}'""" in rendered

@@ -86,7 +86,7 @@ Within that step:
 
 | Phase | Where | What happens |
 | --- | --- | --- |
-| 1 | coordinator, once | `java.archive` is opened with `tarfile`, checked for `bin/java` under its single top-level directory, and its size printed. **A bad archive fails here**, before a byte moves |
+| 1 | coordinator, once | `java.archive` is opened with `tarfile`, searched for `bin/java`, and its size printed. **A bad archive fails here**, before a byte moves. A directory is packed here too, once for the whole run |
 | 2 | each host, in parallel | the discovery script runs rungs 1–3 |
 | 3 | each host that found nothing | delivery, below |
 
@@ -106,8 +106,8 @@ So on a twelve-host cluster where eleven already carry Java 17, exactly one uplo
 2. Check `install_root` is writable; if not and `--sudo` was not passed, fail naming the
    directory and the account.
 3. Create a staging directory beside the target, upload the archive into it, and unpack —
-   `--strip-components=1` when the tarball has a single top-level directory, which is what
-   a stock Temurin tarball has.
+   with `--strip-components` set to whatever wraps the JDK home (1 for a stock Temurin
+   tarball) and the decompression flag taken from the file's suffix.
 4. Verify `bin/java` exists in the staging tree; if not, remove the staging tree and fail.
 5. Write the manifest, then **swap** the staging tree into place and delete the old one.
 
@@ -116,12 +116,22 @@ that looks present is exactly as bad as a half-extracted distribution.
 
 ### Archive formats
 
+`.tar.gz`, `.tgz`, `.tar`, `.tar.bz2`/`.tbz2` and `.tar.xz`/`.txz` are all accepted; the
+`tar` flag on the worker follows the suffix.
+
+The JDK home is *located* rather than assumed: the shallowest `bin/java` in the archive
+wins, and everything above it is stripped. A second, deeper `bin/java` (a bundled JRE)
+cannot pull the depth with it.
+
 | Given | Result |
 | --- | --- |
-| `.tar.gz` / `.tgz` / `.tar` with one top-level dir | stripped; target defaults to that dir's name, e.g. `/opt/jdk-17.0.11+9` |
-| the same, flat (`bin/java` at the root) | not stripped; target defaults to the file name without its suffix |
-| an unpacked directory containing `bin/java` | tarred on the fly and sent |
-| no `bin/java` where expected | **refused on the coordinator** — a macOS build with `Contents/Home` is the realistic case |
+| one top-level dir, `jdk-17.0.11+9/bin/java` | stripped by 1; target defaults to that dir's name, e.g. `/opt/jdk-17.0.11+9` |
+| flat, `bin/java` at the root | not stripped; target defaults to the file name without its suffix |
+| wrapped deeper, `openjdk-17/jdk-17.0.11+9/bin/java` | stripped by 2; target defaults to `jdk-17.0.11+9` |
+| extra entries beside the JDK (a stray `LICENSE`, AppleDouble `._*` files) | ignored; they do not change where `bin/java` is |
+| an unpacked directory containing `bin/java` | packed once on the coordinator and sent to every host that needs it |
+| no `bin/java` anywhere | **refused on the coordinator**, naming the archive |
+| a macOS build (`Contents/Home` in the way) | **refused on the coordinator** — it unpacks fine and then fails on every worker |
 | `.zip` | **refused**, naming `.tar.gz`. Linux JDKs ship as tarballs, and a zip branch would be untested code on every real run |
 
 `java.name` overrides the target directory name; `java.install_root` overrides where it
