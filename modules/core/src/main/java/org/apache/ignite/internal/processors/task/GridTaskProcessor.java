@@ -473,8 +473,13 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
         assert ctx.security().enabled();
 
+        IgniteInternalCache<GridTaskNameHashKey, String> tasksMetaCache = taskMetaCache();
+
+        if (tasksMetaCache == null)
+            return null;
+
         try {
-            return taskMetaCache().localPeek(
+            return tasksMetaCache.localPeek(
                 new GridTaskNameHashKey(taskNameHash), null);
         }
         catch (IgniteCheckedException e) {
@@ -1177,7 +1182,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
-        // No-op.
+        tasksMetaCache = null;
     }
 
     /**
