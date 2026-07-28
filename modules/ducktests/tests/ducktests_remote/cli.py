@@ -190,6 +190,8 @@ def _common_parser():
                         help="disable ANSI colour")
     parser.add_argument("--fail-fast", action="store_true", default=argparse.SUPPRESS,
                         help="abort a fan-out after the first host failure")
+    parser.add_argument("--no-progress", action="store_true", default=argparse.SUPPRESS,
+                        help="do not report per-host progress during long transfers")
     return parser
 
 

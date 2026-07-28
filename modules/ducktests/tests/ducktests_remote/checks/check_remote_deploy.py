@@ -399,37 +399,48 @@ class CheckRsyncFastPath:
 
     # -- the command line --------------------------------------------------------
 
-    def check_the_file_list_comes_from_stdin_not_from_rsync_patterns(self):
-        argv = deploy.rsync_argv(_RsyncTransport(), "/dist/ignite-dev", "/opt/.tmp.1")
-        assert "--files-from=-" in argv
+    def check_an_exact_file_list_is_sent_not_rsync_patterns(self):
+        argv = deploy.rsync_argv(_RsyncTransport(), "/dist/ignite-dev", "/opt/.tmp.1",
+                                 files_from="/tmp/ignite-dev.files")
+        assert "--files-from=/tmp/ignite-dev.files" in argv
         assert not [a for a in argv if a.startswith("--exclude")], \
             "rsync pattern matching differs from is_excluded; the exact list is sent instead"
 
     def check_unchanged_files_are_hardlinked_against_the_live_distribution(self):
         argv = deploy.rsync_argv(_RsyncTransport(), "/dist/ignite-dev", "/opt/.tmp.1",
-                                 link_dest="/opt/ignite-dev")
+                                 files_from="/tmp/x.files", link_dest="/opt/ignite-dev")
         assert "--link-dest=/opt/ignite-dev" in argv
 
     def check_a_first_deployment_has_nothing_to_link_against(self):
-        argv = deploy.rsync_argv(_RsyncTransport(), "/dist/ignite-dev", "/opt/.tmp.1")
+        argv = deploy.rsync_argv(_RsyncTransport(), "/dist/ignite-dev", "/opt/.tmp.1",
+                                 files_from="/tmp/x.files")
         assert not [a for a in argv if a.startswith("--link-dest")]
 
     def check_it_lands_in_the_staging_directory_never_in_the_target(self):
         argv = deploy.rsync_argv(_RsyncTransport(), "/dist/ignite-dev", "/opt/.tmp.1",
-                                 link_dest="/opt/ignite-dev")
+                                 files_from="/tmp/x.files", link_dest="/opt/ignite-dev")
         assert argv[-1] == "tester@w1:/opt/.tmp.1/", \
             "an interrupted transfer must not leave a live distribution half updated"
         assert argv[-2] == "/dist/ignite-dev/"
 
     def check_ssh_options_reach_rsync(self):
-        argv = deploy.rsync_argv(_RsyncTransport(), "/dist/x", "/opt/.tmp.1")
+        argv = deploy.rsync_argv(_RsyncTransport(), "/dist/x", "/opt/.tmp.1",
+                                 files_from="/tmp/x.files")
         assert argv[argv.index("-e") + 1] == \
             "ssh -o BatchMode=yes -i /home/tester/.ssh/id_ed25519"
 
     def check_sudo_and_checksum_are_passed_through(self):
         argv = deploy.rsync_argv(_RsyncTransport(), "/dist/x", "/opt/.tmp.1",
-                                 checksum=True, sudo=True)
+                                 files_from="/tmp/x.files", checksum=True, sudo=True)
         assert "--checksum" in argv and "--rsync-path=sudo -n rsync" in argv
+
+    def check_progress_is_asked_of_rsync_only_when_something_displays_it(self):
+        plain = deploy.rsync_argv(_RsyncTransport(), "/dist/x", "/opt/.tmp.1",
+                                  files_from="/tmp/x.files")
+        watched = deploy.rsync_argv(_RsyncTransport(), "/dist/x", "/opt/.tmp.1",
+                                    files_from="/tmp/x.files", progress=True)
+        assert "--info=progress2" not in plain
+        assert "--info=progress2" in watched
 
     # -- stats -------------------------------------------------------------------
 
@@ -480,6 +491,12 @@ class CheckRsyncFastPath:
 
     # -- the transfer ------------------------------------------------------------
 
+    @staticmethod
+    def _file_list(tmp_path, root, name="ignite-dev.files"):
+        path = tmp_path / name
+        path.write_text("\n".join(deploy.included_files(root)) + "\n", encoding="utf-8")
+        return path
+
     def check_the_tarball_is_never_built_when_every_host_takes_rsync(self, tmp_path,
                                                                      monkeypatch):
         root, payload = self._dist_and_payload(tmp_path)
@@ -487,20 +504,21 @@ class CheckRsyncFastPath:
         calls = []
 
         def fake_run_local(argv, **kw):
-            calls.append((argv, kw.get("input")))
+            calls.append(argv)
             return Result(argv, 0, self.STATS, "", "local")
 
         monkeypatch.setattr(deploy, "run_local", fake_run_local)
         manifest = deploy.build_manifest(root)
+        files = self._file_list(tmp_path, root)
         result = deploy._deploy_to_host(  # noqa: SLF001
             self._ctx(transport), Node(host="w1", user="tester"), "ignite-dev",
-            "/opt/ignite-dev", manifest, "{}", payload, None, None,
-            "\n".join(deploy.included_files(root)) + "\n")
+            "/opt/ignite-dev", manifest, "{}", payload, None, None, files)
 
         assert not (tmp_path / "p.tar.gz").exists(), \
             "compressing a linked checkout would cost more than the transfer saves"
         assert len(calls) == 1
-        assert calls[0][1] == "bin/ignite.sh\nlibs/core.jar\n"
+        assert "--files-from=%s" % files in calls[0]
+        assert files.read_text(encoding="utf-8") == "bin/ignite.sh\nlibs/core.jar\n"
         assert result.status == CHANGED and "rsync: 12 of 2 file(s) changed" in result.message
 
     def check_the_staging_tree_is_still_swapped_into_place(self, tmp_path, monkeypatch):
@@ -511,7 +529,7 @@ class CheckRsyncFastPath:
         deploy._deploy_to_host(  # noqa: SLF001
             self._ctx(transport), Node(host="w1", user="tester"), "ignite-dev",
             "/opt/ignite-dev", deploy.build_manifest(root), "{}", payload, None, None,
-            "bin/ignite.sh\n")
+            self._file_list(tmp_path, root))
         scripts = "\n".join(transport.scripts)
         assert 'mv -- "$staging" "$target"' in scripts
         assert deploy.MANIFEST_NAME in "".join(transport.files)
@@ -525,7 +543,7 @@ class CheckRsyncFastPath:
         result = deploy._deploy_to_host(  # noqa: SLF001
             self._ctx(transport), Node(host="w1", user="tester"), "ignite-dev",
             "/opt/ignite-dev", deploy.build_manifest(root), "{}", payload, None, None,
-            "bin/ignite.sh\n")
+            self._file_list(tmp_path, root))
         assert (tmp_path / "p.tar.gz").exists()
         assert transport.uploads and result.status == CHANGED
 
@@ -538,7 +556,7 @@ class CheckRsyncFastPath:
         result = deploy._deploy_to_host(  # noqa: SLF001
             self._ctx(transport), Node(host="w1", user="tester"), "ignite-dev",
             "/opt/ignite-dev", deploy.build_manifest(root), "{}", payload, None, None,
-            "bin/ignite.sh\n")
+            self._file_list(tmp_path, root))
         assert result.status == FAILED and "permission denied" in result.detail
         assert 'mv -- "$staging" "$target"' not in "\n".join(transport.scripts)
 

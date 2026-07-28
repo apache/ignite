@@ -29,6 +29,7 @@ For changing the CLI rather than using it.
 | `cluster.py` | inventory → `Node` list → ducktape's `cluster.json` |
 | `transport.py` | the only place that shells out to `ssh`/`scp` |
 | `fanout.py` | bounded parallel per-host execution and the result table |
+| `progress.py` | the live per-host display for transfers that take minutes |
 | `runs.py` | run ids, run directory layout, state derivation, script rendering |
 | `sshdiag.py` | SSH failure classification and the administrator block |
 | `java.py` | JDK discovery, environment files, archive inspection |
@@ -103,6 +104,25 @@ point. Statuses: `ok`, `changed`, `skipped`, `warn`, `failed`.
 `render_table` prints failures' detail by default and everything's detail with `-v`;
 `summarise` prints `9 ok, 2 failed`, ordered worst-first.
 
+## Progress
+
+`Progress` is written to from the fan-out threads and drawn by one daemon thread of its
+own, so a slow terminal cannot slow a transfer down and an update never blocks on a
+redraw. Three rules it does not break:
+
+- **It never raises.** A display that takes a deploy down with it would be worse than no
+  display, so a stream that cannot be written to just turns the display off.
+- **The block is erased before anything else prints.** `deploy` renders the result table
+  after the `with progress:` body, on the lines the block occupied.
+- **`NullProgress` has the same surface.** Callers never test for `None` or for whether
+  the display is on; `--quiet`, `--dry-run` and `--no-progress` simply swap the object.
+
+Byte counts come from `--info=progress2` (rsync) and from `upload_watched`, which streams
+a file into `ssh 'cat > path'` because scp suppresses its own meter when its output is a
+pipe. `run_local_streaming` reads a child's output as it arrives, treating a carriage
+return as a line ending, and drains stderr on a thread so a chatty failure cannot deadlock
+the pipe.
+
 ## Redaction
 
 `Redactor` keys on resolved **values**, not on key names. Anything coming out of `${env:}`
@@ -145,8 +165,10 @@ flake8 ducktests_remote
 `[pytest]` in `tox.ini` collects `check_*.py` files, `Check` classes and `check_*`
 functions, which is why the files are named that way. `checks/fake_transport.py` provides a
 recording transport that simulates a small filesystem and returns canned output for
-commands matching a needle. The only subprocess in the suite is the deliberate one that
-proves the ducktape import boundary still holds.
+commands matching a needle. Two kinds of subprocess are deliberate: the one that proves
+the ducktape import boundary still holds, and the short `python -c` scripts that
+`check_remote_progress.py` uses to prove output really is read as it arrives. Nothing
+else spawns anything.
 
 Checks are named as sentences — `check_lists_replace_and_do_not_concatenate` — because the
 name is the specification and shows up in the failure output.

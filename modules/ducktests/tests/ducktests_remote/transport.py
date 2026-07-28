@@ -29,6 +29,7 @@ import shutil
 import subprocess
 import tarfile
 import tempfile
+import threading
 import uuid
 from dataclasses import dataclass, field
 from fnmatch import fnmatch
@@ -147,6 +148,17 @@ class Transport(abc.ABC):  # pylint: disable=too-many-instance-attributes
     def upload(self, local_path, remote_path, *, mode=None):
         """Copy a single local file to ``remote_path``."""
 
+    def upload_watched(self, local_path, remote_path, *, mode=None, on_bytes=None):
+        """
+        Copy a file, reporting bytes as they go out.
+
+        The default is :meth:`upload` with no reporting at all; only transports that can
+        see the bytes leave override it.  Callers therefore never have to ask whether
+        progress is available.
+        """
+        del on_bytes
+        return self.upload(local_path, remote_path, mode=mode)
+
     @abc.abstractmethod
     def download(self, remote_path, local_path):
         """Copy a single remote file to ``local_path``."""
@@ -211,6 +223,23 @@ class LocalTransport(Transport):
         shutil.copyfile(str(local_path), remote_path)
         if mode is not None:
             os.chmod(remote_path, mode)
+
+    def upload_watched(self, local_path, remote_path, *, mode=None, on_bytes=None):
+        if on_bytes is None:
+            return self.upload(local_path, remote_path, mode=mode)
+        self._trace(["cp", str(local_path), remote_path])
+        if self.dry_run:
+            return None
+        Path(remote_path).parent.mkdir(parents=True, exist_ok=True)
+        sent = 0
+        with open(local_path, "rb") as source, open(remote_path, "wb") as target:
+            for block in iter(lambda: source.read(CHUNK), b""):
+                target.write(block)
+                sent += len(block)
+                on_bytes(sent)
+        if mode is not None:
+            os.chmod(remote_path, mode)
+        return None
 
     def download(self, remote_path, local_path):
         self._trace(["cp", remote_path, str(local_path)])
@@ -290,6 +319,27 @@ class SshTransport(Transport):
         _spawn(argv, host=self.name, check=True)
         if mode is not None:
             self.run(["chmod", "%o" % mode, remote_path]).check()
+
+    def upload_watched(self, local_path, remote_path, *, mode=None, on_bytes=None):
+        """
+        Send a file through ``ssh 'cat > path'``, counting the bytes on the way in.
+
+        scp is the better tool and stays the default, but its progress meter is written
+        for a terminal and suppressed when stdout is a pipe - which it always is here.
+        Feeding the file to a remote ``cat`` ourselves is the only way to know how far a
+        300 MB payload has got, and the write blocks on a slow link exactly as scp does.
+        """
+        if on_bytes is None:
+            return self.upload(local_path, remote_path, mode=mode)
+        self._trace(["cat", str(local_path), ">", "%s:%s" % (self.target, remote_path)])
+        if self.dry_run:
+            return None
+        command = "cat > %s" % shlex.quote(remote_path)
+        argv = ["ssh"] + self.ssh_options() + ["-T", self.target, command]
+        _stream_to_stdin(argv, local_path, on_bytes, host=self.name)
+        if mode is not None:
+            self.run(["chmod", "%o" % mode, remote_path]).check()
+        return None
 
     def download(self, remote_path, local_path):
         self._trace(["scp", "%s:%s" % (self.target, remote_path), str(local_path)])
@@ -493,6 +543,90 @@ def _decode(raw):
 def run_local(argv, *, check=False, timeout=None, input=None):  # noqa: A002 - matches spec
     """Run a command on the coordinator itself, outside any transport (probes only)."""
     return _spawn([str(a) for a in argv], host="local", check=check, timeout=timeout, input=input)
+
+
+CHUNK = 1024 * 1024
+
+
+def run_local_streaming(argv, *, on_output, host="local"):
+    """
+    Run ``argv`` locally, handing each output line to ``on_output`` as it appears.
+
+    :return: a :class:`Result` holding the whole output, so a caller can still parse a
+        summary the command printed at the end.
+
+    Progress meters separate their updates with carriage returns rather than newlines,
+    so both count as line endings here.  stderr is drained by a thread: a command that
+    fills the stderr pipe while nobody reads it deadlocks, and rsync is chatty on stderr
+    when a host misbehaves.
+    """
+    argv = [str(a) for a in argv]
+    try:
+        # pylint: disable=consider-using-with
+        process = subprocess.Popen(  # noqa: S603 - argv is always a list, never a string
+            argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=0)
+    except FileNotFoundError as ex:
+        raise TransportError("%s: %s" % (argv[0], ex)) from ex
+
+    errors = []
+    drain = threading.Thread(target=lambda: errors.append(_decode(process.stderr.read())),
+                             daemon=True)
+    drain.start()
+
+    collected = []
+    pending = ""
+    while True:
+        block = process.stdout.read(4096)
+        if not block:
+            break
+        text = _decode(block)
+        collected.append(text)
+        pending += text
+        pending = _emit_lines(pending, on_output)
+    if pending.strip():
+        on_output(pending.strip())
+
+    process.wait()
+    drain.join(timeout=5)
+    return Result(argv, process.returncode, "".join(collected),
+                  errors[0] if errors else "", host)
+
+
+def _emit_lines(pending, on_output):
+    """:return: the unterminated tail; every complete line goes to ``on_output``."""
+    pending = pending.replace("\r\n", "\n")
+    while True:
+        cut = min((i for i in (pending.find("\n"), pending.find("\r")) if i >= 0), default=-1)
+        if cut < 0:
+            return pending
+        line, pending = pending[:cut], pending[cut + 1:]
+        if line.strip():
+            on_output(line.strip())
+
+
+def _stream_to_stdin(argv, local_path, on_bytes, *, host):
+    """Feed a file into ``argv``'s stdin in chunks, reporting the running total."""
+    try:
+        # pylint: disable=consider-using-with
+        process = subprocess.Popen(  # noqa: S603 - argv is always a list, never a string
+            argv, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except FileNotFoundError as ex:
+        raise TransportError("%s: %s" % (argv[0], ex)) from ex
+
+    sent = 0
+    try:
+        with open(local_path, "rb") as handle:
+            for block in iter(lambda: handle.read(CHUNK), b""):
+                process.stdin.write(block)
+                sent += len(block)
+                on_bytes(sent)
+        process.stdin.close()
+    except (BrokenPipeError, OSError):
+        # The far end died mid-transfer; its stderr says why, so fall through to wait().
+        pass
+    _, stderr = process.communicate()
+    result = Result(argv, process.returncode, "", _decode(stderr), host)
+    return result.check()
 
 
 def build_transport(host: str, *, user=None, port=22, identity_file=None, connect_timeout=15,

@@ -33,6 +33,7 @@ Ten commands: `run`, `status`, `logs`, `fetch`, `stop`, `provision`, `deploy`, `
 | `--dry-run` | print what would happen; execute nothing |
 | `--no-color` | disable ANSI colour |
 | `--fail-fast` | stop scheduling further hosts after the first failure |
+| `--no-progress` | do not report per-host progress during long transfers |
 
 `--version` prints the CLI version. Everything after a bare `--` is passed straight to
 ducktape by `run`.
@@ -276,6 +277,41 @@ The result line reports what actually moved:
 ```
 w01  changed  4.1s  rsync: 12 of 8431 file(s) changed, 4.0 MB sent
 ```
+
+### Watching a long transfer
+
+Sending 3.5 GB to twelve machines takes minutes, and a terminal that prints nothing for
+that long is indistinguishable from one that has hung. `deploy` shows every host while it
+works, redrawn in place:
+
+```
+  worker01  █████████████████░░░░░░░  70%  210.0 MB / 300.0 MB  24.1 MB/s
+  worker02  ████████░░░░░░░░░░░░░░░░  32%   96.0 MB / 300.0 MB  18.7 MB/s
+  worker03  ░░░░░░░░░░░░░░░░░░░░░░░░ extracting
+  total     ████████████░░░░░░░░░░░░  50%  1/4 host(s)  306.0 MB sent  1:12
+```
+
+Hosts drop out of the block as they finish — they are already counted in the total — and
+a cluster larger than the block ends with `... N more host(s)`.
+
+The total is the **mean of the per-host fractions**, not bytes against a predicted total:
+rsync sends only what differs, so a denominator of "distribution size × hosts" would stop
+at 12% and finish there. Each host owns an equal share of that bar.
+
+Where the byte counts come from: `--info=progress2` on the rsync path, and the bytes
+handed to the remote `cat` on the tarball path. scp has a progress meter of its own, but
+it is written for a terminal and suppressed when its output is a pipe — which it always
+is here — so a watched tarball upload streams the file through `ssh 'cat > path'` and
+counts the chunks itself.
+
+| Situation | What you get |
+| --- | --- |
+| a terminal | the redrawn block above |
+| not a terminal (a log, CI), or `--verbose` | one `total ...` line every 15 s |
+| `--quiet`, `--dry-run`, `--no-progress` | nothing |
+
+`--verbose` deliberately drops to the single line: it prints a traced command per host,
+and a redrawn block would fight with it.
 
 The tarball path is used instead when:
 

@@ -31,8 +31,10 @@ against the previous deployment (``--link-dest``), so a rebuild of one module se
 jar rather than the whole tree.  The fallback, used when either end has no rsync or when
 ``--via`` stages the payload on an intermediate host, is a tarball of the whole
 distribution.  Both end in the same atomic swap, and both carry exactly the file list the
-manifest was built from - rsync is fed that list on stdin rather than its own ``--exclude``
-patterns, whose matching rules differ subtly from :func:`is_excluded`'s.
+manifest was built from - rsync is handed that list as a file rather than its own
+``--exclude`` patterns, whose matching rules differ subtly from :func:`is_excluded`'s.
+
+Long transfers report progress per host; see :mod:`ducktests_remote.progress`.
 
 :func:`build_manifest`, :func:`prepare_script`, :func:`swap_script` and :func:`human` are
 public because ``provision``'s ``jdk`` step delivers a JDK the same way and must not grow
@@ -46,6 +48,7 @@ import posixpath
 import re
 import shlex
 import shutil
+import sys
 import tempfile
 import threading
 import uuid
@@ -55,8 +58,9 @@ from ducktests_remote.cli import EXIT_OK, EXIT_TRANSPORT, EXIT_USAGE
 from ducktests_remote.config import ConfigError, expand_path
 from ducktests_remote.fanout import (CHANGED, FAILED, HostResult, SKIPPED, any_failed,
                                      fanout, render_table, summarise)
+from ducktests_remote.progress import NullProgress, Progress, is_a_terminal
 from ducktests_remote.transport import (ProxiedTransport, is_excluded, make_tarball,
-                                        run_local)
+                                        run_local, run_local_streaming)
 
 MANIFEST_NAME = ".ducktests-deploy.json"
 
@@ -70,6 +74,10 @@ IGNORE_NAME = ".ducktests-deploy.ignore"
 # on 2.x.  Thousands separators are locale-dependent; the labels are not translated.
 _RSYNC_TRANSFERRED = re.compile(r"Number of (?:regular )?files transferred:\s*([\d,.]+)")
 _RSYNC_SENT = re.compile(r"Total transferred file size:\s*([\d,.]+)")
+
+# `--info=progress2`: `      1,234,567  35%   12.34MB/s    0:00:12`.  The separators are
+# locale-dependent, the layout is not.
+_RSYNC_PROGRESS = re.compile(r"^\s*([\d,.]+)\s+(\d+)%\s")
 
 
 def register(subparsers, common):
@@ -143,7 +151,10 @@ def execute(ctx):  # pylint: disable=too-many-locals
     overall = []
     for name, manifest, excludes in plans:
         console.heading("%s -> %s/%s" % (name, install_root, name))
-        results = _deploy_one(ctx, dist_dir, name, manifest, install_root, nodes, excludes)
+        progress = build_progress(ctx, nodes)
+        with progress:
+            results = _deploy_one(ctx, dist_dir, name, manifest, install_root, nodes,
+                                  excludes, progress)
         overall.extend(results)
         console.out(render_table(results, verbose=console.verbose))
         console.out(summarise(results))
@@ -153,6 +164,22 @@ def execute(ctx):  # pylint: disable=too-many-locals
                                 for r in overall], indent=2))
 
     return EXIT_TRANSPORT if any_failed(overall) else EXIT_OK
+
+
+def build_progress(ctx, nodes):
+    """
+    :return: a :class:`Progress` for this deploy, or a :class:`NullProgress`.
+
+    Off for ``--dry-run`` (nothing moves) and ``--quiet``.  Live only on a terminal:
+    ``--verbose`` prints a traced command line per host, which a redrawn block would
+    fight with, so that combination reports one aggregate line every few seconds
+    instead - the same shape a CI log gets.
+    """
+    if ctx.dry_run or ctx.console.quiet or getattr(ctx.args, "no_progress", False):
+        return NullProgress()
+    live = is_a_terminal(sys.stderr) and not ctx.console.verbose
+    return Progress([node.host for node in nodes], live=live,
+                    redactor=ctx.console.redactor)
 
 
 def _distributions(dist_dir, only):
@@ -271,7 +298,8 @@ def human(size):
     return "%.1f TB" % value
 
 
-def _deploy_one(ctx, dist_dir, name, manifest, install_root, nodes, excludes=()):
+def _deploy_one(ctx, dist_dir, name, manifest, install_root, nodes, excludes=(),
+                progress=None):
     args = ctx.args
     target = posixpath.join(install_root, name)
     manifest_body = json.dumps({
@@ -304,12 +332,14 @@ def _deploy_one(ctx, dist_dir, name, manifest, install_root, nodes, excludes=())
 
         file_list = None
         if rsync_enabled(ctx):
-            file_list = "\n".join(included_files(Path(dist_dir) / name, excludes)) + "\n"
+            file_list = Path(tmp) / ("%s.files" % name)
+            file_list.write_text("\n".join(included_files(Path(dist_dir) / name, excludes))
+                                 + "\n", encoding="utf-8")
 
         def operation(node, _payload=payload, _staged=staged_on_via, _via=via_transport,
                       _files=file_list):
             return _deploy_to_host(ctx, node, name, target, manifest, manifest_body,
-                                   _payload, _staged, _via, _files)
+                                   _payload, _staged, _via, _files, progress)
 
         try:
             return fanout(nodes, operation, jobs=ctx.jobs,
@@ -371,7 +401,19 @@ def rsync_enabled(ctx):
     return shutil.which("rsync") is not None
 
 
-def rsync_argv(transport, local_root, staging, *, link_dest=None, checksum=False, sudo=False):
+def parse_rsync_progress(line):
+    """:return: ``(bytes_so_far, fraction)`` from one ``--info=progress2`` line, or None."""
+    match = _RSYNC_PROGRESS.match(line or "")
+    if not match:
+        return None
+    try:
+        return int(re.sub(r"[,.]", "", match.group(1))), int(match.group(2)) / 100.0
+    except ValueError:
+        return None
+
+
+def rsync_argv(transport, local_root, staging, *, files_from, link_dest=None,
+               checksum=False, sudo=False, progress=False):
     """
     :return: the rsync command line that fills ``staging`` on one worker.
 
@@ -380,9 +422,16 @@ def rsync_argv(transport, local_root, staging, *, link_dest=None, checksum=False
     one module costs one jar.  The staging directory is still built from scratch and
     still swapped in atomically, so an interrupted transfer cannot leave a live
     distribution half updated.
+
+    ``files_from`` is a file holding the exact list to send, written once per
+    distribution.  It is not stdin: the output side is read as it arrives for progress,
+    and a process whose stdin and stdout are both being pumped by one thread deadlocks
+    as soon as either pipe fills.
     """
-    argv = ["rsync", "-a", "--stats", "--files-from=-",
+    argv = ["rsync", "-a", "--stats", "--files-from=%s" % files_from,
             "-e", shlex.join(["ssh"] + transport.ssh_options())]
+    if progress:
+        argv.append("--info=progress2")
     if checksum:
         argv.append("--checksum")
     if link_dest:
@@ -408,8 +457,9 @@ def parse_rsync_stats(text):
 
 
 def _deploy_to_host(ctx, node, name, target, manifest, manifest_body, payload,
-                    staged_on_via, via_transport, file_list=None):
+                    staged_on_via, via_transport, file_list=None, progress=None):
     transport = ctx.worker(node)
+    progress = progress or NullProgress()
     remote_manifest = posixpath.join(target, MANIFEST_NAME)
 
     if not ctx.args.force:
@@ -417,6 +467,7 @@ def _deploy_to_host(ctx, node, name, target, manifest, manifest_body, payload,
         if existing:
             try:
                 if json.loads(existing).get("hash") == manifest["hash"]:
+                    progress.done(node.host, "already up to date")
                     return HostResult(node.host, SKIPPED, "already at %s"
                                       % manifest["hash"][:12])
             except ValueError:
@@ -425,6 +476,7 @@ def _deploy_to_host(ctx, node, name, target, manifest, manifest_body, payload,
     install_root = posixpath.dirname(target)
     writable = transport.run(["test", "-w", install_root], check=False).ok
     if not writable and not ctx.args.sudo:
+        progress.done(node.host, "not writable")
         return HostResult(node.host, FAILED,
                           "%s is not writable by %s and --sudo was not passed"
                           % (install_root, node.user or "this account"))
@@ -434,6 +486,7 @@ def _deploy_to_host(ctx, node, name, target, manifest, manifest_body, payload,
     stats = None
 
     if via_transport is not None:
+        progress.phase(node.host, "fanning out")
         proxied = ProxiedTransport(name=node.host, via=via_transport, user=node.user,
                                    port=node.port,
                                    identity_file=node.identity_file,
@@ -443,21 +496,29 @@ def _deploy_to_host(ctx, node, name, target, manifest, manifest_body, payload,
         proxied.push_archive(staged_on_via, staging)
     elif file_list is not None and getattr(transport, "has_rsync", _no_rsync)():
         outcome = _rsync_to_host(ctx, node, transport, payload.root, staging, target,
-                                 file_list)
+                                 file_list, progress)
         if isinstance(outcome, HostResult):
+            progress.done(node.host, "failed")
             return outcome
         used_rsync, stats = True, outcome
     else:
         transport.run_script(prepare_script(staging, ctx.args.sudo)).check()
         remote_archive = "%s/.payload.tar.gz" % staging
-        transport.upload(payload.archive(), remote_archive)
+        archive = payload.archive()
+        progress.phase(node.host, "sending")
+        transport.upload_watched(archive, remote_archive,
+                                 on_bytes=_watcher(progress, node.host,
+                                                   os.path.getsize(archive)))
+        progress.phase(node.host, "extracting")
         transport.run_script(
             "set -eu\ntar -xzf %s -C %s\nrm -f -- %s\n"
             % (shlex.quote(remote_archive), shlex.quote(staging),
                shlex.quote(remote_archive))).check()
 
+    progress.phase(node.host, "swapping")
     transport.write_file(manifest_body, posixpath.join(staging, MANIFEST_NAME))
     transport.run_script(swap_script(staging, target, ctx.args.sudo, ctx.args.owner)).check()
+    progress.done(node.host)
     if used_rsync:
         if stats:
             return HostResult(node.host, CHANGED, "rsync: %d of %s file(s) changed, %s sent"
@@ -472,7 +533,13 @@ def _no_rsync():
     return False
 
 
-def _rsync_to_host(ctx, node, transport, local_root, staging, target, file_list):
+def _watcher(progress, host, total):
+    """:return: an ``on_bytes`` callback that feeds one host's row."""
+    return lambda sent: progress.sent(host, sent, total)
+
+
+def _rsync_to_host(ctx, node, transport, local_root, staging, target, file_list,
+                   progress=None):
     """
     :return: ``(files, bytes)`` transferred, ``None`` when ``--stats`` could not be read,
         or a failed :class:`HostResult`.
@@ -480,17 +547,34 @@ def _rsync_to_host(ctx, node, transport, local_root, staging, target, file_list)
     The staging directory is created before rsync runs, and hardlinked against the live
     distribution when there is one to link against.
     """
+    progress = progress or NullProgress()
     transport.run_script(prepare_script(staging, ctx.args.sudo)).check()
-    argv = rsync_argv(transport, local_root, staging,
+    # Both display modes need the byte counts; only the display itself differs.
+    watched = not isinstance(progress, NullProgress)
+    argv = rsync_argv(transport, local_root, staging, files_from=file_list,
                       link_dest=target if transport.exists(target) else None,
                       checksum=ctx.args.checksum or ctx.config["deploy"].get("checksum", False),
-                      sudo=ctx.args.sudo)
+                      sudo=ctx.args.sudo, progress=watched)
     ctx.console.detail("%s: %s" % (node.host, shlex.join(argv)))
-    result = run_local(argv, input=file_list)
+    progress.phase(node.host, "sending")
+    if watched:
+        result = run_local_streaming(argv, host=node.host,
+                                     on_output=_rsync_watcher(progress, node.host))
+    else:
+        result = run_local(argv)
     if not result.ok:
         return HostResult(node.host, FAILED, "rsync failed",
                           detail=(result.stderr or result.stdout).strip())
     return parse_rsync_stats(result.stdout)
+
+
+def _rsync_watcher(progress, host):
+    """:return: a line callback that turns ``--info=progress2`` into one host's row."""
+    def watch(line):
+        reading = parse_rsync_progress(line)
+        if reading:
+            progress.sent(host, reading[0], fraction=reading[1])
+    return watch
 
 
 def prepare_script(staging, use_sudo):

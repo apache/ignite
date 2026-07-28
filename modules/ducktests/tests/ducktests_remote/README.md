@@ -251,7 +251,17 @@ sends one jar rather than the whole tree:
 w01  changed  4.1s  rsync: 12 of 8431 file(s) changed, 4.0 MB sent
 ```
 
-rsync is fed the exact file list on stdin — never its own `--exclude` patterns, whose
+A transfer that takes minutes shows what every host is doing, redrawn in place on a
+terminal and reduced to one `total ...` line every 15 seconds in a log, under `--verbose`,
+or wherever stderr is not a terminal (`--no-progress` turns it off):
+
+```
+  worker01  █████████████████░░░░░░░  70%  210.0 MB / 300.0 MB  24.1 MB/s
+  worker02  ████████░░░░░░░░░░░░░░░░  32%   96.0 MB / 300.0 MB  18.7 MB/s
+  total     ████████████░░░░░░░░░░░░  50%  1/4 host(s)  306.0 MB sent  1:12
+```
+
+rsync is fed the exact file list as a file — never its own `--exclude` patterns, whose
 matching differs from the manifest's. `deploy` falls back to a tarball of the whole
 distribution when either end has no rsync (probed per host), with `--via`, with
 `--no-rsync` or `deploy.rsync: false`, or on a Windows coordinator, where rsync would read
