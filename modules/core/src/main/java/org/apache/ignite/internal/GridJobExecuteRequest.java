@@ -451,7 +451,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     /**
      * @param marsh Marshaller.
      */
-    public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+    public void marshal(Marshaller marsh) throws IgniteCheckedException {
         jobBytes = U.marshal(marsh, job);
         topPredBytes = U.marshal(marsh, topPred);
         siblingsBytes = U.marshal(marsh, siblings);
@@ -463,7 +463,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
      * @param marsh Marshaller.
      * @param ldr Class loader.
      */
-    public void finishUnmarshal(Marshaller marsh, ClassLoader ldr) throws IgniteCheckedException {
+    public void unmarshal(Marshaller marsh, ClassLoader ldr) throws IgniteCheckedException {
         assert top != null || topPredBytes != null;
         assert sesAttrsBytes != null || !sesFullSup;
 

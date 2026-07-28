@@ -1931,12 +1931,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             else {
                 try {
                     for (DataStreamerEntry e : entries) {
-                        e.getKey().prepareMarshal(cacheObjCtx);
+                        e.getKey().marshal(cacheObjCtx);
 
                         CacheObject val = e.getValue();
 
                         if (val != null)
-                            val.prepareMarshal(cacheObjCtx);
+                            val.marshal(cacheObjCtx);
                     }
 
                     if (updaterBytes == null) {
@@ -2253,7 +2253,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     cctx.shared().database().checkpointReadLock();
 
                     try {
-                        e.getKey().finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
+                        e.getKey().unmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
 
                         int p = cctx.affinity().partition(e.getKey());
 

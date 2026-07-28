@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.DeployableMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
@@ -39,7 +40,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * DHT atomic cache near update response.
  */
-public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements GridCacheDeployable {
+public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements GridCacheDeployable, DeployableMessage {
     /** Cache message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
 
@@ -337,39 +338,6 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
         errs.addFailedKeys(keys, e);
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
-
-        if (errs != null)
-            errs.prepareMarshal(this, cctx);
-
-        if (nearUpdates != null)
-            prepareMarshalCacheObjects(nearUpdates.nearValues(), cctx);
-
-        if (ret != null)
-            ret.prepareMarshal(cctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
-
-        if (errs != null)
-            errs.finishUnmarshal(this, cctx, ldr);
-
-        if (nearUpdates != null)
-            finishUnmarshalCacheObjects(nearUpdates.nearValues(), cctx, ldr);
-
-        if (ret != null)
-            ret.finishUnmarshal(cctx, ldr);
-    }
-
     /**
      * @return Data for near cache update.
      */
@@ -406,6 +374,14 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
         return ctx.atomicMessageLogger();
     }
 
+    /** {@inheritDoc} */
+    @Override public void deploy(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        if (nearUpdates != null) {
+            GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
+
+            deployCacheObjects(nearUpdates.nearValues(), cctx);
+        }
+    }
 
     /** {@inheritDoc} */
     @Override public String toString() {
