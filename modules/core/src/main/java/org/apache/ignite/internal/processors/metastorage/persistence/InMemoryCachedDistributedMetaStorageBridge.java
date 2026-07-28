@@ -115,12 +115,14 @@ class InMemoryCachedDistributedMetaStorageBridge {
 
     /** */
     public void writeFullNodeData(DistributedMetaStorageClusterNodeData fullNodeData) {
-        assert fullNodeData.fullData != null;
+        assert fullNodeData.fullDataKeys != null;
+        assert fullNodeData.fullDataValsBytes != null;
+        assert fullNodeData.fullDataKeys.length == fullNodeData.fullDataValsBytes.length;
 
         cache.clear();
 
-        for (DistributedMetaStorageKeyValuePair item : fullNodeData.fullData)
-            cache.put(item.key, item.valBytes);
+        for (int i = 0; i < fullNodeData.fullDataKeys.length; ++i)
+            cache.put(fullNodeData.fullDataKeys[i], fullNodeData.fullDataValsBytes[i]);
     }
 
     /** */

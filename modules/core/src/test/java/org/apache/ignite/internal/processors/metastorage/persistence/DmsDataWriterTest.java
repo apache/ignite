@@ -203,12 +203,8 @@ public class DmsDataWriterTest extends GridCommonAbstractTest {
 
         DistributedMetaStorageVersion ver = INITIAL_VERSION.nextVersion(update);
 
-        dmsDataWriter.addUpdateTask(new DistributedMetaStorageClusterNodeData(
-            ver,
-            new DistributedMetaStorageKeyValuePair[] {toKeyValuePair(update)},
-            new DistributedMetaStorageHistoryItem[] {update},
-            new DistributedMetaStorageHistoryItem[] {histItem("key4", "val4")} // Has to be ignored.
-        ));
+        dmsDataWriter.addUpdateTask(ver, new DistributedMetaStorageHistoryItem[] {update},
+            new DistributedMetaStorageKeyValuePair[] {toKeyValuePair(update)});
 
         stopWorker();
 

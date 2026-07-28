@@ -211,6 +211,9 @@ import org.apache.ignite.internal.processors.marshaller.MissingMappingRequestMes
 import org.apache.ignite.internal.processors.marshaller.MissingMappingResponseMessage;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageCasAckMessage;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageCasMessage;
+import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageClusterNodeData;
+import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryItemMessage;
+import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageJoiningNodeData;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUpdateAckMessage;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUpdateMessage;
 import org.apache.ignite.internal.processors.plugin.PluginsDataBagItem;
@@ -709,6 +712,9 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(ClusterUpdateNotifierDataBagItem.class);
         withNoSchemaResolvedClassLoader(PluginsDataBagItem.class);
         withSchema(EventsDataBagItem.class);
+        withSchema(DistributedMetaStorageHistoryItemMessage.class);
+        withSchema(DistributedMetaStorageJoiningNodeData.class);
+        withSchema(DistributedMetaStorageClusterNodeData.class);
 
         // [13400 - 13500]: Operation context messages.
         msgIdx = 13400;

@@ -130,9 +130,7 @@ public interface GridComponent {
      *
      * @param dataBag container object to store discovery data in.
      */
-    default void collectJoiningNodeData(DiscoveryDataBag dataBag) {
-        // No-op.
-    }
+    public void collectJoiningNodeData(DiscoveryDataBag dataBag);
 
     /**
      * Collects discovery data on nodes already in grid on receiving
