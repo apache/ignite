@@ -17,51 +17,85 @@
 
 package org.apache.ignite.internal.processors.metastorage.persistence;
 
-import java.io.Serializable;
+import java.io.Externalizable;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Distributed metastorage data that cluster sends to joining node.
+ * Distributed metastorage data that cluster sends to joining node. Contains unwrapped {@link DistributedMetaStorageVersion},
+ * arrays of unwrapped {@link DistributedMetaStorageKeyValuePair} (to reduce messages number) and
+ * {@link DistributedMetaStorageHistoryItemMessage} wraps. The original data holders are {@link Externalizable}s and
+ * are persistent by {@link MetaStorage with the dedicated code-generated serializers. Thus, we do not make them directly a {@link Message}.
+ *
+ * @see DmsDataWriter#write(String, byte[])
+ * @see MetaStorage#write(String, Serializable)
  */
-@SuppressWarnings({"PublicField", "AssignmentOrReturnOfFieldWithMutableType"})
-class DistributedMetaStorageClusterNodeData implements Serializable {
-    /** */
-    private static final long serialVersionUID = 0L;
+public class DistributedMetaStorageClusterNodeData implements Message {
+    /** @see DistributedMetaStorageVersion#id */
+    @Order(0)
+    @GridToStringInclude
+    long dVerId;
+
+    /** @see DistributedMetaStorageVersion#hash */
+    @Order(1)
+    @GridToStringInclude
+    long dVerHash;
+
+    /** @see DistributedMetaStorageKeyValuePair#key */
+    @GridToStringInclude
+    @Order(2)
+    String[] fullDataKeys;
+
+    /** @see DistributedMetaStorageKeyValuePair#valBytes */
+    @GridToStringInclude
+    @Order(3)
+    byte[][] fullDataValsBytes;
 
     /**
-     * Distributed metastorage version of cluster. If {@link #fullData} is not null then this version corresponds to
-     * its content.
-     */
-    public final DistributedMetaStorageVersion ver;
-
-    /**
-     * Full data is sent if there's not enough history items on local node.
-     */
-    public final DistributedMetaStorageKeyValuePair[] fullData;
-
-    /**
-     * Required updates for joining nodes or full available history of local node if {@link #fullData} is
+     * Required updates for joining nodes or full available history of local node if the full data is
      * not {@code null}.
      */
-    public final DistributedMetaStorageHistoryItem[] hist;
+    @Order(4)
+    @Nullable DistributedMetaStorageHistoryItemMessage[] hist;
 
     /**
-     * Additional updates. Makes sence only if {@link #fullData} is not {@code null}.
+     * Additional updates. Makes sence only if the full data is not {@code null}.
      */
-    public DistributedMetaStorageHistoryItem[] updates;
+    @Order(5)
+    @Nullable DistributedMetaStorageHistoryItemMessage[] updates;
+
+    /** Empty constructor for serialization purposes. */
+    public DistributedMetaStorageClusterNodeData() {
+        // No-op.
+    }
 
     /** */
     public DistributedMetaStorageClusterNodeData(
         DistributedMetaStorageVersion ver,
-        DistributedMetaStorageKeyValuePair[] fullData,
-        DistributedMetaStorageHistoryItem[] hist,
-        DistributedMetaStorageHistoryItem[] updates
+        @Nullable DistributedMetaStorageKeyValuePair[] fullData,
+        @Nullable DistributedMetaStorageHistoryItem[] hist,
+        @Nullable DistributedMetaStorageHistoryItem[] updates
     ) {
         assert ver != null;
         assert fullData == null || hist != null;
 
-        this.fullData = fullData;
-        this.ver = ver;
-        this.hist = hist;
-        this.updates = updates;
+        dVerId = ver.id;
+        dVerHash = ver.hash;
+
+        if (fullData != null) {
+            fullDataKeys = new String[fullData.length];
+            fullDataValsBytes = new byte[fullData.length][];
+
+            for (int i = 0; i < fullData.length; ++i) {
+                fullDataKeys[i] = fullData[i].key;
+                fullDataValsBytes[i] = fullData[i].valBytes;
+            }
+        }
+
+        this.hist = DistributedMetaStorageHistoryItemMessage.of(hist);
+        this.updates = DistributedMetaStorageHistoryItemMessage.of(updates);
     }
 }

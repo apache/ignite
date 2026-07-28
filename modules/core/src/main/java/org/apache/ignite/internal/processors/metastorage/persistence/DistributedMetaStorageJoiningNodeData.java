@@ -17,30 +17,47 @@
 
 package org.apache.ignite.internal.processors.metastorage.persistence;
 
-import java.io.Serializable;
+import java.io.Externalizable;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
- * Distributed metastorage data that joining node sends to cluster.
+ * Distributed metastorage data message that a joining node sends to a cluster. Contains unwrapped
+ * {@link DistributedMetaStorageVersion} (to reduce messages number) and {@link DistributedMetaStorageHistoryItemMessage}s.
+ * They are a {@link Externalizable} and persistent by {@link MetaStorage with the dedicated code-generated serializers.
+ * Thus, we do not make them directly a {@link Message}.
+ *
+ * @see DmsDataWriter#write(String, byte[])
+ * @see MetaStorage#write(String, Serializable)
  */
-@SuppressWarnings("PublicField")
-class DistributedMetaStorageJoiningNodeData implements Serializable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class DistributedMetaStorageJoiningNodeData implements Message {
     /**
      * Baseline topology id of node, {@code -1} if baseline topology is null.
      */
-    public final int bltId;
+    @Order(0)
+    int bltId;
 
-    /**
-     * Distributed metastorage version of joining node.
-     */
-    public final DistributedMetaStorageVersion ver;
+    /** @see DistributedMetaStorageVersion#id */
+    @Order(1)
+    @GridToStringInclude
+    long dVerId;
 
-    /**
-     * Available history of joining node.
-     */
-    public final DistributedMetaStorageHistoryItem[] hist;
+    /** @see DistributedMetaStorageVersion#hash */
+    @Order(2)
+    @GridToStringInclude
+    long dVerHash;
+
+    /** Available history of joining node. */
+    @Order(3)
+    @GridToStringInclude
+    DistributedMetaStorageHistoryItemMessage[] hist;
+
+    /** For serialization purposes. */
+    public DistributedMetaStorageJoiningNodeData() {
+        // No-op.
+    }
 
     /** */
     public DistributedMetaStorageJoiningNodeData(
@@ -48,8 +65,14 @@ class DistributedMetaStorageJoiningNodeData implements Serializable {
         DistributedMetaStorageVersion ver,
         DistributedMetaStorageHistoryItem[] hist
     ) {
+        assert ver != null;
+        assert hist != null;
+
         this.bltId = bltId;
-        this.ver = ver;
-        this.hist = hist;
+
+        dVerId = ver.id;
+        dVerHash = ver.hash;
+
+        this.hist = DistributedMetaStorageHistoryItemMessage.of(hist);
     }
 }
