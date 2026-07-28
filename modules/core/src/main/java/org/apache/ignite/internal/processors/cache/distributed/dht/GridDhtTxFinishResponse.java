@@ -17,12 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -118,33 +115,6 @@ public final class GridDhtTxFinishResponse extends GridDistributedTxFinishRespon
         return checkCommitted;
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        if (retVal != null && retVal.cacheId() != 0) {
-            GridCacheContext<?, ?> cctx = ctx.cacheContext(retVal.cacheId());
-
-            assert cctx != null : retVal.cacheId();
-
-            retVal.prepareMarshal(cctx);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr)
-        throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        if (retVal != null && retVal.cacheId() != 0) {
-            GridCacheContext<?, ?> cctx = ctx.cacheContext(retVal.cacheId());
-
-            assert cctx != null : retVal.cacheId();
-
-            retVal.finishUnmarshal(cctx, ldr);
-        }
-    }
-
     /**
      * @param retVal Return value.
      */
@@ -158,8 +128,7 @@ public final class GridDhtTxFinishResponse extends GridDistributedTxFinishRespon
     public GridCacheReturn returnValue() {
         return retVal;
     }
-
-
+    
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtTxFinishResponse.class, this, "super", super.toString());

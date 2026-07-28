@@ -76,6 +76,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.DeferredUnmarshalMessage;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -493,6 +494,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
                 msg0.senderNodeId(nodeId);
 
+                msg0.onAfterRead();
+
                 if (msg0.request()) {
                     IgniteIoTestMessage res = new IgniteIoTestMessage(msg0.id(), false, null);
 
@@ -502,6 +505,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                     res.copyDataFromRequest(msg0);
 
                     try {
+                        res.onBeforeWrite();
+
                         sendToGridTopic(node, GridTopic.TOPIC_IO_TEST, res, GridIoPolicy.SYSTEM_POOL);
                     }
                     catch (IgniteCheckedException e) {
@@ -546,6 +551,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
         ioTestMap().put(id, fut);
 
+        msg.onBeforeWrite();
+
         for (int i = 0; i < nodes.size(); i++) {
             ClusterNode node = nodes.get(i);
 
@@ -582,6 +589,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         msg.processFromNioThread(procFromNioThread);
 
         ioTestMap().put(id, fut);
+
+        msg.onBeforeWrite();
 
         try {
             sendToGridTopic(node, GridTopic.TOPIC_IO_TEST, msg, GridIoPolicy.SYSTEM_POOL);
@@ -1167,10 +1176,22 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
             byte plc = initMsg.policy();
 
+            // Not a double unmarshal: the @NioField routing header is restored here on the NIO thread, its full
+            // payload below on a pool thread — disjoint fields.
+            MessageMarshalling.unmarshalNio(initMsg, ctx);
+
             pools.poolForPolicy(plc).execute(new Runnable() {
                 @Override public void run() {
-                    processOpenedChannel(initMsg.topic(), rmtNodeId, (SessionChannelMessage)initMsg.message(),
-                        (SocketChannel)channel);
+                    try {
+                        MessageMarshalling.unmarshal(initMsg, ctx);
+
+                        processOpenedChannel(initMsg.topic(), rmtNodeId, (SessionChannelMessage)initMsg.message(),
+                            (SocketChannel)channel);
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to process channel creation event due to exception " +
+                            "[rmtNodeId=" + rmtNodeId + ", initMsg=" + initMsg + ']', e);
+                    }
                 }
             });
         }
@@ -1232,6 +1253,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                     lock.readLock().unlock();
                 }
             }
+
+            // After the delayed-message gate: a replayed message re-enters this method, so its NIO-thread header
+            // unmarshal is kept here to run exactly once.
+            MessageMarshalling.unmarshalNio(msg, ctx);
 
             // If message is P2P, then process in P2P service.
             // This is done to avoid extra waiting and potential deadlocks
@@ -1299,16 +1324,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                 try {
                     threadProcessingMessage(true, msgC);
 
-                    GridMessageListener lsnr = listenerGet0(msg.topic());
-
-                    if (lsnr == null)
-                        return;
-
-                    Object obj = msg.message();
-
-                    assert obj != null;
-
-                    invokeListener(msg.policy(), lsnr, nodeId, obj);
+                    processRegularMessage0(msg, nodeId);
                 }
                 finally {
                     threadProcessingMessage(false, null);
@@ -1438,11 +1454,22 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         if (lsnr == null)
             return;
 
-        Object obj = msg.message();
+        unmarshalPayload(msg);
 
-        assert obj != null;
+        invokeListener(msg.policy(), lsnr, nodeId, msg.message());
+    }
 
-        invokeListener(msg.policy(), lsnr, nodeId, obj);
+    /** */
+    private void unmarshalPayload(GridIoMessage msg) {
+        if (msg.message() instanceof DeferredUnmarshalMessage)
+            return;
+
+        try {
+            MessageMarshalling.unmarshal(msg.message(), ctx);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to unmarshal message payload", e);
+        }
     }
 
     /**
@@ -1926,6 +1953,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             false
         );
 
+        marshal(ioMsg);
+
         try {
             return ((TcpCommunicationSpi)(CommunicationSpi)getSpi()).openChannel(node, ioMsg);
         }
@@ -1992,25 +2021,158 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                 ackC.apply(null);
         }
         else {
+            marshal(ioMsg);
+
+            sendMarshalled(node, ioMsg, ackC);
+        }
+    }
+
+    /**
+     * Wraps {@code msg} into a marshalled {@link GridIoMessage} without sending it. Message marshalling is not
+     * idempotent (see {@code MessageMarshalOnceTest}), so {@link #sendWithRetry} prepares the message once and
+     * re-sends it via {@link #sendPrepared} on each attempt.
+     */
+    private GridIoMessage prepare(Object topic, Message msg, byte plc, boolean ordered, long timeout,
+        boolean skipOnTimeout) throws IgniteCheckedException {
+        assert !ordered || timeout > 0 || skipOnTimeout;
+
+        GridIoMessage ioMsg = createGridIoMessage(topic, msg, plc, ordered, timeout, skipOnTimeout);
+
+        marshal(ioMsg);
+
+        return ioMsg;
+    }
+
+    /**
+     * Marshals {@code ioMsg} enforcing the marshal-once contract: a wrap is marshalled exactly once before
+     * transmission (marshalling is not idempotent, see {@code MessageMarshalOnceTest}).
+     */
+    private void marshal(GridIoMessage ioMsg) throws IgniteCheckedException {
+        assert !ioMsg.marshalled() : "GridIoMessage is marshalled twice: " + ioMsg;
+
+        MessageMarshalling.marshal(ioMsg, ctx, null);
+
+        ioMsg.markMarshalled();
+    }
+
+    /**
+     * Sends a message created by {@link #prepare} to a remote node. Sending does not mutate the message,
+     * so it can be safely retried.
+     */
+    public void sendPrepared(ClusterNode node, GridIoMessage ioMsg) throws IgniteCheckedException {
+        assert !locNodeId.equals(node.id()) : node;
+        assert ioMsg.marshalled() : "Message must be prepared via prepare() before sendPrepared(): " + ioMsg;
+
+        sendMarshalled(node, ioMsg, null);
+    }
+
+    /**
+     * Sends a message to a remote node, marshalling it once and retrying only the transmission: repeat failed
+     * attempts reuse the prepared message. Waits {@code IgniteConfiguration#getNetworkSendRetryDelay()} between
+     * attempts; {@code retryPlc} decides whether an attempt failure is retried.
+     *
+     * @param node Destination node.
+     * @param topic Topic to send the message to.
+     * @param msg Message to send.
+     * @param plc Type of processing.
+     * @param ordered Ordered flag.
+     * @param timeout Timeout to keep a message on receiving queue.
+     * @param skipOnTimeout Whether message can be skipped on timeout.
+     * @param retryPlc Failure policy.
+     */
+    public void sendWithRetry(ClusterNode node, Object topic, Message msg, byte plc, boolean ordered, long timeout,
+        boolean skipOnTimeout, SendRetryPolicy retryPlc) throws IgniteCheckedException {
+        GridIoMessage ioMsg = prepare(topic, msg, plc, ordered, timeout, skipOnTimeout);
+
+        for (int attempt = 1;; attempt++) {
             try {
-                if ((CommunicationSpi<?>)getSpi() instanceof TcpCommunicationSpi)
-                    getTcpCommunicationSpi().sendMessage(node, ioMsg, ackC);
-                else
-                    getSpi().sendMessage(node, ioMsg);
+                sendPrepared(node, ioMsg);
+
+                return;
             }
-            catch (IgniteSpiException e) {
-                if (e.getCause() instanceof ClusterTopologyCheckedException)
-                    throw (ClusterTopologyCheckedException)e.getCause();
+            catch (ClusterTopologyCheckedException e) {
+                throw e;
+            }
+            catch (IgniteCheckedException e) {
+                if (!retryPlc.onFailure(node, e, attempt))
+                    throw e;
+            }
 
-                if (!ctx.discovery().alive(node))
-                    throw new ClusterTopologyCheckedException("Failed to send message, node left: " + node.id(), e);
+            U.sleep(ctx.config().getNetworkSendRetryDelay());
+        }
+    }
 
-                throw new IgniteCheckedException("Failed to send message (node may have left the grid or " +
-                    "TCP connection cannot be established due to firewall issues) " +
-                    "[node=" + node + ", topic=" + topic +
-                    ", msg=" + msg + ", policy=" + plc + ']', e);
+    /** Failure policy for {@link #sendWithRetry}: decides whether a failed transmission attempt is retried. */
+    @FunctionalInterface public interface SendRetryPolicy {
+        /**
+         * @param node Destination node of the failed attempt.
+         * @param e Transmission failure.
+         * @param attempt Failed attempt number, starting with {@code 1}.
+         * @return {@code true} to retry, {@code false} to rethrow {@code e}.
+         * @throws IgniteCheckedException To replace {@code e} with a more specific failure.
+         */
+        public boolean onFailure(ClusterNode node, IgniteCheckedException e, int attempt) throws IgniteCheckedException;
+    }
+
+    /**
+     * Sends an already-marshalled message to a remote node. Marshalling is the caller's job, so one {@code ioMsg} can
+     * be prepared once and delivered to many nodes (see {@link #sendToMany}).
+     */
+    private void sendMarshalled(ClusterNode node, GridIoMessage ioMsg, IgniteInClosure<IgniteException> ackC)
+        throws IgniteCheckedException {
+        assert ioMsg.marshalled() : "GridIoMessage is transmitted unmarshalled: " + ioMsg;
+
+        try {
+            if ((CommunicationSpi<?>)getSpi() instanceof TcpCommunicationSpi)
+                getTcpCommunicationSpi().sendMessage(node, ioMsg, ackC);
+            else
+                getSpi().sendMessage(node, ioMsg);
+        }
+        catch (IgniteSpiException e) {
+            if (e.getCause() instanceof ClusterTopologyCheckedException)
+                throw (ClusterTopologyCheckedException)e.getCause();
+
+            if (!ctx.discovery().alive(node))
+                throw new ClusterTopologyCheckedException("Failed to send message, node left: " + node.id(), e);
+
+            throw new IgniteCheckedException("Failed to send message (node may have left the grid or " +
+                "TCP connection cannot be established due to firewall issues) " +
+                "[node=" + node + ", topic=" + ioMsg.topic() +
+                ", msg=" + ioMsg.message() + ", policy=" + ioMsg.policy() + ']', e);
+        }
+    }
+
+    /**
+     * Marshals {@code msg} once and delivers it to every node, instead of re-marshalling per destination. The local
+     * node, if present, goes through the regular per-node path, unmarshalled.
+     */
+    private void sendToMany(Collection<? extends ClusterNode> nodes, Object topic, Message msg, byte plc,
+        boolean ordered, long timeout, boolean skipOnTimeout) throws IgniteCheckedException {
+        GridIoMessage ioMsg = null;
+
+        IgniteCheckedException err = null;
+
+        for (ClusterNode node : nodes) {
+            try {
+                if (locNodeId.equals(node.id()))
+                    send(node, topic, msg, plc, ordered, timeout, skipOnTimeout, null, false);
+                else {
+                    if (ioMsg == null)
+                        ioMsg = prepare(topic, msg, plc, ordered, timeout, skipOnTimeout);
+
+                    sendMarshalled(node, ioMsg, null);
+                }
+            }
+            catch (IgniteCheckedException e) {
+                if (err == null)
+                    err = e;
+                else
+                    err.addSuppressed(e);
             }
         }
+
+        if (err != null)
+            throw err;
     }
 
     /** */
@@ -2159,22 +2321,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         throws IgniteCheckedException {
         assert timeout > 0 || skipOnTimeout;
 
-        IgniteCheckedException err = null;
-
-        for (ClusterNode node : nodes) {
-            try {
-                send(node, topic, msg, plc, true, timeout, skipOnTimeout, null, false);
-            }
-            catch (IgniteCheckedException e) {
-                if (err == null)
-                    err = e;
-                else
-                    err.addSuppressed(e);
-            }
-        }
-
-        if (err != null)
-            throw err;
+        sendToMany(nodes, topic, msg, plc, true, timeout, skipOnTimeout);
     }
 
     /**
@@ -2190,22 +2337,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         Message msg,
         byte plc
     ) throws IgniteCheckedException {
-        IgniteCheckedException err = null;
-
-        for (ClusterNode node : nodes) {
-            try {
-                send(node, topic, msg, plc, false, 0, false, null, false);
-            }
-            catch (IgniteCheckedException e) {
-                if (err == null)
-                    err = e;
-                else
-                    err.addSuppressed(e);
-            }
-        }
-
-        if (err != null)
-            throw err;
+        sendToMany(nodes, topic, msg, plc, false, 0, false);
     }
 
     /**
@@ -3778,6 +3910,18 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             for (OrderedMessageContainer mc = msgs.poll(); mc != null; mc = msgs.poll()) {
                 try (Scope ignored0 = ctx.operationContextDispatcher().restoreSnapshot(mc.message.opCtxSnp)) {
                     try {
+                        try {
+                            unmarshalPayload(mc.message);
+                        }
+                        catch (IgniteException e) {
+                            // Skip the failed message: rethrowing would abandon the rest of the set until
+                            // the next message arrives on this topic.
+                            U.error(log, "Failed to unmarshal ordered message (will skip) [nodeId=" + nodeId +
+                                ", msg=" + mc.message + ']', e);
+
+                            continue;
+                        }
+
                         invokeListener(plc, lsnr, nodeId, mc.message.message());
                     }
                     finally {

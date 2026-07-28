@@ -19,9 +19,10 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.DeployableMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
@@ -29,7 +30,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -45,7 +45,7 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
 /**
  * Query request.
  */
-public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCacheDeployable {
+public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCacheDeployable, DeployableMessage {
     /** */
     private static final int FLAG_DATA_PAGE_SCAN_DFLT = 0b00;
 
@@ -76,7 +76,8 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     String clause;
 
     /** */
-    private IndexQueryDesc idxQryDesc;
+    @Marshalled("idxQryDescBytes")
+    IndexQueryDesc idxQryDesc;
 
     /** */
     @Order(4)
@@ -91,28 +92,32 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     String clsName;
 
     /** */
-    private IgniteBiPredicate<Object, Object> keyValFilter;
+    @Marshalled("keyValFilterBytes")
+    IgniteBiPredicate<Object, Object> keyValFilter;
 
     /** */
     @Order(7)
     byte[] keyValFilterBytes;
 
     /** */
-    private IgniteReducer<Object, Object> rdc;
+    @Marshalled("rdcBytes")
+    IgniteReducer<Object, Object> rdc;
 
     /** */
     @Order(8)
     byte[] rdcBytes;
 
     /** */
-    private IgniteClosure<?, ?> trans;
+    @Marshalled("transBytes")
+    IgniteClosure<?, ?> trans;
 
     /** */
     @Order(9)
     byte[] transBytes;
 
     /** */
-    private Object[] args;
+    @Marshalled("argsBytes")
+    Object[] args;
 
     /** */
     @Order(10)
@@ -407,86 +412,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
-
-        if (keyValFilter != null && keyValFilterBytes == null) {
-            if (addDepInfo)
-                prepareObject(keyValFilter, cctx);
-
-            keyValFilterBytes = CU.marshal(cctx, keyValFilter);
-        }
-
-        if (rdc != null && rdcBytes == null) {
-            if (addDepInfo)
-                prepareObject(rdc, cctx);
-
-            rdcBytes = CU.marshal(cctx, rdc);
-        }
-
-        if (trans != null && transBytes == null) {
-            if (addDepInfo)
-                prepareObject(trans, cctx);
-
-            transBytes = CU.marshal(cctx, trans);
-        }
-
-        if (!F.isEmpty(args) && argsBytes == null) {
-            if (addDepInfo) {
-                for (Object arg : args)
-                    prepareObject(arg, cctx);
-            }
-
-            argsBytes = CU.marshal(cctx, args);
-        }
-
-        if (idxQryDesc != null && idxQryDescBytes == null) {
-            if (addDepInfo)
-                prepareObject(idxQryDesc, cctx);
-
-            idxQryDescBytes = CU.marshal(cctx, idxQryDesc);
-        }
-
-        if (!F.isEmpty(skipKeys)) {
-            for (KeyCacheObject k : skipKeys)
-                k.prepareMarshal(cctx.cacheObjectContext());
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        Marshaller mrsh = ctx.marshaller();
-
-        ClassLoader clsLdr = U.resolveClassLoader(ldr, ctx.gridConfig());
-
-        if (keyValFilterBytes != null && keyValFilter == null)
-            keyValFilter = U.unmarshal(mrsh, keyValFilterBytes, clsLdr);
-
-        if (rdcBytes != null && rdc == null)
-            rdc = U.unmarshal(mrsh, rdcBytes, ldr);
-
-        if (transBytes != null && trans == null)
-            trans = U.unmarshal(mrsh, transBytes, clsLdr);
-
-        if (argsBytes != null && args == null)
-            args = U.unmarshal(mrsh, argsBytes, clsLdr);
-
-        if (idxQryDescBytes != null && idxQryDesc == null)
-            idxQryDesc = U.unmarshal(mrsh, idxQryDescBytes, clsLdr);
-
-        if (!F.isEmpty(skipKeys)) {
-            CacheObjectContext objCtx = ctx.cacheObjectContext(cacheId);
-
-            for (KeyCacheObject k : skipKeys)
-                k.finishUnmarshal(objCtx, ldr);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return addDepInfo;
     }
@@ -659,6 +584,37 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         return part;
     }
 
+    /** {@inheritDoc} */
+    @Override public void deploy(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
+
+        if (keyValFilter != null && keyValFilterBytes == null) {
+            if (addDepInfo)
+                deployObject(keyValFilter, cctx);
+        }
+
+        if (rdc != null && rdcBytes == null) {
+            if (addDepInfo)
+                deployObject(rdc, cctx);
+        }
+
+        if (trans != null && transBytes == null) {
+            if (addDepInfo)
+                deployObject(trans, cctx);
+        }
+
+        if (!F.isEmpty(args) && argsBytes == null) {
+            if (addDepInfo) {
+                for (Object arg : args)
+                    deployObject(arg, cctx);
+            }
+        }
+
+        if (idxQryDesc != null && idxQryDescBytes == null) {
+            if (addDepInfo)
+                deployObject(idxQryDesc, cctx);
+        }
+    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

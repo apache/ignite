@@ -131,6 +131,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper;
@@ -2704,28 +2705,36 @@ public final class GridTestUtils {
     }
 
     /** */
-    public static <T extends Message> MessageSerializer<T> loadSerializer(Class<? extends Message> msgCls,
-        @Nullable Marshaller dfltMarsh, @Nullable ClassLoader dfltClsLdr) {
+    public static <T extends Message> MessageSerializer<T> loadSerializer(Class<? extends Message> msgCls) {
         try {
-            boolean isMarshallable = MarshallableMessage.class.isAssignableFrom(msgCls);
-
-            String clsPref = msgCls.getSimpleName() + (isMarshallable ? "Marshallable" : "");
-
             Class<?> serCls = U.gridClassLoader()
-                .loadClass(msgCls.getPackage().getName() + "." + clsPref + "Serializer");
+                .loadClass(msgCls.getPackage().getName() + "." + msgCls.getSimpleName() + "Serializer");
 
-            Marshaller marsh = dfltMarsh != null ? dfltMarsh : jdk();
-            ClassLoader cldLdr = dfltClsLdr != null ? dfltClsLdr : U.gridClassLoader();
-
-            Object msgSer = isMarshallable ?
-                serCls.getConstructor(Marshaller.class, ClassLoader.class)
-                     .newInstance(marsh, cldLdr) :
-                U.newInstance(serCls);
-
-            return (MessageSerializer<T>)msgSer;
+            return (MessageSerializer<T>)U.newInstance(serCls);
         }
         catch (Exception e) {
             throw new RuntimeException("Unable to find serializer for message: " + msgCls, e);
+        }
+    }
+
+    /** Loads the generated {@code *Marshaller} class for {@code msgCls} and instantiates it with {@code dfltMarsh}. */
+    public static <T extends Message> MessageMarshaller<T> loadMarshaller(Class<? extends Message> msgCls,
+        @Nullable Marshaller dfltMarsh) {
+        try {
+            Class<?> marshallerCls = U.gridClassLoader()
+                .loadClass(msgCls.getPackage().getName() + "." + msgCls.getSimpleName() + "Marshaller");
+
+            boolean isMarshallable = MarshallableMessage.class.isAssignableFrom(msgCls);
+
+            if (isMarshallable) {
+                Marshaller marsh = dfltMarsh != null ? dfltMarsh : jdk();
+                return (MessageMarshaller<T>)marshallerCls.getConstructor(Marshaller.class).newInstance(marsh);
+            }
+
+            return (MessageMarshaller<T>)U.newInstance(marshallerCls);
+        }
+        catch (Exception e) {
+            throw new RuntimeException("Unable to find marshaller for message: " + msgCls, e);
         }
     }
 

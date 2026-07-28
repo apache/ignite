@@ -123,13 +123,13 @@ public class LazyServiceConfigurationMessage implements MarshallableMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (affKey != null)
+    @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
+        if (affKey != null && affKeyBytes == null)
             affKeyBytes = U.marshal(marsh, affKey);
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         if (!F.isEmpty(affKeyBytes)) {
             affKey = U.unmarshal(marsh, affKeyBytes, clsLdr);
 

@@ -1908,6 +1908,10 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
     @SystemProperty(value = "Packages list to expose in configuration view")
     public static final String IGNITE_CONFIGURATION_VIEW_PACKAGES = "IGNITE_CONFIGURATION_VIEW_PACKAGES";
 
+    /** Enables the assertion that a message is finish-unmarshalled at most once. For tests; off in production. */
+    @SystemProperty("Enables the message finish-unmarshal-once self-check (tests only)")
+    public static final String IGNITE_MESSAGE_UNMARSHAL_ONCE_CHECK = "IGNITE_MESSAGE_UNMARSHAL_ONCE_CHECK";
+
     /**
      * Enforces singleton.
      */

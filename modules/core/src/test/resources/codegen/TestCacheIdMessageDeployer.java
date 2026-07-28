@@ -15,26 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.message;
+package org.apache.ignite.internal;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.TestCacheIdMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.plugin.extensions.communication.Message;
 
-/** A Calcite engine related message which requires marshalling with context. */
-public interface CalciteContextMarshallableMessage extends Message {
-    /**
-     * Prepares the message before sending.
-     *
-     * @param ctx Cache shared context.
-     */
-    void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException;
+/**
+ * This class is generated automatically.
+ *
+ * @see org.apache.ignite.internal.MessageProcessor
+ */
+public class TestCacheIdMessageDeployer implements GridCacheMessageDeployer<TestCacheIdMessage> {
+    /** */
+    @Override public void deploy(TestCacheIdMessage msg, GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        GridCacheContext<?, ?> cctx = ctx.cacheContext(msg.cacheId());
 
-    /**
-     * Prepares the message before processing.
-     *
-     * @param ctx Cache shared context.
-     * @param clsLdr Class loader.
-     */
-    void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader clsLdr) throws IgniteCheckedException;
+        msg.deployCacheObject(msg.key, cctx);
+
+        msg.deployCacheObject(msg.val, cctx);
+
+        msg.deployCacheObjects(msg.keys, cctx);
+
+        msg.deployTx(msg.writes, ctx);
+    }
 }
