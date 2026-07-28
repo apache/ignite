@@ -35,7 +35,7 @@ public class DistributedJoinIntegrationTest extends AbstractBasicIntegrationTran
     public void testRehashResourceCleanup() throws Exception {
         prepareTables();
 
-        String sql = "SELECT sum(i.price * i.amount)" +
+        String sql = "SELECT /*+ MERGE_JOIN */ sum(i.price * i.amount)" +
             " FROM order_items i JOIN orders o ON o.id=i.orderId" +
             " WHERE o.region = ?";
 

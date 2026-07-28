@@ -55,14 +55,13 @@ public class QueryBlockingTaskExecutorIntegrationTest extends AbstractBasicInteg
                 sql("INSERT INTO order_items VALUES(?, ?, ?)", i + "_" + j, i, j);
         }
 
-        String sql = "SELECT sum(i.amount)" +
+        String sql = "SELECT /*+ DISABLE_RULE('HashJoinConverter') */ sum(i.amount)" +
             " FROM order_items i JOIN orders o ON o.id=i.orderId" +
             " WHERE o.region = ?";
 
         assertQuery(sql)
             .withParams("region0")
-            .matches(QueryChecker.containsSubPlan("IgniteMergeJoin"))
-            .matches(QueryChecker.containsSubPlan("IgniteExchange(distribution=[affinity"))
+            .matches(QueryChecker.matches(".*IgniteMergeJoin.*IgniteExchange\\(distribution=\\[affinity.*"))
             .returns(9500L) // 50 * sum(0 .. 19)
             .check();
 

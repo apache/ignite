@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.function.Predicate;
 import org.apache.calcite.rel.core.Exchange;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -59,23 +60,20 @@ public class PlanSplitterTest extends AbstractPlannerTest {
     /** */
     @Test
     public void testSplitterColocatedPartitionedPartitioned() throws Exception {
+        ColocationGroup assignments = ColocationGroup.forAssignments(List.of(
+            select(nodes, 0, 1),
+            select(nodes, 1, 2),
+            select(nodes, 2, 0),
+            select(nodes, 0, 1),
+            select(nodes, 1, 2)
+        ));
+
         IgniteSchema schema = createSchema(
             IgniteDistributions.affinity(0, "Developer", "hash"),
-            ColocationGroup.forAssignments(Arrays.asList(
-                select(nodes, 0, 1),
-                select(nodes, 1, 2),
-                select(nodes, 2, 0),
-                select(nodes, 0, 1),
-                select(nodes, 1, 2)
-            )),
+            assignments,
+
             IgniteDistributions.affinity(0, "Project", "hash"),
-            ColocationGroup.forAssignments(Arrays.asList(
-                select(nodes, 0, 1),
-                select(nodes, 1, 2),
-                select(nodes, 2, 0),
-                select(nodes, 0, 1),
-                select(nodes, 1, 2)
-            ))
+            assignments
         );
 
         String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 " +

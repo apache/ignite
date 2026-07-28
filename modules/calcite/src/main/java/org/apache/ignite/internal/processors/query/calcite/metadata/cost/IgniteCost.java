@@ -41,7 +41,7 @@ public class IgniteCost implements RelOptCost {
     public static final double AGG_CALL_MEM_COST = 5;
 
     /** Cost of a lookup at the hash. */
-    public static final double HASH_LOOKUP_COST = 10;
+    public static final double HASH_LOOKUP_COST = 4;
 
     /** In case the fetch value is a DYNAMIC_PARAM. */
     public static final double FETCH_IS_PARAM_FACTOR = 0.01;
