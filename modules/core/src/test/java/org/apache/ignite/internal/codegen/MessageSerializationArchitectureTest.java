@@ -80,7 +80,7 @@ public class MessageSerializationArchitectureTest {
      * called from within classes that themselves implement {@link MessageSerializer} — i.e. generated
      * serializers and hand-written wrappers that delegate to the underlying serializer — or the
      * {@link MessageSerialization} dispatcher that resolves and calls them.
-     *
+     * <p>
      * Everyone else must use the static {@link MessageSerialization} entry points.
      */
     @Test
@@ -105,7 +105,7 @@ public class MessageSerializationArchitectureTest {
      * only be called from within classes that themselves implement {@link MessageMarshaller} — i.e. generated
      * marshallers and hand-written wrappers that delegate to the underlying marshaller — or the
      * {@link MessageMarshalling} dispatcher that resolves and calls them.
-     *
+     * <p>
      * Everyone else must use the static {@link MessageMarshalling} entry points.
      */
     @Test
@@ -128,7 +128,7 @@ public class MessageSerializationArchitectureTest {
     /**
      * Instance method of {@link GridCacheMessageDeployer} ({@code deploy}) must only be called from
      * within classes that themselves implement {@link GridCacheMessageDeployer} — i.e. generated deployers.
-     *
+     * <p>
      * Everyone else must use the static {@code GridCacheMessageDeployer.deploy(factory, msg, ctx)} facade.
      */
     @Test

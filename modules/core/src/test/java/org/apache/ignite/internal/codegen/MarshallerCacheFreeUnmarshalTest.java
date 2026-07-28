@@ -36,20 +36,12 @@ import org.junit.Test;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 /**
- * A message is finish-unmarshalled in two passes — cache-free (via {@code GridIoManager}) and cache-aware (via a
- * subsystem) — and the mode-aware no-double-unmarshal check ({@link MessageMarshaller.Dedup}) deliberately allows
- * both. So whatever the cache-free pass does must stay correct when the cache-aware pass runs it again.
+ * A message is finish-unmarshalled in two passes, cache-free and cache-aware, and {@code MessageUnmarshalOnceCheck}
+ * allows both. A field restored by assignment survives that: assigning the same value twice is a no-op. A collection
+ * or map one does not: {@code add}/{@code put} run twice double the content.
  *
- * <p>The distinction is the side effect. A plain {@code @Marshalled} field unmarshals by <b>assignment</b>
- * ({@code msg.x = ...}); assigning the same value twice is a no-op, so it is idempotent and needs no guarding. A
- * {@code @Marshalled} / {@code @Marshalled} field unmarshals by <b>mutation</b> ({@code collection.add} /
- * {@code map.put}); running that twice appends the elements twice — a doubled, corrupt collection. So a collection/map
- * mutation is the one thing that must not run in both passes, and the generator keeps it in the cache-aware pass only.
- *
- * <p>That is exactly what this rule checks — purely the mutating side effect, not the fields: the cache-free
- * {@code unmarshal(msg, kctx)} overload of every generated marshaller must not call {@link Collection#add} or
- * {@link Map#put}. Assignments are left unchecked (they can't break); a generator regression that moved an append into
- * the cache-free pass — a real double-add the runtime check can't see, since it allows both passes — fails here.
+ * <p>Hence the rule: the cache-free {@code unmarshal(msg, kctx)} of a generated marshaller must not call
+ * {@link Collection#add} or {@link Map#put} — the generator emits those in the cache-aware pass only.
  */
 public class MarshallerCacheFreeUnmarshalTest {
     /**
@@ -101,9 +93,9 @@ public class MarshallerCacheFreeUnmarshalTest {
                 .areAssignableTo(MessageMarshaller.class)
             .should()
                 .callMethodWhere(CACHE_FREE_UNMARSHAL_APPEND)
-            .because("@Marshalled/@Marshalled appends are non-idempotent and run only in the cache-aware " +
-                "unmarshal pass; an append in the cache-free pass would double-add when both passes run, which " +
-                "the mode-aware unmarshal-once check (MessageMarshaller.Dedup) permits and cannot catch.");
+            .because("Appends into a collection or map are non-idempotent and belong to the cache-aware " +
+                "unmarshal pass only; in the cache-free one they would double-add when both passes run, which " +
+                "MessageUnmarshalOnceCheck permits by design and cannot catch.");
 
         rule.check(classes);
     }
