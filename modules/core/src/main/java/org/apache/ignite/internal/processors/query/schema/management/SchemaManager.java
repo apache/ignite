@@ -86,6 +86,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
+import static org.apache.ignite.internal.processors.query.QueryUtils.isReservedFieldName;
 import static org.apache.ignite.internal.processors.query.QueryUtils.matches;
 
 /**
@@ -411,7 +412,7 @@ public class SchemaManager {
         String ptrn = "Name ''{0}'' is reserved and cannot be used as a field name [type=" + type.name() + "]";
 
         for (String name : names) {
-            if (name.equalsIgnoreCase(KEY_FIELD_NAME) || name.equalsIgnoreCase(VAL_FIELD_NAME))
+            if (isReservedFieldName(name))
                 throw new IgniteCheckedException(MessageFormat.format(ptrn, name));
         }
     }
