@@ -461,9 +461,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                             msg.getClass().getName() + ". Most likely GridCommunicationSpi is being used directly, " +
                             "which is illegal - make sure to send messages only via GridProjection API.");
                 }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
             }
 
             @Override public void onDisconnected(UUID nodeId) {
@@ -1212,7 +1209,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
      * @param msg Message bytes.
      * @param msgC Closure to call when message processing finished.
      */
-    private void onMessage0(UUID nodeId, GridIoMessage msg, IgniteRunnable msgC) throws IgniteCheckedException {
+    private void onMessage0(UUID nodeId, GridIoMessage msg, IgniteRunnable msgC) {
         assert nodeId != null;
         assert msg != null;
 
