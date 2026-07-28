@@ -18,7 +18,9 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.adapter.enumerable.NullPolicy;
@@ -40,6 +42,7 @@ import org.apache.calcite.sql.fun.SqlTrimFunction;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
+import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.util.ReflectiveSqlOperatorTable;
 import org.apache.calcite.sql.util.SqlOperatorTables;
@@ -158,6 +161,23 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
             .check();
     }
 
+    /** */
+    @Test
+    public void testCustomAggregateHandlesDistinct() {
+        assertQuery("SELECT TEST_COUNT_PAIRS(DISTINCT x, y) "
+            + "FROM (VALUES (1, 10), (1, 20), (1, 20), (2, 10)) t(x, y)")
+            .returns(3L)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testCustomAggregateUsesDefaultDistinctHandling() {
+        assertQuery("SELECT TEST_SUM(DISTINCT x) FROM (VALUES (1), (1), (2)) t(x)")
+            .returns(3L)
+            .check();
+    }
+
     /** Rewrites LTRIM with 2 parameters. */
     public static SqlCall rewriteLtrim(SqlValidator validator, SqlCall call) {
         if (call.operandCount() != 2)
@@ -220,6 +240,9 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
 
         /** */
         public static final SqlAggFunction TEST_SUM = new SqlTestSumAggFunction();
+
+        /** */
+        public static final SqlAggFunction TEST_COUNT_PAIRS = new SqlTestCountPairsAggFunction();
     }
 
     /** Extended convertlet table. */
@@ -264,6 +287,9 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
             if (call.getAggregation().getName().equals(OperatorTable.TEST_SUM.getName()))
                 return () -> new TestSum<>(call, ctx.rowHandler());
 
+            if (call.getAggregation().getName().equals(OperatorTable.TEST_COUNT_PAIRS.getName()))
+                return () -> new TestCountPairs<>(call, ctx.rowHandler());
+
             return null;
         }
     }
@@ -279,6 +305,25 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
                 ReturnTypes.AGG_SUM,
                 null,
                 OperandTypes.NUMERIC,
+                SqlFunctionCategory.NUMERIC,
+                false,
+                false,
+                Optionality.FORBIDDEN
+            );
+        }
+    }
+
+    /** */
+    public static class SqlTestCountPairsAggFunction extends SqlAggFunction {
+        /** */
+        public SqlTestCountPairsAggFunction() {
+            super(
+                "TEST_COUNT_PAIRS",
+                null,
+                SqlKind.SUM,
+                opBinding -> opBinding.getTypeFactory().createSqlType(SqlTypeName.BIGINT),
+                null,
+                OperandTypes.family(SqlTypeFamily.NUMERIC, SqlTypeFamily.NUMERIC),
                 SqlFunctionCategory.NUMERIC,
                 false,
                 false,
@@ -323,6 +368,61 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
         /** {@inheritDoc} */
         @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
             return typeFactory.createSqlType(org.apache.calcite.sql.type.SqlTypeName.BIGINT);
+        }
+    }
+
+    /** */
+    private static class TestCountPairs<Row> extends Accumulators.AbstractAccumulator<Row> {
+        /** */
+        private long count;
+
+        /** */
+        private final Set<List<Object>> distinctPairs = new HashSet<>();
+
+        /** */
+        protected TestCountPairs(AggregateCall aggCall, RowHandler<Row> hnd) {
+            super(aggCall, hnd);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void add(Row row) {
+            if (aggregateCall().isDistinct())
+                distinctPairs.add(List.of(get(0, row), get(1, row)));
+            else
+                count++;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void apply(Accumulator<Row> other) {
+            TestCountPairs<Row> other0 = (TestCountPairs<Row>)other;
+
+            if (aggregateCall().isDistinct())
+                distinctPairs.addAll(other0.distinctPairs);
+            else
+                count += other0.count;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object end() {
+            return aggregateCall().isDistinct() ? (long)distinctPairs.size() : count;
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory) {
+            RelDataType type =
+                typeFactory.createTypeWithNullability(typeFactory.createSqlType(SqlTypeName.BIGINT), true);
+
+            return List.of(type, type);
+        }
+
+        /** {@inheritDoc} */
+        @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
+            return typeFactory.createSqlType(SqlTypeName.BIGINT);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean handlesDistinct() {
+            return true;
         }
     }
 }
