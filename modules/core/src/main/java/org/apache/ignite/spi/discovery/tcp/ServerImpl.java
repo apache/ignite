@@ -5968,7 +5968,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 getLocalNodeId(), nextMsg);
 
                             ackMsg.topologyVersion(msg.topologyVersion());
-                            ackMsg.attachOperationContextSnapshot(operationCtxDispatcher.createSnapshot());
+                            ackMsg.attachOperationContextSnapshot(msg.opCtxSnp);
 
                             processCustomMessage(ackMsg, waitForNotification);
                         }
