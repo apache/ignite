@@ -23,6 +23,13 @@ Run Apache Ignite ducktests against a real VM cluster, from wherever you happen 
 cluster of real machines, driven by a long `ducktape ...` command line that until now
 only existed inside a Jenkins job.
 
+**This file is the tour. [`docs/`](docs/index.md) is the manual** — every command and
+config key, and exactly what happens in what order. Start at
+[docs/index.md](docs/index.md), which routes questions to the document that answers them:
+[concepts](docs/concepts.md) · [configuration](docs/configuration.md) ·
+[commands](docs/commands.md) · [java](docs/java.md) · [runs](docs/runs.md) ·
+[troubleshooting](docs/troubleshooting.md) · [internals](docs/internals.md).
+
 ## The model, in three sentences
 
 The **coordinator** is the machine where this CLI runs — your laptop, a VM inside the
