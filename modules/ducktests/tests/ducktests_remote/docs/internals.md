@@ -87,6 +87,11 @@ Design decisions that are load-bearing:
 - **`expand`** resolves a leading `~` against the *remote* home, once per connection, because
   paths are shell-quoted before they reach the remote side and a literal tilde would never
   be expanded there.
+- **`has_rsync()` is probed once per transport and cached.** Both the source sync and
+  `deploy`'s incremental path ask for it; a mixed cluster where one host lacks rsync falls
+  back per host rather than for the whole run. `deploy` does not route rsync through the
+  transport, though — it runs rsync on the coordinator with the transport's own
+  `ssh_options()` in `-e`, because the payload never passes through a shell.
 
 ## Fan-out
 

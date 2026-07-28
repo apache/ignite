@@ -26,6 +26,14 @@ to a source checkout: the workers need the built jars under ``modules/*/target``
 nothing else in the tree.  Excludes are opt-in and default to nothing, so a distribution
 without them is still shipped byte for byte.
 
+Two ways to move the bytes.  The default is rsync into a staging directory hardlinked
+against the previous deployment (``--link-dest``), so a rebuild of one module sends one
+jar rather than the whole tree.  The fallback, used when either end has no rsync or when
+``--via`` stages the payload on an intermediate host, is a tarball of the whole
+distribution.  Both end in the same atomic swap, and both carry exactly the file list the
+manifest was built from - rsync is fed that list on stdin rather than its own ``--exclude``
+patterns, whose matching rules differ subtly from :func:`is_excluded`'s.
+
 :func:`build_manifest`, :func:`prepare_script`, :func:`swap_script` and :func:`human` are
 public because ``provision``'s ``jdk`` step delivers a JDK the same way and must not grow
 a second copy of the staging-and-swap logic.
@@ -35,8 +43,11 @@ import hashlib
 import json
 import os
 import posixpath
+import re
 import shlex
+import shutil
 import tempfile
+import threading
 import uuid
 from pathlib import Path
 
@@ -44,7 +55,8 @@ from ducktests_remote.cli import EXIT_OK, EXIT_TRANSPORT, EXIT_USAGE
 from ducktests_remote.config import ConfigError, expand_path
 from ducktests_remote.fanout import (CHANGED, FAILED, HostResult, SKIPPED, any_failed,
                                      fanout, render_table, summarise)
-from ducktests_remote.transport import ProxiedTransport, is_excluded, make_tarball
+from ducktests_remote.transport import (ProxiedTransport, is_excluded, make_tarball,
+                                        run_local)
 
 MANIFEST_NAME = ".ducktests-deploy.json"
 
@@ -53,6 +65,11 @@ MANIFEST_NAME = ".ducktests-deploy.json"
 # distribution root and the source root are the same directory, and the two lists are
 # opposites - the source sync drops `target`, deploy keeps only `target`.
 IGNORE_NAME = ".ducktests-deploy.ignore"
+
+# `Number of regular files transferred: 12` on rsync 3.x, `Number of files transferred`
+# on 2.x.  Thousands separators are locale-dependent; the labels are not translated.
+_RSYNC_TRANSFERRED = re.compile(r"Number of (?:regular )?files transferred:\s*([\d,.]+)")
+_RSYNC_SENT = re.compile(r"Total transferred file size:\s*([\d,.]+)")
 
 
 def register(subparsers, common):
@@ -78,6 +95,8 @@ def register(subparsers, common):
                         help="redeploy even when the manifest already matches")
     parser.add_argument("--checksum", action="store_true",
                         help="hash file contents for the manifest instead of size+mtime")
+    parser.add_argument("--no-rsync", action="store_true",
+                        help="send a full tarball instead of an incremental rsync")
     parser.add_argument("-n", "--num-nodes", type=int, default=None,
                         help="only deploy to the first N inventory hosts")
     parser.add_argument("--json", action="store_true", help="machine-readable output")
@@ -114,6 +133,10 @@ def execute(ctx):  # pylint: disable=too-many-locals
                          % (name, manifest["excluded"], len(excludes)))
             console.detail("excludes: %s" % ", ".join(excludes))
         plans.append((name, manifest, excludes))
+
+    if (not rsync_enabled(ctx) and not args.via and not args.no_rsync
+            and ctx.config["deploy"].get("rsync", True)):
+        console.detail("no usable rsync on this machine; sending whole tarballs")
 
     _print_cost(ctx, plans, nodes)
 
@@ -173,17 +196,10 @@ def build_manifest(path, *, checksum=False, excludes=()):
     ``excludes`` must be the same list the tarball is built with, or a host would be
     called up to date while holding a different set of files.
     """
+    included, excluded = _scan(path, excludes)
     entries = []
     total = 0
-    excluded = 0
-    root = Path(path)
-    for entry in sorted(root.rglob("*")):
-        if entry.is_dir() or entry.is_symlink():
-            continue
-        rel = entry.relative_to(root)
-        if is_excluded(rel, excludes):
-            excluded += 1
-            continue
+    for entry, rel in included:
         stat = entry.stat()
         total += stat.st_size
         if checksum:
@@ -193,6 +209,34 @@ def build_manifest(path, *, checksum=False, excludes=()):
     digest = hashlib.sha256("\n".join(entries).encode("utf-8")).hexdigest()
     return {"hash": digest, "files": len(entries), "bytes": total, "excluded": excluded,
             "mode": "checksum" if checksum else "size+mtime"}
+
+
+def included_files(path, excludes=()):
+    """
+    :return: the relative posix paths a deploy would carry, sorted.
+
+    This is what rsync is fed on stdin.  It comes from the same walk as the manifest on
+    purpose: rsync's own ``--exclude`` matching is close to :func:`is_excluded` but not
+    identical, and a distribution that differs from the manifest describing it is exactly
+    the bug the manifest exists to prevent.
+    """
+    return [rel.as_posix() for _, rel in _scan(path, excludes)[0]]
+
+
+def _scan(path, excludes):
+    """:return: ``([(file, relative_path)], excluded_count)`` for one distribution."""
+    included = []
+    excluded = 0
+    root = Path(path)
+    for entry in sorted(root.rglob("*")):
+        if entry.is_dir() or entry.is_symlink():
+            continue
+        rel = entry.relative_to(root)
+        if is_excluded(rel, excludes):
+            excluded += 1
+            continue
+        included.append((entry, rel))
+    return included, excluded
 
 
 def _sha256(path):
@@ -209,6 +253,9 @@ def _print_cost(ctx, plans, nodes):
     console = ctx.console
     console.info("%d distribution(s), %s each, %d host(s) = %s total"
                  % (len(plans), per_host, len(nodes), human(total * len(nodes))))
+    if rsync_enabled(ctx):
+        console.info("rsync: only what differs from each host is sent")
+        return
     if not ctx.args.via and len(nodes) > 3 and total > 200 * 1024 * 1024:
         console.warn("that is %s over the wire from this machine. `--via <host-near-the-"
                      "cluster>` uploads it once and fans out from there."
@@ -236,13 +283,13 @@ def _deploy_one(ctx, dist_dir, name, manifest, install_root, nodes, excludes=())
     }, indent=2, sort_keys=True)
 
     if ctx.dry_run:
-        return [HostResult(node.host, SKIPPED,
-                           "would send %s to %s" % (human(manifest["bytes"]), target))
+        how = "rsync" if rsync_enabled(ctx) else "tarball"
+        return [HostResult(node.host, SKIPPED, "would send %s to %s (%s)"
+                           % (human(manifest["bytes"]), target, how))
                 for node in nodes]
 
     with tempfile.TemporaryDirectory() as tmp:
-        archive = Path(tmp) / ("%s.tar.gz" % name)
-        make_tarball(Path(dist_dir) / name, archive, excludes=excludes)
+        payload = _Payload(Path(dist_dir) / name, Path(tmp) / ("%s.tar.gz" % name), excludes)
 
         via_transport = None
         staged_on_via = None
@@ -253,11 +300,16 @@ def _deploy_one(ctx, dist_dir, name, manifest, install_root, nodes, excludes=())
             staged_on_via = posixpath.join(staged_dir, "%s-%s.tar.gz"
                                            % (name, uuid.uuid4().hex[:8]))
             ctx.console.info("staging %s on %s" % (name, args.via))
-            via_transport.upload(archive, staged_on_via)
+            via_transport.upload(payload.archive(), staged_on_via)
 
-        def operation(node, _archive=archive, _staged=staged_on_via, _via=via_transport):
+        file_list = None
+        if rsync_enabled(ctx):
+            file_list = "\n".join(included_files(Path(dist_dir) / name, excludes)) + "\n"
+
+        def operation(node, _payload=payload, _staged=staged_on_via, _via=via_transport,
+                      _files=file_list):
             return _deploy_to_host(ctx, node, name, target, manifest, manifest_body,
-                                   _archive, _staged, _via)
+                                   _payload, _staged, _via, _files)
 
         try:
             return fanout(nodes, operation, jobs=ctx.jobs,
@@ -277,8 +329,86 @@ def _via_node(ctx, host):
                 identity_file=ctx.cluster_cfg.get("identity_file"))
 
 
-def _deploy_to_host(ctx, node, name, target, manifest, manifest_body, archive,
-                    staged_on_via, via_transport):
+class _Payload:
+    """
+    The tarball for one distribution, built at most once and only if a host needs it.
+
+    With every host on the rsync path, a distribution is never tarred at all - which for
+    a linked checkout is a gigabyte of compression that would buy nothing.
+    """
+
+    def __init__(self, root, archive_path, excludes):
+        self.root = root
+        self._archive = archive_path
+        self._excludes = excludes
+        self._built = False
+        self._lock = threading.Lock()
+
+    def archive(self):
+        """:return: the path to the tarball, building it on first use."""
+        with self._lock:
+            if not self._built:
+                make_tarball(self.root, self._archive, excludes=self._excludes)
+                self._built = True
+        return self._archive
+
+
+def rsync_enabled(ctx):
+    """
+    :return: True when the incremental path may be used for this invocation.
+
+    ``--via`` is deliberately excluded: its whole point is that the payload crosses the
+    slow link once, as one file, which is the opposite of a per-host rsync.
+    """
+    if getattr(ctx.args, "no_rsync", False) or getattr(ctx.args, "via", None):
+        return False
+    if not ctx.config["deploy"].get("rsync", True):
+        return False
+    if os.name == "nt":
+        # rsync reads `C:/dist/ignite-dev` as host `C`, and a coordinator that hands it a
+        # Windows path silently deploys nothing.  The tarball path has no such problem.
+        return False
+    return shutil.which("rsync") is not None
+
+
+def rsync_argv(transport, local_root, staging, *, link_dest=None, checksum=False, sudo=False):
+    """
+    :return: the rsync command line that fills ``staging`` on one worker.
+
+    ``--link-dest`` is what makes a redeploy cheap on both sides: unchanged files become
+    hardlinks to the deployment already on the host and are never sent, so a rebuild of
+    one module costs one jar.  The staging directory is still built from scratch and
+    still swapped in atomically, so an interrupted transfer cannot leave a live
+    distribution half updated.
+    """
+    argv = ["rsync", "-a", "--stats", "--files-from=-",
+            "-e", shlex.join(["ssh"] + transport.ssh_options())]
+    if checksum:
+        argv.append("--checksum")
+    if link_dest:
+        argv.append("--link-dest=%s" % link_dest)
+    if sudo:
+        argv.append("--rsync-path=sudo -n rsync")
+    argv += ["%s/" % str(local_root).rstrip("/\\"),
+             "%s:%s/" % (transport.target, staging)]
+    return argv
+
+
+def parse_rsync_stats(text):
+    """:return: ``(files_transferred, bytes_transferred)`` from ``--stats``, or None."""
+    transferred = _RSYNC_TRANSFERRED.search(text or "")
+    sent = _RSYNC_SENT.search(text or "")
+    if not transferred or not sent:
+        return None
+    try:
+        return (int(re.sub(r"[,.]", "", transferred.group(1))),
+                int(re.sub(r"[,.]", "", sent.group(1))))
+    except ValueError:
+        return None
+
+
+def _deploy_to_host(ctx, node, name, target, manifest, manifest_body, payload,
+                    staged_on_via, via_transport, file_list=None):
     transport = ctx.worker(node)
     remote_manifest = posixpath.join(target, MANIFEST_NAME)
 
@@ -300,6 +430,8 @@ def _deploy_to_host(ctx, node, name, target, manifest, manifest_body, archive,
                           % (install_root, node.user or "this account"))
 
     staging = "%s/.%s.tmp.%s" % (install_root, name, uuid.uuid4().hex[:8])
+    used_rsync = False
+    stats = None
 
     if via_transport is not None:
         proxied = ProxiedTransport(name=node.host, via=via_transport, user=node.user,
@@ -309,10 +441,16 @@ def _deploy_to_host(ctx, node, name, target, manifest, manifest_body, archive,
                                    dry_run=ctx.dry_run, verbose=ctx.console.verbose)
         proxied.run_script(prepare_script(staging, ctx.args.sudo)).check()
         proxied.push_archive(staged_on_via, staging)
+    elif file_list is not None and getattr(transport, "has_rsync", _no_rsync)():
+        outcome = _rsync_to_host(ctx, node, transport, payload.root, staging, target,
+                                 file_list)
+        if isinstance(outcome, HostResult):
+            return outcome
+        used_rsync, stats = True, outcome
     else:
         transport.run_script(prepare_script(staging, ctx.args.sudo)).check()
         remote_archive = "%s/.payload.tar.gz" % staging
-        transport.upload(archive, remote_archive)
+        transport.upload(payload.archive(), remote_archive)
         transport.run_script(
             "set -eu\ntar -xzf %s -C %s\nrm -f -- %s\n"
             % (shlex.quote(remote_archive), shlex.quote(staging),
@@ -320,8 +458,39 @@ def _deploy_to_host(ctx, node, name, target, manifest, manifest_body, archive,
 
     transport.write_file(manifest_body, posixpath.join(staging, MANIFEST_NAME))
     transport.run_script(swap_script(staging, target, ctx.args.sudo, ctx.args.owner)).check()
+    if used_rsync:
+        if stats:
+            return HostResult(node.host, CHANGED, "rsync: %d of %s file(s) changed, %s sent"
+                              % (stats[0], manifest["files"], human(stats[1])))
+        return HostResult(node.host, CHANGED, "rsync: %s file(s)" % manifest["files"])
     return HostResult(node.host, CHANGED, "%s files, %s"
                       % (manifest["files"], human(manifest["bytes"])))
+
+
+def _no_rsync():
+    """``has_rsync`` stand-in for transports that have no such notion (local copies)."""
+    return False
+
+
+def _rsync_to_host(ctx, node, transport, local_root, staging, target, file_list):
+    """
+    :return: ``(files, bytes)`` transferred, ``None`` when ``--stats`` could not be read,
+        or a failed :class:`HostResult`.
+
+    The staging directory is created before rsync runs, and hardlinked against the live
+    distribution when there is one to link against.
+    """
+    transport.run_script(prepare_script(staging, ctx.args.sudo)).check()
+    argv = rsync_argv(transport, local_root, staging,
+                      link_dest=target if transport.exists(target) else None,
+                      checksum=ctx.args.checksum or ctx.config["deploy"].get("checksum", False),
+                      sudo=ctx.args.sudo)
+    ctx.console.detail("%s: %s" % (node.host, shlex.join(argv)))
+    result = run_local(argv, input=file_list)
+    if not result.ok:
+        return HostResult(node.host, FAILED, "rsync failed",
+                          detail=(result.stderr or result.stdout).strip())
+    return parse_rsync_stats(result.stdout)
 
 
 def prepare_script(staging, use_sudo):

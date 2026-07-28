@@ -98,4 +98,8 @@ deploy:
   #           generated-sources, generated-test-sources, maven-status, maven-archiver,
   #           surefire-reports, javadoc, "*.tar.gz", "*.zip", __pycache__, "*.pyc"]
 
+  # Send only what differs from the deployment already on each host, hardlinking the
+  # rest. Falls back to a whole tarball when either end has no rsync, or with --via.
+  rsync: true
+
 jobs: 16

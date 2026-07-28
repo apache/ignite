@@ -23,11 +23,12 @@ import time
 import pytest
 from fake_transport import FakeTransport
 
+from ducktests_remote.cluster import Node
 from ducktests_remote.commands import clean as clean_cmd
 from ducktests_remote.commands import deploy, provision
 from ducktests_remote.config import DEFAULTS, ConfigError
 from ducktests_remote.fanout import CHANGED, FAILED, OK, HostResult, fanout, summarise
-from ducktests_remote.transport import make_tarball
+from ducktests_remote.transport import Result, make_tarball
 
 
 def _dist(tmp_path, name="ignite-dev", body="binary"):
@@ -329,3 +330,224 @@ class CheckExcludes:
     def check_the_default_is_no_filtering(self, tmp_path):
         assert deploy.resolve_excludes(self._ctx(tmp_path), self._checkout(tmp_path)) == []
         assert DEFAULTS["deploy"]["exclude"] == []
+
+
+class _RsyncTransport(FakeTransport):
+    """A worker whose rsync is present, with the ssh details rsync needs."""
+
+    rsync = True
+
+    @property
+    def target(self):
+        return "tester@w1"
+
+    def ssh_options(self, *, for_scp=False):  # pylint: disable=unused-argument
+        return ["-o", "BatchMode=yes", "-i", "/home/tester/.ssh/id_ed25519"]
+
+    def has_rsync(self):
+        """:return: whether this worker is on the incremental path."""
+        return self.rsync
+
+
+class CheckRsyncFastPath:
+    """Rebuild one module, send one jar."""
+
+    STATS = ("Number of files: 1,234 (reg: 1,200, dir: 34)\n"
+             "Number of regular files transferred: 12\n"
+             "Total file size: 524,288,000 bytes\n"
+             "Total transferred file size: 4,194,304 bytes\n")
+
+    @staticmethod
+    def _args(**kw):
+        class _Args:  # pylint: disable=too-few-public-methods
+            force = False
+            sudo = False
+            owner = None
+            checksum = False
+            no_rsync = False
+            via = None
+
+        args = _Args()
+        for key, value in kw.items():
+            setattr(args, key, value)
+        return args
+
+    @classmethod
+    def _ctx(cls, transport, **kw):
+        class _Console:  # pylint: disable=too-few-public-methods
+            verbose = False
+
+            @staticmethod
+            def detail(message):
+                """Swallow the traced command line."""
+
+        class _Ctx:  # pylint: disable=too-few-public-methods
+            pass
+
+        ctx = _Ctx()
+        ctx.args = cls._args(**kw)
+        ctx.config = {"deploy": dict(DEFAULTS["deploy"])}
+        ctx.console = _Console()
+        ctx.dry_run = False
+        ctx.worker = lambda node: transport
+        return ctx
+
+    @staticmethod
+    def _dist_and_payload(tmp_path):
+        root = _dist(tmp_path / "d")
+        return root, deploy._Payload(root, tmp_path / "p.tar.gz", ())  # noqa: SLF001
+
+    # -- the command line --------------------------------------------------------
+
+    def check_the_file_list_comes_from_stdin_not_from_rsync_patterns(self):
+        argv = deploy.rsync_argv(_RsyncTransport(), "/dist/ignite-dev", "/opt/.tmp.1")
+        assert "--files-from=-" in argv
+        assert not [a for a in argv if a.startswith("--exclude")], \
+            "rsync pattern matching differs from is_excluded; the exact list is sent instead"
+
+    def check_unchanged_files_are_hardlinked_against_the_live_distribution(self):
+        argv = deploy.rsync_argv(_RsyncTransport(), "/dist/ignite-dev", "/opt/.tmp.1",
+                                 link_dest="/opt/ignite-dev")
+        assert "--link-dest=/opt/ignite-dev" in argv
+
+    def check_a_first_deployment_has_nothing_to_link_against(self):
+        argv = deploy.rsync_argv(_RsyncTransport(), "/dist/ignite-dev", "/opt/.tmp.1")
+        assert not [a for a in argv if a.startswith("--link-dest")]
+
+    def check_it_lands_in_the_staging_directory_never_in_the_target(self):
+        argv = deploy.rsync_argv(_RsyncTransport(), "/dist/ignite-dev", "/opt/.tmp.1",
+                                 link_dest="/opt/ignite-dev")
+        assert argv[-1] == "tester@w1:/opt/.tmp.1/", \
+            "an interrupted transfer must not leave a live distribution half updated"
+        assert argv[-2] == "/dist/ignite-dev/"
+
+    def check_ssh_options_reach_rsync(self):
+        argv = deploy.rsync_argv(_RsyncTransport(), "/dist/x", "/opt/.tmp.1")
+        assert argv[argv.index("-e") + 1] == \
+            "ssh -o BatchMode=yes -i /home/tester/.ssh/id_ed25519"
+
+    def check_sudo_and_checksum_are_passed_through(self):
+        argv = deploy.rsync_argv(_RsyncTransport(), "/dist/x", "/opt/.tmp.1",
+                                 checksum=True, sudo=True)
+        assert "--checksum" in argv and "--rsync-path=sudo -n rsync" in argv
+
+    # -- stats -------------------------------------------------------------------
+
+    def check_stats_are_read_back(self):
+        assert deploy.parse_rsync_stats(self.STATS) == (12, 4194304)
+
+    def check_rsync_2_x_wording_is_understood(self):
+        assert deploy.parse_rsync_stats("Number of files transferred: 3\n"
+                                        "Total transferred file size: 1024 bytes\n") == (3, 1024)
+
+    def check_unreadable_stats_are_not_guessed(self):
+        assert deploy.parse_rsync_stats("") is None
+        assert deploy.parse_rsync_stats("all done") is None
+
+    # -- when it is used ---------------------------------------------------------
+
+    @staticmethod
+    def _posix_with_rsync(monkeypatch):
+        monkeypatch.setattr(deploy.shutil, "which", lambda _: "/usr/bin/rsync")
+        monkeypatch.setattr(deploy.os, "name", "posix")
+
+    def check_it_is_on_by_default_when_rsync_is_installed(self, monkeypatch):
+        self._posix_with_rsync(monkeypatch)
+        assert deploy.rsync_enabled(self._ctx(None)) is True
+
+    def check_no_rsync_flag_and_config_both_turn_it_off(self, monkeypatch):
+        self._posix_with_rsync(monkeypatch)
+        assert deploy.rsync_enabled(self._ctx(None, no_rsync=True)) is False
+        ctx = self._ctx(None)
+        ctx.config["deploy"]["rsync"] = False
+        assert deploy.rsync_enabled(ctx) is False
+
+    def check_via_keeps_the_single_upload(self, monkeypatch):
+        self._posix_with_rsync(monkeypatch)
+        assert deploy.rsync_enabled(self._ctx(None, via="build-vm-01")) is False, \
+            "--via exists so the payload crosses the slow link once, as one file"
+
+    def check_a_coordinator_without_rsync_falls_back(self, monkeypatch):
+        monkeypatch.setattr(deploy.os, "name", "posix")
+        monkeypatch.setattr(deploy.shutil, "which", lambda _: None)
+        assert deploy.rsync_enabled(self._ctx(None)) is False
+
+    def check_a_windows_coordinator_falls_back(self, monkeypatch):
+        monkeypatch.setattr(deploy.shutil, "which", lambda _: "rsync.exe")
+        monkeypatch.setattr(deploy.os, "name", "nt")
+        assert deploy.rsync_enabled(self._ctx(None)) is False, \
+            "rsync would read C:/dist/ignite-dev as host C"
+
+    # -- the transfer ------------------------------------------------------------
+
+    def check_the_tarball_is_never_built_when_every_host_takes_rsync(self, tmp_path,
+                                                                     monkeypatch):
+        root, payload = self._dist_and_payload(tmp_path)
+        transport = _RsyncTransport()
+        calls = []
+
+        def fake_run_local(argv, **kw):
+            calls.append((argv, kw.get("input")))
+            return Result(argv, 0, self.STATS, "", "local")
+
+        monkeypatch.setattr(deploy, "run_local", fake_run_local)
+        manifest = deploy.build_manifest(root)
+        result = deploy._deploy_to_host(  # noqa: SLF001
+            self._ctx(transport), Node(host="w1", user="tester"), "ignite-dev",
+            "/opt/ignite-dev", manifest, "{}", payload, None, None,
+            "\n".join(deploy.included_files(root)) + "\n")
+
+        assert not (tmp_path / "p.tar.gz").exists(), \
+            "compressing a linked checkout would cost more than the transfer saves"
+        assert len(calls) == 1
+        assert calls[0][1] == "bin/ignite.sh\nlibs/core.jar\n"
+        assert result.status == CHANGED and "rsync: 12 of 2 file(s) changed" in result.message
+
+    def check_the_staging_tree_is_still_swapped_into_place(self, tmp_path, monkeypatch):
+        root, payload = self._dist_and_payload(tmp_path)
+        transport = _RsyncTransport()
+        monkeypatch.setattr(deploy, "run_local",
+                            lambda argv, **kw: Result(argv, 0, self.STATS, "", "local"))
+        deploy._deploy_to_host(  # noqa: SLF001
+            self._ctx(transport), Node(host="w1", user="tester"), "ignite-dev",
+            "/opt/ignite-dev", deploy.build_manifest(root), "{}", payload, None, None,
+            "bin/ignite.sh\n")
+        scripts = "\n".join(transport.scripts)
+        assert 'mv -- "$staging" "$target"' in scripts
+        assert deploy.MANIFEST_NAME in "".join(transport.files)
+
+    def check_a_worker_without_rsync_gets_the_tarball(self, tmp_path, monkeypatch):
+        root, payload = self._dist_and_payload(tmp_path)
+        transport = _RsyncTransport()
+        transport.rsync = False
+        monkeypatch.setattr(deploy, "run_local",
+                            lambda argv, **kw: pytest.fail("rsync must not run here"))
+        result = deploy._deploy_to_host(  # noqa: SLF001
+            self._ctx(transport), Node(host="w1", user="tester"), "ignite-dev",
+            "/opt/ignite-dev", deploy.build_manifest(root), "{}", payload, None, None,
+            "bin/ignite.sh\n")
+        assert (tmp_path / "p.tar.gz").exists()
+        assert transport.uploads and result.status == CHANGED
+
+    def check_a_failed_rsync_leaves_the_target_alone(self, tmp_path, monkeypatch):
+        root, payload = self._dist_and_payload(tmp_path)
+        transport = _RsyncTransport()
+        monkeypatch.setattr(deploy, "run_local",
+                            lambda argv, **kw: Result(argv, 23, "", "permission denied",
+                                                      "local"))
+        result = deploy._deploy_to_host(  # noqa: SLF001
+            self._ctx(transport), Node(host="w1", user="tester"), "ignite-dev",
+            "/opt/ignite-dev", deploy.build_manifest(root), "{}", payload, None, None,
+            "bin/ignite.sh\n")
+        assert result.status == FAILED and "permission denied" in result.detail
+        assert 'mv -- "$staging" "$target"' not in "\n".join(transport.scripts)
+
+    def check_the_file_list_matches_the_manifest(self, tmp_path):
+        root = CheckExcludes._checkout(tmp_path)  # noqa: SLF001
+        excludes = ["src", "classes"]
+        files = deploy.included_files(root, excludes)
+        assert files == ["bin/ignite.sh",
+                         "modules/core/target/ignite-core.jar",
+                         "modules/core/target/libs/dep.jar",
+                         "modules/ducktests/tests/certs/truststore.jks"]
+        assert len(files) == deploy.build_manifest(root, excludes=excludes)["files"]

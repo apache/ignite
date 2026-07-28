@@ -128,6 +128,9 @@ DEFAULTS = {
         "owner": None,
         "staging_dir": "/tmp/ducktests-remote-staging",
         "checksum": False,
+        # Send only what differs, hardlinking the rest against the deployment already on
+        # the host.  Falls back to a whole tarball when either end has no rsync.
+        "rsync": True,
         # rsync-style patterns left out of every distribution.  Empty by default: a
         # release directory is shipped whole.  The list matters when ignite-dev is a link
         # to a source checkout, where only the built jars are wanted on the workers.

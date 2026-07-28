@@ -240,8 +240,23 @@ ducktests-remote deploy --sudo --owner max         # when /opt is root-owned
 
 Each host gets a `.ducktests-deploy.json` manifest (sorted paths + sizes + mtimes;
 `--checksum` hashes contents instead). Hosts whose manifest already matches are skipped
-unless `--force`. Extraction goes to a temporary directory and is then swapped into
-place, because a half-copied distribution that looks present is worse than an absent one.
+unless `--force`. The staging directory is filled and then swapped into place, because a
+half-copied distribution that looks present is worse than an absent one.
+
+By default the staging directory is filled by **rsync**, hardlinked with `--link-dest`
+against the deployment already on the host, so a redeploy after rebuilding one module
+sends one jar rather than the whole tree:
+
+```
+w01  changed  4.1s  rsync: 12 of 8431 file(s) changed, 4.0 MB sent
+```
+
+rsync is fed the exact file list on stdin — never its own `--exclude` patterns, whose
+matching differs from the manifest's. `deploy` falls back to a tarball of the whole
+distribution when either end has no rsync (probed per host), with `--via`, with
+`--no-rsync` or `deploy.rsync: false`, or on a Windows coordinator, where rsync would read
+`C:/dist/ignite-dev` as a host named `C`. Nothing is tarred at all when every host takes
+the rsync path.
 
 On a twelve-host cluster a 300 MB distribution is 3.7 GB over the wire from a laptop.
 `deploy` prints that total before it starts, and suggests `--via`.

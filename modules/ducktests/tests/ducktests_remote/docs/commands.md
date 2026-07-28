@@ -225,7 +225,8 @@ assumption; a doctor FAIL makes it exit 2.
 
 ```
 deploy [--dist-dir PATH] [--only NAME]... [--exclude PATTERN]... [--install-root PATH]
-       [--via HOST] [--sudo] [--owner USER] [--force] [--checksum] [-n N] [--json]
+       [--via HOST] [--sudo] [--owner USER] [--force] [--checksum] [--no-rsync]
+       [-n N] [--json]
 ```
 
 Each subdirectory of `--dist-dir` is copied verbatim to `<install_root>/<name>`. The name
@@ -246,6 +247,48 @@ Per distribution, per host:
 `--via HOST` uploads the payload once to an intermediate host and fans out from there.
 `deploy` prints the total bytes before it starts — on a twelve-host cluster a 300 MB
 distribution is 3.7 GB from a laptop — and suggests `--via` when that total is large.
+
+### Incremental redeploys
+
+Step 4 has two implementations, and the default is the incremental one:
+
+```
+rsync -a --files-from=- --link-dest=/opt/ignite-dev  ./dist/ignite-dev/  host:/opt/.ignite-dev.tmp.ab12/
+```
+
+The staging directory is filled by rsync rather than by extracting a tarball.
+`--link-dest` points at the deployment already on the host, so every file that has not
+changed becomes a **hardlink** to the one already there and is never sent: rebuild one
+module and the transfer is one jar, on a tree of any size. The staging directory is still
+built from scratch and still swapped in atomically, so this costs nothing in safety;
+deleting the old tree afterwards only drops link counts.
+
+Two details worth knowing:
+
+- rsync is fed the exact file list on **stdin**, not `--exclude` patterns. Its matching
+  rules are close to `is_excluded`'s but not identical, and a distribution that differs
+  from the manifest describing it is the one bug the manifest exists to prevent.
+- Nothing is tarred when every host takes this path — the tarball is built lazily, only
+  for hosts that need it.
+
+The result line reports what actually moved:
+
+```
+w01  changed  4.1s  rsync: 12 of 8431 file(s) changed, 4.0 MB sent
+```
+
+The tarball path is used instead when:
+
+| Condition | Why |
+| --- | --- |
+| `--no-rsync`, or `deploy.rsync: false` | you asked for it |
+| `--via HOST` | the point of `--via` is one upload across the slow link, not one per host |
+| no `rsync` on the coordinator, or on that worker | probed per host, so a mixed cluster works |
+| the coordinator runs Windows | rsync reads `C:/dist/ignite-dev` as host `C` |
+
+`provision` installs `rsync` on the workers as part of the Dockerfile-derived package
+list, so a provisioned cluster is already on the fast path. `--checksum` is passed
+through to rsync, matching the manifest mode.
 
 ### Leaving files out
 
@@ -320,8 +363,8 @@ how many files the patterns dropped, and transfers nothing:
 ducktests-remote deploy --only ignite-dev --dry-run
 ```
 
-Note that a distribution is all-or-nothing: rebuild one module and the whole distribution
-is re-tarred and re-uploaded, because the manifest hash covers the tree.
+Rebuilding one module changes the manifest hash for the whole distribution, so every host
+is redeployed — but on the rsync path that redeploy sends only the jars that changed.
 
 ### Where the directory names come from
 
