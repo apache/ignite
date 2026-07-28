@@ -61,8 +61,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
-import org.apache.ignite.internal.processors.tracing.MTC;
-import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.ClusterNodeFunc;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -80,8 +78,6 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_LOADED;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRELOAD;
-import static org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
-import static org.apache.ignite.internal.processors.tracing.SpanType.TX_DHT_LOCK_MAP;
 
 /**
  * Cache lock future.
@@ -90,9 +86,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
     implements GridCacheVersionedFuture<Boolean>, GridDhtFuture<Boolean>, GridCacheMappedVersion {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Tracing span. */
-    private Span span;
 
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
@@ -738,35 +731,33 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
     /** {@inheritDoc} */
     @Override public boolean onDone(@Nullable Boolean success, @Nullable Throwable err) {
-        try (TraceSurroundings ignored = MTC.support(span)) {
-            // Protect against NPE.
-            if (success == null) {
-                assert err != null;
+        // Protect against NPE.
+        if (success == null) {
+            assert err != null;
 
-                success = false;
-            }
-
-            assert err == null || !success;
-            assert !success || (initialized() && !hasPending()) : "Invalid done callback [success=" + success +
-                ", fut=" + this + ']';
-
-            if (log.isDebugEnabled())
-                log.debug("Received onDone(..) callback [success=" + success + ", err=" + err + ", fut=" + this + ']');
-
-            // If locks were not acquired yet, delay completion.
-            if (isDone() || (err == null && success && !checkLocks()))
-                return false;
-
-            synchronized (this) {
-                if (this.err == null)
-                    this.err = err;
-            }
-
-            if (!success && err == null && CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout))
-                return onComplete(false, false, false, false);
-
-            return onComplete(success, err instanceof NodeStoppingException, true);
+            success = false;
         }
+
+        assert err == null || !success;
+        assert !success || (initialized() && !hasPending()) : "Invalid done callback [success=" + success +
+            ", fut=" + this + ']';
+
+        if (log.isDebugEnabled())
+            log.debug("Received onDone(..) callback [success=" + success + ", err=" + err + ", fut=" + this + ']');
+
+        // If locks were not acquired yet, delay completion.
+        if (isDone() || (err == null && success && !checkLocks()))
+            return false;
+
+        synchronized (this) {
+            if (this.err == null)
+                this.err = err;
+        }
+
+        if (!success && err == null && CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout))
+            return onComplete(false, false, false, false);
+
+        return onComplete(success, err instanceof NodeStoppingException, true);
     }
 
     /**
@@ -840,21 +831,18 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
      *
      */
     public void map() {
-        try (TraceSurroundings ignored =
-                 MTC.supportContinual(span = cctx.kernalContext().tracing().create(TX_DHT_LOCK_MAP, MTC.span()))) {
-            if (F.isEmpty(entries)) {
-                onComplete(true, false, true);
+        if (F.isEmpty(entries)) {
+            onComplete(true, false, true);
 
-                return;
-            }
+            return;
+        }
 
-            readyLocks();
+        readyLocks();
 
-            if (lockTimeout() > 0 && !isDone()) { // Prevent memory leak if future is completed by call to readyLocks.
-                timeoutObj = new LockTimeoutObject();
+        if (lockTimeout() > 0 && !isDone()) { // Prevent memory leak if future is completed by call to readyLocks.
+            timeoutObj = new LockTimeoutObject();
 
-                cctx.time().addTimeoutObject(timeoutObj);
-            }
+            cctx.time().addTimeoutObject(timeoutObj);
         }
     }
 

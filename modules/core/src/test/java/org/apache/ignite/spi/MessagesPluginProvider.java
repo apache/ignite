@@ -26,6 +26,7 @@ import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 
 import static org.apache.ignite.testframework.GridTestUtils.loadSerializer;
@@ -73,9 +74,11 @@ public class MessagesPluginProvider extends AbstractTestPluginProvider {
 
     /** {@inheritDoc} */
     @Override public void start(PluginContext ctx) throws IgniteCheckedException {
-        // Register messages into the discovery protocol.
-        TestTcpDiscoverySpi discoSpi = (TestTcpDiscoverySpi)ctx.igniteConfiguration().getDiscoverySpi();
+        DiscoverySpi discoSpi = ctx.igniteConfiguration().getDiscoverySpi();
 
-        discoSpi.messageFactory(msgFactoryProvider, ctx.igniteConfiguration());
+        if (discoSpi instanceof TestTcpDiscoverySpi testDiscoSpi) {
+            // Register messages into the discovery protocol.
+            testDiscoSpi.messageFactory(msgFactoryProvider, ctx.igniteConfiguration());
+        }
     }
 }

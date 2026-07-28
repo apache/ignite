@@ -19,11 +19,10 @@ package org.apache.ignite.internal.managers.communication;
 
 import org.apache.ignite.internal.ExecutorAwareMessage;
 import org.apache.ignite.internal.GridTopicMessage;
-import org.apache.ignite.internal.OperationContextMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
-import org.apache.ignite.internal.processors.tracing.messages.SpanTransport;
+import org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage;
 import org.apache.ignite.internal.util.nio.GridNioServer.MessageWrapper;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -33,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Wrapper for all grid messages.
  */
-public class GridIoMessage implements Message, SpanTransport, MessageWrapper {
+public class GridIoMessage implements Message, MessageWrapper {
     /** */
     public static final Integer STRIPE_DISABLED_PART = Integer.MIN_VALUE;
 
@@ -62,14 +61,10 @@ public class GridIoMessage implements Message, SpanTransport, MessageWrapper {
     @Order(5)
     Message msg;
 
-    /** Serialized span */
-    @Order(6)
-    byte[] span;
-
     /** Effective operation context attributes to propagate. */
-    @Order(7)
+    @Order(6)
     @GridToStringInclude
-    public @Nullable OperationContextMessage opCtxMsg;
+    @Nullable OperationContextSnapshotMessage opCtxSnp;
 
     /**
      * Default constructor.
@@ -85,6 +80,7 @@ public class GridIoMessage implements Message, SpanTransport, MessageWrapper {
      * @param ordered Message ordered flag.
      * @param timeout Timeout.
      * @param skipOnTimeout Whether message can be skipped on timeout.
+     * @param opCtxSnp Operation Context snapshot.
      */
     public GridIoMessage(
         byte plc,
@@ -92,7 +88,8 @@ public class GridIoMessage implements Message, SpanTransport, MessageWrapper {
         Message msg,
         boolean ordered,
         long timeout,
-        boolean skipOnTimeout
+        boolean skipOnTimeout,
+        @Nullable OperationContextSnapshotMessage opCtxSnp
     ) {
         assert topic != null;
         assert msg != null;
@@ -103,6 +100,7 @@ public class GridIoMessage implements Message, SpanTransport, MessageWrapper {
         this.ordered = ordered;
         this.timeout = timeout;
         this.skipOnTimeout = skipOnTimeout;
+        this.opCtxSnp = opCtxSnp;
     }
 
     /**
@@ -160,16 +158,6 @@ public class GridIoMessage implements Message, SpanTransport, MessageWrapper {
     /** {@inheritDoc} */
     @Override public int hashCode() {
         throw new AssertionError();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void span(byte[] span) {
-        this.span = span;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte[] span() {
-        return span;
     }
 
     /**
