@@ -30,6 +30,7 @@ from ducktests_remote import (__version__, cluster as cluster_mod, globals_build
 from ducktests_remote.cli import (EXIT_OK, EXIT_PREFLIGHT, EXIT_TESTS_FAILED, Console)
 from ducktests_remote.commands import doctor
 from ducktests_remote.config import ConfigError, expand_path
+from ducktests_remote.progress import build_progress
 
 DEFAULT_EXCLUDES = [".git", "target", "results", "__pycache__", "*.pyc", ".idea",
                     "venv", ".venv", "*.egg-info", ".tox", ".pytest_cache"]
@@ -407,7 +408,17 @@ def _sync_sources(ctx, source_root, paths):
             "build directory leaked into the payload - check --exclude / %s. Distributions "
             "belong in `ducktests-remote deploy`, never in the source sync."
             % (size_mb, limit, IGNITE_IGNORE_FILE))
-    ctx.runner.upload_dir(source_root, paths.src_dir, excludes=excludes)
+    total = int(size_mb * 1024 * 1024)
+    progress = build_progress(ctx, [ctx.runner_host])
+    watcher = None
+    if progress.watching:
+        def watcher(sent, fraction):  # noqa: F811 - reported only when something draws it
+            progress.sent(ctx.runner_host, sent, total, fraction=fraction)
+    with progress:
+        progress.phase(ctx.runner_host, "sending")
+        ctx.runner.upload_dir(source_root, paths.src_dir, excludes=excludes,
+                              on_progress=watcher)
+        progress.done(ctx.runner_host)
 
 
 def _payload_size_mb(source_root, excludes):

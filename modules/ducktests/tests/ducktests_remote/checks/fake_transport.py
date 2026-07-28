@@ -35,6 +35,7 @@ class FakeTransport(Transport):
         self.uploads = []
         self.downloads = []
         self.dirs = []
+        self.reported = []
         self.files = {}
         self.responses = []
         self._home = home
@@ -66,8 +67,19 @@ class FakeTransport(Transport):
     def download(self, remote_path, local_path):
         self.downloads.append((remote_path, str(local_path)))
 
-    def upload_dir(self, local_dir, remote_dir, *, excludes=(), delete=False):
+    def upload_dir(self, local_dir, remote_dir, *, excludes=(), delete=False,
+                   on_progress=None):
         self.uploads.append((str(local_dir), remote_dir, "dir"))
+        if on_progress is not None:
+            # One synthetic report, so a caller's wiring is exercised rather than assumed.
+            self.reported.append((1024, 1.0))
+            on_progress(1024, 1.0)
+
+    def upload_watched(self, local_path, remote_path, *, mode=None, on_bytes=None):
+        self.uploads.append((str(local_path), remote_path, mode))
+        if on_bytes is not None:
+            self.reported.append((1024, None))
+            on_bytes(1024)
 
     def write_file(self, content, remote_path, *, mode=None):
         self.files[remote_path] = (content, mode)

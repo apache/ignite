@@ -24,6 +24,7 @@ Nothing above this boundary may shell out to ``ssh`` directly, so ``--runner loc
 import abc
 import os
 import posixpath
+import re
 import shlex
 import shutil
 import subprocess
@@ -164,8 +165,15 @@ class Transport(abc.ABC):  # pylint: disable=too-many-instance-attributes
         """Copy a single remote file to ``local_path``."""
 
     @abc.abstractmethod
-    def upload_dir(self, local_dir, remote_dir, *, excludes=(), delete=False):
-        """Copy a directory tree; ``local_dir`` contents land inside ``remote_dir``."""
+    def upload_dir(self, local_dir, remote_dir, *, excludes=(), delete=False,
+                   on_progress=None):
+        """
+        Copy a directory tree; ``local_dir`` contents land inside ``remote_dir``.
+
+        ``on_progress(sent_bytes, fraction)`` is called as the transfer goes, with
+        ``fraction`` set only when the sender knows it.  Implementations that cannot see
+        the bytes leave simply never call it.
+        """
 
     def exists(self, remote_path):
         """:return: True when ``remote_path`` exists on this host."""
@@ -248,7 +256,9 @@ class LocalTransport(Transport):
         Path(local_path).parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(remote_path, str(local_path))
 
-    def upload_dir(self, local_dir, remote_dir, *, excludes=(), delete=False):
+    def upload_dir(self, local_dir, remote_dir, *, excludes=(), delete=False,
+                   on_progress=None):
+        del on_progress  # a local copy is not worth watching
         self._trace(["cp", "-r", str(local_dir), remote_dir])
         if self.dry_run:
             return
@@ -361,7 +371,8 @@ class SshTransport(Transport):
                 self._rsync = bool(remote)
         return self._rsync
 
-    def upload_dir(self, local_dir, remote_dir, *, excludes=(), delete=False):
+    def upload_dir(self, local_dir, remote_dir, *, excludes=(), delete=False,
+                   on_progress=None):
         local_dir = str(local_dir)
         self._trace(["rsync", local_dir, "%s:%s" % (self.target, remote_dir)])
         if self.dry_run:
@@ -374,14 +385,24 @@ class SshTransport(Transport):
             for pattern in excludes:
                 argv += ["--exclude", pattern]
             argv += [local_dir.rstrip("/\\") + "/", "%s:%s/" % (self.target, remote_dir)]
-            _spawn(argv, host=self.name, check=True)
+            if on_progress is None:
+                _spawn(argv, host=self.name, check=True)
+                return
+            argv.insert(1, "--info=progress2")
+            run_local_streaming(argv, host=self.name,
+                                on_output=rsync_reporter(on_progress)).check()
             return
         # rsync missing on one of the ends: fall back to a tar stream through scp.
         with tempfile.TemporaryDirectory() as tmp:
             archive = Path(tmp) / "payload.tar.gz"
             make_tarball(local_dir, archive, excludes=excludes)
             staged = "/tmp/dtr-upload-%s.tar.gz" % uuid.uuid4().hex[:8]
-            self.upload(archive, staged)
+            if on_progress is None:
+                self.upload(archive, staged)
+            else:
+                total = archive.stat().st_size
+                self.upload_watched(archive, staged,
+                                    on_bytes=lambda sent: on_progress(sent, sent / total))
             script = "set -eu\nmkdir -p %s\n" % shlex.quote(remote_dir)
             if delete:
                 script += "rm -rf -- %s/*\n" % shlex.quote(remote_dir)
@@ -455,7 +476,9 @@ class ProxiedTransport(Transport):
         finally:
             self.via.run(["rm", "-f", "--", staged], check=False)
 
-    def upload_dir(self, local_dir, remote_dir, *, excludes=(), delete=False):
+    def upload_dir(self, local_dir, remote_dir, *, excludes=(), delete=False,
+                   on_progress=None):
+        del on_progress  # the interesting hop is the second one, which scp cannot watch
         with tempfile.TemporaryDirectory() as tmp:
             archive = Path(tmp) / "payload.tar.gz"
             make_tarball(local_dir, archive, excludes=excludes)
@@ -546,6 +569,30 @@ def run_local(argv, *, check=False, timeout=None, input=None):  # noqa: A002 - m
 
 
 CHUNK = 1024 * 1024
+
+# `--info=progress2`: `      1,234,567  35%   12.34MB/s    0:00:12`.  The separators are
+# locale-dependent, the layout is not.
+_RSYNC_PROGRESS = re.compile(r"^\s*([\d,.]+)\s+(\d+)%\s")
+
+
+def parse_rsync_progress(line):
+    """:return: ``(bytes_so_far, fraction)`` from one ``--info=progress2`` line, or None."""
+    match = _RSYNC_PROGRESS.match(line or "")
+    if not match:
+        return None
+    try:
+        return int(re.sub(r"[,.]", "", match.group(1))), int(match.group(2)) / 100.0
+    except ValueError:
+        return None
+
+
+def rsync_reporter(on_progress):
+    """:return: an ``on_output`` callback that turns rsync's meter into ``on_progress``."""
+    def watch(line):
+        reading = parse_rsync_progress(line)
+        if reading:
+            on_progress(reading[0], reading[1])
+    return watch
 
 
 def run_local_streaming(argv, *, on_output, host="local"):

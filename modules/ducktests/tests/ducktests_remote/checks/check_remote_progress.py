@@ -18,9 +18,10 @@
 import io
 import sys
 
+from ducktests_remote import progress as progress_mod
 from ducktests_remote.commands import deploy
-from ducktests_remote.progress import (NullProgress, Progress, human_bytes, human_duration,
-                                       is_a_terminal)
+from ducktests_remote.progress import (NullProgress, Progress, build_progress, human_bytes,
+                                       human_duration, is_a_terminal)
 from ducktests_remote.transport import LocalTransport, run_local_streaming
 
 
@@ -189,7 +190,7 @@ class CheckNullProgress:
 
 
 class CheckWhenItIsUsed:
-    """deploy decides; the display only draws."""
+    """The command decides; the display only draws."""
 
     @staticmethod
     def _ctx(*, dry_run=False, quiet=False, verbose=False, no_progress=False):
@@ -220,24 +221,24 @@ class CheckWhenItIsUsed:
         return [_Node()]
 
     def check_a_dry_run_reports_nothing(self):
-        assert isinstance(deploy.build_progress(self._ctx(dry_run=True), self._nodes()),
+        assert isinstance(build_progress(self._ctx(dry_run=True), self._nodes()),
                           NullProgress)
 
     def check_quiet_and_no_progress_report_nothing(self):
-        assert isinstance(deploy.build_progress(self._ctx(quiet=True), self._nodes()),
+        assert isinstance(build_progress(self._ctx(quiet=True), self._nodes()),
                           NullProgress)
-        assert isinstance(deploy.build_progress(self._ctx(no_progress=True), self._nodes()),
+        assert isinstance(build_progress(self._ctx(no_progress=True), self._nodes()),
                           NullProgress)
 
     def check_verbose_reports_without_redrawing(self, monkeypatch):
-        monkeypatch.setattr(deploy, "is_a_terminal", lambda _: True)
-        progress = deploy.build_progress(self._ctx(verbose=True), self._nodes())
+        monkeypatch.setattr(progress_mod, "is_a_terminal", lambda _: True)
+        progress = build_progress(self._ctx(verbose=True), self._nodes())
         assert isinstance(progress, Progress) and progress.live is False, \
             "a redrawn block would fight with the traced command lines"
 
     def check_a_terminal_gets_the_live_display(self, monkeypatch):
-        monkeypatch.setattr(deploy, "is_a_terminal", lambda _: True)
-        assert deploy.build_progress(self._ctx(), self._nodes()).live is True
+        monkeypatch.setattr(progress_mod, "is_a_terminal", lambda _: True)
+        assert build_progress(self._ctx(), self._nodes()).live is True
 
 
 class CheckStreamedTransfers:

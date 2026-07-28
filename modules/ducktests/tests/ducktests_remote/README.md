@@ -251,9 +251,10 @@ sends one jar rather than the whole tree:
 w01  changed  4.1s  rsync: 12 of 8431 file(s) changed, 4.0 MB sent
 ```
 
-A transfer that takes minutes shows what every host is doing, redrawn in place on a
-terminal and reduced to one `total ...` line every 15 seconds in a log, under `--verbose`,
-or wherever stderr is not a terminal (`--no-progress` turns it off):
+Every transfer that can take minutes — this one, `run`'s source sync and `provision`'s JDK
+delivery — shows what each host is doing, redrawn in place on a terminal and reduced to one
+`total ...` line every 15 seconds in a log, under `--verbose`, or wherever stderr is not a
+terminal (`--no-progress` turns it off):
 
 ```
   worker01  █████████████████░░░░░░░  70%  210.0 MB / 300.0 MB  24.1 MB/s

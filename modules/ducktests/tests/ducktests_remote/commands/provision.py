@@ -25,6 +25,7 @@ step idempotent and independently selectable.
 
 import hashlib
 import json
+import os
 import posixpath
 import shlex
 import tempfile
@@ -38,6 +39,7 @@ from ducktests_remote.commands import deploy, doctor
 from ducktests_remote.config import ConfigError
 from ducktests_remote.fanout import (CHANGED, FAILED, HostResult, OK, SKIPPED, any_failed,
                                      fanout, render_table, summarise)
+from ducktests_remote.progress import NullProgress, build_progress
 from ducktests_remote.transport import make_tarball
 
 STEPS = ("packages", "jdk", "python", "user", "ssh-env", "dirs", "hosts")
@@ -252,17 +254,24 @@ def _run_jdk_step(ctx, nodes):
     script = java.discovery_script(cfg)
     payload = JdkPayload(plan) if plan else None
 
+    # Only a delivery is worth watching; the probe-only case is one round trip per host.
+    progress = build_progress(ctx, nodes) if payload else NullProgress()
+
     def operation(node):
         if ctx.dry_run:
             ctx.console.out("[dry-run] %s: probe for a Java %s JDK"
                             % (node.host, cfg.major or "any"))
             ctx.console.detail(script)
             return HostResult(node.host, SKIPPED, "dry-run")
-        return _jdk_on_host(ctx, node, cfg, payload, script)
+        try:
+            return _jdk_on_host(ctx, node, cfg, payload, script, progress)
+        finally:
+            progress.done(node.host)
 
     try:
-        return fanout(nodes, operation, jobs=ctx.jobs,
-                      fail_fast=getattr(ctx.args, "fail_fast", False))
+        with progress:
+            return fanout(nodes, operation, jobs=ctx.jobs,
+                          fail_fast=getattr(ctx.args, "fail_fast", False))
     finally:
         if payload:
             payload.close()
@@ -321,8 +330,10 @@ class JdkPayload:
             self._archive = None
 
 
-def _jdk_on_host(ctx, node, cfg, payload, script):
+def _jdk_on_host(ctx, node, cfg, payload, script, progress=None):
+    progress = progress or NullProgress()
     transport = ctx.worker(node)
+    progress.phase(node.host, "probing")
     probe = transport.run_script(script, check=False)
     if not probe.ok:
         return HostResult(node.host, FAILED, "could not probe for a JDK",
@@ -340,7 +351,7 @@ def _jdk_on_host(ctx, node, cfg, payload, script):
                           detail=_found(res))
 
     if payload is not None:
-        return _deliver_jdk(ctx, node, cfg, payload)
+        return _deliver_jdk(ctx, node, cfg, payload, progress)
 
     if ctx.args.install_jdk:
         return _install_jdk(ctx, node, cfg)
@@ -358,13 +369,14 @@ def _found(res):
                                  for home, major, _ in res.candidates)
 
 
-def _deliver_jdk(ctx, node, cfg, payload):
+def _deliver_jdk(ctx, node, cfg, payload, progress=None):
     """
     Copy the JDK to one worker, reusing ``deploy``'s staging and atomic swap.
 
     A half-extracted JDK that looks present is exactly as bad as a half-extracted
     distribution, which is why this does not extract in place.
     """
+    progress = progress or NullProgress()
     plan = payload.plan
     transport = ctx.worker(node)
     target = java.target_dir(cfg, plan)
@@ -391,7 +403,14 @@ def _deliver_jdk(ctx, node, cfg, payload):
     transport.run_script(deploy.prepare_script(staging, ctx.args.sudo)).check()
 
     remote = "%s/.payload.tar" % staging
-    transport.upload(payload.archive(), remote)
+    archive = payload.archive()
+    progress.phase(node.host, "sending")
+    total = os.path.getsize(archive)
+    transport.upload_watched(
+        archive, remote,
+        on_bytes=(lambda sent: progress.sent(node.host, sent, total))
+        if progress.watching else None)
+    progress.phase(node.host, "extracting")
     transport.run_script(
         "set -eu\ntar -x%sf %s -C %s%s\nrm -f -- %s\n"
         % (payload.tar_flag(), shlex.quote(remote), shlex.quote(staging),
@@ -404,6 +423,7 @@ def _deliver_jdk(ctx, node, cfg, payload):
         return HostResult(node.host, FAILED,
                           "the delivered archive has no bin/java under %s" % staging)
 
+    progress.phase(node.host, "swapping")
     transport.write_file(json.dumps(manifest, indent=2, sort_keys=True),
                          posixpath.join(staging, JAVA_MANIFEST_NAME))
     transport.run_script(deploy.swap_script(staging, target, ctx.args.sudo, None)).check()

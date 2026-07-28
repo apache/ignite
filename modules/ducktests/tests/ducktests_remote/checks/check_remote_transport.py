@@ -23,6 +23,7 @@ import pytest
 from fake_transport import FakeTransport
 
 from ducktests_remote import cli, runs
+from ducktests_remote import transport as transport_mod
 from ducktests_remote.transport import (LocalTransport, ProxiedTransport, Result,
                                         SshTransport, TransportError, is_excluded)
 
@@ -188,3 +189,39 @@ class CheckResult:
     def check_ok_and_out(self):
         result = Result(["true"], 0, "  value \n")
         assert result.ok and result.out == "value"
+
+
+class CheckWatchedTransfers:
+    """A transfer only pays for progress when something is drawing it."""
+
+    @staticmethod
+    def _rsync_transport(monkeypatch, recorded):
+        transport = SshTransport(name="w1", user="tester")
+        monkeypatch.setattr(transport, "has_rsync", lambda: True)
+        monkeypatch.setattr(transport, "mkdirs", lambda *a, **kw: None)
+
+        def record(argv, **kw):
+            recorded.append(list(argv))
+            return Result(list(argv), 0, "", "", "w1")
+
+        monkeypatch.setattr(transport_mod, "_spawn", record)
+        monkeypatch.setattr(transport_mod, "run_local_streaming", record)
+        return transport
+
+    def check_an_unwatched_sync_keeps_the_quiet_rsync(self, tmp_path, monkeypatch):
+        recorded = []
+        self._rsync_transport(monkeypatch, recorded).upload_dir(tmp_path, "/remote")
+        assert "--info=progress2" not in recorded[0]
+
+    def check_a_watched_sync_asks_rsync_for_its_meter(self, tmp_path, monkeypatch):
+        recorded = []
+        transport = self._rsync_transport(monkeypatch, recorded)
+        transport.upload_dir(tmp_path, "/remote", on_progress=lambda sent, fraction: None)
+        assert "--info=progress2" in recorded[0]
+
+    def check_the_meter_is_turned_into_calls(self):
+        seen = []
+        watch = transport_mod.rsync_reporter(lambda sent, fraction: seen.append((sent, fraction)))
+        watch("      1,048,576  25%   12.34MB/s    0:00:12")
+        watch("sending incremental file list")
+        assert seen == [(1048576, 0.25)], "only meter lines count"

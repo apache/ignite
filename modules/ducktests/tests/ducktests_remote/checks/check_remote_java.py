@@ -366,6 +366,51 @@ class CheckDelivery:
             ctx, NODE, cfg, provision.JdkPayload(plan), java.discovery_script(cfg))
         assert result.status == provision.OK and not fake.uploads
 
+    def check_the_delivery_reports_its_bytes(self, tmp_path):
+        archive = _tarball(tmp_path, ["bin/java"])
+        ctx, fake = _context(PROBE, major=21, archive=str(archive), install_root="/opt")
+        cfg = java.config_of(ctx)
+        plan = java.archive_plan(cfg.archive)
+        seen = []
+
+        class _Progress:  # pylint: disable=too-few-public-methods
+            """Records what a real display would draw."""
+
+            live = False
+            watching = True
+
+            @staticmethod
+            def phase(host, phase):
+                seen.append((host, phase))
+
+            @staticmethod
+            def sent(host, sent, total=None, fraction=None):
+                seen.append((host, "sent", sent, total))
+
+            @staticmethod
+            def done(host, message=""):
+                seen.append((host, "done"))
+
+        provision._jdk_on_host(  # noqa: SLF001
+            ctx, NODE, cfg, provision.JdkPayload(plan), java.discovery_script(cfg),
+            _Progress())
+        phases = [entry[1] for entry in seen]
+        assert phases[:2] == ["probing", "sending"]
+        assert "extracting" in phases and "swapping" in phases
+        assert any(entry[1] == "sent" for entry in seen), \
+            "a JDK is a few hundred megabytes; it has to show movement"
+        assert fake.reported, "the upload must be the watched one"
+
+    def check_a_delivery_that_is_skipped_reports_nothing(self, tmp_path):
+        archive = _tarball(tmp_path, ["bin/java"])
+        ctx, fake = _context(PROBE, major=21, archive=str(archive), install_root="/opt")
+        cfg = java.config_of(ctx)
+        plan = java.archive_plan(cfg.archive)
+        fake.when("cat", json.dumps({"hash": provision._tar_manifest(plan)["hash"]}))  # noqa: SLF001
+        provision._jdk_on_host(  # noqa: SLF001
+            ctx, NODE, cfg, provision.JdkPayload(plan), java.discovery_script(cfg))
+        assert not fake.reported and not fake.uploads
+
     def check_no_archive_and_no_match_fails_with_the_config_keys(self):
         ctx, _ = _context(PROBE, major=21)
         cfg = java.config_of(ctx)

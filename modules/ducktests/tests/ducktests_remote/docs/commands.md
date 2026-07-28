@@ -114,7 +114,8 @@ to ducktape unchanged, with a warning.
 8. **Sync the source tree** to `<state_root>/src/<run-id>` unless `--no-sync`. The payload
    is measured first and refused above `run.max_payload_mb` (200 MB): that almost always
    means a build directory leaked in. rsync when both ends have it, otherwise a tar stream
-   over scp.
+   over scp. Progress is reported while it runs — see
+   [deploy's description of the display](#watching-a-long-transfer), which is the same one.
 9. **Ensure the venv**: create `<state_root>/venv` when missing, and install
    `docker/requirements.txt` into it when `import ducktape` fails. This is where `pip.*`
    applies. Runs after the sync because the requirements file comes from the synced tree.
@@ -220,6 +221,11 @@ assumption; a doctor FAIL makes it exit 2.
 
 `--dry-run` prints the exact script per host and probes nothing.
 
+Delivering a JDK is the one step that moves real bytes, so it reports progress per host
+while it does — the same display [`deploy` uses](#watching-a-long-transfer). The
+probe-only case does not: it is one round trip per host, and only the hosts that come back
+without a usable JDK are sent anything.
+
 ---
 
 ## `deploy`
@@ -281,8 +287,9 @@ w01  changed  4.1s  rsync: 12 of 8431 file(s) changed, 4.0 MB sent
 ### Watching a long transfer
 
 Sending 3.5 GB to twelve machines takes minutes, and a terminal that prints nothing for
-that long is indistinguishable from one that has hung. `deploy` shows every host while it
-works, redrawn in place:
+that long is indistinguishable from one that has hung. Every transfer that can take
+minutes reports the same way — `deploy`, `run`'s source sync, and `provision`'s JDK
+delivery — redrawn in place:
 
 ```
   worker01  █████████████████░░░░░░░  70%  210.0 MB / 300.0 MB  24.1 MB/s
@@ -312,6 +319,10 @@ counts the chunks itself.
 
 `--verbose` deliberately drops to the single line: it prints a traced command per host,
 and a redrawn block would fight with it.
+
+Counting bytes is not free — rsync grows a meter, and a watched upload streams through
+`ssh 'cat > path'` instead of scp — so when nothing will draw the result, nothing is asked
+to report and the plain transfer is used. That is what `--no-progress` really turns off.
 
 The tarball path is used instead when:
 

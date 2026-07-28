@@ -123,6 +123,12 @@ pipe. `run_local_streaming` reads a child's output as it arrives, treating a car
 return as a line ending, and drains stderr on a thread so a chatty failure cannot deadlock
 the pipe.
 
+`build_progress(ctx, hosts)` is the single decision point, shared by `deploy`,
+`run`'s source sync and `provision`'s JDK delivery. Callers gate the wiring on
+`progress.watching` rather than on which object they got: reporting costs something —
+rsync grows a meter, an upload leaves scp for a streamed `cat` — and none of it is worth
+paying when the display is a `NullProgress`.
+
 ## Redaction
 
 `Redactor` keys on resolved **values**, not on key names. Anything coming out of `${env:}`

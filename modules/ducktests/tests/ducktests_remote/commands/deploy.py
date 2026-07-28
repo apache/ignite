@@ -48,7 +48,6 @@ import posixpath
 import re
 import shlex
 import shutil
-import sys
 import tempfile
 import threading
 import uuid
@@ -58,9 +57,10 @@ from ducktests_remote.cli import EXIT_OK, EXIT_TRANSPORT, EXIT_USAGE
 from ducktests_remote.config import ConfigError, expand_path
 from ducktests_remote.fanout import (CHANGED, FAILED, HostResult, SKIPPED, any_failed,
                                      fanout, render_table, summarise)
-from ducktests_remote.progress import NullProgress, Progress, is_a_terminal
+from ducktests_remote.progress import NullProgress, build_progress
 from ducktests_remote.transport import (ProxiedTransport, is_excluded, make_tarball,
-                                        run_local, run_local_streaming)
+                                        parse_rsync_progress, run_local,
+                                        run_local_streaming)
 
 MANIFEST_NAME = ".ducktests-deploy.json"
 
@@ -74,10 +74,6 @@ IGNORE_NAME = ".ducktests-deploy.ignore"
 # on 2.x.  Thousands separators are locale-dependent; the labels are not translated.
 _RSYNC_TRANSFERRED = re.compile(r"Number of (?:regular )?files transferred:\s*([\d,.]+)")
 _RSYNC_SENT = re.compile(r"Total transferred file size:\s*([\d,.]+)")
-
-# `--info=progress2`: `      1,234,567  35%   12.34MB/s    0:00:12`.  The separators are
-# locale-dependent, the layout is not.
-_RSYNC_PROGRESS = re.compile(r"^\s*([\d,.]+)\s+(\d+)%\s")
 
 
 def register(subparsers, common):
@@ -164,22 +160,6 @@ def execute(ctx):  # pylint: disable=too-many-locals
                                 for r in overall], indent=2))
 
     return EXIT_TRANSPORT if any_failed(overall) else EXIT_OK
-
-
-def build_progress(ctx, nodes):
-    """
-    :return: a :class:`Progress` for this deploy, or a :class:`NullProgress`.
-
-    Off for ``--dry-run`` (nothing moves) and ``--quiet``.  Live only on a terminal:
-    ``--verbose`` prints a traced command line per host, which a redrawn block would
-    fight with, so that combination reports one aggregate line every few seconds
-    instead - the same shape a CI log gets.
-    """
-    if ctx.dry_run or ctx.console.quiet or getattr(ctx.args, "no_progress", False):
-        return NullProgress()
-    live = is_a_terminal(sys.stderr) and not ctx.console.verbose
-    return Progress([node.host for node in nodes], live=live,
-                    redactor=ctx.console.redactor)
 
 
 def _distributions(dist_dir, only):
@@ -401,17 +381,6 @@ def rsync_enabled(ctx):
     return shutil.which("rsync") is not None
 
 
-def parse_rsync_progress(line):
-    """:return: ``(bytes_so_far, fraction)`` from one ``--info=progress2`` line, or None."""
-    match = _RSYNC_PROGRESS.match(line or "")
-    if not match:
-        return None
-    try:
-        return int(re.sub(r"[,.]", "", match.group(1))), int(match.group(2)) / 100.0
-    except ValueError:
-        return None
-
-
 def rsync_argv(transport, local_root, staging, *, files_from, link_dest=None,
                checksum=False, sudo=False, progress=False):
     """
@@ -550,7 +519,7 @@ def _rsync_to_host(ctx, node, transport, local_root, staging, target, file_list,
     progress = progress or NullProgress()
     transport.run_script(prepare_script(staging, ctx.args.sudo)).check()
     # Both display modes need the byte counts; only the display itself differs.
-    watched = not isinstance(progress, NullProgress)
+    watched = progress.watching
     argv = rsync_argv(transport, local_root, staging, files_from=file_list,
                       link_dest=target if transport.exists(target) else None,
                       checksum=ctx.args.checksum or ctx.config["deploy"].get("checksum", False),

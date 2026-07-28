@@ -174,3 +174,27 @@ class CheckTestPaths:
         in_dir(str(tmp_path))
         assert self._paths(_checkout(tmp_path), ["./ignitetest/tests/absent.py"]) == \
             ["./ignitetest/tests/absent.py"]
+
+
+class CheckSyncProgress:
+    """The 171 MB that goes to the runner before a run starts."""
+
+    class _Paths:  # pylint: disable=too-few-public-methods
+        src_dir = "/state/runs/r/src"
+
+    def _sync(self, tmp_path, **args):
+        root = _checkout(tmp_path)
+        args.setdefault("exclude", [])
+        ctx = _context(**args)
+        run._sync_sources(ctx, root, self._Paths())  # noqa: SLF001
+        return ctx._runner  # noqa: SLF001
+
+    def check_the_sync_is_watched(self, tmp_path):
+        runner = self._sync(tmp_path)
+        assert runner.uploads and runner.uploads[0][2] == "dir"
+        assert runner.reported, "a sync that takes minutes has to show movement"
+
+    def check_no_progress_still_syncs(self, tmp_path):
+        runner = self._sync(tmp_path, no_progress=True)
+        assert runner.uploads, "the transfer happens either way"
+        assert not runner.reported, "--no-progress means nothing is asked to report"

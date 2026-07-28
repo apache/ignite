@@ -98,6 +98,11 @@ class Progress:
     so a stream that cannot be written to simply stops being written to.
     """
 
+    # Callers ask this before wiring a transfer up to report: counting bytes has a cost
+    # (rsync grows a meter, an upload streams through ssh instead of scp) that is only
+    # worth paying when something will draw the result.
+    watching = True
+
     def __init__(self, hosts, *, stream=None, live=None, redactor=None,
                  interval=0.25, plain_interval=15.0, max_rows=12, unicode_bar=None):
         self.stream = stream if stream is not None else sys.stderr
@@ -304,6 +309,7 @@ class NullProgress:
     """The same surface, doing nothing. Callers never test for None."""
 
     live = False
+    watching = False
 
     def start(self, title=""):
         """:return: self, so ``with`` reads the same either way."""
@@ -326,6 +332,24 @@ class NullProgress:
 
     def done(self, host, message=""):
         """Ignore the update."""
+
+
+def build_progress(ctx, hosts):
+    """
+    :return: a :class:`Progress` for this command, or a :class:`NullProgress`.
+
+    Off for ``--dry-run`` (nothing moves), ``--quiet`` and ``--no-progress``.  Live only
+    on a terminal: ``--verbose`` prints a traced command line per host, which a redrawn
+    block would fight with, so that combination reports one aggregate line every few
+    seconds instead - the same shape a CI log gets.
+    """
+    if ctx.dry_run or ctx.console.quiet or getattr(ctx.args, "no_progress", False):
+        return NullProgress()
+    names = [getattr(host, "host", host) for host in hosts]
+    if not names:
+        return NullProgress()
+    return Progress(names, live=is_a_terminal(sys.stderr) and not ctx.console.verbose,
+                    redactor=ctx.console.redactor)
 
 
 def is_a_terminal(stream):
