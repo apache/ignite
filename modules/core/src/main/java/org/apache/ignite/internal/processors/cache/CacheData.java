@@ -18,21 +18,20 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.MarshallableMessage;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** Cache information sent in discovery data to joining node. */
-public class CacheData implements MarshallableMessage {
+public class CacheData implements Message {
     /** */
-    private CacheConfiguration cacheCfg;
+    @Marshalled("cacheCfgBytes")
+    CacheConfiguration cacheCfg;
 
     /** Serialized {@link #cacheCfg}. */
     @Order(0)
@@ -51,7 +50,8 @@ public class CacheData implements MarshallableMessage {
     IgniteUuid deploymentId;
 
     /** */
-    private QuerySchema schema;
+    @Marshalled("schemaBytes")
+    QuerySchema schema;
 
     /** Serialized {@link #schema}. */
     @Order(4)
@@ -160,30 +160,6 @@ public class CacheData implements MarshallableMessage {
     /** @return Cache configuration enrichment. */
     public CacheConfigurationEnrichment cacheConfigurationEnrichment() {
         return cacheCfgEnrichment;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (cacheCfg != null)
-            cacheCfgBytes = U.marshal(marsh, cacheCfg);
-
-        if (schema != null)
-            schemaBytes = U.marshal(marsh, schema);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (cacheCfgBytes != null) {
-            cacheCfg = U.unmarshal(marsh, cacheCfgBytes, clsLdr);
-
-            cacheCfgBytes = null;
-        }
-
-        if (schemaBytes != null) {
-            schema = U.unmarshal(marsh, schemaBytes, clsLdr);
-
-            schemaBytes = null;
-        }
     }
 
     /** {@inheritDoc} */

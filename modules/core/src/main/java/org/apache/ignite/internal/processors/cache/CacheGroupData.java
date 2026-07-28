@@ -20,21 +20,19 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.MarshallableMessage;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class CacheGroupData implements MarshallableMessage {
+public class CacheGroupData implements Message {
     /** */
     @Order(0)
     int grpId;
@@ -56,7 +54,8 @@ public class CacheGroupData implements MarshallableMessage {
     IgniteUuid deploymentId;
 
     /** */
-    private CacheConfiguration<?, ?> cacheCfg;
+    @Marshalled("cacheCfgBytes")
+    CacheConfiguration<?, ?> cacheCfg;
 
     /** Serialized {@link #cacheCfg}. */
     @Order(5)
@@ -184,21 +183,6 @@ public class CacheGroupData implements MarshallableMessage {
     /** @return Cache configuration enrichment. */
     public CacheConfigurationEnrichment cacheConfigurationEnrichment() {
         return cacheCfgEnrichment;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (cacheCfg != null)
-            cacheCfgBytes = U.marshal(marsh, cacheCfg);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (cacheCfgBytes != null) {
-            cacheCfg = U.unmarshal(marsh, cacheCfgBytes, clsLdr);
-
-            cacheCfgBytes = null;
-        }
     }
 
     /** {@inheritDoc} */
