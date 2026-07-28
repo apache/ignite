@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -97,36 +96,28 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     @GridToStringInclude
     public Collection<IgniteTxEntry> writes;
 
-    /** DHT versions to verify. */
-    @GridToStringInclude
-    @Marshalled(keys = "dhtVerKeys", values = "dhtVerVals")
-    public Map<IgniteTxKey, GridCacheVersion> dhtVers;
-
-    /** */
+    /** Keys whose DHT version has to be verified on the remote node. */
     @Order(7)
+    @GridToStringInclude
     public Collection<IgniteTxKey> dhtVerKeys;
 
-    /** */
-    @Order(8)
-    public Collection<GridCacheVersion> dhtVerVals;
-
     /** Expected transaction size. */
-    @Order(9)
+    @Order(8)
     public int txSize;
 
     /** Transaction nodes mapping (primary node -> related backup nodes). */
-    @Order(10)
+    @Order(9)
     public Map<UUID, Collection<UUID>> txNodes;
 
     /** IO policy. */
-    @Order(11)
+    @Order(10)
     public byte plc;
 
     /** Transient TX state. */
     private IgniteTxState txState;
 
     /** */
-    @Order(12)
+    @Order(11)
     @GridToStringExclude
     public byte flags;
 
@@ -235,23 +226,20 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     }
 
     /**
-     * Adds version to be verified on remote node.
-     *
-     * @param key Key for which version is verified.
-     * @param dhtVer DHT version to check.
+     * @param key Key whose DHT version is verified on the remote node.
      */
-    public void addDhtVersion(IgniteTxKey key, @Nullable GridCacheVersion dhtVer) {
-        if (dhtVers == null)
-            dhtVers = new HashMap<>();
+    public void addDhtVersionKey(IgniteTxKey key) {
+        if (dhtVerKeys == null)
+            dhtVerKeys = new ArrayList<>();
 
-        dhtVers.put(key, dhtVer);
+        dhtVerKeys.add(key);
     }
 
     /**
-     * @return Map of versions to be verified.
+     * @return Keys whose DHT version is verified.
      */
-    public Map<IgniteTxKey, GridCacheVersion> dhtVersions() {
-        return dhtVers == null ? Collections.emptyMap() : dhtVers;
+    public Collection<IgniteTxKey> dhtVersionKeys() {
+        return dhtVerKeys == null ? Collections.emptyList() : dhtVerKeys;
     }
 
     /**

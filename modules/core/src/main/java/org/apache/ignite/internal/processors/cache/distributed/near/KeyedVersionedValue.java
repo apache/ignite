@@ -15,66 +15,42 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.transactions;
+package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.util.Collection;
-import java.util.Set;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
-/**
- * Transactions lock list request.
- */
-public class TxLocksRequest extends GridCacheMessage {
-    /** Future ID. */
+/** Cache object and version, told apart by the key they belong to. */
+public class KeyedVersionedValue extends CacheVersionedValue {
+    /** */
     @Order(0)
-    long futId;
-
-    /** Tx keys. */
-    @Order(1)
     @GridToStringInclude
-    Collection<IgniteTxKey> txKeys;
+    KeyCacheObject key;
 
-    /**
-     * Default constructor.
-     */
-    public TxLocksRequest() {
+    /** */
+    public KeyedVersionedValue() {
         // No-op.
     }
 
-    /**
-     * @param futId Future ID.
-     * @param txKeys Target tx keys.
-     */
-    public TxLocksRequest(long futId, Set<IgniteTxKey> txKeys) {
-        A.notEmpty(txKeys, "txKeys");
-
-        this.futId = futId;
-        this.txKeys = txKeys;
-    }
-
-    /**
-     * @return Future ID.
-     */
-    public long futureId() {
-        return futId;
-    }
-
     /** */
-    public Collection<IgniteTxKey> txKeys() {
-        return txKeys;
+    public KeyedVersionedValue(IgniteTxKey txKey, CacheObject val, GridCacheVersion ver) {
+        super(val, ver, txKey.cacheId());
+
+        key = txKey.key();
+    }
+
+    /** @return Key this value belongs to. */
+    public IgniteTxKey txKey() {
+        return new IgniteTxKey(key, cacheId());
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(TxLocksRequest.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean addDeploymentInfo() {
-        return addDepInfo;
+        return S.toString(KeyedVersionedValue.class, this, "super", super.toString());
     }
 }

@@ -17,11 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.Collection;
 import java.util.Map;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
@@ -32,7 +30,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionable;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -67,15 +64,16 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
 
     /** */
     @GridToStringInclude
-    private LinkedHashMap<KeyCacheObject, Boolean> keyMap;
+    @Marshalled(keys = "keys", values = "readersFlags")
+    Map<KeyCacheObject, Boolean> keyMap;
 
     /** */
     @Order(3)
-    List<KeyCacheObject> keys;
+    Collection<KeyCacheObject> keys;
 
     /** */
     @Order(4)
-    List<Boolean> readersFlags;
+    Collection<Boolean> readersFlags;
 
     /** */
     @Order(5)
@@ -147,19 +145,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
         this.futId = futId;
         this.miniId = miniId;
         this.ver = ver;
-
-        this.keys = new ArrayList<>(keys.size());
-
-        if (addReader)
-            readersFlags = new ArrayList<>(keys.size());
-
-        for (Map.Entry<KeyCacheObject, Boolean> entry : keys.entrySet()) {
-            this.keys.add(entry.getKey());
-
-            if (addReader)
-                readersFlags.add(entry.getValue());
-        }
-
+        this.keyMap = keys;
         this.topVer = topVer;
         this.taskNameHash = taskNameHash;
         this.createTtl = createTtl;
@@ -210,19 +196,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
     /**
      * @return Keys.
      */
-    public LinkedHashMap<KeyCacheObject, Boolean> keyMap() {
-        if (keyMap == null && !F.isEmpty(keys)) {
-            keyMap = U.newLinkedHashMap(keys.size());
-
-            Iterator<KeyCacheObject> keysIt = keys.iterator();
-
-            for (int i = 0; i < keys.size(); i++) {
-                Boolean addRdr = readersFlags != null ? readersFlags.get(i) : Boolean.FALSE;
-
-                keyMap.put(keysIt.next(), addRdr);
-            }
-        }
-
+    public Map<KeyCacheObject, Boolean> keyMap() {
         return keyMap;
     }
 
@@ -276,7 +250,9 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
 
     /** {@inheritDoc} */
     @Override public int partition() {
-        return keys != null && !keys.isEmpty() ? keys.get(0).partition() : -1;
+        Collection<KeyCacheObject> keys0 = keyMap != null ? keyMap.keySet() : keys;
+
+        return F.isEmpty(keys0) ? -1 : keys0.iterator().next().partition();
     }
 
     /**

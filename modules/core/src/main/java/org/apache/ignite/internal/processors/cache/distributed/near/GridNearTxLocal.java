@@ -4079,7 +4079,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             this,
             timeout,
             0,
-            Collections.emptyMap(),
+            Collections.emptyList(),
             req.last(),
             needReturnValue() && implicit());
 
