@@ -2969,7 +2969,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (!fromSocket)
-                msg.opCtxMsg = operationCtxDispatcher.collectDistributedAttributeValues();
+                msg.attachOperationContextSnapshot(operationCtxDispatcher.createSnapshot());
 
             boolean addFirst = msg.highPriority() && !ignoreHighPriority;
 
@@ -3198,7 +3198,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (msg == WAKEUP)
                 return;
 
-            try (Scope ignored = operationCtxDispatcher.restoreRemoteAttributeValues(msg.opCtxMsg)) {
+            try (Scope ignored = operationCtxDispatcher.restoreSnapshot(msg.opCtxSnp)) {
                 processMessage0(msg);
             }
         }
@@ -5968,7 +5968,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 getLocalNodeId(), nextMsg);
 
                             ackMsg.topologyVersion(msg.topologyVersion());
-                            ackMsg.opCtxMsg = operationCtxDispatcher.collectDistributedAttributeValues();
+                            ackMsg.attachOperationContextSnapshot(msg.opCtxSnp);
 
                             processCustomMessage(ackMsg, waitForNotification);
                         }
@@ -6012,10 +6012,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             synchronized (mux) {
                 joiningEmpty = joiningNodes.isEmpty();
-
-                if (log.isDebugEnabled())
-                    log.debug("Delay custom message processing, there are joining nodes [msg=" + msg +
-                        ", joiningNodes=" + joiningNodes + ']');
             }
 
             boolean delayMsg = msg.topologyVersion() == 0L && !joiningEmpty;
@@ -6024,6 +6020,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                 synchronized (mux) {
                     pendingCustomMsgs.add(msg);
                 }
+
+                if (log.isDebugEnabled())
+                    log.debug("Delay custom message processing, there are joining nodes [msg=" + msg +
+                        ", joiningNodes=" + joiningNodes + ']');
 
                 return true;
             }
@@ -6095,8 +6095,11 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (joiningEmpty && isLocalNodeCoordinator()) {
                 TcpDiscoveryCustomEventMessage msg;
 
-                while ((msg = pollPendingCustomMessage()) != null)
-                    processCustomMessage(msg, true);
+                while ((msg = pollPendingCustomMessage()) != null) {
+                    try (Scope ignored = operationCtxDispatcher.restoreSnapshot(msg.opCtxSnp)) {
+                        processCustomMessage(msg, true);
+                    }
+                }
             }
         }
 

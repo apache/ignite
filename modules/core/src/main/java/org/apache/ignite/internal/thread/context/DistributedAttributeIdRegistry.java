@@ -15,14 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.thread.context;
 
-import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 
 /**
- *
+ * Declares reserved distributed IDs used to consistently identify {@link OperationContext} attributes across
+ * all nodes in the cluster.
  */
-public class CachePeekModes {
-    /** */
-    public static final CachePeekMode[] ONHEAP_ONLY = {CachePeekMode.ONHEAP};
+public class DistributedAttributeIdRegistry {
+    /** ID Reserved for {@link SecurityContext} propagation. */
+    public static final byte SECURITY = 0;
 }

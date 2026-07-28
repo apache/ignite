@@ -712,7 +712,8 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
                             appMsg,
                             GridTestUtils.<Boolean>getFieldValue(ioMsg, "ordered"),
                             ioMsg.timeout(),
-                            ioMsg.skipOnTimeout()
+                            ioMsg.skipOnTimeout(),
+                            null
                         );
 
                         try {
