@@ -41,7 +41,7 @@ import static org.apache.ignite.internal.MessageProcessor.CACHE_OBJECT_CLS;
  * <p>A message with deployment logic that cannot be inferred from field types implements {@code DeployableMessage};
  * the generated deployer then also delegates to its {@code deploy}, mirroring {@code marshal}.
  */
-public class MessageDeploymentGenerator extends MessageGenerator {
+public class MessageDeploymentGenerator extends MessageCompanionGenerator {
     /** */
     private final TypeMirror gridCacheMsgType;
 

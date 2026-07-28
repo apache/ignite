@@ -57,10 +57,10 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 
-import static org.apache.ignite.internal.MessageGenerator.NL;
-import static org.apache.ignite.internal.MessageGenerator.TAB;
-import static org.apache.ignite.internal.MessageGenerator.identicalFileIsAlreadyGenerated;
-import static org.apache.ignite.internal.MessageGenerator.writeLicense;
+import static org.apache.ignite.internal.MessageCompanionGenerator.NL;
+import static org.apache.ignite.internal.MessageCompanionGenerator.TAB;
+import static org.apache.ignite.internal.MessageCompanionGenerator.identicalFileIsAlreadyGenerated;
+import static org.apache.ignite.internal.MessageCompanionGenerator.writeLicense;
 import static org.apache.ignite.internal.MessageSerializerGenerator.enumType;
 import static org.apache.ignite.internal.MessageSerializerGenerator.qualifiedClassName;
 import static org.apache.ignite.internal.idto.IgniteDataTransferObjectProcessor.DTO_CLASS;

@@ -50,7 +50,7 @@ import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcess
  * Base class for message code generators ({@link MessageSerializerGenerator}, {@link MessageMarshallerGenerator},
  * {@link MessageDeploymentGenerator}).
  */
-public abstract class MessageGenerator {
+public abstract class MessageCompanionGenerator {
     /** Blank separator line in generated code. */
     public static final String EMPTY = "";
 
@@ -86,7 +86,7 @@ public abstract class MessageGenerator {
     protected final TypeMirror cacheIdAwareType;
 
     /** */
-    MessageGenerator(ProcessingEnvironment env) {
+    MessageCompanionGenerator(ProcessingEnvironment env) {
         this.env = env;
 
         cacheIdAwareType = type("org.apache.ignite.plugin.extensions.communication.CacheIdAware");
@@ -151,7 +151,7 @@ public abstract class MessageGenerator {
 
     /** */
     public static void writeLicense(Writer writer) throws IOException {
-        try (InputStream in = MessageGenerator.class.getClassLoader().getResourceAsStream("license.txt");
+        try (InputStream in = MessageCompanionGenerator.class.getClassLoader().getResourceAsStream("license.txt");
              BufferedReader reader = new BufferedReader(new InputStreamReader(in))) {
 
             PrintWriter out = new PrintWriter(writer);

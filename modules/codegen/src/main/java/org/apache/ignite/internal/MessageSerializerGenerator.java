@@ -49,7 +49,7 @@ import static org.apache.ignite.internal.MessageProcessor.KEY_CACHE_OBJECT_CLS;
 import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
 
 /** Generates {@code *Serializer} classes for {@code Message} types. */
-public class MessageSerializerGenerator extends MessageGenerator {
+public class MessageSerializerGenerator extends MessageCompanionGenerator {
     /** */
     private static final String RETURN_FALSE_STMT = "return false;";
 

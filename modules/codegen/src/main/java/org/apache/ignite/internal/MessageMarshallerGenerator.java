@@ -52,7 +52,7 @@ import static org.apache.ignite.internal.MessageProcessor.NON_MARSHALLABLE_MESSA
 /**
  * Generates {@code *Marshaller} classes for {@code Message} types that are not {@code NonMarshallableMessage}.
  */
-public class MessageMarshallerGenerator extends MessageGenerator {
+public class MessageMarshallerGenerator extends MessageCompanionGenerator {
     /** Accumulated source lines for all generated marshal/unmarshal methods. */
     private final List<String> marshall = new ArrayList<>();
 
@@ -118,11 +118,11 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
     /** {@inheritDoc} */
     @Override boolean shouldSkip(TypeElement type, List<VariableElement> fields) {
-        return isNonMarshallableMessage(type);
+        return isNonMarshallable(type.asType());
     }
 
     /** {@inheritDoc} */
-    @Override void generateBody(List<VariableElement> fields) throws Exception {
+    @Override void generateBody(List<VariableElement> fields) {
         enclosed = enclosedFields();
 
         for (VariableElement f : enclosed.values()) {
@@ -229,13 +229,15 @@ public class MessageMarshallerGenerator extends MessageGenerator {
             if (nioField && isMessage(f.asType()) && !nestedNeedsCtx(f.asType()))
                 nioFields.add(f);
             else {
-                if (nioField && !isMessage(f.asType()))
+                if (nioField && !isMessage(f.asType())) {
                     env.getMessager().printMessage(Diagnostic.Kind.ERROR,
                         "@NioField has no effect on non-Message field '" + f.getSimpleName() + "' of type " + f.asType(), f);
-                else if (nioField)
+                }
+                else if (nioField) {
                     env.getMessager().printMessage(Diagnostic.Kind.ERROR,
                         "@NioField field '" + f.getSimpleName() + "' of type " + f.asType() + " needs a cache object " +
                             "context to unmarshal, but the NIO thread has none; only context-free messages may be @NioField", f);
+                }
 
                 workerFields.add(f);
             }
@@ -1063,11 +1065,6 @@ public class MessageMarshallerGenerator extends MessageGenerator {
         return assignableFrom(erasedType(type), colType);
     }
 
-    /** */
-    private boolean isNonMarshallableMessage(TypeElement te) {
-        return isNonMarshallable(te.asType());
-    }
-
     /** Recursion skip for such fields is subtype-safe: subclasses inherit the {@code NonMarshallableMessage} marker. */
     private boolean isNonMarshallable(TypeMirror t) {
         return assignableFrom(t, nonMarshallableType);
@@ -1155,9 +1152,9 @@ public class MessageMarshallerGenerator extends MessageGenerator {
 
     /** Returns the element for {@code t}; for a type variable, uses its upper bound. */
     private Element element(TypeMirror t) {
-        return t.getKind() == TypeKind.DECLARED ?
-            ((DeclaredType)t).asElement() :
-            ((DeclaredType)((TypeVariable)t).getUpperBound()).asElement();
+        return t.getKind() == TypeKind.DECLARED
+            ? ((DeclaredType)t).asElement()
+            : ((DeclaredType)((TypeVariable)t).getUpperBound()).asElement();
     }
 
     /** Returns the simple name of the array component type of {@code field}, registering its import. */

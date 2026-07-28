@@ -38,10 +38,10 @@ import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 
-import static org.apache.ignite.internal.MessageGenerator.NL;
-import static org.apache.ignite.internal.MessageGenerator.TAB;
-import static org.apache.ignite.internal.MessageGenerator.identicalFileIsAlreadyGenerated;
-import static org.apache.ignite.internal.MessageGenerator.writeLicense;
+import static org.apache.ignite.internal.MessageCompanionGenerator.NL;
+import static org.apache.ignite.internal.MessageCompanionGenerator.TAB;
+import static org.apache.ignite.internal.MessageCompanionGenerator.identicalFileIsAlreadyGenerated;
+import static org.apache.ignite.internal.MessageCompanionGenerator.writeLicense;
 import static org.apache.ignite.internal.idto.IDTOSerializerGenerator.CLS_JAVADOC;
 import static org.apache.ignite.internal.idto.IDTOSerializerGenerator.DTO_SERDES_INTERFACE;
 import static org.apache.ignite.internal.idto.IDTOSerializerGenerator.simpleName;
