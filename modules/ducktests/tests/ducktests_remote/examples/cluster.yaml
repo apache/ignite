@@ -61,6 +61,30 @@ runner:
   python: python3
   create_venv: true
 
+# Where the runner installs those requirements from. Only the runner ever runs pip;
+# workers are driven over plain ssh and need no Python. Leave the whole section out to
+# use PyPI. A token in the URL belongs in the environment, not in this file - and
+# anything resolved from ${env:} is masked in everything the CLI prints.
+pip:
+  # index_url: ${env:DTR_PIP_INDEX_URL}       # a missing variable is a hard error, never ""
+  # extra_index_url: [https://nexus.example.invalid/repository/pypi-internal/simple]
+  # trusted_host: [nexus.example.invalid]     # plain http, or a certificate you cannot fix
+  # cert: /etc/pki/tls/certs/corp-ca.pem      # a RUNNER-side path, like identity_file
+  timeout: 60
+  retries: 5
+
+# Which JVM the workers run the tests under. `major` alone is enough when the VMs already
+# carry a suitable JDK somewhere under search_paths; `archive` covers the ones that do not.
+java:
+  major: 17
+  # home: /opt/jdk-17.0.11         # use exactly this JDK, no search
+  search_paths: [/opt, /usr/lib/jvm, /usr/java]
+  # archive: ~/jdk/OpenJDK17U-jdk_x64_linux_hotspot.tar.gz   # coordinator-side
+  # install_root: /opt             # defaults to cluster.install_root
+  # name: jdk-17                   # target directory; defaults to the archive's own name
+  ssh_environment: true            # write ~/.ssh/environment
+  bashrc: true                     # and a marked block at the top of ~/.bashrc
+
 deploy:
   dist_dir: ./dist
 

@@ -47,6 +47,44 @@ Runtime dependencies: the standard library and `PyYAML`. The CLI deliberately **
 imports ducktape** — it drives ducktape on the runner, so it stays installable on a
 coordinator that has none. There is a unit check that fails if that ever changes.
 
+### When PyPI is not reachable
+
+Only the runner ever runs pip: it creates the venv from `docker/requirements.txt`, and
+`run --install-sources` installs the synced sources into it. Workers need no Python at
+all. Point pip at your mirror once, in the config:
+
+```yaml
+pip:
+  index_url: https://nexus.corp/repository/pypi/simple
+  extra_index_url: [https://nexus.corp/repository/pypi-internal/simple]
+  trusted_host: [nexus.corp]     # plain http, or a certificate you cannot fix
+  cert: /etc/pki/tls/certs/corp-ca.pem
+  timeout: 60
+  retries: 5
+```
+
+or per invocation: `--pip-index-url`, `--pip-extra-index-url`, `--pip-trusted-host`,
+`--pip-timeout`, `--pip-cert`. The flags become literal pip arguments — `--dry-run` shows
+them — and they apply to *every* pip command the CLI runs, including the build
+dependencies of `--install-sources`.
+
+`cert` is a **runner-side** path, exactly like `identity_file`: it is opened by pip on the
+runner, so a file that exists on your laptop proves nothing.
+
+An index URL usually carries a token. Write it as `${env:NEXUS_URL}` and it is resolved on
+the coordinator at launch and masked in everything the CLI prints; credentials typed
+directly into a config file are masked too, on output, but they are then sitting in a file.
+
+The coordinator's own install obeys the same flags, in pip's own spelling:
+
+```bash
+pip install --index-url https://nexus.corp/repository/pypi/simple -e .
+```
+
+`provision --only packages` uses apt/dnf and is *not* covered by any of this. Which OS
+repositories a VM talks to is set when the image is built; this tool does not pretend to
+manage it.
+
 ## Quickstart
 
 Every command accepts `--dry-run`, and `--dry-run` is genuinely side-effect free: it
@@ -147,7 +185,8 @@ globals:
 Then `ducktests-remote --profile ise-perf run -t ./isetest/perftests/`. Compare the two
 with `--dry-run` until the rendered `globals.json` matches, and delete the blob.
 
-`${env:NAME}` and `${file:PATH}` are resolved on the coordinator at launch. A missing
+`${env:NAME}` and `${file:PATH}` are resolved on the coordinator at launch, in `globals`
+and in every other section alike — `cluster.user`, `pip.index_url`, `java.home`. A missing
 variable is a hard error naming the variable and the file it came from — never an empty
 string, never a run that fails on authentication three hours later.
 
@@ -228,10 +267,10 @@ ducktests-remote provision --sudo --write-hosts
 | Step | What it does |
 | --- | --- |
 | `packages` | Installs the Dockerfile's system utilities. Detects apt/dnf/yum; an unknown package manager is a clear failure, not a guess. Needs `--sudo`. |
-| `jdk` | Verifies `java -version` matches the expected major. Installing is opt-in (`--install-jdk`) because where a JDK comes from is site-specific. |
+| `jdk` | Resolves a JDK of `java.major` per host and, when none is there, delivers `java.archive`. See "Choosing the JDK". |
 | `python` | Verifies only. Workers do not need Python — ducktape drives them over plain SSH. The runner's venv is created by `run`. |
 | `user` | `--create-user NAME` plus `--authorize-key`. Not run by default; most operators use their own account. Needs `--sudo`. |
-| `ssh-env` | Writes `PATH`/`JAVA_HOME` into `~/.ssh/environment`. **The one that is easiest to forget.** |
+| `ssh-env` | Points the workers' non-interactive `PATH`/`JAVA_HOME` at that JDK, then proves it. **The one that is easiest to forget.** |
 | `dirs` | Creates and chowns `/mnt/service` and the install root. Needs `--sudo`. |
 | `hosts` | `--write-hosts` rewrites only the block between `# BEGIN ducktests-remote` and `# END ducktests-remote` in `/etc/hosts`. Needs `--sudo`. |
 
@@ -245,8 +284,85 @@ the `doctor` checks, so it ends with evidence rather than an assumption.
 ducktape runs every command over **non-interactive** SSH, where `~/.profile` is not
 sourced. A `java` that works fine when you log in by hand is simply absent during a test
 run, and the failure surfaces as an unrelated timeout. The Dockerfile solves this with
-`PermitUserEnvironment yes` plus `~/.ssh/environment`; this step does the same and then
-proves it by running `java -version` non-interactively.
+`PermitUserEnvironment yes` plus `~/.ssh/environment`; this step does the same, adds a
+`~/.bashrc` fallback, and then proves it by running `java -version` non-interactively.
+
+## Choosing the JDK
+
+### Why `PATH` matters more than `JAVA_HOME`
+
+`ignitetest` reaches a JVM four different ways, and only one of them respects `JAVA_HOME`:
+
+| Consumer | Mechanism |
+| --- | --- |
+| `ignite.sh`, via `IgniteSpec.envs()` | honours `JAVA_HOME` |
+| `jvm_utils.java_version()` → `java -version` | bare `java`, so `PATH` |
+| `services/kafka/kafka.py` → `nohup java …` | bare `java`, so `PATH` |
+| `jmx_utils` → `java -jar jmxterm.jar` | bare `java`, so `PATH` |
+
+Setting `JAVA_HOME` therefore changes what `ignite.sh` uses and nothing else. Both are
+set, and what a fresh non-interactive session actually gets is then verified rather than
+assumed.
+
+### Configuration
+
+```yaml
+java:
+  major: 17                       # derived from the Dockerfile's eclipse-temurin:17
+  home: /opt/jdk-17.0.11          # optional: use exactly this, no search
+  search_paths: [/opt, /usr/lib/jvm, /usr/java]
+  archive: ~/jdk/OpenJDK17U-jdk_x64_linux_hotspot.tar.gz
+  install_root: /opt              # defaults to cluster.install_root
+  ssh_environment: true
+  bashrc: true
+```
+
+`provision --only jdk` resolves one JDK per host, in this order:
+
+1. **`java.home`** — verified, and a host that does not have it is a failure naming that
+   host. Explicit means explicit; falling back would defeat the point of saying it.
+2. **the JVM already on the non-interactive `PATH`**, when its major matches. Nothing is
+   installed on a VM that is already correct.
+3. **a JDK under `search_paths`** — `/opt/jdk-17.0.11`, `/usr/lib/jvm/java-17-openjdk`.
+   Highest patch level wins, compared numerically, so `17.0.11` beats `17.0.9`.
+4. **`java.archive`**, delivered from the coordinator to the hosts that got this far —
+   and only to those. A `.tar.gz`, `.tgz`, `.tar` or an unpacked directory; a single
+   top-level directory is stripped, so a stock Temurin tarball lands as
+   `/opt/jdk-17.0.11+9`. Bad archives (no `bin/java`, a macOS build with `Contents/Home`,
+   a zip) fail on the coordinator, before anything is copied to twelve machines.
+5. otherwise a failure listing every JDK that *was* found. `--install-jdk` (with `--sudo`)
+   adds the distribution's own package as a last rung.
+
+Delivery reuses `deploy`: staging plus an atomic swap, and a `.ducktests-java.json`
+manifest so a host that already has the JDK is skipped. `--force` re-delivers.
+
+```bash
+ducktests-remote provision --dry-run --only jdk        # what each host would resolve to
+ducktests-remote provision --only jdk --only ssh-env   # resolve, install, then point PATH at it
+ducktests-remote provision --only jdk --java-archive ~/jdk/temurin17.tar.gz
+```
+
+`provision --only ssh-env` runs the same ladder, so it can be used on its own and still
+points at the JDK you asked for rather than at whatever `java` happens to be first.
+
+### Making it stick
+
+Both files are written, from one resolved value, in one step:
+
+- **`~/.ssh/environment`** — what the Dockerfile does. Silently ignored unless sshd carries
+  `PermitUserEnvironment yes`; `provision` says so when it does not.
+- **`~/.bashrc`** — a marked block at the **top** of the file, above the
+  `case $- in *i*) ;; *) return;; esac` guard the stock file opens with. That guard exists
+  precisely because bash *does* source `~/.bashrc` for non-interactive ssh commands. It
+  does nothing when the account's login shell is not bash.
+
+Then a fresh connection is opened and asked what it got. That answer is the result: if it
+is still the wrong JVM, the step fails there, not three hours into a run.
+
+`doctor` judges the same thing — what a non-interactive session gets — and a major that
+does not match `java.major` is a **FAIL**, which stops `run` at preflight (exit 2). A
+matching version from a JDK other than an explicitly configured `java.home` is a WARN: the
+tests will run, but the pin is not in effect.
 
 ## Privileges the tests actually need
 
@@ -349,8 +465,10 @@ nothing. `doctor` checks it on the runner and reports mode; `keys push` installs
 lifetime of your session. A run that lasts hours outlives it, and every subsequent
 worker connection then fails. Use a real key file on the runner.
 
-**`java: command not found` deep inside a test.** Non-interactive SSH does not source
-`~/.profile`. Run `provision --only ssh-env`.
+**`java: command not found`, or the wrong JDK, deep inside a test.** Non-interactive SSH
+does not source `~/.profile`. Run `provision --only jdk --only ssh-env`. If it still
+reports the wrong JVM afterwards, sshd is ignoring `~/.ssh/environment` *and* the login
+shell is not bash; set `java.home` to a JDK the site already puts on the default `PATH`.
 
 **Discovery failures with no useful message.** Workers that cannot resolve each other's
 hostnames fail inside discovery. `doctor` runs an N-way resolution probe; `provision

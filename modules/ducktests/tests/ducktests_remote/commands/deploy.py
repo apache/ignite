@@ -20,6 +20,10 @@ Deliberately dumb.  Each subdirectory of ``--dist-dir`` is copied verbatim to
 ``<install_root>/<name>``; the name is never interpreted, rewritten, or checked against
 version-parsing logic.  The operator names the directories to match what the tests
 expect, which is also what makes fork layouts work without special cases.
+
+:func:`build_manifest`, :func:`prepare_script`, :func:`swap_script` and :func:`human` are
+public because ``provision``'s ``jdk`` step delivers a JDK the same way and must not grow
+a second copy of the staging-and-swap logic.
 """
 
 import hashlib
@@ -156,17 +160,17 @@ def _sha256(path):
 
 def _print_cost(ctx, plans, nodes):
     total = sum(m["bytes"] for _, m in plans)
-    per_host = _human(total)
+    per_host = human(total)
     console = ctx.console
     console.info("%d distribution(s), %s each, %d host(s) = %s total"
-                 % (len(plans), per_host, len(nodes), _human(total * len(nodes))))
+                 % (len(plans), per_host, len(nodes), human(total * len(nodes))))
     if not ctx.args.via and len(nodes) > 3 and total > 200 * 1024 * 1024:
         console.warn("that is %s over the wire from this machine. `--via <host-near-the-"
                      "cluster>` uploads it once and fans out from there."
-                     % _human(total * len(nodes)))
+                     % human(total * len(nodes)))
 
 
-def _human(size):
+def human(size):
     value = float(size)
     for unit in ("B", "KB", "MB", "GB", "TB"):
         if value < 1024 or unit == "TB":
@@ -188,7 +192,7 @@ def _deploy_one(ctx, dist_dir, name, manifest, install_root, nodes):
 
     if ctx.dry_run:
         return [HostResult(node.host, SKIPPED,
-                           "would send %s to %s" % (_human(manifest["bytes"]), target))
+                           "would send %s to %s" % (human(manifest["bytes"]), target))
                 for node in nodes]
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -258,10 +262,10 @@ def _deploy_to_host(ctx, node, name, target, manifest, manifest_body, archive,
                                    identity_file=node.identity_file,
                                    staging_dir=ctx.config["deploy"]["staging_dir"],
                                    dry_run=ctx.dry_run, verbose=ctx.console.verbose)
-        proxied.run_script(_prepare_script(staging, ctx.args.sudo)).check()
+        proxied.run_script(prepare_script(staging, ctx.args.sudo)).check()
         proxied.push_archive(staged_on_via, staging)
     else:
-        transport.run_script(_prepare_script(staging, ctx.args.sudo)).check()
+        transport.run_script(prepare_script(staging, ctx.args.sudo)).check()
         remote_archive = "%s/.payload.tar.gz" % staging
         transport.upload(archive, remote_archive)
         transport.run_script(
@@ -270,18 +274,18 @@ def _deploy_to_host(ctx, node, name, target, manifest, manifest_body, archive,
                shlex.quote(remote_archive))).check()
 
     transport.write_file(manifest_body, posixpath.join(staging, MANIFEST_NAME))
-    transport.run_script(_swap_script(staging, target, ctx.args.sudo, ctx.args.owner)).check()
+    transport.run_script(swap_script(staging, target, ctx.args.sudo, ctx.args.owner)).check()
     return HostResult(node.host, CHANGED, "%s files, %s"
-                      % (manifest["files"], _human(manifest["bytes"])))
+                      % (manifest["files"], human(manifest["bytes"])))
 
 
-def _prepare_script(staging, use_sudo):
+def prepare_script(staging, use_sudo):
     sudo = "sudo -n " if use_sudo else ""
     return "set -eu\n%(sudo)srm -rf -- %(staging)s\n%(sudo)smkdir -p %(staging)s\n" % {
         "sudo": sudo, "staging": shlex.quote(staging)}
 
 
-def _swap_script(staging, target, use_sudo, owner):
+def swap_script(staging, target, use_sudo, owner):
     """
     Swap the freshly extracted tree into place, then delete the old one.
 

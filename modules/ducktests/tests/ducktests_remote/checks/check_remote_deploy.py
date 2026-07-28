@@ -91,14 +91,14 @@ class CheckSkipLogic:
         assert deploy.MANIFEST_NAME == ".ducktests-deploy.json"
 
     def check_swap_removes_the_old_tree_only_after_the_move(self, tmp_path):
-        script = deploy._swap_script("/opt/.x.tmp.1", "/opt/x", False, None)  # noqa: SLF001
+        script = deploy.swap_script("/opt/.x.tmp.1", "/opt/x", False, None)
         move_index = script.index('mv -- "$staging" "$target"')
         remove_index = script.index('rm -rf -- "$old"')
         assert move_index < remove_index, \
             "a half-copied distribution that looks present is worse than an absent one"
 
     def check_sudo_prefixes_every_privileged_command(self):
-        script = deploy._swap_script("/opt/.x.tmp.1", "/opt/x", True, "max")  # noqa: SLF001
+        script = deploy.swap_script("/opt/.x.tmp.1", "/opt/x", True, "max")
         assert script.count("sudo -n ") >= 3
         assert "chown -R max" in script
 

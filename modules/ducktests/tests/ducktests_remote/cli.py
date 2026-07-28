@@ -226,7 +226,17 @@ def _flag_overrides(args):
                          ("state_root", "cluster.state_root"),
                          ("dist_dir", "deploy.dist_dir"),
                          ("source_root", "run.source_root"),
-                         ("work_dir", "run.work_dir")):
+                         ("work_dir", "run.work_dir"),
+                         # Repeatable pip flags replace the configured list rather than
+                         # extending it, matching how deep_merge treats every other list.
+                         ("pip_index_url", "pip.index_url"),
+                         ("pip_extra_index_url", "pip.extra_index_url"),
+                         ("pip_trusted_host", "pip.trusted_host"),
+                         ("pip_timeout", "pip.timeout"),
+                         ("pip_cert", "pip.cert"),
+                         ("java_home", "java.home"),
+                         ("java_major", "java.major"),
+                         ("java_archive", "java.archive")):
         value = getattr(args, flag, None)
         if value:
             set_dotted(overlay, dotted, value)
@@ -265,7 +275,8 @@ def main(argv=None):
     try:
         config = load_config(config_files=getattr(args, "config", None) or [],
                              profiles=getattr(args, "profile", None) or [],
-                             overrides=_flag_overrides(args))
+                             overrides=_flag_overrides(args),
+                             redactor=console.redactor)
         ctx = Context(config, args, console)
         return args.handler(ctx)
     except ConfigError as ex:

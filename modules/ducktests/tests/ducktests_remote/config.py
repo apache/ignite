@@ -32,6 +32,7 @@ import difflib
 import getpass
 import json
 import os
+import re
 from pathlib import Path
 
 import yaml
@@ -68,6 +69,15 @@ SUDO_DEPENDENT_TESTS = (
     "ignitetest/tests/discovery_test.py",
     "ignitetest/tests/cellular_affinity_test.py",
 )
+
+# Where a JDK is looked for on a worker, in this order of preference within a major
+# version.  A search path may be a directory *of* JDK homes (/usr/lib/jvm) or a JDK home
+# itself; both shapes are probed.
+JAVA_SEARCH_PATHS = ["/opt", "/usr/lib/jvm", "/usr/java"]
+
+# modules/ducktests/tests/docker/Dockerfile pins `ARG jdk_version="eclipse-temurin:17"`.
+# The Dockerfile is the source of truth here too; when the two disagree, it wins.
+JAVA_MAJOR = 17
 
 # ignitetest services launch these main classes; see services/ignite.py,
 # services/ignite_app.py, services/utils/cdc/ignite_cdc.py and .../kafka_to_ignite.py.
@@ -128,11 +138,32 @@ DEFAULTS = {
     },
     "provision": {
         "packages": list(DOCKERFILE_PACKAGES),
-        "jdk_major": 17,
         "install_jdk": False,
-        "pip_index_url": None,
         "ssh_env_path_extra": [],
         "dirs": ["/mnt/service"],
+    },
+    # Everything pip needs to reach an index that is not PyPI.  Only the runner ever runs
+    # pip: the venv install and `run --install-sources`.  Workers are driven over plain
+    # ssh and never see Python.
+    "pip": {
+        "index_url": None,          # --index-url
+        "extra_index_url": [],      # --extra-index-url, repeatable; a bare string is ok
+        "trusted_host": [],         # --trusted-host, repeatable; a bare string is ok
+        "timeout": None,            # --timeout, seconds
+        "retries": None,            # --retries
+        "cert": None,               # --cert; a RUNNER-side path to a CA bundle
+    },
+    # Which JVM the workers run the tests under.  See ducktests_remote/java.py for the
+    # resolution ladder and for why PATH matters more here than JAVA_HOME.
+    "java": {
+        "major": JAVA_MAJOR,
+        "home": None,               # explicit JDK home on the workers; set -> no search
+        "search_paths": list(JAVA_SEARCH_PATHS),
+        "archive": None,            # coordinator-side .tar.gz/.tgz/.tar, or a directory
+        "install_root": None,       # defaults to cluster.install_root
+        "name": None,               # target directory name; defaults to the archive's own
+        "ssh_environment": True,    # write ~/.ssh/environment
+        "bashrc": True,             # write a marked block at the top of ~/.bashrc
     },
     "ssh": {
         "connect_timeout": 15,
@@ -144,9 +175,59 @@ DEFAULTS = {
 
 _FREE_FORM_SECTIONS = ("globals", "parameters")
 
+_PLACEHOLDER = re.compile(r"\$\{(env|file):([^}]+)\}")
+
 
 class ConfigError(Exception):
     """Raised for anything the operator can fix by editing a file or a flag (exit 1)."""
+
+
+class _NullRedactor:
+    """Accepts resolved values and forgets them; used when no redactor was supplied."""
+
+    def add(self, value):
+        """Ignore ``value``."""
+
+
+def interpolate(value, redactor=None, environ=None, source="<config>"):
+    """
+    Resolve ``${env:NAME}`` and ``${file:PATH}`` placeholders throughout a structure.
+
+    A missing variable or file is a hard error naming both the placeholder and the file
+    it came from.  Substituting an empty string instead would produce a run that fails
+    three hours later with an authentication error nobody can trace back to here.
+
+    Every resolved value is handed to ``redactor`` so that it is masked in everything the
+    CLI prints afterwards, ``--dry-run`` included.
+    """
+    environ = os.environ if environ is None else environ
+    redactor = _NullRedactor() if redactor is None else redactor
+
+    if isinstance(value, dict):
+        return {k: interpolate(v, redactor, environ, source) for k, v in value.items()}
+    if isinstance(value, list):
+        return [interpolate(v, redactor, environ, source) for v in value]
+    if not isinstance(value, str):
+        return value
+
+    resolved = value
+    for match in _PLACEHOLDER.finditer(value):
+        kind, ref = match.group(1), match.group(2).strip()
+        if kind == "env":
+            if ref not in environ:
+                raise ConfigError(
+                    "%s: environment variable %r referenced by ${env:%s} is not set"
+                    % (source, ref, ref))
+            replacement = environ[ref]
+        else:
+            path = Path(os.path.expanduser(ref))
+            if not path.is_file():
+                raise ConfigError(
+                    "%s: file %s referenced by ${file:%s} does not exist" % (source, path, ref))
+            replacement = path.read_text(encoding="utf-8").strip()
+        redactor.add(replacement)
+        resolved = resolved.replace(match.group(0), replacement)
+    return resolved
 
 
 def deep_merge(base, overlay):
@@ -301,7 +382,7 @@ def get_dotted(source, dotted, default=None):
 
 
 def load_config(config_files=(), profiles=(), overrides=None, environ=None,
-                user_config=USER_CONFIG_FILE):
+                user_config=USER_CONFIG_FILE, redactor=None):
     """
     Compose the effective configuration from every layer.
 
@@ -310,6 +391,7 @@ def load_config(config_files=(), profiles=(), overrides=None, environ=None,
     :param overrides: overlay built from explicit command-line flags.
     :param environ: environment mapping, defaults to ``os.environ``.
     :param user_config: path to the per-user config file.
+    :param redactor: collects values resolved from ``${env:}`` / ``${file:}``.
     :return: the merged, validated configuration.
     """
     config = copy.deepcopy(DEFAULTS)
@@ -334,9 +416,29 @@ def load_config(config_files=(), profiles=(), overrides=None, environ=None,
     if overrides:
         config = _layer(config, overrides, "command line")
 
+    config = _interpolate_config(config, sources, redactor, environ)
+
     config["cluster"]["user"] = config["cluster"]["user"] or _current_user()
     config["_sources"] = sources
     return config
+
+
+def _interpolate_config(config, sources, redactor, environ):
+    """
+    Resolve placeholders in every section except the free-form ones.
+
+    ``globals`` and ``parameters`` are left alone here: :mod:`globals_builder` resolves
+    them per layer, so its errors can name the profile a placeholder came from, and doing
+    it twice would re-scan an already resolved secret for placeholders of its own.
+    """
+    source = "config (%s)" % (", ".join(sources) if sources else "built-in defaults")
+    resolved = {}
+    for key, value in config.items():
+        if key in _FREE_FORM_SECTIONS:
+            resolved[key] = value
+        else:
+            resolved[key] = interpolate(value, redactor, environ, source)
+    return resolved
 
 
 def _layer(config, overlay, source):

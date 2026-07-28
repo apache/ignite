@@ -25,12 +25,13 @@ environment at the last moment, and written straight to a 0600 file on the runne
 
 import json
 import os
-import re
 from pathlib import Path
 
-from ducktests_remote.config import ConfigError, deep_merge, set_dotted
+from ducktests_remote.config import ConfigError, deep_merge, interpolate, set_dotted
 
-_PLACEHOLDER = re.compile(r"\$\{(env|file):([^}]+)\}")
+# Re-exported: ``interpolate`` lives in `config` so that the non-globals sections can use
+# it too, without `config` having to import this module back.
+__all__ = ["Redactor", "build", "dumps", "interpolate", "load_raw_layer", "parse_kv_override"]
 
 
 class Redactor:
@@ -82,43 +83,6 @@ class Redactor:
         if isinstance(data, str):
             return self.redact(data)
         return data
-
-
-def interpolate(value, redactor, environ=None, source="<config>"):
-    """
-    Resolve ``${env:NAME}`` and ``${file:PATH}`` placeholders throughout a structure.
-
-    A missing variable or file is a hard error naming both the placeholder and the file
-    it came from.  Substituting an empty string instead would produce a run that fails
-    three hours later with an authentication error nobody can trace back to here.
-    """
-    environ = os.environ if environ is None else environ
-
-    if isinstance(value, dict):
-        return {k: interpolate(v, redactor, environ, source) for k, v in value.items()}
-    if isinstance(value, list):
-        return [interpolate(v, redactor, environ, source) for v in value]
-    if not isinstance(value, str):
-        return value
-
-    resolved = value
-    for match in _PLACEHOLDER.finditer(value):
-        kind, ref = match.group(1), match.group(2).strip()
-        if kind == "env":
-            if ref not in environ:
-                raise ConfigError(
-                    "%s: environment variable %r referenced by ${env:%s} is not set"
-                    % (source, ref, ref))
-            replacement = environ[ref]
-        else:
-            path = Path(os.path.expanduser(ref))
-            if not path.is_file():
-                raise ConfigError(
-                    "%s: file %s referenced by ${file:%s} does not exist" % (source, path, ref))
-            replacement = path.read_text(encoding="utf-8").strip()
-        redactor.add(replacement)
-        resolved = resolved.replace(match.group(0), replacement)
-    return resolved
 
 
 def parse_kv_override(item):

@@ -28,7 +28,7 @@ import shlex
 import shutil
 import time
 
-from ducktests_remote import sshdiag
+from ducktests_remote import java, pipconf, sshdiag
 from ducktests_remote.cli import EXIT_OK, EXIT_PREFLIGHT
 from ducktests_remote.config import (REQUIREMENTS_RELPATH, SUDO_DEPENDENT_TESTS,
                                      expand_path)
@@ -244,6 +244,10 @@ def runner_checks(ctx):
     checks.append(_runner_ducktape_check(ctx))
     checks.append(_identity_check(ctx))
     checks.append(_runner_disk_check(ctx))
+    # Informational: reaching the index is pip's business, and doctor does not make
+    # network calls on someone else's behalf to find out.
+    checks.append(Check("runner", host, "pip", OK,
+                        pipconf.describe(ctx.config, ctx.console.redactor)))
     return checks
 
 
@@ -367,11 +371,13 @@ def worker_checks(ctx, nodes, versions):
     install_root = ctx.cluster_cfg.get("install_root", "/opt")
     persistent = (ctx.config["clean"]["paths"] or ["/mnt/service"])[0]
     pattern = ctx.config["clean"]["process_pattern"]
+    java_cfg = java.config_of(ctx)
 
     script = _WORKER_SCRIPT % {
         "install_root": shlex.quote(install_root),
         "persistent": shlex.quote(persistent),
         "pattern": shlex.quote(pattern),
+        "java_probe": java.discovery_script(java_cfg),
     }
 
     def probe(node):
@@ -383,7 +389,7 @@ def worker_checks(ctx, nodes, versions):
     facts = {r.host: (r.data or {}) for r in results}
 
     checks = []
-    checks += _java_checks(facts)
+    checks += _java_checks(facts, java_cfg)
     for host in sorted(facts):
         fact = facts[host]
         checks.append(_disk_from_facts(host, "install_free_gb", install_root, fact))
@@ -400,7 +406,6 @@ set -u
 say() { printf '%%s=%%s\\n' "$1" "$2"; }
 say epoch "$(date +%%s)"
 say whoami "$(id -un 2>/dev/null || echo '?')"
-say java "$(java -version 2>&1 | head -n1 | tr -d '\\r' || echo missing)"
 say install_free_gb "$(df -Pk %(install_root)s 2>/dev/null | awk 'NR==2{printf "%%d", $4/1048576}')"
 say install_writable "$([ -w %(install_root)s ] && echo 1 || echo 0)"
 if [ -d %(persistent)s ]; then
@@ -414,28 +419,63 @@ fi
 say stale "$(pgrep -f %(pattern)s 2>/dev/null | wc -l | tr -d ' ')"
 if sudo -n true 2>/dev/null; then say sudo 1; else say sudo 0; fi
 say install_dirs "$(ls -1 %(install_root)s 2>/dev/null | tr '\\n' ',' )"
+# Last, because the JDK probe ends in `exit 0`.
+%(java_probe)s
 """
 
 
-def _java_checks(facts):
+def _java_checks(facts, java_cfg):
+    """
+    Judge the JVM the tests will actually get.
+
+    The question is deliberately not "is a good JDK installed somewhere" but "what does a
+    non-interactive ssh session get", because that is the JVM ``ignite.sh``, the Kafka
+    service, jmxterm and ``jvm_utils.java_version`` all end up running.  A JDK of the
+    right version sitting unused in ``/opt`` is a remedy to suggest, not a pass.
+    """
     checks = []
-    versions = {}
-    for host, fact in facts.items():
-        java = fact.get("java", "missing")
-        if not java or "missing" in java or "not found" in java:
+    seen = {}
+    for host in sorted(facts):
+        res = java.parse_facts(host, facts[host], java_cfg)
+        version = facts[host].get("java", "missing")
+        if res.path_major is None:
             checks.append(Check("workers", host, "java", FAIL,
-                                "java not on the non-interactive PATH; see `provision --only "
-                                "ssh-env`"))
+                                "java not on the non-interactive PATH; run `provision "
+                                "--only jdk --only ssh-env`"))
             continue
-        versions.setdefault(java, []).append(host)
-        checks.append(Check("workers", host, "java", OK, java))
-    if len(versions) > 1:
-        majority = max(versions, key=lambda k: len(versions[k]))
-        outliers = [h for k, hosts in versions.items() if k != majority for h in hosts]
+        seen.setdefault(res.path_version or version, []).append(host)
+        checks.append(_java_check(host, res, java_cfg))
+
+    if len(seen) > 1:
+        majority = max(seen, key=lambda k: len(seen[k]))
+        outliers = [h for k, hosts in seen.items() if k != majority for h in hosts]
         checks.append(Check("workers", "-", "java-consistency", WARN,
                             "mixed JDKs; majority %r, outliers: %s"
                             % (majority, ", ".join(sorted(outliers)))))
     return checks
+
+
+def _java_check(host, res, java_cfg):
+    if not res.path_matches(java_cfg.major):
+        if res.selected:
+            return Check("workers", host, "java", FAIL,
+                         "non-interactive java is %s, requested %s; %s is present on this "
+                         "host - run `provision --only jdk --only ssh-env`"
+                         % (res.path_version, java_cfg.major, res.home))
+        found = ", ".join("%s (Java %s)" % (home, major) for home, major, _ in res.candidates)
+        return Check("workers", host, "java", FAIL,
+                     "non-interactive java is %s, requested %s, and no Java %s is "
+                     "installed here. Found: %s. Set java.archive to deliver one, or "
+                     "java.home to name an existing one."
+                     % (res.path_version, java_cfg.major, java_cfg.major, found or "nothing"))
+    if java_cfg.home and not res.home_in_effect:
+        # Right version, wrong JDK: the tests will run, so this is not a failure, but an
+        # explicit java.home that is not in effect is always worth saying out loud.
+        return Check("workers", host, "java", WARN,
+                     "non-interactive java is %s from %s, but java.home names %s"
+                     % (res.path_version, res.path_real or res.path_java, java_cfg.home))
+    return Check("workers", host, "java", OK,
+                 "%s from %s" % (res.path_version, res.path_real or res.path_java))
 
 
 def _disk_from_facts(host, key, path, fact=None):

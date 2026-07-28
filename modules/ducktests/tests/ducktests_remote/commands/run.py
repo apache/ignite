@@ -25,7 +25,8 @@ import sys
 import time
 from pathlib import Path
 
-from ducktests_remote import __version__, cluster as cluster_mod, globals_builder, runs
+from ducktests_remote import (__version__, cluster as cluster_mod, globals_builder, pipconf,
+                              runs)
 from ducktests_remote.cli import (EXIT_OK, EXIT_PREFLIGHT, EXIT_TESTS_FAILED, Console)
 from ducktests_remote.commands import doctor
 from ducktests_remote.config import ConfigError, expand_path
@@ -75,6 +76,16 @@ def register(subparsers, common):
     parser.add_argument("--install-sources", action="store_true",
                         help="pip install the synced sources into the runner venv. Not needed "
                              "for test discovery; ducktape puts the sources on sys.path itself")
+    parser.add_argument("--pip-index-url", metavar="URL",
+                        help="package index for the runner venv, when PyPI is unreachable")
+    parser.add_argument("--pip-extra-index-url", action="append", default=None, metavar="URL",
+                        help="additional index; repeatable, replaces the configured list")
+    parser.add_argument("--pip-trusted-host", action="append", default=None, metavar="HOST",
+                        help="host whose certificate pip should not verify; repeatable")
+    parser.add_argument("--pip-timeout", type=int, default=None, metavar="SECONDS",
+                        help="pip socket timeout, for a slow internal mirror")
+    parser.add_argument("--pip-cert", metavar="PATH",
+                        help="CA bundle for the index, as a RUNNER-side path")
     parser.add_argument("--repeat", type=int, default=None, metavar="N")
     parser.add_argument("--max-parallel", type=int, default=None, metavar="N")
     parser.add_argument("--test-runner-timeout", type=int, default=None, metavar="MS")
@@ -327,8 +338,7 @@ def _ensure_venv(ctx, work_dir):
     python = ctx.config["runner"].get("python", "python3")
     requirements = ctx.config["runner"].get("requirements") or posixpath.join(
         work_dir, "modules", "ducktests", "tests", "docker", "requirements.txt")
-    index = ctx.config["provision"].get("pip_index_url")
-    index_arg = "--index-url %s" % shlex.quote(index) if index else ""
+    index_arg = pipconf.pip_args_str(ctx.config)
 
     script = """set -eu
 venv=%(venv)s
@@ -354,9 +364,11 @@ fi
     result = ctx.runner.run_script(script, check=False)
     if not result.ok:
         raise ConfigError(
-            "could not prepare the runner venv at %s:\n%s\nEither point runner.venv at an "
-            "existing environment or make %s reachable on the runner."
-            % (venv, (result.stderr or result.stdout).strip(), requirements))
+            "could not prepare the runner venv at %s:\n%s\nInstalling from: %s.\nEither "
+            "point runner.venv at an existing environment, make %s reachable on the "
+            "runner, or set pip.index_url to an index the runner can reach."
+            % (venv, (result.stderr or result.stdout).strip(),
+               pipconf.describe(ctx.config, ctx.console.redactor), requirements))
     ctx.console.info(result.out.splitlines()[-1] if result.out else "venv ready")
 
 
@@ -365,7 +377,8 @@ def _install_sources(ctx, work_dir):
     pip = posixpath.join(venv, "bin", "pip3") if venv else "pip3"
     tests_dir = posixpath.join(work_dir, "modules", "ducktests", "tests")
     ctx.console.info("installing sources from %s" % tests_dir)
-    ctx.runner.run([pip, "install", "--disable-pip-version-check", "-e", tests_dir]).check()
+    ctx.runner.run([pip, "install", "--disable-pip-version-check"]
+                   + pipconf.pip_args(ctx.config) + ["-e", tests_dir]).check()
 
 
 def _update_latest_link(ctx, paths):

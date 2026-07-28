@@ -139,3 +139,60 @@ class CheckLoad:
         with pytest.raises(ConfigError) as ex:
             load_config(config_files=["/nonexistent/nope.yaml"], environ={}, user_config=None)
         assert "not found" in str(ex.value)
+
+
+class CheckRenamedKeys:
+    """Keys that moved out of `provision` when pip and java got sections of their own."""
+
+    def check_the_old_pip_index_key_is_rejected_with_a_hint(self):
+        with pytest.raises(ConfigError) as ex:
+            validate({"provision": {"pip_index_url": "https://nexus.invalid/simple"}})
+        assert "provision.pip_index_url" in str(ex.value)
+
+    def check_the_old_jdk_major_key_is_rejected(self):
+        with pytest.raises(ConfigError) as ex:
+            validate({"provision": {"jdk_major": 17}})
+        assert "provision.jdk_major" in str(ex.value)
+
+    def check_the_new_sections_validate(self):
+        validate({"pip": {"index_url": "https://nexus.invalid/simple", "timeout": 60},
+                  "java": {"major": 17, "home": "/opt/jdk-17", "bashrc": False}})
+
+    def check_a_typo_in_the_new_sections_is_caught(self):
+        with pytest.raises(ConfigError) as ex:
+            validate({"java": {"majr": 17}})
+        assert "java.majr" in str(ex.value) and "major" in str(ex.value)
+
+
+class CheckInterpolation:
+    """``${env:}`` / ``${file:}`` outside the globals section."""
+
+    def check_a_placeholder_in_a_config_section_is_resolved(self):
+        # examples/cluster.yaml has always advertised this; before pip.* needed it, the
+        # placeholder was passed through literally and ssh went looking for a host named
+        # "${env:DTR_RUNNER}".
+        config = load_config(environ={"DTR_TEST_RUNNER": "build-vm-01"}, user_config=None,
+                             overrides={"cluster": {"runner": "${env:DTR_TEST_RUNNER}"}})
+        assert config["cluster"]["runner"] == "build-vm-01"
+
+    def check_a_missing_variable_names_the_variable(self):
+        with pytest.raises(ConfigError) as ex:
+            load_config(environ={}, user_config=None,
+                        overrides={"pip": {"index_url": "${env:DTR_ABSENT_INDEX}"}})
+        assert "DTR_ABSENT_INDEX" in str(ex.value)
+
+    def check_a_resolved_value_is_registered_for_redaction(self):
+        from ducktests_remote.globals_builder import Redactor  # noqa: PLC0415
+
+        redactor = Redactor()
+        load_config(environ={"DTR_TEST_INDEX": "https://bob:s3cret@nexus.invalid/simple"},
+                    user_config=None, redactor=redactor,
+                    overrides={"pip": {"index_url": "${env:DTR_TEST_INDEX}"}})
+        assert redactor.redact("index is https://bob:s3cret@nexus.invalid/simple") \
+            == "index is ***"
+
+    def check_globals_are_left_for_the_globals_builder(self):
+        # Resolved there, per layer, so the error can name the profile it came from.
+        config = load_config(environ={}, user_config=None,
+                             overrides={"globals": {"password": "${env:DTR_ABSENT}"}})
+        assert config["globals"]["password"] == "${env:DTR_ABSENT}"
