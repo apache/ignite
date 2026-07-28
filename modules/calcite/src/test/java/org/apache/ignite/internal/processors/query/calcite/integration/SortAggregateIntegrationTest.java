@@ -156,6 +156,31 @@ public class SortAggregateIntegrationTest extends AbstractBasicIntegrationTransa
     }
 
     /**
+     * Tests that sort aggregate node correctly handles the case when input data
+     * ends exactly when the requested number of rows is satisfied.
+     */
+    @Test
+    public void testRequestRowsAfterInputEnds() {
+        /**
+         * With 512 input rows (equal to buffer size), the last row completes both
+         * the input data and the requested count in the same cycle. This triggers
+         * a synchronous request() call from within push() to fill the buffer, and
+         * the node must properly handle the termination on the subsequent request()
+         * call rather than on end().
+         */
+        int bufSize = 512;
+
+        sql("CREATE TABLE t0(a INTEGER PRIMARY KEY, b INTEGER) WITH template=replicated," + atomicity());
+
+        for (int i = 0; i < bufSize; i++)
+            sql("INSERT INTO t0 VALUES (?, ?)", i, i);
+
+        assertQuery("SELECT t1.a FROM t0 AS t1 JOIN (SELECT a, count(a) FROM t0 GROUP BY a) AS t2 ON t1.a = t2.a")
+            .resultSize(bufSize)
+            .check();
+    }
+
+    /**
      * @param c Cache.
      * @param rows Rows count.
      */
