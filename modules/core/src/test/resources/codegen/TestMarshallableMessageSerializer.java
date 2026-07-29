@@ -17,10 +17,7 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.TestMarshallableMessage;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -30,29 +27,12 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public class TestMarshallableMessageMarshallableSerializer implements MessageSerializer<TestMarshallableMessage> {
-    /** */
-    private final ClassLoader clsLdr;
-    /** */
-    private final Marshaller marshaller;
-
-    /** */
-    public TestMarshallableMessageMarshallableSerializer(Marshaller marshaller, ClassLoader clsLdr) {
-        this.marshaller = marshaller;
-        this.clsLdr = clsLdr;
-    }
+public class TestMarshallableMessageSerializer implements MessageSerializer<TestMarshallableMessage> {
     /** */
     @Override public boolean writeTo(TestMarshallableMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
                 return false;
-
-            try {
-                msg.prepareMarshal(marshaller);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to marshal object " + msg.getClass().getSimpleName(), e);
-            }
 
             writer.onHeaderWritten();
         }
@@ -106,13 +86,6 @@ public class TestMarshallableMessageMarshallableSerializer implements MessageSer
                     return false;
 
                 reader.incrementState();
-        }
-
-        try {
-            msg.finishUnmarshal(marshaller, clsLdr);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException("Failed to unmarshal object " + msg.getClass().getSimpleName(), e);
         }
 
         return true;

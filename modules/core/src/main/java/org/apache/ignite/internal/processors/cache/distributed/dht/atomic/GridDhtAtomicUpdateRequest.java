@@ -18,14 +18,15 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.DeployableMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -36,13 +37,14 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Lite dht cache backup update request.
  */
-public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateRequest {
+public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateRequest implements MarshallableMessage, DeployableMessage {
     /** Keys to update. */
     @GridToStringInclude
     @Order(0)
@@ -465,71 +467,56 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
-
-        prepareMarshalCacheObjects(keys, cctx);
-
-        prepareMarshalCacheObjects(vals, cctx);
-
-        prepareMarshalCacheObjects(nearKeys, cctx);
-
-        prepareMarshalCacheObjects(nearVals, cctx);
-
-        prepareMarshalCacheObjects(prevVals, cctx);
-
-        if (forceTransformBackups) {
-            // force addition of deployment info for entry processors if P2P is enabled globally.
-            if (!addDepInfo && ctx.deploymentEnabled())
-                addDepInfo = true;
-
-            if (!F.isEmpty(invokeArgs) && invokeArgsBytes == null)
-                invokeArgsBytes = Arrays.asList(marshalInvokeArguments(invokeArgs, cctx));
-
-            if (entryProcessorsBytes == null)
-                entryProcessorsBytes = marshalCollection(entryProcessors, cctx);
-
-            if (nearEntryProcessorsBytes == null)
-                nearEntryProcessorsBytes = marshalCollection(nearEntryProcessors, cctx);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
-
-        finishUnmarshalCacheObjects(keys, cctx, ldr);
-
-        finishUnmarshalCacheObjects(vals, cctx, ldr);
-
-        finishUnmarshalCacheObjects(nearKeys, cctx, ldr);
-
-        finishUnmarshalCacheObjects(nearVals, cctx, ldr);
-
-        finishUnmarshalCacheObjects(prevVals, cctx, ldr);
-
-        if (forceTransformBackups) {
-            if (entryProcessors == null)
-                entryProcessors = unmarshalCollection(entryProcessorsBytes, ctx, ldr);
-
-            if (invokeArgsBytes != null && invokeArgs == null)
-                invokeArgs = unmarshalInvokeArguments(invokeArgsBytes.toArray(new byte[invokeArgsBytes.size()][]), ctx, ldr);
-
-            if (nearEntryProcessors == null)
-                nearEntryProcessors = unmarshalCollection(nearEntryProcessorsBytes, ctx, ldr);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override protected void cleanup() {
         nearVals = null;
         prevVals = null;
     }
 
+    /** {@inheritDoc} */
+    @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
+        if (forceTransformBackups) {
+            if (!F.isEmpty(invokeArgs) && invokeArgsBytes == null)
+                invokeArgsBytes = marshallInvokeArguments(invokeArgs, marsh);
+
+            if (entryProcessorsBytes == null)
+                entryProcessorsBytes = marshallCollection(entryProcessors, marsh);
+
+            if (nearEntryProcessorsBytes == null)
+                nearEntryProcessorsBytes = marshallCollection(nearEntryProcessors, marsh);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (forceTransformBackups) {
+            if (entryProcessors == null)
+                entryProcessors = unmarshalCollection(entryProcessorsBytes, marsh, clsLdr);
+
+            if (invokeArgsBytes != null && invokeArgs == null)
+                invokeArgs = unmarshalInvokeArguments(invokeArgsBytes, marsh, clsLdr);
+
+            if (nearEntryProcessors == null)
+                nearEntryProcessors = unmarshalCollection(nearEntryProcessorsBytes, marsh, clsLdr);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void deploy(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        if (forceTransformBackups) {
+            GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
+
+            forceDeploymentInfo(ctx);
+
+            if (!F.isEmpty(invokeArgs) && invokeArgsBytes == null)
+                deployInvokeArguments(invokeArgs, cctx);
+
+            if (entryProcessorsBytes == null)
+                deployCollection(entryProcessors, cctx);
+
+            if (nearEntryProcessorsBytes == null)
+                deployCollection(nearEntryProcessors, cctx);
+        }
+    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

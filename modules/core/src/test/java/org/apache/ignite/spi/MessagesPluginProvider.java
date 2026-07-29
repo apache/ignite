@@ -54,7 +54,7 @@ public class MessagesPluginProvider extends AbstractTestPluginProvider {
                     }
                 };
 
-                f.register(directType, msgSupp, loadSerializer(msg, null, null));
+                f.register(directType, msgSupp, loadSerializer(msg));
 
                 directType++;
             }
@@ -78,7 +78,7 @@ public class MessagesPluginProvider extends AbstractTestPluginProvider {
 
         if (discoSpi instanceof TestTcpDiscoverySpi testDiscoSpi) {
             // Register messages into the discovery protocol.
-            testDiscoSpi.messageFactory(msgFactoryProvider, ctx.igniteConfiguration());
+            testDiscoSpi.messageFactory(msgFactoryProvider);
         }
     }
 }

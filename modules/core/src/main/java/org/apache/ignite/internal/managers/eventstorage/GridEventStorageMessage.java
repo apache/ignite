@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridTopicMessage;
 import org.apache.ignite.internal.MarshallableMessage;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -52,7 +53,8 @@ public class GridEventStorageMessage implements MarshallableMessage {
     byte[] filterBytes;
 
     /** */
-    private Collection<Event> evts;
+    @Marshalled("evtsBytes")
+    Collection<Event> evts;
 
     /** */
     @Order(2)
@@ -197,27 +199,21 @@ public class GridEventStorageMessage implements MarshallableMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+    @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
         if (filter != null)
             filterBytes = U.marshal(marsh, filter);
-
-        if (evts != null)
-            evtsBytes = U.marshal(marsh, evts);
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader ldr) throws IgniteCheckedException {
-        if (evtsBytes != null) {
-            evts = U.unmarshal(marsh, evtsBytes, ldr);
-
-            evtsBytes = null;
-        }
+    @Override public void unmarshal(Marshaller marsh, ClassLoader ldr) throws IgniteCheckedException {
+        // No-op.
     }
 
     /**
      * @param marsh Marshaller.
      * @param filterClsLdr Class loader for filter.
      */
+    // TODO IGNITE-28901: revise the filters marshalling.
     public void finishUnmarshalFilters(Marshaller marsh, ClassLoader filterClsLdr) throws IgniteCheckedException {
         if (filterBytes != null && filter == null) {
             filter = U.unmarshal(marsh, filterBytes, filterClsLdr);

@@ -17,17 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.DeployableMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareRequest;
@@ -44,7 +43,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * DHT prepare request.
  */
-public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
+public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest implements DeployableMessage {
     /** Max order. */
     @Order(0)
     UUID nearNodeId;
@@ -72,7 +71,8 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
     /** Owned versions by key. */
     @GridToStringInclude
-    private Map<IgniteTxKey, GridCacheVersion> owned;
+    @Marshalled(keys = "ownedKeys", values = "ownedVals")
+    Map<IgniteTxKey, GridCacheVersion> owned;
 
     /** Owned keys. */
     @Order(6)
@@ -97,9 +97,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /** Preload keys. */
     @Order(11)
     BitSet preloadKeys;
-
-    /** */
-    private List<IgniteTxKey> nearWritesCacheMissed;
 
     /** {@code True} if remote tx should skip adding itself to completed versions map on finish. */
     @Order(12)
@@ -185,13 +182,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
      */
     public Collection<PartitionUpdateCountersMessage> updateCounters() {
         return updCntrs;
-    }
-
-    /**
-     * @return Near cache writes for which cache was not found (possible if client near cache was closed).
-     */
-    @Nullable public List<IgniteTxKey> nearWritesCacheMissed() {
-        return nearWritesCacheMissed;
     }
 
     /**
@@ -315,82 +305,17 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         return txLbl;
     }
 
-    /**
-     * {@inheritDoc}
-     *
-     * @param ctx
-     */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
+    /** {@inheritDoc} */
+    @Override public void deploy(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         if (owned != null && ownedKeys == null) {
-            ownedKeys = owned.keySet();
-
-            ownedVals = owned.values();
-
-            for (IgniteTxKey key: ownedKeys) {
+            for (IgniteTxKey key : owned.keySet()) {
                 GridCacheContext<?, ?> cctx = ctx.cacheContext(key.cacheId());
 
-                key.prepareMarshal(cctx);
-
                 if (addDepInfo)
-                    prepareObject(key, cctx);
-            }
-        }
-
-        if (nearWrites != null)
-            marshalTx(nearWrites, ctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        if (ownedKeys != null) {
-            assert ownedKeys.size() == ownedVals.size();
-
-            owned = U.newHashMap(ownedKeys.size());
-
-            Iterator<IgniteTxKey> keyIter = ownedKeys.iterator();
-
-            Iterator<GridCacheVersion> valIter = ownedVals.iterator();
-
-            while (keyIter.hasNext()) {
-                IgniteTxKey key = keyIter.next();
-
-                GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(key.cacheId());
-
-                if (cacheCtx != null) {
-                    key.finishUnmarshal(cacheCtx, ldr);
-
-                    owned.put(key, valIter.next());
-                }
-            }
-        }
-
-        if (nearWrites != null) {
-            for (Iterator<IgniteTxEntry> it = nearWrites.iterator(); it.hasNext();) {
-                IgniteTxEntry e = it.next();
-
-                GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(e.cacheId());
-
-                if (cacheCtx == null) {
-                    it.remove();
-
-                    if (nearWritesCacheMissed == null)
-                        nearWritesCacheMissed = new ArrayList<>();
-
-                    nearWritesCacheMissed.add(e.txKey());
-                }
-                else {
-                    e.context(cacheCtx);
-
-                    e.unmarshal(ctx, true, ldr);
-                }
+                    deployObject(key, cctx);
             }
         }
     }
-
 
     /** {@inheritDoc} */
     @Override public int partition() {
