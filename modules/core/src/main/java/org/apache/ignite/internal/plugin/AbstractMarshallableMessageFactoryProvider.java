@@ -63,23 +63,8 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
         this.schemaAwareMarsh = schemaAwareMarsh;
     }
 
-    /** */
+    /** Register a message with a caller-provided {@code id}. */
     protected <T extends Message> void register(IgniteMessageFactory factory, Class<T> cls, short id) {
-        Marshaller marsh;
-
-        if (cls.getAnnotation(UseJdkMarshaller.class) != null) {
-            assert cls.getAnnotation(UseBinaryMarshaller.class) == null;
-
-            marsh = dfltMarsh;
-        }
-        else if (cls.getAnnotation(UseBinaryMarshaller.class) != null) {
-            assert cls.getAnnotation(UseJdkMarshaller.class) == null;
-
-            marsh = schemaAwareMarsh;
-        }
-        else
-            throw new IllegalStateException(cls.getSimpleName() + " must be annotated with @UseJdkMarshaller or @UseBinaryMarshaller");
-
         Constructor<T> ctor;
 
         try {
@@ -96,7 +81,7 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
             catch (Exception e) {
                 throw new IgniteException("Failed to create message of type " + cls.getSimpleName(), e);
             }
-        }, marsh);
+        });
     }
 
     /**
@@ -104,6 +89,26 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
      * marshallable), and deployer (if any). Use this overload when {@code cls} is package-private and so cannot be
      * instantiated by reflection from this package — pass an in-package {@code ::new} reference as {@code supplier}.
      */
+    protected <T extends Message> void register(IgniteMessageFactory factory, Class<T> cls, short id, Supplier<Message> supplier) {
+        Marshaller marsh;
+
+        if (cls.getAnnotation(UseJdkMarshaller.class) != null) {
+            assert cls.getAnnotation(UseBinaryMarshaller.class) == null;
+
+            marsh = dfltMarsh;
+        }
+        else if (cls.getAnnotation(UseBinaryMarshaller.class) != null) {
+            assert cls.getAnnotation(UseJdkMarshaller.class) == null;
+
+            marsh = schemaAwareMarsh;
+        }
+        else
+            throw new IllegalStateException(cls.getSimpleName() + " must be annotated with @UseJdkMarshaller or @UseBinaryMarshaller");
+
+        register(factory, cls, id, supplier, marsh);
+    }
+
+    /** */
     private static <T extends Message> void register(IgniteMessageFactory factory, Class<T> cls, short id,
         Supplier<Message> supplier, Marshaller marsh) {
         MessageSerializer<T> serializer = requireGenerated(cls, "Serializer", marsh);
