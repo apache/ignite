@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.AbstractNode;
 import org.junit.Test;
 
 /**
@@ -39,11 +40,11 @@ public class CollectIntegrationTest extends AbstractBasicIntegrationTest {
         assertQuery(sql).resultSize(1).check();
 
         /**
-         * The data source size of 513 (buffer size + 1) is used to ensure that multiple batches are needed
+         * The data source size of (buffer size + 1) is used to ensure that multiple batches are needed
          * on right hand of CNLJ to process all input rows, in this case left hand is not requested
          * immediately after endLeft() call.
          */
-        for (int i = 1; i < 513; i++)
+        for (int i = 1; i < AbstractNode.IN_BUFFER_SIZE + 1; i++)
             sql("INSERT INTO t (a) VALUES (?)", i);
 
         assertQuery(sql).resultSize(1).check();

@@ -28,6 +28,7 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.AbstractNode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 
@@ -162,13 +163,13 @@ public class SortAggregateIntegrationTest extends AbstractBasicIntegrationTransa
     @Test
     public void testRequestRowsAfterInputEnds() {
         /**
-         * With 512 input rows (equal to buffer size), the last row completes both
+         * With input rows count equals to the buffer size, the last row completes both
          * the input data and the requested count in the same cycle. This triggers
          * a synchronous request() call from within push() to fill the buffer, and
          * the node must properly handle the termination on the subsequent request()
          * call rather than on end().
          */
-        int bufSize = 512;
+        int bufSize = AbstractNode.IN_BUFFER_SIZE;
 
         sql("CREATE TABLE t0(a INTEGER PRIMARY KEY, b INTEGER) WITH template=replicated," + atomicity());
 
