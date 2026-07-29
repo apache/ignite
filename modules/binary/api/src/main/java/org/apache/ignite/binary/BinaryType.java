@@ -41,7 +41,8 @@ public interface BinaryType {
     public int typeId();
 
     /**
-     * Gets collection of all field names for this binary type.
+     * Gets collection of all field names for this binary type in the order in which the fields were initially
+     * registered.
      *
      * @return Collection of all field names for this binary type.
      */
