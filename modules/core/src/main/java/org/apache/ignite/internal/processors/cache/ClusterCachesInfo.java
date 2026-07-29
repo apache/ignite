@@ -1567,6 +1567,13 @@ public class ClusterCachesInfo {
 
             CacheConfiguration<?, ?> cfg = cacheData.cacheConfiguration();
 
+            // JDK marshalling guarantees reference identity of objects within a single object graph, so if
+            // CacheGroupData and CacheData were JDK-serialized together, they would deserialize to the exact
+            // same AffinityFunction instance. Message serialization does not preserve this cross-message identity
+            // (each configuration is marshalled into a separate byte[] blob), so we must restore it manually
+            // to match the behavior of GridCacheProcessor.lifecycleAwares().
+            cfg.setAffinity(grpDesc.config().getAffinity());
+
             DynamicCacheDescriptor desc = new DynamicCacheDescriptor(
                 ctx,
                 cacheData.cacheConfiguration(),

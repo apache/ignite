@@ -17,11 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collection;
 import java.util.UUID;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.query.QuerySchema;
+import org.apache.ignite.internal.processors.query.schema.message.QueryEntityMessage;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -50,12 +54,11 @@ public class CacheData implements Message {
     IgniteUuid deploymentId;
 
     /** */
-    @Marshalled("schemaBytes")
-    QuerySchema schema;
+    private Collection<QueryEntity> entities;
 
-    /** Serialized {@link #schema}. */
+    /** */
     @Order(4)
-    byte[] schemaBytes;
+    Collection<QueryEntityMessage> entitiesMsgs;
 
     /** */
     @Order(5)
@@ -110,7 +113,7 @@ public class CacheData implements Message {
         this.grpId = grpId;
         this.cacheType = cacheType;
         this.deploymentId = deploymentId;
-        this.schema = schema;
+        entitiesMsgs = F.viewReadOnly(schema.entities(), QueryEntityMessage::new);
         this.rcvdFrom = rcvdFrom;
         this.staticCfg = staticCfg;
         this.sql = sql;
@@ -149,7 +152,10 @@ public class CacheData implements Message {
 
     /** @return Schema. */
     public QuerySchema schema() {
-        return schema.copy();
+        if (entities == null)
+            entities = F.transform(entitiesMsgs, QueryEntityMessage::toEntity);
+
+        return new QuerySchema(entities);
     }
 
     /** @return ID of node provided cache configuration. */
