@@ -46,8 +46,11 @@ class IgniteToKafkaCdcHelper(CdcHelper):
             cdc_params.kafka,
             dst_cluster,
             cdc_params=cdc_params,
-            jvm_opts=dst_cluster.spec.jvm_opts,
-            merge_with_default=True,
+            # The delta the test applied to the destination cluster, not its resolved option list --
+            # dst_cluster is a server and kafka_to_ignite is a client, so copying the resolution would
+            # carry the server's collector into a client JVM.
+            jvm_opts=dst_cluster.spec.user_jvm_opts,
+            merge_with_default=dst_cluster.spec.merge_with_default,
             modules=dst_cluster.modules
         )
 
@@ -128,7 +131,7 @@ def get_ignite_to_kafka_spec(base, kafka_connection_string, service):
 
             return templates
 
-    return IgniteToKafkaSpec(service, service.spec.jvm_opts, merge_with_default=True)
+    return service.spec.rebuild_as(IgniteToKafkaSpec)
 
 
 class KafkaCdcParams(CdcParams):

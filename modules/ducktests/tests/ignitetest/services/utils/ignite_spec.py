@@ -30,7 +30,8 @@ from itertools import chain
 from ignitetest.services.utils import IgniteServiceType
 from ignitetest.services.utils.config_template import IgniteClientConfigTemplate, IgniteServerConfigTemplate, \
     IgniteLoggerConfigTemplate, IgniteThinClientConfigTemplate, IgniteThinJdbcConfigTemplate
-from ignitetest.services.utils.jvm_utils import create_jvm_settings, merge_jvm_settings
+from ignitetest.services.utils.gc_params import is_gc_configured, resolve_gc_settings, CLIENT_ROLE, SERVER_ROLE
+from ignitetest.services.utils.jvm_utils import create_jvm_settings, merge_jvm_settings, validate_gc_settings
 from ignitetest.services.utils.path import get_home_dir, IgnitePathAware
 from ignitetest.services.utils.ssl.ssl_params import is_ssl_enabled
 from ignitetest.services.utils.metrics.metrics import is_opencensus_metrics_enabled, configure_opencensus_metrics, \
@@ -77,6 +78,24 @@ def envs_to_exports(envs):
     return "; ".join(exports) + ";"
 
 
+def service_role(service):
+    """
+    Determine the GC role of a service semantically rather than by spec class: IgniteService can run in
+    client mode, and subclasses of it (KafkaToIgniteService) are clients too, so an isinstance check
+    would hand those nodes server settings.
+
+    :param service: Service
+    :return: SERVER_ROLE or CLIENT_ROLE
+    """
+    config = service.config
+
+    # client_mode is absent on thin-client / thin-JDBC configs, so the service type check must come first.
+    if config.service_type == IgniteServiceType.NODE and not config.client_mode:
+        return SERVER_ROLE
+
+    return CLIENT_ROLE
+
+
 class IgniteSpec(metaclass=ABCMeta):
     """
     This class is a basic Spec
@@ -91,14 +110,52 @@ class IgniteSpec(metaclass=ABCMeta):
                          default options will be applied.
         """
         self.service = service
-        self.jvm_opts = merge_jvm_settings(self.__get_default_jvm_opts() if merge_with_default else [],
-                                           jvm_opts if jvm_opts else [])
+
+        # The caller's delta is kept alongside the merged result so that another service can inherit the
+        # tuning a test applied here without inheriting this service's role-dependent options too.
+        # See rebuild_as() -- copying the resolved list across services is what broke the CDC path.
+        self.user_jvm_opts = jvm_opts.split() if isinstance(jvm_opts, str) else list(jvm_opts or [])
+        self.merge_with_default = merge_with_default
+
+        if merge_with_default:
+            defaults = merge_jvm_settings(self.__get_default_jvm_opts(), self._service_defaults())
+        else:
+            defaults = []
+
+            if is_gc_configured(self.service.context.globals):
+                self.service.logger.warning(
+                    f"{type(self.service).__name__} is built with merge_with_default=False, so the 'gc' global "
+                    f"does not apply to it. Its collector comes from jvm_opts only.")
+
+        self.jvm_opts = merge_jvm_settings(defaults, self.user_jvm_opts)
+
+    def rebuild_as(self, spec_class, **kwargs):
+        """
+        Re-create this spec as another class, reproducing the original resolution.
+
+        Passing the *resolved* self.jvm_opts instead would leak this service's role-dependent options
+        (the GC block) into the new spec.
+
+        :param spec_class: IgniteSpec subclass to build.
+        :return: instance of spec_class.
+        """
+        return spec_class(self.service, jvm_opts=self.user_jvm_opts,
+                          merge_with_default=self.merge_with_default, **kwargs)
+
+    def _service_defaults(self):
+        """
+        :return: spec-specific default JVM options, merged after the common defaults.
+        """
+        return []
 
     def __get_default_jvm_opts(self):
         """
         Return a set of default JVM options.
         """
-        default_jvm_opts = create_jvm_settings(gc_dump_path=os.path.join(self.service.log_dir, "gc.log"),
+        gc_settings = resolve_gc_settings(self.service.context.globals, service_role(self.service))
+
+        default_jvm_opts = create_jvm_settings(gc_settings=gc_settings,
+                                               gc_dump_path=os.path.join(self.service.log_dir, "gc.log"),
                                                oom_path=os.path.join(self.service.log_dir, "out_of_mem.hprof"),
                                                vm_error_path=os.path.join(self.service.log_dir, "hs_err_pid%p.log"))
 
@@ -310,6 +367,10 @@ class IgniteSpec(metaclass=ABCMeta):
         """
         :return: line with extra JVM params for ignite.sh script: -J-Dparam=value -J-ea
         """
+        # Second validation pass: every code path building a command line goes through here, so this
+        # catches options appended to jvm_opts directly, bypassing merge_jvm_settings.
+        validate_gc_settings(self.jvm_opts)
+
         opts = ["-J%s" % o for o in self.jvm_opts]
         return " ".join(opts)
 
@@ -342,17 +403,11 @@ class IgniteApplicationSpec(IgniteSpec):
     """
     Spec to run ignite application
     """
-    def __init__(self, service, jvm_opts=None, merge_with_default=True):
-        super().__init__(
-            service,
-            merge_jvm_settings(self.__get_default_jvm_opts() if merge_with_default else [],
-                               jvm_opts if jvm_opts else []),
-            merge_with_default)
-
-    def __get_default_jvm_opts(self):
+    def _service_defaults(self):
         return [
             "-DIGNITE_NO_SHUTDOWN_HOOK=true",  # allows performing operations on app termination.
             "-Xmx1G",
+            "-Xms1G",  # kept in step with -Xmx: _remove_duplicates drops the base -Xmx but keeps the base -Xms.
             "-ea",
             "-DIGNITE_ALLOW_ATOMIC_OPS_IN_TX=false"
         ]
