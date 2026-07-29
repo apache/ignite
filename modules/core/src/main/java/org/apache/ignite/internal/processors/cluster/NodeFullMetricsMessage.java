@@ -21,12 +21,14 @@ import java.util.Map;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** Node compound metrics message. */
+@UseJdkMarshaller
 public class NodeFullMetricsMessage implements Message {
     /** Node metrics wrapper message. */
     @Order(0)

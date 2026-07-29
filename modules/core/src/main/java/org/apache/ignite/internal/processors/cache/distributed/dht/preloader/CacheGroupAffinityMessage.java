@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
@@ -38,6 +39,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Information about affinity assignment.
  */
+@UseJdkMarshaller
 public class CacheGroupAffinityMessage implements Message {
     /** */
     @Order(0)

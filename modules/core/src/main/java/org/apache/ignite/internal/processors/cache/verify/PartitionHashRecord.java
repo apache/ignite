@@ -21,6 +21,7 @@ import java.util.Objects;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.VerifyPartitionContext;
@@ -34,6 +35,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Record containing partition checksum, primary flag and consistent ID of owner.
  */
+@UseJdkMarshaller
 public class PartitionHashRecord implements Message, Serializable {
     /** */
     private static final long serialVersionUID = 0L;

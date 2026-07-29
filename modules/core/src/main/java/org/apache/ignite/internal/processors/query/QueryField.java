@@ -18,12 +18,14 @@
 package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Query field metadata.
  */
+@UseJdkMarshaller
 public class QueryField implements Message {
     /** Field name. */
     @Order(0)

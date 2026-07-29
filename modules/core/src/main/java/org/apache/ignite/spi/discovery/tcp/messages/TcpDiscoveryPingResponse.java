@@ -19,11 +19,13 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Ping response.
  */
+@UseJdkMarshaller
 public class TcpDiscoveryPingResponse extends TcpDiscoveryAbstractMessage {
     /** Whether pinged client exists. */
     @Order(0)

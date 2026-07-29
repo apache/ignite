@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -25,6 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Affinity assignment request.
  */
+@UseJdkMarshaller
 public class GridDhtAffinityAssignmentRequest extends GridCacheGroupIdMessage {
     /** */
     private static final int SND_PART_STATE_MASK = 0x01;

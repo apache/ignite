@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -31,6 +32,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Snapshot operation end request for {@link DistributedProcessType#END_SNAPSHOT} initiate message.
  */
+@UseJdkMarshaller
 public class SnapshotOperationEndRequest implements Message {
     /** Request ID. */
     @GridToStringInclude

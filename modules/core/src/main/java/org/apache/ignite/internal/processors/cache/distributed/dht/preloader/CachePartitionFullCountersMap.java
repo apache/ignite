@@ -22,11 +22,13 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  *
  */
+@UseJdkMarshaller
 public class CachePartitionFullCountersMap implements Message {
     /** */
     @Order(0)

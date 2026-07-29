@@ -21,6 +21,7 @@ import java.io.Serializable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -30,6 +31,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /** Wrapper message for serializable data in a {@link DiscoveryDataBag}. */
+@UseJdkMarshaller
 public class SerializableDataBagItemWrapper implements MarshallableMessage {
     /** */
     @GridToStringInclude

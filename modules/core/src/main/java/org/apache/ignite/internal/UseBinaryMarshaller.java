@@ -14,32 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal;
 
-package org.apache.ignite.internal.processors.marshaller;
-
-import java.util.List;
-import java.util.Map;
-import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
+import java.lang.annotation.Documented;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-/** */
-@UseJdkMarshaller
-public class MarshallerDataBagItem implements Message {
-    /** */
-    @Order(0)
-    List<Map<Integer, MappedName>> mappings;
+import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-    /** */
-    public MarshallerDataBagItem() {}
-
-    /** @param mappings Mappings. */
-    public MarshallerDataBagItem(List<Map<Integer, MappedName>> mappings) {
-        this.mappings = mappings;
-    }
-
-    /** @return Mappings. */
-    public List<Map<Integer, MappedName>> mappings() {
-        return mappings;
-    }
+/**
+ * Mark {@link Message} class with this annotation to serialize it with {@link BinaryMarshaller}.
+ */
+@Documented
+@Target(value = TYPE)
+@Retention(RUNTIME)
+public @interface UseBinaryMarshaller {
+    // No-op.
 }

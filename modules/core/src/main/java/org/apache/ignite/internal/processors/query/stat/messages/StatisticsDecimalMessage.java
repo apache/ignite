@@ -22,11 +22,13 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Objects;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * H2 Decimal.
  */
+@UseJdkMarshaller
 public class StatisticsDecimalMessage implements Message, Serializable {
     /** */
     private static final long serialVersionUID = 0L;

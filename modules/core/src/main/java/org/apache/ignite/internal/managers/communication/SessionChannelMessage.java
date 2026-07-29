@@ -19,6 +19,7 @@ package org.apache.ignite.internal.managers.communication;
 
 import java.nio.channels.Channel;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -27,6 +28,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  * A message with additional {@link Channel} attibutes which is send on connection established and
  * an appropriate channel is opened.
  */
+@UseJdkMarshaller
 public class SessionChannelMessage implements Message {
     /** Channel session unique identifier. */
     @Order(0)
@@ -53,10 +55,8 @@ public class SessionChannelMessage implements Message {
         return sesId;
     }
 
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SessionChannelMessage.class, this);
     }
-
 }

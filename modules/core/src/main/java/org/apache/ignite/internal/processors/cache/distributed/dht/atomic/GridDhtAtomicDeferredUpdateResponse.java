@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -31,6 +32,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Deferred dht atomic update response.
  */
+@UseJdkMarshaller
 public class GridDhtAtomicDeferredUpdateResponse extends GridCacheIdMessage implements GridCacheDeployable {
     /** Message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();

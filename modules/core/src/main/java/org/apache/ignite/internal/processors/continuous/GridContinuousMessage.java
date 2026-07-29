@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.internal.DeferredUnmarshalMessage;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -32,6 +33,7 @@ import static org.apache.ignite.internal.processors.continuous.GridContinuousMes
 /**
  * Continuous processor message.
  */
+@UseJdkMarshaller
 public class GridContinuousMessage implements DeferredUnmarshalMessage {
     /** Message type. */
     @Order(0)

@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
+@UseJdkMarshaller
 public final class TxInfo extends IgniteDiagnosticRequest.DiagnosticBaseInfo {
     /** */
     @Order(0)

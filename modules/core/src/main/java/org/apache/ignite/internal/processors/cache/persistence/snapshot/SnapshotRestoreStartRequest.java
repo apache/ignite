@@ -19,11 +19,13 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** */
+@UseJdkMarshaller
 public class SnapshotRestoreStartRequest implements Message {
     /** Request id. */
     @Order(0)

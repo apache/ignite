@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -28,6 +29,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Reply for synchronous phase 2.
  */
+@UseJdkMarshaller
 public final class GridNearTxFinishResponse extends GridDistributedTxFinishResponse {
     /** Error message. */
     @Order(0)

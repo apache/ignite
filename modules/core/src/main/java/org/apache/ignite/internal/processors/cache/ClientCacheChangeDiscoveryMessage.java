@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -33,6 +34,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Sent from cache client node to asynchronously notify about started.closed client caches.
  */
+@UseJdkMarshaller
 public class ClientCacheChangeDiscoveryMessage extends DiscoveryCustomMessage {
     /** */
     @GridToStringInclude

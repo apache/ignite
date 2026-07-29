@@ -21,6 +21,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -30,6 +31,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /**
  * Query.
  */
+@UseJdkMarshaller
 public class GridCacheSqlQuery implements Message {
     /** */
     public static final Object[] EMPTY_PARAMS = {};

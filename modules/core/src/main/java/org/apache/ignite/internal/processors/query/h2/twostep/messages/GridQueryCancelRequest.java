@@ -18,12 +18,14 @@
 package org.apache.ignite.internal.processors.query.h2.twostep.messages;
 
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Cancel map part of query request.
  */
+@UseJdkMarshaller
 public class GridQueryCancelRequest implements Message {
     /** */
     @Order(0)

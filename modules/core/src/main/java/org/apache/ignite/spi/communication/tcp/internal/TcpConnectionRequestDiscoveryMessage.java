@@ -19,6 +19,7 @@ package org.apache.ignite.spi.communication.tcp.internal;
 
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -34,6 +35,7 @@ import org.jetbrains.annotations.Nullable;
  * node B receives request and opens communication connection to node A
  * thus allowing both nodes to communicate to each other.
  */
+@UseJdkMarshaller
 public class TcpConnectionRequestDiscoveryMessage extends DiscoveryCustomMessage {
     /** Receiver node id. */
     @Order(0)

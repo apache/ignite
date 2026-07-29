@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.service;
 
 import java.util.Collection;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -33,6 +34,7 @@ import org.jetbrains.annotations.Nullable;
  * <p/>
  * Contains collection of {@link ServiceClusterDeploymentResult}.
  */
+@UseJdkMarshaller
 public class ServiceClusterDeploymentResultBatch extends DiscoveryCustomMessage {
     /** Deployment process id. */
     @Order(0)

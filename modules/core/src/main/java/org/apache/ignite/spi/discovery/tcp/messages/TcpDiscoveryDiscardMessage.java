@@ -19,6 +19,7 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 
@@ -26,6 +27,7 @@ import org.apache.ignite.lang.IgniteUuid;
  * Message sent by coordinator when some operation handling is over. All receiving
  * nodes should discard this and all preceding messages in local buffers.
  */
+@UseJdkMarshaller
 public class TcpDiscoveryDiscardMessage extends TcpDiscoveryAbstractMessage {
     /** ID of the message to discard (this and all preceding). */
     @Order(0)

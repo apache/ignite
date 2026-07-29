@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.communication.tcp.internal;
 
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -27,6 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * The main purpose of this message is to communicate back to server node connection index of a thread waiting for
  * establishing of communication connection.
  */
+@UseJdkMarshaller
 public class TcpInverseConnectionResponseMessage implements TcpConnectionIndexAwareMessage {
     /** */
     @Order(0)
@@ -45,7 +47,6 @@ public class TcpInverseConnectionResponseMessage implements TcpConnectionIndexAw
     @Override public int connectionIndex() {
         return connIdx;
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

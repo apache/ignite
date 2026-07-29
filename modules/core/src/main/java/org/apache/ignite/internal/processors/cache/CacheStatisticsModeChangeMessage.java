@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -30,6 +31,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Cache statistics mode change discovery message.
  */
+@UseJdkMarshaller
 public class CacheStatisticsModeChangeMessage extends DiscoveryCustomMessage {
     /** Initial message flag mask. */
     private static final byte INITIAL_MSG_MASK = 0x01;

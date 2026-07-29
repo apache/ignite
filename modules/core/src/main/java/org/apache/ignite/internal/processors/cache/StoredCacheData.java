@@ -24,6 +24,7 @@ import org.apache.ignite.cdc.CdcCacheEvent;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -43,6 +44,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
  * <p>
  * All changes must be made with the respect of RU rules.
  */
+@UseJdkMarshaller
 public class StoredCacheData implements Serializable, CdcCacheEvent, Message {
     /** */
     private static final long serialVersionUID = 0L;

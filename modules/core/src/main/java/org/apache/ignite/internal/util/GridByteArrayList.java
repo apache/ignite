@@ -24,6 +24,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Arrays;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -32,6 +33,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /**
  * Re-sizable array implementation of the byte list (eliminating auto-boxing of primitive byte type).
  */
+@UseJdkMarshaller
 public class GridByteArrayList implements Message, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;

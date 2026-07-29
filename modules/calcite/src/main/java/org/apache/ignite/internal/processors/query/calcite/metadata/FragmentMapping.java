@@ -24,6 +24,7 @@ import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -33,6 +34,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  *
  */
+@UseJdkMarshaller
 public class FragmentMapping implements Message {
     /** */
     @Order(0)

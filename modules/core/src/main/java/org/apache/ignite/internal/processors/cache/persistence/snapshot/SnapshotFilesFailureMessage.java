@@ -19,11 +19,13 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Message indicating a failure occurred during processing snapshot files request.
  */
+@UseJdkMarshaller
 public class SnapshotFilesFailureMessage extends AbstractSnapshotMessage {
     /** Exception message which is occurred during snapshot request processing. */
     @Order(0)

@@ -19,12 +19,14 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Message that holds a transaction message and incremental snapshot ID.
  */
+@UseJdkMarshaller
 public class IncrementalSnapshotAwareMessage extends GridCacheMessage {
     /** Original transaction message. */
     @Order(0)

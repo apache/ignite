@@ -22,8 +22,10 @@ import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.internal.DeferredUnmarshalMessage;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 
 /** */
+@UseJdkMarshaller
 public class QueryBatchMessage implements DeferredUnmarshalMessage, ExecutionContextAware {
     /** */
     @Order(0)

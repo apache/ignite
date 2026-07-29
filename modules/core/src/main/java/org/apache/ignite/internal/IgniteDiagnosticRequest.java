@@ -31,6 +31,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
+@UseBinaryMarshaller
 public class IgniteDiagnosticRequest implements Message {
     /** */
     @Order(0)

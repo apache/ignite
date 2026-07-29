@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.marshaller;
 
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -28,6 +29,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * If any nodes were waiting for this mapping to be accepted they will be unblocked on receiving this message.
  */
+@UseJdkMarshaller
 public class MappingAcceptedMessage extends DiscoveryCustomMessage {
     /** */
     @Order(0)

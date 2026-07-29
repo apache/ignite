@@ -19,12 +19,14 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Map;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** */
+@UseJdkMarshaller
 public class SnapshotPartitionsVerifyHandlerResponse implements Message {
     /** */
     @Order(0)

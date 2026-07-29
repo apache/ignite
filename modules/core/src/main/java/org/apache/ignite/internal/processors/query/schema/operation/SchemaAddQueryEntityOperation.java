@@ -21,12 +21,14 @@ import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.processors.query.schema.message.QueryEntityExMessage;
 import org.apache.ignite.internal.processors.query.schema.message.QueryEntityMessage;
 import org.apache.ignite.internal.util.typedef.F;
 
 /** Operation, which enables indexing on cache operation. */
+@UseJdkMarshaller
 public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation {
     /** Query entities messages. */
     @Order(0)

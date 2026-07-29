@@ -20,12 +20,14 @@ package org.apache.ignite.internal.processors.query.stat.messages;
 import java.io.Serializable;
 import java.util.Map;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.processors.query.stat.StatisticsType;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Statistics for some object (index or table) in database.
  */
+@UseJdkMarshaller
 public class StatisticsObjectData implements Message, Serializable {
     /** */
     private static final long serialVersionUID = 0L;

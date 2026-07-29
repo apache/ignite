@@ -21,11 +21,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
+@UseJdkMarshaller
 public class NodeEncryptionKeys implements Message {
     /** Known i.e. stored in {@code ReadWriteMetastorage} keys from node (in compatible format). */
     @Order(0)

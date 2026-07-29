@@ -22,6 +22,7 @@ import java.util.Comparator;
 import java.util.function.Function;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -37,6 +38,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  * @see ExecutionContext#transactionChanges(int, int[], Function, Comparator)
  * @see QueryStartRequest#queryTransactionEntries()
  */
+@UseJdkMarshaller
 public class QueryTxEntry implements Message, CacheIdAware {
     /** Cache id. */
     @Order(0)

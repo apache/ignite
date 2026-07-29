@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
@@ -26,6 +27,7 @@ import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
  * The difference from {@link TcpDiscoveryStatusCheckMessage} is that this message is sent to the next node
  * which directly replies to the sender without message re-translation to the coordinator.
  */
+@UseJdkMarshaller
 public class TcpDiscoveryConnectionCheckMessage extends TcpDiscoveryAbstractMessage {
     /**
      * Default constructor for {@link MessageFactory}.

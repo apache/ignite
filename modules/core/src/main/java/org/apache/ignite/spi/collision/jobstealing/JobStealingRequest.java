@@ -18,12 +18,14 @@
 package org.apache.ignite.spi.collision.jobstealing;
 
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Job stealing request.
  */
+@UseJdkMarshaller
 public class JobStealingRequest implements Message {
     /** Delta. */
     @Order(0)

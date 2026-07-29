@@ -20,12 +20,14 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Message telling joining node that it has loopback problem (misconfiguration).
  * This means that remote node is configured to use loopback address, but joining node is not, or vise versa.
  */
+@UseJdkMarshaller
 public class TcpDiscoveryLoopbackProblemMessage extends TcpDiscoveryAbstractMessage {
     /** Remote node addresses. */
     @Order(0)

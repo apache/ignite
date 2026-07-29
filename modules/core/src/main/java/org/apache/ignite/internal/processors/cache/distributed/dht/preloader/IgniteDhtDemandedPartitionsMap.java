@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -33,6 +34,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Map of partitions demanded during rebalancing.
  */
+@UseJdkMarshaller
 public class IgniteDhtDemandedPartitionsMap implements Serializable, Message {
     /** */
     private static final long serialVersionUID = 0L;

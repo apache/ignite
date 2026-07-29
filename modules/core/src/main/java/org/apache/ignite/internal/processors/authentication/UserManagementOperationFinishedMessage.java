@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.authentication;
 
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -26,6 +27,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  * Message indicating that user operation is finished locally on the node.
  * Server nodes send this message to coordinator when the user operation is finished.
  */
+@UseJdkMarshaller
 public class UserManagementOperationFinishedMessage implements Message {
     /** Operation Id. */
     @Order(0)

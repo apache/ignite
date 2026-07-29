@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareRequest;
@@ -40,6 +41,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Near transaction prepare request to primary node. 'Near' means 'Initiating node' here, not 'Near Cache'.
  */
+@UseJdkMarshaller
 public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest implements MarshallableMessage {
     /** */
     private static final int NEAR_FLAG_MASK = 0x01;

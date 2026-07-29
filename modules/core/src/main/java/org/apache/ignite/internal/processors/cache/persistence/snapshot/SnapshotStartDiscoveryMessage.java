@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -26,6 +27,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.START_SNAPSHOT;
 
 /** Snapshot operation start message. */
+@UseJdkMarshaller
 public class SnapshotStartDiscoveryMessage extends InitMessage<SnapshotOperationRequest> {
     /** */
     @Order(0)

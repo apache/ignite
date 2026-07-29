@@ -18,11 +18,13 @@
 package org.apache.ignite.internal.cache.query.index.sorted;
 
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Defines a signle index key.
  */
+@UseJdkMarshaller
 public class IndexKeyDefinition implements Message {
     /** Index key type. */
     @Order(0)

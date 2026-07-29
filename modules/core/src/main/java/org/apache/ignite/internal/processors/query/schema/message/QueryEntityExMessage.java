@@ -19,9 +19,11 @@ package org.apache.ignite.internal.processors.query.schema.message;
 
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
 
 /** Message for {@link QueryEntityEx} transfer. */
+@UseJdkMarshaller
 public class QueryEntityExMessage extends QueryEntityMessage {
     /** Whether to preserve order specified by 'keyFields' or not. */
     @Order(0)

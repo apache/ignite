@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -34,6 +35,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Lock request message.
  */
+@UseBinaryMarshaller
 public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     /** Skip store flag bit mask. */
     private static final int SKIP_STORE_FLAG_MASK = 0x01;

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.twostep.messages;
 
 import java.util.Collection;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -26,6 +27,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /**
  * Next page response.
  */
+@UseJdkMarshaller
 public class GridQueryNextPageResponse implements Message {
     /** */
     @Order(0)

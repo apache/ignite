@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -29,6 +30,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Snapshot operation end request for {@link DistributedProcess.DistributedProcessType#START_SNAPSHOT} initiate message.
  */
+@UseJdkMarshaller
 public class SnapshotOperationRequest extends AbstractSnapshotOperationRequest {
     /** Operational node ID. */
     @Order(0)

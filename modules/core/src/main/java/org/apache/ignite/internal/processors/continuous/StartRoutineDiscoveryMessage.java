@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -31,6 +32,7 @@ import static org.apache.ignite.internal.processors.continuous.StartRoutineDisco
 /**
  * Discovery message used for Continuous Query registration.
  */
+@UseJdkMarshaller
 public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
     /** Discovery message mode. */
     enum Mode {

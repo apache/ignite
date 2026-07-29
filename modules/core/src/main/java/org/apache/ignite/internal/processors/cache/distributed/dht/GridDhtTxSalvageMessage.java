@@ -18,10 +18,12 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /** Salvage tx. */
+@UseJdkMarshaller
 public class GridDhtTxSalvageMessage extends GridCacheMessage {
     /** */
     @Order(0)

@@ -19,12 +19,14 @@ package org.apache.ignite.internal.processors.query.stat.messages;
 
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Response for statistics request.
  */
+@UseJdkMarshaller
 public class StatisticsResponse implements Message {
     /** Request id. */
     @Order(0)

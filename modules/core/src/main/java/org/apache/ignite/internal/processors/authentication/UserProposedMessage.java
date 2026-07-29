@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.authentication;
 
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -32,6 +33,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * {@link UserAcceptedMessage} is sent as an acknowledgement that operation is finished on the all nodes of the cluster.
  */
+@UseJdkMarshaller
 public class UserProposedMessage extends DiscoveryServerOnlyCustomMessage {
     /** */
     @Order(0)

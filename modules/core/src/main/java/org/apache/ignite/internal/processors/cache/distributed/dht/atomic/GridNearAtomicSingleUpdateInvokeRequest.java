@@ -26,6 +26,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.DeployableMessage;
@@ -45,6 +46,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 /**
  *
  */
+@UseBinaryMarshaller
 public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingleUpdateRequest
     implements MarshallableMessage, DeployableMessage {
     /** Optional arguments for entry processor. */

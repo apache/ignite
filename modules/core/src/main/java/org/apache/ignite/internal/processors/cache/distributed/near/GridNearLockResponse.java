@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockResponse;
@@ -33,6 +34,7 @@ import org.jetbrains.annotations.Nullable;
  * Near cache lock response.
  */
 @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+@UseJdkMarshaller
 public class GridNearLockResponse extends GridDistributedLockResponse {
     /** Pending versions that are less than {@link #version()}. */
     @GridToStringInclude

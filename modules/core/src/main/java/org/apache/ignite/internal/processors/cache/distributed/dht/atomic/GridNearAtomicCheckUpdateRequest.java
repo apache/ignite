@@ -18,12 +18,14 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
  */
+@UseJdkMarshaller
 public class GridNearAtomicCheckUpdateRequest extends GridCacheIdMessage {
     /** Cache message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();

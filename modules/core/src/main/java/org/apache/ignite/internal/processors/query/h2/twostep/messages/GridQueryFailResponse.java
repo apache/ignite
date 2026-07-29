@@ -20,12 +20,14 @@ package org.apache.ignite.internal.processors.query.h2.twostep.messages;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.QueryRetryException;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Error message.
  */
+@UseJdkMarshaller
 public class GridQueryFailResponse implements Message {
     /** General error failure type. */
     public static final byte GENERAL_ERROR = 0;

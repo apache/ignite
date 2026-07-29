@@ -31,6 +31,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
@@ -47,6 +48,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * All changes must be made with the respect of RU rules.
  */
+@UseJdkMarshaller
 public class SnapshotMetadata implements Message, Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;

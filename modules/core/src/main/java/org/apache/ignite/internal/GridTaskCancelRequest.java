@@ -24,6 +24,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /**
  * Request for cancelling tasks.
  */
+@UseJdkMarshaller
 public class GridTaskCancelRequest implements Message {
     /** */
     @Order(0)

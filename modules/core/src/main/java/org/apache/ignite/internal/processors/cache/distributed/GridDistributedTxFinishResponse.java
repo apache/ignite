@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -29,6 +30,7 @@ import org.apache.ignite.lang.IgniteUuid;
 /**
  * Transaction finish response.
  */
+@UseJdkMarshaller
 public class GridDistributedTxFinishResponse extends GridCacheMessage {
     /** */
     @Order(0)

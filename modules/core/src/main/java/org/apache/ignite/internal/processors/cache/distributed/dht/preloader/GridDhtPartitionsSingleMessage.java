@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Compress;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -39,6 +40,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * Sent in response to {@link GridDhtPartitionsSingleRequest} and during processing partitions exchange future.
  */
+@UseJdkMarshaller
 public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMessage implements MarshallableMessage {
     /** Local partitions. */
     @Order(0)

@@ -20,12 +20,14 @@ package org.apache.ignite.internal.processors.marshaller;
 import java.io.Serializable;
 import java.util.Objects;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Contains mapped class name and boolean flag showing whether this mapping was accepted by other nodes or not.
  */
+@UseJdkMarshaller
 public final class MappedName implements Serializable, Message {
     /** */
     private static final long serialVersionUID = 0L;

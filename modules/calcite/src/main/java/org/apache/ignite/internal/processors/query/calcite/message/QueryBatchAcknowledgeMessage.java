@@ -19,10 +19,12 @@ package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 
 /**
  *
  */
+@UseJdkMarshaller
 public class QueryBatchAcknowledgeMessage implements ExecutionContextAware {
     /** */
     @Order(0)

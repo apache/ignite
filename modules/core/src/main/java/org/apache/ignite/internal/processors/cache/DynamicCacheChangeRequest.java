@@ -25,6 +25,7 @@ import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -35,6 +36,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Cache start/stop request.
  */
+@UseJdkMarshaller
 public class DynamicCacheChangeRequest implements Message, Serializable {
     /** */
     private static final long serialVersionUID = 0L;

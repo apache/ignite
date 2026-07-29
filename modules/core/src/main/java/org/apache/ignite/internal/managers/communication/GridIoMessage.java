@@ -21,6 +21,7 @@ import org.apache.ignite.internal.ExecutorAwareMessage;
 import org.apache.ignite.internal.GridTopicMessage;
 import org.apache.ignite.internal.NioField;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage;
@@ -33,6 +34,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Wrapper for all grid messages.
  */
+@UseJdkMarshaller
 public class GridIoMessage implements Message, MessageWrapper {
     /** */
     public static final Integer STRIPE_DISABLED_PART = Integer.MIN_VALUE;

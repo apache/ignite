@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.internal.DeferredUnmarshalMessage;
 import org.apache.ignite.internal.GridTopicMessage;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -36,6 +37,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
+@UseJdkMarshaller
 public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAware {
     /** */
     @Order(0)

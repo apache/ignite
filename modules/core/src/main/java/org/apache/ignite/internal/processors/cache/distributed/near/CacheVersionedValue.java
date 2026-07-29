@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -28,6 +29,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /**
  * Cache object and version.
  */
+@UseJdkMarshaller
 public class CacheVersionedValue implements Message, CacheIdAware {
     /** Value. */
     @Order(0)

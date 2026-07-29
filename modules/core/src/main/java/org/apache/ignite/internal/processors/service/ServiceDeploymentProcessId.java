@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.service;
 import java.io.Serializable;
 import java.util.Objects;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -30,6 +31,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Service deployment process' identifier.
  */
+@UseJdkMarshaller
 public class ServiceDeploymentProcessId implements Message, Serializable {
     /** */
     private static final long serialVersionUID = 0L;

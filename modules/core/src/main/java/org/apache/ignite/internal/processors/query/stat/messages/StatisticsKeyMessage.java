@@ -21,12 +21,14 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Key, describing the object of statistics. For example: table with some columns.
  */
+@UseJdkMarshaller
 public class StatisticsKeyMessage implements Message, Serializable {
     /** */
     private static final long serialVersionUID = 0L;

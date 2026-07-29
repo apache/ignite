@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.authentication;
 
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -25,6 +26,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /**
  * Message is sent from client to coordinator node when a user needs to authorize on client node.
  */
+@UseJdkMarshaller
 public class UserAuthenticateRequestMessage implements Message {
     /** User name. */
     @Order(0)

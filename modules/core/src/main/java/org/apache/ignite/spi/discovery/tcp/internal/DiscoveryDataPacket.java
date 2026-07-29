@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.Compress;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -40,6 +41,7 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
  * Carries discovery data in form of {@link Message}
  * and allows convenient way of converting it to and from {@link DiscoveryDataBag} objects.
  */
+@UseJdkMarshaller
 public class DiscoveryDataPacket implements Message {
     /** */
     @Order(0)

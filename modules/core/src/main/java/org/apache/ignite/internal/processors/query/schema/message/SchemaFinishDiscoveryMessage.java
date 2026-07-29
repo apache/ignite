@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.schema.message;
 
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -26,6 +27,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Schema change finish discovery message.
  */
+@UseJdkMarshaller
 public class SchemaFinishDiscoveryMessage extends SchemaAbstractDiscoveryMessage {
     /** No-op flag. */
     @Order(0)

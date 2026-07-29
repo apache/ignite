@@ -25,11 +25,13 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /** */
+@UseJdkMarshaller
 public class ClusterCacheGroupRecoveryData implements Externalizable, Message {
     /** */
     private static final long serialVersionUID = 0L;

@@ -18,12 +18,14 @@
 package org.apache.ignite.internal.processors.rollingupgrade.feature;
 
 import org.apache.ignite.internal.IgniteVersionUtils;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.lang.IgniteProductVersion;
 
 /**
  * Represents the set of {@link IgniteFeature}s associated with Ignite core functionality.
  * Its name is always {@link IgniteCoreFeature#COMPONENT_NAME}.
  */
+@UseJdkMarshaller
 public class IgniteCoreFeatureSet extends IgniteComponentFeatureSet {
     /** */
     private static final long serialVersionUID = 0L;

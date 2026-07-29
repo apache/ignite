@@ -20,6 +20,7 @@ package org.apache.ignite.internal.thread.context;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 import static org.apache.ignite.internal.thread.context.OperationContextDispatcher.MAX_ATTRS_CNT;
@@ -29,6 +30,7 @@ import static org.apache.ignite.internal.thread.context.OperationContextDispatch
  *
  * @see OperationContextDispatcher
  */
+@UseJdkMarshaller
 public class OperationContextSnapshotMessage implements Message {
     /** Values of operation context attributes. */
     @Order(0)

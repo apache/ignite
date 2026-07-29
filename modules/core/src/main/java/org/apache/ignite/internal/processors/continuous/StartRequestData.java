@@ -23,6 +23,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteDeploymentCheckedException;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryHandler;
@@ -34,6 +35,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /**
  * Start request data.
  */
+@UseJdkMarshaller
 public class StartRequestData implements Message {
     /** Node filter. */
     private IgnitePredicate<ClusterNode> nodeFilter;
