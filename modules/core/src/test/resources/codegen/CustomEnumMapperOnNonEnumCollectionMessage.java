@@ -19,17 +19,13 @@ package org.apache.ignite.internal;
 
 import java.util.Collection;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.transactions.TransactionIsolation;
 
-public class CustomMapperEnumFieldsMessage implements Message {
+public class CustomEnumMapperOnNonEnumCollectionMessage implements Message {
     @Order(0)
-    @CustomMapper("org.apache.ignite.internal.TransactionIsolationEnumMapper")
-    TransactionIsolation txMode;
+    @CustomMapper("org.apache.ignite.internal.CustomEnumMapper")
+    private Collection<Integer> intColField;
 
-    @Order(1)
-    @CustomMapper("org.apache.ignite.internal.TransactionIsolationEnumMapper")
-    Collection<Collection<TransactionIsolation>> isolations;
-
+    @Override
     public short directType() {
         return 0;
     }

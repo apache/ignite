@@ -293,6 +293,43 @@ public class MessageProcessorTest {
     }
 
     /**
+     * Negative test for CustomMapper annotation verifying an error is thrown by codegeneration tool if
+     * the annotation is used with a collection, which does not store enums.
+     */
+    @Test
+    public void testCustomMapperCannotBeUsedOnNonEnumCollection() {
+        Compilation compilation = compile("CustomEnumMapperOnArrayFieldMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining(CUSTOM_MAPPER_ERROR);
+    }
+
+    /**
+     * Negative test for CustomMapper annotation verifying an error is thrown by codegeneration tool if
+     * the annotation is used with a collection, which does not store enums.
+     */
+    @Test
+    public void testCustomMapperCannotBeUsedOnNonEnumMap() {
+        Compilation compilation = compile("CustomEnumMapperOnNonEnumMapMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining(CUSTOM_MAPPER_ERROR);
+    }
+
+
+    /**
+     * Negative test for enum mapper verifying an error is thrown by codegeneration tool if
+     * the annotation is used with a collection with nested enums of different type.
+     */
+    @Test
+    public void testEnumMapperCannotBeTwoEnums() {
+        Compilation compilation = compile("TwoDifferentEnumsInCollectionMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("Multiple enums of different types are not supported for a single field");
+    }
+
+    /**
      * Positive test for custom EnumMapper implementation for enum field: codegeneration tool
      * generates a serializer using provided EnumMapper implementation.
      * Generated serializer compiles successfully.

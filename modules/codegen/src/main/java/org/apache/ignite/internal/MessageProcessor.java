@@ -352,27 +352,25 @@ public class MessageProcessor extends AbstractProcessor {
 
             return true;
         }
-        else {
-            if (assignableFrom(erasedType(type), type(Collection.class.getName()))) {
-                List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
+        else if (assignableFrom(erasedType(type), type(Collection.class.getName()))) {
+            List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
 
-                assert typeArgs.size() == 1 : type.toString();
+            assert typeArgs.size() == 1 : type.toString();
 
-                TypeMirror typeArg = typeArgs.get(0);
+            TypeMirror typeArg = typeArgs.get(0);
 
-                return validateEnumType(msgClsName, field, typeArg, custMappAnn);
-            }
-            else if (assignableFrom(erasedType(type), type(Map.class.getName()))) {
-                List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
+            return validateEnumType(msgClsName, field, typeArg, custMappAnn);
+        }
+        else if (assignableFrom(erasedType(type), type(Map.class.getName()))) {
+            List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
 
-                assert typeArgs.size() == 2 : type.toString();
+            assert typeArgs.size() == 2 : type.toString();
 
-                TypeMirror keyType = typeArgs.get(0);
-                TypeMirror valType = typeArgs.get(1);
+            TypeMirror keyType = typeArgs.get(0);
+            TypeMirror valType = typeArgs.get(1);
 
-                return validateEnumType(msgClsName, field, keyType, custMappAnn) |
-                    validateEnumType(msgClsName, field, valType, custMappAnn);
-            }
+            return validateEnumType(msgClsName, field, keyType, custMappAnn) |
+                validateEnumType(msgClsName, field, valType, custMappAnn);
         }
 
         return false;

@@ -517,7 +517,7 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
 
             List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
 
-            assert typeArgs.size() == 2;
+            assert typeArgs.size() == 2 : type.toString();
 
             return "new MessageMapType(" +
                 messageCollectionItemTypeDescriptor(typeArgs.get(0), field) + ", " +
@@ -529,7 +529,7 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
 
             List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
 
-            assert typeArgs.size() == 1;
+            assert typeArgs.size() == 1 : type.toString();
 
             return "new MessageCollectionType(" +
                 messageCollectionItemTypeDescriptor(typeArgs.get(0), field) + ", " +
@@ -542,7 +542,7 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
             boolean custMapper = field.getAnnotation(CustomMapper.class) != null;
 
             String encoder = (custMapper ? prefix + "Mapper" : "DefaultEnumMapper.INSTANCE") + "::encode";
-            String decoder = custMapper ? prefix + "Mapper::decode)" :
+            String decoder = custMapper ? prefix + "Mapper::decode" :
                 "b -> DefaultEnumMapper.INSTANCE.decode(" + prefix + "Vals, b)";
 
             return String.format("new MessageEnumType<>(%s, %s)", encoder, decoder);
