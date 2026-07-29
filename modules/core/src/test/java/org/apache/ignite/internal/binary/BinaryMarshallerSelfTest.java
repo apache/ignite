@@ -3805,6 +3805,34 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         assertArrayEquals(fieldNames, restoredMeta.fields().toArray());
     }
 
+    /** Tests that metadata merge appends fields without changing the previously registered order. */
+    @Test
+    public void testMetadataFieldOrderAfterMerge() {
+        Map<String, BinaryFieldMetadata> oldFields = new LinkedHashMap<>();
+
+        oldFields.put("field9", new BinaryFieldMetadata(GridBinaryMarshaller.INT, 9));
+        oldFields.put("field8", new BinaryFieldMetadata(GridBinaryMarshaller.INT, 8));
+
+        Map<String, BinaryFieldMetadata> newFields = new LinkedHashMap<>();
+
+        newFields.put("field0", new BinaryFieldMetadata(GridBinaryMarshaller.INT, 0));
+
+        BinaryMetadata oldMeta = new BinaryMetadata(1, "type", oldFields, null, false, null);
+        BinaryMetadata newMeta = new BinaryMetadata(1, "type", newFields, null, false, null);
+        boolean prevFieldsSortedOrder = BinaryUtils.FIELDS_SORTED_ORDER;
+
+        BinaryUtils.FIELDS_SORTED_ORDER = true;
+
+        try {
+            BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(oldMeta, newMeta);
+
+            assertArrayEquals(new String[] {"field9", "field8", "field0"}, mergedMeta.fields().toArray());
+        }
+        finally {
+            BinaryUtils.FIELDS_SORTED_ORDER = prevFieldsSortedOrder;
+        }
+    }
+
     /**
      * @param obj Instance of the BinaryObjectImpl to offheap marshalling.
      * @param marsh Binary marshaller.

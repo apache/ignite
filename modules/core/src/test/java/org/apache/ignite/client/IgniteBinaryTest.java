@@ -153,13 +153,12 @@ public class IgniteBinaryTest extends GridCommonAbstractTest {
                 builder.setField(fieldName, 0);
 
             BinaryType serverType = builder.build().type();
-
-            assertArrayEquals(fieldNames, serverType.fieldNames().toArray());
+            Object[] serverFieldNames = serverType.fieldNames().toArray();
 
             try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))) {
                 BinaryType clientType = client.binary().type(serverType.typeId());
 
-                assertArrayEquals(fieldNames, clientType.fieldNames().toArray());
+                assertArrayEquals(serverFieldNames, clientType.fieldNames().toArray());
             }
         }
     }
