@@ -43,6 +43,10 @@ public interface BinaryType {
     /**
      * Gets collection of all field names for this binary type in the order in which the fields were initially
      * registered.
+     * <p>
+     * Older Ignite versions did not preserve field registration order. If such a version created or processed the
+     * metadata, the original order may already be lost. In that case, this method returns the order available in the
+     * metadata.
      *
      * @return Collection of all field names for this binary type.
      */
