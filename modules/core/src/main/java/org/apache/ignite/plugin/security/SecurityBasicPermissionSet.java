@@ -23,8 +23,10 @@ import java.io.ObjectOutputStream;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -45,24 +47,29 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
 
     /** Cache permissions. */
     @GridToStringInclude
-    private Map<String, Collection<SecurityPermission>> cachePermissions = new HashMap<>();
+    @Order(0)
+    Map<String, Collection<SecurityPermission>> cachePermissions = new HashMap<>();
 
     /** Task permissions. */
     @GridToStringInclude
-    private Map<String, Collection<SecurityPermission>> taskPermissions = new HashMap<>();
+    @Order(1)
+    Map<String, Collection<SecurityPermission>> taskPermissions = new HashMap<>();
 
     /** Service permissions. */
     @GridToStringInclude
-    private transient Map<String, Collection<SecurityPermission>> servicePermissions = isSecurityCompatibilityMode()
+    @Order(2)
+    transient Map<String, Collection<SecurityPermission>> servicePermissions = isSecurityCompatibilityMode()
             ? compatibleServicePermissions()
             : new HashMap<String, Collection<SecurityPermission>>();
 
     /** System permissions. */
     @GridToStringInclude
-    private Collection<SecurityPermission> systemPermissions;
+    @Order(3)
+    Collection<SecurityPermission> systemPermissions;
 
     /** Default allow all. */
-    private boolean dfltAllowAll;
+    @Order(4)
+    boolean dfltAllowAll;
 
     /**
      * Setter for set cache permission map.
@@ -72,7 +79,7 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
     public void setCachePermissions(Map<String, Collection<SecurityPermission>> cachePermissions) {
         A.notNull(cachePermissions, "cachePermissions");
 
-        this.cachePermissions = cachePermissions;
+        this.cachePermissions = new HashMap<>(cachePermissions);
     }
 
     /**
@@ -83,7 +90,7 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
     public void setTaskPermissions(Map<String, Collection<SecurityPermission>> taskPermissions) {
         A.notNull(taskPermissions, "taskPermissions");
 
-        this.taskPermissions = taskPermissions;
+        this.taskPermissions = new HashMap<>(taskPermissions);
     }
 
     /**
@@ -94,7 +101,7 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
     public void setServicePermissions(Map<String, Collection<SecurityPermission>> servicePermissions) {
         A.notNull(taskPermissions, "servicePermissions");
 
-        this.servicePermissions = servicePermissions;
+        this.servicePermissions = new HashMap<>(servicePermissions);
     }
 
     /**
@@ -103,7 +110,7 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
      * @param systemPermissions System permissions.
      */
     public void setSystemPermissions(Collection<SecurityPermission> systemPermissions) {
-        this.systemPermissions = systemPermissions;
+        this.systemPermissions = new HashSet<>(systemPermissions);
     }
 
     /**

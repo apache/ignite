@@ -2138,6 +2138,8 @@ public class DirectByteBufferStream {
             case ENUM:
                 writeByte(((MessageEnumType)type).encode((Enum<?>)val));
 
+                break;
+
             case MSG:
                 writeMessage((Message)val, writer);
 
