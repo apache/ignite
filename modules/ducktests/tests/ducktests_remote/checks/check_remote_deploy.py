@@ -40,6 +40,13 @@ def _dist(tmp_path, name="ignite-dev", body="binary"):
     return root
 
 
+def _staging_of(transport):
+    """:return: the staging path a recorded deploy created on ``transport``."""
+    prepared = [s for s in transport.scripts if "mkdir -p" in s]
+    assert prepared, "the deploy never got as far as making a staging directory"
+    return prepared[0].split("mkdir -p ")[1].strip()
+
+
 class CheckManifest:
     """Skip-if-unchanged."""
 
@@ -104,6 +111,96 @@ class CheckSkipLogic:
         script = deploy.swap_script("/opt/.x.tmp.1", "/opt/x", True, "max")
         assert script.count("sudo -n ") >= 3
         assert "chown -R max" in script
+
+
+class CheckStagingLifecycle:
+    """
+    A staging directory holds a whole copy of the distribution and hides behind a dot.
+
+    Deploys of a gigabyte tree to fourteen hosts have failed after the transfer and left
+    one of these per attempt per host, where nothing looks for them.
+    """
+
+    @staticmethod
+    def _ctx(dist_root, transport):
+        class _Args:  # pylint: disable=too-few-public-methods
+            force = False
+            sudo = False
+            owner = None
+            checksum = False
+            via = None
+
+        class _Console:  # pylint: disable=too-few-public-methods
+            verbose = False
+
+            @staticmethod
+            def detail(_message):
+                """Swallow the traced command line."""
+
+        class _Ctx:  # pylint: disable=too-few-public-methods
+            args = _Args()
+            console = _Console()
+            config = {"deploy": DEFAULTS["deploy"]}
+            dry_run = False
+            dist_root = None
+
+            @staticmethod
+            def worker(_node):
+                return transport
+
+        ctx = _Ctx()
+        ctx.dist_root = dist_root
+        return ctx
+
+    def check_preparing_sweeps_what_an_earlier_attempt_left(self):
+        sweep = deploy.staging_prefix("/opt", "ignite-dev")
+        script = deploy.prepare_script(sweep + "abc123", False, sweep=sweep)
+        assert "rm -rf -- /opt/.ignite-dev.tmp.*" in script, \
+            "every attempt picks a new suffix, so only a glob reclaims the old ones"
+        assert script.index("rm -rf") < script.index("mkdir -p")
+
+    def check_the_sweep_is_scoped_to_one_distribution(self):
+        script = deploy.prepare_script("/opt/.ignite-dev.tmp.abc", False,
+                                       sweep=deploy.staging_prefix("/opt", "ignite-dev"))
+        for line in script.splitlines():
+            if line.startswith("rm -rf"):
+                assert "ignite-dev" in line, "a glob here would empty the install root"
+
+    def check_a_name_needing_quotes_still_globs(self):
+        sweep = deploy.staging_prefix("/opt", "fork 2.8")
+        script = deploy.prepare_script(sweep + "abc", False, sweep=sweep)
+        assert "'/opt/.fork 2.8.tmp.'*" in script, \
+            "the star must stay outside the quotes or nothing is swept"
+
+    def check_a_failed_transfer_takes_its_staging_directory_with_it(self, tmp_path):
+        root = _dist(tmp_path)
+        transport = FakeTransport()
+        transport.when("tar -xzf", returncode=1, stderr="unexpected end of file")
+        ctx = self._ctx(root, transport)
+        payload = deploy._Payload(root, tmp_path / "p.tar.gz", ())  # noqa: SLF001
+
+        with pytest.raises(Exception):  # noqa: B017 - any failure must still clean up
+            deploy._deploy_to_host(  # noqa: SLF001
+                ctx, Node(host="w1"), "ignite-dev", "/opt/ignite-dev",
+                deploy.build_manifest(root), "{}", payload, None, None)
+
+        assert deploy.discard_script(_staging_of(transport), False) in transport.scripts, \
+            "the staging tree outlived the deploy that made it"
+
+    def check_a_successful_deploy_does_not_remove_the_swapped_tree(self, tmp_path):
+        root = _dist(tmp_path)
+        transport = FakeTransport()
+        ctx = self._ctx(root, transport)
+        payload = deploy._Payload(root, tmp_path / "p.tar.gz", ())  # noqa: SLF001
+
+        result = deploy._deploy_to_host(  # noqa: SLF001
+            ctx, Node(host="w1"), "ignite-dev", "/opt/ignite-dev",
+            deploy.build_manifest(root), "{}", payload, None, None)
+
+        assert result.status == CHANGED
+        assert any('mv -- "$staging" "$target"' in s for s in transport.scripts)
+        assert deploy.discard_script(_staging_of(transport), False) not in transport.scripts, \
+            "after the swap the staging path is the distribution; removing it deletes it"
 
 
 class CheckCleanAllowList:

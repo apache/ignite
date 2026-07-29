@@ -108,11 +108,12 @@ So on a twelve-host cluster where eleven already carry Java 17, exactly one uplo
 3. Create a staging directory beside the target, upload the archive into it, and unpack —
    with `--strip-components` set to whatever wraps the JDK home (1 for a stock Temurin
    tarball) and the decompression flag taken from the file's suffix.
-4. Verify `bin/java` exists in the staging tree; if not, remove the staging tree and fail.
+4. Verify `bin/java` exists in the staging tree; if not, fail.
 5. Write the manifest, then **swap** the staging tree into place and delete the old one.
 
 The staging-and-swap is `deploy`'s, reused rather than reimplemented: a half-extracted JDK
-that looks present is exactly as bad as a half-extracted distribution.
+that looks present is exactly as bad as a half-extracted distribution, and a staging tree
+that is not swapped in is discarded the same way.
 
 ### Archive formats
 

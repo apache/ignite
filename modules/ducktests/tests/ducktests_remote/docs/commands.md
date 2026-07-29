@@ -251,6 +251,12 @@ Per distribution, per host:
    delete the old tree. A half-copied distribution that looks present is worse than an
    absent one.
 
+A staging directory is `<install_root>/.<name>.tmp.<random>`, and holds a whole copy of
+the distribution until the swap. One that is never swapped in — a failed host, an
+interrupted run — is removed on the way out, and any left by an earlier attempt are swept
+before the next one starts. It is scoped to the distribution being deployed: `deploy
+ignite-dev` never touches `.ignite-2.17.0.tmp.*`.
+
 `--via HOST` uploads the payload once to an intermediate host and fans out from there.
 `deploy` prints the total bytes before it starts — on a twelve-host cluster a 300 MB
 distribution is 3.7 GB from a laptop — and suggests `--via` when that total is large.

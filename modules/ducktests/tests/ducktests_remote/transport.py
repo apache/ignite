@@ -615,10 +615,8 @@ def run_local_streaming(argv, *, on_output, host="local"):
     except FileNotFoundError as ex:
         raise TransportError("%s: %s" % (argv[0], ex)) from ex
 
-    errors = []
-    drain = threading.Thread(target=lambda: errors.append(_decode(process.stderr.read())),
-                             daemon=True)
-    drain.start()
+    errors = {}
+    drain = _drain(process.stderr, "stderr", errors)
 
     collected = []
     pending = ""
@@ -635,8 +633,7 @@ def run_local_streaming(argv, *, on_output, host="local"):
 
     process.wait()
     drain.join(timeout=5)
-    return Result(argv, process.returncode, "".join(collected),
-                  errors[0] if errors else "", host)
+    return Result(argv, process.returncode, "".join(collected), errors.get("stderr", ""), host)
 
 
 def _emit_lines(pending, on_output):
@@ -651,14 +648,44 @@ def _emit_lines(pending, on_output):
             on_output(line.strip())
 
 
+def _drain(pipe, key, into):
+    """:return: a started daemon thread reading ``pipe`` to EOF into ``into[key]``."""
+    def read():
+        try:
+            into[key] = _decode(pipe.read())
+        except (OSError, ValueError):
+            into[key] = ""
+    thread = threading.Thread(target=read, daemon=True)
+    thread.start()
+    return thread
+
+
 def _stream_to_stdin(argv, local_path, on_bytes, *, host):
-    """Feed a file into ``argv``'s stdin in chunks, reporting the running total."""
+    """
+    Feed a file into ``argv``'s stdin in chunks, reporting the running total.
+
+    Both output pipes are drained by threads for the whole transfer rather than collected
+    at the end by ``communicate``.  Two reasons, and the second one is why this function
+    does its own bookkeeping instead of writing four lines:
+
+    * Nothing would read them while a multi-gigabyte payload is being written, and an ssh
+      that says anything at all - a login banner, a host-key notice - fills its pipe and
+      wedges the write part way through, with no error and no end.
+    * ``communicate`` flushes stdin before closing it, and guards only ``BrokenPipeError``
+      while doing so.  A handle closed here would make that flush raise
+      ``ValueError('flush of closed file')`` - after the payload is already on the far
+      end, so a transfer that fully succeeded is reported as a failure.
+    """
     try:
         # pylint: disable=consider-using-with
         process = subprocess.Popen(  # noqa: S603 - argv is always a list, never a string
             argv, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     except FileNotFoundError as ex:
         raise TransportError("%s: %s" % (argv[0], ex)) from ex
+
+    output = {}
+    readers = [_drain(process.stdout, "stdout", output),
+               _drain(process.stderr, "stderr", output)]
 
     sent = 0
     try:
@@ -667,12 +694,22 @@ def _stream_to_stdin(argv, local_path, on_bytes, *, host):
                 process.stdin.write(block)
                 sent += len(block)
                 on_bytes(sent)
-        process.stdin.close()
     except (BrokenPipeError, OSError):
         # The far end died mid-transfer; its stderr says why, so fall through to wait().
         pass
-    _, stderr = process.communicate()
-    result = Result(argv, process.returncode, "", _decode(stderr), host)
+    finally:
+        # The close is what tells the remote `cat` that the file is over, so it has to
+        # happen even when the write above failed.
+        try:
+            process.stdin.close()
+        except (BrokenPipeError, OSError):
+            pass
+
+    process.wait()
+    for reader in readers:
+        reader.join(timeout=5)
+    result = Result(argv, process.returncode, output.get("stdout", ""),
+                    output.get("stderr", ""), host)
     return result.check()
 
 

@@ -15,8 +15,10 @@
 
 """Checks for the transport boundary, the import guard, and exit-code mapping."""
 
+import os
 import subprocess
 import sys
+import threading
 from pathlib import Path
 
 import pytest
@@ -225,3 +227,71 @@ class CheckWatchedTransfers:
         watch("      1,048,576  25%   12.34MB/s    0:00:12")
         watch("sending incremental file list")
         assert seen == [(1048576, 0.25)], "only meter lines count"
+
+
+class CheckStreamedUpload:
+    """
+    A watched upload really runs a child process, so these checks really run one too.
+
+    The path they cover broke in a way no mock could have shown: the payload reached the
+    far end intact and the transfer was then reported as failed, because ``communicate``
+    flushed a stdin handle the caller had already closed.  Nothing short of a live
+    subprocess sees that, and it is worth the second these take.
+    """
+
+    @staticmethod
+    def _child(body, *args):
+        return [sys.executable, "-c", body] + list(args)
+
+    def check_the_whole_payload_arrives_and_every_byte_is_reported(self, tmp_path):
+        source = tmp_path / "payload.bin"
+        source.write_bytes(os.urandom(3 * 1024 * 1024 + 17))
+        landed = tmp_path / "landed.bin"
+        seen = []
+        argv = self._child("import sys\n"
+                           "open(sys.argv[1], 'wb').write(sys.stdin.buffer.read())\n",
+                           str(landed))
+
+        result = transport_mod._stream_to_stdin(argv, source, seen.append, host="w1")
+
+        assert result.ok
+        assert landed.read_bytes() == source.read_bytes()
+        assert seen[-1] == source.stat().st_size, "the last report is the whole file"
+
+    def check_a_chatty_command_does_not_wedge_the_transfer(self, tmp_path):
+        # ssh talks on the way in - a login banner, a host-key notice - and its output
+        # pipe holds 64 KB.  With nobody draining it the child blocks on its own write
+        # while we block on ours, and the transfer stops for good at some arbitrary
+        # percentage.  Run it on a thread so a regression fails the check instead of
+        # hanging the suite.
+        source = tmp_path / "payload.bin"
+        source.write_bytes(b"x" * (2 * 1024 * 1024))
+        landed = tmp_path / "landed.bin"
+        argv = self._child("import sys\n"
+                           "sys.stderr.write('noise\\n' * 40000)\n"
+                           "sys.stderr.flush()\n"
+                           "open(sys.argv[1], 'wb').write(sys.stdin.buffer.read())\n",
+                           str(landed))
+
+        done = []
+        worker = threading.Thread(
+            target=lambda: done.append(
+                transport_mod._stream_to_stdin(argv, source, lambda sent: None, host="w1")),
+            daemon=True)
+        worker.start()
+        worker.join(timeout=60)
+
+        assert not worker.is_alive(), "the transfer deadlocked on an undrained output pipe"
+        assert done[0].ok and landed.stat().st_size == source.stat().st_size
+
+    def check_a_failing_command_reports_its_stderr(self, tmp_path):
+        source = tmp_path / "payload.bin"
+        source.write_bytes(b"payload")
+        argv = self._child("import sys\n"
+                           "sys.stderr.write('no such file or directory\\n')\n"
+                           "sys.exit(1)\n")
+
+        with pytest.raises(TransportError) as raised:
+            transport_mod._stream_to_stdin(argv, source, lambda sent: None, host="w1")
+
+        assert "no such file or directory" in str(raised.value)

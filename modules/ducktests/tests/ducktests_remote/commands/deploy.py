@@ -36,9 +36,15 @@ manifest was built from - rsync is handed that list as a file rather than its ow
 
 Long transfers report progress per host; see :mod:`ducktests_remote.progress`.
 
-:func:`build_manifest`, :func:`prepare_script`, :func:`swap_script` and :func:`human` are
-public because ``provision``'s ``jdk`` step delivers a JDK the same way and must not grow
-a second copy of the staging-and-swap logic.
+Nothing is written to the live path until the whole distribution is staged beside it, and
+a staging directory that is not swapped in is removed on the way out - including the
+leftovers of an earlier attempt, which carry a random suffix and a leading dot and would
+otherwise sit in the install root forever.
+
+:func:`build_manifest`, :func:`staging_prefix`, :func:`prepare_script`,
+:func:`discard_script`, :func:`swap_script` and :func:`human` are public because
+``provision``'s ``jdk`` step delivers a JDK the same way and must not grow a second copy
+of the staging-and-swap logic.
 """
 
 import hashlib
@@ -450,43 +456,55 @@ def _deploy_to_host(ctx, node, name, target, manifest, manifest_body, payload,
                           "%s is not writable by %s and --sudo was not passed"
                           % (install_root, node.user or "this account"))
 
-    staging = "%s/.%s.tmp.%s" % (install_root, name, uuid.uuid4().hex[:8])
+    sweep = staging_prefix(install_root, name)
+    staging = "%s%s" % (sweep, uuid.uuid4().hex[:8])
     used_rsync = False
     stats = None
+    swapped = False
 
-    if via_transport is not None:
-        progress.phase(node.host, "fanning out")
-        proxied = ProxiedTransport(name=node.host, via=via_transport, user=node.user,
-                                   port=node.port,
-                                   identity_file=node.identity_file,
-                                   staging_dir=ctx.config["deploy"]["staging_dir"],
-                                   dry_run=ctx.dry_run, verbose=ctx.console.verbose)
-        proxied.run_script(prepare_script(staging, ctx.args.sudo)).check()
-        proxied.push_archive(staged_on_via, staging)
-    elif file_list is not None and getattr(transport, "has_rsync", _no_rsync)():
-        outcome = _rsync_to_host(ctx, node, transport, payload.root, staging, target,
-                                 file_list, progress)
-        if isinstance(outcome, HostResult):
-            progress.done(node.host, "failed")
-            return outcome
-        used_rsync, stats = True, outcome
-    else:
-        transport.run_script(prepare_script(staging, ctx.args.sudo)).check()
-        remote_archive = "%s/.payload.tar.gz" % staging
-        archive = payload.archive()
-        progress.phase(node.host, "sending")
-        transport.upload_watched(archive, remote_archive,
-                                 on_bytes=_watcher(progress, node.host,
-                                                   os.path.getsize(archive)))
-        progress.phase(node.host, "extracting")
-        transport.run_script(
-            "set -eu\ntar -xzf %s -C %s\nrm -f -- %s\n"
-            % (shlex.quote(remote_archive), shlex.quote(staging),
-               shlex.quote(remote_archive))).check()
+    try:
+        if via_transport is not None:
+            progress.phase(node.host, "fanning out")
+            proxied = ProxiedTransport(name=node.host, via=via_transport, user=node.user,
+                                       port=node.port,
+                                       identity_file=node.identity_file,
+                                       staging_dir=ctx.config["deploy"]["staging_dir"],
+                                       dry_run=ctx.dry_run, verbose=ctx.console.verbose)
+            proxied.run_script(prepare_script(staging, ctx.args.sudo, sweep=sweep)).check()
+            proxied.push_archive(staged_on_via, staging)
+        elif file_list is not None and getattr(transport, "has_rsync", _no_rsync)():
+            outcome = _rsync_to_host(ctx, node, transport, payload.root, staging, target,
+                                     file_list, progress, sweep)
+            if isinstance(outcome, HostResult):
+                progress.done(node.host, "failed")
+                return outcome
+            used_rsync, stats = True, outcome
+        else:
+            transport.run_script(prepare_script(staging, ctx.args.sudo, sweep=sweep)).check()
+            remote_archive = "%s/.payload.tar.gz" % staging
+            archive = payload.archive()
+            progress.phase(node.host, "sending")
+            transport.upload_watched(archive, remote_archive,
+                                     on_bytes=_watcher(progress, node.host,
+                                                       os.path.getsize(archive)))
+            progress.phase(node.host, "extracting")
+            transport.run_script(
+                "set -eu\ntar -xzf %s -C %s\nrm -f -- %s\n"
+                % (shlex.quote(remote_archive), shlex.quote(staging),
+                   shlex.quote(remote_archive))).check()
 
-    progress.phase(node.host, "swapping")
-    transport.write_file(manifest_body, posixpath.join(staging, MANIFEST_NAME))
-    transport.run_script(swap_script(staging, target, ctx.args.sudo, ctx.args.owner)).check()
+        progress.phase(node.host, "swapping")
+        transport.write_file(manifest_body, posixpath.join(staging, MANIFEST_NAME))
+        transport.run_script(swap_script(staging, target, ctx.args.sudo,
+                                         ctx.args.owner)).check()
+        swapped = True
+    finally:
+        # A staging tree holds a whole copy of the distribution.  Once the swap has moved
+        # it into place there is nothing left at this path; before that, any way out of
+        # here - a failed host, a transport error, Ctrl-C - has to take it with it.
+        if not swapped:
+            transport.run_script(discard_script(staging, ctx.args.sudo), check=False)
+
     progress.done(node.host)
     if used_rsync:
         if stats:
@@ -508,7 +526,7 @@ def _watcher(progress, host, total):
 
 
 def _rsync_to_host(ctx, node, transport, local_root, staging, target, file_list,
-                   progress=None):
+                   progress=None, sweep=None):
     """
     :return: ``(files, bytes)`` transferred, ``None`` when ``--stats`` could not be read,
         or a failed :class:`HostResult`.
@@ -517,7 +535,7 @@ def _rsync_to_host(ctx, node, transport, local_root, staging, target, file_list,
     distribution when there is one to link against.
     """
     progress = progress or NullProgress()
-    transport.run_script(prepare_script(staging, ctx.args.sudo)).check()
+    transport.run_script(prepare_script(staging, ctx.args.sudo, sweep=sweep)).check()
     # Both display modes need the byte counts; only the display itself differs.
     watched = progress.watching
     argv = rsync_argv(transport, local_root, staging, files_from=file_list,
@@ -546,10 +564,38 @@ def _rsync_watcher(progress, host):
     return watch
 
 
-def prepare_script(staging, use_sudo):
+def staging_prefix(install_root, name):
+    """
+    :return: the path prefix shared by every staging directory for one distribution.
+
+    A random suffix is appended to it per attempt.  Keeping the prefix in one function is
+    what lets :func:`prepare_script` recognise the leftovers of an earlier attempt.
+    """
+    return "%s/.%s.tmp." % (install_root, name)
+
+
+def prepare_script(staging, use_sudo, sweep=None):
+    """
+    Make an empty staging directory to fill.
+
+    ``sweep`` is the path prefix every staging directory for this distribution shares.
+    Anything matching it is removed first: each attempt picks a fresh random suffix, so a
+    deploy killed between the transfer and the swap would otherwise leave a full copy of
+    the distribution behind that nothing ever looks at again - and a dot-prefixed name at
+    that, invisible to a plain ``ls``.
+    """
     sudo = "sudo -n " if use_sudo else ""
-    return "set -eu\n%(sudo)srm -rf -- %(staging)s\n%(sudo)smkdir -p %(staging)s\n" % {
+    script = "set -eu\n"
+    if sweep:
+        script += "%srm -rf -- %s*\n" % (sudo, shlex.quote(sweep))
+    return script + "%(sudo)srm -rf -- %(staging)s\n%(sudo)smkdir -p %(staging)s\n" % {
         "sudo": sudo, "staging": shlex.quote(staging)}
+
+
+def discard_script(staging, use_sudo):
+    """:return: a script removing a staging directory that will never be swapped in."""
+    return "set -eu\n%srm -rf -- %s\n" % ("sudo -n " if use_sudo else "",
+                                          shlex.quote(staging))
 
 
 def swap_script(staging, target, use_sudo, owner):

@@ -398,35 +398,44 @@ def _deliver_jdk(ctx, node, cfg, payload, progress=None):
                           "%s is not writable by %s and --sudo was not passed"
                           % (install_root, node.user or "this account"))
 
-    staging = "%s/.%s.tmp.%s" % (install_root, posixpath.basename(target),
-                                 uuid.uuid4().hex[:8])
-    transport.run_script(deploy.prepare_script(staging, ctx.args.sudo)).check()
+    sweep = deploy.staging_prefix(install_root, posixpath.basename(target))
+    staging = "%s%s" % (sweep, uuid.uuid4().hex[:8])
+    swapped = False
 
-    remote = "%s/.payload.tar" % staging
-    archive = payload.archive()
-    progress.phase(node.host, "sending")
-    total = os.path.getsize(archive)
-    transport.upload_watched(
-        archive, remote,
-        on_bytes=(lambda sent: progress.sent(node.host, sent, total))
-        if progress.watching else None)
-    progress.phase(node.host, "extracting")
-    transport.run_script(
-        "set -eu\ntar -x%sf %s -C %s%s\nrm -f -- %s\n"
-        % (payload.tar_flag(), shlex.quote(remote), shlex.quote(staging),
-           " --strip-components=%d" % payload.strip() if payload.strip() else "",
-           shlex.quote(remote))).check()
+    try:
+        transport.run_script(deploy.prepare_script(staging, ctx.args.sudo, sweep=sweep)).check()
 
-    check = transport.run(["test", "-x", "%s/bin/java" % staging], check=False)
-    if not check.ok:
-        transport.run(["rm", "-rf", "--", staging], check=False)
-        return HostResult(node.host, FAILED,
-                          "the delivered archive has no bin/java under %s" % staging)
+        remote = "%s/.payload.tar" % staging
+        archive = payload.archive()
+        progress.phase(node.host, "sending")
+        total = os.path.getsize(archive)
+        transport.upload_watched(
+            archive, remote,
+            on_bytes=(lambda sent: progress.sent(node.host, sent, total))
+            if progress.watching else None)
+        progress.phase(node.host, "extracting")
+        transport.run_script(
+            "set -eu\ntar -x%sf %s -C %s%s\nrm -f -- %s\n"
+            % (payload.tar_flag(), shlex.quote(remote), shlex.quote(staging),
+               " --strip-components=%d" % payload.strip() if payload.strip() else "",
+               shlex.quote(remote))).check()
 
-    progress.phase(node.host, "swapping")
-    transport.write_file(json.dumps(manifest, indent=2, sort_keys=True),
-                         posixpath.join(staging, JAVA_MANIFEST_NAME))
-    transport.run_script(deploy.swap_script(staging, target, ctx.args.sudo, None)).check()
+        check = transport.run(["test", "-x", "%s/bin/java" % staging], check=False)
+        if not check.ok:
+            return HostResult(node.host, FAILED,
+                              "the delivered archive has no bin/java under %s" % staging)
+
+        progress.phase(node.host, "swapping")
+        transport.write_file(json.dumps(manifest, indent=2, sort_keys=True),
+                             posixpath.join(staging, JAVA_MANIFEST_NAME))
+        transport.run_script(deploy.swap_script(staging, target, ctx.args.sudo, None)).check()
+        swapped = True
+    finally:
+        # Same rule as deploy: a staging tree that is not swapped in is dead weight, and
+        # its dot-prefixed name means nobody would ever notice it accumulating.
+        if not swapped:
+            transport.run_script(deploy.discard_script(staging, ctx.args.sudo), check=False)
+
     return HostResult(node.host, CHANGED, "delivered %s to %s"
                       % (deploy.human(plan.bytes), target))
 
