@@ -968,7 +968,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 }
 
                 if (nodeData.hist != null) {
-                    newHist = new DistributedMetaStorageHistoryItem[newfullData.length];
+                    newHist = new DistributedMetaStorageHistoryItem[nodeData.hist.length];
 
                     clearHistoryCache();
 
