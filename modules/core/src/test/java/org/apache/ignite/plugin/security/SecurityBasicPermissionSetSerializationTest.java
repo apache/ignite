@@ -25,8 +25,6 @@ import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
-import org.apache.ignite.internal.processors.query.schema.message.QueryEntityExMessage;
-import org.apache.ignite.internal.processors.query.schema.message.QueryEntityMessage;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.nio.MessageSerialization;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -48,7 +46,7 @@ import static org.apache.ignite.plugin.security.SecurityPermission.SERVICE_INVOK
 import static org.apache.ignite.plugin.security.SecurityPermission.TASK_CANCEL;
 import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
 
-/** Test for serialization round-trip of {@link QueryEntityMessage} and {@link QueryEntityExMessage}. */
+/** Test for serialization round-trip of {@link SecurityBasicPermissionSet}. */
 public class SecurityBasicPermissionSetSerializationTest extends GridCommonAbstractTest {
     /** */
     private final MessageFactory<? extends Message> msgFactory = new IgniteMessageFactoryImpl<>(

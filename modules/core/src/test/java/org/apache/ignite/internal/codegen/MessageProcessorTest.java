@@ -316,7 +316,6 @@ public class MessageProcessorTest {
         assertThat(compilation).hadErrorContaining(CUSTOM_MAPPER_ERROR);
     }
 
-
     /**
      * Negative test for enum mapper verifying an error is thrown by codegeneration tool if
      * the annotation is used with a collection with nested enums of different type.
