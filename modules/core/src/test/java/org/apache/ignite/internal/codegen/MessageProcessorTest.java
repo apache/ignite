@@ -51,6 +51,10 @@ import static org.junit.Assert.assertTrue;
 
 /** */
 public class MessageProcessorTest {
+    /** Custom mapper error. */
+    public static final String CUSTOM_MAPPER_ERROR = "Annotation @CustomMapper must only be used for enum fields or " +
+        "enum collections and maps, including nested ones.";
+
     /** */
     @Test
     public void testMarshalledObjectsMessage() {
@@ -273,7 +277,7 @@ public class MessageProcessorTest {
         Compilation compilation = compile("CustomEnumMapperOnPrimitiveFieldMessage.java");
 
         assertThat(compilation).failed();
-        assertThat(compilation).hadErrorContaining("Annotation @CustomMapper must only be used for enum fields.");
+        assertThat(compilation).hadErrorContaining(CUSTOM_MAPPER_ERROR);
     }
 
     /**
@@ -285,7 +289,7 @@ public class MessageProcessorTest {
         Compilation compilation = compile("CustomEnumMapperOnArrayFieldMessage.java");
 
         assertThat(compilation).failed();
-        assertThat(compilation).hadErrorContaining("Annotation @CustomMapper must only be used for enum fields.");
+        assertThat(compilation).hadErrorContaining(CUSTOM_MAPPER_ERROR);
     }
 
     /**

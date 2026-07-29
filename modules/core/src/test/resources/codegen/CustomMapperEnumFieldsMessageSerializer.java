@@ -32,7 +32,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
  */
 public class CustomMapperEnumFieldsMessageSerializer implements MessageSerializer<CustomMapperEnumFieldsMessage> {
     /** */
-    private final EnumMapper<TransactionIsolation> transactionIsolationMapper = new TransactionIsolationEnumMapper();
+    private static final EnumMapper<TransactionIsolation> transactionIsolationMapper = new TransactionIsolationEnumMapper();
 
     /** */
     @Override public boolean writeTo(CustomMapperEnumFieldsMessage msg, MessageWriter writer) {

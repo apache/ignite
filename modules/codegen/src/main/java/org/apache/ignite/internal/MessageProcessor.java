@@ -19,6 +19,7 @@ package org.apache.ignite.internal;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -39,8 +40,10 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
+import javax.lang.model.util.Elements;
 import javax.tools.Diagnostic;
 import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor;
 import org.apache.ignite.internal.util.typedef.F;
@@ -119,6 +122,9 @@ public class MessageProcessor extends AbstractProcessor {
 
     /** */
     private final Map<String, IgniteBiTuple<String, String>> enumMappersInUse = new HashMap<>();
+
+    /** */
+    private final Map<Element, String> enumsPerField = new HashMap<>();
 
     /** Processes all classes implementing the {@code Message} interface and generates corresponding serializer code. */
     @Override public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
@@ -294,11 +300,27 @@ public class MessageProcessor extends AbstractProcessor {
     private void validateEnumFieldMapping(TypeElement type, Element el) {
         CustomMapper custMappAnn = el.getAnnotation(CustomMapper.class);
 
-        if (enumType(processingEnv, el.asType())) {
-            String enumClsFullName = el.asType().toString();
-            String enumMapperClsName = custMappAnn != null ? custMappAnn.value() : DLFT_ENUM_MAPPER_CLS;
-            String msgClsName = type.toString();
+        if (!validateEnumType(type.toString(), el, el.asType(), custMappAnn) && custMappAnn != null) {
+            processingEnv.getMessager().printMessage(
+                Diagnostic.Kind.ERROR,
+                "Annotation @CustomMapper must only be used for enum fields or enum collections and maps, including nested ones.",
+                el);
+        }
 
+        enumsPerField.clear();
+    }
+
+    /**
+     * @param msgClsName Message class name.
+     * @param field Field.
+     * @param type Type.
+     * @param custMappAnn Cust mapp ann.
+     */
+    private boolean validateEnumType(String msgClsName, Element field, TypeMirror type, CustomMapper custMappAnn) {
+        String enumClsFullName = type.toString();
+        String enumMapperClsName = custMappAnn != null ? custMappAnn.value() : DLFT_ENUM_MAPPER_CLS;
+
+        if (enumType(processingEnv, type)) {
             IgniteBiTuple<String, String> otherMsgAndMapperClassesNames =
                 enumMappersInUse.put(enumClsFullName, new IgniteBiTuple<>(msgClsName, enumMapperClsName));
 
@@ -313,16 +335,47 @@ public class MessageProcessor extends AbstractProcessor {
                             otherEnumMapperClsName + " in " + otherMsgClsName + " and " +
                             enumMapperClsName + " in " + msgClsName +
                             ". Only one mapper is allowed per enum type.",
-                        el);
+                        field);
                 }
             }
+
+            String otherEnum = type.toString();
+            String existingEnum = enumsPerField.put(field, otherEnum);
+
+            if (existingEnum != null && !Objects.equals(existingEnum, otherEnum)) {
+                processingEnv.getMessager().printMessage(
+                    Diagnostic.Kind.ERROR,
+                    String.format("Multiple enums of different types are not supported for a single field " +
+                            "[msgClsName=%s, field=%s, existingEnumType=%s, otherEnumType=%s]", msgClsName,
+                        field.getSimpleName().toString(), existingEnum, otherEnum));
+            }
+
+            return true;
         }
-        else if (custMappAnn != null) {
-            processingEnv.getMessager().printMessage(
-                Diagnostic.Kind.ERROR,
-                "Annotation @CustomMapper must only be used for enum fields.",
-                el);
+        else {
+            if (assignableFrom(erasedType(type), type(Collection.class.getName()))) {
+                List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
+
+                assert typeArgs.size() == 1 : type.toString();
+
+                TypeMirror typeArg = typeArgs.get(0);
+
+                return validateEnumType(msgClsName, field, typeArg, custMappAnn);
+            }
+            else if (assignableFrom(erasedType(type), type(Map.class.getName()))) {
+                List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
+
+                assert typeArgs.size() == 2 : type.toString();
+
+                TypeMirror keyType = typeArgs.get(0);
+                TypeMirror valType = typeArgs.get(1);
+
+                return validateEnumType(msgClsName, field, keyType, custMappAnn) |
+                    validateEnumType(msgClsName, field, valType, custMappAnn);
+            }
         }
+
+        return false;
     }
 
     /** Map class names to {@link TypeMirror} objects. */
@@ -344,5 +397,22 @@ public class MessageProcessor extends AbstractProcessor {
         return SystemViewRowAttributeWalkerProcessor.superclasses(processingEnv, clazz)
             .flatMap(c -> ElementFilter.fieldsIn(c.getEnclosedElements()).stream())
             .anyMatch(f -> f.getAnnotation(Marshalled.class) != null);
+    }
+
+    /** */
+    boolean assignableFrom(TypeMirror type, TypeMirror superType) {
+        return superType != null && processingEnv.getTypeUtils().isAssignable(type, superType);
+    }
+
+    /** */
+    TypeMirror erasedType(TypeMirror type) {
+        return processingEnv.getTypeUtils().erasure(type);
+    }
+
+    /** @return the {@link TypeMirror} for the fully-qualified {@code clazz}, or {@code null} if not on classpath. */
+    TypeMirror type(String clazz) {
+        Elements elementUtils = processingEnv.getElementUtils();
+        TypeElement typeElement = elementUtils.getTypeElement(clazz);
+        return typeElement != null ? typeElement.asType() : null;
     }
 }
