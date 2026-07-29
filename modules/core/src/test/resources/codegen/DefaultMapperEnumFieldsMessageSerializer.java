@@ -46,7 +46,7 @@ public class DefaultMapperEnumFieldsMessageSerializer implements MessageSerializ
     /** */
     private static final MessageCollectionType partStatesCollDesc = new MessageCollectionType(new MessageEnumType<>(DefaultEnumMapper.INSTANCE::encode, b -> DefaultEnumMapper.INSTANCE.decode(partitionStateVals, b)), false);
     /** */
-    private static final MessageMapType isolationStringMapCollDesc = new MessageMapType(new MessageEnumType<>(DefaultEnumMapper.INSTANCE::encode, b -> DefaultEnumMapper.INSTANCE.decode(transactionIsolationVals, b)), new MessageItemType(MessageCollectionItemType.STRING), false);
+    private static final MessageMapType isolationStringMapCollDesc = new MessageMapType(new MessageCollectionType(new MessageEnumType<>(DefaultEnumMapper.INSTANCE::encode, b -> DefaultEnumMapper.INSTANCE.decode(transactionIsolationVals, b)), false), new MessageItemType(MessageCollectionItemType.STRING), false);
 
     /** */
     @Override public boolean writeTo(DefaultMapperEnumFieldsMessage msg, MessageWriter writer) {

@@ -32,7 +32,7 @@ public class DefaultMapperEnumFieldsMessage implements Message {
     GridCacheOperation internalEnum;
 
     @Order(2)
-    Map<TransactionIsolation, String> isolationStringMap;
+    Map<Collection<TransactionIsolation>, String> isolationStringMap;
 
     @Order(3)
     Collection<PartitionHashRecord.PartitionState> partStates;
