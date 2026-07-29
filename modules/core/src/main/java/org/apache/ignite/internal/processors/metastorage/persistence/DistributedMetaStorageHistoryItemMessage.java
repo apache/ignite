@@ -52,7 +52,7 @@ public class DistributedMetaStorageHistoryItemMessage implements Message {
         this.valBytes = valBytes;
     }
 
-    /** @return {@link Message} wraps array for {@link DistributedMetaStorageHistoryItem} array. */
+    /** @return {@link Message} wraps array for {@code hist}. */
     static @Nullable DistributedMetaStorageHistoryItemMessage[] of(@Nullable DistributedMetaStorageHistoryItem[] hist) {
         if (hist == null)
             return null;

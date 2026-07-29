@@ -24,10 +24,10 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
- * Distributed metastorage data message that a joining node sends to a cluster. Contains unwrapped
- * {@link DistributedMetaStorageVersion} (to reduce the messages number) and {@link DistributedMetaStorageHistoryItemMessage}s.
- * They are a {@link Externalizable} and persistent by {@link MetaStorage} with the dedicated code-generated serializers.
- * Thus, we do not make them directly a {@link Message}.
+ * Distributed metastorage data message that a joining node sends to a cluster. To reduce the messages number, contains
+ * plain representation of {@link DistributedMetaStorageVersion}. And {@link Message}s wraps of {@link DistributedMetaStorageHistoryItem}s.
+ * The original data holders are a {@link Externalizable} and persistent by {@link MetaStorage} with the dedicated
+ * code-generated serializers. Thus, we do not make them directly a {@link Message}.
  *
  * @see DmsDataWriter#write(String, byte[])
  * @see MetaStorage#write(String, Serializable)

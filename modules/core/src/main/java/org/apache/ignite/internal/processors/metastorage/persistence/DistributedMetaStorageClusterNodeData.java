@@ -25,10 +25,11 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Distributed metastorage data that cluster sends to joining node. Contains unwrapped {@link DistributedMetaStorageVersion},
- * arrays of unwrapped {@link DistributedMetaStorageKeyValuePair} (to reduce messages number) and wrapped
- * {@link DistributedMetaStorageHistoryItem}s. The original data holders are {@link Externalizable}s and are persistent by
- * {@link MetaStorage} with the dedicated code-generated serializers. Thus, we do not make them directly a {@link Message}.
+ * Distributed metastorage data that cluster sends to joining node. To reduce messages number, contains plain representation
+ * of {@link DistributedMetaStorageVersion}, arrays of plain representations of {@link DistributedMetaStorageKeyValuePair}.
+ * And wrapped {@link DistributedMetaStorageHistoryItem}s. The original data holders are {@link Externalizable}s and
+ * are persistent by {@link MetaStorage} with the dedicated code-generated serializers. Thus, we do not make them
+ * directly a {@link Message}.
  *
  * @see DmsDataWriter#write(String, byte[])
  * @see MetaStorage#write(String, Serializable)
