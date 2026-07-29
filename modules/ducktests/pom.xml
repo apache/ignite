@@ -109,6 +109,15 @@
             <artifactId>simpleclient_httpserver</artifactId>
             <version>${prometheus.version}</version>
         </dependency>
+
+        <!-- JMX Prometheus Exporter (javaagent for Prometheus metrics) -->
+        <dependency>
+            <groupId>io.prometheus.jmx</groupId>
+            <artifactId>jmx_prometheus_javaagent</artifactId>
+            <version>1.0.1</version>
+            <scope>runtime</scope>
+            <type>jar</type>
+        </dependency>
     </dependencies>
 
     <build>
