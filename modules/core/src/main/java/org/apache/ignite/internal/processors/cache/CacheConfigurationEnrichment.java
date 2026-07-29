@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -33,7 +32,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  * This object is needed to exchange and store shrinked cache configurations to avoid possible {@link ClassNotFoundException} errors
  * during deserialization on nodes where some specific class may not exist.
  */
-@UseJdkMarshaller
 public class CacheConfigurationEnrichment implements Message, Serializable {
     /** */
     private static final long serialVersionUID = 0L;

@@ -20,13 +20,11 @@ package org.apache.ignite.internal.processors.authentication;
 import java.util.ArrayList;
 import java.util.Collection;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** Initial data is collected on coordinator to send to join node. */
-@UseJdkMarshaller
 public class AuthentificationDataBagItem implements Message {
     /** Users. */
     @GridToStringInclude

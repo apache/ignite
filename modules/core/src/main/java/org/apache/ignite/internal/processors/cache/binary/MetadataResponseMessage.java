@@ -17,14 +17,12 @@
 package org.apache.ignite.internal.processors.cache.binary;
 
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Carries latest version of metadata to client as a response for {@link MetadataRequestMessage}.
  */
-@UseJdkMarshaller
 public class MetadataResponseMessage implements Message {
     /** Type ID. */
     @Order(0)

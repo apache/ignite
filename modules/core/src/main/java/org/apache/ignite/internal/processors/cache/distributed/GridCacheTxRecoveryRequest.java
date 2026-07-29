@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -29,7 +28,6 @@ import org.apache.ignite.lang.IgniteUuid;
 /**
  * Message sent to check that transactions related to transaction were prepared on remote node.
  */
-@UseJdkMarshaller
 public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage {
     /** Future ID. */
     @Order(0)

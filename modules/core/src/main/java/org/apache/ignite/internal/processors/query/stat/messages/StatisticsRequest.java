@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.stat.messages;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.stat.StatisticsType;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -29,7 +28,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /**
  * Request for statistics.
  */
-@UseJdkMarshaller
 public class StatisticsRequest implements Message {
     /** Gathering id. */
     @Order(0)

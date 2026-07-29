@@ -21,7 +21,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -31,7 +30,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Dummy discovery message which is not really sent via ring, it is just added in local discovery worker queue.
  */
-@UseJdkMarshaller
 public class ClientCacheChangeDummyDiscoveryMessage extends DiscoveryCustomMessage {
     /** */
     @Order(0)

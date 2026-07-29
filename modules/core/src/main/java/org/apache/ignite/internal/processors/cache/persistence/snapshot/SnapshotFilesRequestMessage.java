@@ -25,7 +25,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -34,7 +33,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-@UseJdkMarshaller
 public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
     /** Snapshot operation request ID. */
     @Order(0)

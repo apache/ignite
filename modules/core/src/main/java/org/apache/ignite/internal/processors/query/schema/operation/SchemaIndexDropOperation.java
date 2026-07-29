@@ -19,13 +19,11 @@ package org.apache.ignite.internal.processors.query.schema.operation;
 
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Schema index drop operation.
  */
-@UseJdkMarshaller
 public class SchemaIndexDropOperation extends SchemaIndexAbstractOperation {
     /** Index name. */
     @Order(0)

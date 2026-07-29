@@ -22,14 +22,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  *
  */
-@UseJdkMarshaller
 public class CachePartitionPartialCountersMap implements Serializable, Message {
     /** */
     private static final long serialVersionUID = 0L;

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.schema.message;
 
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
@@ -27,7 +26,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Schema operation status message.
  */
-@UseJdkMarshaller
 public class SchemaOperationStatusMessage implements Message {
     /** Operation ID. */
     @Order(0)

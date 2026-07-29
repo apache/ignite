@@ -18,14 +18,12 @@
 package org.apache.ignite.internal.processors.rest.handlers.task;
 
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Task result request.
  */
-@UseJdkMarshaller
 public class GridTaskResultRequest implements Message {
     /** Task ID. */
     @Order(0)

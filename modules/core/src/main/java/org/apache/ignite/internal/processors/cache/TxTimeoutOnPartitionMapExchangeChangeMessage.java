@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -28,7 +27,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Discovery message for changing transaction timeout on partition map exchange.
  */
-@UseJdkMarshaller
 public class TxTimeoutOnPartitionMapExchangeChangeMessage extends DiscoveryCustomMessage {
     /** Request ID. */
     @Order(0)

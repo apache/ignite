@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -35,7 +34,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Cache change batch.
  */
-@UseJdkMarshaller
 public class DynamicCacheChangeBatch extends DiscoveryCustomMessage {
     /** Change requests. */
     @GridToStringInclude

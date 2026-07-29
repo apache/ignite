@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.version;
 
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -29,7 +28,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Raw versioned entry.
  */
-@UseJdkMarshaller
 public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implements GridCacheVersionedEntry<K, V>, GridCacheVersionable {
     /** TTL. */
     @Order(0)

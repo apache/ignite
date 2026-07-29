@@ -21,7 +21,6 @@ import java.io.Serializable;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -32,7 +31,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-@UseJdkMarshaller
 public class DistributedMetaStorageUpdateMessage extends DiscoveryCustomMessage {
     /** Request ID. */
     @GridToStringInclude

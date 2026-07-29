@@ -25,7 +25,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Job cancellation request.
  */
-@UseJdkMarshaller
 public class GridJobCancelRequest implements Message {
     /** */
     @Order(0)

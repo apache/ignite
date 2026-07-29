@@ -21,7 +21,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.MetaPageInfo;
@@ -33,7 +32,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  * Metadata for IndexQuery response. This information is required to be sent to a node that initiated a query.
  * Thick client nodes may have irrelevant information about index structure, {@link MetaPageInfo}.
  */
-@UseJdkMarshaller
 public class IndexQueryResultMeta implements Message {
     /** Index key settings. */
     @Order(0)

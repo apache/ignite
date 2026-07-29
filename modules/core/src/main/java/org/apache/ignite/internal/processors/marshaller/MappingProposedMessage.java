@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.marshaller;
 
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -34,7 +33,6 @@ import org.jetbrains.annotations.Nullable;
  * When it completes a pass around the cluster ring with no conflicts observed,
  * {@link MappingAcceptedMessage} is sent as an acknowledgement that everything is fine.
  */
-@UseJdkMarshaller
 public class MappingProposedMessage extends DiscoveryCustomMessage {
     /** */
     enum ProposalStatus {

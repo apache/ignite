@@ -24,7 +24,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.Compress;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -37,7 +36,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Affinity assignment response.
  */
-@UseJdkMarshaller
 public class GridDhtAffinityAssignmentResponse extends GridCacheGroupIdMessage {
     /** */
     @Order(0)

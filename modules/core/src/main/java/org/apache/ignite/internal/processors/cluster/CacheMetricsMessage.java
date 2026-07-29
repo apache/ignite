@@ -20,13 +20,11 @@ package org.apache.ignite.internal.processors.cluster;
 import java.util.Collection;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** Cache metrics message. */
-@UseJdkMarshaller
 public class CacheMetricsMessage implements Message {
     /** Number of reads. */
     @Order(0)

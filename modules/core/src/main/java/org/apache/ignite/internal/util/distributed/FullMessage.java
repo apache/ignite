@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
@@ -40,7 +39,6 @@ import org.jetbrains.annotations.Nullable;
  * @see InitMessage
  * @see SingleNodeMessage
  */
-@UseJdkMarshaller
 public class FullMessage<R extends Message> extends DiscoveryCustomMessage {
     /** Process id. */
     @Order(0)

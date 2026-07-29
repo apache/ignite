@@ -20,11 +20,9 @@ package org.apache.ignite.internal.processors.query.schema.message;
 import java.util.LinkedHashMap;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** Wrapper for active schema change propose discovery messages. */
-@UseJdkMarshaller
 public class QueryProposalsDataBagItem implements Message {
     /** Active proposals. */
     @Order(0)

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.managers.checkpoint;
 
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -27,7 +26,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /**
  * This class defines checkpoint request.
  */
-@UseJdkMarshaller
 public class GridCheckpointRequest implements Message {
     /** */
     @Order(0)

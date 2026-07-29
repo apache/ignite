@@ -18,11 +18,9 @@
 package org.apache.ignite.internal.processors.cluster;
 
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
-@UseJdkMarshaller
 public class ClusterUpdateNotifierDataBagItem implements Message {
     /** Update notifier enabled status. */
     @Order(0)

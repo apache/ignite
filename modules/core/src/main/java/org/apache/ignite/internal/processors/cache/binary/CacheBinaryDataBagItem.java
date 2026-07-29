@@ -19,11 +19,9 @@ package org.apache.ignite.internal.processors.cache.binary;
 
 import java.util.Map;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
-@UseJdkMarshaller
 public class CacheBinaryDataBagItem implements Message {
     /** */
     @Order(0)

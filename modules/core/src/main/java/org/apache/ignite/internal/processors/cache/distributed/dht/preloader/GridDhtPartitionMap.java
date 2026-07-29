@@ -23,7 +23,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
@@ -35,7 +34,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 /**
  * Partition map from single node.
  */
-@UseJdkMarshaller
 public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Message {
     /** Node ID. */
     @Order(0)

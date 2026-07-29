@@ -19,14 +19,12 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
  *
  */
-@UseJdkMarshaller
 public class TcpDiscoveryClientAckResponse extends TcpDiscoveryAbstractMessage {
     /** */
     @Order(0)

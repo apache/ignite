@@ -19,14 +19,12 @@
 package org.apache.ignite.internal.processors.query.messages;
 
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Query kill response.
  */
-@UseJdkMarshaller
 public class GridQueryKillResponse implements Message {
     /** Error text. */
     @Order(0)

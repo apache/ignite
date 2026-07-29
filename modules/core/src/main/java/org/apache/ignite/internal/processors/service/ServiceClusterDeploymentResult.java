@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -34,7 +33,6 @@ import org.jetbrains.annotations.NotNull;
  * <p/>
  * Contains coint of deployed service and deployment errors across the cluster mapped to nodes ids.
  */
-@UseJdkMarshaller
 public class ServiceClusterDeploymentResult implements Message {
     /** Service id. */
     @Order(0)

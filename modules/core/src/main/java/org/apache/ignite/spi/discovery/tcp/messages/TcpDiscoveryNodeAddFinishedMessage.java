@@ -21,7 +21,6 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
@@ -32,7 +31,6 @@ import org.jetbrains.annotations.Nullable;
  */
 @TcpDiscoveryEnsureDelivery
 @TcpDiscoveryRedirectToClient
-@UseJdkMarshaller
 public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractMessage {
     /** Added node ID. */
     @Order(0)

@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.schema.operation;
 import java.util.UUID;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.cache.query.QueryIndexMessage;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -29,7 +28,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Schema index create operation.
  */
-@UseJdkMarshaller
 public class SchemaIndexCreateOperation extends SchemaIndexAbstractOperation {
     /** Table name. */
     @Order(0)

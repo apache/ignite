@@ -19,14 +19,12 @@ package org.apache.ignite.spi.communication.tcp.messages;
 
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Node ID message.
  */
-@UseJdkMarshaller
 public class NodeIdMessage implements Message {
     /** Message body size (with message type) in bytes. */
     static final int MESSAGE_SIZE = 1 + 16;  // null flag, UUID value.

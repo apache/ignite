@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.binary;
 
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -31,7 +30,6 @@ import org.jetbrains.annotations.Nullable;
  * discovery-based protocol for manage {@link BinaryMetadata metadata} describing objects in binary format
  * stored in Ignite caches.
  */
-@UseJdkMarshaller
 public final class MetadataRemoveProposedMessage extends DiscoveryCustomMessage {
     /** Node UUID which initiated metadata update. */
     @Order(0)

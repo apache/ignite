@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -33,7 +32,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.atomic
 /**
  * Message sent from DHT nodes to near node in FULL_SYNC mode.
  */
-@UseJdkMarshaller
 public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
     /** Message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();

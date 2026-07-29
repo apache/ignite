@@ -19,12 +19,10 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.net.InetAddress;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** Socket address utility container message. Is not a pure {@link TcpDiscoveryAbstractMessage}. */
-@UseJdkMarshaller
 public class InetSocketAddressMessage extends InetAddressMessage {
     /** */
     @Order(0)

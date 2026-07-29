@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.authentication;
 import java.io.Serializable;
 import java.util.Objects;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -30,7 +29,6 @@ import org.mindrot.BCrypt;
 
 /**
  */
-@UseJdkMarshaller
 public class User implements Serializable, Message {
     /** */
     private static final long serialVersionUID = 0L;

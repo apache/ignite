@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteProductVersion;
 
@@ -29,7 +28,6 @@ import org.apache.ignite.lang.IgniteProductVersion;
  * Represents the set of {@link IgniteFeature}s associated with a user plugin.
  * Explicitly stores the name of the plugin to which the feature set belongs.
  */
-@UseJdkMarshaller
 public class IgnitePluginFeatureSet extends IgniteComponentFeatureSet {
     /** */
     private static final long serialVersionUID = 0L;

@@ -24,7 +24,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
-@UseJdkMarshaller
 public final class ExchangeInfo extends IgniteDiagnosticRequest.DiagnosticBaseInfo {
     /** */
     @Order(0)

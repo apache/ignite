@@ -25,7 +25,6 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
@@ -43,7 +42,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  * This class represents discovery message that is used to provide information about dynamic cache start failure.
  */
-@UseJdkMarshaller
 public class ExchangeFailureMessage extends DiscoveryCustomMessage {
     /** Cache names. */
     @GridToStringInclude

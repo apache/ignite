@@ -20,13 +20,11 @@ package org.apache.ignite.spi.discovery.zk.internal;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.spi.discovery.SerializableDataBagItemWrapper;
 
 /** Data bag data holder. */
-@UseJdkMarshaller
 public class ZkDiscoDataBagWrapper implements Message {
     /** */
     @Order(0)

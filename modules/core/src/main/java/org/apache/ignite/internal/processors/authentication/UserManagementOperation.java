@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.authentication;
 
 import java.util.Objects;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -27,7 +26,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /**
  * The operation with users. Used to deliver the information about requested operation to all server nodes.
  */
-@UseJdkMarshaller
 public class UserManagementOperation implements Message {
     /** User. */
     @Order(0)

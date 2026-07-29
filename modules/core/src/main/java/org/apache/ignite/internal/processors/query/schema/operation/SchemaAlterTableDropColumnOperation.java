@@ -20,13 +20,11 @@ package org.apache.ignite.internal.processors.query.schema.operation;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Schema alter table drop column operation.
  */
-@UseJdkMarshaller
 public class SchemaAlterTableDropColumnOperation extends SchemaAbstractOperation {
     /** Target table name. */
     @Order(0)

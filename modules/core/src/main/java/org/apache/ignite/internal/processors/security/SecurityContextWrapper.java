@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.security;
 
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.thread.context.DistributedAttributeIdRegistry;
 import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -31,7 +30,6 @@ import org.apache.ignite.plugin.security.SecuritySubject;
  * @see OperationContextDispatcher#createSnapshot()
  * @see DistributedAttributeIdRegistry#SECURITY
  */
-@UseJdkMarshaller
 public class SecurityContextWrapper implements Message {
     /** A value of {@link SecuritySubject#id()} */
     @Order(0)

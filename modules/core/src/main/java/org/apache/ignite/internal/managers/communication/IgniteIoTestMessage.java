@@ -19,14 +19,12 @@ package org.apache.ignite.internal.managers.communication;
 
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  *
  */
-@UseJdkMarshaller
 public class IgniteIoTestMessage implements Message {
     /** */
     private static final byte FLAG_PROC_FROM_NIO = 1;

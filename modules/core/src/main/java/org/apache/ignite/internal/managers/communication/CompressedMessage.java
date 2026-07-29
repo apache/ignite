@@ -25,7 +25,6 @@ import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage;
 
@@ -34,7 +33,6 @@ import org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage;
  * <p>
  * WARNING: CompressedMessage is not intended for explicit use in messages.
  */
-@UseJdkMarshaller
 public class CompressedMessage implements NonMarshallableMessage {
     /** Chunk size. */
     static final int CHUNK_SIZE = 10 * 1024;

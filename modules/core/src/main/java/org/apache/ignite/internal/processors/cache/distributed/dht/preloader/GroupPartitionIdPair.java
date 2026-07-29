@@ -19,11 +19,9 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.util.Objects;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** Pair of group ID and partition ID. */
-@UseJdkMarshaller
 public class GroupPartitionIdPair implements Message {
     /** Group ID. */
     @Order(0)

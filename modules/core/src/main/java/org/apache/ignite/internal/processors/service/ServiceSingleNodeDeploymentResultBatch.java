@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.service;
 
 import java.util.Map;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -31,7 +30,6 @@ import org.jetbrains.annotations.NotNull;
  * <p/>
  * Contains collection of {@link ServiceSingleNodeDeploymentResult} mapped services ids.
  */
-@UseJdkMarshaller
 public class ServiceSingleNodeDeploymentResultBatch implements Message {
     /** Deployment process id. */
     @Order(0)

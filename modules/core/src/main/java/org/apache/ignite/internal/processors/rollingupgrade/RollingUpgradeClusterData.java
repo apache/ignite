@@ -19,14 +19,12 @@ package org.apache.ignite.internal.processors.rollingupgrade;
 
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteComponentFeatureSet;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-@UseJdkMarshaller
 public class RollingUpgradeClusterData implements Message {
     /** */
     @Order(0)

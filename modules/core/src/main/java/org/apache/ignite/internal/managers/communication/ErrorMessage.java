@@ -20,7 +20,6 @@ package org.apache.ignite.internal.managers.communication;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -32,7 +31,6 @@ import org.jetbrains.annotations.Nullable;
  */
 // TODO IGNITE-28912: move to a common package.
 @SuppressWarnings({"NullableProblems", "unused"})
-@UseJdkMarshaller
 public class ErrorMessage implements MarshallableMessage {
     /** Error bytes. */
     @Order(0)

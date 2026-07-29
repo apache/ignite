@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -28,7 +27,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Batch acknowledgement.
  */
-@UseJdkMarshaller
 public class CacheContinuousQueryBatchAck extends GridCacheIdMessage {
     /** Routine ID. */
     @Order(0)

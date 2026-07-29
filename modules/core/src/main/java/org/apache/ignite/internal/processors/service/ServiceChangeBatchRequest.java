@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.service;
 import java.util.Collection;
 import java.util.Collections;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -33,7 +32,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Service change batch request discovery message.
  */
-@UseJdkMarshaller
 public class ServiceChangeBatchRequest extends DiscoveryCustomMessage {
     /** Change requests. */
     @GridToStringInclude

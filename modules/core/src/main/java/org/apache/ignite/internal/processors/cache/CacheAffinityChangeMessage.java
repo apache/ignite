@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -37,7 +36,6 @@ import org.jetbrains.annotations.Nullable;
  * CacheAffinityChangeMessage represent a message that switches to a new affinity assignmentafter rebalance is finished.
  * This message should not be mutated  in any way outside the "disco-notifier-worker" thread.
  */
-@UseJdkMarshaller
 public class CacheAffinityChangeMessage extends DiscoveryCustomMessage {
     /** */
     @Order(0)

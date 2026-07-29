@@ -22,7 +22,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-@UseJdkMarshaller
 public class IgniteDiagnosticResponse implements Message {
     /** */
     @Order(0)

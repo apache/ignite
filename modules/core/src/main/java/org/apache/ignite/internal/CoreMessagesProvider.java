@@ -725,8 +725,8 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
 
     /** Registers message using {@link #dfltMarsh}. */
     private <T extends Message> void withNoSchema(Class<T> cls) {
-        assert cls.getAnnotation(UseJdkMarshaller.class) != null :
-            "Add @" + UseJdkMarshaller.class.getSimpleName() + " for class: " + cls.getSimpleName();
+        assert cls.getAnnotation(UseBinaryMarshaller.class) == null :
+            "Remove @" + UseBinaryMarshaller.class.getSimpleName() + " for class: " + cls.getSimpleName();
 
         register(factory, cls, msgIdx++);
     }

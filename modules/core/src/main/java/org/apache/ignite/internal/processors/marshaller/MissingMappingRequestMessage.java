@@ -17,7 +17,6 @@
 package org.apache.ignite.internal.processors.marshaller;
 
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
@@ -33,7 +32,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  * If server node where mapping request was sent to leaves the cluster for some reason
  * mapping request gets automatically resent to the next alive server node in topology.
  */
-@UseJdkMarshaller
 public class MissingMappingRequestMessage implements Message {
     /** */
     @Order(0)

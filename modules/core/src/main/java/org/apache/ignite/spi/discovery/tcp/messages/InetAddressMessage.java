@@ -21,13 +21,11 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** Address utility container message. Is not a pure {@link TcpDiscoveryAbstractMessage}. */
-@UseJdkMarshaller
 public class InetAddressMessage implements Message {
     /** */
     @Order(0)

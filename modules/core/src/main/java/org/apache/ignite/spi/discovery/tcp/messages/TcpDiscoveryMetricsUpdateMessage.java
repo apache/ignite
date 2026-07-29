@@ -25,7 +25,6 @@ import java.util.UUID;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.processors.cluster.CacheMetricsMessage;
 import org.apache.ignite.internal.processors.cluster.NodeFullMetricsMessage;
 import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
@@ -50,7 +49,6 @@ import org.jetbrains.annotations.Nullable;
  * second pass).
  */
 @TcpDiscoveryRedirectToClient
-@UseJdkMarshaller
 public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessage {
     /** Connected clients metrics: server id -> client id -> clients metrics. */
     @GridToStringExclude

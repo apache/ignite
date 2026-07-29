@@ -17,7 +17,6 @@
 package org.apache.ignite.internal.processors.marshaller;
 
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
@@ -26,7 +25,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  * for requested platformId and typeId in its local marshaller cache and sends back
  * a {@link MissingMappingResponseMessage} mapping response with resolved class name.
  */
-@UseJdkMarshaller
 public class MissingMappingResponseMessage implements Message {
     /** */
     @Order(0)

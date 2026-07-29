@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.managers.deployment;
 
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -26,7 +25,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /**
  * Grid deployment response containing requested resource bytes.
  */
-@UseJdkMarshaller
 public class GridDeploymentResponse implements Message {
     /** Result state. */
     @Order(0)

@@ -25,7 +25,6 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
@@ -34,7 +33,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  * <p>
  * Null values are prohibited.
  */
-@UseJdkMarshaller
 public class GridPartitionStateMap extends AbstractMap<Integer, GridDhtPartitionState> implements Serializable, Message {
     /** Empty map. */
     public static final GridPartitionStateMap EMPTY = new GridPartitionStateMap(0);

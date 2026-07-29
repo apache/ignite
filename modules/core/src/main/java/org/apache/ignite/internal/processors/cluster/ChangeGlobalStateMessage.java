@@ -22,7 +22,6 @@ import java.util.UUID;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -38,7 +37,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Message represent request for change cluster global state.
  */
-@UseJdkMarshaller
 public class ChangeGlobalStateMessage extends DiscoveryCustomMessage {
     /** Request ID */
     @Order(0)

@@ -22,7 +22,6 @@ import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.UseBinaryMarshaller;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
@@ -90,22 +89,7 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
      * instantiated by reflection from this package — pass an in-package {@code ::new} reference as {@code supplier}.
      */
     protected <T extends Message> void register(IgniteMessageFactory factory, Class<T> cls, short id, Supplier<Message> supplier) {
-        Marshaller marsh;
-
-        if (cls.getAnnotation(UseJdkMarshaller.class) != null) {
-            assert cls.getAnnotation(UseBinaryMarshaller.class) == null;
-
-            marsh = dfltMarsh;
-        }
-        else if (cls.getAnnotation(UseBinaryMarshaller.class) != null) {
-            assert cls.getAnnotation(UseJdkMarshaller.class) == null;
-
-            marsh = schemaAwareMarsh;
-        }
-        else
-            throw new IllegalStateException(cls.getSimpleName() + " must be annotated with @UseJdkMarshaller or @UseBinaryMarshaller");
-
-        register(factory, cls, id, supplier, marsh);
+        register(factory, cls, id, supplier, cls.getAnnotation(UseBinaryMarshaller.class) != null ? schemaAwareMarsh : dfltMarsh);
     }
 
     /** */

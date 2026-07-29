@@ -27,7 +27,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.cache.query.QueryIndexMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -36,7 +35,6 @@ import org.apache.ignite.marshaller.Marshaller;
 /**
  * Message for {@link QueryEntity} transfer.
  */
-@UseJdkMarshaller
 public class QueryEntityMessage implements MarshallableMessage {
     /** Key type. */
     @Order(0)

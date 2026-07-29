@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.internal.GridTopicMessage;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -31,7 +30,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Deployment request.
  */
-@UseJdkMarshaller
 public class GridDeploymentRequest implements Message {
     /** Response topic message. Response should be sent back to this topic. */
     @Order(0)

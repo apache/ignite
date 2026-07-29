@@ -24,7 +24,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /**
  * Job siblings request.
  */
-@UseJdkMarshaller
 public class GridJobSiblingsRequest implements Message {
     /** */
     @Order(0)

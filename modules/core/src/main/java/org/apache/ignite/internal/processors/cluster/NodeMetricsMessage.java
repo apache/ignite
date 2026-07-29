@@ -22,7 +22,6 @@ import java.util.Map;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -33,7 +32,6 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 
 /** */
-@UseJdkMarshaller
 public class NodeMetricsMessage implements Message {
     /** */
     @Order(0)

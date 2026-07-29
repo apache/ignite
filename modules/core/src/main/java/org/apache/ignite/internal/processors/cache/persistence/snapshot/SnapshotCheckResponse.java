@@ -21,7 +21,6 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -29,7 +28,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /** A DTO to transfer node's results for the both phases. */
-@UseJdkMarshaller
 public final class SnapshotCheckResponse<T extends Message> implements Message {
     /** The result. Is usually a collection or a map of hashes, metas, etc. */
     @Order(0)

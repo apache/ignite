@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.authentication;
 
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -30,7 +29,6 @@ import org.jetbrains.annotations.Nullable;
  * Is sent as an acknowledgement for end (with success or error) of user management operation on the cluster
  * (see {@link UserProposedMessage} and {@link UserManagementOperation}).
  */
-@UseJdkMarshaller
 public class UserAcceptedMessage extends DiscoveryCustomMessage {
     /** Operation ID. */
     @Order(0)

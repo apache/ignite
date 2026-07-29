@@ -20,14 +20,12 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 import java.net.InetAddress;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /**
  * Message telling joining node that its authentication failed.
  */
-@UseJdkMarshaller
 public class TcpDiscoveryAuthFailedMessage extends TcpDiscoveryAbstractMessage {
     /** Creator address. */
     @Order(0)

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.continuous;
 
 import java.util.UUID;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -26,7 +25,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-@UseJdkMarshaller
 public class StopRoutineAckDiscoveryMessage extends AbstractContinuousMessage {
     /** */
     public StopRoutineAckDiscoveryMessage() {

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.datastreamer;
 
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -27,7 +26,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-@UseJdkMarshaller
 public class DataStreamerResponse implements Message {
     /** */
     @Order(0)

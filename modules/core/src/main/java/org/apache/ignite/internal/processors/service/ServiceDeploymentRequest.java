@@ -18,14 +18,12 @@
 package org.apache.ignite.internal.processors.service;
 
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.NotNull;
 
 /** Service deployment request. */
-@UseJdkMarshaller
 public class ServiceDeploymentRequest extends ServiceChangeAbstractRequest {
     /** Service configuration. */
     private LazyServiceConfiguration cfg;

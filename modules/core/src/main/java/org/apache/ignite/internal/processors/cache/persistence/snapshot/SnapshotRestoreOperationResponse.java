@@ -21,13 +21,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** Snapshot operation prepare response. */
-@UseJdkMarshaller
 public class SnapshotRestoreOperationResponse implements Message {
     /** Cache configurations on local node. */
     @Order(0)

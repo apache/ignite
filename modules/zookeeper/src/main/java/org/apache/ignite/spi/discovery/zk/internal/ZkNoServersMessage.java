@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.discovery.zk.internal;
 
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.jetbrains.annotations.Nullable;
@@ -25,7 +24,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-@UseJdkMarshaller
 class ZkNoServersMessage implements DiscoverySpiCustomMessage, ZkInternalMessage {
     /** {@inheritDoc} */
     @Nullable @Override public DiscoverySpiCustomMessage ackMessage() {

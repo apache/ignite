@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockRequest;
@@ -34,7 +33,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Near cache lock request to primary node. 'Near' means 'Initiating node' here, not 'Near Cache'.
  */
-@UseJdkMarshaller
 public class GridNearLockRequest extends GridDistributedLockRequest {
     /** */
     private static final int NEED_RETURN_VALUE_FLAG_MASK = 0x01;

@@ -18,12 +18,10 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** */
-@UseJdkMarshaller
 public class DataStreamerUpdatesHandlerResult implements Message {
     /** */
     @Order(0)

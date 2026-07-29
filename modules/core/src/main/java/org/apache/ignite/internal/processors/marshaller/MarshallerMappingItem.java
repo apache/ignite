@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.marshaller;
 import java.io.Serializable;
 import java.util.Objects;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
@@ -28,7 +27,6 @@ import org.jetbrains.annotations.Nullable;
  *  Used to exchange mapping information on new mapping added or missing mapping requested flows.
  *  See {@link GridMarshallerMappingProcessor} javadoc for more information.
  */
-@UseJdkMarshaller
 public final class MarshallerMappingItem implements Message, Serializable {
     /** */
     private static final long serialVersionUID = 0L;

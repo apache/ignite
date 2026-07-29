@@ -19,7 +19,6 @@ package org.apache.ignite.internal.managers.encryption;
 
 import java.util.Collection;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseJdkMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -27,7 +26,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /**
  * Generate encryption key response.
  */
-@UseJdkMarshaller
 public class GenerateEncryptionKeyResponse implements Message {
     /** Request message ID. */
     @Order(0)
