@@ -19,7 +19,7 @@ MDC transactional load through a cross-DC network partition.
 A TRANSACTIONAL cache spans both data centers: with backups=1 and the
 MdcAffinityBackupFilter every partition owns exactly one copy per DC, so every
 explicit-transaction write (a plain put on a transactional cache) must reach a
-node in the other DC. A continuous single-threaded insert load runs from the main
+node in the other DC. A continuous single-threaded insert load runs from the backup
 DC; the instant the DCs are partitioned the next commit cannot reach all partition
 copies and fails with a cache exception. The load cuts itself off on that first
 exception and records how many inserts had succeeded.
@@ -48,9 +48,6 @@ BACKUPS = 1
 
 # Fresh, disjoint key range for the continuous insert load: the load advances the key
 # on every success, so [LOAD_KEY_FROM, LOAD_KEY_FROM + successfulInserts) gets inserted.
-LOAD_KEY_FROM_DC_1 = 1_000_000
-LOAD_KEY_TO_DC_1 = 10_000_000
-
 LOAD_KEY_FROM_DC_2 = 10_000_000
 LOAD_KEY_TO_DC_2 = 20_000_000
 
@@ -71,7 +68,7 @@ class MdcTransactionalPartitionTest(IgniteTest):
     @parametrize(cross_dc_latency_ms=100)
     def test_transactional_load_cut_on_partition(self, ignite_version, cross_dc_latency_ms):
         """
-        Continuous explicit-transaction insert load from the main DC is cut off by the first
+        Continuous explicit-transaction insert load from the backup DC is cut off by the first
         cache exception the cross-DC partition triggers; afterwards no transaction is left
         hanging on either half-ring and the server logs are clean.
         """
@@ -130,6 +127,16 @@ class MdcTransactionalPartitionTest(IgniteTest):
             # ...and neither half-ring logged a hung PME, a long running transaction or a
             # lost partition.
             mdc.verify_servers_log_clean()
+
+            load_key_to = LOAD_KEY_TO_DC_2 if inserts > LOAD_KEY_TO_DC_2 - LOAD_KEY_FROM_DC_2 else inserts
+
+            # All data written before the split is readable in both halves.
+            mdc.check_data(DC_1, CACHE_NAME, LOAD_KEY_FROM_DC_2, load_key_to)
+            mdc.check_data(DC_2, CACHE_NAME, LOAD_KEY_FROM_DC_2, load_key_to)
+
+            # The half-ring holding the main DC accepts writes, the other one is read-only.
+            mdc.check_put_admissibility(DC_1, CACHE_NAME, True, key_offset=40_000_000)
+            mdc.check_put_admissibility(DC_2, CACHE_NAME, False, key_offset=41_000_000)
 
             net.disable_network_partition(DC_1, DC_2)
 
