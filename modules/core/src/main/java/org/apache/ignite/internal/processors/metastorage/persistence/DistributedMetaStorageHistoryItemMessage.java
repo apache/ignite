@@ -25,7 +25,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Message wrap for {@link DistributedMetaStorageHistoryItem} which is a persistent {@link IgniteDataTransferObject} stored
+ * Transfer wrap for {@link DistributedMetaStorageHistoryItem} which is a persistent {@link IgniteDataTransferObject} stored
  * by {@link MetaStorage} using the dedicated code-generated DTO-serializer.
  *
  * @see DistributedMetaStorageHistoryItem
