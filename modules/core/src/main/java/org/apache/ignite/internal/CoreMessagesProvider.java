@@ -184,12 +184,16 @@ import org.apache.ignite.internal.processors.cache.transactions.TxLocksResponse;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.verify.TransactionsHashRecord;
 import org.apache.ignite.internal.processors.cache.version.GridCacheRawVersionedEntry;
+import org.apache.ignite.internal.processors.cluster.BaselineStateAndHistoryData;
+import org.apache.ignite.internal.processors.cluster.BaselineTopologyHistory;
+import org.apache.ignite.internal.processors.cluster.BaselineTopologyHistoryItem;
 import org.apache.ignite.internal.processors.cluster.CacheMetricsMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.ClusterIdAndTag;
 import org.apache.ignite.internal.processors.cluster.ClusterMetricsUpdateMessage;
 import org.apache.ignite.internal.processors.cluster.ClusterUpdateNotifierDataBagItem;
+import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.NodeFullMetricsMessage;
 import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.processors.continuous.ContinuousRoutineStartResultMessage;
@@ -707,6 +711,10 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(ClusterUpdateNotifierDataBagItem.class);
         withNoSchema(PluginsDataBagItem.class);
         withSchema(EventsDataBagItem.class);
+        withNoSchema(BaselineStateAndHistoryData.class);
+        withNoSchema(BaselineTopologyHistory.class);
+        withNoSchema(BaselineTopologyHistoryItem.class);
+        withNoSchema(DiscoveryDataClusterState.class);
 
         // [13400 - 13500]: Operation context messages.
         msgIdx = 13400;
