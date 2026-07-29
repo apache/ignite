@@ -78,6 +78,16 @@ final class DistributedMetaStorageHistoryItem extends IgniteDataTransferObject {
     }
 
     /** */
+    static DistributedMetaStorageHistoryItem[] of(DistributedMetaStorageHistoryItemMessage[] histMsgs) {
+        DistributedMetaStorageHistoryItem[] res = new DistributedMetaStorageHistoryItem[histMsgs.length];
+
+        for (int i = 0; i < histMsgs.length; ++i)
+            res[i] = new DistributedMetaStorageHistoryItem(histMsgs[i].keys, histMsgs[i].valBytes);
+
+        return res;
+    }
+
+    /** */
     public long estimateSize() {
         int len = keys.length;
 
