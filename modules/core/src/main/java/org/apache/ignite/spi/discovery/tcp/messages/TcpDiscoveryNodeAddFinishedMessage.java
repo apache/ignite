@@ -19,13 +19,10 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.MarshallableMessage;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
  */
 @TcpDiscoveryEnsureDelivery
 @TcpDiscoveryRedirectToClient
-public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractMessage implements MarshallableMessage {
+public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractMessage {
     /** Added node ID. */
     @Order(0)
     UUID nodeId;
@@ -48,7 +45,8 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractMess
 
     /** */
     @GridToStringExclude
-    private Map<String, Object> clientNodeAttrs;
+    @Marshalled("clientNodeAttrsBytes")
+    Map<String, Object> clientNodeAttrs;
 
     /** Serialized client node attributes. */
     @Order(2)
@@ -120,20 +118,6 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractMess
      */
     public void clientNodeAttributes(Map<String, Object> clientNodeAttrs) {
         this.clientNodeAttrs = clientNodeAttrs;
-        clientNodeAttrsBytes = null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (clientNodeAttrs != null)
-            clientNodeAttrsBytes = U.marshal(marsh, clientNodeAttrs);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (clientNodeAttrsBytes != null)
-            clientNodeAttrs = U.unmarshal(marsh, clientNodeAttrsBytes, clsLdr);
-
         clientNodeAttrsBytes = null;
     }
 

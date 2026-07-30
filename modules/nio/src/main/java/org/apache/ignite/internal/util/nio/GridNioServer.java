@@ -77,7 +77,6 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
@@ -1613,11 +1612,9 @@ public class GridNioServer<T> {
                 finished = ((ClientMessage)msg).writeTo(buf);
             }
             else {
-                MessageSerializer msgSer = messageFactory().serializer(msg.directType());
-
                 writer.setBuffer(buf);
 
-                finished = msgSer.writeTo(msg, writer);
+                finished = MessageSerialization.writeTo(messageFactory(), msg, writer);
             }
 
             if (finished) {
@@ -1804,11 +1801,9 @@ public class GridNioServer<T> {
                 finished = ((ClientMessage)msg).writeTo(buf);
             }
             else {
-                MessageSerializer msgSer = msgFactory.serializer(msg.directType());
-
                 writer.setBuffer(buf);
 
-                finished = msgSer.writeTo(msg, writer);
+                finished = MessageSerialization.writeTo(msgFactory, msg, writer);
             }
 
             if (finished) {

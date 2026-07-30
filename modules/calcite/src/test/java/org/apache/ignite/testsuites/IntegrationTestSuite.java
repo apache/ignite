@@ -90,6 +90,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.WindowInt
 import org.apache.ignite.internal.processors.query.calcite.integration.tpch.TpchScale001Test;
 import org.apache.ignite.internal.processors.query.calcite.integration.tpch.TpchScale010Test;
 import org.apache.ignite.internal.processors.query.calcite.integration.tpch.TpchScale100Test;
+import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessageUnmarshalThreadIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.JoinCommuteRulesTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.JoinOrderOptimizationTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.OrToUnionRuleTest;
@@ -185,6 +186,7 @@ import org.junit.runners.Suite;
     TxThreadLockingTest.class,
     SelectByKeyFieldTest.class,
     WindowIntegrationTest.class,
+    CalciteMessageUnmarshalThreadIntegrationTest.class,
 })
 public class IntegrationTestSuite {
 }

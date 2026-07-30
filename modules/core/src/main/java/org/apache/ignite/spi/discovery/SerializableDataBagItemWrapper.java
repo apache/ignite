@@ -76,13 +76,13 @@ public class SerializableDataBagItemWrapper implements MarshallableMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+    @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
         if (data != null)
             dataBytes = U.marshal(marsh, data);
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         if (dataBytes != null) {
             try {
                 data = U.unmarshal(marsh, dataBytes, clsLdr);

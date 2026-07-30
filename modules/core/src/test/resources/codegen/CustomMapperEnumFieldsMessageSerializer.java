@@ -30,12 +30,12 @@ import org.apache.ignite.transactions.TransactionIsolation;
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public class CustomMapperEnumFieldsMessageSerializer implements MessageSerializer<CustomMapperEnumFieldsMessage> {
+public final class CustomMapperEnumFieldsMessageSerializer implements MessageSerializer<CustomMapperEnumFieldsMessage> {
     /** */
     private final EnumMapper<TransactionIsolation> transactionIsolationMapper = new TransactionIsolationEnumMapper();
 
     /** */
-    @Override public boolean writeTo(CustomMapperEnumFieldsMessage msg, MessageWriter writer) {
+    @Override public final boolean writeTo(CustomMapperEnumFieldsMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
                 return false;
@@ -55,7 +55,7 @@ public class CustomMapperEnumFieldsMessageSerializer implements MessageSerialize
     }
 
     /** */
-    @Override public boolean readFrom(CustomMapperEnumFieldsMessage msg, MessageReader reader) {
+    @Override public final boolean readFrom(CustomMapperEnumFieldsMessage msg, MessageReader reader) {
         switch (reader.state()) {
             case 0:
                 msg.txMode = transactionIsolationMapper.decode(reader.readByte());
@@ -67,5 +67,10 @@ public class CustomMapperEnumFieldsMessageSerializer implements MessageSerialize
         }
 
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public final CustomMapperEnumFieldsMessage createMessage() {
+        return new CustomMapperEnumFieldsMessage();
     }
 }

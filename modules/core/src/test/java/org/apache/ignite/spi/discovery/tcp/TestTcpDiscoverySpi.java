@@ -20,11 +20,9 @@ package org.apache.ignite.spi.discovery.tcp;
 import java.io.IOException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
@@ -120,14 +118,13 @@ public class TestTcpDiscoverySpi extends TcpDiscoverySpi implements IgniteDiscov
      * Otherwise, this method call will take no effect.
      *
      * @param msgFactoryProvider Discovery messages factory provider.
-     * @param cfg Ignite configuration.
      */
-    public void messageFactory(MessageFactoryProvider msgFactoryProvider, IgniteConfiguration cfg) {
+    public void messageFactory(MessageFactoryProvider msgFactoryProvider) {
         provider = msgFactoryProvider;
         assert !started();
 
         msgFactory = new IgniteMessageFactoryImpl(new MessageFactoryProvider[] {
-            new CoreMessagesProvider(jdk(), jdk(), U.resolveClassLoader(cfg)),
+            new CoreMessagesProvider(jdk(), jdk()),
             msgFactoryProvider
         });
     }

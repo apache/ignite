@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.TestMarshallableMessage;
-import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.internal.TestMarshalledMapMessage;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionType;
+import org.apache.ignite.plugin.extensions.communication.MessageItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -30,48 +30,30 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public class TestMarshallableMessageMarshallableSerializer implements MessageSerializer<TestMarshallableMessage> {
+public final class TestMarshalledMapMessageSerializer implements MessageSerializer<TestMarshalledMapMessage> {
     /** */
-    private final ClassLoader clsLdr;
+    private static final MessageCollectionType mapKeysCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.GRID_CACHE_VERSION), false);
     /** */
-    private final Marshaller marshaller;
+    private static final MessageCollectionType mapValsCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.GRID_CACHE_VERSION), false);
 
     /** */
-    public TestMarshallableMessageMarshallableSerializer(Marshaller marshaller, ClassLoader clsLdr) {
-        this.marshaller = marshaller;
-        this.clsLdr = clsLdr;
-    }
-    /** */
-    @Override public boolean writeTo(TestMarshallableMessage msg, MessageWriter writer) {
+    @Override public final boolean writeTo(TestMarshalledMapMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
                 return false;
-
-            try {
-                msg.prepareMarshal(marshaller);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to marshal object " + msg.getClass().getSimpleName(), e);
-            }
 
             writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeInt(msg.iv))
+                if (!writer.writeCollection(msg.mapKeys, mapKeysCollDesc))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeString(msg.sv))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeByteArray(msg.cstDataBytes))
+                if (!writer.writeCollection(msg.mapVals, mapValsCollDesc))
                     return false;
 
                 writer.incrementState();
@@ -81,10 +63,10 @@ public class TestMarshallableMessageMarshallableSerializer implements MessageSer
     }
 
     /** */
-    @Override public boolean readFrom(TestMarshallableMessage msg, MessageReader reader) {
+    @Override public final boolean readFrom(TestMarshalledMapMessage msg, MessageReader reader) {
         switch (reader.state()) {
             case 0:
-                msg.iv = reader.readInt();
+                msg.mapKeys = reader.readCollection(mapKeysCollDesc);
 
                 if (!reader.isLastRead())
                     return false;
@@ -92,29 +74,19 @@ public class TestMarshallableMessageMarshallableSerializer implements MessageSer
                 reader.incrementState();
 
             case 1:
-                msg.sv = reader.readString();
+                msg.mapVals = reader.readCollection(mapValsCollDesc);
 
                 if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
-
-            case 2:
-                msg.cstDataBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-        }
-
-        try {
-            msg.finishUnmarshal(marshaller, clsLdr);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException("Failed to unmarshal object " + msg.getClass().getSimpleName(), e);
         }
 
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public final TestMarshalledMapMessage createMessage() {
+        return new TestMarshalledMapMessage();
     }
 }
