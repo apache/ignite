@@ -40,6 +40,7 @@ import org.jetbrains.annotations.Nullable;
  * Job execution request.
  */
 @SuppressWarnings({"AssignmentOrReturnOfFieldWithMutableType", "NullableProblems"})
+@UseBinaryMarshaller
 public class GridJobExecuteRequest implements ExecutorAwareMessage {
     /** */
     @Order(0)

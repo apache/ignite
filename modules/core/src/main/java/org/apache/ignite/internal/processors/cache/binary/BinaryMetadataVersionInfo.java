@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.binary;
 import java.io.Serializable;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
@@ -28,6 +29,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  * The version refers solely to the internal protocol for updating BinaryMetadata and is unknown externally.
  * It can be updated dynamically from different nodes and threads on the same node.
  */
+@UseBinaryMarshaller
 public final class BinaryMetadataVersionInfo implements Serializable, Message {
     /** */
     private static final long serialVersionUID = 0L;

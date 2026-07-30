@@ -31,7 +31,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public class TestMapMessageSerializer implements MessageSerializer<TestMapMessage> {
+public final class TestMapMessageSerializer implements MessageSerializer<TestMapMessage> {
     /** */
     private static final MessageMapType affTopVersionIgniteUuidMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.AFFINITY_TOPOLOGY_VERSION), new MessageItemType(MessageCollectionItemType.IGNITE_UUID), false);
     /** */
@@ -86,7 +86,7 @@ public class TestMapMessageSerializer implements MessageSerializer<TestMapMessag
     private static final MessageMapType uuidStringMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.UUID), new MessageItemType(MessageCollectionItemType.STRING), false);
 
     /** */
-    @Override public boolean writeTo(TestMapMessage msg, MessageWriter writer) {
+    @Override public final boolean writeTo(TestMapMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
                 return false;
@@ -256,7 +256,7 @@ public class TestMapMessageSerializer implements MessageSerializer<TestMapMessag
     }
 
     /** */
-    @Override public boolean readFrom(TestMapMessage msg, MessageReader reader) {
+    @Override public final boolean readFrom(TestMapMessage msg, MessageReader reader) {
         switch (reader.state()) {
             case 0:
                 msg.booleanArrayBoxedLongMap = reader.readMap(booleanArrayBoxedLongMapCollDesc);
@@ -468,5 +468,10 @@ public class TestMapMessageSerializer implements MessageSerializer<TestMapMessag
         }
 
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public final TestMapMessage createMessage() {
+        return new TestMapMessage();
     }
 }

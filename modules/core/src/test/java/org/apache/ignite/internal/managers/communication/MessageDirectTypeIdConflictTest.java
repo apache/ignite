@@ -80,7 +80,7 @@ public class MessageDirectTypeIdConflictTest extends GridCommonAbstractTest {
         @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
             registry.registerExtension(MessageFactoryProvider.class, new MessageFactoryProvider() {
                 @Override public void registerAll(IgniteMessageFactory factory) {
-                    factory.register(DIRECT_TYPE, DuplicateDirectTypeIdMessage::new, new DuplicateDirectTypeIdMessageSerializer());
+                    factory.register(DIRECT_TYPE, new DuplicateDirectTypeIdMessageSerializer());
                 }
             });
         }

@@ -36,6 +36,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Job execution response.
  */
+@UseBinaryMarshaller
 public class GridJobExecuteResponse implements Message {
     /** */
     @Order(0)

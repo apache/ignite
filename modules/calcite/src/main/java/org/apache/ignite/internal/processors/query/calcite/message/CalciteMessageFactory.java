@@ -36,18 +36,18 @@ public class CalciteMessageFactory extends AbstractMarshallableMessageFactoryPro
 
     /** {@inheritDoc} */
     @Override public void registerAll(IgniteMessageFactory factory) {
-        register(factory, QueryStartRequest.class, (short)300, QueryStartRequest::new, schemaAwareMarsh);
-        register(factory, QueryStartResponse.class, (short)301, QueryStartResponse::new, dfltMarsh);
-        register(factory, CalciteErrorMessage.class, (short)302, CalciteErrorMessage::new, dfltMarsh);
-        register(factory, QueryBatchMessage.class, (short)303, QueryBatchMessage::new, dfltMarsh);
-        register(factory, QueryBatchAcknowledgeMessage.class, (short)304, QueryBatchAcknowledgeMessage::new, dfltMarsh);
-        register(factory, QueryInboxCloseMessage.class, (short)305, QueryInboxCloseMessage::new, dfltMarsh);
-        register(factory, QueryCloseMessage.class, (short)306, QueryCloseMessage::new, dfltMarsh);
-        register(factory, GenericValueMessage.class, (short)307, GenericValueMessage::new, schemaAwareMarsh);
-        register(factory, FragmentMapping.class, (short)308, FragmentMapping::new, dfltMarsh);
-        register(factory, ColocationGroup.class, (short)309, ColocationGroup::new, dfltMarsh);
-        register(factory, FragmentDescription.class, (short)310, FragmentDescription::new, dfltMarsh);
-        register(factory, QueryTxEntry.class, (short)311, QueryTxEntry::new, dfltMarsh);
+        register(factory, QueryStartRequest.class, (short)300);
+        register(factory, QueryStartResponse.class, (short)301);
+        register(factory, CalciteErrorMessage.class, (short)302);
+        register(factory, QueryBatchMessage.class, (short)303);
+        register(factory, QueryBatchAcknowledgeMessage.class, (short)304);
+        register(factory, QueryInboxCloseMessage.class, (short)305);
+        register(factory, QueryCloseMessage.class, (short)306);
+        register(factory, GenericValueMessage.class, (short)307);
+        register(factory, FragmentMapping.class, (short)308);
+        register(factory, ColocationGroup.class, (short)309);
+        register(factory, FragmentDescription.class, (short)310);
+        register(factory, QueryTxEntry.class, (short)311);
     }
 
     /** */

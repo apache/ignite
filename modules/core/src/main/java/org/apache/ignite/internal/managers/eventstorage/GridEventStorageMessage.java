@@ -28,6 +28,7 @@ import org.apache.ignite.internal.GridTopicMessage;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -40,6 +41,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Event storage message.
  */
+@UseBinaryMarshaller
 public class GridEventStorageMessage implements MarshallableMessage {
     /** */
     @Order(0)

@@ -36,7 +36,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public class DefaultMapperEnumFieldsMessageSerializer implements MessageSerializer<DefaultMapperEnumFieldsMessage> {
+public final class DefaultMapperEnumFieldsMessageSerializer implements MessageSerializer<DefaultMapperEnumFieldsMessage> {
     /** */
     private static final GridCacheOperation[] gridCacheOperationVals = GridCacheOperation.values();
     /** */
@@ -49,7 +49,7 @@ public class DefaultMapperEnumFieldsMessageSerializer implements MessageSerializ
     private static final MessageMapType isolationStringMapCollDesc = new MessageMapType(new MessageCollectionType(new MessageEnumType<>(DefaultEnumMapper.INSTANCE::encode, b -> DefaultEnumMapper.INSTANCE.decode(transactionIsolationVals, b)), false), new MessageItemType(MessageCollectionItemType.STRING), false);
 
     /** */
-    @Override public boolean writeTo(DefaultMapperEnumFieldsMessage msg, MessageWriter writer) {
+    @Override public final boolean writeTo(DefaultMapperEnumFieldsMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
                 return false;
@@ -87,7 +87,7 @@ public class DefaultMapperEnumFieldsMessageSerializer implements MessageSerializ
     }
 
     /** */
-    @Override public boolean readFrom(DefaultMapperEnumFieldsMessage msg, MessageReader reader) {
+    @Override public final boolean readFrom(DefaultMapperEnumFieldsMessage msg, MessageReader reader) {
         switch (reader.state()) {
             case 0:
                 msg.publicEnum = DefaultEnumMapper.INSTANCE.decode(transactionIsolationVals, reader.readByte());
@@ -123,5 +123,10 @@ public class DefaultMapperEnumFieldsMessageSerializer implements MessageSerializ
         }
 
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public final DefaultMapperEnumFieldsMessage createMessage() {
+        return new DefaultMapperEnumFieldsMessage();
     }
 }
