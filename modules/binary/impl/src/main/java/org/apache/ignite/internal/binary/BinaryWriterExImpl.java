@@ -905,6 +905,21 @@ class BinaryWriterExImpl implements BinaryWriterEx {
     }
 
     /** {@inheritDoc} */
+    @Override public void writeByteArray(@Nullable byte[] val, int pos, int len) throws BinaryObjectException {
+        if (val == null)
+            out.writeByte(GridBinaryMarshaller.NULL);
+        else {
+            if (len > val.length)
+                throw new IllegalArgumentException("len must be less then val.length");
+
+            out.unsafeEnsure(1 + 4);
+            out.unsafeWriteByte(GridBinaryMarshaller.BYTE_ARR);
+            out.unsafeWriteInt(len);
+            out.writeByteArray(val, pos, len);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeShortArray(String fieldName, @Nullable short[] val) throws BinaryObjectException {
         writeFieldId(fieldName);
         writeShortArray(val);

@@ -20,10 +20,12 @@ package org.apache.ignite.internal.processors.query.calcite.message;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 
 /** */
+@UseBinaryMarshaller
 public final class GenericValueMessage implements MarshallableMessage {
     /** */
     private Object val;
@@ -48,13 +50,13 @@ public final class GenericValueMessage implements MarshallableMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+    @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
         if (val != null && serialized == null)
             serialized = U.marshal(marsh, val);
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         if (serialized != null && val == null)
             val = U.unmarshal(marsh, serialized, clsLdr);
 

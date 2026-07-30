@@ -46,7 +46,6 @@ public class TcpInverseConnectionResponseMessage implements TcpConnectionIndexAw
         return connIdx;
     }
 
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpInverseConnectionResponseMessage.class, this);
