@@ -2206,7 +2206,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
             if (ignite instanceof IgniteEx) {
                 ((IgniteEx)ignite).context().internalSubscriptionProcessor()
-                    .registerSslContextReloadable("discovery", this);
+                    .registerSslContextReloadable(DISCOVERY, this);
             }
         }
 

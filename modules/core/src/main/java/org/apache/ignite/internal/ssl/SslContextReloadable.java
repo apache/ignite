@@ -26,9 +26,25 @@ import org.jetbrains.annotations.Nullable;
  * A node component whose TLS certificates can be replaced at runtime, without a node restart.
  * <p>
  * A component registers itself in {@link GridInternalSubscriptionProcessor} once it has set SSL up, so an empty
- * registry means the node does not use SSL at all.
+ * registry means the node does not use SSL at all. It registers under one of the names below, which is also how
+ * the reload command reports it, so they are part of what an operator sees and scripts against.
  */
 public interface SslContextReloadable {
+    /** */
+    public static final String COMMUNICATION = "communication";
+
+    /** */
+    public static final String DISCOVERY = "discovery";
+
+    /** */
+    public static final String CLIENT_CONNECTOR = "client connector";
+
+    /** */
+    public static final String BINARY_REST = "binary REST";
+
+    /** */
+    public static final String HTTP_REST = "HTTP REST";
+
     /**
      * Rebuilds the SSL context from the configured factory and applies it. Connections opened afterwards use the
      * updated certificates, already established sessions are not interrupted.

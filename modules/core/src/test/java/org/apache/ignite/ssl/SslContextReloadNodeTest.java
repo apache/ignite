@@ -23,7 +23,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -45,6 +44,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.ssl.SslContextReloadable.CLIENT_CONNECTOR;
+import static org.apache.ignite.internal.ssl.SslContextReloadable.COMMUNICATION;
+import static org.apache.ignite.internal.ssl.SslContextReloadable.DISCOVERY;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 
@@ -54,10 +56,10 @@ import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
  * without changing anything.
  */
 public class SslContextReloadNodeTest extends GridCommonAbstractTest {
-    /** Reason {@link FailingSslContextFactory} reports, standing in for an unreadable key store. */
+    /** Reason the failing factory reports, standing in for an unreadable key store. */
     private static final String FAILURE_MSG = "Key store is unreadable";
 
-    /** Switches {@link FailingSslContextFactory} to failing; static, as the factory lives inside the node. */
+    /** Switches the failing factory to failing; static, so that it is reachable from inside the node. */
     private static final AtomicBoolean FAIL_RELOAD = new AtomicBoolean();
 
     /** Key store file shared by the nodes; replaced on disk to simulate certificate rotation. */
@@ -74,9 +76,6 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
 
     /** Test trust store the node runs on, {@code null} to trust any peer. */
     private String trustStore;
-
-    /** Key store of the probing client; fixed, so that probing does not depend on the rotation under test. */
-    private Path probeKeyStore;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -97,11 +96,8 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         keyStore = Files.createTempFile("ignite-ssl-reload-node-", ".jks");
-        probeKeyStore = Files.createTempFile("ignite-ssl-reload-probe-", ".jks");
 
         copyKeyStore("node01");
-
-        Files.copy(Path.of(GridTestUtils.keyStorePath("node01")), probeKeyStore, StandardCopyOption.REPLACE_EXISTING);
     }
 
     /** {@inheritDoc} */
@@ -117,22 +113,32 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
 
         if (keyStore != null)
             Files.deleteIfExists(keyStore);
-
-        if (probeKeyStore != null)
-            Files.deleteIfExists(probeKeyStore);
     }
 
     /**
      * @return SSL context factory the node under test runs on, according to the flags set by the test.
      */
     private Factory<SSLContext> nodeSslContextFactory() {
-        if (cachingFactory)
-            return new CachingSslContextFactory(reloadableFactory());
+        Factory<SSLContext> factory = reloadableFactory();
 
-        if (failingFactory)
-            return new FailingSslContextFactory(reloadableFactory());
+        if (cachingFactory) {
+            // A ready-made context, the way a factory caching it internally hands it over: the node gets the very
+            // same instance back, so there is nothing to read again.
+            SSLContext ctx = factory.create();
 
-        return reloadableFactory();
+            return () -> ctx;
+        }
+
+        if (failingFactory) {
+            return () -> {
+                if (FAIL_RELOAD.get())
+                    throw new IgniteException(FAILURE_MSG);
+
+                return factory.create();
+            };
+        }
+
+        return factory;
     }
 
     /** Certificate reload on every SSL transport of a running two-node cluster must succeed and keep it operational. */
@@ -156,23 +162,44 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
 
         String res = reload(g0, g1);
 
-        assertContains(log, res, "communication");
-        assertContains(log, res, "discovery");
-        assertContains(log, res, "client connector");
+        assertReloaded(res, g0, CLIENT_CONNECTOR, COMMUNICATION, DISCOVERY);
+        assertReloaded(res, g1, CLIENT_CONNECTOR, COMMUNICATION, DISCOVERY);
 
         // The report names the certificate now in use, so a rotation can be verified without probing the ports.
         assertContains(log, res, "serving CN=node02");
 
-        assertRotated("client connector", cliCertBefore, servedCertificate(clientConnectorPort(g0)));
+        assertRotated(CLIENT_CONNECTOR, cliCertBefore, servedCertificate(clientConnectorPort(g0)));
 
         // Discovery accepts on a plain socket and secures every connection separately, so the listening socket
         // does not pin the certificate it was bound with.
-        assertRotated("discovery", discoCertBefore, servedCertificate(discoveryPort(g0)));
+        assertRotated(DISCOVERY, discoCertBefore, servedCertificate(discoveryPort(g0)));
 
         cache.put(2, 2);
 
         assertEquals("Established sessions must survive the reload",
             (Integer)2, g1.<Integer, Integer>cache(DEFAULT_CACHE_NAME).get(2));
+    }
+
+    /**
+     * A second rotation has to take effect as well. Each reload compares what it built against the context in use,
+     * so a component that kept comparing against the one it started with would report the second rotation as
+     * nothing to do.
+     */
+    @Test
+    public void testSecondReloadRotatesAgain() throws Exception {
+        IgniteEx g = startGrid(0);
+
+        copyKeyStore("node02");
+
+        assertContains(log, reload(g), "serving CN=node02");
+
+        X509Certificate afterFirst = servedCertificate(discoveryPort(g));
+
+        copyKeyStore("node03");
+
+        assertContains(log, reload(g), "serving CN=node03");
+
+        assertRotated("A second reload", afterFirst, servedCertificate(discoveryPort(g)));
     }
 
     /** A caching custom factory cannot be reloaded, and the command must report that instead of a success. */
@@ -214,9 +241,9 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
         String res = X.getFullStackTrace(GridTestUtils.assertThrows(log, () -> reload(g), Exception.class, null));
 
         // Every SSL transport is attempted, so a single broken one does not hide the state of the others.
-        assertContains(log, res, "communication");
-        assertContains(log, res, "discovery");
-        assertContains(log, res, "client connector");
+        assertContains(log, res, COMMUNICATION);
+        assertContains(log, res, DISCOVERY);
+        assertContains(log, res, CLIENT_CONNECTOR);
         assertContains(log, res, FAILURE_MSG);
 
         assertKept("A failed reload", certBefore, servedCertificate(clientConnectorPort(g)));
@@ -240,13 +267,13 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
         String res = X.getFullStackTrace(GridTestUtils.assertThrows(log, () -> reload(g), Exception.class, null));
 
         assertContains(log, res, "failed on");
-        assertContains(log, res, "communication");
-        assertContains(log, res, "discovery");
+        assertContains(log, res, COMMUNICATION);
+        assertContains(log, res, DISCOVERY);
 
         assertKept("A certificate the trust store rejects", certBefore, servedCertificate(discoveryPort(g)));
     }
 
-    /** Ensure must accept a valid rotation and still leave the node on the certificate it is running. */
+    /** A dry run must accept a valid rotation and still leave the node on the certificate it is running. */
     @Test
     public void testDryRunAcceptsWithoutApplying() throws Exception {
         IgniteEx g = startGrid(0);
@@ -258,12 +285,12 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
         String res = dryRun(g);
 
         assertContains(log, res, "can be reloaded");
-        assertContains(log, res, "discovery");
+        assertContains(log, res, DISCOVERY);
 
         assertKept("An accepted but not applied certificate", certBefore, servedCertificate(discoveryPort(g)));
     }
 
-    /** Ensure must reject a certificate that a reload would refuse, before any node has been touched. */
+    /** A dry run must reject a certificate that a reload would refuse, before any node has been touched. */
     @Test
     public void testDryRunRejectsUntrustedCertificate() throws Exception {
         trustStore = "trustone";
@@ -277,7 +304,7 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
         String res = X.getFullStackTrace(GridTestUtils.assertThrows(log, () -> dryRun(g), Exception.class, null));
 
         assertContains(log, res, "would fail on");
-        assertContains(log, res, "discovery");
+        assertContains(log, res, DISCOVERY);
 
         assertKept("A rejected certificate", certBefore, servedCertificate(discoveryPort(g)));
     }
@@ -290,16 +317,7 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
 
         copyKeyStore("node02");
 
-        String res = reload(srv, cli);
-
-        String cliLine = Arrays.stream(res.split("\n"))
-            .filter(line -> line.startsWith(cli.localNode().id().toString()))
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("No report line for the client node: " + res));
-
-        assertContains(log, cliLine, "reloaded");
-        assertContains(log, cliLine, "communication");
-        assertContains(log, cliLine, "discovery");
+        assertReloaded(reload(srv, cli), cli, CLIENT_CONNECTOR, COMMUNICATION, DISCOVERY);
     }
 
     /** Reload must report nothing to reload on a node that does not use SSL. */
@@ -373,7 +391,7 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
     private Factory<SSLContext> probeFactory() {
         SslContextFactory factory = new SslContextFactory();
 
-        factory.setKeyStoreFilePath(probeKeyStore.toString());
+        factory.setKeyStoreFilePath(GridTestUtils.keyStorePath("node01"));
         factory.setKeyStorePassword(GridTestUtils.keyStorePassword().toCharArray());
         factory.setTrustManagers(SslContextFactory.getDisabledTrustManager());
 
@@ -388,13 +406,21 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param res Aggregated report.
+     * @param node Node whose line the report must carry.
+     * @param comps Transports the node must have reloaded; the report lists them sorted by name.
+     */
+    private void assertReloaded(String res, IgniteEx node, String... comps) {
+        assertContains(log, res, node.localNode().id() + ": reloaded " + String.join(", ", comps));
+    }
+
+    /**
      * @param name Transport that was expected to pick the rotated certificate up.
      * @param before Certificate served before the reload.
      * @param after Certificate served after the reload.
      */
-    private void assertRotated(String name, X509Certificate before, X509Certificate after) throws Exception {
-        assertFalse(name + " must serve the rotated certificate to new connections",
-            Arrays.equals(before.getEncoded(), after.getEncoded()));
+    private void assertRotated(String name, X509Certificate before, X509Certificate after) {
+        assertFalse(name + " must serve the rotated certificate to new connections", before.equals(after));
     }
 
     /**
@@ -402,9 +428,8 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
      * @param before Certificate served before the reload.
      * @param after Certificate served after the reload.
      */
-    private void assertKept(String what, X509Certificate before, X509Certificate after) throws Exception {
-        assertTrue(what + " must keep the previously loaded certificate",
-            Arrays.equals(before.getEncoded(), after.getEncoded()));
+    private void assertKept(String what, X509Certificate before, X509Certificate after) {
+        assertTrue(what + " must keep the previously loaded certificate", before.equals(after));
     }
 
     /** @param node Node to connect to. */
@@ -432,59 +457,6 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
             sock.startHandshake();
 
             return (X509Certificate)sock.getSession().getPeerCertificates()[0];
-        }
-    }
-
-    /**
-     * Not an {@link AbstractSslContextFactory} and caches the created context, so its certificate cannot be rotated
-     * without a node restart.
-     */
-    private static class CachingSslContextFactory implements Factory<SSLContext> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private final Factory<SSLContext> delegate;
-
-        /** Cached context, created once and never rebuilt. */
-        private volatile SSLContext ctx;
-
-        /** */
-        private CachingSslContextFactory(Factory<SSLContext> delegate) {
-            this.delegate = delegate;
-        }
-
-        /** {@inheritDoc} */
-        @Override public SSLContext create() {
-            if (ctx == null)
-                ctx = delegate.create();
-
-            return ctx;
-        }
-    }
-
-    /**
-     * Builds the context through the delegate until {@link #FAIL_RELOAD} is set, and fails afterwards the way a
-     * factory reading a corrupted store on disk would.
-     */
-    private static class FailingSslContextFactory implements Factory<SSLContext> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private final Factory<SSLContext> delegate;
-
-        /** */
-        private FailingSslContextFactory(Factory<SSLContext> delegate) {
-            this.delegate = delegate;
-        }
-
-        /** {@inheritDoc} */
-        @Override public SSLContext create() {
-            if (FAIL_RELOAD.get())
-                throw new IgniteException(FAILURE_MSG);
-
-            return delegate.create();
         }
     }
 }

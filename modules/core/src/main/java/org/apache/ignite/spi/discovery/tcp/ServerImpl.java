@@ -6372,10 +6372,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                         sock = spi.acceptedSocket(sock);
                     }
                     catch (IOException e) {
-                        // A single connection that cannot be secured must not terminate the server.
+                        // The peer hung up before any TLS could start. No certificate is checked here: the handshake
+                        // runs on the first read, in the reader below, and a peer refused there loses its connection
+                        // and nothing else. Letting this out would end the accept worker instead, which the failure
+                        // processor takes for a critical failure of the node.
                         if (log.isDebugEnabled())
-                            log.debug("Failed to secure an accepted connection [rmtAddr=" + sock.getInetAddress() +
-                                ", err=" + e + ']');
+                            log.debug("Failed to set TLS up on an accepted connection [rmtAddr=" +
+                                sock.getInetAddress() + ", err=" + e + ']');
 
                         U.closeQuiet(sock);
 
@@ -6779,9 +6782,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                         U.error(log, "Caught exception on handshake [err=" + e + ", sock=" + sock + ']', e);
 
                     if (X.hasCause(e, SSLException.class) && spi.isSslEnabled() && !spi.isNodeStopping0()) {
-                        LT.warn(log, "Failed to initialize connection " +
-                            "(missing SSL configuration on remote node?) " +
-                            "[rmtAddr=" + sock.getInetAddress() + ']', true);
+                        SSLException sslErr = X.cause(e, SSLException.class);
+
+                        LT.warn(log, "Failed to initialize connection [rmtAddr=" + sock.getInetAddress() +
+                            ", err=" + (sslErr == null ? e.getMessage() : sslErr.getMessage()) + "]. The remote " +
+                            "node has no SSL configured, or presents a certificate this node does not trust. " +
+                            "While certificates are being rotated, a new authority has to be trusted everywhere " +
+                            "before anything presents a certificate issued by it.", true);
 
                         spi.stats.onSslConnectionRejected();
                     }

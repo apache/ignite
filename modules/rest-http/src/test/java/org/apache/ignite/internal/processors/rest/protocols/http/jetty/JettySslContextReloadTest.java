@@ -23,7 +23,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
-import java.util.Collections;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManager;
@@ -32,6 +31,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.ssl.SslReloadCommandArg;
 import org.apache.ignite.internal.management.ssl.SslReloadTask;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.VisorTaskResult;
 import org.apache.ignite.ssl.SslContextFactory;
@@ -39,6 +39,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_JETTY_PORT;
+import static org.apache.ignite.internal.ssl.SslContextReloadable.HTTP_REST;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 
 /**
@@ -48,9 +50,6 @@ import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 public class JettySslContextReloadTest extends GridCommonAbstractTest {
     /** System property the Jetty configuration reads the key store path from. */
     private static final String KEY_STORE_PROP = "IGNITE_TEST_JETTY_KEY_STORE";
-
-    /** Port the Jetty configuration binds to. */
-    private static final int PORT = 11443;
 
     /** Key store Jetty runs on; replaced on disk to rotate the certificate. */
     private Path keyStore;
@@ -89,16 +88,17 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
     public void testCertificateReloaded() throws Exception {
         IgniteEx g = startGrid(0);
 
-        X509Certificate certBefore = servedCertificate();
+        X509Certificate certBefore = servedCertificate(g);
 
         copyKeyStore("node02");
 
         String res = reload(g);
 
-        assertContains(log, res, "HTTP REST");
+        // A successful list is always printed right after the node id, so "not reloaded" cannot match.
+        assertContains(log, res, ": reloaded " + HTTP_REST);
 
         assertFalse("Jetty must serve the rotated certificate to new connections",
-            Arrays.equals(certBefore.getEncoded(), servedCertificate().getEncoded()));
+            Arrays.equals(certBefore.getEncoded(), servedCertificate(g).getEncoded()));
     }
 
     /** A key store Jetty cannot read must be reported, and the connector must keep serving the previous one. */
@@ -106,24 +106,26 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
     public void testBrokenKeyStoreKeepsConnectorServing() throws Exception {
         IgniteEx g = startGrid(0);
 
-        X509Certificate certBefore = servedCertificate();
+        X509Certificate certBefore = servedCertificate(g);
 
         Files.write(keyStore, "not a key store".getBytes());
 
-        GridTestUtils.assertThrows(log, () -> reload(g), Exception.class, null);
+        String err = X.getFullStackTrace(GridTestUtils.assertThrows(log, () -> reload(g), Exception.class, null));
+
+        // The whole chain, so that the assertion does not depend on how the compute framework wraps the failure.
+        assertContains(log, err, "failed on " + HTTP_REST);
 
         assertTrue("A broken key store must not reach the connector",
-            Arrays.equals(certBefore.getEncoded(), servedCertificate().getEncoded()));
+            Arrays.equals(certBefore.getEncoded(), servedCertificate(g).getEncoded()));
     }
 
     /**
      * @param node Node to run the reload on.
-     * @return Task result.
+     * @return Report the command prints for this node.
      */
     private String reload(IgniteEx node) throws Exception {
         VisorTaskResult<String> res = node.compute(node.cluster()).execute(SslReloadTask.class,
-            new VisorTaskArgument<>(Collections.singletonList(node.localNode().id()), new SslReloadCommandArg(),
-                false));
+            new VisorTaskArgument<>(node.localNode().id(), new SslReloadCommandArg(), false));
 
         return res.result();
     }
@@ -136,15 +138,16 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param node Node whose HTTP REST connector is probed.
      * @return Certificate the connector presents on a new TLS connection.
      */
-    private X509Certificate servedCertificate() throws Exception {
+    private X509Certificate servedCertificate(IgniteEx node) throws Exception {
         SSLContext cliCtx = SSLContext.getInstance("TLS");
 
         cliCtx.init(null, new TrustManager[] {SslContextFactory.getDisabledTrustManager()}, null);
 
         try (SSLSocket sock = (SSLSocket)cliCtx.getSocketFactory()
-            .createSocket(InetAddress.getLoopbackAddress(), PORT)) {
+            .createSocket(InetAddress.getLoopbackAddress(), (Integer)node.localNode().attribute(ATTR_REST_JETTY_PORT))) {
 
             sock.startHandshake();
 

@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
 import org.apache.ignite.internal.processors.rest.protocols.GridRestProtocolAdapter;
 import org.apache.ignite.internal.ssl.NioSslContextReloadable;
+import org.apache.ignite.internal.ssl.SslContextReloadable;
 import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
 import org.apache.ignite.internal.util.nio.GridNioFilter;
 import org.apache.ignite.internal.util.nio.GridNioParser;
@@ -268,7 +269,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
             ctx.ports().registerPort(port, IgnitePortProtocol.TCP, getClass());
 
             if (sslFilter != null) {
-                ctx.internalSubscriptionProcessor().registerSslContextReloadable("binary REST",
+                ctx.internalSubscriptionProcessor().registerSslContextReloadable(SslContextReloadable.BINARY_REST,
                     new NioSslContextReloadable(sslCtxFactory, sslFilter, false));
             }
 

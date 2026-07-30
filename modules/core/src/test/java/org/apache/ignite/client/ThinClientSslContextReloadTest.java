@@ -72,9 +72,9 @@ public class ThinClientSslContextReloadTest extends GridCommonAbstractTest {
         cliTrustStore = Files.createTempFile("ignite-thin-trust-", ".jks");
         cliKeyStore = Files.createTempFile("ignite-thin-cli-", ".jks");
 
-        copy("node01", srvKeyStore);
-        copy("trustone", cliTrustStore);
-        copy("node01", cliKeyStore);
+        placeStore("node01", srvKeyStore);
+        placeStore("trustone", cliTrustStore);
+        placeStore("node01", cliKeyStore);
     }
 
     /** {@inheritDoc} */
@@ -99,13 +99,13 @@ public class ThinClientSslContextReloadTest extends GridCommonAbstractTest {
             stopAllGrids();
 
             // The server comes back with a certificate issued by an authority the client does not trust yet.
-            copy("node02", srvKeyStore);
+            placeStore("node02", srvKeyStore);
 
             startGrid(0);
 
             assertFalse("The client must not trust the rotated server yet", reachable(cli));
 
-            copy("trustboth", cliTrustStore);
+            placeStore("trustboth", cliTrustStore);
 
             assertTrue("The client must pick the widened trust store up from disk",
                 GridTestUtils.waitForCondition(() -> reachable(cli), 10_000));
@@ -128,7 +128,7 @@ public class ThinClientSslContextReloadTest extends GridCommonAbstractTest {
             stopAllGrids();
 
             // Staged, and signed by an authority the cluster does not trust yet.
-            copy("node02", cliKeyStore);
+            placeStore("node02", cliKeyStore);
 
             try (ServerSocket ignored = acceptAndClose()) {
                 assertFalse("The handshake must not complete against a socket that closes at once", reachable(cli));
@@ -144,7 +144,7 @@ public class ThinClientSslContextReloadTest extends GridCommonAbstractTest {
     /** A refused handshake must name the reason, or a rotation done out of order cannot be diagnosed. */
     @Test
     public void testRefusedHandshakeNamesTheReason() throws Exception {
-        copy("node02", srvKeyStore);
+        placeStore("node02", srvKeyStore);
 
         startGrid(0);
 
@@ -191,15 +191,11 @@ public class ThinClientSslContextReloadTest extends GridCommonAbstractTest {
         ServerSocket srvSock = new ServerSocket(ClientConnectorConfiguration.DFLT_PORT, 0,
             InetAddress.getLoopbackAddress());
 
+        // accept() throws once the test closes the socket, and the async runner absorbs that into a future
+        // nobody waits on.
         GridTestUtils.runAsync(() -> {
-            while (!srvSock.isClosed()) {
-                try {
-                    srvSock.accept().close();
-                }
-                catch (Exception ignored) {
-                    // The socket is closed once the test is done with it.
-                }
-            }
+            while (!srvSock.isClosed())
+                srvSock.accept().close();
         });
 
         return srvSock;
@@ -228,7 +224,7 @@ public class ThinClientSslContextReloadTest extends GridCommonAbstractTest {
      * @param name Test key store name (see {@code tests.properties}).
      * @param dest File to replace.
      */
-    private void copy(String name, Path dest) throws Exception {
+    private void placeStore(String name, Path dest) throws Exception {
         Files.copy(Path.of(GridTestUtils.keyStorePath(name)), dest, StandardCopyOption.REPLACE_EXISTING);
     }
 }

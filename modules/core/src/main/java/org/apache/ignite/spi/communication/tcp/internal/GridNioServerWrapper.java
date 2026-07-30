@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.ssl.NioSslContextReloadable;
+import org.apache.ignite.internal.ssl.SslContextReloadable;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.function.ThrowableBiFunction;
@@ -993,7 +994,7 @@ public class GridNioServerWrapper {
 
                 // Registered only once the port is taken: a busy port makes this method try the next one.
                 if (sslFilter != null && subscriptionProc != null) {
-                    subscriptionProc.registerSslContextReloadable("communication",
+                    subscriptionProc.registerSslContextReloadable(SslContextReloadable.COMMUNICATION,
                         new NioSslContextReloadable(igniteCfg.getSslContextFactory(), sslFilter, true));
                 }
 
