@@ -105,13 +105,6 @@ public enum IgniteComponentType {
         "ignite-compress"
     ),
 
-    /** OpenCensus tracing implementation. */
-    TRACING(
-        null,
-        "org.apache.ignite.spi.tracing.opencensus.OpenCensusTracingSpi",
-        "ignite-opencensus"
-    ),
-
     /** Calcite based query engine. */
     QUERY_ENGINE(
         NoOpQueryEngine.class.getName(),
@@ -208,7 +201,7 @@ public enum IgniteComponentType {
         try {
             Class.forName(cls);
         }
-        catch (ClassNotFoundException e) {
+        catch (ClassNotFoundException | LinkageError e) {
             if (mandatory)
                 throw componentException(e);
 
@@ -263,7 +256,7 @@ public enum IgniteComponentType {
         try {
             cls = Class.forName(clsName);
         }
-        catch (ClassNotFoundException ignored) {
+        catch (ClassNotFoundException | LinkageError ignored) {
             try {
                 cls = Class.forName(noOpClsName);
             }

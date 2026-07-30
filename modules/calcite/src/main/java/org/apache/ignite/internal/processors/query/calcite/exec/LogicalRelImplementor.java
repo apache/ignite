@@ -27,13 +27,16 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.Intersect;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.core.Minus;
 import org.apache.calcite.rel.core.Spool;
+import org.apache.calcite.rel.core.Window;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexLiteral;
@@ -48,6 +51,8 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFa
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.window.WindowPartition;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.window.WindowPartitionFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.AbstractSetOpNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.CollectNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.CorrelatedNestedLoopJoinNode;
@@ -73,6 +78,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.TableSpoolNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.UncollectNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.UnionAllNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.WindowNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
@@ -85,7 +91,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexBound;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoinInfo;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJoin;
@@ -104,6 +109,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchang
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUncollect;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUnionAll;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteWindow;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteColocatedHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteColocatedSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapHashAggregate;
@@ -282,8 +288,6 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         RelDataType rightType = rel.getRight().getRowType();
         JoinRelType joinType = rel.getJoinType();
 
-        IgniteJoinInfo joinInfo = IgniteJoinInfo.of(rel);
-
         RexNode nonEquiConditionExpression = RexUtil.composeConjunction(Commons.emptyCluster().getRexBuilder(),
             rel.analyzeCondition().nonEquiConditions, true);
 
@@ -295,7 +299,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
             nonEquiCondition = expressionFactory.biPredicate(rel.getCondition(), rowType);
         }
 
-        Node<Row> node = HashJoinNode.create(ctx, outType, leftType, rightType, joinType, joinInfo,
+        Node<Row> node = HashJoinNode.create(ctx, outType, leftType, rightType, joinType, rel.analyzeCondition(),
             nonEquiCondition);
 
         node.register(Arrays.asList(visit(rel.getLeft()), visit(rel.getRight())));
@@ -339,14 +343,14 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         List<RelFieldCollation> leftCollations = rel.leftCollation().getFieldCollations();
         List<RelFieldCollation> rightCollations = rel.rightCollation().getFieldCollations();
 
-        ImmutableBitSet allowNulls = rel.allowNulls();
-        ImmutableBitSet.Builder collsAllowNullsBuilder = ImmutableBitSet.builder();
+        ImmutableList<Boolean> nullExclusions = rel.analyzeCondition().nullExclusionFlags;
+        ImmutableBitSet.Builder nullCompAsEqual = ImmutableBitSet.builder();
         int lastCollField = -1;
 
         for (int c = 0; c < Math.min(leftCollations.size(), rightCollations.size()); ++c) {
             RelFieldCollation leftColl = leftCollations.get(c);
             RelFieldCollation rightColl = rightCollations.get(c);
-            collsAllowNullsBuilder.set(c);
+            nullCompAsEqual.set(c);
 
             for (int p = 0; p < pairsCnt; ++p) {
                 IntPair pair = joinPairs.get(p);
@@ -354,8 +358,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
                 if (pair.source == leftColl.getFieldIndex() && pair.target == rightColl.getFieldIndex()) {
                     lastCollField = c;
 
-                    if (!allowNulls.get(p)) {
-                        collsAllowNullsBuilder.clear(c);
+                    if (nullExclusions.get(p)) {
+                        nullCompAsEqual.clear(c);
 
                         break;
                     }
@@ -366,7 +370,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         Comparator<Row> comp = expressionFactory.comparator(
             leftCollations.subList(0, lastCollField + 1),
             rightCollations.subList(0, lastCollField + 1),
-            collsAllowNullsBuilder.build()
+            nullCompAsEqual.build()
         );
 
         Node<Row> node = MergeJoinNode.create(ctx, outType, leftType, rightType, joinType, comp, hasExchange(rel));
@@ -937,6 +941,32 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         RelDataType outType = rel.getRowType();
 
         CollectNode<Row> node = new CollectNode<>(ctx, outType);
+
+        Node<Row> input = visit(rel.getInput());
+
+        node.register(input);
+
+        return node;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Node<Row> visit(IgniteWindow rel) {
+        RelDataType outType = rel.getRowType();
+        RelDataType inputType = rel.getInput().getRowType();
+        Window.Group grp = rel.getGroup();
+
+        List<Integer> grpKeys = grp.keys.toList();
+        RelCollation collation = rel.collation();
+
+        assert collation.getFieldCollations().size() >= grpKeys.size();
+        Comparator<Row> partCmp = expressionFactory.comparator(TraitUtils.createCollation(grpKeys));
+
+        List<AggregateCall> calls = grp.getAggregateCalls(rel);
+        Supplier<WindowPartition<Row>> partFactory = new WindowPartitionFactory<>(ctx, grp, calls, inputType);
+
+        RowFactory<Row> rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), outType);
+
+        WindowNode<Row> node = new WindowNode<>(ctx, outType, partCmp, partFactory, rowFactory);
 
         Node<Row> input = visit(rel.getInput());
 

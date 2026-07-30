@@ -19,11 +19,12 @@ package org.apache.ignite.internal.managers.communication;
 
 import org.apache.ignite.internal.ExecutorAwareMessage;
 import org.apache.ignite.internal.GridTopicMessage;
-import org.apache.ignite.internal.OperationContextMessage;
+import org.apache.ignite.internal.NioField;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
-import org.apache.ignite.internal.processors.tracing.messages.SpanTransport;
+import org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage;
+import org.apache.ignite.internal.util.nio.GridNioServer.MessageWrapper;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -32,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Wrapper for all grid messages.
  */
-public class GridIoMessage implements Message, SpanTransport {
+public class GridIoMessage implements Message, MessageWrapper {
     /** */
     public static final Integer STRIPE_DISABLED_PART = Integer.MIN_VALUE;
 
@@ -41,6 +42,7 @@ public class GridIoMessage implements Message, SpanTransport {
     byte plc;
 
     /** Topic message. */
+    @NioField
     @Order(1)
     @GridToStringInclude
     GridTopicMessage topicMsg;
@@ -61,14 +63,13 @@ public class GridIoMessage implements Message, SpanTransport {
     @Order(5)
     Message msg;
 
-    /** Serialized span */
-    @Order(6)
-    byte[] span;
-
     /** Effective operation context attributes to propagate. */
-    @Order(7)
+    @Order(6)
     @GridToStringInclude
-    public @Nullable OperationContextMessage opCtxMsg;
+    @Nullable OperationContextSnapshotMessage opCtxSnp;
+
+    /** Set once the payload is marshalled; guards double marshal and unmarshalled transmit. Not on the wire. */
+    private boolean marshalled;
 
     /**
      * Default constructor.
@@ -84,6 +85,7 @@ public class GridIoMessage implements Message, SpanTransport {
      * @param ordered Message ordered flag.
      * @param timeout Timeout.
      * @param skipOnTimeout Whether message can be skipped on timeout.
+     * @param opCtxSnp Operation Context snapshot.
      */
     public GridIoMessage(
         byte plc,
@@ -91,7 +93,8 @@ public class GridIoMessage implements Message, SpanTransport {
         Message msg,
         boolean ordered,
         long timeout,
-        boolean skipOnTimeout
+        boolean skipOnTimeout,
+        @Nullable OperationContextSnapshotMessage opCtxSnp
     ) {
         assert topic != null;
         assert msg != null;
@@ -102,6 +105,7 @@ public class GridIoMessage implements Message, SpanTransport {
         this.ordered = ordered;
         this.timeout = timeout;
         this.skipOnTimeout = skipOnTimeout;
+        this.opCtxSnp = opCtxSnp;
     }
 
     /**
@@ -125,10 +129,8 @@ public class GridIoMessage implements Message, SpanTransport {
         return GridTopicMessage.ordinal(topicMsg);
     }
 
-    /**
-     * @return Message.
-     */
-    public Message message() {
+    /** {@inheritDoc} */
+    @Override public Message message() {
         return msg;
     }
 
@@ -146,6 +148,16 @@ public class GridIoMessage implements Message, SpanTransport {
         return skipOnTimeout;
     }
 
+    /** Marks this message as marshalled. */
+    void markMarshalled() {
+        marshalled = true;
+    }
+
+    /** @return {@code true} if this message has been marshalled. */
+    boolean marshalled() {
+        return marshalled;
+    }
+
     /**
      * @return {@code True} if message is ordered, {@code false} otherwise.
      */
@@ -161,16 +173,6 @@ public class GridIoMessage implements Message, SpanTransport {
     /** {@inheritDoc} */
     @Override public int hashCode() {
         throw new AssertionError();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void span(byte[] span) {
-        this.span = span;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte[] span() {
-        return span;
     }
 
     /**

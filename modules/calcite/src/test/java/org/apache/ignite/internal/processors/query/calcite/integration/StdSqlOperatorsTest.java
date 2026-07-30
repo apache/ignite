@@ -371,6 +371,20 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
     }
 
     /** */
+    @Test
+    public void testWindowFunctions() {
+        assertExpression("ROW_NUMBER() OVER()").returns(1).check();
+        assertExpression("DENSE_RANK() OVER(ORDER BY val)").returns(1L).check();
+        assertExpression("RANK() OVER(ORDER BY val)").returns(1L).check();
+        assertExpression("PERCENT_RANK() OVER(ORDER BY val)").returns(0.0).check();
+        assertExpression("CUME_DIST() OVER(ORDER BY val)").returns(1.0).check();
+        assertExpression("FIRST_VALUE(val) OVER()").returns(1).check();
+        assertExpression("LAST_VALUE(val) OVER()").returns(1).check();
+        assertExpression("NTILE(1) OVER(ORDER BY val)").returns(1L).check();
+        assertExpression("NTH_VALUE(val, 1) OVER()").returns(1).check();
+    }
+
+    /** */
     private QueryChecker assertExpression(String qry) {
         // Select expressions from table to test plan serialization containing these expressions.
         return assertQuery("SELECT " + qry + " FROM t");

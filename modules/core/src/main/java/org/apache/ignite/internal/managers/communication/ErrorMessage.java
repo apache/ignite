@@ -29,6 +29,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Message used to transfer {@link Throwable} objects.
  */
+// TODO IGNITE-28912: move to a common package.
 @SuppressWarnings({"NullableProblems", "unused"})
 public class ErrorMessage implements MarshallableMessage {
     /** Error bytes. */
@@ -54,7 +55,7 @@ public class ErrorMessage implements MarshallableMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+    @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
         if (err == null)
             return;
 
@@ -67,7 +68,7 @@ public class ErrorMessage implements MarshallableMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         if (errBytes == null)
             return;
 

@@ -18,12 +18,13 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.future.GridCompoundFuture.SkipLoggingException;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Future computation cannot be retrieved because it was cancelled.
  */
-public class IgniteFutureCancelledCheckedException extends IgniteCheckedException {
+public class IgniteFutureCancelledCheckedException extends IgniteCheckedException implements SkipLoggingException {
     /** */
     private static final long serialVersionUID = 0L;
 

@@ -30,7 +30,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -49,7 +48,10 @@ public class SchemaOperationManager {
     /** Operation handler. */
     private final SchemaOperationWorker worker;
 
-    /** Mutex for concurrency control. */
+    /**
+     * Mutex for concurrency control. It's crucial to maintain locks order to avoid deadlocks,
+     * query processor should be locked before locking this mutex.
+     */
     private final Object mux = new Object();
 
     /** Participants. */
@@ -86,6 +88,8 @@ public class SchemaOperationManager {
         this.qryProc = qryProc;
         this.worker = worker;
 
+        assertQueryProcessorLockedBeforeOperationLock();
+
         synchronized (mux) {
             this.crd = crd;
 
@@ -96,17 +100,8 @@ public class SchemaOperationManager {
     /**
      * Map operation handling.
      */
-    @SuppressWarnings("unchecked")
     public void start() {
         worker.start();
-
-        synchronized (mux) {
-            worker.future().listen(new IgniteInClosure<IgniteInternalFuture>() {
-                @Override public void apply(IgniteInternalFuture fut) {
-                    onLocalNodeFinished(fut);
-                }
-            });
-        }
     }
 
     /**
@@ -114,7 +109,7 @@ public class SchemaOperationManager {
      *
      * @param fut Future.
      */
-    private void onLocalNodeFinished(IgniteInternalFuture fut) {
+    public void onLocalNodeFinished(IgniteInternalFuture fut) {
         assert fut.isDone();
 
         if (ctx.clientNode())
@@ -131,6 +126,8 @@ public class SchemaOperationManager {
             err = QueryUtils.wrapIfNeeded(e);
         }
 
+        assertQueryProcessorLockedBeforeOperationLock();
+
         synchronized (mux) {
             if (isLocalCoordinator())
                 onNodeFinished(ctx.localNodeId(), err, worker.nop());
@@ -146,6 +143,8 @@ public class SchemaOperationManager {
      * @param err Error.
      */
     public void onNodeFinished(UUID nodeId, @Nullable SchemaOperationException err, boolean nop) {
+        assertQueryProcessorLockedBeforeOperationLock();
+
         synchronized (mux) {
             assert isLocalCoordinator();
 
@@ -181,6 +180,8 @@ public class SchemaOperationManager {
      * @param curCrd Current coordinator node.
      */
     public void onNodeLeave(UUID nodeId, ClusterNode curCrd) {
+        assertQueryProcessorLockedBeforeOperationLock();
+
         synchronized (mux) {
             assert crd != null;
 
@@ -204,6 +205,12 @@ public class SchemaOperationManager {
 
             checkFinished();
         }
+    }
+
+    /** */
+    private void assertQueryProcessorLockedBeforeOperationLock() {
+        assert qryProc.isLockedByCurrentThread() : "Locks order violation, GridQueryProcessor.stateMux must be " +
+            "acquired before SchemaOperationManager.mux";
     }
 
     /**

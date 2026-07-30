@@ -24,7 +24,7 @@ import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.xml.XmlBeanFactory;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 
 /**
  * Helper class which helps to read deployer and tasks information from
@@ -32,7 +32,7 @@ import org.springframework.beans.factory.xml.XmlBeanFactory;
  */
 class GridUriDeploymentSpringDocument {
     /** Initialized springs beans factory. */
-    private final XmlBeanFactory factory;
+    private final DefaultListableBeanFactory factory;
 
     /** List of tasks from package description. */
     private List<Class<? extends ComputeTask<?, ?>>> tasks;
@@ -42,7 +42,7 @@ class GridUriDeploymentSpringDocument {
      *
      * @param factory Configuration factory.
      */
-    GridUriDeploymentSpringDocument(XmlBeanFactory factory) {
+    GridUriDeploymentSpringDocument(DefaultListableBeanFactory factory) {
         assert factory != null;
 
         this.factory = factory;

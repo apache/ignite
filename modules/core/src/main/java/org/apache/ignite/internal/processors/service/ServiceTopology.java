@@ -21,33 +21,37 @@ import java.io.Serializable;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** */
-public class ServiceTopology implements Serializable {
+public class ServiceTopology implements Serializable, Message {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** Empty service topology instance. */
-    public static final ServiceTopology EMPTY = new ServiceTopology();
+    public static final ServiceTopology EMPTY = empty();
 
     /** Topology snapshot. */
+    @Order(0)
     @GridToStringInclude
-    private final Map<UUID, Integer> snapshot;
+    Map<UUID, Integer> snapshot;
 
     /**
      * Whether topology is transitional. Nodes may leave the cluster while the service topology is being recalculated.
      * In this case, the resulting service topology may be incomplete. We consider the mentioned service topology
      * transitional and expect it to be recalculated soon.
      */
+    @Order(1)
     @GridToStringInclude
-    private final boolean isTransitional;
+    boolean isTransitional;
 
-    /** */
-    private ServiceTopology() {
-        snapshot = Collections.emptyMap();
-        isTransitional = true;
+    /** Default constructor for {@link MessageFactory}. */
+    public ServiceTopology() {
+        // No-op.
     }
 
     /** */
@@ -84,5 +88,15 @@ public class ServiceTopology implements Serializable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(ServiceTopology.class, this);
+    }
+
+    /** */
+    private static ServiceTopology empty() {
+        ServiceTopology top = new ServiceTopology();
+
+        top.snapshot = Collections.emptyMap();
+        top.isTransitional = true;
+
+        return top;
     }
 }

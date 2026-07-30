@@ -194,7 +194,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
                 for (int port = cliConnCfg.getPort(); port <= portTo && port <= 65535; port++) {
                     try {
-                        srv = GridNioServer.<ClientMessage>builder()
+                        GridNioServer.Builder<ClientMessage> builder = GridNioServer.<ClientMessage>builder()
                             .address(hostAddr)
                             .port(port)
                             .listener(new ClientListenerNioListener(ctx, busyLock, cliConnCfg, metrics, newConnEnabled))
@@ -210,9 +210,11 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                             .filters(filters)
                             .directMode(true)
                             .idleTimeout(idleTimeout > 0 ? idleTimeout : Long.MAX_VALUE)
-                            .metricRegistry(mreg)
-                            .messageQueueSizeListener(msgQueueSizeLsnr)
-                            .build();
+                            .messageQueueSizeListener(msgQueueSizeLsnr);
+
+                        srv = U.setNioServerMetrics(builder, mreg).build();
+
+                        U.registerNioServerMetrics(srv, filters, mreg);
 
                         ctx.ports().registerPort(port, IgnitePortProtocol.TCP, getClass());
 
@@ -492,7 +494,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                 throw new IgniteCheckedException("Failed to create client listener " +
                     "(SSL is enabled but factory is null). Check the ClientConnectorConfiguration");
 
-            GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtxFactory.create(),
+            GridNioSslFilter sslFilter = U.sslFilter(sslCtxFactory.create(),
                 true, ByteOrder.nativeOrder(), log, ctx.metric().registry(CLIENT_CONNECTOR_METRICS));
 
             sslFilter.directMode(true);

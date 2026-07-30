@@ -1138,30 +1138,7 @@ public class QueryUtils {
      * @return Type name.
      */
     public static String typeName(String clsName) {
-        int genericStart = clsName.indexOf('`');  // .NET generic, not valid for Java class name.
-
-        if (genericStart >= 0)
-            clsName = clsName.substring(0, genericStart);
-
-        int pkgEnd = clsName.lastIndexOf('.');
-
-        if (pkgEnd >= 0 && pkgEnd < clsName.length() - 1)
-            clsName = clsName.substring(pkgEnd + 1);
-
-        if (clsName.endsWith("[]"))
-            clsName = clsName.substring(0, clsName.length() - 2) + "_array";
-
-        int parentEnd = clsName.lastIndexOf('$');
-
-        if (parentEnd >= 0)
-            clsName = clsName.substring(parentEnd + 1);
-
-        parentEnd = clsName.lastIndexOf('+');   // .NET parent
-
-        if (parentEnd >= 0)
-            clsName = clsName.substring(parentEnd + 1);
-
-        return clsName;
+        return CommonUtils.typeName(clsName);
     }
 
     /**
@@ -1171,22 +1148,7 @@ public class QueryUtils {
      * @return Type name.
      */
     public static String typeName(Class<?> cls) {
-        String typeName = cls.getSimpleName();
-
-        // To protect from failure on anonymous classes.
-        if (F.isEmpty(typeName)) {
-            String pkg = cls.getPackage().getName();
-
-            typeName = cls.getName().substring(pkg.length() + (pkg.isEmpty() ? 0 : 1));
-        }
-
-        if (cls.isArray()) {
-            assert typeName.endsWith("[]");
-
-            typeName = typeName.substring(0, typeName.length() - 2) + "_array";
-        }
-
-        return typeName;
+        return CommonUtils.typeName(cls);
     }
 
     /**

@@ -18,11 +18,19 @@
 package org.apache.ignite.internal.util.nio;
 
 import java.util.UUID;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteDiagnosticRequest;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.plugin.AbstractTestPluginProvider;
+import org.apache.ignite.plugin.ExtensionRegistry;
+import org.apache.ignite.plugin.PluginContext;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -42,6 +50,8 @@ public class IgniteExceptionInNioWorkerSelfTest extends GridCommonAbstractTest {
         ccfg.setBackups(1);
 
         cfg.setCacheConfiguration(ccfg);
+
+        cfg.setPluginProviders(new BrokenMessageProvider());
 
         return cfg;
     }
@@ -73,19 +83,50 @@ public class IgniteExceptionInNioWorkerSelfTest extends GridCommonAbstractTest {
      *
      */
     private static class BrokenMessage extends IgniteDiagnosticRequest {
+        // No-op.
+    }
+
+    /** Serializer that throws on the first {@code writeTo} call to simulate a broken message. */
+    private static class BrokenMessageSerializer implements MessageSerializer<BrokenMessage> {
         /** */
         private boolean fail = true;
 
         /** {@inheritDoc} */
-        @Override public short directType() {
+        @Override public boolean writeTo(BrokenMessage msg, MessageWriter writer) {
+            if (!writer.isHeaderWritten()) {
+                if (!writer.writeHeader(msg.directType()))
+                    return false;
+
+                writer.onHeaderWritten();
+            }
+            
             if (fail) {
                 fail = false;
 
-                return (byte)242;
+                throw new IgniteException("Broken message");
             }
 
-            // IgniteDiagnosticRequest as an example.
-            return 13003;
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean readFrom(BrokenMessage msg, MessageReader reader) {
+            return true;
+        }
+    }
+
+    /** Plugin provider that registers {@link BrokenMessageSerializer} for {@link BrokenMessage}. */
+    public static class BrokenMessageProvider extends AbstractTestPluginProvider {
+        /** {@inheritDoc} */
+        @Override public String name() {
+            return getClass().getName();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
+            registry.registerExtension(MessageFactoryProvider.class, (factory) ->
+                factory.register(-42, BrokenMessage::new, new BrokenMessageSerializer())
+            );
         }
     }
 }

@@ -20,6 +20,7 @@ package org.apache.ignite.spi.systemview.view;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.UUID;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
@@ -123,6 +124,14 @@ public class TransactionView {
     @Order(2)
     public IgniteUuid xid() {
         return tx.xid();
+    }
+
+    /**
+     * @return Near transaction ID.
+     * @see IgniteInternalTx#nearXidVersion() ()
+     */
+    public IgniteUuid originatingXid() {
+        return BinaryUtils.asIgniteUuid(tx.nearXidVersion());
     }
 
     /**
@@ -284,6 +293,5 @@ public class TransactionView {
         catch (Throwable e) {
             return null;
         }
-
     }
 }

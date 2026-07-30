@@ -393,11 +393,4 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
         if (unsupportedTypeName != null)
             throw new IgniteException("Type '" + unsupportedTypeName + "' is not supported.");
     }
-
-    /** {@inheritDoc} */
-    @Override public RelDataType createUnknownType() {
-        // TODO workaround for https://issues.apache.org/jira/browse/CALCITE-5297
-        // Remove this after update to Calcite 1.33.
-        return createTypeWithNullability(super.createUnknownType(), true);
-    }
 }

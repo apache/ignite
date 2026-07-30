@@ -25,6 +25,8 @@ import java.util.Random;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -86,13 +88,9 @@ public class DirectByteBufferStreamImplByteOrderSelfTest {
      * @return Stream.
      */
     private static DirectByteBufferStream createStream(ByteBuffer buff) {
-        DirectByteBufferStream stream = new DirectByteBufferStream(new MessageFactory() {
-            @Override public void register(short directType, Supplier<Message> supplier) throws IgniteException {
-                throw new UnsupportedOperationException();
-            }
-
+        DirectByteBufferStream stream = new DirectByteBufferStream(new MessageFactory<>() {
             @Override public void register(short directType, Supplier<Message> supplier,
-                MessageSerializer serializer) throws IgniteException {
+                MessageSerializer<Message> serializer) throws IgniteException {
                 throw new UnsupportedOperationException();
             }
 
@@ -100,7 +98,7 @@ public class DirectByteBufferStreamImplByteOrderSelfTest {
                 return null;
             }
 
-            @Override public MessageSerializer serializer(short type) {
+            @Override public MessageSerializer<Message> serializer(short type) {
                 return null;
             }
         });
@@ -542,6 +540,106 @@ public class DirectByteBufferStreamImplByteOrderSelfTest {
     }
 
     /** */
+    @Test
+    public void testGridCacheVersion() {
+        try {
+            GridCacheVersion ver = new GridCacheVersion(2, 20, 8198, 4);
+
+            readWriteGridCacheVersion(ver);
+            readWriteGridCacheVersion(null);
+
+            buff.limit(0);
+
+            readWriteGridCacheVersion(ver);
+            readWriteGridCacheVersion(null);
+
+            buff.limit(6);
+
+            readWriteGridCacheVersion(ver);
+            readWriteGridCacheVersion(null);
+
+        }
+        finally {
+            buff.limit(buff.capacity());
+        }
+    }
+
+    /** */
+    @Test
+    public void testGridCacheVersionEx() {
+        try {
+            GridCacheVersionEx ver = new GridCacheVersionEx(1, 2, 3, new GridCacheVersion(2, 20, 8198, 4));
+
+            assertTrue(ver.conflictVersion().dataCenterId() != 0);
+
+            readWriteGridCacheVersion(ver);
+            readWriteGridCacheVersion(null);
+
+            buff.limit(0);
+
+            readWriteGridCacheVersion(ver);
+            readWriteGridCacheVersion(null);
+
+            buff.limit(6);
+
+            readWriteGridCacheVersion(ver);
+            readWriteGridCacheVersion(null);
+
+        }
+        finally {
+            buff.limit(buff.capacity());
+        }
+    }
+
+    /** */
+    private void readWriteGridCacheVersion(GridCacheVersion ver) {
+        DirectByteBufferStream writeStream = createStream(buff);
+        DirectByteBufferStream readStream = createStream(buff);
+
+        int startLimit = buff.limit();
+        int iter = 0;
+
+        do {
+            writeStream.writeGridCacheVersion(ver);
+
+            if (buff.limit() < buff.capacity())
+                buff.limit(buff.limit() + 1);
+            else
+                buff.limit(buff.capacity());
+
+            assertTrue("Must be done earlier", iter++ < buff.capacity());
+        } while (!writeStream.lastFinished());
+
+        buff.rewind();
+        buff.limit(startLimit);
+
+        GridCacheVersion ver1;
+
+        iter = 0;
+
+        do {
+            ver1 = readStream.readGridCacheVersion();
+
+            if (buff.limit() < buff.capacity())
+                buff.limit(buff.limit() + 1);
+            else
+                buff.limit(buff.capacity());
+
+            assertTrue("Must be done earlier", iter++ < buff.capacity());
+        } while (!readStream.lastFinished());
+
+        assertEquals(ver, ver1);
+
+        if (ver instanceof GridCacheVersionEx) {
+            assertEquals(ver.conflictVersion(), ver1.conflictVersion());
+            assertEquals(ver.conflictVersion().dataCenterId(), ver1.conflictVersion().dataCenterId());
+        }
+
+        buff.rewind();
+        buff.limit(startLimit);
+    }
+
+    /** */
     private void readWriteIgniteProductVersion(IgniteProductVersion ver) {
         DirectByteBufferStream writeStream = createStream(buff);
         DirectByteBufferStream readStream = createStream(buff);
@@ -552,14 +650,12 @@ public class DirectByteBufferStreamImplByteOrderSelfTest {
         do {
             writeStream.writeIgniteProductVersion(ver);
 
-            if (iter == 0 && buff.limit() < buff.capacity())
-                buff.limit(buff.limit() + 4);
-            else if (iter == 1 && buff.limit() < buff.capacity())
-                buff.limit(buff.limit() + 10);
+            if (buff.limit() < buff.capacity())
+                buff.limit(buff.limit() + 1);
             else
                 buff.limit(buff.capacity());
 
-            assertTrue("Must be done earlier", iter++ < 10);
+            assertTrue("Must be done earlier", iter++ < 100);
         } while (!writeStream.lastFinished());
 
         buff.rewind();
@@ -572,14 +668,12 @@ public class DirectByteBufferStreamImplByteOrderSelfTest {
         do {
             ver1 = readStream.readIgniteProductVersion();
 
-            if (iter == 0 && buff.limit() < buff.capacity())
-                buff.limit(buff.limit() + 4);
-            else if (iter == 1 && buff.limit() < buff.capacity())
-                buff.limit(buff.limit() + 10);
+            if (buff.limit() < buff.capacity())
+                buff.limit(buff.limit() + 1);
             else
                 buff.limit(buff.capacity());
 
-            assertTrue("Must be done earlier", iter++ < 10);
+            assertTrue("Must be done earlier", iter++ < 100);
         } while (!readStream.lastFinished());
 
         assertEquals(ver, ver1);

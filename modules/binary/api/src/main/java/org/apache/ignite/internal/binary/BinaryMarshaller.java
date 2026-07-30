@@ -83,14 +83,7 @@ public class BinaryMarshaller extends AbstractNodeNameAwareMarshaller {
 
     /** {@inheritDoc} */
     @Override protected void marshal0(@Nullable Object obj, OutputStream out) throws IgniteCheckedException {
-        byte[] arr = marshal(obj);
-
-        try {
-            out.write(arr);
-        }
-        catch (Exception e) {
-            throw new BinaryObjectException("Failed to marshal the object: " + obj, e);
-        }
+        impl.marshal(obj, out, false);
     }
 
     /** {@inheritDoc} */

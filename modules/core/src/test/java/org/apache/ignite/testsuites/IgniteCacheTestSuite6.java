@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.cache.affinity.PendingExchangeTest;
+import org.apache.ignite.internal.processors.cache.CacheAffinityCoordinatorInitTest;
 import org.apache.ignite.internal.processors.cache.CacheIgniteOutOfMemoryExceptionTest;
 import org.apache.ignite.internal.processors.cache.CacheNoAffinityExchangeTest;
 import org.apache.ignite.internal.processors.cache.ClientFastReplyCoordinatorFailureTest;
@@ -117,6 +118,8 @@ public class IgniteCacheTestSuite6 {
         GridTestUtils.addTestIfNeeded(suite, StartImplicitlyTxOnStopCacheTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, TransactionContextCleanupTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, CacheAffinityCoordinatorInitTest.class, ignoredTests);
 
         return suite;
     }

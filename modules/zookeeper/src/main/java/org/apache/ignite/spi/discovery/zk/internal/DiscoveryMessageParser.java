@@ -25,14 +25,17 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
+import org.apache.ignite.internal.managers.communication.MessageMarshalling;
+import org.apache.ignite.internal.util.CommonUtils;
+import org.apache.ignite.internal.util.nio.MessageSerialization;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.IgniteSpiException;
-
-import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.makeMessageType;
 
 /**
  * Class is responsible for serializing discovery messages using RU-ready {@link MessageSerializer} mechanism.
@@ -45,8 +48,15 @@ public class DiscoveryMessageParser {
     private final MessageFactory msgFactory;
 
     /** */
-    public DiscoveryMessageParser(MessageFactory msgFactory) {
+    private final GridKernalContext kctx;
+
+    /**
+     * @param msgFactory Message factory.
+     * @param kctx Kernal context.
+     */
+    public DiscoveryMessageParser(MessageFactory msgFactory, GridKernalContext kctx) {
         this.msgFactory = msgFactory;
+        this.kctx = kctx;
     }
 
     /** Marshals discovery message to bytes array. */
@@ -83,14 +93,19 @@ public class DiscoveryMessageParser {
 
         msgWriter.setBuffer(msgBuf);
 
-        MessageSerializer msgSer = msgFactory.serializer(m.directType());
+        try {
+            MessageMarshalling.marshal(m, kctx, null);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteSpiException("Failed to marshal discovery message", e);
+        }
 
         boolean finished;
 
         do {
             msgBuf.clear();
 
-            finished = msgSer.writeTo(m, msgWriter);
+            finished = MessageSerialization.writeTo(msgFactory, m, msgWriter);
 
             out.write(msgBuf.array(), 0, msgBuf.position());
         }
@@ -104,8 +119,7 @@ public class DiscoveryMessageParser {
 
         msgReader.setBuffer(msgBuf);
 
-        Message msg = msgFactory.create(makeMessageType((byte)in.read(), (byte)in.read()));
-        MessageSerializer msgSer = msgFactory.serializer(msg.directType());
+        Message msg = msgFactory.create(CommonUtils.makeMessageType((byte)in.read(), (byte)in.read()));
 
         boolean finished;
 
@@ -117,7 +131,7 @@ public class DiscoveryMessageParser {
                 msgBuf.rewind();
             }
 
-            finished = msgSer.readFrom(msg, msgReader);
+            finished = MessageSerialization.readFrom(msgFactory, msg, msgReader);
 
             assert read != -1 || finished : "Stream closed before message was fully read.";
 
@@ -125,6 +139,13 @@ public class DiscoveryMessageParser {
                 msgBuf.compact();
         }
         while (!finished);
+
+        try {
+            MessageMarshalling.unmarshal(msg, kctx);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteSpiException("Failed to unmarshal discovery message", e);
+        }
 
         return (T)msg;
     }

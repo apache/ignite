@@ -1302,7 +1302,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+        @Override protected void body() {
             if (ctx.clientNode())
                 return;
 

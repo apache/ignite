@@ -1018,7 +1018,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
         DistributedMetaStorageUpdateMessage msg = new DistributedMetaStorageUpdateMessage(reqId, key, val);
 
-        msg.prepareMarshal(marshaller);
+        msg.marshal(marshaller);
 
         ctx.discovery().sendCustomEvent(msg);
 
@@ -1039,7 +1039,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
         DistributedMetaStorageCasMessage msg = new DistributedMetaStorageCasMessage(reqId, key, expVal, newVal);
 
-        msg.prepareMarshal(marshaller);
+        msg.marshal(marshaller);
 
         ctx.discovery().sendCustomEvent(msg);
 
@@ -1281,7 +1281,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
         Serializable oldVal = bridge.read(msg.key());
 
-        msg.finishUnmarshal(marshaller);
+        msg.unmarshal(marshaller);
 
         if (!Objects.deepEquals(oldVal, msg.expectedValue())) {
             msg.setMatches(false);
