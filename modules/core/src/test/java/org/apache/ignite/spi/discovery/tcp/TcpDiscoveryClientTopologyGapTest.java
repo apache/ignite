@@ -95,19 +95,41 @@ public class TcpDiscoveryClientTopologyGapTest extends GridCommonAbstractTest {
 
             long expTopVer = SRVS + CLIENTS + 3;
 
+            // Failure detection may push the topology past the expected version, so it is only a lower bound here,
+            // while the invariant the test is about is checked below.
             for (IgniteEx client : clients) {
-                assertTrue(
-                    "Client stuck [name=" + client.name() +
+                if (!GridTestUtils.waitForCondition(() -> client.cluster().topologyVersion() >= expTopVer, 15_000)) {
+                    fail("Client stuck [name=" + client.name() +
                         ", topVer=" + client.cluster().topologyVersion() +
                         ", expTopVer=" + expTopVer +
-                        ", failures=" + failures + ']',
-                    GridTestUtils.waitForCondition(
-                        () -> client.cluster().topologyVersion() == expTopVer, 15_000));
+                        ", failures=" + failures + ']');
+                }
             }
+
+            for (IgniteEx client : clients)
+                assertNoTopologyGap(client, expTopVer);
 
             assertTrue("Critical failures detected: " + failures, failures.isEmpty());
 
             stopAllGrids();
+        }
+    }
+
+    /**
+     * Checks that the node was notified of every topology version up to {@code lastVer}. Versions preceding the
+     * node's own join are missing from its history and are skipped.
+     *
+     * @param node Node to check.
+     * @param lastVer Last topology version to check.
+     */
+    private void assertNoTopologyGap(IgniteEx node, long lastVer) {
+        boolean joined = false;
+
+        for (long ver = 1; ver <= lastVer; ver++) {
+            if (node.context().discovery().topology(ver) != null)
+                joined = true;
+            else if (joined)
+                fail("Client lost topology version [name=" + node.name() + ", ver=" + ver + ']');
         }
     }
 }
