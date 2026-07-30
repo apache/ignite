@@ -113,7 +113,7 @@ public class SslContextFactoryReloadTest extends GridCommonAbstractTest {
 
         copyKeyStore("node02");
 
-        SSLContext checked = SslContextUtils.check(factory, inUse);
+        SSLContext checked = SslContextUtils.build(factory, inUse);
 
         assertNotNull("The rotated store must be read", checked);
         assertNotSame(inUse, checked);

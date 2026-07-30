@@ -35,6 +35,7 @@ import org.apache.ignite.internal.util.nio.GridNioException;
 import org.apache.ignite.internal.util.nio.GridNioFilterAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
@@ -79,9 +80,6 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
 
     /** Whether direct mode is used. */
     private boolean directMode;
-
-    /** Exception during onSessionOpened */
-    @Nullable private Exception onSessionOpenedException;
 
     /** Metric that indicates sessions count that were rejected due to SSL errors. */
     @Nullable private final Runnable rejectedSesCnt;
@@ -200,9 +198,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
                 engine = sslCtx.createSSLEngine();
             }
             catch (IllegalArgumentException e) {
-                IgniteCheckedException ex = new IgniteCheckedException("Failed connect to cluster. Check SSL configuration.", e);
-                onSessionOpenedException = ex;
-                throw ex;
+                throw new IgniteCheckedException("Failed connect to cluster. Check SSL configuration.", e);
             }
 
             boolean clientMode = !ses.accepted();
@@ -269,7 +265,9 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
             processApplicationBuffer(ses, hnd.getApplicationBuffer());
         }
         catch (SSLException e) {
-            onSessionOpenedException = e;
+            // This path closes the session without an exception, so onExceptionCaught() will not run for it.
+            failHandshake(ses, new IgniteCheckedException("Failed to start SSL handshake: " + ses, e));
+
             CommonUtils.error(log, "Failed to start SSL handshake (will close inbound connection): " + ses, e);
 
             ses.close();
@@ -285,7 +283,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
                 if (rejectedSesCnt != null)
                     rejectedSesCnt.run();
 
-                fut.onDone(new IgniteCheckedException("SSL handshake failed (connection closed).", onSessionOpenedException));
+                fut.onDone(new IgniteCheckedException("SSL handshake failed (connection closed)."));
             }
 
             if (ses.meta(SSL_META.ordinal()) == null)
@@ -303,7 +301,24 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     /** {@inheritDoc} */
     @Override public void onExceptionCaught(GridNioSession ses, IgniteCheckedException ex)
         throws IgniteCheckedException {
+        failHandshake(ses, ex);
+
         proceedExceptionCaught(ses, ex);
+    }
+
+    /**
+     * Names the failure to whoever waits for the handshake. Without this, {@link #onSessionClosed(GridNioSession)}
+     * reports a plain disconnect, which a network drop produces just as well, and the reason the peer refused is
+     * lost. The future is left in the session metadata so that closing still counts the rejected session.
+     *
+     * @param ses Session whose handshake failed.
+     * @param ex Failure to report.
+     */
+    private void failHandshake(GridNioSession ses, IgniteCheckedException ex) {
+        GridFutureAdapter<?> fut = ses.meta(HANDSHAKE_FUT_META_KEY);
+
+        if (fut != null)
+            fut.onDone(ex);
     }
 
     /**
@@ -416,6 +431,13 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
             }
         }
         catch (SSLException e) {
+            // The cause is otherwise not logged anywhere, and it is what names the problem: "No trusted certificate
+            // found" or "Empty client certificate chain" both mean the peers disagree on the certificate authority.
+            // Throttled, as a peer that keeps retrying would flood the log.
+            LT.warn(log, "TLS handshake failed [rmtAddr=" + ses.remoteAddress() + ", err=" + e.getMessage() + "]. " +
+                "While certificates are being rotated, a new authority has to be trusted everywhere before " +
+                "anything presents a certificate issued by it.");
+
             throw new GridNioException("Failed to decode SSL data: " + ses, e);
         }
         finally {

@@ -24,7 +24,6 @@ public class SslCommand extends CommandRegistryImpl {
     /** */
     public SslCommand() {
         super(
-            new SslEnsureCommand(),
             new SslReloadCommand()
         );
     }

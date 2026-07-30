@@ -26,7 +26,8 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     RestProcessorAuthorizationTest.class,
     RestSetupSimpleTest.class,
-    IgniteRestExtensionTest.class
+    IgniteRestExtensionTest.class,
+    JettySslContextReloadTest.class
 })
 public class GridRestSuite {
 }

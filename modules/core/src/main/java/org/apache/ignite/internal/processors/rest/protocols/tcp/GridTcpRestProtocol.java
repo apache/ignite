@@ -268,7 +268,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
             ctx.ports().registerPort(port, IgnitePortProtocol.TCP, getClass());
 
             if (sslFilter != null) {
-                ctx.internalSubscriptionProcessor().registerSslContextReloadable("REST",
+                ctx.internalSubscriptionProcessor().registerSslContextReloadable("binary REST",
                     new NioSslContextReloadable(sslCtxFactory, sslFilter, false));
             }
 

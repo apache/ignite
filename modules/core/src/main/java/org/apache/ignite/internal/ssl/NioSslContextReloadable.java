@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.ssl;
 
+import java.security.cert.X509Certificate;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
@@ -67,6 +68,19 @@ public class NioSslContextReloadable implements SslContextReloadable {
         return rebuild(false) != null;
     }
 
+    /** {@inheritDoc} */
+    @Override public @Nullable X509Certificate servedCertificate() {
+        if (!interNode)
+            return null;
+
+        try {
+            return SslContextValidator.validateInterNode(filter.sslContext());
+        }
+        catch (SSLException ignored) {
+            return null;
+        }
+    }
+
     /**
      * @param apply Whether the factory should hand the rebuilt context out afterwards.
      * @return Rebuilt context, or {@code null} if the factory returned the one already in use.
@@ -76,7 +90,7 @@ public class NioSslContextReloadable implements SslContextReloadable {
         try {
             SSLContext sslCtx = apply
                 ? SslContextUtils.reload(sslCtxFactory, filter.sslContext())
-                : SslContextUtils.check(sslCtxFactory, filter.sslContext());
+                : SslContextUtils.build(sslCtxFactory, filter.sslContext());
 
             if (sslCtx != null && interNode)
                 SslContextValidator.validateInterNode(sslCtx);

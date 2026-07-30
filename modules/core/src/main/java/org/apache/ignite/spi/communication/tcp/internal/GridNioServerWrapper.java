@@ -920,8 +920,10 @@ public class GridNioServerWrapper {
                 filters.add(new GridNioCodecFilter(parser, log, true));
                 filters.add(new GridConnectionBytesVerifyFilter(log));
 
+                GridNioSslFilter sslFilter = null;
+
                 if (stateProvider.isSslEnabled()) {
-                    GridNioSslFilter sslFilter = U.sslFilter(
+                    sslFilter = U.sslFilter(
                         igniteCfg.getSslContextFactory().create(),
                         true,
                         ByteOrder.LITTLE_ENDIAN,
@@ -934,11 +936,6 @@ public class GridNioServerWrapper {
                     sslFilter.needClientAuth(true);
 
                     filters.add(sslFilter);
-
-                    if (subscriptionProc != null) {
-                        subscriptionProc.registerSslContextReloadable("communication",
-                            new NioSslContextReloadable(igniteCfg.getSslContextFactory(), sslFilter, true));
-                    }
                 }
 
                 GridNioFilter[] filtersArr = filters.toArray(new GridNioFilter[filters.size()]);
@@ -994,6 +991,12 @@ public class GridNioServerWrapper {
                 }
 
                 srvr.idleTimeout(cfg.idleConnectionTimeout());
+
+                // Registered only once the port is taken: a busy port makes this method try the next one.
+                if (sslFilter != null && subscriptionProc != null) {
+                    subscriptionProc.registerSslContextReloadable("communication",
+                        new NioSslContextReloadable(igniteCfg.getSslContextFactory(), sslFilter, true));
+                }
 
                 return srvr;
             }

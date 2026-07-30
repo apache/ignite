@@ -18,10 +18,14 @@
 package org.apache.ignite.internal.ssl;
 
 import java.nio.ByteBuffer;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
+import org.jetbrains.annotations.Nullable;
 
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.FINISHED;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING;
@@ -52,9 +56,10 @@ public class SslContextValidator {
      * trust store.
      *
      * @param ctx SSL context to check.
+     * @return Certificate the server side presented, or {@code null} if the exchange did not get that far.
      * @throws SSLException If the handshake was refused. The caller must keep the context currently in use.
      */
-    public static void validateInterNode(SSLContext ctx) throws SSLException {
+    public static @Nullable X509Certificate validateInterNode(SSLContext ctx) throws SSLException {
         SSLEngine srv = ctx.createSSLEngine();
 
         srv.setUseClientMode(false);
@@ -77,10 +82,27 @@ public class SslContextValidator {
             boolean progress = step(cli, cliNet, srvNet, app) | step(srv, srvNet, cliNet, app);
 
             if (done(cli) && done(srv))
-                return;
+                return presented(cli);
 
             if (!progress)
-                return;
+                return null;
+        }
+
+        return null;
+    }
+
+    /**
+     * @param cli Client side of a completed handshake.
+     * @return Certificate its peer presented, or {@code null} if the peer did not present one.
+     */
+    private static @Nullable X509Certificate presented(SSLEngine cli) {
+        try {
+            Certificate[] chain = cli.getSession().getPeerCertificates();
+
+            return chain.length == 0 ? null : (X509Certificate)chain[0];
+        }
+        catch (SSLPeerUnverifiedException ignored) {
+            return null;
         }
     }
 

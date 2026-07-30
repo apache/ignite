@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.ssl;
 
+import java.security.cert.X509Certificate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * A node component whose TLS certificates can be replaced at runtime, without a node restart.
@@ -47,4 +49,12 @@ public interface SslContextReloadable {
      * @throws IgniteCheckedException If the context could not be rebuilt or did not pass the checks.
      */
     public boolean checkSslContext() throws IgniteCheckedException;
+
+    /**
+     * @return Certificate this component presents on new connections, or {@code null} if it cannot be told without
+     *      a peer, which is the case for the transports a client connects to.
+     */
+    public default @Nullable X509Certificate servedCertificate() {
+        return null;
+    }
 }

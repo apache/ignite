@@ -153,7 +153,8 @@ public class GridInternalSubscriptionProcessor extends GridProcessorAdapter {
     public void registerSslContextReloadable(@NotNull String name, @NotNull SslContextReloadable reloadable) {
         requireNonNull(reloadable, "SSL context reloadable should be not-null.");
 
-        sslCtxReloadables.put(name, reloadable);
+        if (sslCtxReloadables.putIfAbsent(name, reloadable) != null)
+            throw new IllegalStateException("SSL context reloadable is already registered: " + name);
     }
 
     /** */

@@ -28,6 +28,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -2355,6 +2356,16 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         return rebuildSslContext(false) != null;
     }
 
+    /** {@inheritDoc} */
+    @Override public @Nullable X509Certificate servedCertificate() {
+        try {
+            return SslContextValidator.validateInterNode(sslCtx);
+        }
+        catch (SSLException ignored) {
+            return null;
+        }
+    }
+
     /**
      * @param apply Whether the factory should hand the rebuilt context out afterwards.
      * @return Rebuilt context, or {@code null} if the factory returned the one already in use.
@@ -2364,7 +2375,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         Factory<SSLContext> factory = ignite.configuration().getSslContextFactory();
 
         try {
-            SSLContext ctx = apply ? SslContextUtils.reload(factory, sslCtx) : SslContextUtils.check(factory, sslCtx);
+            SSLContext ctx = apply ? SslContextUtils.reload(factory, sslCtx) : SslContextUtils.build(factory, sslCtx);
 
             if (ctx != null)
                 SslContextValidator.validateInterNode(ctx);

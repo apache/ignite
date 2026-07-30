@@ -17,18 +17,32 @@
 
 package org.apache.ignite.internal.management.ssl;
 
-import org.apache.ignite.internal.management.api.NoArg;
-import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.visor.VisorJob;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.CliConfirmArgument;
 
-/** Checks the TLS certificates on every mapped node without putting them in use. */
-@GridInternal
-public class SslEnsureTask extends SslTask {
+/** */
+@CliConfirmArgument
+public class SslReloadCommandArg extends IgniteDataTransferObject {
     /** */
-    private static final long serialVersionUID = 0L;
+    private static final long serialVersionUID = 0;
 
-    /** {@inheritDoc} */
-    @Override protected VisorJob<NoArg, String> job(NoArg arg) {
-        return new SslJob(arg, debug, false);
+    /** */
+    @Order(0)
+    @Argument(
+        description = "Report whether the certificates on disk can be used, without putting them in use",
+        optional = true
+    )
+    boolean dryRun;
+
+    /** */
+    public boolean dryRun() {
+        return dryRun;
+    }
+
+    /** */
+    public void dryRun(boolean dryRun) {
+        this.dryRun = dryRun;
     }
 }

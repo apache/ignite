@@ -45,15 +45,16 @@ public class SslContextUtils {
     }
 
     /**
-     * Rebuilds the context and leaves the factory as it was, so that the stores on disk can be read while the node
-     * keeps running on the certificates it already serves.
+     * Rebuilds the context and leaves the factory as it was, for callers that only want to know whether the stores
+     * on disk can be used, or that apply the context themselves. A factory shared with someone else is then left
+     * serving what it served before.
      *
      * @param factory SSL context factory.
      * @param cur Context the caller is using, or {@code null} if it has none yet.
      * @return See {@link #rebuild(Factory, SSLContext, boolean)}.
      * @throws SSLException If the context could not be built.
      */
-    @Nullable public static SSLContext check(Factory<SSLContext> factory, @Nullable SSLContext cur)
+    @Nullable public static SSLContext build(Factory<SSLContext> factory, @Nullable SSLContext cur)
         throws SSLException {
         return rebuild(factory, cur, false);
     }
