@@ -46,11 +46,7 @@ public class DirectMarshallingMessagesTest extends GridCommonAbstractTest {
     private final MessageFactory msgFactory =
         new IgniteMessageFactoryImpl(new MessageFactoryProvider[] {
             new CoreMessagesProvider(jdk(), jdk()),
-            factory -> factory.register(
-                TestNestedContainersMessage.TYPE,
-                TestNestedContainersMessage::new,
-                new TestNestedContainersMessageSerializer()
-            )
+            factory -> factory.register(TestNestedContainersMessage.TYPE, new TestNestedContainersMessageSerializer())
         });
 
     /** */

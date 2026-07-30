@@ -39,4 +39,9 @@ public interface MessageSerializer<M extends Message> {
      * @return Whether message was fully read.
      */
     public boolean readFrom(M msg, MessageReader reader);
+
+    /**
+     * @return New instancle of message.
+     */
+    public M newInstance();
 }

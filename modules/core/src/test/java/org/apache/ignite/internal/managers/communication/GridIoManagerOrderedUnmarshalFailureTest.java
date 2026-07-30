@@ -81,7 +81,7 @@ public class GridIoManagerOrderedUnmarshalFailureTest extends GridCommonAbstract
 
             @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
                 registry.registerExtension(MessageFactoryProvider.class, factory ->
-                    factory.register(TYPE, FailingUnmarshalMessage::new, new Serializer(), new FailingMarshaller()));
+                    factory.register(TYPE, new Serializer(), new FailingMarshaller()));
             }
         });
 
@@ -231,6 +231,11 @@ public class GridIoManagerOrderedUnmarshalFailureTest extends GridCommonAbstract
             }
 
             return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public FailingUnmarshalMessage newInstance() {
+            return new FailingUnmarshalMessage();
         }
     }
 
