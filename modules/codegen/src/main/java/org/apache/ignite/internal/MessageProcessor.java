@@ -351,7 +351,7 @@ public class MessageProcessor extends AbstractProcessor {
     }
 
     /**
-     * Checks, that only single type of mapper is used for an enum type.
+     * Checks, that only single type of mapper is used for the enum type.
      * Particular enum should be processed with a concrete enum mapper: custom or default one.
      */
     private void inspectForDuplicatedMappers(String msgClsName, Element field, String enumClsFullName,
