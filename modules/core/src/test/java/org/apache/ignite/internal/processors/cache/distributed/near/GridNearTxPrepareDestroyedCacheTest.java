@@ -32,7 +32,7 @@ import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.processors.cache.CacheObjectNotResolvedException;
+import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -47,10 +47,10 @@ import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 
 /**
- * Checks the receiver's behaviour when a tx prepare of a destroyed cache cannot be unmarshalled: without the cache
- * there is no cache object context, so the keys stay unresolved and rebuilding the DHT-version map hashes such a key
- * and throws {@link CacheObjectNotResolvedException}. The receiver must convert it to an error response for the
- * sender and stay alive instead of going down through the failure handler.
+ * Checks the receiver's behaviour when a tx prepare arrives for a cache that has been destroyed: the entry has no
+ * cache context to initialize against, so the prepare fails with {@link CacheInvalidStateException}. The receiver
+ * must convert it to an error response for the sender and stay alive instead of going down through the failure
+ * handler.
  */
 public class GridNearTxPrepareDestroyedCacheTest extends GridCommonAbstractTest {
     /** */
@@ -124,8 +124,8 @@ public class GridNearTxPrepareDestroyedCacheTest extends GridCommonAbstractTest 
 
         IgniteInternalFuture<?> txFut = GridTestUtils.runAsync(() -> {
             try (Transaction tx = near.transactions().txStart(OPTIMISTIC, READ_COMMITTED)) {
-                // A transform entry adds its key to the prepare's DHT-version map, so the receiver hashes the key
-                // while rebuilding the map.
+                // A transform entry is what puts a key into the prepare's DHT-version keys, so the request
+                // delivered below carries one.
                 cache.invoke(key, new SetValueProcessor());
 
                 tx.commit();
@@ -163,13 +163,13 @@ public class GridNearTxPrepareDestroyedCacheTest extends GridCommonAbstractTest 
 
         Throwable err = ((GridNearTxPrepareResponse)resps.get(0)).error();
 
-        assertNotNull("The response must carry the unmarshalling error.", err);
+        assertNotNull("The response must carry the error of the destroyed cache.", err);
 
-        CacheObjectNotResolvedException cause = X.cause(err, CacheObjectNotResolvedException.class);
+        CacheInvalidStateException cause = X.cause(err, CacheInvalidStateException.class);
 
         assertNotNull("Unexpected response error: " + X.getFullStackTrace(err), cause);
 
-        assertTrue(cause.getMessage(), cause.getMessage().contains("Cache object is not deserialized"));
+        assertTrue(cause.getMessage(), cause.getMessage().contains("cache is stopped"));
 
         // The transaction had been rolled back by the cache stop before the prepare was delivered, so the arrived
         // error response finds no future to complete.

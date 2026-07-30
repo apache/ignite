@@ -36,7 +36,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxRemoteStateImpl;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -177,10 +176,11 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         if (F.isEmpty(vers))
             return;
 
+        // The request is done with by now, so its map is taken over instead of being copied.
         if (owned == null)
-            owned = new GridLeanMap<>(vers.size());
-
-        owned.putAll(vers);
+            owned = vers;
+        else
+            owned.putAll(vers);
     }
 
     /** {@inheritDoc} */

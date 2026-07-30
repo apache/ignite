@@ -38,7 +38,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.util.nio.MessageSerialization;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -136,7 +135,50 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
      */
     @Test
     public void testCacheContinuousQueryEntrySerialization() throws Exception {
-        CacheContinuousQueryEntry e0 = new CacheContinuousQueryEntry(
+        CacheContinuousQueryEntry e0 = entryWithData();
+
+        e0.markFiltered();
+
+        CacheContinuousQueryEntry sent = sendForm(e0);
+        CacheContinuousQueryEntry e1 = roundTrip(sent);
+
+        assertEquals(sent.cacheId(), e1.cacheId());
+        assertEquals(sent.eventType(), e1.eventType());
+        assertEquals(sent.isFiltered(), e1.isFiltered());
+        assertEquals(sent.isBackup(), e1.isBackup());
+        assertEquals(sent.isKeepBinary(), e1.isKeepBinary());
+        assertEquals(sent.partition(), e1.partition());
+        assertEquals(sent.updateCounter(), e1.updateCounter());
+    }
+
+    /** A filtered entry gives up its data at the buffer, the only door between an update and the wire. */
+    @Test
+    public void testFilteredEntryLosesDataInBuffer() {
+        CacheContinuousQueryEntry e0 = entryWithData();
+
+        e0.markFiltered();
+
+        CacheContinuousQueryEntry sent = sendForm(e0);
+
+        assertTrue(sent.isFiltered());
+
+        assertNull(sent.key());
+        assertNull(sent.newValue());
+        assertNull(sent.oldValue());
+
+        assertNotNull(e0.key());
+        assertNotNull(e0.newValue());
+        assertNotNull(e0.oldValue());
+    }
+
+    /** @return Entry the buffer hands back to be sent: a counter below the batch start goes out as is. */
+    private CacheContinuousQueryEntry sendForm(CacheContinuousQueryEntry e) {
+        return (CacheContinuousQueryEntry)new CacheContinuousQueryEventBuffer(log).processEntry(e, false);
+    }
+
+    /** @return Entry carrying a key and both values. */
+    private CacheContinuousQueryEntry entryWithData() {
+        return new CacheContinuousQueryEntry(
             1,
             EventType.UPDATED,
             new KeyCacheObjectImpl(1, new byte[] {0, 0, 0, 1}, 1),
@@ -144,55 +186,36 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
             new CacheObjectImpl(2, new byte[] {0, 0, 0, 3}),
             true,
             1,
-            1L,
+            0L,
             new AffinityTopologyVersion(1L),
             (byte)0);
+    }
 
-        e0.markFiltered();
-
+    /** @return Entry read back from the bytes {@code e} is written to. */
+    private CacheContinuousQueryEntry roundTrip(CacheContinuousQueryEntry e) throws Exception {
         IgniteMessageFactoryImpl msgFactory =
             new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{new CoreMessagesProvider(jdk(), jdk())});
 
         ByteBuffer buf = ByteBuffer.allocate(4096);
         DirectMessageWriter writer = new DirectMessageWriter(msgFactory);
 
-        assertNotNull("Serializer not found for message type " + e0.directType(), msgFactory.serializer(e0.directType()));
+        assertNotNull("Serializer not found for message type " + e.directType(), msgFactory.serializer(e.directType()));
 
         writer.setBuffer(buf);
 
-        // The marshal phase run by the send path before serialization: must not touch the wire fields of
-        // a filtered entry.
-        e0.marshal(jdk());
-
         // Skip write class header.
         writer.onHeaderWritten();
-        MessageSerialization.writeTo(msgFactory, e0, writer);
+        MessageSerialization.writeTo(msgFactory, e, writer);
 
-        CacheContinuousQueryEntry e1 = new CacheContinuousQueryEntry();
+        CacheContinuousQueryEntry res = new CacheContinuousQueryEntry();
 
-        final DirectMessageReader reader = new DirectMessageReader(msgFactory, null);
+        DirectMessageReader reader = new DirectMessageReader(msgFactory, null);
 
         reader.setBuffer(ByteBuffer.wrap(buf.array()));
 
-        MessageSerialization.readFrom(msgFactory, e1, reader);
+        MessageSerialization.readFrom(msgFactory, res, reader);
 
-        e1.unmarshal(jdk(), U.gridClassLoader());
-
-        assertEquals(e0.cacheId(), e1.cacheId());
-        assertEquals(e0.eventType(), e1.eventType());
-        assertEquals(e0.isFiltered(), e1.isFiltered());
-        assertEquals(e0.isBackup(), e1.isBackup());
-        assertEquals(e0.isKeepBinary(), e1.isKeepBinary());
-        assertEquals(e0.partition(), e1.partition());
-        assertEquals(e0.updateCounter(), e1.updateCounter());
-
-        // Key and value shouldn't be serialized in case an event is filtered.
-        assertNull(e1.key());
-        assertNotNull(e0.key());
-        assertNull(e1.oldValue());
-        assertNotNull(e0.oldValue());
-        assertNull(e1.newValue());
-        assertNotNull(e0.newValue());
+        return res;
     }
 
     /**
