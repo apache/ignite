@@ -231,7 +231,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
         for (IgniteTxEntry txEntry : writes) {
             if (txEntry.op() == TRANSFORM)
-                req.addDhtVersion(txEntry.txKey(), null);
+                req.addDhtVersionKey(txEntry.txKey());
         }
 
         return req;

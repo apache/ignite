@@ -150,6 +150,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFi
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.KeyedVersionedValue;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.DataStreamerUpdatesHandlerResult;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotAwareMessage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotVerifyResult;
@@ -372,6 +373,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(DiscoveryDataPacket.class);
         withNoSchema(GridByteArrayList.class);
         withNoSchema(CacheVersionedValue.class);
+        withNoSchema(KeyedVersionedValue.class);
         withNoSchema(WALPointer.class);
         withNoSchema(SerializableDataBagItemWrapper.class);
         withSchema(GridTopicMessage.class);

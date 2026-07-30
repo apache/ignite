@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import javax.cache.event.EventType;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
@@ -30,15 +28,15 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Continuous query entry.
  */
 @UseBinaryMarshaller
-public class CacheContinuousQueryEntry implements GridCacheDeployable, MarshallableMessage, CacheIdAware {
+public class CacheContinuousQueryEntry implements GridCacheDeployable, Message, CacheIdAware {
     /** */
     private static final byte BACKUP_ENTRY = 0b0001;
 
@@ -56,29 +54,20 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Marshalla
     @Order(1)
     byte flags;
 
-    /** Key. */
+    /** Key. {@code null} for a filtered entry. */
+    @Order(2)
     @GridToStringInclude
     KeyCacheObject key;
 
-    /** {@code null} for a filtered entry. */
-    @Order(2)
-    KeyCacheObject keyWire;
-
-    /** New value. */
+    /** New value. {@code null} for a filtered entry. */
+    @Order(3)
     @GridToStringInclude
     CacheObject newVal;
 
-    /** {@code null} for a filtered entry. */
-    @Order(3)
-    CacheObject newValWire;
-
-    /** Old value. */
+    /** Old value. {@code null} for a filtered entry. */
+    @Order(4)
     @GridToStringInclude
     CacheObject oldVal;
-
-    /** {@code null} for a filtered entry. */
-    @Order(4)
-    CacheObject oldValWire;
 
     /** Cache name. */
     @Order(5)
@@ -324,37 +313,6 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Marshalla
     /** {@inheritDoc} */
     @Override public GridDeploymentInfo deployInfo() {
         return depInfo;
-    }
-
-    // TODO IGNITE-28922: get rid of the wire-companion field pairs.
-    /** {@inheritDoc} */
-    @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
-        if (!isFiltered()) {
-            keyWire = key;
-            newValWire = newVal;
-            oldValWire = oldVal;
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (keyWire != null) {
-            key = keyWire;
-
-            keyWire = null;
-        }
-
-        if (newValWire != null) {
-            newVal = newValWire;
-
-            newValWire = null;
-        }
-
-        if (oldValWire != null) {
-            oldVal = oldValWire;
-
-            oldValWire = null;
-        }
     }
 
     /** {@inheritDoc} */

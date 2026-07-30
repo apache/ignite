@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.Collection;
 import java.util.Set;
-import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -36,15 +35,13 @@ public class TxLocksRequest extends GridCacheMessage {
     @Order(0)
     long futId;
 
-    /** Tx keys. */
-    @GridToStringInclude
-    @Marshalled("txKeysArr")
-    Set<IgniteTxKey> txKeys;
-
-    /** Array of txKeys from {@link #txKeys}. Used during marshalling and unmarshalling. */
-    @GridToStringExclude
+    /**
+     * Tx keys, deduplicated by the sender. Not a {@code Set}: the reader would fill one while reading, and
+     * {@link IgniteTxKey#hashCode()} throws until the key's cache object is resolved, which happens later.
+     */
     @Order(1)
-    IgniteTxKey[] txKeysArr;
+    @GridToStringInclude
+    Collection<IgniteTxKey> txKeys;
 
     /**
      * Default constructor.
@@ -72,7 +69,7 @@ public class TxLocksRequest extends GridCacheMessage {
     }
 
     /** */
-    public Set<IgniteTxKey> txKeys() {
+    public Collection<IgniteTxKey> txKeys() {
         return txKeys;
     }
 
