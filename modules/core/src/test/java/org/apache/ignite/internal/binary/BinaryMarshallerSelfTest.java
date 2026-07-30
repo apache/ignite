@@ -3770,9 +3770,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         }
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** @throws Exception If failed. */
     @Test
     public void testFieldOrderByBinarylizable() throws Exception {
         BinaryObjectImpl binObj = marshal(new FieldOrderBinarylizable(), binaryMarshaller());
@@ -3780,9 +3778,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         assertArrayEquals(FieldOrderBinarylizable.FIELD_NAMES, binObj.type().fieldNames().toArray());
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** @throws Exception If failed. */
     @Test
     public void testMetadataFieldOrderAfterSerialization() throws Exception {
         String[] fieldNames = {"field9", "field8", "field0", "field1", "field2"};
