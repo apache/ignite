@@ -18,6 +18,7 @@
 package org.apache.ignite.plugin.security;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
@@ -25,14 +26,15 @@ import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
-import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.nio.MessageSerialization;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.util.CommonUtils.makeMessageType;
@@ -66,8 +68,7 @@ public class SecurityBasicPermissionSetSerializationTest extends GridCommonAbstr
         src.setCachePermissions(Map.of("cache", Set.of(CACHE_CREATE, CACHE_PUT)));
         SecurityBasicPermissionSet res = writeAndReadBack(src);
 
-        assertTrue("Permission sets are not equal [src=" + src + ", res=" + res + "]",
-            SecurityUtils.deepEquals(src, res));
+        assertTrue("Permission sets are not equal [src=" + src + ", res=" + res + "]", deepEquals(src, res));
     }
 
     /**
@@ -98,5 +99,60 @@ public class SecurityBasicPermissionSetSerializationTest extends GridCommonAbstr
         assertTrue(MessageSerialization.readFrom(msgFactory, res, reader));
 
         return res;
+    }
+
+    /**
+     * Perfroms deep equals of permission sets.
+     *
+     * @param lhs First permissions set for equality check.
+     * @param rhs Second permissions set for equality check.
+     * @return Whether specified permission sets are equal.
+     */
+    public static boolean deepEquals(SecurityPermissionSet lhs, SecurityPermissionSet rhs) {
+        if (lhs == rhs)
+            return true;
+
+        return lhs != null
+            && rhs != null
+            && lhs.defaultAllowAll() == rhs.defaultAllowAll()
+            && (F.isEmpty(rhs.systemPermissions()) && F.isEmpty(rhs.systemPermissions())
+            || F.eqNotOrdered(rhs.systemPermissions(), lhs.systemPermissions()))
+            && eqNotOrdered(rhs.taskPermissions(), lhs.taskPermissions())
+            && eqNotOrdered(rhs.servicePermissions(), lhs.servicePermissions())
+            && eqNotOrdered(rhs.cachePermissions(), lhs.cachePermissions());
+    }
+
+    /**
+     * @param m1 First map to check.
+     * @param m2 Second map to check
+     * @return {@code True} is maps are equal, {@code False} otherwise.
+     */
+    public static boolean eqNotOrdered(
+        @Nullable Map<String, Collection<SecurityPermission>> m1,
+        @Nullable Map<String, Collection<SecurityPermission>> m2) {
+        if (m1 == m2)
+            return true;
+
+        if (m1 == null || m2 == null)
+            return false;
+
+        if (m1.size() != m2.size())
+            return false;
+
+        for (Map.Entry<String, Collection<SecurityPermission>> e : m1.entrySet()) {
+            Collection<SecurityPermission> v1 = e.getValue();
+            Collection<SecurityPermission> v2 = m2.get(e.getKey());
+
+            if (v1 == v2)
+                continue;
+
+            if (v1 == null || v2 == null)
+                return false;
+
+            if (!F.eqNotOrdered(v1, v2))
+                return false;
+        }
+
+        return true;
     }
 }

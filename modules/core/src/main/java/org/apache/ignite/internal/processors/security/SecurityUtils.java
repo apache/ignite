@@ -57,7 +57,6 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.IgniteInternalWrapper.unwrap;
 import static org.apache.ignite.internal.util.IgniteUtils.IGNITE_PKG;
@@ -372,60 +371,5 @@ public class SecurityUtils {
             return;
 
         permissions.forEach((name, permsPerName) -> permsPerName.forEach(perm -> security.authorize(name, perm)));
-    }
-
-    /**
-     * Perfroms deep equals of permission sets.
-     *
-     * @param lhs First permissions set for equality check.
-     * @param rhs Second permissions set for equality check.
-     * @return Whether specified permission sets are equal.
-     */
-    public static boolean deepEquals(SecurityPermissionSet lhs, SecurityPermissionSet rhs) {
-        if (lhs == rhs)
-            return true;
-
-        return lhs != null
-            && rhs != null
-            && lhs.defaultAllowAll() == rhs.defaultAllowAll()
-            && (F.isEmpty(rhs.systemPermissions()) && F.isEmpty(rhs.systemPermissions())
-            || F.eqNotOrdered(rhs.systemPermissions(), lhs.systemPermissions()))
-            && eqNotOrdered(rhs.taskPermissions(), lhs.taskPermissions())
-            && eqNotOrdered(rhs.servicePermissions(), lhs.servicePermissions())
-            && eqNotOrdered(rhs.cachePermissions(), lhs.cachePermissions());
-    }
-
-    /**
-     * @param m1 First map to check.
-     * @param m2 Second map to check
-     * @return {@code True} is maps are equal, {@code False} otherwise.
-     */
-    public static boolean eqNotOrdered(
-        @Nullable Map<String, Collection<SecurityPermission>> m1,
-        @Nullable Map<String, Collection<SecurityPermission>> m2) {
-        if (m1 == m2)
-            return true;
-
-        if (m1 == null || m2 == null)
-            return false;
-
-        if (m1.size() != m2.size())
-            return false;
-
-        for (Map.Entry<String, Collection<SecurityPermission>> e : m1.entrySet()) {
-            Collection<SecurityPermission> v1 = e.getValue();
-            Collection<SecurityPermission> v2 = m2.get(e.getKey());
-
-            if (v1 == v2)
-                continue;
-
-            if (v1 == null || v2 == null)
-                return false;
-
-            if (!F.eqNotOrdered(v1, v2))
-                return false;
-        }
-
-        return true;
     }
 }
