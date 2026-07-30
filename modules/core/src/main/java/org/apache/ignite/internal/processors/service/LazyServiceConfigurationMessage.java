@@ -17,18 +17,15 @@
 
 package org.apache.ignite.internal.processors.service;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.MarshallableMessage;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** Message for {@link LazyServiceConfiguration}. */
-public class LazyServiceConfigurationMessage implements MarshallableMessage {
+public class LazyServiceConfigurationMessage implements Message {
     /** Service name. */
     @Order(0)
     String name;
@@ -46,7 +43,8 @@ public class LazyServiceConfigurationMessage implements MarshallableMessage {
     String cacheName;
 
     /** Affinity key. */
-    private Object affKey;
+    @Marshalled("affKeyBytes")
+    Object affKey;
 
     /** Serialized {@link #affKey}. */
     @Order(4)
@@ -120,21 +118,6 @@ public class LazyServiceConfigurationMessage implements MarshallableMessage {
             .nodeFilterBytes(nodeFilterBytes)
             .interceptorBytes(interceptorsBytes)
             .platformMtdNames(platformMtdNames);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
-        if (affKey != null && affKeyBytes == null)
-            affKeyBytes = U.marshal(marsh, affKey);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (!F.isEmpty(affKeyBytes)) {
-            affKey = U.unmarshal(marsh, affKeyBytes, clsLdr);
-
-            affKeyBytes = null;
-        }
     }
 
     /** {@inheritDoc} */
