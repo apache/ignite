@@ -140,16 +140,7 @@ public class SecurityBasicPermissionSetSerializationTest extends GridCommonAbstr
             return false;
 
         for (Map.Entry<String, Collection<SecurityPermission>> e : m1.entrySet()) {
-            Collection<SecurityPermission> v1 = e.getValue();
-            Collection<SecurityPermission> v2 = m2.get(e.getKey());
-
-            if (v1 == v2)
-                continue;
-
-            if (v1 == null || v2 == null)
-                return false;
-
-            if (!F.eqNotOrdered(v1, v2))
+            if (!F.eqNotOrdered(e.getValue(), m2.get(e.getKey())))
                 return false;
         }
 
