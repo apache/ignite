@@ -384,6 +384,25 @@ public class MessageProcessorTest {
     }
 
     /**
+     * Negative test for a coflict situation when two enum mappers are used for the same enum in different messages.
+     * Tests conflict between ordinary enum field and collection of enums.
+     */
+    @Test
+    public void testDifferentMappersForTheSameEnumAreProhibitedWithCollection() {
+        Compilation compilation = compile("DefaultMapperEnumMapCollectionMessage.java",
+            "CustomMapperEnumFieldsMessage.java",
+            "TransactionIsolationEnumMapper.java");
+
+        assertThat(compilation).failed();
+
+        String errMsg = "Enum " + TransactionIsolation.class.getName() + " is declared with different mappers: " +
+            DefaultEnumMapper.class.getName() + " in org.apache.ignite.internal.DefaultMapperEnumMapCollectionMessage" +
+            " and org.apache.ignite.internal.TransactionIsolationEnumMapper in org.apache.ignite.internal.CustomMapperEnumFieldsMessage.";
+
+        assertThat(compilation).hadErrorContaining(errMsg);
+    }
+
+    /**
      * Positive test verifies that codegeneration is successful when two messages use DefaultEnumMapper for the same enum type.
      */
     @Test
