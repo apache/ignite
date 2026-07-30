@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import javax.management.JMException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -761,7 +760,6 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
                 msgFactory0 = new IgniteMessageFactory<>() {
                     @Override public void register(
                         short directType,
-                        Supplier<Message> supplier,
                         MessageSerializer<Message> serializer,
                         @Nullable MessageMarshaller<Message> marshaller,
                         @Nullable GridCacheMessageDeployer<GridCacheMessage> deployer

@@ -733,16 +733,17 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
 
     /** Registers message using {@link #dfltMarsh}. */
     private <T extends Message> void withNoSchema(Class<T> cls) {
-        register(cls, dfltMarsh);
+        assert cls.getAnnotation(UseBinaryMarshaller.class) == null :
+            "Remove @" + UseBinaryMarshaller.class.getSimpleName() + " for class: " + cls.getSimpleName();
+
+        register(factory, cls, msgIdx++);
     }
 
     /** Registers message using {@link #schemaAwareMarsh}. */
     private <T extends Message> void withSchema(Class<T> cls) {
-        register(cls, schemaAwareMarsh);
-    }
+        assert cls.getAnnotation(UseBinaryMarshaller.class) != null :
+            "Add @" + UseBinaryMarshaller.class.getSimpleName() + " for class: " + cls.getSimpleName();
 
-    /** Registers message using incrementing {@link #msgIdx} as the message id/type. */
-    private <T extends Message> void register(Class<T> cls, Marshaller marsh) {
-        register(factory, cls, msgIdx++, marsh);
+        register(factory, cls, msgIdx++);
     }
 }

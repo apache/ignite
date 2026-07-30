@@ -31,12 +31,12 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public class TestMarshalledCollectionMessageSerializer implements MessageSerializer<TestMarshalledCollectionMessage> {
+public final class TestMarshalledCollectionMessageSerializer implements MessageSerializer<TestMarshalledCollectionMessage> {
     /** */
     private static final MessageArrayType keysArrCollDesc = new MessageArrayType(new MessageItemType(MessageCollectionItemType.GRID_CACHE_VERSION), GridCacheVersion.class);
 
     /** */
-    @Override public boolean writeTo(TestMarshalledCollectionMessage msg, MessageWriter writer) {
+    @Override public final boolean writeTo(TestMarshalledCollectionMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
                 return false;
@@ -56,7 +56,7 @@ public class TestMarshalledCollectionMessageSerializer implements MessageSeriali
     }
 
     /** */
-    @Override public boolean readFrom(TestMarshalledCollectionMessage msg, MessageReader reader) {
+    @Override public final boolean readFrom(TestMarshalledCollectionMessage msg, MessageReader reader) {
         switch (reader.state()) {
             case 0:
                 msg.keysArr = reader.readObjectArray(keysArrCollDesc);
@@ -68,5 +68,10 @@ public class TestMarshalledCollectionMessageSerializer implements MessageSeriali
         }
 
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public final TestMarshalledCollectionMessage createMessage() {
+        return new TestMarshalledCollectionMessage();
     }
 }

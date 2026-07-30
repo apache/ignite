@@ -30,14 +30,14 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public class TestMarshalledMapMessageSerializer implements MessageSerializer<TestMarshalledMapMessage> {
+public final class TestMarshalledMapMessageSerializer implements MessageSerializer<TestMarshalledMapMessage> {
     /** */
     private static final MessageCollectionType mapKeysCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.GRID_CACHE_VERSION), false);
     /** */
     private static final MessageCollectionType mapValsCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.GRID_CACHE_VERSION), false);
 
     /** */
-    @Override public boolean writeTo(TestMarshalledMapMessage msg, MessageWriter writer) {
+    @Override public final boolean writeTo(TestMarshalledMapMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
                 return false;
@@ -63,7 +63,7 @@ public class TestMarshalledMapMessageSerializer implements MessageSerializer<Tes
     }
 
     /** */
-    @Override public boolean readFrom(TestMarshalledMapMessage msg, MessageReader reader) {
+    @Override public final boolean readFrom(TestMarshalledMapMessage msg, MessageReader reader) {
         switch (reader.state()) {
             case 0:
                 msg.mapKeys = reader.readCollection(mapKeysCollDesc);
@@ -83,5 +83,10 @@ public class TestMarshalledMapMessageSerializer implements MessageSerializer<Tes
         }
 
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public final TestMarshalledMapMessage createMessage() {
+        return new TestMarshalledMapMessage();
     }
 }

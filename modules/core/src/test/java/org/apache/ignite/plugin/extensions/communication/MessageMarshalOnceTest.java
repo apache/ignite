@@ -86,8 +86,8 @@ public class MessageMarshalOnceTest extends GridCommonAbstractTest {
 
             @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
                 registry.registerExtension(MessageFactoryProvider.class, factory -> {
-                    factory.register(TYPE, MarshalOnceCheckMessage::new, new Serializer(), new CountingMarshaller());
-                    factory.register(RETRY_TYPE, RetryCheckMessage::new, new RetrySerializer(), new RetryCountingMarshaller());
+                    factory.register(TYPE, new Serializer(), new CountingMarshaller());
+                    factory.register(RETRY_TYPE, new RetrySerializer(), new RetryCountingMarshaller());
                 });
             }
         });
@@ -171,6 +171,11 @@ public class MessageMarshalOnceTest extends GridCommonAbstractTest {
         @Override public boolean readFrom(MarshalOnceCheckMessage msg, MessageReader reader) {
             return true;
         }
+
+        /** {@inheritDoc} */
+        @Override public MarshalOnceCheckMessage createMessage() {
+            return new MarshalOnceCheckMessage();
+        }
     }
 
     /** Marshaller that only counts {@code marshal} calls — no idempotency guard, so it counts raw invocations. */
@@ -217,6 +222,11 @@ public class MessageMarshalOnceTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public boolean readFrom(RetryCheckMessage msg, MessageReader reader) {
             return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public RetryCheckMessage createMessage() {
+            return new RetryCheckMessage();
         }
     }
 

@@ -34,7 +34,7 @@ class IgniteApplicationService(IgniteAwareService):
     APP_FINISH_EVT_MSG = "IGNITE_APPLICATION_FINISHED"
     APP_BROKEN_EVT_MSG = "IGNITE_APPLICATION_BROKEN"
 
-    def __init__(self, context, config, java_class_name, num_nodes=1, params="", startup_timeout_sec=60,
+    def __init__(self, context, config, java_class_name=None, num_nodes=1, params="", startup_timeout_sec=60,
                  shutdown_timeout_sec=60, modules=None, main_java_class=SERVICE_JAVA_CLASS_NAME, jvm_opts=None,
                  merge_with_default=True):
         super().__init__(context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, main_java_class,
@@ -43,27 +43,27 @@ class IgniteApplicationService(IgniteAwareService):
         self.java_class_name = java_class_name
         self.params = params
 
-    def await_started(self):
-        super().await_started()
+    def await_started(self, nodes=None):
+        super().await_started(nodes)
 
-        self.__check_status(self.APP_INIT_EVT_MSG, timeout=self.startup_timeout_sec)
+        self.__check_status(self.APP_INIT_EVT_MSG, timeout=self.startup_timeout_sec, nodes=nodes)
 
     def await_stopped(self):
         super().await_stopped()
 
         self.__check_status(self.APP_FINISH_EVT_MSG)
 
-    def __check_status(self, desired, timeout=1):
-        self.await_event("%s\\|%s" % (desired, self.APP_BROKEN_EVT_MSG), timeout, from_the_beginning=True)
+    def __check_status(self, desired, timeout=1, nodes=None):
+        self.await_event("%s\\|%s" % (desired, self.APP_BROKEN_EVT_MSG), timeout, nodes=nodes, from_the_beginning=True)
 
         try:
-            self.await_event(self.APP_BROKEN_EVT_MSG, 1, from_the_beginning=True)
+            self.await_event(self.APP_BROKEN_EVT_MSG, 1, nodes=nodes, from_the_beginning=True)
             raise IgniteExecutionException("Java application execution failed. %s" % self.extract_result("ERROR"))
         except TimeoutError:
             pass
 
         try:
-            self.await_event(desired, 1, from_the_beginning=True)
+            self.await_event(desired, 1, nodes=nodes, from_the_beginning=True)
         except Exception:
             raise Exception("Java application execution failed.") from None
 

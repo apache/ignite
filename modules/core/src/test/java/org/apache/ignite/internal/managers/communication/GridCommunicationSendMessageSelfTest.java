@@ -150,8 +150,8 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
         @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
             registry.registerExtension(MessageFactoryProvider.class, new MessageFactoryProvider() {
                 @Override public void registerAll(IgniteMessageFactory factory) {
-                    factory.register(DIRECT_TYPE, TestValidByteIdMessage::new, new TestValidByteIdMessageSerializer());
-                    factory.register(DIRECT_TYPE_OVER_BYTE, TestOverByteIdMessage::new, new TestOverByteIdMessageSerializer());
+                    factory.register(DIRECT_TYPE, new TestValidByteIdMessageSerializer());
+                    factory.register(DIRECT_TYPE_OVER_BYTE, new TestOverByteIdMessageSerializer());
                 }
             });
         }

@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
@@ -38,6 +39,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Near cache prepare response.
  */
+@UseBinaryMarshaller
 public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse {
     /** Versions that are less than lock version ({@link #version()}). */
     @GridToStringInclude

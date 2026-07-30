@@ -71,5 +71,4 @@ public class DataStreamerResponse implements Message {
     @Override public String toString() {
         return S.toString(DataStreamerResponse.class, this);
     }
-
 }

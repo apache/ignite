@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
@@ -29,6 +30,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
+@UseBinaryMarshaller
 public class GridNearSingleGetRequest extends GridCacheIdMessage implements GridCacheDeployable {
     /** */
     private static final int READ_THROUGH_FLAG_MASK = 0x01;

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -28,6 +29,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  * Cache transaction key. This wrapper is needed because same keys may be enlisted in the same transaction
  * for multiple caches.
  */
+@UseBinaryMarshaller
 public class IgniteTxKey implements Message, CacheIdAware {
     /** Key. */
     @Order(0)

@@ -24,6 +24,7 @@ import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.DeployableMessage;
@@ -44,6 +45,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Lite dht cache backup update request.
  */
+@UseBinaryMarshaller
 public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateRequest implements MarshallableMessage, DeployableMessage {
     /** Keys to update. */
     @GridToStringInclude

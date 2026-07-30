@@ -121,7 +121,7 @@ class KafkaToIgniteService(IgniteService):
                 version=dst_cluster.config.version
             )
 
-    def await_started(self):
+    def await_started(self, nodes=None):
         """
         Awaits kafka-to-ignite.sh started.
         """
