@@ -17,33 +17,56 @@
 
 package org.apache.ignite.internal.processors.continuous;
 
-import java.util.List;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-/**
- *
- */
-public class ContinuousRoutinesJoiningNodeDiscoveryData implements Message {
-    /** */
+/** Discovery data. */
+public class ContinousRoutineDiscoveryData implements Message {
+    /** Node ID.  */
     @Order(0)
-    List<ContinuousRoutineInfo> startedRoutines;
+    UUID nodeId;
+
+    /** Items. */
+    @GridToStringInclude
+    @Order(1)
+    Collection<ContinousRoutineDiscoveryDataItem> items;
+
+    /** */
+    @Order(2)
+    Map<UUID, Map<UUID, ContinousRoutineLocalInfo>> clientInfos;
 
     /** Empty constructor for serialization purposes. */
-    public ContinuousRoutinesJoiningNodeDiscoveryData() {
+    public ContinousRoutineDiscoveryData() {
         // No-op.
     }
 
     /**
-     * @param startedRoutines Routines registered on nodes, to be started in cluster.
+     * @param nodeId Node ID.
+     * @param clientInfos Client information.
      */
-    ContinuousRoutinesJoiningNodeDiscoveryData(List<ContinuousRoutineInfo> startedRoutines) {
-        this.startedRoutines = startedRoutines;
+    ContinousRoutineDiscoveryData(UUID nodeId, Map<UUID, Map<UUID, ContinousRoutineLocalInfo>> clientInfos) {
+        assert nodeId != null;
+
+        this.nodeId = nodeId;
+
+        this.clientInfos = clientInfos;
+
+        items = new ArrayList<>();
+    }
+
+    /** @param item Item. */
+    public void addItem(ContinousRoutineDiscoveryDataItem item) {
+        items.add(item);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(ContinuousRoutinesJoiningNodeDiscoveryData.class, this);
+        return S.toString(ContinousRoutineDiscoveryData.class, this);
     }
 }

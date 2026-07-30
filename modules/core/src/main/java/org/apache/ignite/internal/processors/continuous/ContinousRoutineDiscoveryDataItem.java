@@ -18,93 +18,79 @@
 package org.apache.ignite.internal.processors.continuous;
 
 import java.util.UUID;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.jetbrains.annotations.Nullable;
 
-/**
- *
- */
-public class ContinuousRoutineInfo implements Message {
+/** Discovery data item. */
+public class ContinousRoutineDiscoveryDataItem implements Message {
     /** */
     @Order(0)
-    UUID srcNodeId;
-
-    /** */
-    @Order(1)
     UUID routineId;
 
     /** */
+    @Marshalled("prjPredBytes")
+    IgnitePredicate<ClusterNode> prjPred;
+
+    /** Marshalled {@link #prjPred}. */
+    @Order(1)
+    byte[] prjPredBytes;
+
+    /** Handler. */
     @Order(2)
-    byte[] hnd;
+    GridContinuousHandler hnd;
 
-    /** */
+    /** Buffer size. */
     @Order(3)
-    byte[] nodeFilter;
-
-    /** */
-    @Order(4)
     int bufSize;
 
-    /** */
-    @Order(5)
+    /** Time interval. */
+    @Order(4)
     long interval;
 
-    /** */
-    @Order(6)
+    /** Automatic unsubscribe flag. */
+    @Order(5)
     boolean autoUnsubscribe;
 
-    /** Transient. */
-    boolean disconnected;
-
-    /** Empty constructor for serialization purposes. */
-    public ContinuousRoutineInfo() {
+    /** Empty constructor for serialization porposes. */
+    public ContinousRoutineDiscoveryDataItem() {
         // No-op.
     }
 
     /**
-     * @param srcNodeId Source node ID.
-     * @param routineId Routine ID.
-     * @param hnd Marshalled handler.
-     * @param nodeFilter Marshalled node filter.
-     * @param bufSize Handler buffer size.
+     * @param routineId Consume ID.
+     * @param prjPred Projection predicate.
+     * @param hnd Handler.
+     * @param bufSize Buffer size.
      * @param interval Time interval.
-     * @param autoUnsubscribe Auto unsubscribe flag.
+     * @param autoUnsubscribe Automatic unsubscribe flag.
      */
-    ContinuousRoutineInfo(
-        UUID srcNodeId,
-        UUID routineId,
-        byte[] hnd,
-        byte[] nodeFilter,
+    ContinousRoutineDiscoveryDataItem(UUID routineId,
+        @Nullable IgnitePredicate<ClusterNode> prjPred,
+        GridContinuousHandler hnd,
         int bufSize,
         long interval,
         boolean autoUnsubscribe
     ) {
-        this.srcNodeId = srcNodeId;
+        assert routineId != null;
+        assert hnd != null;
+        assert bufSize > 0;
+        assert interval >= 0;
+
         this.routineId = routineId;
+        this.prjPred = prjPred;
         this.hnd = hnd;
-        this.nodeFilter = nodeFilter;
         this.bufSize = bufSize;
         this.interval = interval;
         this.autoUnsubscribe = autoUnsubscribe;
     }
 
-    /**
-     * @param srcNodeId Source node ID.
-     */
-    void sourceNodeId(UUID srcNodeId) {
-        this.srcNodeId = srcNodeId;
-    }
-
-    /**
-     *
-     */
-    void onDisconnected() {
-        disconnected = true;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(ContinuousRoutineInfo.class, this);
+        return S.toString(ContinousRoutineDiscoveryDataItem.class, this);
     }
 }

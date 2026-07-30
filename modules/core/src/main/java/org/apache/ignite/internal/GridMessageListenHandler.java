@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -39,41 +35,48 @@ import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Continuous handler for message subscription.
  */
-public class GridMessageListenHandler implements GridContinuousHandler {
+public final class GridMessageListenHandler implements GridContinuousHandler, MarshallableMessage {
     /** */
-    private static final long serialVersionUID = 0L;
+    private @Nullable Object topic;
 
-    /** */
-    private Object topic;
+    /** Marshalled {@link #topic}. */
+    @Order(0)
+    @Nullable byte[] topicBytes;
 
     /** */
     private IgniteBiPredicate<UUID, Object> pred;
 
-    /** */
-    private byte[] topicBytes;
+    /** Marshalled {@link #pred}. */
+    @Order(1)
+    byte[] predBytes;
 
-    /** */
-    private byte[] predBytes;
+    /** Is {@code null} if the P2P deployment is disabled. */
+    @Order(2)
+    @Nullable String clsName;
 
-    /** */
-    private String clsName;
-
-    /** */
-    private GridDeploymentInfoBean depInfo;
-
-    /** */
-    private boolean depEnabled;
-
-    /** P2P unmarshalling future. */
-    private IgniteInternalFuture<Void> p2pUnmarshalFut = new GridFinishedFuture<>();
+    /** Is {@code null} if the P2P deployment is disabled. */
+    @Order(3)
+    @Nullable GridDeploymentInfoBean depInfo;
 
     /**
-     * Required by {@link Externalizable}.
+     * Lever of the own marshaling.
+     *
+     * @see #p2pMarshal(GridKernalContext)
+     */
+    @Order(4)
+    boolean externalMarshal;
+
+    /** P2P unmarshalling future. */
+    private final IgniteInternalFuture<Void> p2pUnmarshalFut = new GridFinishedFuture<>();
+
+    /**
+     * Empty constructor for serialization purposes
      */
     public GridMessageListenHandler() {
         // No-op.
@@ -168,7 +171,7 @@ public class GridMessageListenHandler implements GridContinuousHandler {
 
         depInfo = new GridDeploymentInfoBean(dep);
 
-        depEnabled = true;
+        externalMarshal = true;
     }
 
     /** {@inheritDoc} */
@@ -206,6 +209,35 @@ public class GridMessageListenHandler implements GridContinuousHandler {
     }
 
     /** {@inheritDoc} */
+    @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
+        assert externalMarshal ^ clsName != null;
+        assert externalMarshal ^ depInfo != null;
+
+        /** Are marshaled in {@link #p2pMarshal(GridKernalContext)}. */
+        if (externalMarshal)
+            return;
+
+        assert topicBytes == null;
+        assert predBytes == null;
+
+        topicBytes = marsh.marshal(topic);
+        predBytes = marsh.marshal(pred);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        assert externalMarshal ^ clsName != null;
+        assert externalMarshal ^ depInfo != null;
+
+        /** Are unmarshaled in {@link #p2pUnmarshal(UUID, GridKernalContext)}. */
+        if (externalMarshal)
+            return;
+
+        topic = marsh.unmarshal(topicBytes, clsLdr);
+        pred = marsh.unmarshal(predBytes, clsLdr);
+    }
+
+    /** {@inheritDoc} */
     @Override public GridContinuousBatch createBatch() {
         return new GridContinuousBatchAdapter();
     }
@@ -232,39 +264,6 @@ public class GridMessageListenHandler implements GridContinuousHandler {
         }
         catch (CloneNotSupportedException e) {
             throw new IllegalStateException(e);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeBoolean(depEnabled);
-
-        if (depEnabled) {
-            U.writeByteArray(out, topicBytes);
-            U.writeByteArray(out, predBytes);
-            U.writeString(out, clsName);
-            out.writeObject(depInfo);
-        }
-        else {
-            out.writeObject(topic);
-            out.writeObject(pred);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        depEnabled = in.readBoolean();
-
-        if (depEnabled) {
-            p2pUnmarshalFut = new GridFutureAdapter<>();
-            topicBytes = U.readByteArray(in);
-            predBytes = U.readByteArray(in);
-            clsName = U.readString(in);
-            depInfo = (GridDeploymentInfoBean)in.readObject();
-        }
-        else {
-            topic = in.readObject();
-            pred = (IgniteBiPredicate<UUID, Object>)in.readObject();
         }
     }
 

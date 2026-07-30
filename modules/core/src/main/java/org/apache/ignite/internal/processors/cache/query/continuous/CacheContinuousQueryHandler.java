@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
-import java.io.Externalizable;
 import java.io.IOException;
-import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -83,6 +81,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteAsyncCallback;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -96,10 +95,7 @@ import static org.apache.ignite.internal.processors.cache.query.continuous.Cache
 /**
  * Continuous query handler.
  */
-public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public final class CacheContinuousQueryHandler<K, V> extends CacheContinuousQueryHandlerMessage<K, V> implements GridContinuousHandler {
     /** @see #IGNITE_CONTINUOUS_QUERY_BACKUP_ACK_THRESHOLD */
     public static final int DFLT_CONTINUOUS_QUERY_BACKUP_ACK_THRESHOLD = 100;
 
@@ -131,8 +127,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
      * Transformer implementation for processing received remote events.
      * They are already transformed so we simply return transformed value for event.
      */
-    private transient IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> returnValTrans =
-        new IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, Object>() {
+    private IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> returnValTrans =
+        new IgniteClosure<>() {
             @Override public Object apply(CacheEntryEvent<? extends K, ? extends V> evt) {
                 assert evt.getKey() == null;
 
@@ -140,125 +136,77 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             }
         };
 
-    /** Cache name. */
-    private String cacheName;
-
-    /** Topic for ordered messages. */
-    private Object topic;
-
     /** P2P unmarshalling future. */
-    protected transient IgniteInternalFuture<Void> p2pUnmarshalFut = new GridFinishedFuture<>();
+    protected IgniteInternalFuture<Void> p2pUnmarshalFut = new GridFinishedFuture<>();
 
     /** Initialization future. */
-    protected transient IgniteInternalFuture<Void> initFut;
+    protected IgniteInternalFuture<Void> initFut;
 
     /** Local listener. */
-    private transient CacheEntryUpdatedListener<K, V> locLsnr;
-
-    /** Remote filter. */
-    private CacheEntryEventSerializableFilter<K, V> rmtFilter;
-
-    /** Deployable object for filter. */
-    private CacheContinuousQueryDeployableObject rmtFilterDep;
-
-    /** Remote filter factory. */
-    private Factory<? extends CacheEntryEventFilter> rmtFilterFactory;
-
-    /** Deployable object for filter factory. */
-    private CacheContinuousQueryDeployableObject rmtFilterFactoryDep;
+    private CacheEntryUpdatedListener<K, V> locLsnr;
 
     /** Remote filter created by {@link #rmtFilterFactory}. */
-    private transient CacheEntryEventFilter rmtFilterFromFactory;
-
-    /** Event types for JCache API. */
-    private byte types;
-
-    /** Remote transformer factory. */
-    private Factory<? extends IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?>> rmtTransFactory;
-
-    /** Deployable object for transformer factory. */
-    private CacheContinuousQueryDeployableObject rmtTransFactoryDep;
+    private CacheEntryEventFilter rmtFilterFromFactory;
 
     /** Remote transformer created by {@link #rmtTransFactory}. */
-    private transient IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> rmtTrans;
+    private IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> rmtTrans;
 
     /** Local listener for transformed events. */
-    private transient EventListener<?> locTransLsnr;
-
-    /** Internal flag. */
-    private boolean internal;
-
-    /** Notify existing flag. */
-    private boolean notifyExisting;
-
-    /** Old value required flag. */
-    private boolean oldValRequired;
-
-    /** Synchronous flag. */
-    private boolean sync;
-
-    /** Ignore expired events flag. */
-    private boolean ignoreExpired;
-
-    /** Task name hash code. */
-    private int taskHash;
+    private EventListener<?> locTransLsnr;
 
     /** Whether to skip primary check for REPLICATED cache. */
-    private transient boolean skipPrimaryCheck;
+    boolean skipPrimaryCheck;
+    
+    /** */
+    private boolean locOnly;
 
     /** */
-    private transient boolean locOnly;
+    private ConcurrentMap<Integer, CacheContinuousQueryPartitionRecovery> rcvs;
 
     /** */
-    private boolean keepBinary;
+    private ConcurrentMap<Integer, CacheContinuousQueryEventBuffer> entryBufs;
 
     /** */
-    private transient ConcurrentMap<Integer, CacheContinuousQueryPartitionRecovery> rcvs;
+    private CacheContinuousQueryAcknowledgeBuffer ackBuf;
 
     /** */
-    private transient ConcurrentMap<Integer, CacheContinuousQueryEventBuffer> entryBufs;
+    private int cacheId;
 
     /** */
-    private transient CacheContinuousQueryAcknowledgeBuffer ackBuf;
+    private volatile Map<Integer, Long> initUpdCntrs;
 
     /** */
-    private transient int cacheId;
+    private volatile Map<UUID, Map<Integer, Long>> initUpdCntrsPerNode;
 
     /** */
-    private transient volatile Map<Integer, Long> initUpdCntrs;
+    private volatile AffinityTopologyVersion initTopVer;
 
     /** */
-    private transient volatile Map<UUID, Map<Integer, Long>> initUpdCntrsPerNode;
+    private volatile boolean nodeLeft;
 
     /** */
-    private transient volatile AffinityTopologyVersion initTopVer;
+    private boolean ignoreClsNotFound;
 
     /** */
-    private transient volatile boolean nodeLeft;
+    boolean asyncCb;
 
     /** */
-    private transient boolean ignoreClsNotFound;
+    private UUID nodeId;
 
     /** */
-    transient boolean asyncCb;
-
-    /** */
-    private transient UUID nodeId;
-
-    /** */
-    private transient UUID routineId;
+    private UUID routineId;
 
     /** Local update counters values on listener start. Used for skipping events fired before the listener start. */
-    private transient volatile Map<Integer, Long> locInitUpdCntrs;
+    private volatile Map<Integer, Long> locInitUpdCntrs;
 
     /** */
-    private transient GridKernalContext ctx;
+    private GridKernalContext ctx;
 
     /** */
-    private transient IgniteLogger log;
+    private IgniteLogger log;
 
     /**
-     * Required by {@link Externalizable}.
+     * Empty constructor for serialization purposes.
      */
     public CacheContinuousQueryHandler() {
         // No-op.
@@ -1389,76 +1337,72 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
     /** {@inheritDoc} */
     @Override public void p2pMarshal(GridKernalContext ctx) throws IgniteCheckedException {
-        assert ctx != null;
         assert ctx.config().isPeerClassLoadingEnabled();
 
-        if (requiresDeployment(rmtFilter))
-            rmtFilterDep = new CacheContinuousQueryDeployableObject(rmtFilter, ctx);
+        externalMarshal(ctx);
+    }
 
-        if (requiresDeployment(rmtFilterFactory))
-            rmtFilterFactoryDep = new CacheContinuousQueryDeployableObject(rmtFilterFactory, ctx);
+    /** Processes {@link #p2pUnmarshalFut} over the super's method. */
+    @Override protected CacheContinuousQueryDeployableObject marshalDeployable(
+        Object deployable,
+        GridKernalContext ctx
+    ) throws IgniteCheckedException {
+        CacheContinuousQueryDeployableObject res = super.marshalDeployable(deployable, ctx);
 
-        if (requiresDeployment(rmtTransFactory))
-            rmtTransFactoryDep = new CacheContinuousQueryDeployableObject(rmtTransFactory, ctx);
+        if (p2pUnmarshalFut == null)
+            p2pUnmarshalFut = new GridFutureAdapter<>();
+        else if (p2pUnmarshalFut.isDone())
+            p2pUnmarshalFut = new GridFutureAdapter<>();
+
+        return res;
     }
 
     /** {@inheritDoc} */
     @Override public void p2pUnmarshal(UUID nodeId, GridKernalContext ctx) throws IgniteCheckedException {
-        assert nodeId != null;
-        assert ctx != null;
         assert ctx.config().isPeerClassLoadingEnabled();
 
-        if (rmtFilterDep != null)
-            rmtFilter = p2pUnmarshal(rmtFilterDep, nodeId, ctx);
-
-        if (rmtFilterFactoryDep != null)
-            rmtFilterFactory = p2pUnmarshal(rmtFilterFactoryDep, nodeId, ctx);
-
-        if (rmtTransFactoryDep != null)
-            rmtTransFactory = p2pUnmarshal(rmtTransFactoryDep, nodeId, ctx);
+        externalUnmarshal(nodeId, ctx);
 
         if (!p2pUnmarshalFut.isDone())
             ((GridFutureAdapter)p2pUnmarshalFut).onDone();
     }
 
-    /**
-     * @return Whether the handler is marshalled for peer class loading.
-     */
-    public boolean isMarshalled() {
-        return (!requiresDeployment(rmtFilter) || rmtFilterDep != null)
-            && (!requiresDeployment(rmtFilterFactory) || rmtFilterFactoryDep != null)
-            && (!requiresDeployment(rmtTransFactory) || rmtTransFactoryDep != null);
+    /**{@inheritDoc} */
+    @Override protected <T> T externalUnmarshal(
+        CacheContinuousQueryDeployableObject depObj,
+        UUID nodeId,
+        GridKernalContext ctx
+    ) throws IgniteCheckedException {
+        try {
+            return super.externalUnmarshal(depObj, nodeId, ctx);
+        }
+        catch (IgniteCheckedException e) {
+            ((GridFutureAdapter<?>)p2pUnmarshalFut).onDone(e);
+
+            throw e;
+        }
+        catch (ExceptionInInitializerError e) {
+            IgniteCheckedException err = new IgniteCheckedException("Failed to unmarshal deployable object.", e);
+
+            ((GridFutureAdapter<?>)p2pUnmarshalFut).onDone(err);
+
+            throw err;
+        }
     }
 
-    /**
-     * @param depObj Deployable object to unmarshal.
-     * @param nodeId Sender node Id.
-     * @param ctx Kernal context.
-     * @param <T> Result type.
-     * @return Unmarshalled object.
-     * @throws IgniteCheckedException In case of unmarshalling failures.
-     */
-    protected <T> T p2pUnmarshal(CacheContinuousQueryDeployableObject depObj,
-        UUID nodeId, GridKernalContext ctx) throws IgniteCheckedException {
-        if (depObj != null) {
-            try {
-                return depObj.unmarshal(nodeId, ctx);
-            }
-            catch (IgniteCheckedException e) {
-                ((GridFutureAdapter)p2pUnmarshalFut).onDone(e);
+    /** {@inheritDoc} */
+    @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
+        /** @see #marshalDeployable(Object, GridKernalContext) */
+        p2pUnmarshalFut = null;
 
-                throw e;
-            }
-            catch (ExceptionInInitializerError e) {
-                IgniteCheckedException err = new IgniteCheckedException("Failed to unmarshal deployable object.", e);
+        super.marshal(marsh);
+    }
 
-                ((GridFutureAdapter)p2pUnmarshalFut).onDone(err);
+    /** {@inheritDoc} */
+    @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        super.unmarshal(marsh, clsLdr);
 
-                throw err;
-            }
-        }
-        else
-            return null;
+        cacheId = CU.cacheId(cacheName);
     }
 
     /** {@inheritDoc} */
@@ -1552,78 +1496,6 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheContinuousQueryHandler.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeString(out, cacheName);
-        out.writeObject(topic);
-
-        writeDeployable(out, rmtFilter, rmtFilterDep);
-
-        out.writeBoolean(internal);
-        out.writeBoolean(notifyExisting);
-        out.writeBoolean(oldValRequired);
-        out.writeBoolean(sync);
-        out.writeBoolean(ignoreExpired);
-        out.writeInt(taskHash);
-        out.writeBoolean(keepBinary);
-
-        writeDeployable(out, rmtFilterFactory, rmtFilterFactoryDep);
-
-        out.writeByte(types);
-
-        writeDeployable(out, rmtTransFactory, rmtTransFactoryDep);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        cacheName = U.readString(in);
-        topic = in.readObject();
-
-        boolean b = in.readBoolean();
-
-        if (b) {
-            rmtFilterDep = (CacheContinuousQueryDeployableObject)in.readObject();
-
-            p2pUnmarshalFut = new GridFutureAdapter<>();
-        }
-        else
-            rmtFilter = (CacheEntryEventSerializableFilter<K, V>)in.readObject();
-
-        internal = in.readBoolean();
-        notifyExisting = in.readBoolean();
-        oldValRequired = in.readBoolean();
-        sync = in.readBoolean();
-        ignoreExpired = in.readBoolean();
-        taskHash = in.readInt();
-        keepBinary = in.readBoolean();
-
-        b = in.readBoolean();
-
-        if (b) {
-            rmtFilterFactoryDep = (CacheContinuousQueryDeployableObject)in.readObject();
-
-            if (p2pUnmarshalFut.isDone())
-                p2pUnmarshalFut = new GridFutureAdapter<>();
-        }
-        else
-            rmtFilterFactory = (Factory)in.readObject();
-
-        types = in.readByte();
-
-        b = in.readBoolean();
-
-        if (b) {
-            rmtTransFactoryDep = (CacheContinuousQueryDeployableObject)in.readObject();
-
-            if (p2pUnmarshalFut.isDone())
-                p2pUnmarshalFut = new GridFutureAdapter<>();
-        }
-        else
-            rmtTransFactory = (Factory<? extends IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?>>)in.readObject();
-
-        cacheId = CU.cacheId(cacheName);
     }
 
     /** */
@@ -1811,10 +1683,5 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     /** */
     Map<Integer, CacheContinuousQueryEventBuffer> partitionContinuesQueryEntryBuffers() {
         return Collections.unmodifiableMap(entryBufs);
-    }
-
-    /** */
-    private static boolean requiresDeployment(@Nullable Object obj) {
-        return obj != null && !U.isGrid(obj.getClass());
     }
 }
