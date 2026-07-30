@@ -173,7 +173,7 @@ public class MessageMarshalOnceTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public MarshalOnceCheckMessage newInstance() {
+        @Override public MarshalOnceCheckMessage createMessage() {
             return new MarshalOnceCheckMessage();
         }
     }
@@ -225,7 +225,7 @@ public class MessageMarshalOnceTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public RetryCheckMessage newInstance() {
+        @Override public RetryCheckMessage createMessage() {
             return new RetryCheckMessage();
         }
     }

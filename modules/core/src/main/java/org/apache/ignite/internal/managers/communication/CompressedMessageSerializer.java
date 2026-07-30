@@ -128,7 +128,7 @@ public class CompressedMessageSerializer implements MessageSerializer<Compressed
     }
 
     /** {@inheritDoc} */
-    @Override public CompressedMessage newInstance() {
+    @Override public CompressedMessage createMessage() {
         return new CompressedMessage();
     }
 }

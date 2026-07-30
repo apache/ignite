@@ -43,5 +43,5 @@ public interface MessageSerializer<M extends Message> {
     /**
      * @return New instancle of message.
      */
-    public M newInstance();
+    public M createMessage();
 }

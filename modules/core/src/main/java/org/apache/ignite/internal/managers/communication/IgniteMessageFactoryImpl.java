@@ -90,7 +90,7 @@ public class IgniteMessageFactoryImpl<M extends Message, CM extends GridCacheMes
         }
 
         try {
-            Message msg = serializer.newInstance();
+            Message msg = serializer.createMessage();
 
             if (marshaller == null && msg instanceof MarshallableMessage) {
                 throw new IgniteException("Failed to register a message: it implements MarshallableMessage but no" +
@@ -143,7 +143,7 @@ public class IgniteMessageFactoryImpl<M extends Message, CM extends GridCacheMes
         if (serializer == null)
             throw new UnknownMessageException(directType);
 
-        return serializer.newInstance();
+        return serializer.createMessage();
     }
 
     /** {@inheritDoc} */

@@ -234,7 +234,7 @@ public class GridIoManagerOrderedUnmarshalFailureTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
-        @Override public FailingUnmarshalMessage newInstance() {
+        @Override public FailingUnmarshalMessage createMessage() {
             return new FailingUnmarshalMessage();
         }
     }

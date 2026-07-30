@@ -115,7 +115,7 @@ public class IgniteExceptionInNioWorkerSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public BrokenMessage newInstance() {
+        @Override public BrokenMessage createMessage() {
             return new BrokenMessage();
         }
     }

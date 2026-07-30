@@ -52,7 +52,7 @@ public class TestDelayMessageSerializer implements MessageSerializer<TestDelayMe
     }
 
     /** {@inheritDoc} */
-    @Override public TestDelayMessage newInstance() {
+    @Override public TestDelayMessage createMessage() {
         return new TestDelayMessage();
     }
 }
