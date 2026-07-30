@@ -391,7 +391,7 @@ public class MessageProcessorTest {
     }
 
     /**
-     * Negative test for a coflict situation when two enum mappers are used for the same enum in different messages.
+     * Negative test for a conflict situation when two enum mappers are used for the same enum in different messages.
      * Tests conflict between ordinary enum field and collection of enums.
      */
     @Test
