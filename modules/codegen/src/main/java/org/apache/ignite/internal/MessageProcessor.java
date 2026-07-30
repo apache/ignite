@@ -312,7 +312,7 @@ public class MessageProcessor extends AbstractProcessor {
      * @param field Field being inspected.
      * @param type Type that should be inpected for enum type (direct type or type parameter).
      * @param custMappAnn Custom mapper annotation declared for the enum type.
-     * @param enumsPerField Map for collecting enum types related to a partiular field.
+     * @param enumsPerField Map for collecting enum types related to a particular field.
      */
     private boolean inspectFieldForEnumTypes(String msgClsName, Element field, TypeMirror type, CustomMapper custMappAnn,
         Map<Element, String> enumsPerField) {
