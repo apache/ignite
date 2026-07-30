@@ -320,34 +320,9 @@ public class MessageProcessor extends AbstractProcessor {
         String enumMapperClsName = custMappAnn != null ? custMappAnn.value() : DLFT_ENUM_MAPPER_CLS;
 
         if (enumType(processingEnv, type)) {
-            IgniteBiTuple<String, String> otherMsgAndMapperClassesNames =
-                enumMappersInUse.put(enumClsFullName, new IgniteBiTuple<>(msgClsName, enumMapperClsName));
+            inspectForDuplicatedMappers(msgClsName, field, enumClsFullName, enumMapperClsName);
 
-            if (otherMsgAndMapperClassesNames != null) {
-                String otherMsgClsName = otherMsgAndMapperClassesNames.get1();
-                String otherEnumMapperClsName = otherMsgAndMapperClassesNames.get2();
-
-                if (!otherEnumMapperClsName.equals(enumMapperClsName)) {
-                    processingEnv.getMessager().printMessage(
-                        Diagnostic.Kind.ERROR,
-                        "Enum " + enumClsFullName + " is declared with different mappers: " +
-                            otherEnumMapperClsName + " in " + otherMsgClsName + " and " +
-                            enumMapperClsName + " in " + msgClsName +
-                            ". Only one mapper is allowed per enum type.",
-                        field);
-                }
-            }
-
-            String otherEnum = type.toString();
-            String existingEnum = enumsPerField.put(field, otherEnum);
-
-            if (existingEnum != null && !Objects.equals(existingEnum, otherEnum)) {
-                processingEnv.getMessager().printMessage(
-                    Diagnostic.Kind.ERROR,
-                    String.format("Multiple enums of different types are not supported for a single field " +
-                            "[msgClsName=%s, field=%s, existingEnumType=%s, otherEnumType=%s]", msgClsName,
-                        field.getSimpleName(), existingEnum, otherEnum));
-            }
+            inspectForDuplicatedEnums(msgClsName, field, type, enumsPerField);
 
             return true;
         }
@@ -373,6 +348,49 @@ public class MessageProcessor extends AbstractProcessor {
         }
 
         return false;
+    }
+
+    /**
+     * Checks, that only single type of mapper is used for an enum type.
+     * Particular enum should be processed with a concrete enum mapper: custom or default one.
+     */
+    private void inspectForDuplicatedMappers(String msgClsName, Element field, String enumClsFullName,
+        String enumMapperClsName) {
+        IgniteBiTuple<String, String> otherMsgAndMapperClassesNames =
+            enumMappersInUse.put(enumClsFullName, new IgniteBiTuple<>(msgClsName, enumMapperClsName));
+
+        if (otherMsgAndMapperClassesNames != null) {
+            String otherMsgClsName = otherMsgAndMapperClassesNames.get1();
+            String otherEnumMapperClsName = otherMsgAndMapperClassesNames.get2();
+
+            if (!otherEnumMapperClsName.equals(enumMapperClsName)) {
+                processingEnv.getMessager().printMessage(
+                    Diagnostic.Kind.ERROR,
+                    "Enum " + enumClsFullName + " is declared with different mappers: " +
+                        otherEnumMapperClsName + " in " + otherMsgClsName + " and " +
+                        enumMapperClsName + " in " + msgClsName +
+                        ". Only one mapper is allowed per enum type.",
+                    field);
+            }
+        }
+    }
+
+    /**
+     * Checks that only single type of enum is introduced for a particular field.
+     * Multiple enum types currently are not supported for custom mapper.
+     */
+    private void inspectForDuplicatedEnums(String msgClsName, Element field, TypeMirror type,
+        Map<Element, String> enumsPerField) {
+        String otherEnum = type.toString();
+        String existingEnum = enumsPerField.put(field, otherEnum);
+
+        if (existingEnum != null && !Objects.equals(existingEnum, otherEnum)) {
+            processingEnv.getMessager().printMessage(
+                Diagnostic.Kind.ERROR,
+                String.format("Multiple enums of different types are not supported for a single field " +
+                        "[msgClsName=%s, field=%s, existingEnumType=%s, otherEnumType=%s]", msgClsName,
+                    field.getSimpleName(), existingEnum, otherEnum));
+        }
     }
 
     /** Map class names to {@link TypeMirror} objects. */
