@@ -24,14 +24,11 @@ import org.apache.ignite.internal.plugin.AbstractMarshallableMessageFactoryProvi
 public class ZkMessageFactory extends AbstractMarshallableMessageFactoryProvider {
     /** {@inheritDoc} */
     @Override public void registerAll(IgniteMessageFactory factory) {
-        register(factory, ZkCommunicationErrorResolveFinishMessage.class, (short)400, 
-            ZkCommunicationErrorResolveFinishMessage::new, dfltMarsh);
-        register(factory, ZkCommunicationErrorResolveStartMessage.class, (short)401, 
-            ZkCommunicationErrorResolveStartMessage::new, dfltMarsh);
-        register(factory, ZkForceNodeFailMessage.class, (short)402, ZkForceNodeFailMessage::new, dfltMarsh);
-        register(factory, ZkNoServersMessage.class, (short)403, ZkNoServersMessage::new, dfltMarsh);
-        register(factory, ZkDiscoDataBagWrapper.class, (short)404, ZkDiscoDataBagWrapper::new, dfltMarsh);
-        register(factory, ZkOperationContextAwareCustomMessage.class, (short)405,
-            ZkOperationContextAwareCustomMessage::new, dfltMarsh);
+        register(factory, ZkCommunicationErrorResolveFinishMessage.class, (short)400, ZkCommunicationErrorResolveFinishMessage::new);
+        register(factory, ZkCommunicationErrorResolveStartMessage.class, (short)401, ZkCommunicationErrorResolveStartMessage::new);
+        register(factory, ZkForceNodeFailMessage.class, (short)402, ZkForceNodeFailMessage::new);
+        register(factory, ZkNoServersMessage.class, (short)403, ZkNoServersMessage::new);
+        register(factory, ZkDiscoDataBagWrapper.class, (short)404, ZkDiscoDataBagWrapper::new);
+        register(factory, ZkOperationContextAwareCustomMessage.class, (short)405, ZkOperationContextAwareCustomMessage::new);
     }
 }

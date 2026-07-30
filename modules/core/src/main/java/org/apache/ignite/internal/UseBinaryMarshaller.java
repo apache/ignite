@@ -14,25 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal;
 
-package org.apache.ignite.internal.managers.eventstorage;
-
-import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseBinaryMarshaller;
+import java.lang.annotation.Documented;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-/** */
-@UseBinaryMarshaller
-public class EventsDataBagItem implements Message {
-    /** */
-    @Order(0)
-    int[] enabledEvts;
+import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-    /** */
-    public EventsDataBagItem() { }
-
-    /** @param enabledEvts Enabled events. */
-    public EventsDataBagItem(int[] enabledEvts) {
-        this.enabledEvts = enabledEvts;
-    }
+/**
+ * In case message CAN contain user provided classes it must be marshalled with the {@link BinaryMarshaller}.
+ * {@link BinaryMarshaller} is able to process user classes using schema tansfering protocol through Discovery.
+ * Mark {@link Message} class with annotation to serialize it with {@link BinaryMarshaller}.
+ */
+@Documented
+@Target(value = TYPE)
+@Retention(RUNTIME)
+public @interface UseBinaryMarshaller {
+    // No-op.
 }

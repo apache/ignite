@@ -26,6 +26,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Job siblings response.
  */
+@UseBinaryMarshaller
 public class GridJobSiblingsResponse implements Message {
     /** */
     @Marshalled("siblingsBytes")

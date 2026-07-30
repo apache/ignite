@@ -24,6 +24,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
 
 /** Message wrapper for grid topic. */
+@UseBinaryMarshaller
 public class GridTopicMessage implements MarshallableMessage {
     /** Topic. */
     private Object topic;

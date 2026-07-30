@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.DeferredUnmarshalMessage;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -31,6 +32,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
 
 /** Message sent to remote nodes to start a query fragment execution. */
+@UseBinaryMarshaller
 public class QueryStartRequest implements MarshallableMessage, DeferredUnmarshalMessage, ExecutionContextAware {
     /** */
     @Order(0)

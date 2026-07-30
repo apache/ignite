@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.UUID;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
@@ -31,6 +32,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
+@UseBinaryMarshaller
 public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingleUpdateRequest {
     /** Filter. */
     @Order(0)
