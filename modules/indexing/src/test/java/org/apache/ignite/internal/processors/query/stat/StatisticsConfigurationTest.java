@@ -152,6 +152,11 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
         return ign;
     }
 
+    /** {@inheritDoc} */
+    @Override protected long getPartitionMapExchangeTimeout() {
+        return super.getPartitionMapExchangeTimeout() * 4;
+    }
+
     /** */
     protected void stopGridAndChangeBaseline(int nodeIdx) throws Exception {
         stopGrid(nodeIdx);
@@ -161,17 +166,23 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
 
             crdNode.cluster().setBaselineTopology(crdNode.cluster().topologyVersion());
 
-            // Wait for exchange + rebalance: setBaselineTopology changes the topology version,
-            // awaitPartitionMapExchange waits for exchange completion on the discovery version.
-            // Poll partition owners to confirm rebalance finished (lost partitions recovered).
+            // setBaselineTopology triggers exchange + lost partition recovery.
+            // Lost partition recovery is async and slow on CI (reads WAL/persistence).
+            // awaitPartitionMapExchange may timeout because it checks owner counts using
+            // readyAffinityVersion which can lag behind actual partition state.
+            // We ignore its timeout and rely on stabilization sleep + increased global timeout.
             try {
                 awaitPartitionMapExchange();
             }
             catch (InterruptedException | IgniteException ignored) {
-                // awaitPartitionMapExchange may timeout because owner count lags behind
-                // exchange. Partition owners polling below ensures real rebalance completion.
+                // Expected on CI when lost partition recovery is slow.
             }
 
+            // Poll partition owners directly. top.owners(p, NONE) reads the latest
+            // partition state regardless of exchange version (unlike awaitPartitionMapExchange
+            // which checks against a specific readyAffinityVersion). With the extended timeout
+            // (120s via getPartitionMapExchangeTimeout), this gives lost partition recovery
+            // enough time to restore owners from persistence on slow CI machines.
             long timeout = U.currentTimeMillis() + getPartitionMapExchangeTimeout();
 
             for (Ignite grid : G.allGrids()) {
@@ -199,7 +210,7 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
                         if (ok)
                             break;
 
-                        U.sleep(100);
+                        U.sleep(500);
                     }
 
                     if (U.currentTimeMillis() >= timeout) {
