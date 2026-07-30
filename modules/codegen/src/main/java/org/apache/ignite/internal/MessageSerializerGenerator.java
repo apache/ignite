@@ -110,7 +110,7 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
     /** */
     private final List<String> read = new ArrayList<>();
 
-    /** Class fields, which should come before ordinary class fields. */
+    /** Static class fields, which should come before ordinary class fields. */
     private final Set<String> headingClsFields = new TreeSet<>();
 
     /** Class-field declarations (enum mappers/values, collection descriptors) emitted at the top of the generated class. */
