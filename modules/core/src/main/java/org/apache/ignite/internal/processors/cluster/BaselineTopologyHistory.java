@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
@@ -34,15 +33,10 @@ public class BaselineTopologyHistory implements Message {
     private static final String METASTORE_BLT_HIST_PREFIX = "bltHist-";
 
     /** */
-    @Marshalled("bufferedForStoreBytes")
-    Queue<BaselineTopologyHistoryItem> bufferedForStore = new ConcurrentLinkedQueue<>();
+    private final Queue<BaselineTopologyHistoryItem> bufferedForStore = new ConcurrentLinkedQueue<>();
 
     /** */
     @Order(0)
-    byte[] bufferedForStoreBytes;
-
-    /** */
-    @Order(1)
     List<BaselineTopologyHistoryItem> hist = new ArrayList<>();
 
     /** */
