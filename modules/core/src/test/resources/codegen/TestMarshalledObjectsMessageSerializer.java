@@ -30,12 +30,12 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public class TestMarshalledObjectsMessageSerializer implements MessageSerializer<TestMarshalledObjectsMessage> {
+public final class TestMarshalledObjectsMessageSerializer implements MessageSerializer<TestMarshalledObjectsMessage> {
     /** */
     private static final MessageCollectionType dataBytesCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.BYTE_ARR), false);
 
     /** */
-    @Override public boolean writeTo(TestMarshalledObjectsMessage msg, MessageWriter writer) {
+    @Override public final boolean writeTo(TestMarshalledObjectsMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
                 return false;
@@ -55,7 +55,7 @@ public class TestMarshalledObjectsMessageSerializer implements MessageSerializer
     }
 
     /** */
-    @Override public boolean readFrom(TestMarshalledObjectsMessage msg, MessageReader reader) {
+    @Override public final boolean readFrom(TestMarshalledObjectsMessage msg, MessageReader reader) {
         switch (reader.state()) {
             case 0:
                 msg.dataBytes = reader.readCollection(dataBytesCollDesc);
@@ -67,5 +67,10 @@ public class TestMarshalledObjectsMessageSerializer implements MessageSerializer
         }
 
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public final TestMarshalledObjectsMessage createMessage() {
+        return new TestMarshalledObjectsMessage();
     }
 }

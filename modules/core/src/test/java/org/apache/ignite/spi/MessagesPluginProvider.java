@@ -17,10 +17,8 @@
 
 package org.apache.ignite.spi;
 
-import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.CoreMessagesProvider;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.PluginContext;
@@ -45,16 +43,7 @@ public class MessagesPluginProvider extends AbstractTestPluginProvider {
             short directType = CoreMessagesProvider.MAX_MESSAGE_ID + 1;
 
             for (Class<? extends Message> msg : msgs) {
-                Supplier<Message> msgSupp = () -> {
-                    try {
-                        return U.newInstance(msg);
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new RuntimeException(e);
-                    }
-                };
-
-                f.register(directType, msgSupp, loadSerializer(msg));
+                f.register(directType, loadSerializer(msg));
 
                 directType++;
             }

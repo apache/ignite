@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.plugin;
 
 import java.lang.reflect.Constructor;
-import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.UseBinaryMarshaller;
@@ -64,37 +63,11 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
 
     /** Register a message with a caller-provided {@code id}. */
     protected <T extends Message> void register(IgniteMessageFactory factory, Class<T> cls, short id) {
-        Constructor<T> ctor;
-
-        try {
-            ctor = cls.getConstructor();
-        }
-        catch (NoSuchMethodException e) {
-            throw new IgniteException("Failed to register message of type " + cls.getSimpleName(), e);
-        }
-
-        register(factory, cls, id, () -> {
-            try {
-                return ctor.newInstance();
-            }
-            catch (Exception e) {
-                throw new IgniteException("Failed to create message of type " + cls.getSimpleName(), e);
-            }
-        });
-    }
-
-    /**
-     * Registers a message with a caller-provided {@code supplier} and its generated serializer, marshaller (if
-     * marshallable), and deployer (if any). Use this overload when {@code cls} is package-private and so cannot be
-     * instantiated by reflection from this package — pass an in-package {@code ::new} reference as {@code supplier}.
-     */
-    protected <T extends Message> void register(IgniteMessageFactory factory, Class<T> cls, short id, Supplier<Message> supplier) {
-        register(factory, cls, id, supplier, cls.getAnnotation(UseBinaryMarshaller.class) != null ? schemaAwareMarsh : dfltMarsh);
+        register(factory, cls, id, cls.getAnnotation(UseBinaryMarshaller.class) != null ? schemaAwareMarsh : dfltMarsh);
     }
 
     /** */
-    private static <T extends Message> void register(IgniteMessageFactory factory, Class<T> cls, short id,
-        Supplier<Message> supplier, Marshaller marsh) {
+    private static <T extends Message> void register(IgniteMessageFactory factory, Class<T> cls, short id, Marshaller marsh) {
         MessageSerializer<T> serializer = requireGenerated(cls, "Serializer", marsh);
 
         // A MarshallableMessage always gets a generated marshaller (the hook call alone is a statement), so its
@@ -116,7 +89,7 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
             ? loadGenerated(cls, "Deployer", marsh)
             : null;
 
-        factory.register(id, supplier, serializer, marshaller, deployer);
+        factory.register(id, serializer, marshaller, deployer);
     }
 
     /** Loads the generated companion like {@link #loadGenerated}, failing fast when it is missing. */

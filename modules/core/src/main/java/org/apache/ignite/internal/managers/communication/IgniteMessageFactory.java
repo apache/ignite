@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
@@ -38,9 +37,9 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface IgniteMessageFactory<M extends Message, CM extends GridCacheMessage> extends MessageFactory<M> {
     /** {@inheritDoc} */
-    @Override default void register(short directType, Supplier<M> supplier, MessageSerializer<M> serializer)
+    @Override default void register(short directType, MessageSerializer<M> serializer)
         throws IgniteException {
-        register(directType, supplier, serializer, null, null);
+        register(directType, serializer, null, null);
     }
 
     /**
@@ -48,14 +47,13 @@ public interface IgniteMessageFactory<M extends Message, CM extends GridCacheMes
      * during construction of the class that implements this interface.
      *
      * @param directType Direct type ({@link Message#directType()}) to register the message under.
-     * @param supplier Message supplier.
      * @param serializer Message serializer.
      * @param marshaller Message marshaller, or {@code null} for non-marshallable messages.
      * @throws IgniteException If a message is already registered under the given direct type.
      */
-    default void register(short directType, Supplier<M> supplier, MessageSerializer<M> serializer,
+    default void register(short directType, MessageSerializer<M> serializer,
         @Nullable MessageMarshaller<M> marshaller) throws IgniteException {
-        register(directType, supplier, serializer, marshaller, null);
+        register(directType, serializer, marshaller, null);
     }
 
     /**
@@ -63,13 +61,12 @@ public interface IgniteMessageFactory<M extends Message, CM extends GridCacheMes
      * registered during construction of the class that implements this interface.
      *
      * @param directType Direct type ({@link Message#directType()}) to register the message under.
-     * @param supplier Message supplier.
      * @param serializer Message serializer.
      * @param marshaller Message marshaller, or {@code null} for non-marshallable messages.
      * @param deployer Message deployer, or {@code null} for messages without deployable fields.
      * @throws IgniteException If a message is already registered under the given direct type.
      */
-    public void register(short directType, Supplier<M> supplier, MessageSerializer<M> serializer,
+    public void register(short directType, MessageSerializer<M> serializer,
         @Nullable MessageMarshaller<M> marshaller, @Nullable GridCacheMessageDeployer<CM> deployer) throws IgniteException;
 
     /**
