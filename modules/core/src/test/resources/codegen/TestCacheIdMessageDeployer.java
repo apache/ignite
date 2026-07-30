@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public class TestCacheIdMessageDeployer implements GridCacheMessageDeployer<TestCacheIdMessage> {
+public final class TestCacheIdMessageDeployer implements GridCacheMessageDeployer<TestCacheIdMessage> {
     /** */
     @Override public void deploy(TestCacheIdMessage msg, GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         GridCacheContext<?, ?> cctx = ctx.cacheContext(msg.cacheId());

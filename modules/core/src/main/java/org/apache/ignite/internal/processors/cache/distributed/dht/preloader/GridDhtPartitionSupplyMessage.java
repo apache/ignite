@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -40,6 +41,7 @@ import org.jetbrains.annotations.Nullable;
  * Partition supply message.
  */
 @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+@UseBinaryMarshaller
 public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage implements GridCacheDeployable {
     /** An unique (per demander) rebalance id. */
     @Order(0)

@@ -325,7 +325,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
                 this,
                 timeout,
                 req.miniId(),
-                req.dhtVersions(),
+                req.dhtVersionKeys(),
                 req.last(),
                 needReturnValue()))) {
                 GridDhtTxPrepareFuture f = prepFut;

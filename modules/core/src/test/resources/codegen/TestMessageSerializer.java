@@ -31,7 +31,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public class TestMessageSerializer implements MessageSerializer<TestMessage> {
+public final class TestMessageSerializer implements MessageSerializer<TestMessage> {
     /** */
     private static final MessageArrayType intMatrixCollDesc = new MessageArrayType(new MessageItemType(MessageCollectionItemType.INT_ARR), int[].class);
     /** */
@@ -40,7 +40,7 @@ public class TestMessageSerializer implements MessageSerializer<TestMessage> {
     private static final MessageArrayType verArrCollDesc = new MessageArrayType(new MessageItemType(MessageCollectionItemType.GRID_CACHE_VERSION), GridCacheVersion.class);
 
     /** */
-    @Override public boolean writeTo(TestMessage msg, MessageWriter writer) {
+    @Override public final boolean writeTo(TestMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
                 return false;
@@ -150,7 +150,7 @@ public class TestMessageSerializer implements MessageSerializer<TestMessage> {
     }
 
     /** */
-    @Override public boolean readFrom(TestMessage msg, MessageReader reader) {
+    @Override public final boolean readFrom(TestMessage msg, MessageReader reader) {
         switch (reader.state()) {
             case 0:
                 msg.id = reader.readInt();
@@ -282,5 +282,10 @@ public class TestMessageSerializer implements MessageSerializer<TestMessage> {
         }
 
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public final TestMessage createMessage() {
+        return new TestMessage();
     }
 }

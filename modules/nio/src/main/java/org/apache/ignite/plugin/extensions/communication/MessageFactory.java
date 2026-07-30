@@ -21,7 +21,7 @@ import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
 
 /**
- * Message factory for all communication messages registered using {@link #register(short, Supplier, MessageSerializer)} method call.
+ * Message factory for all communication messages registered using {@link #register(short, MessageSerializer)} method call.
  */
 public interface MessageFactory<T extends Message> {
     /**
@@ -34,7 +34,7 @@ public interface MessageFactory<T extends Message> {
      * @throws IgniteException In case of attempt to register message with direct type which is already registered.
      * @throws IllegalStateException On any invocation of this method when class which implements this interface
      * is alredy constructed.
-     * @deprecated Use {@link #register(short, Supplier, MessageSerializer)} instead.
+     * @deprecated Use {@link #register(short, MessageSerializer)} instead.
      */
     @Deprecated(forRemoval = true)
     default void register(short directType, Supplier<T> supplier) throws IgniteException {
@@ -51,7 +51,7 @@ public interface MessageFactory<T extends Message> {
      * @throws IgniteException In case of attempt to register message with direct type which is already registered.
      * @throws IllegalStateException On any invocation of this method when class which implements this interface
      * is alredy constructed.
-     * @deprecated Use {@link #register(int, Supplier, MessageSerializer)} instead.
+     * @deprecated Use {@link #register(int, MessageSerializer)} instead.
      */
     @Deprecated(forRemoval = true)
     default void register(int directType, Supplier<T> supplier) throws IgniteException {
@@ -64,13 +64,12 @@ public interface MessageFactory<T extends Message> {
      * throw {@link IllegalStateException} exception.
      *
      * @param directType Direct type.
-     * @param supplier Message factory.
      * @param serializer Message serializer.
      * @throws IgniteException In case of attempt to register message with direct type which is already registered.
      * @throws IllegalStateException On any invocation of this method when class which implements this interface
      * is alredy constructed.
      */
-    public void register(short directType, Supplier<T> supplier, MessageSerializer<T> serializer) throws IgniteException;
+    public void register(short directType, MessageSerializer<T> serializer) throws IgniteException;
 
     /**
      * Register message factory with given direct type and serializer. The direct type is also registered
@@ -82,14 +81,13 @@ public interface MessageFactory<T extends Message> {
      * throw {@link IllegalStateException} exception.
      *
      * @param directType Direct type.
-     * @param supplier Message factory.
      * @param serializer Message serializer.
      * @throws IgniteException In case of attempt to register message with direct type which is already registered.
      * @throws IllegalStateException On any invocation of this method when class which implements this interface
      * is already constructed.
      */
-    default void register(int directType, Supplier<T> supplier, MessageSerializer<T> serializer) throws IgniteException {
-        register((short)directType, supplier, serializer);
+    default void register(int directType, MessageSerializer<T> serializer) throws IgniteException {
+        register((short)directType, serializer);
     }
 
     /**

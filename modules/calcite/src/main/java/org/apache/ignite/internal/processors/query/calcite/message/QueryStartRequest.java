@@ -20,18 +20,17 @@ package org.apache.ignite.internal.processors.query.calcite.message;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.DeferredUnmarshalMessage;
-import org.apache.ignite.internal.MarshallableMessage;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
 
 /** Message sent to remote nodes to start a query fragment execution. */
-public class QueryStartRequest implements MarshallableMessage, DeferredUnmarshalMessage, ExecutionContextAware {
+@UseBinaryMarshaller
+public class QueryStartRequest implements DeferredUnmarshalMessage, ExecutionContextAware {
     /** */
     @Order(0)
     String schema;
@@ -61,7 +60,8 @@ public class QueryStartRequest implements MarshallableMessage, DeferredUnmarshal
     int totalFragmentsCnt;
 
     /** */
-    private @Nullable Object[] params;
+    @Marshalled("paramsBytes")
+    @Nullable Object[] params;
 
     /** */
     @Order(7)
@@ -212,17 +212,4 @@ public class QueryStartRequest implements MarshallableMessage, DeferredUnmarshal
         return keepBinaryMode;
     }
 
-    /** {@inheritDoc} */
-    @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
-        if (paramsBytes == null && params != null)
-            paramsBytes = U.marshal(marsh, params);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (params == null && paramsBytes != null)
-            params = U.unmarshal(marsh, paramsBytes, clsLdr);
-
-        paramsBytes = null;
-    }
 }

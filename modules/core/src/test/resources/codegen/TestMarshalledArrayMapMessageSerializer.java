@@ -33,7 +33,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public class TestMarshalledArrayMapMessageSerializer implements MessageSerializer<TestMarshalledArrayMapMessage> {
+public final class TestMarshalledArrayMapMessageSerializer implements MessageSerializer<TestMarshalledArrayMapMessage> {
     /** */
     private static final MessageArrayType fixedMapKeysCollDesc = new MessageArrayType(new MessageItemType(MessageCollectionItemType.MSG), GridTopicMessage.class);
     /** */
@@ -44,7 +44,7 @@ public class TestMarshalledArrayMapMessageSerializer implements MessageSerialize
     private static final MessageArrayType mapValsCollDesc = new MessageArrayType(new MessageCollectionType(new MessageItemType(MessageCollectionItemType.MSG), false), List.class);
 
     /** */
-    @Override public boolean writeTo(TestMarshalledArrayMapMessage msg, MessageWriter writer) {
+    @Override public final boolean writeTo(TestMarshalledArrayMapMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
                 return false;
@@ -82,7 +82,7 @@ public class TestMarshalledArrayMapMessageSerializer implements MessageSerialize
     }
 
     /** */
-    @Override public boolean readFrom(TestMarshalledArrayMapMessage msg, MessageReader reader) {
+    @Override public final boolean readFrom(TestMarshalledArrayMapMessage msg, MessageReader reader) {
         switch (reader.state()) {
             case 0:
                 msg.mapKeys = reader.readObjectArray(mapKeysCollDesc);
@@ -118,5 +118,10 @@ public class TestMarshalledArrayMapMessageSerializer implements MessageSerialize
         }
 
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public final TestMarshalledArrayMapMessage createMessage() {
+        return new TestMarshalledArrayMapMessage();
     }
 }

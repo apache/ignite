@@ -528,7 +528,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
                 for (IgniteTxEntry txEntry : m.entries()) {
                     if (txEntry.op() == TRANSFORM)
-                        req.addDhtVersion(txEntry.txKey(), null);
+                        req.addDhtVersionKey(txEntry.txKey());
                 }
 
                 // Must lock near entries separately.

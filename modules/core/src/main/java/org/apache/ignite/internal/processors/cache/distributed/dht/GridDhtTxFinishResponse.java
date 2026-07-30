@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishResponse;
@@ -29,6 +30,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * DHT transaction finish response.
  */
+@UseBinaryMarshaller
 public final class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
     /** Mini future ID. */
     @Order(0)

@@ -26,7 +26,9 @@ import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.MarshallableMessage;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -54,6 +56,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPD
 /**
  * Lite DHT cache update request sent from near node to primary node.
  */
+@UseBinaryMarshaller
 public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdateRequest implements MarshallableMessage, DeployableMessage {
     /** Keys to update. */
     @Order(0)
@@ -65,7 +68,8 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     List<CacheObject> vals;
 
     /** Entry processors. */
-    private List<EntryProcessor<Object, Object, Object>> entryProcessors;
+    @Marshalled("entryProcessorsBytes")
+    List<Object> entryProcessors;
 
     /** Entry processors bytes. */
     @Order(2)
@@ -266,7 +270,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     @Override public EntryProcessor<Object, Object, Object> entryProcessor(int idx) {
         assert operation() == TRANSFORM : operation();
 
-        return entryProcessors.get(idx);
+        return (EntryProcessor<Object, Object, Object>)entryProcessors.get(idx);
     }
 
     /** {@inheritDoc} */
@@ -353,14 +357,9 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
         if (expiryPlc != null && expiryPlcBytes == null)
             expiryPlcBytes = U.marshal(marsh, new IgniteExternalizableExpiryPolicy(expiryPlc));
-        
-        if (operation() == TRANSFORM) {
-            if (entryProcessorsBytes == null)
-                entryProcessorsBytes = marshallCollection(entryProcessors, marsh);
 
-            if (!F.isEmpty(invokeArgs) && invokeArgsBytes == null)
-                invokeArgsBytes = marshallInvokeArguments(invokeArgs, marsh);
-        }
+        if (operation() == TRANSFORM && !F.isEmpty(invokeArgs) && invokeArgsBytes == null)
+            invokeArgsBytes = marshallInvokeArguments(invokeArgs, marsh);
     }
 
     /** {@inheritDoc} */
@@ -368,13 +367,8 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         if (expiryPlcBytes != null && expiryPlc == null)
             expiryPlc = U.unmarshal(marsh, expiryPlcBytes, clsLdr);
 
-        if (operation() == TRANSFORM) {
-            if (entryProcessors == null)
-                entryProcessors = unmarshalCollection(entryProcessorsBytes, marsh, clsLdr);
-
-            if (invokeArgsBytes != null && invokeArgs == null)
-                invokeArgs = unmarshalInvokeArguments(invokeArgsBytes, marsh, clsLdr);
-        }
+        if (operation() == TRANSFORM && invokeArgsBytes != null && invokeArgs == null)
+            invokeArgs = unmarshalInvokeArguments(invokeArgsBytes, marsh, clsLdr);
     }
 
     /** {@inheritDoc} */
@@ -387,7 +381,8 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
             forceDeploymentInfo(ctx);
 
-            if (entryProcessorsBytes == null)
+            // Gated on the object, not on the bytes: the generated unmarshal nulls the companion once it is done.
+            if (entryProcessors != null)
                 deployCollection(entryProcessors, cctx);
 
             if (!F.isEmpty(invokeArgs) && invokeArgsBytes == null)
