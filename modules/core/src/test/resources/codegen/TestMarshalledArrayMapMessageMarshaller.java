@@ -35,7 +35,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public class TestMarshalledArrayMapMessageMarshaller implements MessageMarshaller<TestMarshalledArrayMapMessage> {
+public final class TestMarshalledArrayMapMessageMarshaller implements MessageMarshaller<TestMarshalledArrayMapMessage> {
     /** */
     @Override public void marshal(TestMarshalledArrayMapMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         IgniteMessageFactory msgFactory = (IgniteMessageFactory)kctx.messageFactory();
