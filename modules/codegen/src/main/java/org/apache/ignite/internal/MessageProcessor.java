@@ -308,7 +308,7 @@ public class MessageProcessor extends AbstractProcessor {
     }
 
     /**
-     * @param msgClsName Message class name.
+     * @param msgClsName Message class name currently being inspected.
      * @param field Field.
      * @param type Type of field or type argument.
      * @param custMappAnn Custom mapper annotation.
