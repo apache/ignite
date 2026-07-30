@@ -19,9 +19,11 @@ package org.apache.ignite.internal.processors.query.calcite.message;
 
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
+@UseBinaryMarshaller
 public final class GenericValueMessage implements Message {
     /** */
     @Marshalled("serialized")

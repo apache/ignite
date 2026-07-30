@@ -45,6 +45,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.MessageProcessor.CACHE_OBJECT_CLS;
 import static org.apache.ignite.internal.MessageProcessor.COMPRESSED_MESSAGE_CLASS;
+import static org.apache.ignite.internal.MessageProcessor.GRID_H2_NULL;
 import static org.apache.ignite.internal.MessageProcessor.KEY_CACHE_OBJECT_CLS;
 import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
 
@@ -133,7 +134,6 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
     /** {@inheritDoc} */
     @Override protected String buildClassCode(String serClsName) throws IOException {
         try (Writer writer = new StringWriter()) {
-            imports.add(type.toString());
             imports.add(MESSAGE_SERIALIZER_CLS);
             imports.add(MESSAGE_WRITER_CLS);
             imports.add(MESSAGE_READER_CLS);
@@ -151,6 +151,10 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
 
             for (String r: read)
                 writer.write(r + NL);
+
+            writer.write(NL);
+
+            writeCreateMessage(writer);
 
             writer.write("}");
 
@@ -183,7 +187,7 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
     private void generateMethod(List<String> code, List<VariableElement> fields, boolean write) throws Exception {
         code.add(indentedLine(METHOD_JAVADOC));
 
-        code.add(indentedLine("@Override public boolean %s(" + simpleNameWithGeneric(type) + " msg, %s) {",
+        code.add(indentedLine("@Override public final boolean %s(" + simpleNameWithGeneric(type) + " msg, %s) {",
             write ? "writeTo" : "readFrom", write ? "MessageWriter writer" : "MessageReader reader"));
 
         indent++;
@@ -220,6 +224,23 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
         indent--;
 
         code.add(indentedLine("}"));
+    }
+
+    /** Writes {@code MessageSerializer#createMessage()} method body. */
+    private void writeCreateMessage(Writer writer) throws IOException {
+        writer.write(TAB + "/** {@inheritDoc} */");
+        writer.write(NL);
+        writer.write(TAB + "@Override public final " + type.getSimpleName() + " createMessage() {");
+        writer.write(NL);
+
+        if (type.getQualifiedName().contentEquals(GRID_H2_NULL))
+            writer.write(TAB + TAB + "return GridH2Null.INSTANCE;");
+        else
+            writer.write(TAB + TAB + "return new " + type.getSimpleName() + "();");
+
+        writer.write(NL);
+        writer.write(TAB + "}");
+        writer.write(NL);
     }
 
     /**

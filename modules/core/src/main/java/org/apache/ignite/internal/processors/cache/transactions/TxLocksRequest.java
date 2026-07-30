@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import java.util.Collection;
 import java.util.Set;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -28,6 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Transactions lock list request.
  */
+@UseBinaryMarshaller
 public class TxLocksRequest extends GridCacheMessage {
     /** Future ID. */
     @Order(0)

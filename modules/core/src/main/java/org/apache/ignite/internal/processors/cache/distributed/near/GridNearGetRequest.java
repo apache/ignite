@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
@@ -37,6 +38,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Get request. Responsible for obtaining entry from primary node. 'Near' means 'Initiating node' here, not 'Near Cache'.
  */
+@UseBinaryMarshaller
 public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheDeployable, GridCacheVersionable {
     /** */
     private static final int READ_THROUGH_FLAG_MASK = 0x01;

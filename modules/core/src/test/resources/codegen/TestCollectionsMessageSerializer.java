@@ -30,7 +30,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public class TestCollectionsMessageSerializer implements MessageSerializer<TestCollectionsMessage> {
+public final class TestCollectionsMessageSerializer implements MessageSerializer<TestCollectionsMessage> {
     /** */
     private static final MessageCollectionType affTopVersionListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.AFFINITY_TOPOLOGY_VERSION), false);
     /** */
@@ -85,7 +85,7 @@ public class TestCollectionsMessageSerializer implements MessageSerializer<TestC
     private static final MessageCollectionType uuidListCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.UUID), false);
 
     /** */
-    @Override public boolean writeTo(TestCollectionsMessage msg, MessageWriter writer) {
+    @Override public final boolean writeTo(TestCollectionsMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
                 return false;
@@ -255,7 +255,7 @@ public class TestCollectionsMessageSerializer implements MessageSerializer<TestC
     }
 
     /** */
-    @Override public boolean readFrom(TestCollectionsMessage msg, MessageReader reader) {
+    @Override public final boolean readFrom(TestCollectionsMessage msg, MessageReader reader) {
         switch (reader.state()) {
             case 0:
                 msg.booleanArrayList = reader.readCollection(booleanArrayListCollDesc);
@@ -467,5 +467,10 @@ public class TestCollectionsMessageSerializer implements MessageSerializer<TestC
         }
 
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public final TestCollectionsMessage createMessage() {
+        return new TestCollectionsMessage();
     }
 }

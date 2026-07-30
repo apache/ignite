@@ -33,7 +33,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public class TestMarshalledObjectsMessageMarshaller implements MessageMarshaller<TestMarshalledObjectsMessage> {
+public final class TestMarshalledObjectsMessageMarshaller implements MessageMarshaller<TestMarshalledObjectsMessage> {
     /** */
     private final Marshaller marshaller;
 
