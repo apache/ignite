@@ -21,7 +21,6 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -55,6 +54,7 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -408,7 +408,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             return;
         }
 
-        Serializable data = getDiscoveryData(dataBag.joiningNodeId());
+        var data = getDiscoveryData(dataBag.joiningNodeId());
 
         if (data != null)
             dataBag.addJoiningNodeData(CONTINUOUS_PROC.ordinal(), data);
@@ -422,7 +422,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             return;
         }
 
-        Serializable data = getDiscoveryData(dataBag.joiningNodeId());
+        Message data = getDiscoveryData(dataBag.joiningNodeId());
 
         if (data != null)
             dataBag.addNodeSpecificData(CONTINUOUS_PROC.ordinal(), data);
@@ -431,13 +431,14 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     /**
      * @param joiningNodeId Joining node id.
      */
-    private Serializable getDiscoveryData(UUID joiningNodeId) {
+    private @Nullable DiscoveryData getDiscoveryData(UUID joiningNodeId) {
         if (log.isDebugEnabled()) {
             log.debug("collectDiscoveryData [node=" + joiningNodeId +
-                    ", loc=" + ctx.localNodeId() +
-                    ", locInfos=" + locInfos +
-                    ", clientInfos=" + clientInfos +
-                    ']');
+                ", loc=" + ctx.localNodeId() +
+                ", locInfos=" + locInfos +
+                ", clientInfos=" + clientInfos +
+                ']'
+            );
         }
 
         if (!joiningNodeId.equals(ctx.localNodeId()) || !locInfos.isEmpty()) {
@@ -458,14 +459,16 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                 assert !ctx.config().isPeerClassLoadingEnabled() ||
                     !(info.hnd instanceof CacheContinuousQueryHandler) ||
-                    ((CacheContinuousQueryHandler)info.hnd).isMarshalled();
+                    ((CacheContinuousQueryHandler<?, ?>)info.hnd).isMarshalled();
 
-                data.addItem(new DiscoveryDataItem(routineId,
+                data.addItem(new DiscoveryDataItem(
+                    routineId,
                     info.prjPred,
                     info.hnd,
                     info.bufSize,
                     info.interval,
-                    info.autoUnsubscribe));
+                    info.autoUnsubscribe
+                ));
             }
 
             return data;
@@ -1971,30 +1974,31 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         boolean delayedRegister();
     }
 
-    /**
-     * Local routine info.
-     */
-    public static class LocalRoutineInfo implements Serializable, RoutineInfo {
-        /** */
-        private static final long serialVersionUID = 0L;
-
+    /** Local routine info. */
+    public static class LocalRoutineInfo implements Message, RoutineInfo {
         /** Source node id. */
-        private final UUID nodeId;
+        @Order(0)
+        UUID nodeId;
 
         /** Projection predicate. */
-        private final IgnitePredicate<ClusterNode> prjPred;
+        @Order(1)
+        IgnitePredicate<ClusterNode> prjPred;
 
         /** Continuous routine handler. */
-        private final GridContinuousHandler hnd;
+        @Order(2)
+        GridContinuousHandler hnd;
 
         /** Buffer size. */
-        private final int bufSize;
+        @Order(3)
+        int bufSize;
 
         /** Time interval. */
-        private final long interval;
+        @Order(4)
+        long interval;
 
         /** Automatic unsubscribe flag. */
-        private boolean autoUnsubscribe;
+        @Order(5)
+        boolean autoUnsubscribe;
 
         /**
          * @param nodeId Node id.
@@ -2286,26 +2290,22 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         }
     }
 
-    /**
-     * Discovery data.
-     */
-    private static class DiscoveryData implements Externalizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
+    /** Discovery data. */
+    public static class DiscoveryData implements Message {
         /** Node ID. */
-        private UUID nodeId;
+        @Order(0)
+        UUID nodeId;
 
         /** Items. */
         @GridToStringInclude
-        private Collection<DiscoveryDataItem> items;
+        @Order(1)
+        Collection<DiscoveryDataItem> items;
 
         /** */
-        private Map<UUID, Map<UUID, LocalRoutineInfo>> clientInfos;
+        @Order(2)
+        Map<UUID, Map<UUID, LocalRoutineInfo>> clientInfos;
 
-        /**
-         * Required by {@link Externalizable}.
-         */
+        /** Empty constructor for serialization purposes. */
         public DiscoveryData() {
             // No-op.
         }
@@ -2329,20 +2329,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
          */
         public void addItem(DiscoveryDataItem item) {
             items.add(item);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            U.writeUuid(out, nodeId);
-            U.writeCollection(out, items);
-            U.writeMap(out, clientInfos);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            nodeId = U.readUuid(in);
-            items = U.readCollection(in);
-            clientInfos = U.readMap(in);
         }
 
         /** {@inheritDoc} */
