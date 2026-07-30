@@ -230,7 +230,7 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
     private void writeNewInstance(Writer writer) throws IOException {
         writer.write(TAB + "/** {@inheritDoc} */");
         writer.write(NL);
-        writer.write(TAB + "@Override public final " + type.getSimpleName() + " newInstance() {");
+        writer.write(TAB + "@Override public final " + type.getSimpleName() + " createMessage() {");
         writer.write(NL);
 
         if (type.getQualifiedName().contentEquals(GRID_H2_NULL))
