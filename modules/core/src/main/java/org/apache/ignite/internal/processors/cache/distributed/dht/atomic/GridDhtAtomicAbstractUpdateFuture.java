@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -132,7 +131,6 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
      * @param affAssignment Affinity assignment.
      * @param entry Entry to map.
      * @param val Value to write.
-     * @param entryProc Entry processor.
      * @param ttl TTL (optional).
      * @param conflictExpireTime Conflict expire time (optional).
      * @param conflictVer Conflict version (optional).
@@ -147,7 +145,6 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
         AffinityAssignment affAssignment,
         GridDhtCacheEntry entry,
         @Nullable CacheObject val,
-        EntryProcessor<Object, Object, Object> entryProc,
         long ttl,
         long conflictExpireTime,
         @Nullable GridCacheVersion conflictVer,
@@ -196,7 +193,6 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
 
                 updateReq.addWriteValue(entry.key(),
                     val,
-                    entryProc,
                     ttl,
                     conflictExpireTime,
                     conflictVer,
@@ -225,7 +221,6 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
      * @param readers Entry readers.
      * @param entry Entry.
      * @param val Value.
-     * @param entryProc Entry processor..
      * @param ttl TTL for near cache update (optional).
      * @param expireTime Expire time for near cache update (optional).
      * @param readRepairRecovery Recovery on Read Repair.
@@ -235,7 +230,6 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
         GridDhtCacheEntry.ReaderId[] readers,
         GridDhtCacheEntry entry,
         @Nullable CacheObject val,
-        EntryProcessor<Object, Object, Object> entryProc,
         long ttl,
         long expireTime,
         boolean readRepairRecovery) {
@@ -285,7 +279,6 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
 
             updateReq.addNearWriteValue(entry.key(),
                 val,
-                entryProc,
                 ttl,
                 expireTime);
         }

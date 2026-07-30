@@ -20,17 +20,10 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import javax.cache.processor.EntryProcessor;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.DeployableMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
@@ -38,15 +31,13 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Lite dht cache backup update request.
  */
-@UseBinaryMarshaller
-public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateRequest implements MarshallableMessage, DeployableMessage {
+public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateRequest {
     /** Keys to update. */
     @GridToStringInclude
     @Order(0)
@@ -97,33 +88,8 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     @Order(10)
     List<Integer> obsoleteIndexes;
 
-    /** Force transform backups flag. */
-    @Order(11)
-    boolean forceTransformBackups;
-
-    /** Entry processors. */
-    private List<EntryProcessor<Object, Object, Object>> entryProcessors;
-
-    /** Entry processors bytes. */
-    @Order(12)
-    List<byte[]> entryProcessorsBytes;
-
-    /** Near entry processors. */
-    private List<EntryProcessor<Object, Object, Object>> nearEntryProcessors;
-
-    /** Near entry processors bytes. */
-    @Order(13)
-    List<byte[]> nearEntryProcessorsBytes;
-
-    /** Optional arguments for entry processor. */
-    private Object[] invokeArgs;
-
-    /** Entry processor arguments bytes. */
-    @Order(14)
-    List<byte[]> invokeArgsBytes;
-
     /** Partition. */
-    @Order(15)
+    @Order(11)
     GridLongList updateCntrs;
 
     /**
@@ -140,12 +106,10 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
      * @param nodeId Node ID.
      * @param futId Future ID.
      * @param writeVer Write version for cache values.
-     * @param invokeArgs Optional arguments for entry processor.
      * @param topVer Topology version.
      * @param keepBinary Keep binary flag.
      * @param skipStore Skip store flag.
      * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
-     * @param forceTransformBackups Force transform backups flag.
      * @param taskNameHash Task name hash code.
      * @param readRepairRecovery Recovery on Read Repair flag.
      */
@@ -156,11 +120,9 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
         GridCacheVersion writeVer,
         @NotNull AffinityTopologyVersion topVer,
         int taskNameHash,
-        Object[] invokeArgs,
         boolean keepBinary,
         boolean keepBinaryInInterceptor,
         boolean skipStore,
-        boolean forceTransformBackups,
         boolean readRepairRecovery
     ) {
         super(cacheId,
@@ -174,25 +136,13 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
             skipStore,
             readRepairRecovery);
 
-        assert invokeArgs == null || forceTransformBackups;
-
-        this.forceTransformBackups = forceTransformBackups;
-        this.invokeArgs = invokeArgs;
-
         keys = new ArrayList<>();
-
-        if (forceTransformBackups) {
-            entryProcessors = new ArrayList<>();
-            entryProcessorsBytes = new ArrayList<>();
-        }
-        else
-            vals = new ArrayList<>();
+        vals = new ArrayList<>();
     }
 
     /** {@inheritDoc} */
     @Override public void addWriteValue(KeyCacheObject key,
         @Nullable CacheObject val,
-        EntryProcessor<Object, Object, Object> entryProc,
         long ttl,
         long conflictExpireTime,
         @Nullable GridCacheVersion conflictVer,
@@ -203,14 +153,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
         assert key.partition() >= 0 : key;
 
         keys.add(key);
-
-        if (forceTransformBackups) {
-            assert entryProc != null;
-
-            entryProcessors.add(entryProc);
-        }
-        else
-            vals.add(val);
+        vals.add(val);
 
         if (addPrevVal) {
             if (prevVals == null)
@@ -262,7 +205,6 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     /** {@inheritDoc} */
     @Override public void addNearWriteValue(KeyCacheObject key,
         @Nullable CacheObject val,
-        EntryProcessor<Object, Object, Object> entryProc,
         long ttl,
         long expireTime) {
         assert key.partition() >= 0 : key;
@@ -280,24 +222,11 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
 
         if (nearKeys == null) {
             nearKeys = new ArrayList<>();
-
-            if (forceTransformBackups) {
-                nearEntryProcessors = new ArrayList<>();
-                nearEntryProcessorsBytes = new ArrayList<>();
-            }
-            else
-                nearVals = new ArrayList<>();
+            nearVals = new ArrayList<>();
         }
 
         nearKeys.add(key);
-
-        if (forceTransformBackups) {
-            assert entryProc != null;
-
-            nearEntryProcessors.add(entryProc);
-        }
-        else
-            nearVals.add(val);
+        nearVals.add(val);
 
         if (ttl >= 0 && nearTtls == null) {
             nearTtls = new GridLongList(nearKeys.size());
@@ -318,11 +247,6 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
 
         if (nearExpireTimes != null)
             nearExpireTimes.add(expireTime);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean forceTransformBackups() {
-        return forceTransformBackups;
     }
 
     /** {@inheritDoc} */
@@ -380,21 +304,11 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public EntryProcessor<Object, Object, Object> entryProcessor(int idx) {
-        return entryProcessors == null ? null : entryProcessors.get(idx);
-    }
-
-    /** {@inheritDoc} */
     @Override @Nullable public CacheObject nearValue(int idx) {
         if (nearVals != null)
             return nearVals.get(idx);
 
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override @Nullable public EntryProcessor<Object, Object, Object> nearEntryProcessor(int idx) {
-        return nearEntryProcessors == null ? null : nearEntryProcessors.get(idx);
     }
 
     /** {@inheritDoc} */
@@ -464,60 +378,9 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public Object[] invokeArguments() {
-        return invokeArgs;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void cleanup() {
         nearVals = null;
         prevVals = null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
-        if (forceTransformBackups) {
-            if (!F.isEmpty(invokeArgs) && invokeArgsBytes == null)
-                invokeArgsBytes = marshallInvokeArguments(invokeArgs, marsh);
-
-            if (entryProcessorsBytes == null)
-                entryProcessorsBytes = marshallCollection(entryProcessors, marsh);
-
-            if (nearEntryProcessorsBytes == null)
-                nearEntryProcessorsBytes = marshallCollection(nearEntryProcessors, marsh);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (forceTransformBackups) {
-            if (entryProcessors == null)
-                entryProcessors = unmarshalCollection(entryProcessorsBytes, marsh, clsLdr);
-
-            if (invokeArgsBytes != null && invokeArgs == null)
-                invokeArgs = unmarshalInvokeArguments(invokeArgsBytes, marsh, clsLdr);
-
-            if (nearEntryProcessors == null)
-                nearEntryProcessors = unmarshalCollection(nearEntryProcessorsBytes, marsh, clsLdr);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void deploy(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        if (forceTransformBackups) {
-            GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
-
-            forceDeploymentInfo(ctx);
-
-            if (!F.isEmpty(invokeArgs) && invokeArgsBytes == null)
-                deployInvokeArguments(invokeArgs, cctx);
-
-            if (entryProcessorsBytes == null)
-                deployCollection(entryProcessors, cctx);
-
-            if (nearEntryProcessorsBytes == null)
-                deployCollection(nearEntryProcessors, cctx);
-        }
     }
 
     /** {@inheritDoc} */
