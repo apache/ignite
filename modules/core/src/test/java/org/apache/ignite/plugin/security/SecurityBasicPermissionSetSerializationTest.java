@@ -60,8 +60,8 @@ public class SecurityBasicPermissionSetSerializationTest extends GridCommonAbstr
         SecurityBasicPermissionSet src = new SecurityBasicPermissionSet();
 
         src.setDefaultAllowAll(true);
-        src.setSystemPermissions(Set.of(ADMIN_CACHE, ADMIN_QUERY));
-        src.setTaskPermissions(Map.of("task", Set.of(TASK_EXECUTE, TASK_CANCEL)));
+        src.setSystemPermissions(F.asList(ADMIN_CACHE, ADMIN_QUERY, null));
+        src.setTaskPermissions(Map.of("task", F.asList(TASK_EXECUTE, null, TASK_CANCEL)));
         src.setServicePermissions(Map.of("service", Set.of(SERVICE_INVOKE, SERVICE_CANCEL)));
         src.setCachePermissions(Map.of("cache", Set.of(CACHE_CREATE, CACHE_PUT)));
 
