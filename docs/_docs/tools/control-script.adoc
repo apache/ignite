@@ -1769,19 +1769,16 @@ also still there.
 --
 *On every node:*
 
-* create a key pair and a request for the new authority to sign. Keytool asks for a store password and then for a
-key password: give the one the node is configured with to both, because it opens the store and the private key
-with that one:
+* work on a copy of the key store this node already runs on — its key stays, only the certificate changes:
 +
 .Example
 [source, shell]
 ----
-keytool -genkeypair -keystore node.jks.new -alias node -keyalg RSA -dname "CN=node01"
-keytool -certreq -keystore node.jks.new -alias node -file node.csr
+cp node.jks node.jks.new
 ----
-* install what the authority returns for `node.csr`. A reply that carries the whole chain goes in as it is; one
-that carries the node certificate alone needs the authority's own certificate imported first, or there is nothing
-to chain the reply to:
+* install the certificate the new authority issued for that key. A reply that carries the whole chain goes in as
+it is; one that carries the node certificate alone needs the authority's own certificate imported before it, or
+there is nothing to chain the reply to:
 +
 .Example
 [source, shell]
@@ -1796,8 +1793,9 @@ keytool -importcert -keystore node.jks.new -alias node -file node.crt -noprompt
 mv node.jks.new node.jks
 ----
 
-Keep one key entry per store: if it holds several, the JSSE key manager picks one of them and you cannot influence
-which.
+The store and the private key inside it have to open with the one password the node is configured with, because it
+opens both with that one. Keep one key entry per store as well: if it holds several, the JSSE key manager picks one
+of them and you cannot influence which.
 
 *Applications that present a certificate of their own.* Place the new key store at any moment after step 1 and
 before step 3. Earlier, the cluster does not trust the new authority yet; later, step 3 has already checked what
