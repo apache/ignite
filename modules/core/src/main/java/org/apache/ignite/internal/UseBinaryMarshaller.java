@@ -27,6 +27,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
  * In case message CAN contain user provided classes it must be marshalled with the {@link BinaryMarshaller}.
+ * {@link BinaryMarshaller} is able to process user classes using schema tansfering protocol through Discovery.
  * Mark {@link Message} class with annotation to serialize it with {@link BinaryMarshaller}.
  */
 @Documented
