@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-filelock==3.8.2
-ducktape==0.13.0
-looseversion==1.3.0
-tcconfig==0.29.1
+"""
+Multi DC Cluster Service
+"""
