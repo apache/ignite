@@ -593,16 +593,10 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         private final AtomicReference<Collection<InetSocketAddress>> simulatedPrevNodeAddr = new AtomicReference<>();
 
         /** {@inheritDoc} */
-        @Override protected void initializeImpl() {
-            if (impl != null)
-                return;
-
-            super.initializeImpl();
-
-            // To make the test stable, we want a loopback paddress of the previous node responds first.
+        @Override TcpDiscoveryImpl createServerTcpDiscoveryImplementation() {
+            // To make the test stable, we want a loopback address of the previous node responds first.
             // We don't need a concurrent ping execution.
-            if (impl instanceof ServerImpl)
-                impl = new ServerImpl(this, 1, DFLT_RMT_DC_PING_POOL_SIZE);
+            return new ServerImpl(this, 1, DFLT_RMT_DC_PING_POOL_SIZE);
         }
 
         /** */

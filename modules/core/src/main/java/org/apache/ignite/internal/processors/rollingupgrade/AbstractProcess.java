@@ -57,11 +57,11 @@ abstract class AbstractProcess {
     }
 
     /** */
-    protected synchronized void abort(String reasonMsg) {
+    protected synchronized void abort(String reason) {
         locInitOpId = null;
 
         if (locInitOpFut != null) {
-            locInitOpFut.onDone(new IgniteException("Operation was aborted [reason=" + reasonMsg + ']'));
+            locInitOpFut.onDone(new IgniteException("Operation was aborted [reason=" + reason + ']'));
 
             locInitOpFut = null;
         }

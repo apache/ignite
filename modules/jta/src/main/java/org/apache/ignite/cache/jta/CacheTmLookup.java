@@ -17,7 +17,7 @@
 
 package org.apache.ignite.cache.jta;
 
-import javax.transaction.TransactionManager;
+import jakarta.transaction.TransactionManager;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.jetbrains.annotations.Nullable;

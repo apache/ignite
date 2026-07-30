@@ -28,9 +28,9 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public class ChildMessageSerializer implements MessageSerializer<ChildMessage> {
+public final class ChildMessageSerializer implements MessageSerializer<ChildMessage> {
     /** */
-    @Override public boolean writeTo(ChildMessage msg, MessageWriter writer) {
+    @Override public final boolean writeTo(ChildMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
                 return false;
@@ -68,7 +68,7 @@ public class ChildMessageSerializer implements MessageSerializer<ChildMessage> {
     }
 
     /** */
-    @Override public boolean readFrom(ChildMessage msg, MessageReader reader) {
+    @Override public final boolean readFrom(ChildMessage msg, MessageReader reader) {
         switch (reader.state()) {
             case 0:
                 ((AbstractMessage)msg).id = reader.readInt();
@@ -104,5 +104,10 @@ public class ChildMessageSerializer implements MessageSerializer<ChildMessage> {
         }
 
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public final ChildMessage createMessage() {
+        return new ChildMessage();
     }
 }

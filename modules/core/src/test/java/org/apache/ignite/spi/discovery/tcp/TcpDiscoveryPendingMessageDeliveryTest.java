@@ -238,26 +238,17 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
     /** {@link TcpDiscoverySpi} which doesn't itsring to current DC. */
     private class NoRingClosingTcpDiscoverySpi extends TestTcpDiscoverySpi {
         /** {@inheritDoc} */
-        @Override protected void initializeImpl() {
-            if (impl != null)
-                return;
-
-            super.initializeImpl();
-
-            // In theory, might be a ClientImpl.
-            if (impl instanceof ServerImpl) {
-                impl = new ServerImpl(this, DFLT_UTLITY_POOL_SIZE, 0) {
-                    @Override protected ServerImpl.RingMessageWorker createMessageWorker() {
-                        return new ServerImpl.RingMessageWorker(impl.log) {
-                            @Override protected ServerImpl.CrossRingMessageSendState createConnectionRecoveryState(
-                                TcpDiscoveryNode n) {
-                                // Do not start remote DC ping.
-                                return new ServerImpl.CrossRingMessageSendState();
-                            }
-                        };
-                    }
-                };
-            }
+        @Override TcpDiscoveryImpl createServerTcpDiscoveryImplementation() {
+            return new ServerImpl(this, DFLT_UTLITY_POOL_SIZE, 0) {
+                @Override protected ServerImpl.RingMessageWorker createMessageWorker() {
+                    return new ServerImpl.RingMessageWorker(log) {
+                        @Override protected ServerImpl.CrossRingMessageSendState createConnectionRecoveryState(TcpDiscoveryNode n) {
+                            // Do not start remote DC ping.
+                            return new ServerImpl.CrossRingMessageSendState();
+                        }
+                    };
+                }
+            };
         }
     }
 

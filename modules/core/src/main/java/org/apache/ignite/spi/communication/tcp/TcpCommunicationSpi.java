@@ -46,7 +46,6 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
-import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
@@ -411,9 +410,10 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
 
     /** {@inheritDoc} */
     @Override public int getOutboundMessagesQueueSize() {
-        GridNioServer<Message> srv = nioSrvWrapper.nio();
+        if (metricsLsnr == null)
+            return 0;
 
-        return srv != null ? srv.outboundMessagesQueueSize() : 0;
+        return metricsLsnr.outboundMessagesQueueSize();
     }
 
     /** {@inheritDoc} */
@@ -638,7 +638,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             log,
             cfg,
             attributeNames,
-            tracing,
             nodeGetter,
             locNodeSupplier,
             connectGate,
@@ -1121,8 +1120,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
      * @param msgC Closure to call when message processing finished.
      */
     protected void notifyListener(UUID sndId, Message msg, IgniteRunnable msgC) {
-        MTC.span().addLog(() -> "Communication listeners notified");
-
         if (this.lsnr != null)
             // Notify listener of a new message.
             this.lsnr.onMessage(sndId, msg, msgC);
@@ -1158,17 +1155,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
                 "ctxInitLatch=" + ctxInitLatch.getCount() +
                 ", stopping=" + stopping +
                 "]";
-    }
-
-    /**
-     * Concatenates the two parameter bytes to form a message type value.
-     *
-     * @param b0 The first byte.
-     * @param b1 The second byte.
-     * @return Message type.
-     */
-    public static short makeMessageType(byte b0, byte b1) {
-        return (short)((b1 & 0xFF) << 8 | b0 & 0xFF);
     }
 
     /**

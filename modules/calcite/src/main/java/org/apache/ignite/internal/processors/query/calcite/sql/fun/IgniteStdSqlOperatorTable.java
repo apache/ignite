@@ -75,6 +75,14 @@ public class IgniteStdSqlOperatorTable extends ReflectiveSqlOperatorTable {
         register(SqlStdOperatorTable.UNARY_MINUS);
         register(SqlStdOperatorTable.UNARY_PLUS);
 
+        // Checked arithmetic
+        register(SqlStdOperatorTable.CHECKED_PLUS);
+        register(SqlStdOperatorTable.CHECKED_MINUS);
+        register(SqlStdOperatorTable.CHECKED_MULTIPLY);
+        register(SqlStdOperatorTable.CHECKED_DIVIDE);
+        register(SqlStdOperatorTable.CHECKED_DIVIDE_INTEGER);
+        register(SqlStdOperatorTable.CHECKED_UNARY_MINUS);
+
         // Aggregates.
         register(SqlStdOperatorTable.COUNT);
         register(SqlStdOperatorTable.SUM);
@@ -321,5 +329,16 @@ public class IgniteStdSqlOperatorTable extends ReflectiveSqlOperatorTable {
         register(SqlStdOperatorTable.BIT_AND);
         register(SqlStdOperatorTable.BIT_OR);
         register(SqlStdOperatorTable.BIT_XOR);
+
+        // Window specific operations
+        register(SqlStdOperatorTable.ROW_NUMBER);
+        register(SqlStdOperatorTable.DENSE_RANK);
+        register(SqlStdOperatorTable.RANK);
+        register(SqlStdOperatorTable.PERCENT_RANK);
+        register(SqlStdOperatorTable.CUME_DIST);
+        register(SqlStdOperatorTable.FIRST_VALUE);
+        register(SqlStdOperatorTable.LAST_VALUE);
+        register(SqlStdOperatorTable.NTILE);
+        register(SqlStdOperatorTable.NTH_VALUE);
     }
 }

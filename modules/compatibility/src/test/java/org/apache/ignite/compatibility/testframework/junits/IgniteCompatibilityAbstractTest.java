@@ -295,7 +295,8 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
             "ignite-commons",
             "ignite-grid-unsafe",
             "ignite-thin-client-api",
-            "ignite-thin-client-impl"
+            "ignite-thin-client-impl",
+            "ignite-nio"
         ));
         // During local development, classes from the target directory (for example, ignite/modules/commons/target/classes)
         // are included in the classpath.
@@ -306,7 +307,8 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
             "modules/commons",
             "modules/unsafe",
             "modules/thin-client/api",
-            "modules/thin-client/impl"
+            "modules/thin-client/impl",
+            "modules/nio"
         ));
 
         return excluded;

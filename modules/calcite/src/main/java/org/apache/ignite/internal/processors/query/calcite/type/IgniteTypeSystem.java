@@ -34,13 +34,23 @@ public class IgniteTypeSystem extends RelDataTypeSystemImpl implements Serializa
     public static final RelDataTypeSystem INSTANCE = new IgniteTypeSystem();
 
     /** {@inheritDoc} */
-    @Override public int getMaxNumericScale() {
-        return Short.MAX_VALUE;
+    @Override public int getMaxScale(SqlTypeName typeName) {
+        switch (typeName) {
+            case DECIMAL:
+                return Short.MAX_VALUE;
+            default:
+                return super.getMaxScale(typeName);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public int getMaxNumericPrecision() {
-        return Short.MAX_VALUE;
+    @Override public int getMaxPrecision(SqlTypeName typeName) {
+        switch (typeName) {
+            case DECIMAL:
+                return Short.MAX_VALUE;
+            default:
+                return super.getMaxPrecision(typeName);
+        }
     }
 
     /** {@inheritDoc} */

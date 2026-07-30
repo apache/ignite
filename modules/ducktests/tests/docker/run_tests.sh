@@ -127,6 +127,7 @@ while [[ $# -ge 1 ]]; do
         -t|--tc-paths) TC_PATHS="$2"; shift 2;;
         -n|--num-nodes) IGNITE_NUM_CONTAINERS="$2"; shift 2;;
         -j|--max-parallel) MAX_PARALLEL="$2"; shift 2;;
+        -r|--repeat) REPEAT="$2"; shift 2;;
         --subnet) SUBNET="--subnet $2"; shift 2;;
         --jdk) JDK_VERSION="$2"; shift 2;;
         --image) IMAGE_NAME="$2"; shift 2;;
@@ -162,6 +163,10 @@ fi
 
 if [[ -n "$MAX_PARALLEL" ]]; then
   DUCKTAPE_OPTIONS="$DUCKTAPE_OPTIONS --max-parallel $MAX_PARALLEL"
+fi
+
+if [[ -n "$REPEAT" ]]; then
+  DUCKTAPE_OPTIONS="$DUCKTAPE_OPTIONS --repeat $REPEAT"
 fi
 
 "$SCRIPT_DIR"/ducker-ignite test $TC_PATHS "$DUCKTAPE_OPTIONS" \

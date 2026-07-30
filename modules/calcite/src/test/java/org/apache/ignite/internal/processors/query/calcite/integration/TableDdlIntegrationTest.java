@@ -562,7 +562,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
     @Test
     public void createTableUseReservedWord() {
         assertThrows("create table table (id int primary key, val varchar)", IgniteSQLException.class,
-            "Failed to parse query. Encountered \"table table\"");
+            "Failed to parse query. Encountered \" \"TABLE\" \"table \"  \"TABLE\" \"table \"\"");
 
         sql("create table \"table\" (id int primary key, val varchar)");
 

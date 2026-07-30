@@ -110,7 +110,6 @@ import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.managers.systemview.IgniteConfigurationIterable;
-import org.apache.ignite.internal.managers.tracing.GridTracingManager;
 import org.apache.ignite.internal.plugin.AbstractMarshallableMessageFactoryProvider;
 import org.apache.ignite.internal.plugin.IgniteLogInfoProvider;
 import org.apache.ignite.internal.plugin.IgniteLogInfoProviderImpl;
@@ -170,6 +169,7 @@ import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.processors.tracing.configuration.NoopTracingConfigurationManager;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.suggestions.JvmConfigurationSuggestions;
 import org.apache.ignite.internal.suggestions.OsConfigurationSuggestions;
@@ -1000,12 +1000,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
             // Start SPI managers.
             // NOTE: that order matters as there are dependencies between managers.
-            try {
-                startManager(new GridTracingManager(ctx, false));
-            }
-            catch (IgniteCheckedException e) {
-                startManager(new GridTracingManager(ctx, true));
-            }
             startManager(new GridMetricManager(ctx));
             startManager(new GridSystemViewManager(ctx));
 
@@ -1324,9 +1318,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
         List<MessageFactoryProvider> compMsgs = new ArrayList<>();
 
-        ClassLoader resolvedClsLdr = U.resolveClassLoader(ctx.config());
-
-        compMsgs.add(new CoreMessagesProvider(ctx.marshallerContext().jdkMarshaller(), ctx.marshaller(), resolvedClsLdr));
+        compMsgs.add(new CoreMessagesProvider(ctx.marshallerContext().jdkMarshaller(), ctx.marshaller()));
 
         for (IgniteComponentType compType : IgniteComponentType.values()) {
             MessageFactoryProvider f = compType.messageFactory();
@@ -1348,21 +1340,20 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             msgs = F.concat(msgs, compMsgs.toArray(new MessageFactoryProvider[compMsgs.size()]));
 
         for (MessageFactoryProvider msg : msgs)
-            initProvider(msg, resolvedClsLdr);
+            initProvider(msg);
 
         msgFactory = new IgniteMessageFactoryImpl(msgs);
     }
 
     /**
-     * Re-init {@link AbstractMarshallableMessageFactoryProvider} with a proper marshaller and classloader.
+     * Re-init {@link AbstractMarshallableMessageFactoryProvider} with a proper marshaller.
      *
      * @param factoryProvider Message factory provider.
-     * @param clsLdr Class loader.
      */
-    private void initProvider(MessageFactoryProvider factoryProvider, ClassLoader clsLdr) {
+    private void initProvider(MessageFactoryProvider factoryProvider) {
         if (factoryProvider instanceof AbstractMarshallableMessageFactoryProvider) {
             ((AbstractMarshallableMessageFactoryProvider)factoryProvider).init(ctx.marshallerContext().jdkMarshaller(),
-                ctx.marshaller(), clsLdr);
+                ctx.marshaller());
         }
     }
 
@@ -1654,7 +1645,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         addSpiAttributes(cfg.getCheckpointSpi());
         addSpiAttributes(cfg.getLoadBalancingSpi());
         addSpiAttributes(cfg.getDeploymentSpi());
-        addSpiAttributes(cfg.getTracingSpi());
 
         // Set user attributes for this node.
         if (cfg.getUserAttributes() != null) {
@@ -2773,15 +2763,9 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Deprecated(forRemoval = true)
     @Override public @NotNull TracingConfigurationManager tracingConfiguration() {
-        guard();
-
-        try {
-            return ctx.tracing().configuration();
-        }
-        finally {
-            unguard();
-        }
+        return NoopTracingConfigurationManager.INSTANCE;
     }
 
     /** {@inheritDoc} */
