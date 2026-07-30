@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
@@ -35,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
@@ -241,7 +241,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
      * @return Keys whose DHT version is verified.
      */
     public Collection<IgniteTxKey> dhtVersionKeys() {
-        return dhtVerKeys == null ? Collections.emptyList() : dhtVerKeys;
+        return F.emptyIfNull(dhtVerKeys);
     }
 
     /**

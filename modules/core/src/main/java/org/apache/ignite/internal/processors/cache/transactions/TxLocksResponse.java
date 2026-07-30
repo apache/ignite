@@ -45,7 +45,11 @@ public class TxLocksResponse extends GridCacheMessage {
     @Marshalled(keys = "nearTxKeysArr", values = "locksArr")
     final Map<IgniteTxKey, List<TxLock>> nearTxKeyLocks = new HashMap<>();
 
-    /** Remote keys involved into transactions. Doesn't include near keys. A set: the sender dedups them. */
+    /**
+     * Remote keys involved into transactions, near keys excluded. Deduplicated by the sender. Not a {@code Set}:
+     * the reader would fill one while reading, and {@link IgniteTxKey#hashCode()} throws until the key's cache
+     * object is resolved, which happens later.
+     */
     @Order(2)
     @GridToStringInclude
     Collection<IgniteTxKey> txKeys;

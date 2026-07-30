@@ -35,7 +35,10 @@ public class TxLocksRequest extends GridCacheMessage {
     @Order(0)
     long futId;
 
-    /** Tx keys. */
+    /**
+     * Tx keys, deduplicated by the sender. Not a {@code Set}: the reader would fill one while reading, and
+     * {@link IgniteTxKey#hashCode()} throws until the key's cache object is resolved, which happens later.
+     */
     @Order(1)
     @GridToStringInclude
     Collection<IgniteTxKey> txKeys;

@@ -47,10 +47,10 @@ import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 
 /**
- * Checks the receiver's behaviour when a tx prepare of a destroyed cache cannot be unmarshalled: without the cache
- * there is no cache object context, so the keys stay unresolved and rebuilding the DHT-version map hashes such a key
- * and throws {@link CacheObjectNotResolvedException}. The receiver must convert it to an error response for the
- * sender and stay alive instead of going down through the failure handler.
+ * Checks the receiver's behaviour when a tx prepare arrives for a cache that has been destroyed: the entry has no
+ * cache context to initialize against, so the prepare fails with {@link CacheInvalidStateException}. The receiver
+ * must convert it to an error response for the sender and stay alive instead of going down through the failure
+ * handler.
  */
 public class GridNearTxPrepareDestroyedCacheTest extends GridCommonAbstractTest {
     /** */

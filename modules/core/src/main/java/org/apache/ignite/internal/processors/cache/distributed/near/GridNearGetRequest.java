@@ -147,7 +147,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
         this.futId = futId;
         this.miniId = miniId;
         this.ver = ver;
-        this.keyMap = keys;
+        keyMap = keys;
         this.topVer = topVer;
         this.taskNameHash = taskNameHash;
         this.createTtl = createTtl;

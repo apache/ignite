@@ -381,6 +381,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
             forceDeploymentInfo(ctx);
 
+            // Gated on the object, not on the bytes: the generated unmarshal nulls the companion once it is done.
             if (entryProcessors != null)
                 deployCollection(entryProcessors, cctx);
 
