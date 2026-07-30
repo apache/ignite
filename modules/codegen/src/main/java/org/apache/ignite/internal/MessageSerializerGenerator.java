@@ -154,7 +154,7 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
 
             writer.write(NL);
 
-            writeNewInstance(writer);
+            writeCreateMessage(writer);
 
             writer.write("}");
 
@@ -226,8 +226,8 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
         code.add(indentedLine("}"));
     }
 
-    /** Writes {@code MessageSerializer#newInstance()} method body. */
-    private void writeNewInstance(Writer writer) throws IOException {
+    /** Writes {@code MessageSerializer#createMessage()} method body. */
+    private void writeCreateMessage(Writer writer) throws IOException {
         writer.write(TAB + "/** {@inheritDoc} */");
         writer.write(NL);
         writer.write(TAB + "@Override public final " + type.getSimpleName() + " createMessage() {");
