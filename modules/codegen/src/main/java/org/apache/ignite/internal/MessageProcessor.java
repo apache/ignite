@@ -123,9 +123,6 @@ public class MessageProcessor extends AbstractProcessor {
     /** */
     private final Map<String, IgniteBiTuple<String, String>> enumMappersInUse = new HashMap<>();
 
-    /** */
-    private final Map<Element, String> enumsPerField = new HashMap<>();
-
     /** Processes all classes implementing the {@code Message} interface and generates corresponding serializer code. */
     @Override public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         TypeElement msgEl = processingEnv.getElementUtils().getTypeElement(MESSAGE_INTERFACE);
@@ -300,23 +297,25 @@ public class MessageProcessor extends AbstractProcessor {
     private void validateEnumFieldMapping(TypeElement type, Element el) {
         CustomMapper custMappAnn = el.getAnnotation(CustomMapper.class);
 
-        if (!validateEnumType(type.toString(), el, el.asType(), custMappAnn) && custMappAnn != null) {
+        Map<Element, String> enumsPerField = new HashMap<>();
+
+        if (!validateEnumType(type.toString(), el, el.asType(), custMappAnn, enumsPerField) && custMappAnn != null) {
             processingEnv.getMessager().printMessage(
                 Diagnostic.Kind.ERROR,
                 "Annotation @CustomMapper must only be used for enum fields or enum collections and maps, including nested ones.",
                 el);
         }
-
-        enumsPerField.clear();
     }
 
     /**
      * @param msgClsName Message class name.
      * @param field Field.
-     * @param type Type.
-     * @param custMappAnn Cust mapp ann.
+     * @param type Type of field or type argument.
+     * @param custMappAnn Custom mapper annotation.
+     * @param enumsPerField Map for collecting enum types related to a partiular field.
      */
-    private boolean validateEnumType(String msgClsName, Element field, TypeMirror type, CustomMapper custMappAnn) {
+    private boolean validateEnumType(String msgClsName, Element field, TypeMirror type, CustomMapper custMappAnn,
+        Map<Element, String> enumsPerField) {
         String enumClsFullName = type.toString();
         String enumMapperClsName = custMappAnn != null ? custMappAnn.value() : DLFT_ENUM_MAPPER_CLS;
 
@@ -347,7 +346,7 @@ public class MessageProcessor extends AbstractProcessor {
                     Diagnostic.Kind.ERROR,
                     String.format("Multiple enums of different types are not supported for a single field " +
                             "[msgClsName=%s, field=%s, existingEnumType=%s, otherEnumType=%s]", msgClsName,
-                        field.getSimpleName().toString(), existingEnum, otherEnum));
+                        field.getSimpleName(), existingEnum, otherEnum));
             }
 
             return true;
@@ -359,7 +358,7 @@ public class MessageProcessor extends AbstractProcessor {
 
             TypeMirror typeArg = typeArgs.get(0);
 
-            return validateEnumType(msgClsName, field, typeArg, custMappAnn);
+            return validateEnumType(msgClsName, field, typeArg, custMappAnn, enumsPerField);
         }
         else if (assignableFrom(erasedType(type), type(Map.class.getName()))) {
             List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
@@ -369,8 +368,8 @@ public class MessageProcessor extends AbstractProcessor {
             TypeMirror keyType = typeArgs.get(0);
             TypeMirror valType = typeArgs.get(1);
 
-            return validateEnumType(msgClsName, field, keyType, custMappAnn) |
-                validateEnumType(msgClsName, field, valType, custMappAnn);
+            return validateEnumType(msgClsName, field, keyType, custMappAnn, enumsPerField) |
+                validateEnumType(msgClsName, field, valType, custMappAnn, enumsPerField);
         }
 
         return false;

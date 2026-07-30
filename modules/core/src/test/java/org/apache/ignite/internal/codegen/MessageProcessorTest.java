@@ -325,7 +325,14 @@ public class MessageProcessorTest {
         Compilation compilation = compile("TwoDifferentEnumsInCollectionMessage.java");
 
         assertThat(compilation).failed();
-        assertThat(compilation).hadErrorContaining("Multiple enums of different types are not supported for a single field");
+
+        String oai = "org.apache.ignite.";
+
+        assertThat(compilation).hadErrorContaining(String.format("Multiple enums of different types are not supported " +
+            "for a single field [msgClsName=%s, field=%s, existingEnumType=%s, otherEnumType=%s]",
+            oai + "internal.TwoDifferentEnumsInCollectionMessage", "col",
+            oai + "transactions.TransactionIsolation",
+            oai + "internal.processors.cache.GridCacheOperation"));
     }
 
     /**
