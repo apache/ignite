@@ -41,6 +41,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Continuous handler for message subscription.
  */
+@UseBinaryMarshaller
 public final class GridMessageListenHandler implements GridContinuousHandler, MarshallableMessage {
     /** */
     private @Nullable Object topic;

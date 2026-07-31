@@ -27,12 +27,14 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
 
 /** */
+@UseBinaryMarshaller
 public class CacheContinuousQueryHandlerMessage<K, V> implements MarshallableMessage {
     /** Remote filter. */
     CacheEntryEventSerializableFilter<K, V> rmtFilter;
