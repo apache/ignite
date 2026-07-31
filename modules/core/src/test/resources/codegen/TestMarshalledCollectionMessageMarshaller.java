@@ -30,7 +30,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public class TestMarshalledCollectionMessageMarshaller implements MessageMarshaller<TestMarshalledCollectionMessage> {
+public final class TestMarshalledCollectionMessageMarshaller implements MessageMarshaller<TestMarshalledCollectionMessage> {
     /** */
     @Override public void marshal(TestMarshalledCollectionMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         if (msg.keys != null && msg.keysArr == null)

@@ -811,12 +811,11 @@ public class GridNioServerWrapper {
 
                     @Override public void register(
                         short directType,
-                        Supplier<Message> supplier,
                         MessageSerializer<Message> serializer,
                         @Nullable MessageMarshaller<Message> marshaller,
                         @Nullable GridCacheMessageDeployer<GridCacheMessage> deployer
                     ) throws IgniteException {
-                        get().register(directType, supplier, serializer, marshaller, deployer);
+                        get().register(directType, serializer, marshaller, deployer);
                     }
 
                     @Nullable @Override public Message create(short type) {

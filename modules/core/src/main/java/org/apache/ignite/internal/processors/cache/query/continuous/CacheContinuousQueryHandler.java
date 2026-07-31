@@ -1278,7 +1278,7 @@ public final class CacheContinuousQueryHandler<K, V> extends CacheContinuousQuer
 
         CacheContinuousQueryEventBuffer buf = partitionBuffer(cctx, e.partition());
 
-        buf.processEntry(e.copyWithDataReset(), true);
+        buf.processEntry(e, true);
     }
 
     /**
@@ -1297,10 +1297,10 @@ public final class CacheContinuousQueryHandler<K, V> extends CacheContinuousQuer
                 return e;
         }
 
-        // Initial query entry.
-        // This events should be fired immediately.
+        // Initial query entry. This events should be fired immediately.
+        // A filtered one carries nothing but a counter the receiver discards, so it is not sent at all.
         if (e.updateCounter() == -1L)
-            return e;
+            return e.isFiltered() ? null : e;
 
         CacheContinuousQueryEventBuffer buf = partitionBuffer(cctx, e.partition());
 

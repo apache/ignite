@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -25,6 +26,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /**
  *
  */
+@UseBinaryMarshaller
 public class CacheEvictionEntry implements Message {
     /** */
     @Order(0)

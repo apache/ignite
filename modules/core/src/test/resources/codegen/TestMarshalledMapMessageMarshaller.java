@@ -31,7 +31,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public class TestMarshalledMapMessageMarshaller implements MessageMarshaller<TestMarshalledMapMessage> {
+public final class TestMarshalledMapMessageMarshaller implements MessageMarshaller<TestMarshalledMapMessage> {
     /** */
     @Override public void marshal(TestMarshalledMapMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         if (msg.theMap != null && msg.mapKeys == null) {
