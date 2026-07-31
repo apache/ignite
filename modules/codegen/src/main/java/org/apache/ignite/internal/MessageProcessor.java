@@ -19,6 +19,7 @@ package org.apache.ignite.internal;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -39,8 +40,10 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
+import javax.lang.model.util.Elements;
 import javax.tools.Diagnostic;
 import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor;
 import org.apache.ignite.internal.util.typedef.F;
@@ -294,34 +297,99 @@ public class MessageProcessor extends AbstractProcessor {
     private void validateEnumFieldMapping(TypeElement type, Element el) {
         CustomMapper custMappAnn = el.getAnnotation(CustomMapper.class);
 
-        if (enumType(processingEnv, el.asType())) {
-            String enumClsFullName = el.asType().toString();
-            String enumMapperClsName = custMappAnn != null ? custMappAnn.value() : DLFT_ENUM_MAPPER_CLS;
-            String msgClsName = type.toString();
+        Map<Element, String> enumsPerField = new HashMap<>();
 
-            IgniteBiTuple<String, String> otherMsgAndMapperClassesNames =
-                enumMappersInUse.put(enumClsFullName, new IgniteBiTuple<>(msgClsName, enumMapperClsName));
-
-            if (otherMsgAndMapperClassesNames != null) {
-                String otherMsgClsName = otherMsgAndMapperClassesNames.get1();
-                String otherEnumMapperClsName = otherMsgAndMapperClassesNames.get2();
-
-                if (!otherEnumMapperClsName.equals(enumMapperClsName)) {
-                    processingEnv.getMessager().printMessage(
-                        Diagnostic.Kind.ERROR,
-                        "Enum " + enumClsFullName + " is declared with different mappers: " +
-                            otherEnumMapperClsName + " in " + otherMsgClsName + " and " +
-                            enumMapperClsName + " in " + msgClsName +
-                            ". Only one mapper is allowed per enum type.",
-                        el);
-                }
-            }
-        }
-        else if (custMappAnn != null) {
+        if (!inspectFieldForEnumTypes(type.toString(), el, el.asType(), custMappAnn, enumsPerField) && custMappAnn != null) {
             processingEnv.getMessager().printMessage(
                 Diagnostic.Kind.ERROR,
-                "Annotation @CustomMapper must only be used for enum fields.",
+                "Annotation @CustomMapper must only be used for enum fields or enum collections and maps, including nested ones.",
                 el);
+        }
+    }
+
+    /**
+     * @param msgClsName Message class name currently being inspected.
+     * @param field Field being inspected.
+     * @param type Type that should be inpected for enum type (direct type or type parameter).
+     * @param custMappAnn Custom mapper annotation declared for the enum type.
+     * @param enumsPerField Map for collecting enum types related to a particular field.
+     */
+    private boolean inspectFieldForEnumTypes(String msgClsName, Element field, TypeMirror type, CustomMapper custMappAnn,
+        Map<Element, String> enumsPerField) {
+        String enumClsFullName = type.toString();
+        String enumMapperClsName = custMappAnn != null ? custMappAnn.value() : DLFT_ENUM_MAPPER_CLS;
+
+        if (enumType(processingEnv, type)) {
+            inspectForDuplicatedMappers(msgClsName, field, enumClsFullName, enumMapperClsName);
+
+            inspectForDuplicatedEnums(msgClsName, field, type, enumsPerField);
+
+            return true;
+        }
+        else if (assignableFrom(erasedType(type), type(Collection.class.getName()))) {
+            List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
+
+            assert typeArgs.size() == 1 : type.toString();
+
+            TypeMirror typeArg = typeArgs.get(0);
+
+            return inspectFieldForEnumTypes(msgClsName, field, typeArg, custMappAnn, enumsPerField);
+        }
+        else if (assignableFrom(erasedType(type), type(Map.class.getName()))) {
+            List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
+
+            assert typeArgs.size() == 2 : type.toString();
+
+            TypeMirror keyType = typeArgs.get(0);
+            TypeMirror valType = typeArgs.get(1);
+
+            return inspectFieldForEnumTypes(msgClsName, field, keyType, custMappAnn, enumsPerField) |
+                inspectFieldForEnumTypes(msgClsName, field, valType, custMappAnn, enumsPerField);
+        }
+
+        return false;
+    }
+
+    /**
+     * Checks, that only single type of mapper is used for the enum type.
+     * Particular enum should be processed with a concrete enum mapper: custom or default one.
+     */
+    private void inspectForDuplicatedMappers(String msgClsName, Element field, String enumClsFullName,
+        String enumMapperClsName) {
+        IgniteBiTuple<String, String> otherMsgAndMapperClassesNames =
+            enumMappersInUse.put(enumClsFullName, new IgniteBiTuple<>(msgClsName, enumMapperClsName));
+
+        if (otherMsgAndMapperClassesNames != null) {
+            String otherMsgClsName = otherMsgAndMapperClassesNames.get1();
+            String otherEnumMapperClsName = otherMsgAndMapperClassesNames.get2();
+
+            if (!otherEnumMapperClsName.equals(enumMapperClsName)) {
+                processingEnv.getMessager().printMessage(
+                    Diagnostic.Kind.ERROR,
+                    "Enum " + enumClsFullName + " is declared with different mappers: " +
+                        otherEnumMapperClsName + " in " + otherMsgClsName + " and " +
+                        enumMapperClsName + " in " + msgClsName +
+                        ". Only one mapper is allowed per enum type.",
+                    field);
+            }
+        }
+    }
+
+    /**
+     * Checks that only single type of enum is introduced for a particular field.
+     * Multiple enum types currently are not supported for custom mapper.
+     */
+    private void inspectForDuplicatedEnums(String msgClsName, Element field, TypeMirror type,
+        Map<Element, String> enumsPerField) {
+        String otherEnum = type.toString();
+        String existingEnum = enumsPerField.put(field, otherEnum);
+
+        if (existingEnum != null && !Objects.equals(existingEnum, otherEnum)) {
+            processingEnv.getMessager().printMessage(
+                Diagnostic.Kind.ERROR,
+                String.format("Multiple enums of different types are not supported for a single field " +
+                        "[msgClsName=%s, field=%s, existingEnumType=%s, otherEnumType=%s]", msgClsName,
+                    field.getSimpleName(), existingEnum, otherEnum));
         }
     }
 
@@ -344,5 +412,22 @@ public class MessageProcessor extends AbstractProcessor {
         return SystemViewRowAttributeWalkerProcessor.superclasses(processingEnv, clazz)
             .flatMap(c -> ElementFilter.fieldsIn(c.getEnclosedElements()).stream())
             .anyMatch(f -> f.getAnnotation(Marshalled.class) != null);
+    }
+
+    /** */
+    boolean assignableFrom(TypeMirror type, TypeMirror superType) {
+        return superType != null && processingEnv.getTypeUtils().isAssignable(type, superType);
+    }
+
+    /** */
+    TypeMirror erasedType(TypeMirror type) {
+        return processingEnv.getTypeUtils().erasure(type);
+    }
+
+    /** @return the {@link TypeMirror} for the fully-qualified {@code clazz}, or {@code null} if not on classpath. */
+    TypeMirror type(String clazz) {
+        Elements elementUtils = processingEnv.getElementUtils();
+        TypeElement typeElement = elementUtils.getTypeElement(clazz);
+        return typeElement != null ? typeElement.asType() : null;
     }
 }

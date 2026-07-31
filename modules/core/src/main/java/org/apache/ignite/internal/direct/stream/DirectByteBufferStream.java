@@ -50,6 +50,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageArrayType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionType;
+import org.apache.ignite.plugin.extensions.communication.MessageEnumType;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageMapType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -2134,6 +2135,11 @@ public class DirectByteBufferStream {
 
                 break;
 
+            case ENUM:
+                writeByte(((MessageEnumType)type).encode((Enum<?>)val));
+
+                break;
+
             case MSG:
                 writeMessage((Message)val, writer);
 
@@ -2246,6 +2252,9 @@ public class DirectByteBufferStream {
 
             case ARRAY:
                 return nestedRead(reader, () -> reader.readObjectArray((MessageArrayType)type));
+
+            case ENUM:
+                return ((MessageEnumType)type).decode(readByte());
 
             case MSG:
                 return readMessage(reader);
