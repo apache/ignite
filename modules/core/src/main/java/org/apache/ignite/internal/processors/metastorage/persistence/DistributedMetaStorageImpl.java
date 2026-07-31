@@ -626,7 +626,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
             DistributedMetaStorageVersion remoteVer = new DistributedMetaStorageVersion(joiningData.dVerId, joiningData.dVerHash);
 
-            DistributedMetaStorageHistoryItem[] remoteHist = DistributedMetaStorageHistoryItem.fromMessage(joiningData.hist);
+            DistributedMetaStorageHistoryItem[] remoteHist = DistributedMetaStorageHistoryItem.fromMessages(joiningData.hist);
 
             int remoteHistSize = remoteHist.length;
 
@@ -755,7 +755,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             DistributedMetaStorageVersion locVer = ver;
 
             if (joiningData.dVerId > locVer.id()) {
-                DistributedMetaStorageHistoryItem[] hist = DistributedMetaStorageHistoryItem.fromMessage(joiningData.hist);
+                DistributedMetaStorageHistoryItem[] hist = DistributedMetaStorageHistoryItem.fromMessages(joiningData.hist);
 
                 if (joiningData.dVerId - locVer.id() <= hist.length) {
                     for (long v = locVer.id() + 1; v <= joiningData.dVerId; v++) {
@@ -818,9 +818,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 if (locVer.id() - joiningData.dVerId <= histCache.size() && !dataBag.isJoiningNodeClient()) {
                     DistributedMetaStorageHistoryItem[] updates = history(joiningData.dVerId + 1, locVer.id());
 
-                    var nodeData = new DistributedMetaStorageClusterNodeData(ver, null, null, updates);
-
-                    dataBag.addGridCommonData(COMPONENT_ID, nodeData);
+                    dataBag.addGridCommonData(COMPONENT_ID, new DistributedMetaStorageClusterNodeData(ver, null, null, updates));
                 }
                 else {
                     DistributedMetaStorageVersion ver0 = ver;

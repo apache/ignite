@@ -72,7 +72,7 @@ final class DistributedMetaStorageHistoryItem extends IgniteDataTransferObject {
     }
 
     /** @return Array of {@link DistributedMetaStorageHistoryItem} created of the related {@link Message} transfer wraps. */
-    static DistributedMetaStorageHistoryItem[] fromMessage(DistributedMetaStorageHistoryItemMessage[] histMsgs) {
+    static DistributedMetaStorageHistoryItem[] fromMessages(DistributedMetaStorageHistoryItemMessage[] histMsgs) {
         DistributedMetaStorageHistoryItem[] res = new DistributedMetaStorageHistoryItem[histMsgs.length];
 
         for (int i = 0; i < histMsgs.length; ++i)
