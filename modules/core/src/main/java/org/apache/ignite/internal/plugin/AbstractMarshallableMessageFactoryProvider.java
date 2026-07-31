@@ -68,7 +68,7 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
 
     /** */
     private static <T extends Message> void register(IgniteMessageFactory factory, Class<T> cls, short id, Marshaller marsh) {
-        MessageSerializer<T> serializer = requireGenerated(cls, "Serializer");
+        MessageSerializer<T> serializer = require(loadGenerated(cls, "Serializer"), cls, "Serializer");
 
         // A MarshallableMessage always gets a generated marshaller (the hook call alone is a statement), so its
         // absence is a build problem. For the rest the generator skips statement-free marshallers, so absence
@@ -79,7 +79,7 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
         if (NonMarshallableMessage.class.isAssignableFrom(cls))
             marshaller = null;
         else if (MarshallableMessage.class.isAssignableFrom(cls))
-            marshaller = requireMarshaller(cls, marsh);
+            marshaller = require(loadMarshaller(cls, marsh), cls, "Marshaller");
         else
             marshaller = loadMarshaller(cls, marsh);
 
@@ -92,17 +92,7 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
         factory.register(id, serializer, marshaller, deployer);
     }
 
-    /** Loads the generated companion like {@link #loadGenerated}, failing fast when it is missing. */
-    private static <T> T requireGenerated(Class<?> cls, String suffix) {
-        return require(loadGenerated(cls, suffix), cls, suffix);
-    }
-
-    /** Loads the generated marshaller like {@link #loadMarshaller}, failing fast when it is missing. */
-    private static <T> T requireMarshaller(Class<?> cls, Marshaller marsh) {
-        return require(loadMarshaller(cls, marsh), cls, "Marshaller");
-    }
-
-    /** */
+    /** @return {@code companion}, failing fast when it is missing. */
     private static <T> T require(@Nullable T companion, Class<?> cls, String suffix) {
         if (companion == null) {
             throw new IgniteException("No " + cls.getSimpleName() + suffix + " found for " + cls.getName() +
