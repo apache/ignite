@@ -36,7 +36,7 @@ public class ContinuousRoutineInfo implements Message {
 
     /** */
     @Order(2)
-    byte[] hnd;
+    GridContinuousHandler hnd;
 
     /** */
     @Order(3)
@@ -65,7 +65,7 @@ public class ContinuousRoutineInfo implements Message {
     /**
      * @param srcNodeId Source node ID.
      * @param routineId Routine ID.
-     * @param hnd Marshalled handler.
+     * @param hnd Handler.
      * @param nodeFilter Marshalled node filter.
      * @param bufSize Handler buffer size.
      * @param interval Time interval.
@@ -74,7 +74,7 @@ public class ContinuousRoutineInfo implements Message {
     ContinuousRoutineInfo(
         UUID srcNodeId,
         UUID routineId,
-        byte[] hnd,
+        GridContinuousHandler hnd,
         byte[] nodeFilter,
         int bufSize,
         long interval,

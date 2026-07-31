@@ -43,6 +43,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.GridMessageListenHandler;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteDeploymentCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
@@ -621,23 +622,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             return;
         }
 
-        GridContinuousHandler hnd;
-
-        try {
-            hnd = U.unmarshal(marsh, routineInfo.hnd, U.resolveClassLoader(ctx.config()));
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to unmarshal continuous routine handler [" +
-                "routineId=" + routineInfo.routineId +
-                ", srcNodeId=" + routineInfo.srcNodeId + ']', e);
-
-            ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
-
-            return;
-        }
-
         registerHandlerOnJoin(routineInfo.srcNodeId, routineInfo.routineId, nodeFilter,
-            hnd, routineInfo.bufSize, routineInfo.interval, routineInfo.autoUnsubscribe);
+            routineInfo.hnd, routineInfo.bufSize, routineInfo.interval, routineInfo.autoUnsubscribe);
     }
 
     /**
@@ -815,14 +801,13 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         long interval,
         boolean autoUnsubscribe)
         throws IgniteCheckedException {
-        byte[] hndBytes = marsh.marshal(hnd);
 
         byte[] filterBytes = nodeFilter != null ? marsh.marshal(nodeFilter) : null;
 
         return new ContinuousRoutineInfo(
             srcNodeId,
             routineId,
-            hndBytes,
+            hnd,
             filterBytes,
             bufSize,
             interval,
@@ -850,12 +835,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         // Generate ID.
         final UUID routineId = UUID.randomUUID();
-
-        if (ctx.config().isPeerClassLoadingEnabled()) {
-            hnd.p2pMarshal(ctx);
-
-            assert !(hnd instanceof CacheContinuousQueryHandler) || ((CacheContinuousQueryHandler)hnd).isMarshalled();
-        }
 
         // Register routine locally.
         locInfos.put(routineId,
@@ -1394,8 +1373,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                 if ((prjPred == null || prjPred.apply(ctx.discovery().node(ctx.localNodeId()))) &&
                     !locInfos.containsKey(routineId)) {
-                    if (ctx.config().isPeerClassLoadingEnabled())
-                        hnd.p2pUnmarshal(node.id(), ctx);
+                    assert !ctx.config().isPeerClassLoadingEnabled() || hnd.p2pUnmarshalled();
 
                     registerHandler(node.id(), routineId, hnd, data.bufferSize(), data.interval(),
                         data.autoUnsubscribe(), false);
@@ -1461,7 +1439,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         ContinuousRoutineInfo routineInfo = new ContinuousRoutineInfo(snd.id(),
             msg.routineId(),
-            reqData.hndBytes,
+            reqData.hnd,
             reqData.nodeFilterBytes,
             reqData.bufferSize(),
             reqData.interval(),

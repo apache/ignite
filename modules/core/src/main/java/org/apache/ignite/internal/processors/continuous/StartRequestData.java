@@ -51,11 +51,8 @@ public class StartRequestData implements Message {
     GridDeploymentInfoBean depInfo;
 
     /** Handler. */
-    private GridContinuousHandler hnd;
-
-    /** Serialized handler. */
     @Order(3)
-    byte[] hndBytes;
+    GridContinuousHandler hnd;
 
     /** Buffer size. */
     @Order(4)
@@ -177,8 +174,6 @@ public class StartRequestData implements Message {
                 // Handle peer deployment for other handler-specific objects.
                 hnd.p2pMarshal(ctx);
             }
-
-            hndBytes = U.marshal(ctx.marshaller(), hnd);
         }
 
         if (nodeFilter != null)
@@ -210,17 +205,13 @@ public class StartRequestData implements Message {
                 U.resolveClassLoader(ctx.config()));
         }
 
-        if (hndBytes != null) {
-            hnd = U.unmarshal(ctx.marshaller(), hndBytes, U.resolveClassLoader(ctx.config()));
+        if (ctx.config().isPeerClassLoadingEnabled())
+            hnd.p2pUnmarshal(sndId, ctx);
 
-            if (ctx.config().isPeerClassLoadingEnabled())
-                hnd.p2pUnmarshal(sndId, ctx);
+        if (keepBinary) {
+            assert hnd instanceof CacheContinuousQueryHandler : hnd;
 
-            if (keepBinary) {
-                assert hnd instanceof CacheContinuousQueryHandler : hnd;
-
-                ((CacheContinuousQueryHandler<?, ?>)hnd).keepBinary(true);
-            }
+            ((CacheContinuousQueryHandler<?, ?>)hnd).keepBinary(true);
         }
     }
 }
