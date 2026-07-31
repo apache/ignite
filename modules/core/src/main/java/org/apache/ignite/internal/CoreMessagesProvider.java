@@ -714,9 +714,9 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(ClusterUpdateNotifierDataBagItem.class);
         withNoSchema(PluginsDataBagItem.class);
         withSchema(EventsDataBagItem.class);
-        withSchema(DistributedMetaStorageHistoryItemMessage.class);
-        withSchema(DistributedMetaStorageJoiningNodeData.class);
-        withSchema(DistributedMetaStorageClusterNodeData.class);
+        withNoSchema(DistributedMetaStorageHistoryItemMessage.class);
+        withNoSchema(DistributedMetaStorageJoiningNodeData.class);
+        withNoSchema(DistributedMetaStorageClusterNodeData.class);
 
         // [13400 - 13500]: Operation context messages.
         msgIdx = 13400;
