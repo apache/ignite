@@ -374,7 +374,7 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
     /** */
     private static class TestCountPairs<Row> extends Accumulators.AbstractAccumulator<Row> {
         /** */
-        private long count;
+        private long cnt;
 
         /** */
         private final Set<List<Object>> distinctPairs = new HashSet<>();
@@ -389,7 +389,7 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
             if (aggregateCall().isDistinct())
                 distinctPairs.add(List.of(get(0, row), get(1, row)));
             else
-                count++;
+                cnt++;
         }
 
         /** {@inheritDoc} */
@@ -399,12 +399,12 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
             if (aggregateCall().isDistinct())
                 distinctPairs.addAll(other0.distinctPairs);
             else
-                count += other0.count;
+                cnt += other0.cnt;
         }
 
         /** {@inheritDoc} */
         @Override public Object end() {
-            return aggregateCall().isDistinct() ? (long)distinctPairs.size() : count;
+            return aggregateCall().isDistinct() ? (long)distinctPairs.size() : cnt;
         }
 
         /** {@inheritDoc} */
