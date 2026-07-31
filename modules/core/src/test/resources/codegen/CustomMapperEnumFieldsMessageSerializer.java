@@ -19,6 +19,9 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.internal.CustomMapperEnumFieldsMessage;
 import org.apache.ignite.internal.TransactionIsolationEnumMapper;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionType;
+import org.apache.ignite.plugin.extensions.communication.MessageEnumType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -32,7 +35,9 @@ import org.apache.ignite.transactions.TransactionIsolation;
  */
 public final class CustomMapperEnumFieldsMessageSerializer implements MessageSerializer<CustomMapperEnumFieldsMessage> {
     /** */
-    private final EnumMapper<TransactionIsolation> transactionIsolationMapper = new TransactionIsolationEnumMapper();
+    private static final EnumMapper<TransactionIsolation> transactionIsolationMapper = new TransactionIsolationEnumMapper();
+    /** */
+    private static final MessageCollectionType isolationsCollDesc = new MessageCollectionType(new MessageCollectionType(new MessageEnumType<>(transactionIsolationMapper::encode, transactionIsolationMapper::decode), false), false);
 
     /** */
     @Override public final boolean writeTo(CustomMapperEnumFieldsMessage msg, MessageWriter writer) {
@@ -49,6 +54,12 @@ public final class CustomMapperEnumFieldsMessageSerializer implements MessageSer
                     return false;
 
                 writer.incrementState();
+
+            case 1:
+                if (!writer.writeCollection(msg.isolations, isolationsCollDesc))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -59,6 +70,14 @@ public final class CustomMapperEnumFieldsMessageSerializer implements MessageSer
         switch (reader.state()) {
             case 0:
                 msg.txMode = transactionIsolationMapper.decode(reader.readByte());
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 1:
+                msg.isolations = reader.readCollection(isolationsCollDesc);
 
                 if (!reader.isLastRead())
                     return false;
