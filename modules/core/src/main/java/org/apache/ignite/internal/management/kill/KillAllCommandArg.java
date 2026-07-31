@@ -21,6 +21,7 @@ import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
@@ -34,7 +35,19 @@ public class KillAllCommandArg extends IgniteDataTransferObject {
     /** Target type. */
     @Order(0)
     @Positional
-    @Argument(description = "Target type: SQL, SCAN, CONTINUOUS")
+    @Argument()
+    @EnumDescription(
+        names = {
+            "SQL",
+            "SCAN",
+            "CONTUNUOUS"
+        },
+        descriptions = {
+            "SQL queries",
+            "SCAN queries",
+            "CONTUNUOUS queries"
+        }
+    )
     TargetType target;
 
     /** Node ID to filter targets. */

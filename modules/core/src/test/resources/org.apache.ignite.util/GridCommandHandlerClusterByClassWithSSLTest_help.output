@@ -166,7 +166,9 @@ This utility can do the following commands:
     control.(sh|bat) --kill all SQL|SCAN|CONTINUOUS [--node-id node_id] [--min-duration 60]
 
     Parameters:
-      target             - Target type: SQL, SCAN, CONTINUOUS.
+      SQL                - SQL queries.
+      SCAN               - SCAN queries.
+      CONTUNUOUS         - CONTUNUOUS queries.
       --node-id node_id  - Originating node ID to filter targets.
       --min-duration 60  - Minimum duration in seconds.
 
