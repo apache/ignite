@@ -74,7 +74,7 @@ public final class GridMessageListenHandler implements GridContinuousHandler, Ma
     boolean externalMarshal;
 
     /** P2P unmarshalling future. */
-    private final IgniteInternalFuture<Void> p2pUnmarshalFut = new GridFinishedFuture<>();
+    private IgniteInternalFuture<Void> p2pUnmarshalFut = new GridFinishedFuture<>();
 
     /**
      * Empty constructor for serialization purposes
@@ -206,13 +206,13 @@ public final class GridMessageListenHandler implements GridContinuousHandler, Ma
             throw new IgniteCheckedException("Failed to unmarshal deployable object.", e);
         }
 
-        ((GridFutureAdapter)p2pUnmarshalFut).onDone();
+      // ((GridFutureAdapter)p2pUnmarshalFut).onDone();
     }
 
     /** {@inheritDoc} */
     @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
-        assert externalMarshal ^ clsName != null;
-        assert externalMarshal ^ depInfo != null;
+        assert !(externalMarshal ^ clsName != null);
+        assert !(externalMarshal ^ depInfo != null);
 
         /** Are marshaled in {@link #p2pMarshal(GridKernalContext)}. */
         if (externalMarshal)
@@ -227,12 +227,15 @@ public final class GridMessageListenHandler implements GridContinuousHandler, Ma
 
     /** {@inheritDoc} */
     @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        assert externalMarshal ^ clsName != null;
-        assert externalMarshal ^ depInfo != null;
+        assert !(externalMarshal ^ clsName != null);
+        assert !(externalMarshal ^ depInfo != null);
 
         /** Are unmarshaled in {@link #p2pUnmarshal(UUID, GridKernalContext)}. */
-        if (externalMarshal)
+        if (externalMarshal) {
+            p2pUnmarshalFut = new GridFutureAdapter<>();
+
             return;
+        }
 
         topic = marsh.unmarshal(topicBytes, clsLdr);
         pred = marsh.unmarshal(predBytes, clsLdr);
