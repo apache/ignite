@@ -1000,8 +1000,13 @@ public class BinaryUtils {
                         newMeta.typeName());
             }
 
-            // Check and merge fields preserving their initial registration order.
-            Map<String, BinaryFieldMetadata> mergedFields = new LinkedHashMap<>(oldMeta.fieldsMap());
+            // Check and merge fields.
+            Map<String, BinaryFieldMetadata> mergedFields;
+
+            if (FIELDS_SORTED_ORDER)
+                mergedFields = new TreeMap<>(oldMeta.fieldsMap());
+            else
+                mergedFields = new LinkedHashMap<>(oldMeta.fieldsMap());
 
             Map<String, BinaryFieldMetadata> newFields = newMeta.fieldsMap();
 
