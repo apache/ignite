@@ -143,9 +143,9 @@ public class DmsDataWriter extends IgniteAsyncObjectHandler<RunnableFuture<?>> {
     public void addUpdateTask(
         DistributedMetaStorageVersion ver,
         DistributedMetaStorageHistoryItem[] hist,
-        DistributedMetaStorageKeyValuePair[] fullNodeData
+        String[] newDataKeys,
+        byte[][] newDataVals
     ) {
-        assert fullNodeData != null;
         assert hist != null;
 
         addToQueue(newDmsTask(() -> {
@@ -153,8 +153,8 @@ public class DmsDataWriter extends IgniteAsyncObjectHandler<RunnableFuture<?>> {
 
             doCleanup();
 
-            for (DistributedMetaStorageKeyValuePair item : fullNodeData)
-                metastorage.writeRaw(localKey(item.key), item.valBytes);
+            for (int i = 0; i < newDataKeys.length; ++i)
+                metastorage.writeRaw(localKey(newDataKeys[i]), newDataVals[i]);
 
             for (int i = 0, len = hist.length; i < len; i++) {
                 long histItemVer = ver.id() + i - (len - 1);

@@ -98,7 +98,7 @@ public class DistributedMetaStorageClusterNodeData implements Message {
             }
         }
 
-        this.hist = DistributedMetaStorageHistoryItemMessage.of(hist);
-        this.updates = DistributedMetaStorageHistoryItemMessage.of(updates);
+        this.hist = DistributedMetaStorageHistoryItemMessage.toMessages(hist);
+        this.updates = DistributedMetaStorageHistoryItemMessage.toMessages(updates);
     }
 }

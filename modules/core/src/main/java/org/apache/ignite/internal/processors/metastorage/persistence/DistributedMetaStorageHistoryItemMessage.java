@@ -53,7 +53,7 @@ public class DistributedMetaStorageHistoryItemMessage implements Message {
     }
 
     /** @return {@link Message} wraps array for {@code hist}. */
-    static @Nullable DistributedMetaStorageHistoryItemMessage[] of(@Nullable DistributedMetaStorageHistoryItem[] hist) {
+    static @Nullable DistributedMetaStorageHistoryItemMessage[] toMessages(@Nullable DistributedMetaStorageHistoryItem[] hist) {
         if (hist == null)
             return null;
 

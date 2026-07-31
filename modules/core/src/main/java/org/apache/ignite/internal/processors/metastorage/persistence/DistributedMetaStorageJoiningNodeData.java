@@ -71,6 +71,6 @@ public class DistributedMetaStorageJoiningNodeData implements Message {
         dVerId = ver.id;
         dVerHash = ver.hash;
 
-        this.hist = DistributedMetaStorageHistoryItemMessage.of(hist);
+        this.hist = DistributedMetaStorageHistoryItemMessage.toMessages(hist);
     }
 }

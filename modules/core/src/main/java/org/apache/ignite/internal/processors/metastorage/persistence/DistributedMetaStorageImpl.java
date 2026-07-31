@@ -564,13 +564,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         lock.readLock().lock();
 
         try {
-            var data = new DistributedMetaStorageJoiningNodeData(
-                getBaselineTopologyId(),
-                ver,
-                isClient ? EMPTY_ARRAY : histCache.toArray()
-            );
-
-            dataBag.addJoiningNodeData(COMPONENT_ID, data);
+            dataBag.addJoiningNodeData(COMPONENT_ID, new DistributedMetaStorageJoiningNodeData(
+                getBaselineTopologyId(), ver, isClient ? EMPTY_ARRAY : histCache.toArray()));
         }
         finally {
             lock.readLock().unlock();
@@ -631,7 +626,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
             DistributedMetaStorageVersion remoteVer = new DistributedMetaStorageVersion(joiningData.dVerId, joiningData.dVerHash);
 
-            DistributedMetaStorageHistoryItem[] remoteHist = DistributedMetaStorageHistoryItem.of(joiningData.hist);
+            DistributedMetaStorageHistoryItem[] remoteHist = DistributedMetaStorageHistoryItem.fromMessage(joiningData.hist);
 
             int remoteHistSize = remoteHist.length;
 
@@ -760,7 +755,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             DistributedMetaStorageVersion locVer = ver;
 
             if (joiningData.dVerId > locVer.id()) {
-                DistributedMetaStorageHistoryItem[] hist = DistributedMetaStorageHistoryItem.of(joiningData.hist);
+                DistributedMetaStorageHistoryItem[] hist = DistributedMetaStorageHistoryItem.fromMessage(joiningData.hist);
 
                 if (joiningData.dVerId - locVer.id() <= hist.length) {
                     for (long v = locVer.id() + 1; v <= joiningData.dVerId; v++) {
@@ -947,8 +942,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             DistributedMetaStorageClusterNodeData nodeData = data.commonData();
 
             if (nodeData != null) {
-                // Cached unwrapped full data.
-                DistributedMetaStorageKeyValuePair[] newfullData = null;
                 // Cached unwrapped history.
                 DistributedMetaStorageHistoryItem[] newHist = null;
 
@@ -957,12 +950,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
                     ver = new DistributedMetaStorageVersion(nodeData.dVerId, nodeData.dVerHash);
 
-                    newfullData = new DistributedMetaStorageKeyValuePair[nodeData.fullDataKeys.length];
-
-                    for (int i = 0; i < newfullData.length; ++i)
-                        newfullData[i] = new DistributedMetaStorageKeyValuePair(nodeData.fullDataKeys[i], nodeData.fullDataValsBytes[i]);
-
-                    notifyListenersBeforeReadyForWrite(newfullData);
+                    notifyListenersBeforeReadyForWrite(nodeData.fullDataKeys, nodeData.fullDataValsBytes);
 
                     bridge.writeFullNodeData(nodeData);
                 }
@@ -981,8 +969,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                     }
                 }
 
-                if (isPersistenceEnabled && newfullData != null)
-                    dataWriter.addUpdateTask(ver, newHist, newfullData);
+                if (isPersistenceEnabled && nodeData.fullDataKeys != null)
+                    dataWriter.addUpdateTask(ver, newHist, nodeData.fullDataKeys, nodeData.fullDataValsBytes);
 
                 if (nodeData.updates != null) {
                     for (DistributedMetaStorageHistoryItemMessage updateMsg : nodeData.updates)
@@ -1318,23 +1306,22 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     /**
      * Notify listeners on node start. Even if there was no data restoring.
      *
-     * @param newData Data about which listeners should be notified.
+     * @param newDataKeys Data keys about which listeners should be notified.
+     * @param newDataVals Data values about which listeners should be notified.
      */
-    private void notifyListenersBeforeReadyForWrite(
-        DistributedMetaStorageKeyValuePair[] newData
-    ) throws IgniteCheckedException {
+    private void notifyListenersBeforeReadyForWrite(String[] newDataKeys, byte[][] newDataVals) throws IgniteCheckedException {
         assert lock.isWriteLockedByCurrentThread();
 
         DistributedMetaStorageKeyValuePair[] oldData = bridge.localFullData();
 
         int oldIdx = 0, newIdx = 0;
 
-        while (oldIdx < oldData.length && newIdx < newData.length) {
+        while (oldIdx < oldData.length && newIdx < newDataKeys.length) {
             String oldKey = oldData[oldIdx].key;
             byte[] oldValBytes = oldData[oldIdx].valBytes;
 
-            String newKey = newData[newIdx].key;
-            byte[] newValBytes = newData[newIdx].valBytes;
+            String newKey = newDataKeys[newIdx];
+            byte[] newValBytes = newDataVals[newIdx];
 
             int c = oldKey.compareTo(newKey);
 
@@ -1365,9 +1352,10 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             notifyListeners(oldData[oldIdx].key, () -> unmarshal(marshaller, oldValBytes), () -> null);
         }
 
-        for (; newIdx < newData.length; ++newIdx) {
-            byte[] newValBytes = newData[newIdx].valBytes;
-            notifyListeners(newData[newIdx].key, () -> null, () -> unmarshal(marshaller, newValBytes));
+        for (; newIdx < newDataKeys.length; ++newIdx) {
+            byte[] newValBytes = newDataVals[newIdx];
+
+            notifyListeners(newDataKeys[newIdx], () -> null, () -> unmarshal(marshaller, newValBytes));
         }
     }
 
