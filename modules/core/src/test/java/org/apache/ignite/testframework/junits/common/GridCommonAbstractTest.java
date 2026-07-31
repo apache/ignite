@@ -1890,7 +1890,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param exp Expected.
      * @param act Actual.
      */
-    protected static <K, V> void assertEqualsMaps(Map<K, V> exp, Map<K, V> act) {
+    public static <K, V> void assertEqualsMaps(Map<K, V> exp, Map<K, V> act) {
         if (exp.size() != act.size())
             fail("Maps are not equal:\nExpected:\t" + exp + "\nActual:\t" + act);
 

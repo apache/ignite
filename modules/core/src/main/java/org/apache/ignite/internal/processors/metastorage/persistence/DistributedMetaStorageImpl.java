@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -823,7 +824,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 else {
                     DistributedMetaStorageVersion ver0 = ver;
 
-                    DistributedMetaStorageKeyValuePair[] fullData = bridge.localFullData();
+                    Map<String, byte[]> fullData = bridge.localFullData();
 
                     DistributedMetaStorageHistoryItem[] hist;
 
@@ -922,7 +923,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * {@link InMemoryCachedDistributedMetaStorageBridge#localFullData()} invoked on {@link #bridge}.
      */
     @TestOnly
-    private DistributedMetaStorageKeyValuePair[] localFullData() {
+    private Map<String, byte[]> localFullData() {
         return bridge.localFullData();
     }
 
@@ -1310,44 +1311,38 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     private void notifyListenersBeforeReadyForWrite(String[] newDataKeys, byte[][] newDataVals) throws IgniteCheckedException {
         assert lock.isWriteLockedByCurrentThread();
 
-        DistributedMetaStorageKeyValuePair[] oldData = bridge.localFullData();
+        Map<String, byte[]> oldData = bridge.localFullData();
 
-        int oldIdx = 0, newIdx = 0;
+        int newIdx = 0;
 
-        while (oldIdx < oldData.length && newIdx < newDataKeys.length) {
-            String oldKey = oldData[oldIdx].key;
-            byte[] oldValBytes = oldData[oldIdx].valBytes;
+        for (var oldE : oldData.entrySet()) {
+            String oldKey = oldE.getKey();
+            byte[] oldValBytes = oldE.getValue();
 
-            String newKey = newDataKeys[newIdx];
-            byte[] newValBytes = newDataVals[newIdx];
+            if (newIdx < newDataKeys.length) {
+                String newKey = newDataKeys[newIdx];
+                byte[] newValBytes = newDataVals[newIdx];
 
-            int c = oldKey.compareTo(newKey);
+                int c = oldKey.compareTo(newKey);
 
-            if (c < 0) {
+                if (c < 0)
+                    notifyListeners(oldKey, () -> unmarshal(marshaller, oldValBytes), () -> null);
+                else if (c > 0) {
+                    notifyListeners(newKey, () -> null, () -> unmarshal(marshaller, newValBytes));
+
+                    ++newIdx;
+                }
+                else {
+                    notifyListeners(
+                        oldKey,
+                        () -> unmarshal(marshaller, oldValBytes),
+                        () -> unmarshal(marshaller, newValBytes));
+
+                    ++newIdx;
+                }
+            }
+            else
                 notifyListeners(oldKey, () -> unmarshal(marshaller, oldValBytes), () -> null);
-
-                ++oldIdx;
-            }
-            else if (c > 0) {
-                notifyListeners(newKey, () -> null, () -> unmarshal(marshaller, newValBytes));
-
-                ++newIdx;
-            }
-            else {
-                notifyListeners(
-                    oldKey,
-                    () -> unmarshal(marshaller, oldValBytes),
-                    () -> unmarshal(marshaller, newValBytes));
-
-                ++oldIdx;
-
-                ++newIdx;
-            }
-        }
-
-        for (; oldIdx < oldData.length; ++oldIdx) {
-            byte[] oldValBytes = oldData[oldIdx].valBytes;
-            notifyListeners(oldData[oldIdx].key, () -> unmarshal(marshaller, oldValBytes), () -> null);
         }
 
         for (; newIdx < newDataKeys.length; ++newIdx) {

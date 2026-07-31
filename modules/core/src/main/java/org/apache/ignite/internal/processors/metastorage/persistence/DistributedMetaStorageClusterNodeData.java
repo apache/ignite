@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.io.Externalizable;
+import java.util.Map;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -78,7 +79,7 @@ public class DistributedMetaStorageClusterNodeData implements Message {
     /** */
     public DistributedMetaStorageClusterNodeData(
         DistributedMetaStorageVersion ver,
-        @Nullable DistributedMetaStorageKeyValuePair[] fullData,
+        @Nullable Map<String, byte[]> fullData,
         @Nullable DistributedMetaStorageHistoryItem[] hist,
         @Nullable DistributedMetaStorageHistoryItem[] updates
     ) {
@@ -89,12 +90,16 @@ public class DistributedMetaStorageClusterNodeData implements Message {
         dVerHash = ver.hash;
 
         if (fullData != null) {
-            fullDataKeys = new String[fullData.length];
-            fullDataValsBytes = new byte[fullData.length][];
+            fullDataKeys = new String[fullData.size()];
+            fullDataValsBytes = new byte[fullData.size()][];
 
-            for (int i = 0; i < fullData.length; ++i) {
-                fullDataKeys[i] = fullData[i].key;
-                fullDataValsBytes[i] = fullData[i].valBytes;
+            int i = 0;
+
+            for (var e : fullData.entrySet()) {
+                fullDataKeys[i] = e.getKey();
+                fullDataValsBytes[i] = e.getValue();
+
+                ++i;
             }
         }
 
