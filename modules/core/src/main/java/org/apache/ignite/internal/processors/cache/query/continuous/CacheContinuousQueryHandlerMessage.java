@@ -37,41 +37,41 @@ import org.jetbrains.annotations.Nullable;
 @UseBinaryMarshaller
 public class CacheContinuousQueryHandlerMessage<K, V> implements MarshallableMessage {
     /** Remote filter. */
-    CacheEntryEventSerializableFilter<K, V> rmtFilter;
+    volatile CacheEntryEventSerializableFilter<K, V> rmtFilter;
 
     /** Lever of own marshaling. */
     @Order(0)
-    public boolean[] externalMarshaling;
+    protected volatile boolean[] externalMarshaling;
 
     /** Deployable object for {@link #rmtFilter}. Is {@code null} if no external marsshalling used. */
     @Order(1)
-    @Nullable CacheContinuousQueryDeployableObject rmtFilterDep;
+    @Nullable volatile CacheContinuousQueryDeployableObject rmtFilterDep;
 
     /** Marshalled {@link #rmtFilter} if {@link #rmtFilterDep} is {@code null}. */
     @Order(2)
-    @Nullable byte[] rmtFilterBytes;
+    @Nullable volatile byte[] rmtFilterBytes;
 
     /** Remote filter factory. */
-    @Nullable Factory<? extends CacheEntryEventFilter> rmtFilterFactory;
+    @Nullable volatile Factory<? extends CacheEntryEventFilter> rmtFilterFactory;
 
     /** Deployable object for {@link #rmtFilterFactory}. Is {@code null} if no external marsshalling used. */
     @Order(3)
-    CacheContinuousQueryDeployableObject rmtFilterFactoryDep;
+    volatile CacheContinuousQueryDeployableObject rmtFilterFactoryDep;
 
     /** Marshalled {@link #rmtFilterFactory} if {@link #rmtFilterFactoryDep} is {@code null}. */
     @Order(4)
-    @Nullable byte[] rmtFilterFactoryBytes;
+    @Nullable volatile byte[] rmtFilterFactoryBytes;
 
     /** Remote transformer factory. */
-    Factory<? extends IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?>> rmtTransFactory;
+    volatile Factory<? extends IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?>> rmtTransFactory;
 
     /** Deployable object for {@link #rmtTransFactory}. Is {@code null} if no external marsshalling used. */
     @Order(5)
-    CacheContinuousQueryDeployableObject rmtTransFactoryDep;
+    volatile CacheContinuousQueryDeployableObject rmtTransFactoryDep;
 
     /** Marshalled {@link #rmtTransFactory} if {@link #rmtTransFactoryDep} is {@code null}. */
     @Order(6)
-    @Nullable byte[] rmtTransFactoryBytes;
+    @Nullable volatile byte[] rmtTransFactoryBytes;
 
     /** Cache name. */
     @Order(7)

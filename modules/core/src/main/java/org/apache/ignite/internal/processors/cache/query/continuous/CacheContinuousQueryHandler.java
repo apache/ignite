@@ -137,7 +137,7 @@ public final class CacheContinuousQueryHandler<K, V> extends CacheContinuousQuer
         };
 
     /** P2P unmarshalling future. */
-    protected IgniteInternalFuture<Void> p2pUnmarshalFut = new GridFinishedFuture<>();
+    protected volatile IgniteInternalFuture<Void> p2pUnmarshalFut = new GridFinishedFuture<>();
 
     /** Initialization future. */
     protected IgniteInternalFuture<Void> initFut;
@@ -1363,6 +1363,8 @@ public final class CacheContinuousQueryHandler<K, V> extends CacheContinuousQuer
     /** {@inheritDoc} */
     @Override public void p2pUnmarshal(UUID nodeId, GridKernalContext ctx) throws IgniteCheckedException {
         assert ctx.config().isPeerClassLoadingEnabled();
+        assert !p2pUnmarshalFut.isDone() && p2pUnmarshalFut instanceof GridFutureAdapter :
+            "Can't p2p-unmarshal, the p2p-umarshalling future seems to be already done, " + getClass().getSimpleName();
 
         unmarshalExternally(nodeId, ctx);
 

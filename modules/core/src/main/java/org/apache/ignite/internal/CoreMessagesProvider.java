@@ -528,7 +528,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withSchema(GridDhtForceKeysRequest.class);
         withSchema(GridDhtForceKeysResponse.class);
         withNoSchema(GridDhtAtomicDeferredUpdateResponse.class);
-        withSchema(GridDhtAtomicUpdateRequest.class);
+        withNoSchema(GridDhtAtomicUpdateRequest.class);
         withSchema(GridDhtAtomicUpdateResponse.class);
         withSchema(GridNearAtomicFullUpdateRequest.class);
         withSchema(GridDhtAtomicSingleUpdateRequest.class);

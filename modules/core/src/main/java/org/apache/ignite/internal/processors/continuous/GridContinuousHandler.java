@@ -25,7 +25,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.TestOnly;
 
 /**
  * Continuous routine handler.
@@ -91,10 +90,6 @@ public interface GridContinuousHandler extends Cloneable, Message {
      * @throws IgniteCheckedException In case of error.
      */
     public void p2pUnmarshal(UUID nodeId, GridKernalContext ctx) throws IgniteCheckedException;
-
-    /** @return {@code True} if {@link #p2pUnmarshal(UUID, GridKernalContext)} called once. */
-    @TestOnly
-    public boolean p2pUnmarshalled();
 
     /**
      * Creates new batch.

@@ -48,7 +48,7 @@ public final class GridMessageListenHandler implements GridContinuousHandler, Ma
 
     /** Marshalled {@link #topic}. */
     @Order(0)
-    volatile @Nullable byte[] topicBytes;
+    @Nullable volatile byte[] topicBytes;
 
     /** */
     private volatile IgniteBiPredicate<UUID, Object> pred;
@@ -59,11 +59,11 @@ public final class GridMessageListenHandler implements GridContinuousHandler, Ma
 
     /** Class name of {@link #pred}. Is {@code null} if the P2P deployment is disabled. */
     @Order(2)
-    volatile @Nullable String clsName;
+    @Nullable volatile String clsName;
 
     /** P2P deploy info of {@link #pred}. Is {@code null} if the P2P deployment is disabled. */
     @Order(3)
-    volatile @Nullable GridDeploymentInfoBean predDepInfo;
+    @Nullable volatile GridDeploymentInfoBean predDepInfo;
 
     /**
      * Lever of the own marshaling.
@@ -74,7 +74,7 @@ public final class GridMessageListenHandler implements GridContinuousHandler, Ma
     volatile boolean externalMarshal;
 
     /** P2P unmarshalling future. */
-    private IgniteInternalFuture<Void> p2pUnmarshalFut = new GridFinishedFuture<>();
+    private volatile IgniteInternalFuture<Void> p2pUnmarshalFut = new GridFinishedFuture<>();
 
     /**
      * Empty constructor for serialization purposes
@@ -158,8 +158,6 @@ public final class GridMessageListenHandler implements GridContinuousHandler, Ma
         if (topic != null)
             topicBytes = U.marshal(ctx.marshaller(), topic);
 
-        assert predBytes == null : "Duplicate marshaling of " + getClass().getSimpleName();
-
         predBytes = U.marshal(ctx.marshaller(), pred);
 
         // Deploy only listener, as it is very likely to be of some user class.
@@ -179,8 +177,8 @@ public final class GridMessageListenHandler implements GridContinuousHandler, Ma
 
     /** {@inheritDoc} */
     @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
-        assert !(externalMarshal ^ clsName != null);
-        assert !(externalMarshal ^ predDepInfo != null);
+        assert externalMarshal == (clsName != null);
+        assert externalMarshal == (predDepInfo != null);
 
         /** Are marshaled in {@link #p2pMarshal(GridKernalContext)}. */
         if (externalMarshal)
@@ -197,10 +195,7 @@ public final class GridMessageListenHandler implements GridContinuousHandler, Ma
         assert nodeId != null;
         assert ctx != null;
         assert ctx.config().isPeerClassLoadingEnabled();
-        assert pred == null : "Duplicate unmarshalling of " + getClass().getSimpleName();
         assert externalMarshal : "Is not p2p-marshaled " + getClass().getSimpleName();
-        assert !p2pUnmarshalFut.isDone() && p2pUnmarshalFut instanceof GridFutureAdapter :
-            "Can't p2p-unmarshal, the p2p-umarshaling future seems to be already done, " + getClass().getSimpleName();
 
         try {
             GridDeployment dep = ctx.deploy().getGlobalDeployment(predDepInfo.deployMode(), clsName, clsName,
@@ -211,15 +206,10 @@ public final class GridMessageListenHandler implements GridContinuousHandler, Ma
 
             ClassLoader ldr = dep.classLoader();
 
-            if (topicBytes != null) {
+            if (topicBytes != null)
                 topic = U.unmarshal(ctx, topicBytes, U.resolveClassLoader(ldr, ctx.config()));
 
-                topicBytes = null;
-            }
-
             pred = U.unmarshal(ctx, predBytes, U.resolveClassLoader(ldr, ctx.config()));
-
-            predBytes = null;
         }
         catch (IgniteCheckedException | IgniteException e) {
             ((GridFutureAdapter)p2pUnmarshalFut).onDone(e);
@@ -232,13 +222,14 @@ public final class GridMessageListenHandler implements GridContinuousHandler, Ma
             throw new IgniteCheckedException("Failed to unmarshal deployable object.", e);
         }
 
-       ((GridFutureAdapter)p2pUnmarshalFut).onDone();
+        ((GridFutureAdapter)p2pUnmarshalFut).onDone();
     }
 
     /** {@inheritDoc} */
     @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        assert !(externalMarshal ^ clsName != null);
-        assert !(externalMarshal ^ predDepInfo != null);
+        assert externalMarshal == (clsName != null);
+        assert externalMarshal == (predDepInfo != null);
+        assert predBytes != null;
 
         /** Are unmarshaled in {@link #p2pUnmarshal(UUID, GridKernalContext)}. */
         if (externalMarshal) {

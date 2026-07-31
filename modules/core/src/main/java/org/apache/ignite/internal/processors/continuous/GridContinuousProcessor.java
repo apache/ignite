@@ -43,7 +43,6 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.GridMessageListenHandler;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteDeploymentCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
@@ -836,6 +835,12 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         // Generate ID.
         final UUID routineId = UUID.randomUUID();
 
+        if (ctx.config().isPeerClassLoadingEnabled()) {
+            hnd.p2pMarshal(ctx);
+
+            assert !(hnd instanceof CacheContinuousQueryHandler) || ((CacheContinuousQueryHandler)hnd).isMarshalled();
+        }
+
         // Register routine locally.
         locInfos.put(routineId,
             new ContinousRoutineLocalInfo(ctx.localNodeId(), prjPred, hnd, bufSize, interval, autoUnsubscribe));
@@ -1373,7 +1378,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                 if ((prjPred == null || prjPred.apply(ctx.discovery().node(ctx.localNodeId()))) &&
                     !locInfos.containsKey(routineId)) {
-                    assert !ctx.config().isPeerClassLoadingEnabled() || hnd.p2pUnmarshalled();
+                    if (ctx.config().isPeerClassLoadingEnabled())
+                        hnd.p2pUnmarshal(node.id(), ctx);
 
                     registerHandler(node.id(), routineId, hnd, data.bufferSize(), data.interval(),
                         data.autoUnsubscribe(), false);
