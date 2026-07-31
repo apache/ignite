@@ -22,6 +22,7 @@ import org.apache.ignite.internal.processors.security.InvalidServerTest;
 import org.apache.ignite.internal.processors.security.NodeConnectionCertificateCapturingTest;
 import org.apache.ignite.internal.processors.security.NodeSecurityContextPropagationTest;
 import org.apache.ignite.internal.processors.security.SecurityContextInternalFuturePropagationTest;
+import org.apache.ignite.internal.processors.security.TaskNameResolutionTest;
 import org.apache.ignite.internal.processors.security.cache.CacheOperationPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.cache.CacheOperationPermissionCreateDestroyCheckTest;
 import org.apache.ignite.internal.processors.security.cache.ContinuousQueryPermissionCheckTest;
@@ -146,6 +147,7 @@ import org.junit.runners.Suite;
     NodeJoinPermissionsTest.class,
     ActivationOnJoinWithoutPermissionsWithPersistenceTest.class,
     SecurityContextInternalFuturePropagationTest.class,
+    TaskNameResolutionTest.class,
     NodeConnectionCertificateCapturingTest.class,
     OperationContextAttributesTest.class,
     OperationContextAttributePropagationTest.class,

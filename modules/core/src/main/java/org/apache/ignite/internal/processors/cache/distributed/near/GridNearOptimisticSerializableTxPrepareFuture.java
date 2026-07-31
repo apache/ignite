@@ -534,7 +534,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
         for (IgniteTxEntry txEntry : writes) {
             if (txEntry.op() == TRANSFORM)
-                req.addDhtVersion(txEntry.txKey(), null);
+                req.addDhtVersionKey(txEntry.txKey());
         }
 
         req.miniId(fut.futureId());

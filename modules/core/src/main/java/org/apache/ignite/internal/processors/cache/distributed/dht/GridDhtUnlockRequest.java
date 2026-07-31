@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridNearUnlockRequest;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * DHT cache unlock request.
  */
+@UseBinaryMarshaller
 public class GridDhtUnlockRequest extends GridNearUnlockRequest {
     /** Near keys. */
     @Order(0)
@@ -68,20 +69,6 @@ public class GridDhtUnlockRequest extends GridNearUnlockRequest {
             nearKeys = new ArrayList<>();
 
         nearKeys.add(key);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        prepareMarshalCacheObjects(nearKeys, ctx.cacheContext(cacheId));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        finishUnmarshalCacheObjects(nearKeys, ctx.cacheContext(cacheId), ldr);
     }
 
     /** {@inheritDoc} */

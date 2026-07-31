@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -32,6 +33,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * User message wrapper.
  */
+@UseBinaryMarshaller
 public class GridIoUserMessage implements Message {
     /** Message body. */
     private Object body;

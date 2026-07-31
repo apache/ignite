@@ -183,8 +183,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     /** Near mini future id. */
     private int nearMiniId;
 
-    /** DHT versions map. */
-    private Map<IgniteTxKey, GridCacheVersion> dhtVerMap;
+    /** DHT version keys. */
+    private Collection<IgniteTxKey> dhtVerKeys;
 
     /** {@code True} if this is last prepare operation for node. */
     private boolean last;
@@ -226,7 +226,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      * @param tx Transaction.
      * @param timeout Timeout.
      * @param nearMiniId Near mini future id.
-     * @param dhtVerMap DHT versions map.
+     * @param dhtVerKeys Keys whose DHT version is verified.
      * @param last {@code True} if this is last prepare operation for node.
      * @param retVal Return value flag.
      */
@@ -235,7 +235,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         final GridDhtTxLocalAdapter tx,
         long timeout,
         int nearMiniId,
-        Map<IgniteTxKey, GridCacheVersion> dhtVerMap,
+        Collection<IgniteTxKey> dhtVerKeys,
         boolean last,
         boolean retVal
     ) {
@@ -243,7 +243,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
         this.cctx = cctx;
         this.tx = tx;
-        this.dhtVerMap = dhtVerMap;
+        this.dhtVerKeys = dhtVerKeys;
         this.last = last;
         this.deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
 
@@ -941,6 +941,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      * @param res Response being sent.
      */
     private void addDhtValues(GridNearTxPrepareResponse res) {
+        Collection<IgniteTxKey> added = new HashSet<>();
+
         // Interceptor on near node needs old values to execute callbacks.
         if (req.writes() != null) {
             for (IgniteTxEntry e : req.writes()) {
@@ -958,8 +960,11 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
                         CacheObject val0 = entry.valueBytes();
 
-                        if (val0 != null)
+                        if (val0 != null) {
                             res.addOwnedValue(txEntry.txKey(), dhtVer, val0);
+
+                            added.add(txEntry.txKey());
+                        }
 
                         break;
                     }
@@ -971,13 +976,13 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             }
         }
 
-        for (Map.Entry<IgniteTxKey, GridCacheVersion> ver : dhtVerMap.entrySet()) {
-            IgniteTxEntry txEntry = tx.entry(ver.getKey());
+        for (IgniteTxKey key : dhtVerKeys) {
+            IgniteTxEntry txEntry = tx.entry(key);
 
-            if (res.hasOwnedValue(ver.getKey()))
+            if (added.contains(key))
                 continue;
 
-            assert txEntry != null : ver;
+            assert txEntry != null : key;
 
             GridCacheContext cacheCtx = txEntry.context();
 
@@ -985,13 +990,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 try {
                     GridCacheEntryEx entry = txEntry.cached();
 
-                    GridCacheVersion dhtVer = entry.version();
-
-                    if (ver.getValue() == null || !ver.getValue().equals(dhtVer)) {
-                        CacheObject val0 = entry.valueBytes();
-
-                        res.addOwnedValue(txEntry.txKey(), dhtVer, val0);
-                    }
+                    res.addOwnedValue(txEntry.txKey(), entry.version(), entry.valueBytes());
 
                     break;
                 }

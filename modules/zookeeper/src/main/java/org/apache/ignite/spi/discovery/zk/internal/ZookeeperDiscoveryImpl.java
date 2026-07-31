@@ -280,7 +280,7 @@ public class ZookeeperDiscoveryImpl {
 
         this.stats = stats;
 
-        msgParser = new DiscoveryMessageParser(msgFactory);
+        msgParser = new DiscoveryMessageParser(msgFactory, ((IgniteEx)spi.ignite()).context());
 
         opCtxDispatcher = ((IgniteEx)spi.ignite()).context().operationContextDispatcher();
     }
@@ -1509,7 +1509,7 @@ public class ZookeeperDiscoveryImpl {
             new ZkNoServersMessage(),
             null);
 
-        evtData.prepareMarshal(msgParser);
+        evtData.marshal(msgParser);
 
         Collection<ZookeeperClusterNode> nodesToAck = Collections.emptyList();
 
@@ -1539,7 +1539,7 @@ public class ZookeeperDiscoveryImpl {
             if (evtData instanceof ZkDiscoveryCustomEventData) {
                 ZkDiscoveryCustomEventData evtData0 = (ZkDiscoveryCustomEventData)evtData;
 
-                evtData0.finishUnmarshal(msgParser);
+                evtData0.unmarshal(msgParser);
 
                 // It is possible previous coordinator failed before finished cleanup.
                 if (evtData0.resolvedMsg instanceof ZkCommunicationErrorResolveFinishMessage) {
@@ -2768,7 +2768,7 @@ public class ZookeeperDiscoveryImpl {
                         if (evtData0.ackEvent() && evtData0.topologyVersion() < locNode.order())
                             break;
 
-                        evtData0.finishUnmarshal(msgParser);
+                        evtData0.unmarshal(msgParser);
 
                         if (rtState.crd)
                             assert evtData0.resolvedMsg != null : evtData0;
@@ -3467,7 +3467,7 @@ public class ZookeeperDiscoveryImpl {
             msg,
             null);
 
-        evtData.prepareMarshal(msgParser);
+        evtData.marshal(msgParser);
 
         evtsData.addEvent(rtState.top.nodesByOrder.values(), evtData);
 
