@@ -68,7 +68,7 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
 
     /** */
     private static <T extends Message> void register(IgniteMessageFactory factory, Class<T> cls, short id, Marshaller marsh) {
-        MessageSerializer<T> serializer = require(loadGenerated(cls, "Serializer", null), cls, "Serializer");
+        MessageSerializer<T> serializer = loadGenerated(cls, "Serializer", null, true);
 
         // A MarshallableMessage always gets a generated marshaller (the hook call alone is a statement), so its
         // absence is a build problem. For the rest the generator skips statement-free marshallers, so absence
@@ -79,42 +79,40 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
         if (NonMarshallableMessage.class.isAssignableFrom(cls))
             marshaller = null;
         else if (MarshallableMessage.class.isAssignableFrom(cls))
-            marshaller = require(loadGenerated(cls, "Marshaller", marsh), cls, "Marshaller");
+            marshaller = loadGenerated(cls, "Marshaller", marsh, true);
         else
-            marshaller = loadGenerated(cls, "Marshaller", marsh);
+            marshaller = loadGenerated(cls, "Marshaller", marsh, false);
 
         // Deployers are generated for GridCacheMessage subclasses only, so the class lookup is skipped for the rest;
         // a DeployableMessage left without a deployer is then rejected at registration.
         GridCacheMessageDeployer<?> deployer = GridCacheMessage.class.isAssignableFrom(cls)
-            ? loadGenerated(cls, "Deployer", null)
+            ? loadGenerated(cls, "Deployer", null, false)
             : null;
 
         factory.register(id, serializer, marshaller, deployer);
     }
 
-    /** @return {@code companion}, failing fast when it is missing. */
-    private static <T> T require(@Nullable T companion, Class<?> cls, String suffix) {
-        if (companion == null) {
-            throw new IgniteException("No " + cls.getSimpleName() + suffix + " found for " + cls.getName() +
-                ". Either the class is not processed by codegen or the generated sources are stale," +
-                " try 'mvn clean install'.");
-        }
-
-        return companion;
-    }
-
     /**
-     * Instantiates the generated companion class {@code <message>Serializer/Marshaller/Deployer}, or returns
-     * {@code null} when it does not exist. Only the marshaller companion ever takes a {@code Marshaller}, and only
-     * when the message has fields to marshal with one, so {@code marsh} is {@code null} for the other two.
-     * Constructor lookups, including missing companions, are cached per message class in {@link #COMPANIONS}.
+     * Instantiates the generated companion class {@code <message>Serializer/Marshaller/Deployer}. Only the marshaller
+     * companion ever takes a {@code Marshaller}, and only when the message has fields to marshal with one, so
+     * {@code marsh} is {@code null} for the other two. Constructor lookups, including missing companions, are cached
+     * per message class in {@link #COMPANIONS}.
+     *
+     * @return the companion, or {@code null} when it is not generated and {@code required} is {@code false}.
      */
     @SuppressWarnings("unchecked")
-    private static <T> @Nullable T loadGenerated(Class<?> cls, String suffix, @Nullable Marshaller marsh) {
+    private static <T> @Nullable T loadGenerated(Class<?> cls, String suffix, @Nullable Marshaller marsh, boolean required) {
         Constructor<?> ctor = COMPANIONS.get(cls).ctor(suffix);
 
-        if (ctor == null)
+        if (ctor == null) {
+            if (required) {
+                throw new IgniteException("No " + cls.getSimpleName() + suffix + " found for " + cls.getName() +
+                    ". Either the class is not processed by codegen or the generated sources are stale," +
+                    " try 'mvn clean install'.");
+            }
+
             return null;
+        }
 
         assert ctor.getParameterCount() == 0 || marsh != null :
             cls.getSimpleName() + suffix + " takes a marshaller, but none was provided";
