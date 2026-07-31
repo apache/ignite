@@ -68,7 +68,7 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
 
     /** */
     private static <T extends Message> void register(IgniteMessageFactory factory, Class<T> cls, short id, Marshaller marsh) {
-        MessageSerializer<T> serializer = require(loadGenerated(cls, "Serializer"), cls, "Serializer");
+        MessageSerializer<T> serializer = require(loadGenerated(cls, "Serializer", null), cls, "Serializer");
 
         // A MarshallableMessage always gets a generated marshaller (the hook call alone is a statement), so its
         // absence is a build problem. For the rest the generator skips statement-free marshallers, so absence
@@ -79,14 +79,14 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
         if (NonMarshallableMessage.class.isAssignableFrom(cls))
             marshaller = null;
         else if (MarshallableMessage.class.isAssignableFrom(cls))
-            marshaller = require(loadMarshaller(cls, marsh), cls, "Marshaller");
+            marshaller = require(loadGenerated(cls, "Marshaller", marsh), cls, "Marshaller");
         else
-            marshaller = loadMarshaller(cls, marsh);
+            marshaller = loadGenerated(cls, "Marshaller", marsh);
 
         // Deployers are generated for GridCacheMessage subclasses only, so the class lookup is skipped for the rest;
         // a DeployableMessage left without a deployer is then rejected at registration.
         GridCacheMessageDeployer<?> deployer = GridCacheMessage.class.isAssignableFrom(cls)
-            ? loadGenerated(cls, "Deployer")
+            ? loadGenerated(cls, "Deployer", null)
             : null;
 
         factory.register(id, serializer, marshaller, deployer);
@@ -104,44 +104,26 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
     }
 
     /**
-     * Instantiates the generated companion class {@code <message>Serializer/Deployer}, or returns {@code null} when it
-     * does not exist. Neither takes a marshaller: the serializer writes the wire fields as they are, and the deployer
-     * only walks cache objects.
+     * Instantiates the generated companion class {@code <message>Serializer/Marshaller/Deployer}, or returns
+     * {@code null} when it does not exist. Only the marshaller companion ever takes a {@code Marshaller}, and only
+     * when the message has fields to marshal with one, so {@code marsh} is {@code null} for the other two.
+     * Constructor lookups, including missing companions, are cached per message class in {@link #COMPANIONS}.
      */
     @SuppressWarnings("unchecked")
-    private static <T> @Nullable T loadGenerated(Class<?> cls, String suffix) {
+    private static <T> @Nullable T loadGenerated(Class<?> cls, String suffix, @Nullable Marshaller marsh) {
         Constructor<?> ctor = COMPANIONS.get(cls).ctor(suffix);
 
         if (ctor == null)
             return null;
 
-        assert ctor.getParameterCount() == 0 : cls.getSimpleName() + suffix + " must have a no-arg constructor";
-
-        try {
-            return (T)ctor.newInstance();
-        }
-        catch (Exception e) {
-            throw new IgniteException("Failed to instantiate " + cls.getSimpleName() + suffix, e);
-        }
-    }
-
-    /**
-     * Instantiates the generated {@code <message>Marshaller}, or returns {@code null} when it does not exist. The
-     * generator gives it a {@code Marshaller} constructor only when the message has fields to marshal with one;
-     * otherwise the companion just walks nested messages and cache objects, and takes no arguments.
-     */
-    @SuppressWarnings("unchecked")
-    private static <T> @Nullable T loadMarshaller(Class<?> cls, Marshaller marsh) {
-        Constructor<?> ctor = COMPANIONS.get(cls).ctor("Marshaller");
-
-        if (ctor == null)
-            return null;
+        assert ctor.getParameterCount() == 0 || marsh != null :
+            cls.getSimpleName() + suffix + " takes a marshaller, but none was provided";
 
         try {
             return (T)(ctor.getParameterCount() == 0 ? ctor.newInstance() : ctor.newInstance(marsh));
         }
         catch (Exception e) {
-            throw new IgniteException("Failed to instantiate " + cls.getSimpleName() + "Marshaller", e);
+            throw new IgniteException("Failed to instantiate " + cls.getSimpleName() + suffix, e);
         }
     }
 
