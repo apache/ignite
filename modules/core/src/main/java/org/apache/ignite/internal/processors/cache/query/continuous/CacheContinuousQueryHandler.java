@@ -49,6 +49,10 @@ import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.MarshallableMessage;
+import org.apache.ignite.internal.Marshalled;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.MessageMarshalling;
@@ -95,7 +99,8 @@ import static org.apache.ignite.internal.processors.cache.query.continuous.Cache
 /**
  * Continuous query handler.
  */
-public final class CacheContinuousQueryHandler<K, V> extends CacheContinuousQueryHandlerMessage<K, V> implements GridContinuousHandler {
+@UseBinaryMarshaller
+public final class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler, MarshallableMessage {
     /** @see #IGNITE_CONTINUOUS_QUERY_BACKUP_ACK_THRESHOLD */
     public static final int DFLT_CONTINUOUS_QUERY_BACKUP_ACK_THRESHOLD = 100;
 
@@ -136,8 +141,89 @@ public final class CacheContinuousQueryHandler<K, V> extends CacheContinuousQuer
             }
         };
 
+    /** Remote filter. */
+    volatile CacheEntryEventSerializableFilter<K, V> rmtFilter;
+
+    /** Lever of own marshaling. */
+    @Order(0)
+    protected volatile boolean[] externalMarshal;
+
+    /** Deployable object for {@link #rmtFilter}. Is {@code null} if no external marsshalling used. */
+    @Order(1)
+    @Nullable volatile CacheContinuousQueryDeployableObject rmtFilterDep;
+
+    /** Marshalled {@link #rmtFilter} if {@link #rmtFilterDep} is {@code null}. */
+    @Order(2)
+    @Nullable volatile byte[] rmtFilterBytes;
+
+    /** Remote filter factory. */
+    @Nullable volatile Factory<? extends CacheEntryEventFilter> rmtFilterFactory;
+
+    /** Deployable object for {@link #rmtFilterFactory}. Is {@code null} if no external marsshalling used. */
+    @Order(3)
+    volatile CacheContinuousQueryDeployableObject rmtFilterFactoryDep;
+
+    /** Marshalled {@link #rmtFilterFactory} if {@link #rmtFilterFactoryDep} is {@code null}. */
+    @Order(4)
+    @Nullable volatile byte[] rmtFilterFactoryBytes;
+
+    /** Remote transformer factory. */
+    volatile Factory<? extends IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?>> rmtTransFactory;
+
+    /** Deployable object for {@link #rmtTransFactory}. Is {@code null} if no external marsshalling used. */
+    @Order(5)
+    volatile CacheContinuousQueryDeployableObject rmtTransFactoryDep;
+
+    /** Marshalled {@link #rmtTransFactory} if {@link #rmtTransFactoryDep} is {@code null}. */
+    @Order(6)
+    @Nullable volatile byte[] rmtTransFactoryBytes;
+
+    /** Cache name. */
+    @Order(7)
+    String cacheName;
+
+    /** Topic for ordered messages. */
+    @Marshalled("topicBytes")
+    Object topic;
+
+    /** Marshalled {@link #topic}. */
+    @Order(8)
+    byte[] topicBytes;
+
+    /** Internal flag. */
+    @Order(9)
+    boolean internal;
+
+    /** Notify existing flag. */
+    @Order(10)
+    boolean notifyExisting;
+
+    /** Old value required flag. */
+    @Order(11)
+    boolean oldValRequired;
+
+    /** Synchronous flag. */
+    @Order(12)
+    boolean sync;
+
+    /** Ignore expired events flag. */
+    @Order(13)
+    boolean ignoreExpired;
+
+    /** Task name hash code. */
+    @Order(14)
+    int taskHash;
+
+    /** */
+    @Order(15)
+    boolean keepBinary;
+
+    /** Event types for JCache API. */
+    @Order(16)
+    byte types;
+
     /** P2P unmarshalling future. */
-    protected IgniteInternalFuture<Void> p2pUnmarshalFut = new GridFinishedFuture<>();
+    protected volatile IgniteInternalFuture<Void> p2pUnmarshalFut = new GridFinishedFuture<>();
 
     /** Initialization future. */
     protected IgniteInternalFuture<Void> initFut;
@@ -1337,7 +1423,14 @@ public final class CacheContinuousQueryHandler<K, V> extends CacheContinuousQuer
     @Override public void p2pMarshal(GridKernalContext ctx) throws IgniteCheckedException {
         assert ctx.config().isPeerClassLoadingEnabled();
 
-        marshalExternally(ctx);
+        if (requiresDeployment(rmtFilter))
+            rmtFilterDep = marshalDeployable(rmtFilter, ctx);
+
+        if (requiresDeployment(rmtFilterFactory))
+            rmtFilterFactoryDep = marshalDeployable(rmtFilterFactory, ctx);
+
+        if (requiresDeployment(rmtTransFactory))
+            rmtTransFactoryDep = marshalDeployable(rmtTransFactory, ctx);
     }
 
     /**
@@ -1346,11 +1439,11 @@ public final class CacheContinuousQueryHandler<K, V> extends CacheContinuousQuer
      * @param deployable Deployable object.
      * @param ctx Kernal context.
      */
-    @Override protected CacheContinuousQueryDeployableObject marshalDeployable(
+    private CacheContinuousQueryDeployableObject marshalDeployable(
         Object deployable,
         GridKernalContext ctx
     ) throws IgniteCheckedException {
-        CacheContinuousQueryDeployableObject res = super.marshalDeployable(deployable, ctx);
+        CacheContinuousQueryDeployableObject res = new CacheContinuousQueryDeployableObject(deployable, ctx);
 
         if (p2pUnmarshalFut == null)
             p2pUnmarshalFut = new GridFutureAdapter<>();
@@ -1360,24 +1453,53 @@ public final class CacheContinuousQueryHandler<K, V> extends CacheContinuousQuer
         return res;
     }
 
+    /** */
+    private static boolean requiresDeployment(@Nullable Object obj) {
+        return obj != null && !U.isGrid(obj.getClass());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
+        /** @see #marshalDeployable(Object, GridKernalContext) */
+        p2pUnmarshalFut = null;
+
+        externalMarshal = new boolean[3];
+
+        if (rmtFilterDep == null && rmtFilter != null) {
+            rmtFilterBytes = marsh.marshal(rmtFilter);
+
+            externalMarshal[0] = true;
+        }
+
+        if (rmtFilterFactoryDep == null && rmtFilterFactory != null) {
+            rmtFilterFactoryBytes = marsh.marshal(rmtFilterFactory);
+
+            externalMarshal[1] = true;
+        }
+
+        if (rmtTransFactoryDep == null && rmtTransFactory != null) {
+            rmtTransFactoryBytes = marsh.marshal(rmtTransFactory);
+
+            externalMarshal[2] = true;
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void p2pUnmarshal(UUID nodeId, GridKernalContext ctx) throws IgniteCheckedException {
         assert ctx.config().isPeerClassLoadingEnabled();
 
-        unmarshalExternally(nodeId, ctx);
-
-        if (!p2pUnmarshalFut.isDone())
-            ((GridFutureAdapter)p2pUnmarshalFut).onDone();
-    }
-
-    /**{@inheritDoc} */
-    @Override protected <T> T unmarshalExternally(
-        CacheContinuousQueryDeployableObject depObj,
-        UUID nodeId,
-        GridKernalContext ctx
-    ) throws IgniteCheckedException {
         try {
-            return super.unmarshalExternally(depObj, nodeId, ctx);
+            if (rmtFilterDep != null)
+                rmtFilter = rmtFilterDep.unmarshal(nodeId, ctx);
+
+            if (rmtFilterFactoryDep != null)
+                rmtFilterFactory = rmtFilterFactoryDep.unmarshal(nodeId, ctx);
+
+            if (rmtTransFactoryDep != null)
+                rmtTransFactory = rmtTransFactoryDep.unmarshal(nodeId, ctx);
+
+            if (!p2pUnmarshalFut.isDone())
+                ((GridFutureAdapter)p2pUnmarshalFut).onDone();
         }
         catch (IgniteCheckedException e) {
             ((GridFutureAdapter<?>)p2pUnmarshalFut).onDone(e);
@@ -1394,16 +1516,26 @@ public final class CacheContinuousQueryHandler<K, V> extends CacheContinuousQuer
     }
 
     /** {@inheritDoc} */
-    @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
-        /** @see #marshalDeployable(Object, GridKernalContext) */
-        p2pUnmarshalFut = null;
-
-        super.marshal(marsh);
-    }
-
-    /** {@inheritDoc} */
     @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        super.unmarshal(marsh, clsLdr);
+        assert externalMarshal != null && externalMarshal.length == 3;
+
+        if (externalMarshal[0]) {
+            assert rmtFilterBytes != null;
+
+            rmtFilter = marsh.unmarshal(rmtFilterBytes, clsLdr);
+        }
+
+        if (externalMarshal[1]) {
+            assert rmtFilterFactoryBytes != null;
+
+            rmtFilterFactory = marsh.unmarshal(rmtFilterFactoryBytes, clsLdr);
+        }
+
+        if (externalMarshal[2]) {
+            assert rmtTransFactoryBytes != null;
+
+            rmtTransFactory = marsh.unmarshal(rmtTransFactoryBytes, clsLdr);
+        }
 
         cacheId = CU.cacheId(cacheName);
     }

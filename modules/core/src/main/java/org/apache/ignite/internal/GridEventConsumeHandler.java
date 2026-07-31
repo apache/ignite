@@ -74,19 +74,19 @@ public final class GridEventConsumeHandler implements GridContinuousHandler, Mar
     private IgniteBiPredicate<UUID, Event> cb;
 
     /** Filter. */
-    @Nullable IgnitePredicate<Event> filter;
+    @Nullable volatile IgnitePredicate<Event> filter;
 
     /** Marshaled {@link #filter}. */
     @Order(0)
-    @Nullable byte[] filterBytes;
+    @Nullable volatile byte[] filterBytes;
 
     /** Deployment class name. Is {@code null} if P2P deployment is disabled. */
     @Order(1)
-    @Nullable String clsName;
+    @Nullable volatile String clsName;
 
     /** Deployment info. Is {@code null} if P2P deployment is disabled. */
     @Order(2)
-    @Nullable GridDeploymentInfoBean depInfo;
+    @Nullable volatile GridDeploymentInfoBean depInfo;
 
     /** Types. */
     @Order(3)
@@ -99,13 +99,13 @@ public final class GridEventConsumeHandler implements GridContinuousHandler, Mar
      * @see #marshal(Marshaller)
      */
     @Order(4)
-    boolean externalMarshaling;
+    volatile boolean externalMarshal;
 
     /** Listener. */
     private GridLocalEventListener lsnr;
 
     /** P2P unmarshalling future. */
-    private final IgniteInternalFuture<Void> p2pUnmarshalFut = new GridFinishedFuture<>();
+    private volatile IgniteInternalFuture<Void> p2pUnmarshalFut = new GridFinishedFuture<>();
 
     /**
      * Empty constructor for serialization purposes.
@@ -402,6 +402,8 @@ public final class GridEventConsumeHandler implements GridContinuousHandler, Mar
         assert ctx.config().isPeerClassLoadingEnabled();
 
         if (filter != null) {
+            assert filterBytes == null : "Duplicated p2p-marshalling, " + getClass().getSimpleName();
+
             Class<?> cls = U.detectClass(filter);
 
             clsName = cls.getName();
@@ -415,7 +417,7 @@ public final class GridEventConsumeHandler implements GridContinuousHandler, Mar
 
             filterBytes = U.marshal(ctx.marshaller(), filter);
 
-            externalMarshaling = true;
+            externalMarshal = true;
         }
     }
 
@@ -423,8 +425,13 @@ public final class GridEventConsumeHandler implements GridContinuousHandler, Mar
     @Override public void p2pUnmarshal(UUID nodeId, GridKernalContext ctx) throws IgniteCheckedException {
         assert nodeId != null;
         assert ctx.config().isPeerClassLoadingEnabled();
+        assert externalMarshal : "Is not p2p-marshaled " + getClass().getSimpleName();
+        assert !p2pUnmarshalFut.isDone() && p2pUnmarshalFut instanceof GridFutureAdapter :
+            "Can't p2p-unmarshal, the p2p-umarshalling future seems to be already done, " + getClass().getSimpleName();
 
         if (filterBytes != null) {
+            assert filter == null : "Duplicated p2p-unmarshalling, " + getClass().getSimpleName();
+
             try {
                 GridDeployment dep = ctx.deploy().getGlobalDeployment(depInfo.deployMode(), clsName, clsName,
                     depInfo.userVersion(), nodeId, depInfo.classLoaderId(), depInfo.participants(), null);
@@ -481,17 +488,24 @@ public final class GridEventConsumeHandler implements GridContinuousHandler, Mar
 
     /** {@inheritDoc} */
     @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
-        assert clsName == null ^ depInfo == null;
-        assert depInfo == null ^ !externalMarshaling;
+        assert (clsName == null) == (depInfo == null);
+        assert (depInfo == null) == !externalMarshal;
 
-        if (filter != null && !externalMarshaling)
+        if (filter != null && !externalMarshal)
             filterBytes = marsh.marshal(filter);
     }
 
     /** {@inheritDoc} */
     @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (externalMarshaling)
+        assert (clsName == null) == (depInfo == null);
+        assert (depInfo == null) == !externalMarshal;
+
+        /** Are unmarshaled in {@link #p2pUnmarshal(UUID, GridKernalContext)}. */
+        if (externalMarshal) {
+            p2pUnmarshalFut = new GridFutureAdapter<>();
+
             return;
+        }
 
         if (filterBytes != null)
             filter = marsh.unmarshal(filterBytes, clsLdr);

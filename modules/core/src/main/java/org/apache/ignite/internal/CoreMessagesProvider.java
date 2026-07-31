@@ -177,7 +177,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryBatchAck;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryDeployableObject;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryEntry;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryHandlerMessage;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryHandler;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.TxEntryValueHolder;
@@ -528,7 +528,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withSchema(GridDhtForceKeysRequest.class);
         withSchema(GridDhtForceKeysResponse.class);
         withNoSchema(GridDhtAtomicDeferredUpdateResponse.class);
-        withSchema(GridDhtAtomicUpdateRequest.class);
+        withNoSchema(GridDhtAtomicUpdateRequest.class);
         withSchema(GridDhtAtomicUpdateResponse.class);
         withSchema(GridNearAtomicFullUpdateRequest.class);
         withSchema(GridDhtAtomicSingleUpdateRequest.class);
@@ -623,7 +623,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(ContinuousRoutineInfo.class);
         withNoSchema(ContinuousRoutinesJoiningNodeDiscoveryData.class);
         withNoSchema(CacheContinuousQueryDeployableObject.class);
-        withSchema(CacheContinuousQueryHandlerMessage.class);
+        withSchema(CacheContinuousQueryHandler.class);
         withSchema(GridEventConsumeHandler.class);
         withSchema(GridMessageListenHandler.class);
         withSchema(ContinousRoutineLocalInfo.class);
