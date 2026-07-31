@@ -33,7 +33,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.stream.Stream;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -452,8 +451,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                 assert !ctx.config().isPeerClassLoadingEnabled() ||
                     !(info.hnd instanceof CacheContinuousQueryHandler) ||
-                    (((CacheContinuousQueryHandler)info.hnd).externalMarshaling != null
-                        && Stream.of(((CacheContinuousQueryHandler)info.hnd).externalMarshaling).findAny().isPresent());
+                    ((CacheContinuousQueryHandler<?, ?>)info.hnd).isMarshalled();
 
                 data.addItem(new ContinousRoutineDiscoveryDataItem(routineId,
                     info.prjPred,
@@ -856,8 +854,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         if (ctx.config().isPeerClassLoadingEnabled()) {
             hnd.p2pMarshal(ctx);
 
-            assert !(hnd instanceof CacheContinuousQueryHandler) || (((CacheContinuousQueryHandler)hnd).externalMarshaling != null
-                && Stream.of(((CacheContinuousQueryHandler)hnd).externalMarshaling).findAny().isPresent());
+            assert !(hnd instanceof CacheContinuousQueryHandler) || ((CacheContinuousQueryHandler)hnd).isMarshalled();
         }
 
         // Register routine locally.

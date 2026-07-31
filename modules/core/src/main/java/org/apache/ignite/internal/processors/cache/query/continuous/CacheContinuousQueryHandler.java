@@ -890,8 +890,6 @@ public final class CacheContinuousQueryHandler<K, V> extends CacheContinuousQuer
      * @throws IgniteCheckedException In case of error.
      */
     void waitTopologyFuture(GridKernalContext ctx) throws IgniteCheckedException {
-        GridCacheContext<K, V> cctx = cacheContext(ctx);
-
         AffinityTopologyVersion topVer = initTopVer;
 
         cacheContext(ctx).shared().exchange().affinityReadyFuture(topVer).get();
@@ -1339,10 +1337,15 @@ public final class CacheContinuousQueryHandler<K, V> extends CacheContinuousQuer
     @Override public void p2pMarshal(GridKernalContext ctx) throws IgniteCheckedException {
         assert ctx.config().isPeerClassLoadingEnabled();
 
-        externalMarshal(ctx);
+        marshalExternally(ctx);
     }
 
-    /** Processes {@link #p2pUnmarshalFut} over the super's method. */
+    /**
+     * Processes {@link #p2pUnmarshalFut} over the super's method.
+     *
+     * @param deployable Deployable object.
+     * @param ctx Kernal context.
+     */
     @Override protected CacheContinuousQueryDeployableObject marshalDeployable(
         Object deployable,
         GridKernalContext ctx
@@ -1361,20 +1364,20 @@ public final class CacheContinuousQueryHandler<K, V> extends CacheContinuousQuer
     @Override public void p2pUnmarshal(UUID nodeId, GridKernalContext ctx) throws IgniteCheckedException {
         assert ctx.config().isPeerClassLoadingEnabled();
 
-        externalUnmarshal(nodeId, ctx);
+        unmarshalExternally(nodeId, ctx);
 
         if (!p2pUnmarshalFut.isDone())
             ((GridFutureAdapter)p2pUnmarshalFut).onDone();
     }
 
     /**{@inheritDoc} */
-    @Override protected <T> T externalUnmarshal(
+    @Override protected <T> T unmarshalExternally(
         CacheContinuousQueryDeployableObject depObj,
         UUID nodeId,
         GridKernalContext ctx
     ) throws IgniteCheckedException {
         try {
-            return super.externalUnmarshal(depObj, nodeId, ctx);
+            return super.unmarshalExternally(depObj, nodeId, ctx);
         }
         catch (IgniteCheckedException e) {
             ((GridFutureAdapter<?>)p2pUnmarshalFut).onDone(e);
@@ -1403,6 +1406,15 @@ public final class CacheContinuousQueryHandler<K, V> extends CacheContinuousQuer
         super.unmarshal(marsh, clsLdr);
 
         cacheId = CU.cacheId(cacheName);
+    }
+
+    /**
+     * @return Whether the handler is marshalled for peer class loading.
+     */
+    public boolean isMarshalled() {
+        return (!requiresDeployment(rmtFilter) || rmtFilterDep != null)
+            && (!requiresDeployment(rmtFilterFactory) || rmtFilterFactoryDep != null)
+            && (!requiresDeployment(rmtTransFactory) || rmtTransFactoryDep != null);
     }
 
     /** {@inheritDoc} */

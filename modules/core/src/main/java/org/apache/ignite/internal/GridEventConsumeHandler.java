@@ -63,7 +63,7 @@ import static org.apache.ignite.events.EventType.EVTS_ALL;
  */
 public final class GridEventConsumeHandler implements GridContinuousHandler, MarshallableMessage {
     /** Default callback. */
-    private static final IgniteBiPredicate<UUID, Event> DFLT_CALLBACK = new P2<UUID, Event>() {
+    private static final IgniteBiPredicate<UUID, Event> DFLT_CALLBACK = new P2<>() {
         @Override public boolean apply(UUID uuid, Event e) {
             return true;
         }
@@ -75,7 +75,7 @@ public final class GridEventConsumeHandler implements GridContinuousHandler, Mar
     /** Filter. */
     @Nullable IgnitePredicate<Event> filter;
 
-    /** Serialized {@link #filter}. */
+    /** Marshaled {@link #filter}. */
     @Order(0)
     @Nullable byte[] filterBytes;
 
@@ -104,10 +104,10 @@ public final class GridEventConsumeHandler implements GridContinuousHandler, Mar
     private GridLocalEventListener lsnr;
 
     /** P2P unmarshalling future. */
-    private IgniteInternalFuture<Void> p2pUnmarshalFut = new GridFinishedFuture<>();
+    private final IgniteInternalFuture<Void> p2pUnmarshalFut = new GridFinishedFuture<>();
 
     /**
-     * Required by {@link Externalizable}.
+     * Empty constructor for serialization purposes.
      */
     public GridEventConsumeHandler() {
         // No-op.

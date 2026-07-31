@@ -116,7 +116,7 @@ public class CacheContinuousQueryHandlerMessage<K, V> implements MarshallableMes
     byte types;
 
     /** External marshaling. */
-    protected void externalMarshal(GridKernalContext ctx) throws IgniteCheckedException {
+    protected void marshalExternally(GridKernalContext ctx) throws IgniteCheckedException {
         if (requiresDeployment(rmtFilter))
             rmtFilterDep = marshalDeployable(rmtFilter, ctx);
 
@@ -159,15 +159,15 @@ public class CacheContinuousQueryHandlerMessage<K, V> implements MarshallableMes
     }
 
     /** External unmarshaling. */
-    protected void externalUnmarshal(UUID nodeId, GridKernalContext ctx) throws IgniteCheckedException {
+    protected void unmarshalExternally(UUID nodeId, GridKernalContext ctx) throws IgniteCheckedException {
         if (rmtFilterDep != null)
-            rmtFilter = externalUnmarshal(rmtFilterDep, nodeId, ctx);
+            rmtFilter = unmarshalExternally(rmtFilterDep, nodeId, ctx);
 
         if (rmtFilterFactoryDep != null)
-            rmtFilterFactory = externalUnmarshal(rmtFilterFactoryDep, nodeId, ctx);
+            rmtFilterFactory = unmarshalExternally(rmtFilterFactoryDep, nodeId, ctx);
 
         if (rmtTransFactoryDep != null)
-            rmtTransFactory = externalUnmarshal(rmtTransFactoryDep, nodeId, ctx);
+            rmtTransFactory = unmarshalExternally(rmtTransFactoryDep, nodeId, ctx);
     }
 
     /** {@inheritDoc} */
@@ -194,7 +194,7 @@ public class CacheContinuousQueryHandlerMessage<K, V> implements MarshallableMes
     }
 
     /** */
-    protected <T> T externalUnmarshal(
+    protected <T> T unmarshalExternally(
         CacheContinuousQueryDeployableObject depObj,
         UUID nodeId,
         GridKernalContext ctx
@@ -203,7 +203,7 @@ public class CacheContinuousQueryHandlerMessage<K, V> implements MarshallableMes
     }
 
     /** */
-    private static boolean requiresDeployment(@Nullable Object obj) {
+    protected static boolean requiresDeployment(@Nullable Object obj) {
         return obj != null && !U.isGrid(obj.getClass());
     }
 }
