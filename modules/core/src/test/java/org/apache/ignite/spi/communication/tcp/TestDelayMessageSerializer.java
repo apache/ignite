@@ -50,4 +50,9 @@ public class TestDelayMessageSerializer implements MessageSerializer<TestDelayMe
     @Override public boolean readFrom(TestDelayMessage msg, MessageReader reader) {
         return true;
     }
+
+    /** {@inheritDoc} */
+    @Override public TestDelayMessage createMessage() {
+        return new TestDelayMessage();
+    }
 }

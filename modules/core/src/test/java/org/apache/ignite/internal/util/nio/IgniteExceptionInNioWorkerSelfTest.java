@@ -113,6 +113,11 @@ public class IgniteExceptionInNioWorkerSelfTest extends GridCommonAbstractTest {
         @Override public boolean readFrom(BrokenMessage msg, MessageReader reader) {
             return true;
         }
+
+        /** {@inheritDoc} */
+        @Override public BrokenMessage createMessage() {
+            return new BrokenMessage();
+        }
     }
 
     /** Plugin provider that registers {@link BrokenMessageSerializer} for {@link BrokenMessage}. */
@@ -125,7 +130,7 @@ public class IgniteExceptionInNioWorkerSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
             registry.registerExtension(MessageFactoryProvider.class, (factory) ->
-                factory.register(-42, BrokenMessage::new, new BrokenMessageSerializer())
+                factory.register(-42, new BrokenMessageSerializer())
             );
         }
     }

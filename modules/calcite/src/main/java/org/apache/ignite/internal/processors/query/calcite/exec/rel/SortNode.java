@@ -205,10 +205,11 @@ public class SortNode<Row> extends MemoryTrackingNode<Row> implements SingleNode
             }
 
             if (reversed == null ? rows.isEmpty() : reversed.isEmpty()) {
-                if (requested > 0)
-                    downstream().end();
+                if (requested > 0) {
+                    requested = 0;
 
-                requested = 0;
+                    downstream().end();
+                }
             }
         }
         finally {

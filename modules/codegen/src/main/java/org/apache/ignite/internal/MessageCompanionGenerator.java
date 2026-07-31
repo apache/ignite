@@ -178,7 +178,7 @@ public abstract class MessageCompanionGenerator {
         writer.write(NL);
         writer.write(CLS_JAVADOC);
         writer.write(NL);
-        writer.write("public class " + clsName + " implements " + interfaceName + "<" + simpleNameWithGeneric(type) + ">");
+        writer.write("public final class " + clsName + " implements " + interfaceName + "<" + simpleNameWithGeneric(type) + ">");
     }
 
     /** @return {@code format} formatted with {@code args}, prefixed with {@link #indent} tabs. */

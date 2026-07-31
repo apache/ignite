@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
@@ -30,7 +29,6 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -38,6 +36,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Near cache prepare response.
  */
+@UseBinaryMarshaller
 public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse {
     /** Versions that are less than lock version ({@link #version()}). */
     @GridToStringInclude
@@ -60,33 +59,25 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     @Order(4)
     GridCacheVersion writeVer;
 
-    /** Map of owned values to set on near node. */
-    @GridToStringInclude
-    @Marshalled(keys = "ownedValKeys", values = "ownedValVals")
-    Map<IgniteTxKey, CacheVersionedValue> ownedVals;
-
-    /** OwnedVals' keys for marshalling. */
+    /** Owned values to set on near node. */
     @Order(5)
-    @Nullable Collection<IgniteTxKey> ownedValKeys;
-
-    /** OwnedVals' values for marshalling. */
-    @Order(6)
-    @Nullable Collection<CacheVersionedValue> ownedValVals;
+    @GridToStringInclude
+    @Nullable Collection<KeyedVersionedValue> ownedVals;
 
     /** Cache return value. */
-    @Order(7)
+    @Order(6)
     GridCacheReturn retVal;
 
     /** Keys that did not pass the filter. */
-    @Order(8)
+    @Order(7)
     @Nullable Collection<IgniteTxKey> filterFailedKeys;
 
     /** Topology version, which is set when client node should remap lock request. */
-    @Order(9)
+    @Order(8)
     @Nullable AffinityTopologyVersion clientRemapVer;
 
     /** One-phase commit on primary flag. */
-    @Order(10)
+    @Order(9)
     boolean onePhaseCommit;
 
     /**
@@ -191,18 +182,16 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
             return;
 
         if (ownedVals == null)
-            ownedVals = new HashMap<>();
+            ownedVals = new ArrayList<>();
 
-        CacheVersionedValue oVal = new CacheVersionedValue(val, ver, key.cacheId());
-
-        ownedVals.put(key, oVal);
+        ownedVals.add(new KeyedVersionedValue(key, val, ver));
     }
 
     /**
-     * @return Map of owned values to set on near node.
+     * @return Owned values to set on near node.
      */
-    public Map<IgniteTxKey, CacheVersionedValue> ownedValues() {
-        return ownedVals == null ? Collections.emptyMap() : Collections.unmodifiableMap(ownedVals);
+    public Collection<KeyedVersionedValue> ownedValues() {
+        return ownedVals == null ? Collections.emptyList() : Collections.unmodifiableCollection(ownedVals);
     }
 
     /** @return Cache return value. */
@@ -222,14 +211,6 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
      */
     public @Nullable Collection<IgniteTxKey> filterFailedKeys() {
         return filterFailedKeys;
-    }
-
-    /**
-     * @param key Key.
-     * @return {@code True} if response has owned value for given key.
-     */
-    public boolean hasOwnedValue(IgniteTxKey key) {
-        return F.mapContainsKey(ownedVals, key);
     }
 
     /** {@inheritDoc} */

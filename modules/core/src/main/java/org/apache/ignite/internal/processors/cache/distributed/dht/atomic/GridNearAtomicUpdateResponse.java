@@ -23,6 +23,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.DeployableMessage;
@@ -40,6 +41,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * DHT atomic cache near update response.
  */
+@UseBinaryMarshaller
 public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements GridCacheDeployable, DeployableMessage {
     /** Cache message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();

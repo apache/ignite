@@ -27,9 +27,9 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public class TestMarshallableMessageSerializer implements MessageSerializer<TestMarshallableMessage> {
+public final class TestMarshallableMessageSerializer implements MessageSerializer<TestMarshallableMessage> {
     /** */
-    @Override public boolean writeTo(TestMarshallableMessage msg, MessageWriter writer) {
+    @Override public final boolean writeTo(TestMarshallableMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
                 return false;
@@ -61,7 +61,7 @@ public class TestMarshallableMessageSerializer implements MessageSerializer<Test
     }
 
     /** */
-    @Override public boolean readFrom(TestMarshallableMessage msg, MessageReader reader) {
+    @Override public final boolean readFrom(TestMarshallableMessage msg, MessageReader reader) {
         switch (reader.state()) {
             case 0:
                 msg.iv = reader.readInt();
@@ -89,5 +89,10 @@ public class TestMarshallableMessageSerializer implements MessageSerializer<Test
         }
 
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public final TestMarshallableMessage createMessage() {
+        return new TestMarshallableMessage();
     }
 }
