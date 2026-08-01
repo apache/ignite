@@ -17,11 +17,12 @@
 
 package org.apache.ignite.internal.processors.rollingupgrade;
 
-import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteComponentFeatureSet;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.jetbrains.annotations.Nullable;
 
 /** */
 public class RollingUpgradeClusterData implements Message {
@@ -35,11 +36,11 @@ public class RollingUpgradeClusterData implements Message {
 
     /** */
     @Order(2)
-    boolean isNodeFenceActive;
+    IgniteComponentFeatureSet[] activeFeatures;
 
     /** */
     @Order(3)
-    Collection<IgniteComponentFeatureSet> activeFeatures;
+    @Nullable IgniteComponentFeatureSet[] prevActiveFeatures;
 
     /** */
     public RollingUpgradeClusterData() {
@@ -50,12 +51,22 @@ public class RollingUpgradeClusterData implements Message {
     public RollingUpgradeClusterData(
         boolean isVersionUpgradeEnabled,
         UUID curFinalizeProcId,
-        boolean isNodeFenceActive,
-        Collection<IgniteComponentFeatureSet> activeFeatures
+        IgniteNodeFeatureSet activeFeatures,
+        @Nullable IgniteNodeFeatureSet prevActiveFeatures
     ) {
         this.isVersionUpgradeEnabled = isVersionUpgradeEnabled;
         this.curFinalizeProcId = curFinalizeProcId;
-        this.isNodeFenceActive = isNodeFenceActive;
-        this.activeFeatures = activeFeatures;
+        this.activeFeatures = activeFeatures.values();
+        this.prevActiveFeatures = prevActiveFeatures == null ? null : prevActiveFeatures.values();
+    }
+
+    /** */
+    public IgniteNodeFeatureSet activeFeatures() {
+        return new IgniteNodeFeatureSet(activeFeatures);
+    }
+
+    /** */
+    @Nullable public IgniteNodeFeatureSet previousActiveFeatures() {
+        return prevActiveFeatures == null ? null : new IgniteNodeFeatureSet(prevActiveFeatures);
     }
 }

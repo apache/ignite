@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
-import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
 
 /**
  * Extension point for registering custom HTTP REST endpoints in the Jetty REST protocol.

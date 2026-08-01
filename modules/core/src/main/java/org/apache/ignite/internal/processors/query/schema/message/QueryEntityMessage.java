@@ -23,19 +23,18 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.internal.MarshallableMessage;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.cache.query.QueryIndexMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Message for {@link QueryEntity} transfer.
  */
-public class QueryEntityMessage implements MarshallableMessage {
+public class QueryEntityMessage implements Message {
     /** Key type. */
     @Order(0)
     String keyType;
@@ -80,6 +79,7 @@ public class QueryEntityMessage implements MarshallableMessage {
     Set<String> notNullFields;
 
     /** Fields default values. */
+    @Marshalled("dfltFieldValuesBytes")
     Map<String, Object> dfltFieldValues;
 
     /** Serialized form of {@link #dfltFieldValues}. */
@@ -117,7 +117,10 @@ public class QueryEntityMessage implements MarshallableMessage {
         tableName = qryEntity.getTableName();
 
         notNullFields = qryEntity.getNotNullFields();
-        dfltFieldValues = qryEntity.getDefaultFieldValues();
+
+        if (!F.isEmpty(qryEntity.getDefaultFieldValues()))
+            dfltFieldValues = qryEntity.getDefaultFieldValues();
+
         fieldsPrecision = qryEntity.getFieldsPrecision();
         fieldsScale = qryEntity.getFieldsScale();
     }
@@ -142,17 +145,5 @@ public class QueryEntityMessage implements MarshallableMessage {
             .setDefaultFieldValues(dfltFieldValues)
             .setFieldsPrecision(fieldsPrecision)
             .setFieldsScale(fieldsScale);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (!F.isEmpty(dfltFieldValues))
-            dfltFieldValuesBytes = U.marshal(marsh, dfltFieldValues);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (!F.isEmpty(dfltFieldValuesBytes))
-            dfltFieldValues = U.unmarshal(marsh, dfltFieldValuesBytes, clsLdr);
     }
 }

@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
-
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.client.SslMode;
 import org.apache.ignite.client.SslProtocol;
@@ -123,7 +122,11 @@ final class ClientChannelConfiguration {
      * Constructor.
      */
     @SuppressWarnings("UnnecessaryThis")
-    ClientChannelConfiguration(ClientConfiguration cfg, List<InetSocketAddress> addrs) {
+    ClientChannelConfiguration(
+        ClientConfiguration cfg,
+        List<InetSocketAddress> addrs,
+        Map<String, String> userAttrs
+    ) {
         this.sslMode = cfg.getSslMode();
         this.tcpNoDelay = cfg.isTcpNoDelay();
         this.handshakeTimeout = cfg.getHandshakeTimeout();
@@ -145,7 +148,7 @@ final class ClientChannelConfiguration {
         this.reconnectThrottlingPeriod = cfg.getReconnectThrottlingPeriod();
         this.reconnectThrottlingRetries = cfg.getReconnectThrottlingRetries();
         this.addrs = Collections.unmodifiableList(addrs);
-        this.userAttrs = cfg.getUserAttributes();
+        this.userAttrs = userAttrs;
         this.asyncContinuationExecutor = cfg.getAsyncContinuationExecutor();
         this.heartbeatEnabled = cfg.isHeartbeatEnabled();
         this.heartbeatInterval = cfg.getHeartbeatInterval();

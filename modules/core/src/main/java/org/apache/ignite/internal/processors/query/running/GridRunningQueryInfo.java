@@ -21,8 +21,6 @@ import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.tracing.MTC;
-import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -60,9 +58,6 @@ public class GridRunningQueryInfo {
     /** */
     @GridToStringExclude
     private final QueryRunningFuture fut = new QueryRunningFuture();
-
-    /** Span of the running query. */
-    private final Span span;
 
     /** Originator. */
     private final String qryInitiatorId;
@@ -122,7 +117,6 @@ public class GridRunningQueryInfo {
         this.startTimeNanos = startTimeNanos;
         this.cancel = cancel;
         this.loc = loc;
-        this.span = MTC.span();
         this.qryInitiatorId = qryInitiatorId;
         this.mapQry = mapQry;
         this.enforceJoinOrder = enforceJoinOrder;
@@ -213,13 +207,6 @@ public class GridRunningQueryInfo {
      */
     public UUID nodeId() {
         return nodeId;
-    }
-
-    /**
-     * @return Span of the running query.
-     */
-    public Span span() {
-        return span;
     }
 
     /**

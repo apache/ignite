@@ -119,6 +119,13 @@ The following code sample illustrates how to use the partition awareness feature
 include::{sourceCodeFile}[tag=partition-awareness,indent=0]
 ----
 
+In link:clustering/multi-data-center[multi data center deployments], the Java thin client can prefer server nodes
+located in the same data center as the client.
+Set the `IGNITE_DATA_CENTER_ID` system property or set the same key in `ClientConfiguration#setUserAttributes(...)`
+to enable data-center-aware routing. The system property takes precedence over the client user attribute.
+For partition-aware reads from local backup nodes, the cache must have `readFromBackup=true` and a write
+synchronization mode other than `PRIMARY_SYNC`.
+
 The code sample below shows how to use a custom cache key to partition mapping function to enable affinity awareness on
 a thin client side if the cache already exists in a cluster or/and was created with custom AffinityFunction or AffinityKeyMapper.
 

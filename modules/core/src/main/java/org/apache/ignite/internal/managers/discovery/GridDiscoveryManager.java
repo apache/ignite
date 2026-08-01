@@ -88,9 +88,7 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMess
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IGridClusterStateProcessor;
-import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.SecurityContext;
-import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
 import org.apache.ignite.internal.systemview.ClusterNodeViewWalker;
 import org.apache.ignite.internal.systemview.NodeAttributeViewWalker;
 import org.apache.ignite.internal.systemview.NodeMetricsViewWalker;
@@ -134,7 +132,6 @@ import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.DiscoveryNotification;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiDataExchange;
 import org.apache.ignite.spi.discovery.DiscoverySpiHistorySupport;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
@@ -558,9 +555,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             @Override public IgniteFuture<?> onDiscovery(DiscoveryNotification notification) {
                 GridFutureAdapter<?> notificationFut = new GridFutureAdapter<>();
 
-                discoMsgNotifier.submit(notificationFut, ctx.security().enabled()
-                    ? new SecurityAwareNotificationTask(notification)
-                    : new NotificationTask(notification));
+                discoMsgNotifier.submit(notificationFut, new NotificationTask(notification));
 
                 IgniteFuture<?> fut = new IgniteFutureImpl<>(notificationFut);
 
@@ -743,7 +738,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 }
 
                 if (type == EVT_DISCOVERY_CUSTOM_EVT) {
-                    for (Class cls = customMsg.getClass(); cls != null; cls = cls.getSuperclass()) {
+                    for (Class<?> cls = customMsg.getClass(); cls != null; cls = cls.getSuperclass()) {
                         List<CustomEventListener<DiscoveryCustomMessage>> list = customEvtLsnrs.get(cls);
 
                         if (list != null) {
@@ -775,9 +770,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     discoEvt.type(EVT_NODE_JOINED);
 
                     discoEvt.topologySnapshot(topVer, new ArrayList<>(notification.getTopSnapshot()));
-
-                    if (notification.getSpanContainer() != null)
-                        discoEvt.span(notification.getSpanContainer().span());
 
                     discoEvtHnd.discoCache = discoCache;
 
@@ -874,8 +866,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                                         node,
                                         discoCache0,
                                         notification.getTopSnapshot(),
-                                        null,
-                                        notification.getSpanContainer()
+                                        null
                                     )
                                 );
                             }
@@ -895,8 +886,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             nextTopVer,
                             node, discoCache,
                             notification.getTopSnapshot(),
-                            customMsg,
-                            notification.getSpanContainer()
+                            customMsg
                         )
                     );
 
@@ -908,8 +898,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             node,
                             discoCache,
                             notification.getTopSnapshot(),
-                            stateFinishMsg,
-                            notification.getSpanContainer()
+                            stateFinishMsg
                         )
                     );
 
@@ -917,43 +906,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     discoEvtHnd.awaitDisconnectEvent();
             }
 
-            /**
-             * Extends {@link NotificationTask} to run in a security context owned by the initiator of the
-             * discovery event.
-             */
-            class SecurityAwareNotificationTask extends NotificationTask {
-                /** */
-                public SecurityAwareNotificationTask(DiscoveryNotification notification) {
-                    super(notification);
-                }
-
-                /** */
-                @Override public void run() {
-                    DiscoverySpiCustomMessage customMsg = notification.customMessage();
-
-                    if (customMsg instanceof SecurityAwareCustomMessageWrapper) {
-                        UUID secSubjId = ((SecurityAwareCustomMessageWrapper)customMsg).securitySubjectId();
-
-                        try (Scope ignored = ctx.security().withContext(secSubjId)) {
-                            super.run();
-                        }
-                    }
-                    else {
-                        SecurityContext initiatorNodeSecCtx = nodeSecurityContext(
-                            marshaller,
-                            U.resolveClassLoader(ctx.config()),
-                            notification.getNode()
-                        );
-
-                        try (Scope ignored = ctx.security().withContext(initiatorNodeSecCtx)) {
-                            super.run();
-                        }
-                    }
-                }
-            }
-
             /** Represents task to handle discovery notification asynchronously. */
-            class NotificationTask implements Runnable {
+            private class NotificationTask implements Runnable {
                 /** */
                 protected final DiscoveryNotification notification;
 
@@ -965,8 +919,30 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 /** {@inheritDoc} */
                 @Override public void run() {
                     synchronized (discoEvtMux) {
-                        onDiscovery0(notification);
+                        try (Scope ignored = withRemoteSecurityContext(notification.getNode())) {
+                            onDiscovery0(notification);
+                        }
                     }
+                }
+
+                /** */
+                private Scope withRemoteSecurityContext(ClusterNode node) {
+                    if (ctx.security().enabled()) {
+                        if (ctx.security().isDefaultContext()) {
+                            SecurityContext initiatorNodeSecCtx = nodeSecurityContext(
+                                marshaller,
+                                U.resolveClassLoader(ctx.config()),
+                                node
+                            );
+
+                            return ctx.security().withContext(initiatorNodeSecCtx);
+                        }
+
+                        // Verify that the Security Context currently attached to the thread is valid.
+                        ctx.security().securityContext();
+                    }
+
+                    return Scope.NOOP_SCOPE;
                 }
             }
         });
@@ -2340,11 +2316,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      */
     public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteCheckedException {
         try {
-            IgniteSecurity security = ctx.security();
-
-            getSpi().sendCustomEvent(security.enabled()
-                ? new SecurityAwareCustomMessageWrapper(msg, security.securityContext().subject().id())
-                : msg);
+            getSpi().sendCustomEvent(msg);
         }
         catch (IgniteClientDisconnectedException e) {
             IgniteFuture<?> reconnectFut = ctx.cluster().clientReconnectFuture();
@@ -2373,8 +2345,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     localNode(),
                     null,
                     Collections.<ClusterNode>emptyList(),
-                    new ClientCacheChangeDummyDiscoveryMessage(reqId, startReqs, cachesToClose),
-                    null
+                    new ClientCacheChangeDummyDiscoveryMessage(reqId, startReqs, cachesToClose)
                 )
             );
         }
@@ -2394,7 +2365,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 node,
                 discoCache,
                 discoCache.nodeMap.values(),
-                null,
                 null
             )
         );
@@ -2794,7 +2764,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                                         node,
                                         locNodeOnlyTop),
                                     locNodeOnlyTop,
-                                    null,
                                     null
                                 )
                             );
@@ -2927,9 +2896,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         /** Data. */
         @Nullable DiscoveryCustomMessage customMsg;
 
-        /** Span container. */
-        SpanContainer spanContainer;
-
         /**
          * @param type Type.
          * @param topVer Topology version.
@@ -2937,7 +2903,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @param discoCache Disco cache.
          * @param topSnapshot Topology snapshot.
          * @param customMsg Data.
-         * @param spanContainer Span container.
          */
         public NotificationEvent(
             int type,
@@ -2945,8 +2910,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             ClusterNode node,
             DiscoCache discoCache,
             Collection<ClusterNode> topSnapshot,
-            @Nullable DiscoveryCustomMessage customMsg,
-            SpanContainer spanContainer
+            @Nullable DiscoveryCustomMessage customMsg
         ) {
             this.type = type;
             this.topVer = topVer;
@@ -2954,7 +2918,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             this.discoCache = discoCache;
             this.topSnapshot = topSnapshot;
             this.customMsg = customMsg;
-            this.spanContainer = spanContainer;
         }
     }
 
@@ -3000,8 +2963,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             long topVer,
             ClusterNode node,
             DiscoCache discoCache,
-            Collection<ClusterNode> topSnapshot,
-            @Nullable SpanContainer spanContainer
+            Collection<ClusterNode> topSnapshot
         ) {
             assert node != null;
 
@@ -3012,7 +2974,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 evt.eventNode(node);
                 evt.type(type);
                 evt.topologySnapshot(topVer, U.<ClusterNode, ClusterNode>arrayList(topSnapshot));
-                evt.span(spanContainer != null ? spanContainer.span() : null);
 
                 if (type == EVT_NODE_METRICS_UPDATED)
                     evt.message("Metrics were updated");
@@ -3196,7 +3157,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             customEvt.topologySnapshot(topVer.topologyVersion(), evt.topSnapshot);
                             customEvt.affinityTopologyVersion(topVer);
                             customEvt.customMessage(evt.customMsg);
-                            customEvt.span(evt.spanContainer != null ? evt.spanContainer.span() : null);
 
                             if (evt.discoCache == null) {
                                 assert discoCache != null : evt.customMsg;
@@ -3218,7 +3178,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         assert false : "Invalid discovery event: " + type;
                 }
 
-                recordEvent(type, topVer.topologyVersion(), node, evt.discoCache, evt.topSnapshot, evt.spanContainer);
+                recordEvent(type, topVer.topologyVersion(), node, evt.discoCache, evt.topSnapshot);
 
                 if (segmented)
                     onSegmentation();
