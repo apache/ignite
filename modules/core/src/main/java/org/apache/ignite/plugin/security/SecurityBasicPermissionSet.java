@@ -23,8 +23,11 @@ import java.io.ObjectOutputStream;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -47,24 +50,24 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
     /** Cache permissions. */
     @GridToStringInclude
     @Order(0)
-    Map<String, Collection<SecurityPermission>> cachePermissions = new HashMap<>();
+    Map<String, Set<SecurityPermission>> cachePermissions = new HashMap<>();
 
     /** Task permissions. */
     @GridToStringInclude
     @Order(1)
-    Map<String, Collection<SecurityPermission>> taskPermissions = new HashMap<>();
+    Map<String, Set<SecurityPermission>> taskPermissions = new HashMap<>();
 
     /** Service permissions. */
     @GridToStringInclude
     @Order(2)
-    transient Map<String, Collection<SecurityPermission>> srvcPermissions = isSecurityCompatibilityMode()
+    transient Map<String, Set<SecurityPermission>> srvcPermissions = isSecurityCompatibilityMode()
             ? compatibleServicePermissions()
             : new HashMap<>();
 
     /** System permissions. */
     @GridToStringInclude
     @Order(3)
-    Collection<SecurityPermission> sysPermissions;
+    Set<SecurityPermission> sysPermissions;
 
     /** Default allow all. */
     @Order(4)
@@ -78,7 +81,7 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
     public void setCachePermissions(Map<String, Collection<SecurityPermission>> cachePermissions) {
         A.notNull(cachePermissions, "cachePermissions");
 
-        this.cachePermissions = cachePermissions;
+        this.cachePermissions = toHashSetMap(cachePermissions);
     }
 
     /**
@@ -89,7 +92,7 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
     public void setTaskPermissions(Map<String, Collection<SecurityPermission>> taskPermissions) {
         A.notNull(taskPermissions, "taskPermissions");
 
-        this.taskPermissions = taskPermissions;
+        this.taskPermissions = toHashSetMap(taskPermissions);
     }
 
     /**
@@ -100,7 +103,23 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
     public void setServicePermissions(Map<String, Collection<SecurityPermission>> srvcPermissions) {
         A.notNull(taskPermissions, "servicePermissions");
 
-        this.srvcPermissions = srvcPermissions;
+        this.srvcPermissions = toHashSetMap(srvcPermissions);
+    }
+
+    /**
+     * Copies content to a form with indemponent `hashCode` and `equals` results.
+     *
+     * @param cachePermissions Cache permissions.
+     * @return Map with hash set of security permissions.
+     */
+    private Map<String, Set<SecurityPermission>> toHashSetMap(Map<String, Collection<SecurityPermission>> cachePermissions) {
+        return cachePermissions.entrySet().stream()
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> toHashSet(e.getValue())));
+    }
+
+    /** @return Hash set with permissions. */
+    private Set<SecurityPermission> toHashSet(Collection<SecurityPermission> col) {
+        return col instanceof HashSet<SecurityPermission> ? (HashSet<SecurityPermission>)col : new HashSet<>(col);
     }
 
     /**
@@ -109,7 +128,7 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
      * @param sysPermissions System permissions.
      */
     public void setSystemPermissions(Collection<SecurityPermission> sysPermissions) {
-        this.sysPermissions = sysPermissions;
+        this.sysPermissions = new HashSet<>(sysPermissions);
     }
 
     /**
@@ -122,17 +141,17 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Collection<SecurityPermission>> cachePermissions() {
+    @Override public Map<String, ? extends Collection<SecurityPermission>> cachePermissions() {
         return cachePermissions;
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Collection<SecurityPermission>> taskPermissions() {
+    @Override public Map<String, ? extends Collection<SecurityPermission>> taskPermissions() {
         return taskPermissions;
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Collection<SecurityPermission>> servicePermissions() {
+    @Override public Map<String, ? extends Collection<SecurityPermission>> servicePermissions() {
         return srvcPermissions;
     }
 

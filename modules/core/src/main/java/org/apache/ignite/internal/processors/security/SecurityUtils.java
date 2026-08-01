@@ -32,8 +32,10 @@ import java.security.PrivilegedExceptionAction;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
@@ -131,13 +133,13 @@ public class SecurityUtils {
     /**
      * @return Allow all service permissions.
      */
-    public static Map<String, Collection<SecurityPermission>> compatibleServicePermissions() {
-        Map<String, Collection<SecurityPermission>> srvcPerms = new HashMap<>();
+    public static Map<String, Set<SecurityPermission>> compatibleServicePermissions() {
+        Map<String, Set<SecurityPermission>> srvcPerms = new HashMap<>();
 
-        srvcPerms.put("*", Arrays.asList(
+        srvcPerms.put("*", new HashSet<>(Arrays.asList(
             SecurityPermission.SERVICE_CANCEL,
             SecurityPermission.SERVICE_DEPLOY,
-            SecurityPermission.SERVICE_INVOKE));
+            SecurityPermission.SERVICE_INVOKE)));
 
         return srvcPerms;
     }
@@ -366,7 +368,8 @@ public class SecurityUtils {
     }
 
     /** */
-    private static void authorizeAll(IgniteSecurity security, Map<String, Collection<SecurityPermission>> permissions) {
+    private static void authorizeAll(IgniteSecurity security,
+        Map<String, ? extends Collection<SecurityPermission>> permissions) {
         if (F.isEmpty(permissions))
             return;
 

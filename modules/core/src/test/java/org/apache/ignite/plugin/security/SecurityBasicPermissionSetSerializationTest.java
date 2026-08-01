@@ -18,7 +18,6 @@
 package org.apache.ignite.plugin.security;
 
 import java.nio.ByteBuffer;
-import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
@@ -34,7 +33,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.util.CommonUtils.makeMessageType;
@@ -65,10 +63,11 @@ public class SecurityBasicPermissionSetSerializationTest extends GridCommonAbstr
         src.setServicePermissions(Map.of("service", Set.of(SERVICE_INVOKE, SERVICE_CANCEL)));
         src.setCachePermissions(Map.of("cache", Set.of(CACHE_CREATE, CACHE_PUT)));
 
-        src.setCachePermissions(Map.of("cache", Set.of(CACHE_CREATE, CACHE_PUT)));
         SecurityBasicPermissionSet res = writeAndReadBack(src);
 
-        assertTrue("Permission sets are not equal [src=" + src + ", res=" + res + "]", deepEquals(src, res));
+        assertEquals("Permission sets are not equal", src, res);
+        assertEquals("Hashes of permission sets are not equal [src=" + src + ", res=" + res + "]",
+            src.hashCode(), res.hashCode());
     }
 
     /**
@@ -99,51 +98,5 @@ public class SecurityBasicPermissionSetSerializationTest extends GridCommonAbstr
         assertTrue(MessageSerialization.readFrom(msgFactory, res, reader));
 
         return res;
-    }
-
-    /**
-     * Perfroms deep equals of permission sets.
-     *
-     * @param lhs First permissions set for equality check.
-     * @param rhs Second permissions set for equality check.
-     * @return Whether specified permission sets are equal.
-     */
-    public static boolean deepEquals(SecurityPermissionSet lhs, SecurityPermissionSet rhs) {
-        if (lhs == rhs)
-            return true;
-
-        return lhs != null
-            && rhs != null
-            && lhs.defaultAllowAll() == rhs.defaultAllowAll()
-            && (F.isEmpty(rhs.systemPermissions()) && F.isEmpty(rhs.systemPermissions())
-            || F.eqNotOrdered(rhs.systemPermissions(), lhs.systemPermissions()))
-            && eqNotOrdered(rhs.taskPermissions(), lhs.taskPermissions())
-            && eqNotOrdered(rhs.servicePermissions(), lhs.servicePermissions())
-            && eqNotOrdered(rhs.cachePermissions(), lhs.cachePermissions());
-    }
-
-    /**
-     * @param m1 First map to check.
-     * @param m2 Second map to check
-     * @return {@code True} is maps are equal, {@code False} otherwise.
-     */
-    public static boolean eqNotOrdered(
-        @Nullable Map<String, Collection<SecurityPermission>> m1,
-        @Nullable Map<String, Collection<SecurityPermission>> m2) {
-        if (m1 == m2)
-            return true;
-
-        if (m1 == null || m2 == null)
-            return false;
-
-        if (m1.size() != m2.size())
-            return false;
-
-        for (Map.Entry<String, Collection<SecurityPermission>> e : m1.entrySet()) {
-            if (!F.eqNotOrdered(e.getValue(), m2.get(e.getKey())))
-                return false;
-        }
-
-        return true;
     }
 }

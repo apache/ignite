@@ -261,7 +261,7 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
 
     /** */
     private static boolean contains(
-        Map<String, Collection<SecurityPermission>> userPerms,
+        Map<String, ? extends Collection<SecurityPermission>> userPerms,
         boolean dfltAllowAll,
         String name,
         SecurityPermission perm
