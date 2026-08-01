@@ -58,8 +58,13 @@ public class Accumulators {
     public static <Row> Supplier<Accumulator<Row>> accumulatorFactory(AggregateCall call, ExecutionContext<Row> ctx) {
         Supplier<Accumulator<Row>> supplier = accumulatorFunctionFactory(call, ctx);
 
-        if (call.isDistinct())
-            return () -> new DistinctAccumulator<>(call, ctx.rowHandler(), supplier);
+        if (call.isDistinct()) {
+            return () -> {
+                Accumulator<Row> acc = supplier.get();
+
+                return acc.handlesDistinct() ? acc : new DistinctAccumulator<>(call, ctx.rowHandler(), acc);
+            };
+        }
 
         return supplier;
     }
@@ -1472,10 +1477,10 @@ public class Accumulators {
         private final List<Integer> args;
 
         /** */
-        private DistinctAccumulator(AggregateCall aggCall, RowHandler<Row> hnd, Supplier<Accumulator<Row>> accSup) {
+        private DistinctAccumulator(AggregateCall aggCall, RowHandler<Row> hnd, Accumulator<Row> acc) {
             super(aggCall, hnd);
 
-            acc = accSup.get();
+            this.acc = acc;
 
             args = super.arguments().isEmpty() ? List.of(0) : super.arguments();
         }
@@ -1518,6 +1523,11 @@ public class Accumulators {
         /** {@inheritDoc} */
         @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
             return acc.returnType(typeFactory);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean handlesDistinct() {
+            return true;
         }
     }
 }
