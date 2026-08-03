@@ -19,12 +19,14 @@ package org.apache.ignite.internal.processors.rest.handlers.task;
 
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Task result response.
  */
+@UseBinaryMarshaller
 public class GridTaskResultResponse implements Message {
     /** Result. */
     @Marshalled("resBytes")

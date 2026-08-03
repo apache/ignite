@@ -153,6 +153,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFi
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.KeyedVersionedValue;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.DataStreamerUpdatesHandlerResult;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotAwareMessage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotVerifyResult;
@@ -272,6 +273,7 @@ import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.security.SecurityBasicPermissionSet;
 import org.apache.ignite.spi.collision.jobstealing.JobStealingRequest;
 import org.apache.ignite.spi.communication.tcp.internal.TcpConnectionRequestDiscoveryMessage;
 import org.apache.ignite.spi.communication.tcp.internal.TcpInverseConnectionResponseMessage;
@@ -375,6 +377,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(DiscoveryDataPacket.class);
         withNoSchema(GridByteArrayList.class);
         withNoSchema(CacheVersionedValue.class);
+        withNoSchema(KeyedVersionedValue.class);
         withNoSchema(WALPointer.class);
         withNoSchema(SerializableDataBagItemWrapper.class);
         withSchema(GridTopicMessage.class);
@@ -521,7 +524,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withSchema(GridDhtForceKeysRequest.class);
         withSchema(GridDhtForceKeysResponse.class);
         withNoSchema(GridDhtAtomicDeferredUpdateResponse.class);
-        withSchema(GridDhtAtomicUpdateRequest.class);
+        withNoSchema(GridDhtAtomicUpdateRequest.class);
         withSchema(GridDhtAtomicUpdateResponse.class);
         withSchema(GridNearAtomicFullUpdateRequest.class);
         withSchema(GridDhtAtomicSingleUpdateRequest.class);
@@ -671,6 +674,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         withNoSchema(UserAuthenticateResponseMessage.class);
         withNoSchema(TcpDiscoveryAuthFailedMessage.class);
         withNoSchema(AuthentificationDataBagItem.class);
+        withNoSchema(SecurityBasicPermissionSet.class);
 
         // [12200 - 12300]: Binary, classloading and marshalling messages.
         msgIdx = 12200;
@@ -731,16 +735,17 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
 
     /** Registers message using {@link #dfltMarsh}. */
     private <T extends Message> void withNoSchema(Class<T> cls) {
-        register(cls, dfltMarsh);
+        assert cls.getAnnotation(UseBinaryMarshaller.class) == null :
+            "Remove @" + UseBinaryMarshaller.class.getSimpleName() + " for class: " + cls.getSimpleName();
+
+        register(factory, cls, msgIdx++);
     }
 
     /** Registers message using {@link #schemaAwareMarsh}. */
     private <T extends Message> void withSchema(Class<T> cls) {
-        register(cls, schemaAwareMarsh);
-    }
+        assert cls.getAnnotation(UseBinaryMarshaller.class) != null :
+            "Add @" + UseBinaryMarshaller.class.getSimpleName() + " for class: " + cls.getSimpleName();
 
-    /** Registers message using incrementing {@link #msgIdx} as the message id/type. */
-    private <T extends Message> void register(Class<T> cls, Marshaller marsh) {
-        register(factory, cls, msgIdx++, marsh);
+        register(factory, cls, msgIdx++);
     }
 }
