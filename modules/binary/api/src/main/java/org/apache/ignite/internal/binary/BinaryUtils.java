@@ -79,6 +79,7 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.MutableSingletonList;
@@ -1582,7 +1583,7 @@ public class BinaryUtils {
 
         InvocationHandler ih = (InvocationHandler)doReadObject(in, ctx, ldr, handles);
 
-        return Proxy.newProxyInstance(ldr != null ? ldr : CommonUtils.gridClassLoader(), intfs, ih);
+        return Proxy.newProxyInstance(ldr != null ? ldr : ClassLoaderUtils.gridClassLoader(), intfs, ih);
     }
 
     /**
@@ -1635,7 +1636,7 @@ public class BinaryUtils {
             boolean useCache = Marshallers.USE_CACHE.get();
 
             try {
-                cls = CommonUtils.forName(clsName, ldr, null, Marshallers.USE_CACHE.get());
+                cls = ClassLoaderUtils.forName(clsName, ldr, null, Marshallers.USE_CACHE.get());
             }
             catch (ClassNotFoundException e) {
                 throw new BinaryInvalidTypeException("Failed to load the class: " + clsName, e);
@@ -1666,7 +1667,7 @@ public class BinaryUtils {
             cls = ctx.descriptorForTypeId(true, typeId, ldr, registerMeta).describedClass();
         else {
             try {
-                cls = CommonUtils.forName(clsName, ldr, null, Marshallers.USE_CACHE.get());
+                cls = ClassLoaderUtils.forName(clsName, ldr, null, Marshallers.USE_CACHE.get());
             }
             catch (ClassNotFoundException e) {
                 throw new BinaryInvalidTypeException("Failed to load the class: " + clsName, e);
@@ -1790,7 +1791,7 @@ public class BinaryUtils {
         ByteArrayInputStream input = new ByteArrayInputStream(in.array(), in.position(), len);
 
         try {
-            return ctx.optimizedMarsh().unmarshal(input, CommonUtils.resolveClassLoader(clsLdr, ctx.classLoader()));
+            return ctx.optimizedMarsh().unmarshal(input, ClassLoaderUtils.resolveClassLoader(clsLdr, ctx.classLoader()));
         }
         catch (IgniteCheckedException e) {
             throw new BinaryObjectException("Failed to unmarshal object with optimized marshaller", e);

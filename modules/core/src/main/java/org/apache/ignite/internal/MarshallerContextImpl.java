@@ -47,6 +47,7 @@ import org.apache.ignite.compute.ComputeLoadBalancer;
 import org.apache.ignite.compute.ComputeTaskContinuousMapper;
 import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.internal.executor.GridExecutorService;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
@@ -138,8 +139,8 @@ public class MarshallerContextImpl implements MarshallerContext {
                 sysTypesSet.add(clsName);
             });
 
-            checkHasClassName(GridDhtPartitionFullMap.class.getName(), U.gridClassLoader(), CLS_NAMES_FILE);
-            checkHasClassName(HashMap.class.getName(), U.gridClassLoader(), JDK_CLS_NAMES_FILE);
+            checkHasClassName(GridDhtPartitionFullMap.class.getName(), ClassLoaderUtils.gridClassLoader(), CLS_NAMES_FILE);
+            checkHasClassName(HashMap.class.getName(), ClassLoaderUtils.gridClassLoader(), JDK_CLS_NAMES_FILE);
         }
         catch (IOException e) {
             throw new IllegalStateException("Failed to initialize marshaller context.", e);
@@ -427,7 +428,7 @@ public class MarshallerContextImpl implements MarshallerContext {
         if (clsName == null)
             throw new ClassNotFoundException("Unknown type ID: " + typeId);
 
-        return U.forName(clsName, ldr, MarshallerUtils.classNameFilter());
+        return ClassLoaderUtils.forName(clsName, ldr, MarshallerUtils.classNameFilter());
     }
 
     /** {@inheritDoc} */
@@ -711,7 +712,7 @@ public class MarshallerContextImpl implements MarshallerContext {
 
         if (plugins != null && !plugins.isEmpty()) {
             for (PluginProvider plugin : plugins) {
-                Enumeration<URL> pluginUrls = U.gridClassLoader().getResources("META-INF/" + plugin.name().toLowerCase()
+                Enumeration<URL> pluginUrls = ClassLoaderUtils.gridClassLoader().getResources("META-INF/" + plugin.name().toLowerCase()
                     + ".classnames.properties");
 
                 while (pluginUrls.hasMoreElements())

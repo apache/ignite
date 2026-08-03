@@ -53,6 +53,7 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cacheobject.PlatformCacheObjectImpl;
@@ -1019,7 +1020,7 @@ public class PlatformUtils {
         if (clsName == null)
             throw new IgniteException("Java object/factory class name is not set.");
 
-        Class cls = U.classForName(clsName, null);
+        Class cls = ClassLoaderUtils.classForName(clsName, null);
 
         if (cls == null)
             throw new IgniteException("Java object/factory class is not found (is it in the classpath?): " +

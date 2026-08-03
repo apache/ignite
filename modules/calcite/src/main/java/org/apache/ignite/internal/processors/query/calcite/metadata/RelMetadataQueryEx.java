@@ -24,9 +24,9 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.JaninoRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.util.ConfigurationBuilder;
@@ -38,7 +38,7 @@ public class RelMetadataQueryEx extends RelMetadataQuery {
     static {
         ConfigurationBuilder cfg = new ConfigurationBuilder()
             .forPackages("org.apache.ignite.internal.processors.query.calcite.rel")
-            .addClassLoaders(U.gridClassLoader())
+            .addClassLoaders(ClassLoaderUtils.gridClassLoader())
             .addScanners(new SubTypesScanner());
 
         List<Class<? extends RelNode>> types = new Reflections(cfg)

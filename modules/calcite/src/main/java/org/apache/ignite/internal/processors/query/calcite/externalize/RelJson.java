@@ -100,6 +100,7 @@ import org.apache.calcite.sql.validate.SqlNameMatchers;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.ExactBounds;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.MultiBounds;
@@ -115,7 +116,6 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Utilities for converting {@link RelNode} into JSON format.
@@ -211,7 +211,7 @@ class RelJson {
     /** */
     private static Class<?> classForName(String typeName, boolean skipNotFound) {
         try {
-            return U.forName(typeName, U.gridClassLoader());
+            return ClassLoaderUtils.forName(typeName, ClassLoaderUtils.gridClassLoader());
         }
         catch (ClassNotFoundException e) {
             if (!skipNotFound)

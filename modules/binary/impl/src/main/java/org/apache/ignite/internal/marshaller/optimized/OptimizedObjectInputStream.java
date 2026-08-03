@@ -42,7 +42,7 @@ import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.util.CommonUtils;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.io.GridDataInput;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -338,7 +338,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
 
                 InvocationHandler ih = (InvocationHandler)readObject();
 
-                return Proxy.newProxyInstance(clsLdr != null ? clsLdr : CommonUtils.gridClassLoader(), intfs, ih);
+                return Proxy.newProxyInstance(clsLdr != null ? clsLdr : ClassLoaderUtils.gridClassLoader(), intfs, ih);
 
             case ENUM:
             case EXTERNALIZABLE:
@@ -348,7 +348,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
                 OptimizedClassDescriptor desc = typeId == 0
                     ? classDescriptor(
                         clsMap,
-                        CommonUtils.forName(readUTF(), clsLdr, MarshallerUtils.classNameFilter(), useCache),
+                        ClassLoaderUtils.forName(readUTF(), clsLdr, MarshallerUtils.classNameFilter(), useCache),
                         useCache,
                         ctx,
                         mapper)
@@ -387,7 +387,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
     private Class<?> readClass() throws ClassNotFoundException, IOException {
         int compTypeId = readInt();
 
-        return compTypeId == 0 ? CommonUtils.forName(readUTF(), clsLdr, null, useCache) :
+        return compTypeId == 0 ? ClassLoaderUtils.forName(readUTF(), clsLdr, null, useCache) :
             classDescriptor(clsMap, compTypeId, clsLdr, useCache, ctx, mapper).describedClass();
     }
 
@@ -546,7 +546,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
         // Must have 'Class.forName()' instead of clsLoader.loadClass()
         // due to weird ClassNotFoundExceptions for arrays of classes
         // in certain cases.
-        return CommonUtils.forName(desc.getName(), clsLdr, MarshallerUtils.classNameFilter(), Marshallers.USE_CACHE.get());
+        return ClassLoaderUtils.forName(desc.getName(), clsLdr, MarshallerUtils.classNameFilter(), Marshallers.USE_CACHE.get());
     }
 
     /**

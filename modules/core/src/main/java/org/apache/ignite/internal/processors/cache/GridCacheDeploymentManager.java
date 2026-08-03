@@ -32,6 +32,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -127,7 +128,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     public ClassLoader localLoader() {
         GridDeployment dep = locDep.get();
 
-        return dep == null ? U.gridClassLoader() : dep.classLoader();
+        return dep == null ? ClassLoaderUtils.gridClassLoader() : dep.classLoader();
     }
 
     /**
@@ -356,7 +357,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
 
                     // If current deployment is either system loader or GG loader,
                     // then we don't check it, as new loader is most likely wider.
-                    if (!curLdr.equals(U.gridClassLoader()) && dep.deployedClass(cls.getName()).get1() != null)
+                    if (!curLdr.equals(ClassLoaderUtils.gridClassLoader()) && dep.deployedClass(cls.getName()).get1() != null)
                         // Local deployment can load this class already, so no reason
                         // to look for another class loader.
                         break;

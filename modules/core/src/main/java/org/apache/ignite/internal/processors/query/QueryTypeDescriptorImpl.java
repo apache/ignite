@@ -34,6 +34,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -796,7 +797,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                     .allMatch(x -> x == null || U.box(expColType.getComponentType()).isAssignableFrom(U.box(x.getClass())));
         }
         else if (cacheObjects.typeId(expColType.getName()) != ((BinaryObject)val).type().typeId()) {
-            final Class<?> cls = U.classForName(((BinaryObject)val).type().typeName(), null, true);
+            final Class<?> cls = ClassLoaderUtils.classForName(((BinaryObject)val).type().typeName(), null, true);
 
             return (cls == null && expColType == Object.class) || (cls != null && expColType.isAssignableFrom(cls));
         }

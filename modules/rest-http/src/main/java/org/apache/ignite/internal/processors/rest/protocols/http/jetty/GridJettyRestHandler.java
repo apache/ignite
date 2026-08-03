@@ -48,6 +48,7 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.jackson.IgniteBinaryObjectJsonDeserializer;
 import org.apache.ignite.internal.jackson.IgniteObjectMapper;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.cache.CacheConfigurationOverride;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
@@ -1026,7 +1027,7 @@ public class GridJettyRestHandler extends HttpServlet {
                 }
 
                 // Creating an object of the specified type, if its class is available.
-                Class<?> cls = U.classForName(type, null);
+                Class<?> cls = ClassLoaderUtils.classForName(type, null);
 
                 if (cls != null)
                     return jsonMapper.readValue(str, cls);

@@ -54,6 +54,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.odbc.ClientMessage;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -1979,7 +1980,7 @@ public class GridNioServer<T> {
                 SelectedSelectionKeySet selectedKeySet = new SelectedSelectionKeySet();
 
                 Class<?> selectorImplCls =
-                    Class.forName("sun.nio.ch.SelectorImpl", false, CommonUtils.gridClassLoader());
+                    Class.forName("sun.nio.ch.SelectorImpl", false, ClassLoaderUtils.gridClassLoader());
 
                 // Ensure the current selector implementation is what we can instrument.
                 if (!selectorImplCls.isAssignableFrom(selector.getClass()))

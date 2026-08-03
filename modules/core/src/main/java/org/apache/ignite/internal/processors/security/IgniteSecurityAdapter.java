@@ -26,8 +26,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.security.SecurityUtils.doPrivileged;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.isInIgnitePackage;
@@ -42,7 +42,7 @@ public abstract class IgniteSecurityAdapter extends GridProcessorAdapter impleme
 
     static {
         // ignite-binary-impl. Theoretically, can be absent in runtime due to other implementation of binary-api.
-        Class<?> jdkMarshCls = U.classForName("org.apache.ignite.marshaller.jdk.JdkMarshallerImpl", null);
+        Class<?> jdkMarshCls = ClassLoaderUtils.classForName("org.apache.ignite.marshaller.jdk.JdkMarshallerImpl", null);
 
         if (jdkMarshCls != null)
             MODULES.add(jdkMarshCls.getProtectionDomain().getCodeSource());

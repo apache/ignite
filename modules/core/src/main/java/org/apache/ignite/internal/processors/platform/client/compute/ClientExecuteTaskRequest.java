@@ -22,6 +22,7 @@ import java.util.UUID;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
@@ -106,7 +107,7 @@ public class ClientExecuteTaskRequest extends ClientRequest {
         Class<?> cls;
 
         try {
-            cls = U.forName(taskName, U.gridClassLoader());
+            cls = ClassLoaderUtils.forName(taskName, ClassLoaderUtils.gridClassLoader());
         }
         catch (ClassNotFoundException ignored) {
             return false;

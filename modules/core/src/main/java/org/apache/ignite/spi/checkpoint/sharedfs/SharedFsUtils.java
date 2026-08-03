@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 
@@ -61,7 +62,7 @@ final class SharedFsUtils {
         InputStream in = new FileInputStream(file);
 
         try {
-            return U.unmarshal(m, in, U.gridClassLoader());
+            return U.unmarshal(m, in, ClassLoaderUtils.gridClassLoader());
         }
         finally {
             U.close(in, log);

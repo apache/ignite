@@ -30,7 +30,7 @@ import java.util.function.Consumer;
 import org.apache.ignite.IgniteCommonsSystemProperties;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.ClassSet;
-import org.apache.ignite.internal.util.CommonUtils;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 
 import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_MARSHALLER_BLACKLIST;
 
@@ -80,10 +80,10 @@ public class MarshallerUtils {
         if (fileName != null && !fileName.isBlank()) {
             clsSet = new ClassSet();
 
-            addClassNames(JDK_CLS_NAMES_FILE, clsSet, CommonUtils.gridClassLoader());
-            addClassNames(CLS_NAMES_FILE, clsSet, CommonUtils.gridClassLoader());
-            addClassNames(DEFAULT_WHITELIST_CLS_NAMES_FILE, clsSet, CommonUtils.gridClassLoader());
-            addClassNames(fileName, clsSet, CommonUtils.gridClassLoader());
+            addClassNames(JDK_CLS_NAMES_FILE, clsSet, ClassLoaderUtils.gridClassLoader());
+            addClassNames(CLS_NAMES_FILE, clsSet, ClassLoaderUtils.gridClassLoader());
+            addClassNames(DEFAULT_WHITELIST_CLS_NAMES_FILE, clsSet, ClassLoaderUtils.gridClassLoader());
+            addClassNames(fileName, clsSet, ClassLoaderUtils.gridClassLoader());
         }
 
         return clsSet;
@@ -95,12 +95,12 @@ public class MarshallerUtils {
     private static ClassSet classBlackList() {
         ClassSet clsSet = new ClassSet();
 
-        addClassNames(DEFAULT_BLACKLIST_CLS_NAMES_FILE, clsSet, CommonUtils.gridClassLoader());
+        addClassNames(DEFAULT_BLACKLIST_CLS_NAMES_FILE, clsSet, ClassLoaderUtils.gridClassLoader());
 
         String blackListFileName = IgniteCommonsSystemProperties.getString(IGNITE_MARSHALLER_BLACKLIST);
 
         if (blackListFileName != null && !blackListFileName.isBlank())
-            addClassNames(blackListFileName, clsSet, CommonUtils.gridClassLoader());
+            addClassNames(blackListFileName, clsSet, ClassLoaderUtils.gridClassLoader());
 
         return clsSet;
     }
@@ -157,7 +157,7 @@ public class MarshallerUtils {
      * @param proc Class processor (class name consumer).
      */
     public static void processSystemClasses(Consumer<String> proc) throws IOException {
-        Enumeration<URL> urls = CommonUtils.gridClassLoader().getResources(CLS_NAMES_FILE);
+        Enumeration<URL> urls = ClassLoaderUtils.gridClassLoader().getResources(CLS_NAMES_FILE);
 
         boolean foundClsNames = false;
 
@@ -169,13 +169,13 @@ public class MarshallerUtils {
 
         if (!foundClsNames)
             throw new IgniteException("Failed to load class names properties file packaged with ignite binaries " +
-                "[file=" + CLS_NAMES_FILE + ", ldr=" + CommonUtils.gridClassLoader() + ']');
+                "[file=" + CLS_NAMES_FILE + ", ldr=" + ClassLoaderUtils.gridClassLoader() + ']');
 
-        URL jdkClsNames = CommonUtils.gridClassLoader().getResource(JDK_CLS_NAMES_FILE);
+        URL jdkClsNames = ClassLoaderUtils.gridClassLoader().getResource(JDK_CLS_NAMES_FILE);
 
         if (jdkClsNames == null)
             throw new IgniteException("Failed to load class names properties file packaged with ignite binaries " +
-                "[file=" + JDK_CLS_NAMES_FILE + ", ldr=" + CommonUtils.gridClassLoader() + ']');
+                "[file=" + JDK_CLS_NAMES_FILE + ", ldr=" + ClassLoaderUtils.gridClassLoader() + ']');
 
         processResource(jdkClsNames, proc);
     }

@@ -29,6 +29,7 @@ import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -226,7 +227,7 @@ public class DataStreamProcessor extends GridProcessorAdapter {
             ClassLoader clsLdr;
 
             if (req.forceLocalDeployment())
-                clsLdr = U.gridClassLoader();
+                clsLdr = ClassLoaderUtils.gridClassLoader();
             else {
                 GridDeployment dep = ctx.deploy().getGlobalDeployment(
                     req.deploymentMode(),

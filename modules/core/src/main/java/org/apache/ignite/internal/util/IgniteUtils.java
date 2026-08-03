@@ -181,6 +181,7 @@ import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
 import org.apache.ignite.internal.processors.cache.CacheDefaultBinaryAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -1749,7 +1750,7 @@ public abstract class IgniteUtils extends CommonUtils {
     public static ClassLoader resolveClassLoader(@Nullable ClassLoader ldr, IgniteConfiguration cfg) {
         assert cfg != null;
 
-        return resolveClassLoader(ldr, cfg.getClassLoader());
+        return ClassLoaderUtils.resolveClassLoader(ldr, cfg.getClassLoader());
     }
 
     /**
@@ -3991,7 +3992,7 @@ public abstract class IgniteUtils extends CommonUtils {
             String clsName = obj2 instanceof GridPeerDeployAware ?
                 ((GridPeerDeployAware)obj2).deployClass().getName() : obj2.getClass().getName();
 
-            if (!isLoadableBy(clsName, ldr)) {
+            if (!ClassLoaderUtils.isLoadableBy(clsName, ldr)) {
                 found = false;
 
                 break;
@@ -4036,7 +4037,7 @@ public abstract class IgniteUtils extends CommonUtils {
                         String clsName = obj2 instanceof GridPeerDeployAware ?
                             ((GridPeerDeployAware)obj2).deployClass().getName() : obj2.getClass().getName();
 
-                        if (!isLoadableBy(clsName, ldr)) {
+                        if (!ClassLoaderUtils.isLoadableBy(clsName, ldr)) {
                             found = false;
 
                             break;
@@ -5455,34 +5456,6 @@ public abstract class IgniteUtils extends CommonUtils {
      */
     public static long ensurePositive(long i, long dflt) {
         return i <= 0 ? dflt : i;
-    }
-
-    /**
-     * Gets class for provided name. Accepts primitive types names.
-     *
-     * @param clsName Class name.
-     * @param ldr Class loader.
-     * @return Class.
-     * @throws ClassNotFoundException If class not found.
-     */
-    public static Class<?> forName(String clsName, @Nullable ClassLoader ldr) throws ClassNotFoundException {
-        return forName(clsName, ldr, null, Marshallers.USE_CACHE.get());
-    }
-
-    /**
-     * Gets class for provided name. Accepts primitive types names.
-     *
-     * @param clsName Class name.
-     * @param ldr Class loader.
-     * @return Class.
-     * @throws ClassNotFoundException If class not found.
-     */
-    public static Class<?> forName(
-        String clsName,
-        @Nullable ClassLoader ldr,
-        @Nullable IgnitePredicate<String> clsFilter
-    ) throws ClassNotFoundException {
-        return forName(clsName, ldr, clsFilter, Marshallers.USE_CACHE.get());
     }
 
     /**

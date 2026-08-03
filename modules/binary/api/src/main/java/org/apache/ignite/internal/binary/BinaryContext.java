@@ -63,6 +63,7 @@ import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.internal.DuplicateTypeIdException;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.UnregisteredClassException;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
@@ -82,7 +83,7 @@ import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
  */
 public class BinaryContext {
     /** System loader. */
-    private static final ClassLoader sysLdr = CommonUtils.gridClassLoader();
+    private static final ClassLoader sysLdr = ClassLoaderUtils.gridClassLoader();
 
     /** */
     private static final BinaryInternalMapper DFLT_MAPPER =
@@ -372,7 +373,7 @@ public class BinaryContext {
                         String affField = affFields.remove(clsName0);
 
                         if (affField == null) {
-                            Class<?> cls = CommonUtils.classForName(clsName0, null);
+                            Class<?> cls = ClassLoaderUtils.classForName(clsName0, null);
 
                             if (cls != null)
                                 affField = affFldNameProvider.apply(cls);
@@ -386,7 +387,7 @@ public class BinaryContext {
                     String affField = affFields.remove(clsName);
 
                     if (affField == null) {
-                        Class<?> cls = CommonUtils.classForName(clsName, null);
+                        Class<?> cls = ClassLoaderUtils.classForName(clsName, null);
 
                         if (cls != null)
                             affField = affFldNameProvider.apply(cls);
@@ -470,7 +471,7 @@ public class BinaryContext {
 
         Collection<String> clsNames = new ArrayList<>();
 
-        ClassLoader ldr = CommonUtils.gridClassLoader();
+        ClassLoader ldr = ClassLoaderUtils.gridClassLoader();
 
         String pkgPath = pkgName.replaceAll("\\.", "/");
 
@@ -740,7 +741,7 @@ public class BinaryContext {
                 if (clsName == null)
                     throw new ClassNotFoundException("Unknown type ID: " + typeId);
 
-                cls = CommonUtils.forName(clsName, ldr, null, Marshallers.USE_CACHE.get());
+                cls = ClassLoaderUtils.forName(clsName, ldr, null, Marshallers.USE_CACHE.get());
 
                 desc = descByCls.get(cls);
 
@@ -1117,7 +1118,7 @@ public class BinaryContext {
         Class<?> cls = null;
 
         try {
-            cls = CommonUtils.resolveClassLoader(null, classLoader()).loadClass(clsName);
+            cls = ClassLoaderUtils.resolveClassLoader(null, classLoader()).loadClass(clsName);
         }
         catch (ClassNotFoundException | NoClassDefFoundError ignored) {
             // No-op.
@@ -1496,7 +1497,7 @@ public class BinaryContext {
 
         optmMarsh.onUndeploy(ldr);
 
-        CommonUtils.clearClassCache(ldr);
+        ClassLoaderUtils.clearClassCache(ldr);
     }
 
     /**

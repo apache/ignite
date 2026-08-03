@@ -19,8 +19,8 @@ package org.apache.ignite.internal.managers.communication;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 
 import static org.apache.ignite.marshaller.Marshallers.jdk;
@@ -49,7 +49,7 @@ public class ErrorMessageSelfTest {
         ErrorMessage msg1 = new ErrorMessage();
         msg1.errBytes = errBytes;
 
-        msg1.unmarshal(jdk(), U.gridClassLoader());
+        msg1.unmarshal(jdk(), ClassLoaderUtils.gridClassLoader());
 
         Throwable t = msg1.error();
         

@@ -41,6 +41,7 @@ import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
@@ -313,7 +314,7 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
         Serializable res = null;
 
         if (data != null)
-            res = marshaller.unmarshal(data, U.gridClassLoader());
+            res = marshaller.unmarshal(data, ClassLoaderUtils.gridClassLoader());
 
         return res;
     }
@@ -399,7 +400,7 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
     ) throws IgniteCheckedException {
         if (valBytes != TOMBSTONE) {
             if (unmarshal) {
-                Serializable val = marshaller.unmarshal(valBytes, U.gridClassLoader());
+                Serializable val = marshaller.unmarshal(valBytes, ClassLoaderUtils.gridClassLoader());
 
                 cb.accept(key, val);
             }
