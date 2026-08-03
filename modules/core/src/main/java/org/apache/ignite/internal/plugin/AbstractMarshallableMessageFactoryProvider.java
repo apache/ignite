@@ -35,8 +35,9 @@ import org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * An extension of {@link MessageFactoryProvider} allowing to use provided schema-aware marshaller
- * to register {@link MarshallableMessage}.
+ * A {@link MessageFactoryProvider} that registers messages together with the companions codegen made for them, and
+ * hands a {@link MarshallableMessage} the marshaller its class asks for: schema-aware when the class is annotated
+ * with {@link UseBinaryMarshaller}, the default one otherwise.
  */
 public abstract class AbstractMarshallableMessageFactoryProvider implements MessageFactoryProvider {
     /** Generated-companion constructors per message class, including cached negative lookups. */

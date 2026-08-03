@@ -53,7 +53,10 @@ import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
 import static org.apache.ignite.internal.MessageProcessor.NON_MARSHALLABLE_MESSAGE_INTERFACE;
 
 /**
- * Generates {@code *Marshaller} classes for {@code Message} types that are not {@code NonMarshallableMessage}.
+ * Generates the {@code *Marshaller} class of a {@code Message}: the code that marshals its fields, walks into its
+ * nested messages, and prepares its cache objects. A message with none of that gets no marshaller. A step the message
+ * defines itself, such as {@code CustomWireFormMessage}, is not marshalling and is run by {@code MessageMarshalling}
+ * instead.
  */
 public class MessageMarshallerGenerator extends MessageCompanionGenerator {
     /** Interface the generated marshallers implement. */
@@ -85,8 +88,6 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
     /** */
     private final TypeMirror marshallableMsgType;
-
-    /** */
 
     /** */
     private final TypeMirror msgType;
