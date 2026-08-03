@@ -133,7 +133,6 @@ public final class MessageWire {
      * @param msg Message to run the step of.
      * @param out {@code true} on the way out, {@code false} on the way in.
      */
-    @SuppressWarnings("deprecation")
     private static void wireForm(Message msg, boolean out) {
         if (!(msg instanceof CustomWireFormMessage))
             return;

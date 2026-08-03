@@ -44,7 +44,6 @@ import org.junit.Test;
  * A custom wire form is a step of its own: {@link MessageWire} runs it around marshalling, so it happens even for
  * a message that has no marshaller at all.
  */
-@SuppressWarnings("deprecation")
 public class MessageWireFormStepTest extends GridCommonAbstractTest {
     /** Direct type of the message that has both steps. */
     private static final short BOTH_TYPE = (short)(CoreMessagesProvider.MAX_MESSAGE_ID + 1);
