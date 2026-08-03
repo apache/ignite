@@ -115,9 +115,10 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
     }
 
     /**
-     * Every message gets a serializer, and a {@link CustomMarshallingMessage} always gets a marshaller, so a missing
-     * one means a broken build. The other companions are generated only when there is something to do, so their
-     * absence is normal.
+     * Codegen emits a serializer for every message, and a {@code <message>Marshaller} for every
+     * {@link CustomMarshallingMessage}: the marshalling step of its own is already enough to generate, no matter
+     * whether that step needs a {@link Marshaller}. So a companion missing in these two cases means a stale build.
+     * The rest are emitted only when there is work to do, so their absence is normal.
      *
      * @return {@code true} if {@code cls} must have the {@code suffix} companion.
      */

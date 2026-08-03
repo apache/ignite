@@ -373,6 +373,23 @@ public class MessageProcessorTest {
     }
 
     /**
+     * A message with a custom wire form gets a marshaller even with no field to marshal: the wire form calls alone
+     * make up its body. Message registration relies on that marshaller being there.
+     */
+    @Test
+    public void testCustomWireFormMessage() {
+        Compilation compilation = compile("TestCustomWireFormMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertEquals(2, compilation.generatedSourceFiles().size());
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestCustomWireFormMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("TestCustomWireFormMessageMarshaller.java"));
+    }
+
+    /**
      * Negative test for a coflict situation when two enum mappers are used for the same enum in different messages.
      */
     @Test
@@ -608,6 +625,18 @@ public class MessageProcessorTest {
     @Test
     public void testNonMarshallableWithMarshalledFieldFailed() {
         Compilation compilation = compile("WrongNonMarshallableMessage.java");
+
+        assertThat(compilation).failed();
+
+        assertThat(compilation)
+            .hadErrorContaining(
+                "NonMarshallableMessage must not implement CustomMarshallingMessage or declare @Marshalled fields");
+    }
+
+    /** The same rejection for the other kind of marshalling step: a custom wire form. */
+    @Test
+    public void testNonMarshallableWithCustomWireFormFailed() {
+        Compilation compilation = compile("WrongNonMarshallableWireFormMessage.java");
 
         assertThat(compilation).failed();
 
