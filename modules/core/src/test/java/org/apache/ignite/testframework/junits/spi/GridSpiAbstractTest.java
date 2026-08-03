@@ -20,8 +20,8 @@ package org.apache.ignite.testframework.junits.spi;
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -727,22 +727,22 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         }
 
         /** {@inheritDoc} */
-        @Override public Map<String, ? extends Collection<SecurityPermission>> taskPermissions() {
+        @Override public Map<String, EnumSet<SecurityPermission>> taskPermissions() {
             return Collections.emptyMap();
         }
 
         /** {@inheritDoc} */
-        @Override public Map<String, Collection<SecurityPermission>> cachePermissions() {
+        @Override public Map<String, EnumSet<SecurityPermission>> cachePermissions() {
             return Collections.emptyMap();
         }
 
         /** {@inheritDoc} */
-        @Override public Map<String, ? extends Collection<SecurityPermission>> servicePermissions() {
+        @Override public Map<String, EnumSet<SecurityPermission>> servicePermissions() {
             return Collections.emptyMap();
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Collection<SecurityPermission> systemPermissions() {
+        @Nullable @Override public EnumSet<SecurityPermission> systemPermissions() {
             return null;
         }
     }

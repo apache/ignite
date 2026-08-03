@@ -17,17 +17,16 @@
 
 package org.apache.ignite.plugin.security;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static java.util.Collections.unmodifiableMap;
-import static java.util.Collections.unmodifiableSet;
 
 /**
  * Provides a convenient way to create a permission set.
@@ -53,16 +52,16 @@ import static java.util.Collections.unmodifiableSet;
  */
 public class SecurityPermissionSetBuilder {
     /** Cache permissions.*/
-    private Map<String, Collection<SecurityPermission>> cachePerms = new HashMap<>();
+    private Map<String, EnumSet<SecurityPermission>> cachePerms = new HashMap<>();
 
     /** Task permissions.*/
-    private Map<String, Collection<SecurityPermission>> taskPerms = new HashMap<>();
+    private Map<String, EnumSet<SecurityPermission>> taskPerms = new HashMap<>();
 
     /** Service permissions.*/
-    private Map<String, Collection<SecurityPermission>> srvcPerms = new HashMap<>();
+    private Map<String, EnumSet<SecurityPermission>> srvcPerms = new HashMap<>();
 
     /** System permissions.*/
-    private Set<SecurityPermission> sysPerms = new HashSet<>();
+    private EnumSet<SecurityPermission> sysPerms = EnumSet.noneOf(SecurityPermission.class);
 
     /** Default allow all.*/
     private boolean dfltAllowAll;
@@ -104,7 +103,7 @@ public class SecurityPermissionSetBuilder {
     public SecurityPermissionSetBuilder appendTaskPermissions(String name, SecurityPermission... perms) {
         validate(toCollection("TASK_"), perms);
 
-        append(taskPerms, name, toCollection(perms));
+        append(taskPerms, name, toEnumSet(perms));
 
         return this;
     }
@@ -119,7 +118,7 @@ public class SecurityPermissionSetBuilder {
     public SecurityPermissionSetBuilder appendServicePermissions(String name, SecurityPermission... perms) {
         validate(toCollection("SERVICE_"), perms);
 
-        append(srvcPerms, name, toCollection(perms));
+        append(srvcPerms, name, toEnumSet(perms));
 
         return this;
     }
@@ -134,7 +133,7 @@ public class SecurityPermissionSetBuilder {
     public SecurityPermissionSetBuilder appendCachePermissions(String name, SecurityPermission... perms) {
         validate(toCollection("CACHE_"), perms);
 
-        append(cachePerms, name, toCollection(perms));
+        append(cachePerms, name, toEnumSet(perms));
 
         return this;
     }
@@ -209,20 +208,35 @@ public class SecurityPermissionSetBuilder {
     }
 
     /**
+     * Convert vararg to {@link EnumSet}.
+     *
+     * @param perms Permissions.
+     */
+    private EnumSet<SecurityPermission> toEnumSet(SecurityPermission... perms) {
+        assert perms != null;
+
+        EnumSet<SecurityPermission> permsSet = EnumSet.noneOf(SecurityPermission.class);
+
+        permsSet.addAll(Arrays.asList(perms));
+
+        return permsSet;
+    }
+
+    /**
      * @param permsMap Permissions map.
      * @param name Name.
      * @param perms Permission.
      */
     private void append(
-        Map<String, Collection<SecurityPermission>> permsMap,
+        Map<String, EnumSet<SecurityPermission>> permsMap,
         String name,
-        Collection<SecurityPermission> perms
+        EnumSet<SecurityPermission> perms
     ) {
         assert permsMap != null;
         assert name != null;
         assert perms != null;
 
-        Collection<SecurityPermission> col = permsMap.get(name);
+        EnumSet<SecurityPermission> col = permsMap.get(name);
 
         if (col == null)
             permsMap.put(name, perms);
@@ -242,7 +256,7 @@ public class SecurityPermissionSetBuilder {
         permSet.setCachePermissions(unmodifiableMap(cachePerms));
         permSet.setTaskPermissions(unmodifiableMap(taskPerms));
         permSet.setServicePermissions(unmodifiableMap(srvcPerms));
-        permSet.setSystemPermissions(unmodifiableSet(sysPerms));
+        permSet.setSystemPermissions(sysPerms);
 
         return permSet;
     }

@@ -22,52 +22,56 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.security.SecurityUtils.compatibleServicePermissions;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.downcast;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.isSecurityCompatibilityMode;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.serializeVersion;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.upcast;
 
 /**
  * Simple implementation of {@link SecurityPermissionSet} interface.
  * Provides convenient way to specify permission set in the XML configuration.
  */
-public class SecurityBasicPermissionSet implements SecurityPermissionSet {
+public class SecurityBasicPermissionSet implements SecurityPermissionSet, MarshallableMessage {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** Cache permissions. */
     @GridToStringInclude
     @Order(0)
-    Map<String, Set<SecurityPermission>> cachePermissions = new HashMap<>();
+    Map<String, Collection<SecurityPermission>> cachePermissions = new HashMap<>();
 
     /** Task permissions. */
     @GridToStringInclude
     @Order(1)
-    Map<String, Set<SecurityPermission>> taskPermissions = new HashMap<>();
+    Map<String, Collection<SecurityPermission>> taskPermissions = new HashMap<>();
 
     /** Service permissions. */
     @GridToStringInclude
     @Order(2)
-    transient Map<String, Set<SecurityPermission>> srvcPermissions = isSecurityCompatibilityMode()
+    transient Map<String, Collection<SecurityPermission>> srvcPermissions = isSecurityCompatibilityMode()
             ? compatibleServicePermissions()
             : new HashMap<>();
 
     /** System permissions. */
     @GridToStringInclude
     @Order(3)
-    Set<SecurityPermission> sysPermissions;
+    Collection<SecurityPermission> sysPermissions;
 
     /** Default allow all. */
     @Order(4)
@@ -78,10 +82,10 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
      *
      * @param cachePermissions Cache permissions.
      */
-    public void setCachePermissions(Map<String, Collection<SecurityPermission>> cachePermissions) {
+    public void setCachePermissions(Map<String, EnumSet<SecurityPermission>> cachePermissions) {
         A.notNull(cachePermissions, "cachePermissions");
 
-        this.cachePermissions = toHashSetMap(cachePermissions);
+        this.cachePermissions = upcast(cachePermissions);
     }
 
     /**
@@ -89,10 +93,10 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
      *
      * @param taskPermissions Task permissions.
      */
-    public void setTaskPermissions(Map<String, Collection<SecurityPermission>> taskPermissions) {
+    public void setTaskPermissions(Map<String, EnumSet<SecurityPermission>> taskPermissions) {
         A.notNull(taskPermissions, "taskPermissions");
 
-        this.taskPermissions = toHashSetMap(taskPermissions);
+        this.taskPermissions = upcast(taskPermissions);
     }
 
     /**
@@ -100,26 +104,10 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
      *
      * @param srvcPermissions Service permissions.
      */
-    public void setServicePermissions(Map<String, Collection<SecurityPermission>> srvcPermissions) {
+    public void setServicePermissions(Map<String, EnumSet<SecurityPermission>> srvcPermissions) {
         A.notNull(taskPermissions, "servicePermissions");
 
-        this.srvcPermissions = toHashSetMap(srvcPermissions);
-    }
-
-    /**
-     * Copies content to a form with indemponent `hashCode` and `equals` results.
-     *
-     * @param cachePermissions Cache permissions.
-     * @return Map with hash set of security permissions.
-     */
-    private Map<String, Set<SecurityPermission>> toHashSetMap(Map<String, Collection<SecurityPermission>> cachePermissions) {
-        return cachePermissions.entrySet().stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, e -> toHashSet(e.getValue())));
-    }
-
-    /** @return Hash set with permissions. */
-    private Set<SecurityPermission> toHashSet(Collection<SecurityPermission> col) {
-        return col instanceof HashSet<SecurityPermission> ? (HashSet<SecurityPermission>)col : new HashSet<>(col);
+        this.srvcPermissions = upcast(srvcPermissions);
     }
 
     /**
@@ -127,8 +115,8 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
      *
      * @param sysPermissions System permissions.
      */
-    public void setSystemPermissions(Collection<SecurityPermission> sysPermissions) {
-        this.sysPermissions = new HashSet<>(sysPermissions);
+    public void setSystemPermissions(EnumSet<SecurityPermission> sysPermissions) {
+        this.sysPermissions = sysPermissions;
     }
 
     /**
@@ -141,23 +129,23 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, ? extends Collection<SecurityPermission>> cachePermissions() {
-        return cachePermissions;
+    @Override public Map<String, EnumSet<SecurityPermission>> cachePermissions() {
+        return downcast(cachePermissions);
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, ? extends Collection<SecurityPermission>> taskPermissions() {
-        return taskPermissions;
+    @Override public Map<String, EnumSet<SecurityPermission>> taskPermissions() {
+        return downcast(taskPermissions);
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, ? extends Collection<SecurityPermission>> servicePermissions() {
-        return srvcPermissions;
+    @Override public Map<String, EnumSet<SecurityPermission>> servicePermissions() {
+        return downcast(srvcPermissions);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Collection<SecurityPermission> systemPermissions() {
-        return sysPermissions;
+    @Nullable @Override public EnumSet<SecurityPermission> systemPermissions() {
+        return (EnumSet<SecurityPermission>)sysPermissions;
     }
 
     /** {@inheritDoc} */
@@ -225,5 +213,30 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SecurityBasicPermissionSet.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        // Message framework uses ArrayList for ordinary collectons, so we need convert it explicitly.
+        cachePermissions = toHashSetMap(cachePermissions);
+        taskPermissions = toHashSetMap(taskPermissions);
+        srvcPermissions = toHashSetMap(srvcPermissions);
+        sysPermissions = EnumSet.copyOf(sysPermissions);
+    }
+
+    /**
+     * Copies content to a form with indemponent `hashCode` and `equals` results.
+     *
+     * @param cachePermissions Cache permissions.
+     * @return Map with hash set of security permissions.
+     */
+    private Map<String, Collection<SecurityPermission>> toHashSetMap(Map<String, Collection<SecurityPermission>> cachePermissions) {
+        return cachePermissions.entrySet().stream()
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> EnumSet.copyOf(e.getValue())));
     }
 }

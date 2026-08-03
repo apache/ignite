@@ -29,13 +29,11 @@ import java.security.Permissions;
 import java.security.PrivilegedAction;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
@@ -133,15 +131,27 @@ public class SecurityUtils {
     /**
      * @return Allow all service permissions.
      */
-    public static Map<String, Set<SecurityPermission>> compatibleServicePermissions() {
-        Map<String, Set<SecurityPermission>> srvcPerms = new HashMap<>();
+    public static Map<String, Collection<SecurityPermission>> compatibleServicePermissions() {
+        Map<String, EnumSet<SecurityPermission>> srvcPerms = new HashMap<>();
 
-        srvcPerms.put("*", new HashSet<>(Arrays.asList(
+        srvcPerms.put("*", EnumSet.of(
             SecurityPermission.SERVICE_CANCEL,
             SecurityPermission.SERVICE_DEPLOY,
-            SecurityPermission.SERVICE_INVOKE)));
+            SecurityPermission.SERVICE_INVOKE));
 
-        return srvcPerms;
+        return upcast(srvcPerms);
+    }
+
+    /** @param map Map. */
+    @SuppressWarnings("rawtypes")
+    public static Map<String, Collection<SecurityPermission>> upcast(Map<String, EnumSet<SecurityPermission>> map) {
+        return (Map<String, Collection<SecurityPermission>>)(Map)map;
+    }
+
+    /** @param map Map. */
+    @SuppressWarnings("rawtypes")
+    public static Map<String, EnumSet<SecurityPermission>> downcast(Map<String, Collection<SecurityPermission>> map) {
+        return (Map<String, EnumSet<SecurityPermission>>)(Map)map;
     }
 
     /**
@@ -369,7 +379,7 @@ public class SecurityUtils {
 
     /** */
     private static void authorizeAll(IgniteSecurity security,
-        Map<String, ? extends Collection<SecurityPermission>> permissions) {
+        Map<String, EnumSet<SecurityPermission>> permissions) {
         if (F.isEmpty(permissions))
             return;
 

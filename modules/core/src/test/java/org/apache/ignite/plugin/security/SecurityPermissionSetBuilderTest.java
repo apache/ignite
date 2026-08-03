@@ -17,13 +17,12 @@
 
 package org.apache.ignite.plugin.security;
 
-import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -52,19 +51,19 @@ public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
     public void testPermissionBuilder() {
         SecurityBasicPermissionSet exp = new SecurityBasicPermissionSet();
 
-        Map<String, Collection<SecurityPermission>> permCache = new HashMap<>();
+        Map<String, EnumSet<SecurityPermission>> permCache = new HashMap<>();
         permCache.put("cache1", permissions(CACHE_PUT, CACHE_REMOVE, CACHE_CREATE));
         permCache.put("cache2", permissions(CACHE_READ, CACHE_DESTROY));
 
         exp.setCachePermissions(permCache);
 
-        Map<String, Collection<SecurityPermission>> permTask = new HashMap<>();
+        Map<String, EnumSet<SecurityPermission>> permTask = new HashMap<>();
         permTask.put("task1", permissions(TASK_CANCEL));
         permTask.put("task2", permissions(TASK_EXECUTE));
 
         exp.setTaskPermissions(permTask);
 
-        Map<String, Collection<SecurityPermission>> permSrvc = new HashMap<>();
+        Map<String, EnumSet<SecurityPermission>> permSrvc = new HashMap<>();
         permSrvc.put("service1", permissions(SERVICE_DEPLOY));
         permSrvc.put("service2", permissions(SERVICE_INVOKE));
 
@@ -143,8 +142,8 @@ public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
      * @param perms Permissions.
      * @return Collection.
      */
-    static Collection<SecurityPermission> permissions(SecurityPermission... perms) {
-        Collection<SecurityPermission> col = U.newHashSet(perms.length);
+    static EnumSet<SecurityPermission> permissions(SecurityPermission... perms) {
+        EnumSet<SecurityPermission> col = EnumSet.noneOf(SecurityPermission.class);
 
         Collections.addAll(col, perms);
 

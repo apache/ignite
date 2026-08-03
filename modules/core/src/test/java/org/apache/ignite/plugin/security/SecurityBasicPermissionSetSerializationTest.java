@@ -18,15 +18,16 @@
 package org.apache.ignite.plugin.security;
 
 import java.nio.ByteBuffer;
+import java.util.EnumSet;
 import java.util.Map;
-import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
+import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.util.nio.MessageSerialization;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -58,10 +59,10 @@ public class SecurityBasicPermissionSetSerializationTest extends GridCommonAbstr
         SecurityBasicPermissionSet src = new SecurityBasicPermissionSet();
 
         src.setDefaultAllowAll(true);
-        src.setSystemPermissions(F.asList(ADMIN_CACHE, ADMIN_QUERY, null));
-        src.setTaskPermissions(Map.of("task", F.asList(TASK_EXECUTE, null, TASK_CANCEL)));
-        src.setServicePermissions(Map.of("service", Set.of(SERVICE_INVOKE, SERVICE_CANCEL)));
-        src.setCachePermissions(Map.of("cache", Set.of(CACHE_CREATE, CACHE_PUT)));
+        src.setSystemPermissions(EnumSet.of(ADMIN_CACHE, ADMIN_QUERY));
+        src.setTaskPermissions(Map.of("task", EnumSet.of(TASK_EXECUTE, TASK_CANCEL)));
+        src.setServicePermissions(Map.of("service", EnumSet.of(SERVICE_INVOKE, SERVICE_CANCEL)));
+        src.setCachePermissions(Map.of("cache", EnumSet.of(CACHE_CREATE, CACHE_PUT)));
 
         SecurityBasicPermissionSet res = writeAndReadBack(src);
 
@@ -81,6 +82,8 @@ public class SecurityBasicPermissionSetSerializationTest extends GridCommonAbstr
 
         GridTestUtils.setFieldValue(kctx.grid(), "msgFactory", msgFactory);
 
+        MessageMarshalling.marshal(msg, kctx, null);
+
         ByteBuffer buf = ByteBuffer.allocate(64 * 1024);
 
         DirectMessageWriter writer = new DirectMessageWriter(msgFactory);
@@ -96,6 +99,8 @@ public class SecurityBasicPermissionSetSerializationTest extends GridCommonAbstr
         T res = (T)msgFactory.create(makeMessageType(buf.get(), buf.get()));
 
         assertTrue(MessageSerialization.readFrom(msgFactory, res, reader));
+
+        MessageMarshalling.unmarshal(res, kctx, null, U.gridClassLoader());
 
         return res;
     }
