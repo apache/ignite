@@ -19,17 +19,12 @@ package org.apache.ignite.internal;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
-import javax.lang.model.type.ArrayType;
-import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import javax.tools.Diagnostic;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.MessageProcessor.CACHE_OBJECT_CLS;
 import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
@@ -84,54 +79,6 @@ public abstract class MessageWireCompanionGenerator extends MessageCompanionGene
         return assignableFrom(te.asType(), cacheGrpIdMsgType);
     }
 
-    /** Marshalling flavour of a {@code @Marshalled} field, told apart by the shape of its companion wire field(s). */
-    protected enum MarshalledKind {
-        /** {@code byte[]} companion: the whole object is a single marshaller blob. */
-        BLOB,
-
-        /** {@code Message[]} companion: per-element {@code Message} serialization, the collection is rebuilt on unmarshal. */
-        ELEMENTS,
-
-        /** {@code Collection<byte[]>} companion: per-element marshaller blobs, each element keeping its own class loader. */
-        ELEMENT_BLOBS,
-
-        /** Two companions ({@code keys()}/{@code values()}): a {@code Map} serialized as parallel wire fields. */
-        MAP
-    }
-
-    /**
-     * @return the flavour of {@code field}'s {@code @Marshalled}, or {@code null} when the field is not annotated.
-     * Called once per field when building {@link #kinds}; look the kind up there instead.
-     */
-    protected @Nullable MarshalledKind marshalledKind(VariableElement field) {
-        Marshalled ann = field.getAnnotation(Marshalled.class);
-
-        if (ann == null)
-            return null;
-
-        boolean map = !ann.keys().isEmpty() || !ann.values().isEmpty();
-
-        if (map == !ann.value().isEmpty() || (map && (ann.keys().isEmpty() || ann.values().isEmpty()))) {
-            env.getMessager().printMessage(Diagnostic.Kind.ERROR,
-                "@Marshalled must set either value() or both keys() and values()", field);
-
-            return null;
-        }
-
-        if (map)
-            return MarshalledKind.MAP;
-
-        TypeMirror wire = requireEnclosed(enclosed, ann.value(), "@Marshalled").asType();
-
-        if (wire.getKind() == TypeKind.ARRAY) {
-            return ((ArrayType)wire).getComponentType().getKind() == TypeKind.BYTE
-                ? MarshalledKind.BLOB
-                : MarshalledKind.ELEMENTS;
-        }
-
-        return MarshalledKind.ELEMENT_BLOBS;
-    }
-
     /** */
     protected static final String GRID_KERNAL_CONTEXT_CLS = "org.apache.ignite.internal.GridKernalContext";
 
@@ -146,9 +93,6 @@ public abstract class MessageWireCompanionGenerator extends MessageCompanionGene
 
     /** */
     protected static final String IGNITE_MESSAGE_FACTORY_CLS = "org.apache.ignite.internal.managers.communication.IgniteMessageFactory";
-
-    /** {@code IgniteUtils} shortcut used by the generated {@code @Marshalled} handling. */
-    protected static final String U_CLS = "org.apache.ignite.internal.util.typedef.internal.U";
 
     /** Accumulated source lines of the generated methods. */
     protected final List<String> methods = new ArrayList<>();
@@ -174,12 +118,6 @@ public abstract class MessageWireCompanionGenerator extends MessageCompanionGene
     /** Whether any generated method got a non-empty body; a companion without one is skipped entirely. */
     protected boolean hasStatements;
 
-    /** Enclosed fields of the currently processed type. Computed once per {@link #generateBody} call. */
-    protected Map<String, VariableElement> enclosed;
-
-    /** {@link MarshalledKind} of each {@code @Marshalled} enclosed field. Computed once per {@link #generateBody} call. */
-    protected final Map<VariableElement, MarshalledKind> kinds = new HashMap<>();
-
     /** Nesting depth of the current for-loop; names loop variables {@code e}, {@code e1}, {@code e2}… */
     protected int loopDepth;
 
@@ -196,28 +134,6 @@ public abstract class MessageWireCompanionGenerator extends MessageCompanionGene
         cacheGrpIdMsgType = type(GRID_CACHE_GROUP_ID_MESSAGE_CLS);
         mapType = type(Map.class.getName());
         colType = type(Collection.class.getName());
-    }
-
-    /** Reads the enclosed fields of the current type and the kind of each {@code @Marshalled} one among them. */
-    protected void readFields() {
-        enclosed = enclosedFields();
-
-        for (VariableElement f : enclosed.values()) {
-            MarshalledKind kind = marshalledKind(f);
-
-            if (kind != null)
-                kinds.put(f, kind);
-        }
-    }
-
-    /** Returns the enclosed field named {@code name}, or throws if absent. */
-    protected VariableElement requireEnclosed(Map<String, VariableElement> enclosed, String name, String annotationName) {
-        VariableElement el = enclosed.get(name);
-
-        if (el == null)
-            throw new IllegalStateException(annotationName + " companion field '" + name + "' not found in " + type);
-
-        return el;
     }
 
     /** */

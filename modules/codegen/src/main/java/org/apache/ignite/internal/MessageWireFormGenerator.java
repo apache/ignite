@@ -61,8 +61,6 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
 
     /** {@inheritDoc} */
     @Override protected void generateBody(List<VariableElement> fields) {
-        readFields();
-
         generateToWireMethod(fields);
         generateFromWireMethods(fields);
     }

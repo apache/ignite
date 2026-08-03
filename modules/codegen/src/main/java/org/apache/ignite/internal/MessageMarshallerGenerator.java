@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +36,8 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
+import javax.tools.Diagnostic;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.MessageProcessor.IGNITE_CHECKED_EXCEPTION_CLS;
 import static org.apache.ignite.internal.MessageProcessor.KEY_CACHE_OBJECT_CLS;
@@ -645,5 +648,84 @@ public class MessageMarshallerGenerator extends MessageWireCompanionGenerator {
     /** @return {@code true} if the generated {@code code} refers to the cache object context, so it has to be resolved. */
     private static boolean usesCtx(List<String> code) {
         return code.stream().anyMatch(l -> l.matches(".*\\bctx\\b.*"));
+    }
+
+    /** Marshalling flavour of a {@code @Marshalled} field, told apart by the shape of its companion wire field(s). */
+    private enum MarshalledKind {
+        /** {@code byte[]} companion: the whole object is a single marshaller blob. */
+        BLOB,
+
+        /** {@code Message[]} companion: per-element {@code Message} serialization, the collection is rebuilt on unmarshal. */
+        ELEMENTS,
+
+        /** {@code Collection<byte[]>} companion: per-element marshaller blobs, each element keeping its own class loader. */
+        ELEMENT_BLOBS,
+
+        /** Two companions ({@code keys()}/{@code values()}): a {@code Map} serialized as parallel wire fields. */
+        MAP
+    }
+
+    /**
+     * @return the flavour of {@code field}'s {@code @Marshalled}, or {@code null} when the field is not annotated.
+     * Called once per field when building {@link #kinds}; look the kind up there instead.
+     */
+    private @Nullable MarshalledKind marshalledKind(VariableElement field) {
+        Marshalled ann = field.getAnnotation(Marshalled.class);
+
+        if (ann == null)
+            return null;
+
+        boolean map = !ann.keys().isEmpty() || !ann.values().isEmpty();
+
+        if (map == !ann.value().isEmpty() || (map && (ann.keys().isEmpty() || ann.values().isEmpty()))) {
+            env.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                "@Marshalled must set either value() or both keys() and values()", field);
+
+            return null;
+        }
+
+        if (map)
+            return MarshalledKind.MAP;
+
+        TypeMirror wire = requireEnclosed(enclosed, ann.value(), "@Marshalled").asType();
+
+        if (wire.getKind() == TypeKind.ARRAY) {
+            return ((ArrayType)wire).getComponentType().getKind() == TypeKind.BYTE
+                ? MarshalledKind.BLOB
+                : MarshalledKind.ELEMENTS;
+        }
+
+        return MarshalledKind.ELEMENT_BLOBS;
+    }
+
+    /** {@code IgniteUtils} shortcut used by the generated {@code @Marshalled} handling. */
+    private static final String U_CLS = "org.apache.ignite.internal.util.typedef.internal.U";
+
+    /** Enclosed fields of the currently processed type. Computed once per {@link #generateBody} call. */
+    private Map<String, VariableElement> enclosed;
+
+    /** {@link MarshalledKind} of each {@code @Marshalled} enclosed field. Computed once per {@link #generateBody} call. */
+    private final Map<VariableElement, MarshalledKind> kinds = new HashMap<>();
+
+    /** Reads the enclosed fields of the current type and the kind of each {@code @Marshalled} one among them. */
+    private void readFields() {
+        enclosed = enclosedFields();
+
+        for (VariableElement f : enclosed.values()) {
+            MarshalledKind kind = marshalledKind(f);
+
+            if (kind != null)
+                kinds.put(f, kind);
+        }
+    }
+
+    /** Returns the enclosed field named {@code name}, or throws if absent. */
+    private VariableElement requireEnclosed(Map<String, VariableElement> enclosed, String name, String annotationName) {
+        VariableElement el = enclosed.get(name);
+
+        if (el == null)
+            throw new IllegalStateException(annotationName + " companion field '" + name + "' not found in " + type);
+
+        return el;
     }
 }

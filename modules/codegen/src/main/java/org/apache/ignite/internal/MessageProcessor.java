@@ -45,14 +45,9 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
 import javax.lang.model.util.Elements;
 import javax.tools.Diagnostic;
-import com.sun.source.tree.IdentifierTree;
-import com.sun.source.tree.MethodTree;
-import com.sun.source.util.TreeScanner;
-import com.sun.source.util.Trees;
 import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.MessageSerializerGenerator.DLFT_ENUM_MAPPER_CLS;
 import static org.apache.ignite.internal.MessageSerializerGenerator.enumType;
@@ -88,9 +83,6 @@ public class MessageProcessor extends AbstractProcessor {
 
     /** Externalizable message. */
     static final String MARSHALLABLE_MESSAGE_INTERFACE = "org.apache.ignite.internal.MarshallableMessage";
-
-    /** The marshaller a {@code MarshallableMessage} is handed. */
-    static final String MARSHALLER_CLS = "org.apache.ignite.marshaller.Marshaller";
 
     /** Marker of messages with no marshaller. */
     static final String NON_MARSHALLABLE_MESSAGE_INTERFACE = "org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage";
@@ -167,8 +159,6 @@ public class MessageProcessor extends AbstractProcessor {
                 processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
                     "NonMarshallableMessage must not implement MarshallableMessage or declare @Marshalled fields", clazz);
             }
-
-            checkMarshalUsesMarshaller(clazz, marshallableEl);
 
             if (clazz.getModifiers().contains(Modifier.ABSTRACT))
                 continue;
@@ -419,64 +409,6 @@ public class MessageProcessor extends AbstractProcessor {
     }
 
     /** @return {@code true} if {@code clazz} or any of its superclasses declares a {@code @Marshalled} field. */
-
-    /**
-     * A {@code MarshallableMessage} is a message that turns some of its fields into bytes itself, and the marshaller
-     * it is handed is the only way to do that. A method that does something without ever touching it is not
-     * marshalling: it moves fields around, which is the wire form, and the wire form is deprecated. Nothing but the
-     * method body tells the two apart, so this reads it. An empty body is fine — it does nothing at all.
-     *
-     * @param clazz Message being processed.
-     * @param marshallableEl {@code MarshallableMessage}, or {@code null} when it is not on the compile path.
-     */
-    private void checkMarshalUsesMarshaller(TypeElement clazz, @Nullable TypeElement marshallableEl) {
-        if (marshallableEl == null || !isAssignable(marshallableEl.asType(), clazz))
-            return;
-
-        for (ExecutableElement m : ElementFilter.methodsIn(clazz.getEnclosedElements())) {
-            String name = m.getSimpleName().toString();
-
-            if (!name.equals("marshal") && !name.equals("unmarshal"))
-                continue;
-
-            VariableElement marsh = m.getParameters().isEmpty() ? null : m.getParameters().get(0);
-
-            if (marsh == null || !marsh.asType().toString().equals(MARSHALLER_CLS))
-                continue;
-
-            if (usesParameter(m, marsh))
-                continue;
-
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
-                clazz.getSimpleName() + "." + name + "() never uses the marshaller it is given, so it is not" +
-                    " marshalling. Moving fields around before they go on the wire is a step of its own, and a" +
-                    " deprecated one: do the conversion where the message is filled in and where it is read.", m);
-        }
-    }
-
-    /** @return {@code true} if the body of {@code m} reads {@code param}, is empty, or cannot be seen from here. */
-    private boolean usesParameter(ExecutableElement m, VariableElement param) {
-        Trees trees = Trees.instance(processingEnv);
-
-        MethodTree tree = trees.getTree(m);
-
-        if (tree == null || tree.getBody() == null || tree.getBody().getStatements().isEmpty())
-            return true;
-
-        String name = param.getSimpleName().toString();
-
-        Boolean used = tree.getBody().accept(new TreeScanner<Boolean, Void>() {
-            @Override public Boolean visitIdentifier(IdentifierTree id, Void ignored) {
-                return id.getName().contentEquals(name);
-            }
-
-            @Override public Boolean reduce(Boolean a, Boolean b) {
-                return Boolean.TRUE.equals(a) || Boolean.TRUE.equals(b);
-            }
-        }, null);
-
-        return Boolean.TRUE.equals(used);
-    }
 
     /** @return {@code true} if the class has a {@code @Marshalled} field. */
     private boolean hasMarshalledFields(TypeElement clazz) {
