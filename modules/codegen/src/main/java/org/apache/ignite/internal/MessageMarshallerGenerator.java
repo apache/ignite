@@ -92,8 +92,8 @@ public class MessageMarshallerGenerator extends MessageWireCompanionGenerator {
         marshallable = marshallableMsgType != null && assignableFrom(type.asType(), marshallableMsgType);
         hasMarshalled = kinds.values().stream().anyMatch(k -> k == MarshalledKind.BLOB || k == MarshalledKind.ELEMENT_BLOBS);
 
-        generateMarshalMethod(fields);
-        generateUnmarshalMethod(fields);
+        generateMarshalMethod();
+        generateUnmarshalMethod();
     }
 
     /** {@inheritDoc} */
@@ -150,7 +150,7 @@ public class MessageMarshallerGenerator extends MessageWireCompanionGenerator {
     }
 
     /** Generates the {@code marshal} method: the fields that become bytes, plus the message's own call. */
-    private void generateMarshalMethod(List<VariableElement> orderedFields) {
+    private void generateMarshalMethod() {
         imports.add(IGNITE_CHECKED_EXCEPTION_CLS);
         imports.add(GRID_KERNAL_CONTEXT_CLS);
         imports.add(CACHE_OBJECT_CONTEXT_CLS);
@@ -184,7 +184,7 @@ public class MessageMarshallerGenerator extends MessageWireCompanionGenerator {
     }
 
     /** Generates the {@code unmarshal} method: the message's own call, then the fields rebuilt from bytes. */
-    private void generateUnmarshalMethod(List<VariableElement> orderedFields) {
+    private void generateUnmarshalMethod() {
         String params = simpleNameWithGeneric(type) + " msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr";
 
         hasStatements |= emitMethod(methods, "unmarshal(" + params + ")", body -> {
@@ -370,7 +370,7 @@ public class MessageMarshallerGenerator extends MessageWireCompanionGenerator {
 
             code.add(indentedLine("%s = U.newHashSet(%s.length);", colField, arrField));
             code.add(EMPTY);
-            code.addAll(collectionFinishForBlock(wireField, colField, arrField, field.getSimpleName().toString()));
+            code.addAll(collectionFinishForBlock(wireField, colField, arrField));
             code.add(EMPTY);
             code.add(indentedLine("%s = null;", arrField));
 
@@ -445,7 +445,7 @@ public class MessageMarshallerGenerator extends MessageWireCompanionGenerator {
     }
 
     /** Generates the {@code for} loop body: per-element unmarshal + try/catch add into the collection. */
-    private List<String> collectionFinishForBlock(VariableElement wireField, String colField, String arrField, String fieldName) {
+    private List<String> collectionFinishForBlock(VariableElement wireField, String colField, String arrField) {
         String compName = arrayComponentName(wireField);
 
         List<String> code = new ArrayList<>();
