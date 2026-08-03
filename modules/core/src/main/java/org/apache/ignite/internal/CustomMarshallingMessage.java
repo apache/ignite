@@ -17,15 +17,12 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
- * A {@link Message} that takes part in marshalling itself, so the generated companion has a step to call. What that
- * step is differs: {@link MarshallableMessage} turns fields into bytes with a {@link Marshaller},
- * {@link CustomWireFormMessage} only reshapes its own fields. Everything that treats both the same way - the check
- * against {@link org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage}, requiring the generated
- * marshaller to exist - refers to this interface.
+ * A {@link Message} with a marshalling step of its own, so its generated companion always has something to call.
+ * The step is either {@link MarshallableMessage} or {@link CustomWireFormMessage}; code that does not care which
+ * refers to this interface.
  */
 public interface CustomMarshallingMessage extends Message {
     // No-op.

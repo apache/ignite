@@ -19,17 +19,15 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
- * A {@link CustomMarshallingMessage} that converts its own fields to and from the form that goes on the wire: copying a value into the
- * field that is actually sent, packing bits, recalculating a TTL. Unlike {@link MarshallableMessage} it needs no {@link Marshaller}
- * to do that.
+ * A message that converts its own fields to and from the form that goes on the wire: copying a value into the field
+ * that is actually sent, packing bits, recalculating a TTL. Needs no {@link Marshaller} for that.
  */
 public interface CustomWireFormMessage extends CustomMarshallingMessage {
-    /** Converts the fields into the form that goes on the wire. Called before sending. */
+    /** Called before sending. */
     public void toWireForm() throws IgniteCheckedException;
 
-    /** Converts the fields back from the form they arrived in. Called after receiving. */
+    /** Called after receiving. */
     public void fromWireForm() throws IgniteCheckedException;
 }

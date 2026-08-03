@@ -69,39 +69,32 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
 
     /** */
     private static <T extends Message> void register(IgniteMessageFactory factory, Class<T> cls, short id, Marshaller marsh) {
-        MessageSerializer<T> serializer = loadGenerated(cls, "Serializer", null, true);
+        MessageSerializer<T> serializer = loadGenerated(cls, "Serializer", null);
 
-        // A CustomMarshallingMessage always gets a generated marshaller (its own step alone is a statement), so the
-        // absence of one is a build problem. For the rest the generator skips statement-free
-        // marshallers, so absence legitimately means "nothing to marshal"; the message and its companions ship in the
-        // same jar, hence a missing class cannot be a packaging accident that spares the (required) serializer.
         MessageMarshaller<T> marshaller = NonMarshallableMessage.class.isAssignableFrom(cls)
             ? null
-            : loadGenerated(cls, "Marshaller", marsh, CustomMarshallingMessage.class.isAssignableFrom(cls));
+            : loadGenerated(cls, "Marshaller", marsh);
 
-        // Deployers are generated for GridCacheMessage subclasses only, so the class lookup is skipped for the rest;
-        // a DeployableMessage left without a deployer is then rejected at registration.
+        // Deployers exist for GridCacheMessage only; a DeployableMessage left without one is rejected at registration.
         GridCacheMessageDeployer<?> deployer = GridCacheMessage.class.isAssignableFrom(cls)
-            ? loadGenerated(cls, "Deployer", null, false)
+            ? loadGenerated(cls, "Deployer", null)
             : null;
 
         factory.register(id, serializer, marshaller, deployer);
     }
 
     /**
-     * Instantiates the generated companion class {@code <message>Serializer/Marshaller/Deployer}. Only the marshaller
-     * companion ever takes a {@code Marshaller}, and only when the message has fields to marshal with one, so
-     * {@code marsh} is {@code null} for the other two. Constructor lookups, including missing companions, are cached
-     * per message class in {@link #COMPANIONS}.
+     * Instantiates the generated {@code <message>Serializer/Marshaller/Deployer}. Only the marshaller may take a
+     * {@code Marshaller}, so {@code marsh} is {@code null} for the other two. Lookups are cached in {@link #COMPANIONS}.
      *
-     * @return the companion, or {@code null} when it is not generated and {@code required} is {@code false}.
+     * @return the companion, or {@code null} when it is not generated and not required.
      */
     @SuppressWarnings("unchecked")
-    private static <T> @Nullable T loadGenerated(Class<?> cls, String suffix, @Nullable Marshaller marsh, boolean required) {
+    private static <T> @Nullable T loadGenerated(Class<?> cls, String suffix, @Nullable Marshaller marsh) {
         Constructor<?> ctor = COMPANIONS.get(cls).ctor(suffix);
 
         if (ctor == null) {
-            if (required) {
+            if (required(cls, suffix)) {
                 throw new IgniteException("No " + cls.getSimpleName() + suffix + " found for " + cls.getName() +
                     ". Either the class is not processed by codegen or the generated sources are stale," +
                     " try 'mvn clean install'.");
@@ -119,6 +112,18 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
         catch (Exception e) {
             throw new IgniteException("Failed to instantiate " + cls.getSimpleName() + suffix, e);
         }
+    }
+
+    /**
+     * Every message gets a serializer, and a {@link CustomMarshallingMessage} always gets a marshaller, so a missing
+     * one means a broken build. The other companions are generated only when there is something to do, so their
+     * absence is normal.
+     *
+     * @return {@code true} if {@code cls} must have the {@code suffix} companion.
+     */
+    private static boolean required(Class<?> cls, String suffix) {
+        return "Serializer".equals(suffix)
+            || ("Marshaller".equals(suffix) && CustomMarshallingMessage.class.isAssignableFrom(cls));
     }
 
     /** @return the sole public constructor of the generated companion {@code <message><suffix>}, or {@code null} when it does not exist. */
