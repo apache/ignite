@@ -78,5 +78,43 @@ public final class TestMarshalledArrayMapMessageWireForm implements MessageWireF
 
     /** */
     @Override public void fromWire(TestMarshalledArrayMapMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
+        IgniteMessageFactory msgFactory = (IgniteMessageFactory)kctx.messageFactory();
+
+        CacheObjectContext ctx = cacheObjCtx;
+        if (msg.mapKeys != null) {
+            for (GridTopicMessage e : msg.mapKeys) {
+                if (e != null)
+                    MessageWire.fromWire(msgFactory, e, kctx, ctx, clsLdr);
+            }
+        }
+
+        if (msg.mapVals != null) {
+            for (List e : msg.mapVals) {
+                if (e != null) {
+                    for (GridTopicMessage e1 : (Collection<? extends GridTopicMessage>)e) {
+                        if (e1 != null)
+                            MessageWire.fromWire(msgFactory, e1, kctx, ctx, clsLdr);
+                    }
+                }
+            }
+        }
+
+        if (msg.fixedMapKeys != null) {
+            for (GridTopicMessage e : msg.fixedMapKeys) {
+                if (e != null)
+                    MessageWire.fromWire(msgFactory, e, kctx, ctx, clsLdr);
+            }
+        }
+
+        if (msg.fixedMapVals != null) {
+            for (List e : msg.fixedMapVals) {
+                if (e != null) {
+                    for (GridTopicMessage e1 : (Collection<? extends GridTopicMessage>)e) {
+                        if (e1 != null)
+                            MessageWire.fromWire(msgFactory, e1, kctx, ctx, clsLdr);
+                    }
+                }
+            }
+        }
     }
 }

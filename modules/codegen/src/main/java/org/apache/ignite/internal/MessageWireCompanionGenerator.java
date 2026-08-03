@@ -20,20 +20,15 @@ package org.apache.ignite.internal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import javax.annotation.processing.ProcessingEnvironment;
-import javax.lang.model.element.Element;
-import javax.lang.model.element.QualifiedNameable;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.type.TypeVariable;
 import javax.tools.Diagnostic;
 import org.jetbrains.annotations.Nullable;
 
@@ -47,6 +42,102 @@ import static org.apache.ignite.internal.MessageProcessor.NON_MARSHALLABLE_MESSA
  * What each companion does with a field is left to the subclass.
  */
 public abstract class MessageWireCompanionGenerator extends MessageCompanionGenerator {
+    /** {@inheritDoc} */
+    @Override protected boolean shouldSkip(TypeElement type, List<VariableElement> fields) {
+        return isNonMarshallable(type.asType());
+    }
+
+    /** Prefixes {@code body} with the {@code msgFactory} resolution line when a loop-nested facade call was emitted. */
+    protected void prependMsgFactoryResolution(List<String> body) {
+        if (!usesMsgFactory)
+            return;
+
+        imports.add(IGNITE_MESSAGE_FACTORY_CLS);
+
+        body.add(0, EMPTY);
+        body.add(0, indentedLine("IgniteMessageFactory msgFactory = (IgniteMessageFactory)kctx.messageFactory();"));
+    }
+
+    /**
+     * Returns the {@code CacheObjectContext ctx} resolution line for the current message type. Cache messages resolve
+     * via the cache, group messages via the cache group — the group's context outlives the stop of individual caches,
+     * so cache objects still unmarshal while a cache (group) is being destroyed.
+     */
+    protected String ctxResolutionLine() {
+        if (isCacheIdAwareMessage(type))
+            return indentedLine("CacheObjectContext ctx = cacheObjCtx != null ? cacheObjCtx : " +
+                    "kctx.cache().context().cacheObjectContext(msg.cacheId());");
+        else if (isCacheGroupIdMessage(type))
+            return indentedLine("CacheObjectContext ctx = cacheObjCtx != null ? cacheObjCtx : " +
+                    "kctx.cache().cacheGroup(msg.groupId()) == null ? null : " +
+                    "kctx.cache().cacheGroup(msg.groupId()).cacheObjectContext();");
+        else
+            return indentedLine("CacheObjectContext ctx = cacheObjCtx;");
+    }
+
+    /** Returns {@code true} if any field requires {@code ctx} in generated marshal/unmarshal code. */
+    protected boolean needsCtx(List<VariableElement> fields) {
+        return fields.stream().anyMatch(f -> needsCtxType(f.asType()));
+    }
+
+    /** Recursion skip for such fields is subtype-safe: subclasses inherit the {@code NonMarshallableMessage} marker. */
+    protected boolean isNonMarshallable(TypeMirror t) {
+        return assignableFrom(t, nonMarshallableType);
+    }
+
+    /** */
+    protected boolean isCacheGroupIdMessage(TypeElement te) {
+        return assignableFrom(te.asType(), cacheGrpIdMsgType);
+    }
+
+    /** Marshalling flavour of a {@code @Marshalled} field, told apart by the shape of its companion wire field(s). */
+    protected enum MarshalledKind {
+        /** {@code byte[]} companion: the whole object is a single marshaller blob. */
+        BLOB,
+
+        /** {@code Message[]} companion: per-element {@code Message} serialization, the collection is rebuilt on unmarshal. */
+        ELEMENTS,
+
+        /** {@code Collection<byte[]>} companion: per-element marshaller blobs, each element keeping its own class loader. */
+        ELEMENT_BLOBS,
+
+        /** Two companions ({@code keys()}/{@code values()}): a {@code Map} serialized as parallel wire fields. */
+        MAP
+    }
+
+    /**
+     * @return the flavour of {@code field}'s {@code @Marshalled}, or {@code null} when the field is not annotated.
+     * Called once per field when building {@link #kinds}; look the kind up there instead.
+     */
+    protected @Nullable MarshalledKind marshalledKind(VariableElement field) {
+        Marshalled ann = field.getAnnotation(Marshalled.class);
+
+        if (ann == null)
+            return null;
+
+        boolean map = !ann.keys().isEmpty() || !ann.values().isEmpty();
+
+        if (map == !ann.value().isEmpty() || (map && (ann.keys().isEmpty() || ann.values().isEmpty()))) {
+            env.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                "@Marshalled must set either value() or both keys() and values()", field);
+
+            return null;
+        }
+
+        if (map)
+            return MarshalledKind.MAP;
+
+        TypeMirror wire = requireEnclosed(enclosed, ann.value(), "@Marshalled").asType();
+
+        if (wire.getKind() == TypeKind.ARRAY) {
+            return ((ArrayType)wire).getComponentType().getKind() == TypeKind.BYTE
+                ? MarshalledKind.BLOB
+                : MarshalledKind.ELEMENTS;
+        }
+
+        return MarshalledKind.ELEMENT_BLOBS;
+    }
+
     /** */
     protected static final String GRID_KERNAL_CONTEXT_CLS = "org.apache.ignite.internal.GridKernalContext";
 
@@ -125,252 +216,6 @@ public abstract class MessageWireCompanionGenerator extends MessageCompanionGene
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected boolean shouldSkip(TypeElement type, List<VariableElement> fields) {
-        return isNonMarshallable(type.asType());
-    }
-
-    /** Generates the code of each field and appends the non-empty results to {@code body}. */
-    protected void appendFields(List<String> body, List<VariableElement> fields, Direction mode) {
-        appendFields(body, fields, mode, Set.of());
-    }
-
-    /** Generates the code of each field, skipping names in {@code skip}, and appends the non-empty results. */
-    protected void appendFields(List<String> body, List<VariableElement> fields, Direction mode, Set<String> skip) {
-        for (VariableElement field : fields) {
-            if (skip.contains(field.getSimpleName().toString()))
-                continue;
-
-            List<String> result = codeFor(field.asType(), fieldAccessor(field), mode);
-
-            if (!result.isEmpty())
-                appendBlock(body, result);
-        }
-    }
-
-    /** @return the generated code lines for a field of type {@code t} in the given direction, or empty if it needs none. */
-    protected List<String> codeFor(TypeMirror t, String accessor, Direction mode) {
-        if (t.getKind() == TypeKind.ARRAY) {
-            TypeMirror comp = ((ArrayType)t).getComponentType();
-
-            return comp.getKind() == TypeKind.DECLARED ? arrayCode(comp, accessor, mode) : List.of();
-        }
-
-        if (t.getKind() == TypeKind.DECLARED || t.getKind() == TypeKind.TYPEVAR) {
-            if (isMessage(t))
-                return isNonMarshallable(t) ? List.of() : messageCode(accessor, mode);
-            if (isCacheObject(t))
-                return cacheObjectCode(accessor, mode);
-            if (isMap(t))
-                return mapCode((DeclaredType)t, accessor, mode);
-            if (isCollection(t))
-                return collectionCode((DeclaredType)t, accessor, mode);
-        }
-
-        return List.of();
-    }
-
-    /**
-     * Generates a null-guarded {@code MessageWire} call. Loop-nested calls go through the overloads taking the
-     * pre-resolved {@code msgFactory} local (see {@link #prependMsgFactoryResolution}), so the factory is not
-     * re-resolved from the context on every element.
-     */
-    private List<String> messageCode(String accessor, Direction mode) {
-        imports.add(MESSAGE_WIRE_CLS);
-
-        List<String> code = new ArrayList<>();
-
-        code.add(indentedLine("if (%s != null)", accessor));
-
-        indent++;
-
-        if (loopDepth > 0) {
-            usesMsgFactory = true;
-
-            code.add(mode == Direction.OUT
-                ? indentedLine("MessageWire.toWire(msgFactory, %s, kctx, ctx);", accessor)
-                : indentedLine("MessageWire.fromWire(msgFactory, %s, kctx, ctx, clsLdr);", accessor));
-        }
-        else {
-            code.add(mode == Direction.OUT
-                ? indentedLine("MessageWire.toWire(%s, kctx, ctx);", accessor)
-                : indentedLine("MessageWire.fromWire(%s, kctx, ctx, clsLdr);", accessor));
-        }
-
-        indent--;
-
-        return code;
-    }
-
-    /** Generates a null-and-ctx-guarded call that prepares a {@code CacheObject} field, or reads it back. */
-    private List<String> cacheObjectCode(String accessor, Direction mode) {
-        List<String> code = new ArrayList<>();
-
-        code.add(indentedLine("if (%s != null && ctx != null)", accessor));
-
-        indent++;
-
-        code.add(mode == Direction.OUT
-            ? indentedLine("%s.marshal(ctx);", accessor)
-            : indentedLine("%s.unmarshal(ctx, clsLdr);", accessor));
-
-        indent--;
-
-        return code;
-    }
-
-    /** Generates a null-guarded for-each loop over the array's elements. */
-    private List<String> arrayCode(TypeMirror comp, String accessor, Direction mode) {
-        Element elem = ((DeclaredType)comp).asElement();
-
-        indent++;
-
-        List<String> loopCode = forLoop(elem.getSimpleName().toString(), comp, accessor, mode);
-
-        indent--;
-
-        if (!loopCode.isEmpty())
-            imports.add(((QualifiedNameable)elem).getQualifiedName().toString());
-
-        return wrapNullGuarded(accessor, loopCode);
-    }
-
-    /** Generates a null-guarded for-each loop over the collection's elements. */
-    private List<String> collectionCode(DeclaredType t, String accessor, Direction mode) {
-        TypeMirror arg = t.getTypeArguments().get(0);
-
-        if (arg.getKind() != TypeKind.DECLARED && arg.getKind() != TypeKind.TYPEVAR)
-            return List.of();
-
-        Element elem = element(arg);
-
-        String typeName = elem.getSimpleName().toString();
-
-        indent++;
-
-        List<String> loopCode = forLoop(typeName, arg, "(Collection<? extends " + typeName + ">)" + accessor, mode);
-
-        indent--;
-
-        if (!loopCode.isEmpty()) {
-            imports.add(((QualifiedNameable)elem).getQualifiedName().toString());
-            imports.add(Collection.class.getName());
-        }
-
-        return wrapNullGuarded(accessor, loopCode);
-    }
-
-    /** Iterates {@code keySet()} then {@code values()}, wrapping both loops in a null-guard. */
-    private List<String> mapCode(DeclaredType t, String accessor, Direction mode) {
-        List<? extends TypeMirror> args = t.getTypeArguments();
-
-        indent++;
-
-        List<String> combined = new ArrayList<>();
-
-        for (int i = 0; i < 2; i++) {
-            TypeMirror elemType = args.get(i);
-
-            if (elemType.getKind() != TypeKind.DECLARED && elemType.getKind() != TypeKind.TYPEVAR)
-                continue;
-
-            Element elem = element(elemType);
-
-            String typeName = elem.getSimpleName().toString();
-            String collection = i == 0 ? "keySet" : "values";
-            String iterable = "((Collection<? extends " + typeName + ">)" + accessor + "." + collection + "())";
-
-            List<String> loopCode = forLoop(typeName, elemType, iterable, mode);
-
-            if (loopCode.isEmpty())
-                continue;
-
-            imports.add(((QualifiedNameable)elem).getQualifiedName().toString());
-            imports.add(Collection.class.getName());
-
-            combined.addAll(loopCode);
-        }
-
-        indent--;
-
-        return wrapNullGuarded(accessor, combined);
-    }
-
-    /** @return a for-each loop over {@code iterable}, or empty when its elements need no code of their own. */
-    private List<String> forLoop(String typeName, TypeMirror elemType, String iterable, Direction mode) {
-        String el = loopDepth == 0 ? "e" : "e" + loopDepth;
-
-        loopDepth++;
-        indent++;
-
-        List<String> inner = codeFor(elemType, el, mode);
-
-        indent--;
-        loopDepth--;
-
-        if (inner.isEmpty())
-            return List.of();
-
-        List<String> code = new ArrayList<>();
-
-        code.add(indentedLine("for (%s %s : %s) {", typeName, el, iterable));
-
-        code.addAll(inner);
-
-        code.add(indentedLine("}"));
-
-        return code;
-    }
-
-    /** Prefixes {@code body} with the {@code msgFactory} resolution line when a loop-nested facade call was emitted. */
-    protected void prependMsgFactoryResolution(List<String> body) {
-        if (!usesMsgFactory)
-            return;
-
-        imports.add(IGNITE_MESSAGE_FACTORY_CLS);
-
-        body.add(0, EMPTY);
-        body.add(0, indentedLine("IgniteMessageFactory msgFactory = (IgniteMessageFactory)kctx.messageFactory();"));
-    }
-
-    /** Returns empty if {@code inner} is empty; otherwise wraps {@code inner} in a null-guard on {@code nullGuard}. */
-    private List<String> wrapNullGuarded(String nullGuard, List<String> inner) {
-        if (inner.isEmpty())
-            return List.of();
-
-        List<String> code = new ArrayList<>();
-
-        code.add(indentedLine("if (%s != null) {", nullGuard));
-
-        code.addAll(inner);
-
-        code.add(indentedLine("}"));
-
-        return code;
-    }
-
-    /**
-     * Returns the {@code CacheObjectContext ctx} resolution line for the current message type. Cache messages resolve
-     * via the cache, group messages via the cache group — the group's context outlives the stop of individual caches,
-     * so cache objects still unmarshal while a cache (group) is being destroyed.
-     */
-    protected String ctxResolutionLine() {
-        if (isCacheIdAwareMessage(type))
-            return indentedLine("CacheObjectContext ctx = cacheObjCtx != null ? cacheObjCtx : " +
-                    "kctx.cache().context().cacheObjectContext(msg.cacheId());");
-        else if (isCacheGroupIdMessage(type))
-            return indentedLine("CacheObjectContext ctx = cacheObjCtx != null ? cacheObjCtx : " +
-                    "kctx.cache().cacheGroup(msg.groupId()) == null ? null : " +
-                    "kctx.cache().cacheGroup(msg.groupId()).cacheObjectContext();");
-        else
-            return indentedLine("CacheObjectContext ctx = cacheObjCtx;");
-    }
-
-    /** Returns {@code true} if any field requires {@code ctx} in generated marshal/unmarshal code. */
-    protected boolean needsCtx(List<VariableElement> fields) {
-        return fields.stream().anyMatch(f -> needsCtxType(f.asType()));
-    }
-
     /** Returns {@code true} if type {@code t} (or its element/key/value types) requires {@code ctx}. */
     protected boolean needsCtxType(TypeMirror t) {
         if (t.getKind() == TypeKind.ARRAY)
@@ -397,6 +242,16 @@ public abstract class MessageWireCompanionGenerator extends MessageCompanionGene
         return false;
     }
 
+    /** Returns the enclosed field named {@code name}, or throws if absent. */
+    protected VariableElement requireEnclosed(Map<String, VariableElement> enclosed, String name, String annotationName) {
+        VariableElement el = enclosed.get(name);
+
+        if (el == null)
+            throw new IllegalStateException(annotationName + " companion field '" + name + "' not found in " + type);
+
+        return el;
+    }
+
     /** */
     protected boolean isMessage(TypeMirror type) {
         return assignableFrom(type, msgType);
@@ -417,110 +272,8 @@ public abstract class MessageWireCompanionGenerator extends MessageCompanionGene
         return assignableFrom(erasedType(type), colType);
     }
 
-    /** Recursion skip for such fields is subtype-safe: subclasses inherit the {@code NonMarshallableMessage} marker. */
-    protected boolean isNonMarshallable(TypeMirror t) {
-        return assignableFrom(t, nonMarshallableType);
-    }
-
-    /** */
-    protected boolean isCacheGroupIdMessage(TypeElement te) {
-        return assignableFrom(te.asType(), cacheGrpIdMsgType);
-    }
-
-    /** Returns the element for {@code t}; for a type variable, uses its upper bound. */
-    protected Element element(TypeMirror t) {
-        return t.getKind() == TypeKind.DECLARED
-            ? ((DeclaredType)t).asElement()
-            : ((DeclaredType)((TypeVariable)t).getUpperBound()).asElement();
-    }
-
-    /** Marshalling flavour of a {@code @Marshalled} field, told apart by the shape of its companion wire field(s). */
-    protected enum MarshalledKind {
-        /** {@code byte[]} companion: the whole object is a single marshaller blob. */
-        BLOB,
-
-        /** {@code Message[]} companion: per-element {@code Message} serialization, the collection is rebuilt on unmarshal. */
-        ELEMENTS,
-
-        /** {@code Collection<byte[]>} companion: per-element marshaller blobs, each element keeping its own class loader. */
-        ELEMENT_BLOBS,
-
-        /** Two companions ({@code keys()}/{@code values()}): a {@code Map} serialized as parallel wire fields. */
-        MAP
-    }
-
-    /**
-     * @return the flavour of {@code field}'s {@code @Marshalled}, or {@code null} when the field is not annotated.
-     * Called once per field when building {@link #kinds}; look the kind up there instead.
-     */
-    protected @Nullable MarshalledKind marshalledKind(VariableElement field) {
-        Marshalled ann = field.getAnnotation(Marshalled.class);
-
-        if (ann == null)
-            return null;
-
-        boolean map = !ann.keys().isEmpty() || !ann.values().isEmpty();
-
-        if (map == !ann.value().isEmpty() || (map && (ann.keys().isEmpty() || ann.values().isEmpty()))) {
-            env.getMessager().printMessage(Diagnostic.Kind.ERROR,
-                "@Marshalled must set either value() or both keys() and values()", field);
-
-            return null;
-        }
-
-        if (map)
-            return MarshalledKind.MAP;
-
-        TypeMirror wire = requireEnclosed(enclosed, ann.value(), "@Marshalled").asType();
-
-        if (wire.getKind() == TypeKind.ARRAY) {
-            return ((ArrayType)wire).getComponentType().getKind() == TypeKind.BYTE
-                ? MarshalledKind.BLOB
-                : MarshalledKind.ELEMENTS;
-        }
-
-        return MarshalledKind.ELEMENT_BLOBS;
-    }
-
-    /** Returns the enclosed field named {@code name}, or throws if absent. */
-    protected VariableElement requireEnclosed(Map<String, VariableElement> enclosed, String name, String annotationName) {
-        VariableElement el = enclosed.get(name);
-
-        if (el == null)
-            throw new IllegalStateException(annotationName + " companion field '" + name + "' not found in " + type);
-
-        return el;
-    }
-
-    /** Returns names of wire fields skipped by {@link #appendFields} in UNMARSHAL mode. */
-    protected Set<String> marshalledWireFieldsToSkip() {
-        Set<String> names = new HashSet<>();
-
-        for (VariableElement f : enclosed.values()) {
-            MarshalledKind kind = kinds.get(f);
-
-            if (kind == null || kind == MarshalledKind.BLOB)
-                continue;
-
-            Marshalled ann = f.getAnnotation(Marshalled.class);
-
-            if (kind == MarshalledKind.MAP) {
-                names.add(ann.keys());
-                names.add(ann.values());
-            }
-            else
-                names.add(ann.value());
-        }
-
-        return names;
-    }
-
-    /** Direction of the field code a generator pass emits: object→wire ({@link #MARSHAL}) or wire→object ({@link #UNMARSHAL}). */
-    protected enum Direction {
-        /** On the way out: the code runs before the message is written. */
-        OUT,
-
-        /** On the way in: the code runs after the message is read, with cache context and class loader at hand. */
-        IN
+    /** @return {@code true} if the generated {@code code} refers to the cache object context, so it has to be resolved. */
+    protected static boolean usesCtx(List<String> code) {
+        return code.stream().anyMatch(l -> l.matches(".*\\bctx\\b.*"));
     }
 }

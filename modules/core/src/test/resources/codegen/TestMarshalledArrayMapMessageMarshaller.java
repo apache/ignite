@@ -17,15 +17,12 @@
 
 package org.apache.ignite.internal;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopicMessage;
 import org.apache.ignite.internal.TestMarshalledArrayMapMessage;
-import org.apache.ignite.internal.managers.communication.IgniteMessageFactory;
-import org.apache.ignite.internal.managers.communication.MessageWire;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
@@ -38,7 +35,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 public final class TestMarshalledArrayMapMessageMarshaller implements MessageMarshaller<TestMarshalledArrayMapMessage> {
     /** */
     @Override public void marshal(TestMarshalledArrayMapMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
-        CacheObjectContext ctx = cacheObjCtx;
         if (msg.theMap != null && msg.mapKeys == null) {
             msg.mapKeys = new GridTopicMessage[msg.theMap.size()];
             msg.mapVals = new List[msg.mapKeys.length];
@@ -64,25 +60,12 @@ public final class TestMarshalledArrayMapMessageMarshaller implements MessageMar
 
     /** */
     @Override public void unmarshal(TestMarshalledArrayMapMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
-        IgniteMessageFactory msgFactory = (IgniteMessageFactory)kctx.messageFactory();
-
-        CacheObjectContext ctx = cacheObjCtx;
         if (msg.mapKeys != null) {
             msg.theMap = U.newHashMap(msg.mapKeys.length);
 
             for (int i = 0; i < msg.mapKeys.length; i++) {
                 GridTopicMessage k = msg.mapKeys[i];
                 List v = msg.mapVals[i];
-
-                if (k != null)
-                    MessageWire.fromWire(k, kctx, ctx, clsLdr);
-
-                if (v != null) {
-                    for (GridTopicMessage e : (Collection<? extends GridTopicMessage>)v) {
-                        if (e != null)
-                            MessageWire.fromWire(msgFactory, e, kctx, ctx, clsLdr);
-                    }
-                }
 
                 msg.theMap.put(k, v);
             }
@@ -95,16 +78,6 @@ public final class TestMarshalledArrayMapMessageMarshaller implements MessageMar
             for (int i = 0; i < msg.fixedMapKeys.length; i++) {
                 GridTopicMessage k = msg.fixedMapKeys[i];
                 List v = msg.fixedMapVals[i];
-
-                if (k != null)
-                    MessageWire.fromWire(k, kctx, ctx, clsLdr);
-
-                if (v != null) {
-                    for (GridTopicMessage e : (Collection<? extends GridTopicMessage>)v) {
-                        if (e != null)
-                            MessageWire.fromWire(msgFactory, e, kctx, ctx, clsLdr);
-                    }
-                }
 
                 msg.fixedMap.put(k, v);
             }

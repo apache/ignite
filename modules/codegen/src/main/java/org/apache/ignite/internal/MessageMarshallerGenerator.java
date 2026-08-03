@@ -34,6 +34,7 @@ import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.type.TypeVariable;
 
 import static org.apache.ignite.internal.MessageProcessor.IGNITE_CHECKED_EXCEPTION_CLS;
 import static org.apache.ignite.internal.MessageProcessor.KEY_CACHE_OBJECT_CLS;
@@ -110,6 +111,32 @@ public class MessageMarshallerGenerator extends MessageWireCompanionGenerator {
         }
     }
 
+    /** Writes the {@code marshaller} field and the constructor initializing it, when the marshaller is needed. */
+    private void writeConstructor(Writer writer, String marshallerClsName) throws IOException {
+        if (!marshallable && !hasMarshalled)
+            return;
+
+        writer.write(indentedLine(METHOD_JAVADOC));
+        writer.write(NL);
+        writer.write(indentedLine("private final Marshaller marshaller;"));
+        writer.write(NL + NL);
+
+        writer.write(indentedLine(METHOD_JAVADOC));
+        writer.write(NL);
+        writer.write(indentedLine("public " + marshallerClsName + "(Marshaller marshaller) {"));
+        writer.write(NL);
+
+        indent++;
+
+        writer.write(indentedLine("this.marshaller = marshaller;"));
+        writer.write(NL);
+
+        indent--;
+
+        writer.write(indentedLine("}"));
+        writer.write(NL + NL);
+    }
+
     /** Generates the {@code marshal} method: the fields that become bytes, plus the message's own call. */
     private void generateMarshalMethod(List<VariableElement> orderedFields) {
         imports.add(IGNITE_CHECKED_EXCEPTION_CLS);
@@ -135,7 +162,7 @@ public class MessageMarshallerGenerator extends MessageWireCompanionGenerator {
             if (code.isEmpty())
                 return;
 
-            if (needsCtx(orderedFields))
+            if (usesCtx(code))
                 appendBlock(body, List.of(ctxResolutionLine()));
 
             body.addAll(code);
@@ -165,39 +192,13 @@ public class MessageMarshallerGenerator extends MessageWireCompanionGenerator {
             if (code.isEmpty())
                 return;
 
-            if (needsCtx(orderedFields) || !marshalledWireFieldsToSkip().isEmpty())
+            if (usesCtx(code))
                 appendBlock(body, List.of(ctxResolutionLine()));
 
             body.addAll(code);
 
             prependMsgFactoryResolution(body);
         });
-    }
-
-    /** Writes the {@code marshaller} field and the constructor initializing it, when the marshaller is needed. */
-    private void writeConstructor(Writer writer, String marshallerClsName) throws IOException {
-        if (!marshallable && !hasMarshalled)
-            return;
-
-        writer.write(indentedLine(METHOD_JAVADOC));
-        writer.write(NL);
-        writer.write(indentedLine("private final Marshaller marshaller;"));
-        writer.write(NL + NL);
-
-        writer.write(indentedLine(METHOD_JAVADOC));
-        writer.write(NL);
-        writer.write(indentedLine("public " + marshallerClsName + "(Marshaller marshaller) {"));
-        writer.write(NL);
-
-        indent++;
-
-        writer.write(indentedLine("this.marshaller = marshaller;"));
-        writer.write(NL);
-
-        indent--;
-
-        writer.write(indentedLine("}"));
-        writer.write(NL + NL);
     }
 
     /** Generates logical→wire conversions for the element-, blob-list- and map-flavoured {@code @Marshalled} fields. */
@@ -442,8 +443,6 @@ public class MessageMarshallerGenerator extends MessageWireCompanionGenerator {
 
         indent++;
 
-        code.addAll(codeFor(compType, "e", Direction.IN));
-        code.add(EMPTY);
         code.add(indentedLine("%s.add(e);", colField));
 
         indent--;
@@ -495,8 +494,6 @@ public class MessageMarshallerGenerator extends MessageWireCompanionGenerator {
         indent++;
 
         code.addAll(mapPutBlock(
-            ((ArrayType)keysEl.asType()).getComponentType(),
-            ((ArrayType)valsEl.asType()).getComponentType(),
             arrayComponentName(keysEl) + " k = " + keysField + "[i];",
             arrayComponentName(valsEl) + " v = " + valsField + "[i];",
             mapField));
@@ -546,7 +543,7 @@ public class MessageMarshallerGenerator extends MessageWireCompanionGenerator {
 
         indent++;
 
-        code.addAll(mapPutBlock(keyCompType, valCompType,
+        code.addAll(mapPutBlock(
             keyCompName + " k = keyIter.next();",
             valCompName + " v = valIter.next();",
             mapField));
@@ -569,24 +566,11 @@ public class MessageMarshallerGenerator extends MessageWireCompanionGenerator {
      * Generates the reconstruction-loop body shared by both map layouts: k/v declarations,
      * element unmarshal and {@code map.put}.
      */
-    private List<String> mapPutBlock(TypeMirror keyCompType, TypeMirror valCompType, String kDecl, String vDecl, String mapField) {
+    private List<String> mapPutBlock(String kDecl, String vDecl, String mapField) {
         List<String> code = new ArrayList<>();
 
         code.add(indentedLine("%s", kDecl));
         code.add(indentedLine("%s", vDecl));
-
-        List<String> keyUnmarshal = codeFor(keyCompType, "k", Direction.IN);
-        List<String> valUnmarshal = codeFor(valCompType, "v", Direction.IN);
-
-        if (!keyUnmarshal.isEmpty()) {
-            code.add(EMPTY);
-            code.addAll(keyUnmarshal);
-        }
-
-        if (!valUnmarshal.isEmpty()) {
-            code.add(EMPTY);
-            code.addAll(valUnmarshal);
-        }
 
         code.add(EMPTY);
         code.add(indentedLine("%s.put(k, v);", mapField));
@@ -631,15 +615,6 @@ public class MessageMarshallerGenerator extends MessageWireCompanionGenerator {
         return inner;
     }
 
-    /** Returns the simple name of the array component type of {@code field}, registering its import. */
-    private String arrayComponentName(VariableElement field) {
-        Element comp = ((DeclaredType)((ArrayType)field.asType()).getComponentType()).asElement();
-
-        imports.add(((QualifiedNameable)comp).getQualifiedName().toString());
-
-        return comp.getSimpleName().toString();
-    }
-
     /** Iterates all {@code @Marshalled} fields and applies {@code codeGen(bytesAccessor, objAccessor)} to each. */
     private void forEachMarshalled(BiFunction<String, String, List<String>> codeGen, List<String> body) {
         for (VariableElement field : enclosed.values()) {
@@ -651,4 +626,21 @@ public class MessageMarshallerGenerator extends MessageWireCompanionGenerator {
             appendBlock(body, codeGen.apply("msg." + ann.value(), "msg." + field.getSimpleName()));
         }
     }
+
+    /** Returns the simple name of the array component type of {@code field}, registering its import. */
+    private String arrayComponentName(VariableElement field) {
+        Element comp = ((DeclaredType)((ArrayType)field.asType()).getComponentType()).asElement();
+
+        imports.add(((QualifiedNameable)comp).getQualifiedName().toString());
+
+        return comp.getSimpleName().toString();
+    }
+
+    /** Returns the element for {@code t}; for a type variable, uses its upper bound. */
+    private Element element(TypeMirror t) {
+        return t.getKind() == TypeKind.DECLARED
+            ? ((DeclaredType)t).asElement()
+            : ((DeclaredType)((TypeVariable)t).getUpperBound()).asElement();
+    }
+
 }

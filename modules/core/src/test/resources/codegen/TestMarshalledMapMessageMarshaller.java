@@ -42,7 +42,6 @@ public final class TestMarshalledMapMessageMarshaller implements MessageMarshall
 
     /** */
     @Override public void unmarshal(TestMarshalledMapMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
-        CacheObjectContext ctx = cacheObjCtx;
         if (msg.mapKeys != null) {
             msg.theMap = U.newHashMap(msg.mapKeys.size());
 

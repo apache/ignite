@@ -1,0 +1,15 @@
+# Messages allowed to implement CustomWireFormMessage, that is, to reshape their own fields before they go on the
+# wire. The interface is deprecated: a message carries data, it is not a place to compute. This list only shrinks —
+# a message leaves it when its conversion moves to the code that fills the message in and reads it. Once the list is
+# empty, CustomWireFormMessage and the step MessageWire runs for it go away with it.
+#
+# A message not listed here is rejected at compile time. Do not add one.
+org.apache.ignite.internal.processors.cache.GridCacheEntryInfo
+org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage
+org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage
+org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest
+org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup
+org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode
+
+# Fixtures of the codegen tests: they exist to prove the mechanism still works.
+org.apache.ignite.internal.TestCustomWireFormMessage
