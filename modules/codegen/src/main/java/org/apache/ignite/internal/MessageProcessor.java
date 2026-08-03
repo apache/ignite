@@ -183,7 +183,8 @@ public class MessageProcessor extends AbstractProcessor {
         }
 
         List<Function<ProcessingEnvironment, MessageCompanionGenerator>> generators = List.of(
-            MessageSerializerGenerator::new, MessageMarshallerGenerator::new, MessageDeploymentGenerator::new);
+            MessageSerializerGenerator::new, MessageMarshallerGenerator::new, MessageWireFormGenerator::new,
+            MessageDeploymentGenerator::new);
 
         for (Map.Entry<TypeElement, List<VariableElement>> type: msgFields.entrySet()) {
             for (Function<ProcessingEnvironment, MessageCompanionGenerator> factory : generators) {

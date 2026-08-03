@@ -31,6 +31,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
+import org.apache.ignite.plugin.extensions.communication.MessageWireForm;
 import org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage;
 import org.jetbrains.annotations.Nullable;
 
@@ -76,16 +77,18 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
     private static <T extends Message> void register(IgniteMessageFactory factory, Class<T> cls, short id, Marshaller marsh) {
         MessageSerializer<T> serializer = loadGenerated(cls, Companion.SERIALIZER, null);
 
-        MessageMarshaller<T> marshaller = NonMarshallableMessage.class.isAssignableFrom(cls)
-            ? null
-            : loadGenerated(cls, Companion.MARSHALLER, marsh);
+        boolean nonMarshallable = NonMarshallableMessage.class.isAssignableFrom(cls);
+
+        MessageMarshaller<T> marshaller = nonMarshallable ? null : loadGenerated(cls, Companion.MARSHALLER, marsh);
+
+        MessageWireForm<T> wireForm = nonMarshallable ? null : loadGenerated(cls, Companion.WIRE_FORM, null);
 
         // Deployers exist for GridCacheMessage only; a DeployableMessage left without one is rejected at registration.
         GridCacheMessageDeployer<?> deployer = GridCacheMessage.class.isAssignableFrom(cls)
             ? loadGenerated(cls, Companion.DEPLOYER, null)
             : null;
 
-        factory.register(id, serializer, marshaller, deployer);
+        factory.register(id, serializer, marshaller, wireForm, deployer);
     }
 
     /**
@@ -135,8 +138,11 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
         /** Reads and writes the message fields. Generated for every message. */
         SERIALIZER("Serializer"),
 
-        /** Marshals the fields that need it. Generated when the message has something to marshal. */
+        /** Turns the fields that need it into bytes. Generated when the message has something to marshal. */
         MARSHALLER("Marshaller"),
+
+        /** Walks the fields, nested messages and cache objects. Generated when the message has anything to walk. */
+        WIRE_FORM("WireForm"),
 
         /** Prepares the deployable fields. Generated for a {@link GridCacheMessage} that has them. */
         DEPLOYER("Deployer");
@@ -151,7 +157,8 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
 
         /**
          * A {@link MarshallableMessage} always gets a marshaller, its own {@code marshal} call being enough to
-         * generate one, so a missing companion in these two cases means a stale build.
+         * generate one, so a missing companion in these two cases means a stale build. The rest are generated only
+         * when the message gives them something to do.
          *
          * @return {@code true} if {@code cls} must have this companion.
          */

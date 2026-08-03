@@ -27,7 +27,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
-import org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.MessageWireForm;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -46,6 +46,9 @@ public class IgniteMessageFactoryImpl<M extends Message, CM extends GridCacheMes
 
     /** Message marshallers (null entry = no marshaller registered for that type). */
     private final MessageMarshaller<M>[] msgMarshallers = (MessageMarshaller<M>[])Array.newInstance(MessageMarshaller.class, ARR_SIZE);
+
+    /** Message wire forms (null entry = no wire form registered for that type). */
+    private final MessageWireForm<M>[] msgWireForms = (MessageWireForm<M>[])Array.newInstance(MessageWireForm.class, ARR_SIZE);
 
     /** Message deployers (null entry = no deployer registered for that type). */
     private final GridCacheMessageDeployer<CM>[] msgDeployers =
@@ -79,11 +82,13 @@ public class IgniteMessageFactoryImpl<M extends Message, CM extends GridCacheMes
      *
      * @param directType Direct type ({@link Message#directType()}) to register the message under.
      * @param serializer Message serializer.
-     * @param marshaller Message marshaller, or {@code null} for {@link NonMarshallableMessage} types.
+     * @param marshaller Message marshaller, or {@code null} when the message has nothing to marshal.
+     * @param wireForm Message wire form, or {@code null} when the message has no field to walk.
      * @param deployer Message deployer, or {@code null} for messages without deployable fields.
      */
     @Override public void register(short directType, MessageSerializer<M> serializer,
-        @Nullable MessageMarshaller<M> marshaller, @Nullable GridCacheMessageDeployer<CM> deployer) throws IgniteException {
+        @Nullable MessageMarshaller<M> marshaller, @Nullable MessageWireForm<M> wireForm,
+        @Nullable GridCacheMessageDeployer<CM> deployer) throws IgniteException {
         if (initialized) {
             throw new IllegalStateException("Message factory is already initialized. " +
                     "Registration of new message types is forbidden.");
@@ -118,6 +123,7 @@ public class IgniteMessageFactoryImpl<M extends Message, CM extends GridCacheMes
         if (curr == null) {
             msgSerializers[idx] = serializer;
             msgMarshallers[idx] = marshaller;
+            msgWireForms[idx] = wireForm;
             msgDeployers[idx] = deployer;
 
             minIdx = Math.min(idx, minIdx);
@@ -159,6 +165,11 @@ public class IgniteMessageFactoryImpl<M extends Message, CM extends GridCacheMes
     /** {@inheritDoc} */
     @Override public @Nullable MessageMarshaller<M> marshaller(short directType) {
         return msgMarshallers[directTypeToIndex(directType)];
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable MessageWireForm<M> wireForm(short directType) {
+        return msgWireForms[directTypeToIndex(directType)];
     }
 
     /** {@inheritDoc} */

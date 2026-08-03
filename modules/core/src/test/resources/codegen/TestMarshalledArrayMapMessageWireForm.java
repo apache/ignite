@@ -1,0 +1,82 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.internal;
+
+import java.util.Collection;
+import java.util.List;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.GridTopicMessage;
+import org.apache.ignite.internal.TestMarshalledArrayMapMessage;
+import org.apache.ignite.internal.managers.communication.IgniteMessageFactory;
+import org.apache.ignite.internal.managers.communication.MessageWire;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.plugin.extensions.communication.MessageWireForm;
+
+/**
+ * This class is generated automatically.
+ *
+ * @see org.apache.ignite.internal.MessageProcessor
+ */
+public final class TestMarshalledArrayMapMessageWireForm implements MessageWireForm<TestMarshalledArrayMapMessage> {
+    /** */
+    @Override public void toWire(TestMarshalledArrayMapMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
+        IgniteMessageFactory msgFactory = (IgniteMessageFactory)kctx.messageFactory();
+
+        CacheObjectContext ctx = cacheObjCtx;
+        if (msg.mapKeys != null) {
+            for (GridTopicMessage e : msg.mapKeys) {
+                if (e != null)
+                    MessageWire.toWire(msgFactory, e, kctx, ctx);
+            }
+        }
+
+        if (msg.mapVals != null) {
+            for (List e : msg.mapVals) {
+                if (e != null) {
+                    for (GridTopicMessage e1 : (Collection<? extends GridTopicMessage>)e) {
+                        if (e1 != null)
+                            MessageWire.toWire(msgFactory, e1, kctx, ctx);
+                    }
+                }
+            }
+        }
+
+        if (msg.fixedMapKeys != null) {
+            for (GridTopicMessage e : msg.fixedMapKeys) {
+                if (e != null)
+                    MessageWire.toWire(msgFactory, e, kctx, ctx);
+            }
+        }
+
+        if (msg.fixedMapVals != null) {
+            for (List e : msg.fixedMapVals) {
+                if (e != null) {
+                    for (GridTopicMessage e1 : (Collection<? extends GridTopicMessage>)e) {
+                        if (e1 != null)
+                            MessageWire.toWire(msgFactory, e1, kctx, ctx);
+                    }
+                }
+            }
+        }
+    }
+
+    /** */
+    @Override public void fromWire(TestMarshalledArrayMapMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
+    }
+}

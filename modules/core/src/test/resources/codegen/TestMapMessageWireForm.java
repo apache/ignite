@@ -26,18 +26,17 @@ import org.apache.ignite.internal.TestMapMessage;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
+import org.apache.ignite.plugin.extensions.communication.MessageWireForm;
 
 /**
  * This class is generated automatically.
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public final class TestMapMessageMarshaller implements MessageMarshaller<TestMapMessage> {
+public final class TestMapMessageWireForm implements MessageWireForm<TestMapMessage> {
     /** */
-    @Override public void marshal(TestMapMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
+    @Override public void toWire(TestMapMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         CacheObjectContext ctx = cacheObjCtx;
-
         if (msg.gridCacheObjectMap != null) {
             for (KeyCacheObject e : ((Collection<? extends KeyCacheObject>)msg.gridCacheObjectMap.keySet())) {
                 if (e != null && ctx != null)
@@ -59,9 +58,8 @@ public final class TestMapMessageMarshaller implements MessageMarshaller<TestMap
     }
 
     /** */
-    @Override public void unmarshal(TestMapMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void fromWire(TestMapMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
         CacheObjectContext ctx = cacheObjCtx;
-
         if (msg.gridCacheObjectMap != null) {
             for (KeyCacheObject e : ((Collection<? extends KeyCacheObject>)msg.gridCacheObjectMap.keySet())) {
                 if (e != null && ctx != null)

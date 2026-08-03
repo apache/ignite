@@ -90,6 +90,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
+import org.apache.ignite.plugin.extensions.communication.MessageWireForm;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.spi.ExponentialBackoffTimeoutStrategy;
 import org.apache.ignite.spi.IgniteSpiContext;
@@ -813,9 +814,10 @@ public class GridNioServerWrapper {
                         short directType,
                         MessageSerializer<Message> serializer,
                         @Nullable MessageMarshaller<Message> marshaller,
+                        @Nullable MessageWireForm<Message> wireForm,
                         @Nullable GridCacheMessageDeployer<GridCacheMessage> deployer
                     ) throws IgniteException {
-                        get().register(directType, serializer, marshaller, deployer);
+                        get().register(directType, serializer, marshaller, wireForm, deployer);
                     }
 
                     @Nullable @Override public Message create(short type) {
@@ -832,6 +834,10 @@ public class GridNioServerWrapper {
 
                     @Nullable @Override public MessageMarshaller<Message> marshaller(short type) {
                         return get().marshaller(type);
+                    }
+
+                    @Nullable @Override public MessageWireForm<Message> wireForm(short type) {
+                        return get().wireForm(type);
                     }
 
                     @Nullable @Override public GridCacheMessageDeployer<GridCacheMessage> deployer(short type) {

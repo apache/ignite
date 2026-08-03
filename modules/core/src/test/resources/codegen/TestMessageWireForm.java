@@ -22,18 +22,17 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.TestMessage;
 import org.apache.ignite.internal.managers.communication.MessageWire;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
+import org.apache.ignite.plugin.extensions.communication.MessageWireForm;
 
 /**
  * This class is generated automatically.
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public final class TestMessageMarshaller implements MessageMarshaller<TestMessage> {
+public final class TestMessageWireForm implements MessageWireForm<TestMessage> {
     /** */
-    @Override public void marshal(TestMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
+    @Override public void toWire(TestMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         CacheObjectContext ctx = cacheObjCtx;
-
         if (msg.keyCacheObject != null && ctx != null)
             msg.keyCacheObject.marshal(ctx);
 
@@ -45,9 +44,8 @@ public final class TestMessageMarshaller implements MessageMarshaller<TestMessag
     }
 
     /** */
-    @Override public void unmarshal(TestMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void fromWire(TestMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
         CacheObjectContext ctx = cacheObjCtx;
-
         if (msg.keyCacheObject != null && ctx != null)
             msg.keyCacheObject.unmarshal(ctx, clsLdr);
 
@@ -56,7 +54,7 @@ public final class TestMessageMarshaller implements MessageMarshaller<TestMessag
     }
 
     /** */
-    @Override public void unmarshalNio(TestMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
+    @Override public void fromWireNio(TestMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
         if (msg.nioMsg != null)
             MessageWire.fromWire(msg.nioMsg, kctx);
     }

@@ -38,10 +38,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 public final class TestMarshalledArrayMapMessageMarshaller implements MessageMarshaller<TestMarshalledArrayMapMessage> {
     /** */
     @Override public void marshal(TestMarshalledArrayMapMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
-        IgniteMessageFactory msgFactory = (IgniteMessageFactory)kctx.messageFactory();
-
         CacheObjectContext ctx = cacheObjCtx;
-
         if (msg.theMap != null && msg.mapKeys == null) {
             msg.mapKeys = new GridTopicMessage[msg.theMap.size()];
             msg.mapVals = new List[msg.mapKeys.length];
@@ -63,42 +60,6 @@ public final class TestMarshalledArrayMapMessageMarshaller implements MessageMar
                 i++;
             }
         }
-
-        if (msg.mapKeys != null) {
-            for (GridTopicMessage e : msg.mapKeys) {
-                if (e != null)
-                    MessageWire.toWire(msgFactory, e, kctx, ctx);
-            }
-        }
-
-        if (msg.mapVals != null) {
-            for (List e : msg.mapVals) {
-                if (e != null) {
-                    for (GridTopicMessage e1 : (Collection<? extends GridTopicMessage>)e) {
-                        if (e1 != null)
-                            MessageWire.toWire(msgFactory, e1, kctx, ctx);
-                    }
-                }
-            }
-        }
-
-        if (msg.fixedMapKeys != null) {
-            for (GridTopicMessage e : msg.fixedMapKeys) {
-                if (e != null)
-                    MessageWire.toWire(msgFactory, e, kctx, ctx);
-            }
-        }
-
-        if (msg.fixedMapVals != null) {
-            for (List e : msg.fixedMapVals) {
-                if (e != null) {
-                    for (GridTopicMessage e1 : (Collection<? extends GridTopicMessage>)e) {
-                        if (e1 != null)
-                            MessageWire.toWire(msgFactory, e1, kctx, ctx);
-                    }
-                }
-            }
-        }
     }
 
     /** */
@@ -106,7 +67,6 @@ public final class TestMarshalledArrayMapMessageMarshaller implements MessageMar
         IgniteMessageFactory msgFactory = (IgniteMessageFactory)kctx.messageFactory();
 
         CacheObjectContext ctx = cacheObjCtx;
-
         if (msg.mapKeys != null) {
             msg.theMap = U.newHashMap(msg.mapKeys.length);
 

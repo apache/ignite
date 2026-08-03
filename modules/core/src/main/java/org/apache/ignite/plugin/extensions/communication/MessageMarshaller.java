@@ -24,8 +24,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Handles {@code marshal}/{@code unmarshal} for a {@link Message} that requires custom serialization. It is called by
- * {@code MessageWire}, which also orders it against the step a message may run itself.
+ * Turns the fields of a {@link Message} into bytes and back with a {@code Marshaller}. Walking the fields is a step
+ * of its own and belongs to {@link MessageWireForm}. Generated per message class by codegen and called by
+ * {@code MessageWire}, which also orders both against the step a message may run itself.
  *
  * @param <M> Message type.
  */
@@ -63,13 +64,4 @@ public interface MessageMarshaller<M extends Message> {
         unmarshal(msg, kctx, null, U.resolveClassLoader(kctx.config()));
     }
 
-    /**
-     * Unmarshals only the {@code @NioField} fields (routing headers) on the NIO thread — unlike the {@code unmarshal}
-     * overloads, which restore the full payload later on a worker thread. No-op unless the message has {@code @NioField}s.
-     *
-     * @param msg Message to unmarshal.
-     * @param kctx Kernal context.
-     */
-    default void unmarshalNio(M msg, GridKernalContext kctx) throws IgniteCheckedException {
-    }
 }
