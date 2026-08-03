@@ -26,7 +26,6 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ArrayType;
-import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
@@ -73,11 +72,6 @@ public abstract class MessageWireCompanionGenerator extends MessageCompanionGene
                     "kctx.cache().cacheGroup(msg.groupId()).cacheObjectContext();");
         else
             return indentedLine("CacheObjectContext ctx = cacheObjCtx;");
-    }
-
-    /** Returns {@code true} if any field requires {@code ctx} in generated marshal/unmarshal code. */
-    protected boolean needsCtx(List<VariableElement> fields) {
-        return fields.stream().anyMatch(f -> needsCtxType(f.asType()));
     }
 
     /** Recursion skip for such fields is subtype-safe: subclasses inherit the {@code NonMarshallableMessage} marker. */
@@ -216,32 +210,6 @@ public abstract class MessageWireCompanionGenerator extends MessageCompanionGene
         }
     }
 
-    /** Returns {@code true} if type {@code t} (or its element/key/value types) requires {@code ctx}. */
-    protected boolean needsCtxType(TypeMirror t) {
-        if (t.getKind() == TypeKind.ARRAY)
-            return needsCtxType(((ArrayType)t).getComponentType());
-
-        if (t.getKind() == TypeKind.DECLARED || t.getKind() == TypeKind.TYPEVAR) {
-            if (isMessage(t))
-                return !isNonMarshallable(t);
-
-            if (isCacheObject(t))
-                return true;
-
-            if (isMap(t)) {
-                List<? extends TypeMirror> args = ((DeclaredType)t).getTypeArguments();
-                return needsCtxType(args.get(0)) || needsCtxType(args.get(1));
-            }
-
-            if (isCollection(t)) {
-                List<? extends TypeMirror> args = ((DeclaredType)t).getTypeArguments();
-                return needsCtxType(args.get(0));
-            }
-        }
-
-        return false;
-    }
-
     /** Returns the enclosed field named {@code name}, or throws if absent. */
     protected VariableElement requireEnclosed(Map<String, VariableElement> enclosed, String name, String annotationName) {
         VariableElement el = enclosed.get(name);
@@ -272,8 +240,4 @@ public abstract class MessageWireCompanionGenerator extends MessageCompanionGene
         return assignableFrom(erasedType(type), colType);
     }
 
-    /** @return {@code true} if the generated {@code code} refers to the cache object context, so it has to be resolved. */
-    protected static boolean usesCtx(List<String> code) {
-        return code.stream().anyMatch(l -> l.matches(".*\\bctx\\b.*"));
-    }
 }

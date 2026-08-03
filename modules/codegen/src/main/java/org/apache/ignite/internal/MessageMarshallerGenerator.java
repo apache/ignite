@@ -435,7 +435,6 @@ public class MessageMarshallerGenerator extends MessageWireCompanionGenerator {
     /** Generates the {@code for} loop body: per-element unmarshal + try/catch add into the collection. */
     private List<String> collectionFinishForBlock(VariableElement wireField, String colField, String arrField, String fieldName) {
         String compName = arrayComponentName(wireField);
-        TypeMirror compType = ((ArrayType)wireField.asType()).getComponentType();
 
         List<String> code = new ArrayList<>();
 
@@ -643,4 +642,8 @@ public class MessageMarshallerGenerator extends MessageWireCompanionGenerator {
             : ((DeclaredType)((TypeVariable)t).getUpperBound()).asElement();
     }
 
+    /** @return {@code true} if the generated {@code code} refers to the cache object context, so it has to be resolved. */
+    private static boolean usesCtx(List<String> code) {
+        return code.stream().anyMatch(l -> l.matches(".*\\bctx\\b.*"));
+    }
 }

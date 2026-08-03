@@ -442,4 +442,35 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
             ? ((DeclaredType)t).asElement()
             : ((DeclaredType)((TypeVariable)t).getUpperBound()).asElement();
     }
+
+    /** Returns {@code true} if any field requires {@code ctx} in generated marshal/unmarshal code. */
+    private boolean needsCtx(List<VariableElement> fields) {
+        return fields.stream().anyMatch(f -> needsCtxType(f.asType()));
+    }
+
+    /** Returns {@code true} if type {@code t} (or its element/key/value types) requires {@code ctx}. */
+    private boolean needsCtxType(TypeMirror t) {
+        if (t.getKind() == TypeKind.ARRAY)
+            return needsCtxType(((ArrayType)t).getComponentType());
+
+        if (t.getKind() == TypeKind.DECLARED || t.getKind() == TypeKind.TYPEVAR) {
+            if (isMessage(t))
+                return !isNonMarshallable(t);
+
+            if (isCacheObject(t))
+                return true;
+
+            if (isMap(t)) {
+                List<? extends TypeMirror> args = ((DeclaredType)t).getTypeArguments();
+                return needsCtxType(args.get(0)) || needsCtxType(args.get(1));
+            }
+
+            if (isCollection(t)) {
+                List<? extends TypeMirror> args = ((DeclaredType)t).getTypeArguments();
+                return needsCtxType(args.get(0));
+            }
+        }
+
+        return false;
+    }
 }

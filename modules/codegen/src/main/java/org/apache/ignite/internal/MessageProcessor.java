@@ -92,9 +92,6 @@ public class MessageProcessor extends AbstractProcessor {
     /** The marshaller a {@code MarshallableMessage} is handed. */
     static final String MARSHALLER_CLS = "org.apache.ignite.marshaller.Marshaller";
 
-    /** Message that reshapes its own fields before they go on the wire. */
-    static final String CUSTOM_WIRE_FORM_MESSAGE_INTERFACE = "org.apache.ignite.internal.CustomWireFormMessage";
-
     /** Marker of messages with no marshaller. */
     static final String NON_MARSHALLABLE_MESSAGE_INTERFACE = "org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage";
 
@@ -152,7 +149,6 @@ public class MessageProcessor extends AbstractProcessor {
 
         TypeElement marshallableEl = processingEnv.getElementUtils().getTypeElement(MARSHALLABLE_MESSAGE_INTERFACE);
         TypeElement nonMarshallableEl = processingEnv.getElementUtils().getTypeElement(NON_MARSHALLABLE_MESSAGE_INTERFACE);
-        TypeElement wireFormEl = processingEnv.getElementUtils().getTypeElement(CUSTOM_WIRE_FORM_MESSAGE_INTERFACE);
 
         Map<TypeElement, List<VariableElement>> msgFields = new HashMap<>();
 
