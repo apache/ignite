@@ -81,13 +81,8 @@ public class MessageProcessor extends AbstractProcessor {
     /** Compressed message. */
     static final String COMPRESSED_MESSAGE_CLASS = "org.apache.ignite.internal.managers.communication.CompressedMessage";
 
-    /** Message taking part in marshalling itself, whether with a marshaller or not. */
-
     /** Externalizable message. */
     static final String MARSHALLABLE_MESSAGE_INTERFACE = "org.apache.ignite.internal.MarshallableMessage";
-
-    /** Message reshaping its own fields, with no marshaller involved. */
-    static final String CUSTOM_WIRE_FORM_MESSAGE_INTERFACE = "org.apache.ignite.internal.CustomWireFormMessage";
 
     /** Marker of messages with no marshaller. */
     static final String NON_MARSHALLABLE_MESSAGE_INTERFACE = "org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage";
@@ -158,13 +153,11 @@ public class MessageProcessor extends AbstractProcessor {
             if (!isAssignable(msgType, clazz))
                 continue;
 
-            // No marshaller is generated for a NonMarshallableMessage, so declared marshalling would silently never run.
+            // No marshaller is generated for a NonMarshallableMessage, so declared marshalling logic would silently never run.
             if (nonMarshallableEl != null && isAssignable(nonMarshallableEl.asType(), clazz)
-                && ((marshallableEl != null && isAssignable(marshallableEl.asType(), clazz))
-                    || hasMarshalledFields(clazz))) {
+                && ((marshallableEl != null && isAssignable(marshallableEl.asType(), clazz)) || hasMarshalledFields(clazz))) {
                 processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
-                    "NonMarshallableMessage must not implement MarshallableMessage or declare @Marshalled fields",
-                    clazz);
+                    "NonMarshallableMessage must not implement MarshallableMessage or declare @Marshalled fields", clazz);
             }
 
             if (clazz.getModifiers().contains(Modifier.ABSTRACT))

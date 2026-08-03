@@ -25,7 +25,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.Compress;
 import org.apache.ignite.internal.CustomWireFormMessage;
@@ -387,7 +386,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     }
 
     /** {@inheritDoc} */
-    @Override public void toWireForm() throws IgniteCheckedException {
+    @Override public void toWireForm() {
         if (!F.isEmpty(parts) && locParts == null)
             locParts = copyPartitionsMap(parts);
     }
@@ -407,7 +406,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     }
 
     /** {@inheritDoc} */
-    @Override public void fromWireForm() throws IgniteCheckedException {
+    @Override public void fromWireForm() {
         if (locParts != null && parts == null) {
             parts = copyPartitionsMap(locParts);
 

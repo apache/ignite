@@ -831,9 +831,9 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
     }
 
     /**
-     * Generates a null-guarded {@code MessageWire} call. Loop-nested calls go through the
-     * overloads taking the pre-resolved {@code msgFactory} local (see {@link #prependMsgFactoryResolution}), so the
-     * factory is not re-resolved from the context on every element.
+     * Generates a null-guarded {@code MessageWire} call. Loop-nested calls go through the overloads taking the
+     * pre-resolved {@code msgFactory} local (see {@link #prependMsgFactoryResolution}), so the factory is not
+     * re-resolved from the context on every element.
      */
     private List<String> wireMessage(String accessor, MarshalMode mode) {
         imports.add(MESSAGE_WIRE_CLS);

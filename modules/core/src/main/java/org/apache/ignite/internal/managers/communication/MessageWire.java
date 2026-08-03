@@ -134,7 +134,7 @@ public final class MessageWire {
      * @param out {@code true} on the way out, {@code false} on the way in.
      */
     @SuppressWarnings("deprecation")
-    private static void wireForm(Message msg, boolean out) throws IgniteCheckedException {
+    private static void wireForm(Message msg, boolean out) {
         if (!(msg instanceof CustomWireFormMessage))
             return;
 

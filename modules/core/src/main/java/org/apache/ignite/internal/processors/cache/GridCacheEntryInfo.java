@@ -194,7 +194,7 @@ public class GridCacheEntryInfo implements CustomWireFormMessage, CacheIdAware {
 
     // TODO IGNITE-28920: move the expireTime rebase out of the marshalling hooks.
     /** {@inheritDoc} */
-    @Override public void toWireForm() throws IgniteCheckedException {
+    @Override public void toWireForm() {
         if (expireTime == 0)
             expireTime = -1;
         else {
@@ -206,7 +206,7 @@ public class GridCacheEntryInfo implements CustomWireFormMessage, CacheIdAware {
     }
 
     /** {@inheritDoc} */
-    @Override public void fromWireForm() throws IgniteCheckedException {
+    @Override public void fromWireForm() {
         long remaining = expireTime;
 
         expireTime = remaining < 0 ? 0 : U.currentTimeMillis() + remaining;

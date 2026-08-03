@@ -29,7 +29,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.CustomWireFormMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
@@ -313,7 +312,7 @@ public class ColocationGroup implements CustomWireFormMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void toWireForm() throws IgniteCheckedException {
+    @Override public void toWireForm() {
         if (!F.isEmpty(marshalledAssignments) || assignments == null || primaryAssignment)
             return;
 
@@ -342,7 +341,7 @@ public class ColocationGroup implements CustomWireFormMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void fromWireForm() throws IgniteCheckedException {
+    @Override public void fromWireForm() {
         if (F.isEmpty(marshalledAssignments))
             return;
 

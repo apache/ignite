@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
@@ -32,8 +31,8 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 @Deprecated
 public interface CustomWireFormMessage extends Message {
     /** Called before the message is marshalled and sent. */
-    public void toWireForm() throws IgniteCheckedException;
+    public void toWireForm();
 
     /** Called after the message is received and unmarshalled. */
-    public void fromWireForm() throws IgniteCheckedException;
+    public void fromWireForm();
 }

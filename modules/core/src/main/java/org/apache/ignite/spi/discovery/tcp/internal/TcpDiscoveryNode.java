@@ -30,7 +30,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
@@ -222,12 +221,12 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     }
 
     /** {@inheritDoc} */
-    @Override public void toWireForm() throws IgniteCheckedException {
+    @Override public void toWireForm() {
         metricsMsg = new NodeMetricsMessage(metrics);
     }
 
     /** {@inheritDoc} */
-    @Override public void fromWireForm() throws IgniteCheckedException {
+    @Override public void fromWireForm() {
         if (metricsMsg != null)
             metrics = new ClusterMetricsSnapshot(metricsMsg);
 

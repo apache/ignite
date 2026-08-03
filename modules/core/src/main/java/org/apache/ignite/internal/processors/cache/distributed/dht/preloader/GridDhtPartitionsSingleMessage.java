@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Compress;
 import org.apache.ignite.internal.CustomWireFormMessage;
 import org.apache.ignite.internal.Order;
@@ -291,12 +290,12 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     }
 
     /** {@inheritDoc} */
-    @Override public void toWireForm() throws IgniteCheckedException {
+    @Override public void toWireForm() {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void fromWireForm() throws IgniteCheckedException {
+    @Override public void fromWireForm() {
         if (dupPartsData != null) {
             assert parts != null;
 

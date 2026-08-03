@@ -29,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
  * message's direct type in {@code kctx.messageFactory()} and delegates to it, or skips when none is registered.
  * Marshalling only — the steps around it are ordered by {@link MessageWire}, which is what callers use.
  */
-class MessageMarshalling {
+public final class MessageMarshalling {
     /** */
     private MessageMarshalling() {
         // No-op.
@@ -42,7 +42,7 @@ class MessageMarshalling {
      * @param kctx Kernal context.
      * @param cacheObjCtx Cache object context of the enclosing message, or {@code null} at the top level.
      */
-    static <M extends Message> void marshal(M msg, GridKernalContext kctx, @Nullable CacheObjectContext cacheObjCtx)
+    public static <M extends Message> void marshal(M msg, GridKernalContext kctx, @Nullable CacheObjectContext cacheObjCtx)
         throws IgniteCheckedException {
         marshal(factory(kctx), msg, kctx, cacheObjCtx);
     }
@@ -56,7 +56,7 @@ class MessageMarshalling {
      * @param kctx Kernal context.
      * @param cacheObjCtx Cache object context of the enclosing message, or {@code null} at the top level.
      */
-    static <M extends Message> void marshal(IgniteMessageFactory msgFactory, M msg, GridKernalContext kctx,
+    public static <M extends Message> void marshal(IgniteMessageFactory msgFactory, M msg, GridKernalContext kctx,
         @Nullable CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         MessageMarshaller<M> m = resolve(msgFactory, msg);
 
@@ -72,7 +72,7 @@ class MessageMarshalling {
      * @param cacheObjCtx Cache object context of the enclosing message, or {@code null} at the top level.
      * @param clsLdr Class loader for unmarshalling.
      */
-    static <M extends Message> void unmarshal(M msg, GridKernalContext kctx, @Nullable CacheObjectContext cacheObjCtx,
+    public static <M extends Message> void unmarshal(M msg, GridKernalContext kctx, @Nullable CacheObjectContext cacheObjCtx,
         ClassLoader clsLdr) throws IgniteCheckedException {
         unmarshal(factory(kctx), msg, kctx, cacheObjCtx, clsLdr);
     }
@@ -87,7 +87,7 @@ class MessageMarshalling {
      * @param cacheObjCtx Cache object context of the enclosing message, or {@code null} at the top level.
      * @param clsLdr Class loader for unmarshalling.
      */
-    static <M extends Message> void unmarshal(IgniteMessageFactory msgFactory, M msg, GridKernalContext kctx,
+    public static <M extends Message> void unmarshal(IgniteMessageFactory msgFactory, M msg, GridKernalContext kctx,
         @Nullable CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
         assert !MessageUnmarshalOnceCheck.ENABLED || MessageUnmarshalOnceCheck.firstUnmarshal(msg, true)
             : "Finish-unmarshalled more than once: " + msg.getClass().getName();
@@ -96,7 +96,6 @@ class MessageMarshalling {
 
         if (m != null)
             m.unmarshal(msg, kctx, cacheObjCtx, clsLdr);
-
     }
 
     /**
@@ -105,7 +104,7 @@ class MessageMarshalling {
      * @param msg Message to unmarshal.
      * @param kctx Kernal context.
      */
-    static <M extends Message> void unmarshal(M msg, GridKernalContext kctx) throws IgniteCheckedException {
+    public static <M extends Message> void unmarshal(M msg, GridKernalContext kctx) throws IgniteCheckedException {
         assert !MessageUnmarshalOnceCheck.ENABLED || MessageUnmarshalOnceCheck.firstUnmarshal(msg, false)
             : "Finish-unmarshalled more than once: " + msg.getClass().getName();
 
@@ -113,7 +112,6 @@ class MessageMarshalling {
 
         if (m != null)
             m.unmarshal(msg, kctx);
-
     }
 
     /**
@@ -123,7 +121,7 @@ class MessageMarshalling {
      * @param msg Message to unmarshal.
      * @param kctx Kernal context.
      */
-    static <M extends Message> void unmarshalNio(M msg, GridKernalContext kctx) throws IgniteCheckedException {
+    public static <M extends Message> void unmarshalNio(M msg, GridKernalContext kctx) throws IgniteCheckedException {
         MessageMarshaller<M> m = resolve(factory(kctx), msg);
 
         if (m != null)
