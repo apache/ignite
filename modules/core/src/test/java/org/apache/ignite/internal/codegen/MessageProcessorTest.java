@@ -639,6 +639,19 @@ public class MessageProcessorTest {
             .hadErrorContaining("NonMarshallableMessage must not implement MarshallableMessage or declare @Marshalled fields");
     }
 
+    /**
+     * A {@code marshal} that moves fields around instead of using the marshaller is the wire form wearing the
+     * marshaller's name. Codegen reads the method body and does not let it pass.
+     */
+    @Test
+    public void testMarshalWithoutMarshallerFailed() {
+        Compilation compilation = compile("WrongMarshalWithoutMarshallerMessage.java");
+
+        assertThat(compilation).failed();
+
+        assertThat(compilation).hadErrorContaining("never uses the marshaller it is given, so it is not marshalling");
+    }
+
     /** */
     private Compilation compile(String... srcFiles) {
         return compile(new MessageProcessor(), srcFiles);

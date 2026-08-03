@@ -17,16 +17,11 @@
 
 package org.apache.ignite.internal;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -50,6 +45,10 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
 import javax.lang.model.util.Elements;
 import javax.tools.Diagnostic;
+import com.sun.source.tree.IdentifierTree;
+import com.sun.source.tree.MethodTree;
+import com.sun.source.util.TreeScanner;
+import com.sun.source.util.Trees;
 import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -90,14 +89,8 @@ public class MessageProcessor extends AbstractProcessor {
     /** Externalizable message. */
     static final String MARSHALLABLE_MESSAGE_INTERFACE = "org.apache.ignite.internal.MarshallableMessage";
 
-    /** Message names read from the baseline lists, per resource. */
-    private final Map<String, Set<String>> allowedCache = new HashMap<>();
-
-    /** Messages allowed to implement {@code CustomWireFormMessage}. */
-    private static final String CUSTOM_WIRE_FORM_MESSAGES = "custom-wire-form-messages.txt";
-
-    /** Messages allowed to implement {@code MarshallableMessage}. */
-    private static final String MARSHALLABLE_MESSAGES = "marshallable-messages.txt";
+    /** The marshaller a {@code MarshallableMessage} is handed. */
+    static final String MARSHALLER_CLS = "org.apache.ignite.marshaller.Marshaller";
 
     /** Message that reshapes its own fields before they go on the wire. */
     static final String CUSTOM_WIRE_FORM_MESSAGE_INTERFACE = "org.apache.ignite.internal.CustomWireFormMessage";
@@ -179,11 +172,7 @@ public class MessageProcessor extends AbstractProcessor {
                     "NonMarshallableMessage must not implement MarshallableMessage or declare @Marshalled fields", clazz);
             }
 
-            checkListed(clazz, wireFormEl, CUSTOM_WIRE_FORM_MESSAGES, "CustomWireFormMessage",
-                "do the conversion where the message is filled in and where it is read");
-
-            checkListed(clazz, marshallableEl, MARSHALLABLE_MESSAGES, "MarshallableMessage",
-                "annotate the field with @Marshalled and let codegen turn it into bytes");
+            checkMarshalUsesMarshaller(clazz, marshallableEl);
 
             if (clazz.getModifiers().contains(Modifier.ABSTRACT))
                 continue;
@@ -434,55 +423,63 @@ public class MessageProcessor extends AbstractProcessor {
     }
 
     /** @return {@code true} if {@code clazz} or any of its superclasses declares a {@code @Marshalled} field. */
+
     /**
-     * Both interfaces below are ways for a message to take part in its own wiring by hand, and both are being paid
-     * off rather than extended. The lists say who does it today; a message that is not on its list is rejected here,
-     * so their number can only go down.
+     * A {@code MarshallableMessage} is a message that turns some of its fields into bytes itself, and the marshaller
+     * it is handed is the only way to do that. A method that does something without ever touching it is not
+     * marshalling: it moves fields around, which is the wire form, and the wire form is deprecated. Nothing but the
+     * method body tells the two apart, so this reads it. An empty body is fine — it does nothing at all.
      *
      * @param clazz Message being processed.
-     * @param iface Interface to check for, or {@code null} when it is not on the compile path.
-     * @param listName Resource holding the messages allowed to implement it.
-     * @param ifaceName Interface name, for the error message.
-     * @param whatToDoInstead What the author should do instead, for the error message.
+     * @param marshallableEl {@code MarshallableMessage}, or {@code null} when it is not on the compile path.
      */
-    private void checkListed(TypeElement clazz, @Nullable TypeElement iface, String listName, String ifaceName,
-        String whatToDoInstead) {
-        if (iface == null || !isAssignable(iface.asType(), clazz))
+    private void checkMarshalUsesMarshaller(TypeElement clazz, @Nullable TypeElement marshallableEl) {
+        if (marshallableEl == null || !isAssignable(marshallableEl.asType(), clazz))
             return;
 
-        if (allowed(listName).contains(clazz.getQualifiedName().toString()))
-            return;
+        for (ExecutableElement m : ElementFilter.methodsIn(clazz.getEnclosedElements())) {
+            String name = m.getSimpleName().toString();
 
-        processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
-            clazz.getSimpleName() + " must not implement " + ifaceName + ": " + whatToDoInstead + ". The messages" +
-                " that still do are listed in " + listName + ", and that list is meant to shrink, not to grow.", clazz);
+            if (!name.equals("marshal") && !name.equals("unmarshal"))
+                continue;
+
+            VariableElement marsh = m.getParameters().isEmpty() ? null : m.getParameters().get(0);
+
+            if (marsh == null || !marsh.asType().toString().equals(MARSHALLER_CLS))
+                continue;
+
+            if (usesParameter(m, marsh))
+                continue;
+
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                clazz.getSimpleName() + "." + name + "() never uses the marshaller it is given, so it is not" +
+                    " marshalling. Moving fields around before they go on the wire is a step of its own, and a" +
+                    " deprecated one: do the conversion where the message is filled in and where it is read.", m);
+        }
     }
 
-    /** @return the message names listed in {@code listName}, comments and blank lines left out. */
-    private Set<String> allowed(String listName) {
-        Set<String> names = allowedCache.get(listName);
+    /** @return {@code true} if the body of {@code m} reads {@code param}, is empty, or cannot be seen from here. */
+    private boolean usesParameter(ExecutableElement m, VariableElement param) {
+        Trees trees = Trees.instance(processingEnv);
 
-        if (names != null)
-            return names;
+        MethodTree tree = trees.getTree(m);
 
-        names = new HashSet<>();
+        if (tree == null || tree.getBody() == null || tree.getBody().getStatements().isEmpty())
+            return true;
 
-        try (BufferedReader r = new BufferedReader(new InputStreamReader(
-            MessageProcessor.class.getClassLoader().getResourceAsStream(listName), StandardCharsets.UTF_8))) {
-            for (String line = r.readLine(); line != null; line = r.readLine()) {
-                String name = line.trim();
+        String name = param.getSimpleName().toString();
 
-                if (!name.isEmpty() && !name.startsWith("#"))
-                    names.add(name);
+        Boolean used = tree.getBody().accept(new TreeScanner<Boolean, Void>() {
+            @Override public Boolean visitIdentifier(IdentifierTree id, Void ignored) {
+                return id.getName().contentEquals(name);
             }
-        }
-        catch (IOException | NullPointerException e) {
-            throw new IllegalStateException("Failed to read " + listName + " from the codegen resources", e);
-        }
 
-        allowedCache.put(listName, names);
+            @Override public Boolean reduce(Boolean a, Boolean b) {
+                return Boolean.TRUE.equals(a) || Boolean.TRUE.equals(b);
+            }
+        }, null);
 
-        return names;
+        return Boolean.TRUE.equals(used);
     }
 
     /** @return {@code true} if the class has a {@code @Marshalled} field. */
