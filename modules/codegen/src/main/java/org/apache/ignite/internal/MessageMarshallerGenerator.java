@@ -46,10 +46,10 @@ import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcess
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.MessageProcessor.CACHE_OBJECT_CLS;
+import static org.apache.ignite.internal.MessageProcessor.CUSTOM_WIRE_FORM_MESSAGE_INTERFACE;
 import static org.apache.ignite.internal.MessageProcessor.IGNITE_CHECKED_EXCEPTION_CLS;
 import static org.apache.ignite.internal.MessageProcessor.KEY_CACHE_OBJECT_CLS;
 import static org.apache.ignite.internal.MessageProcessor.MARSHALLABLE_MESSAGE_INTERFACE;
-import static org.apache.ignite.internal.MessageProcessor.CUSTOM_WIRE_FORM_MESSAGE_INTERFACE;
 import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
 import static org.apache.ignite.internal.MessageProcessor.NON_MARSHALLABLE_MESSAGE_INTERFACE;
 
