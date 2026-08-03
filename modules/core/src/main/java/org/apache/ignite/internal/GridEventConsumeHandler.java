@@ -402,8 +402,6 @@ public final class GridEventConsumeHandler implements GridContinuousHandler, Mar
         assert ctx.config().isPeerClassLoadingEnabled();
 
         if (filter != null) {
-            assert filterBytes == null : "Duplicated p2p-marshalling, " + getClass().getSimpleName();
-
             Class<?> cls = U.detectClass(filter);
 
             clsName = cls.getName();
@@ -426,12 +424,8 @@ public final class GridEventConsumeHandler implements GridContinuousHandler, Mar
         assert nodeId != null;
         assert ctx.config().isPeerClassLoadingEnabled();
         assert externalMarshal : "Is not p2p-marshaled " + getClass().getSimpleName();
-        assert !p2pUnmarshalFut.isDone() && p2pUnmarshalFut instanceof GridFutureAdapter :
-            "Can't p2p-unmarshal, the p2p-umarshalling future seems to be already done, " + getClass().getSimpleName();
 
         if (filterBytes != null) {
-            assert filter == null : "Duplicated p2p-unmarshalling, " + getClass().getSimpleName();
-
             try {
                 GridDeployment dep = ctx.deploy().getGlobalDeployment(depInfo.deployMode(), clsName, clsName,
                     depInfo.userVersion(), nodeId, depInfo.classLoaderId(), depInfo.participants(), null);
