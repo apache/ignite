@@ -1424,31 +1424,13 @@ public final class CacheContinuousQueryHandler<K, V> implements GridContinuousHa
             return;
 
         if (requiresDeployment(rmtFilter))
-            rmtFilterDep = marshalDeployable(rmtFilter, ctx);
+            rmtFilterDep = new CacheContinuousQueryDeployableObject(rmtFilter, ctx);
 
         if (requiresDeployment(rmtFilterFactory))
-            rmtFilterFactoryDep = marshalDeployable(rmtFilterFactory, ctx);
+            rmtFilterFactoryDep = new CacheContinuousQueryDeployableObject(rmtFilterFactory, ctx);
 
         if (requiresDeployment(rmtTransFactory))
-            rmtTransFactoryDep = marshalDeployable(rmtTransFactory, ctx);
-    }
-
-    /**
-     * Processes {@link #p2pUnmarshalFut} while marshalling {@code deployable}.
-     *
-     * @param deployable Deployable object.
-     * @param ctx Kernal context.
-     */
-    private CacheContinuousQueryDeployableObject marshalDeployable(
-        Object deployable,
-        GridKernalContext ctx
-    ) throws IgniteCheckedException {
-        CacheContinuousQueryDeployableObject res = new CacheContinuousQueryDeployableObject(deployable, ctx);
-
-        if (p2pUnmarshalFut == null || p2pUnmarshalFut.isDone())
-            p2pUnmarshalFut = new GridFutureAdapter<>();
-
-        return res;
+            rmtTransFactoryDep = new CacheContinuousQueryDeployableObject(rmtTransFactory, ctx);
     }
 
     /** */
@@ -1461,13 +1443,13 @@ public final class CacheContinuousQueryHandler<K, V> implements GridContinuousHa
         /** @see #marshalDeployable(Object, GridKernalContext) */
         p2pUnmarshalFut = null;
 
-        if (rmtFilterDep == null && rmtFilter != null)
+        if (rmtFilter != null && rmtFilterDep == null)
             rmtFilterBytes = marsh.marshal(rmtFilter);
 
-        if (rmtFilterFactoryDep == null && rmtFilterFactory != null)
+        if (rmtFilterFactory != null && rmtFilterFactoryDep == null)
             rmtFilterFactoryBytes = marsh.marshal(rmtFilterFactory);
 
-        if (rmtTransFactoryDep == null && rmtTransFactory != null)
+        if (rmtTransFactory != null && rmtTransFactoryDep == null)
             rmtTransFactoryBytes = marsh.marshal(rmtTransFactory);
     }
 
@@ -1508,14 +1490,17 @@ public final class CacheContinuousQueryHandler<K, V> implements GridContinuousHa
 
     /** {@inheritDoc} */
     @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (rmtFilterDep == null)
+        if (rmtFilterBytes != null && rmtFilterDep == null)
             rmtFilter = marsh.unmarshal(rmtFilterBytes, clsLdr);
 
-        if (rmtFilterFactoryDep == null)
+        if (rmtFilterFactoryBytes != null && rmtFilterFactoryDep == null)
             rmtFilterFactory = marsh.unmarshal(rmtFilterFactoryBytes, clsLdr);
 
-        if (rmtTransFactoryDep == null)
+        if (rmtTransFactoryBytes != null && rmtTransFactoryDep == null)
             rmtTransFactory = marsh.unmarshal(rmtTransFactoryBytes, clsLdr);
+
+        if (rmtFilterDep != null || rmtFilterFactoryDep != null || rmtTransFactoryDep != null)
+            p2pUnmarshalFut = new GridFutureAdapter<>();
 
         cacheId = CU.cacheId(cacheName);
     }
