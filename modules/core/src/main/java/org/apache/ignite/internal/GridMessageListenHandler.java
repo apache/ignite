@@ -146,7 +146,6 @@ public final class GridMessageListenHandler implements GridContinuousHandler, Ma
     @Override public void p2pMarshal(GridKernalContext ctx) throws IgniteCheckedException {
         assert ctx != null;
         assert ctx.config().isPeerClassLoadingEnabled();
-        assert predDepInfo == null : "Already P2P-marshalled: " + getClass().getSimpleName();
 
         if (topic != null)
             topicBytes = U.marshal(ctx.marshaller(), topic);
@@ -183,7 +182,6 @@ public final class GridMessageListenHandler implements GridContinuousHandler, Ma
         assert nodeId != null;
         assert ctx != null;
         assert ctx.config().isPeerClassLoadingEnabled();
-        assert pred == null : "Already P2P-unmarshalled: " + getClass().getSimpleName();
 
         try {
             GridDeployment dep = ctx.deploy().getGlobalDeployment(predDepInfo.deployMode(), clsName, clsName,

@@ -414,8 +414,6 @@ public final class GridEventConsumeHandler implements GridContinuousHandler, Mar
         assert ctx.config().isPeerClassLoadingEnabled();
 
         if (filterBytes != null) {
-            assert filter == null : "Already P2P-unmarshaled " + getClass().getSimpleName();
-
             try {
                 GridDeployment dep = ctx.deploy().getGlobalDeployment(depInfo.deployMode(), clsName, clsName,
                     depInfo.userVersion(), nodeId, depInfo.classLoaderId(), depInfo.participants(), null);
