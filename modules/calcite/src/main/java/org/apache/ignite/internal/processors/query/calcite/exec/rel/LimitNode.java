@@ -30,8 +30,8 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
     /** Fetch param. */
     private final long fetch;
 
-    /** Fetch can be unset. */
-    private final boolean fetchUndefined;
+    /** Summary rows to process. */
+    private final long rowsSummary;
 
     /** Already processed (pushed to upstream) rows count. */
     private int rowsProcessed;
@@ -57,7 +57,7 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
         super(ctx, rowType);
 
         this.offset = offset;
-        fetchUndefined = fetch == -1;
+        rowsSummary = fetch == -1 ? Long.MAX_VALUE : IgniteMath.addExact(fetch, offset);
         this.fetch = fetch == -1 ? 0 : fetch;
     }
 
@@ -141,8 +141,8 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
         return this;
     }
 
-    /** {@code True} if fetch is undefined, or current rows processed is less than required. */
+    /** {@code True} If current rows processed is less than required or undefined. */
     private boolean hasMoreData() {
-        return fetchUndefined || rowsProcessed < IgniteMath.addExact(fetch, offset);
+        return rowsProcessed < rowsSummary;
     }
 }
