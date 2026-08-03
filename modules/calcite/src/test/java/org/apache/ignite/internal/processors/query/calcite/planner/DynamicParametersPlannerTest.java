@@ -33,53 +33,53 @@ public class DynamicParametersPlannerTest extends AbstractPlannerTest {
 
         TestPlanningContextBuilder builder = contextBuilder().query("SELECT * FROM t1 LIMIT ?").schema(schema);
 
-        assertPlan(builder.params(Long.MAX_VALUE));
+        assertPlan(builder.params(Long.MAX_VALUE), rel -> true);
 
         // Count of dynamic parameters need to be invalidated, remove it after: IGNITE-28906
-        assertPlan(builder.params(Long.MAX_VALUE, -1));
+        assertPlan(builder.params(Long.MAX_VALUE, -1), rel -> true);
 
-        assertThrows(() -> assertPlan(builder.params("a")), IgniteException.class,
+        assertThrows(builder.params("a"), IgniteException.class,
             "Incorrect type of a dynamic parameter. Expected <BIGINT> but got <VARCHAR>");
 
         BigInteger moreThanMaxLong = BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.ONE);
 
-        assertThrows(() -> assertPlan(builder.params(moreThanMaxLong)), IgniteException.class,
+        assertThrows(builder.params(moreThanMaxLong), IgniteException.class,
             "Illegal value of fetch / limit");
 
-        assertThrows(() -> assertPlan(builder.params(-1)), IgniteException.class,
+        assertThrows(builder.params(-1), IgniteException.class,
             "Illegal value of fetch / limit");
 
-        assertThrows(() -> assertPlan(builder.params((Object)null)), IgniteException.class,
+        assertThrows(builder.params((Object)null), IgniteException.class,
             "Incorrect type of a dynamic parameter. Expected <BIGINT> but got <null>");
 
         // OFFSET.
         builder.query("SELECT * FROM t1 OFFSET ?");
 
-        assertThrows(() -> assertPlan(builder.params(moreThanMaxLong)), IgniteException.class,
+        assertThrows(builder.params(moreThanMaxLong), IgniteException.class,
             "Illegal value of offset");
 
-        assertThrows(() -> assertPlan(builder.params(-1)), IgniteException.class,
+        assertThrows(builder.params(-1), IgniteException.class,
             "Illegal value of offset");
 
-        assertThrows(() -> assertPlan(builder.params((Object)null)), IgniteException.class,
+        assertThrows(builder.params((Object)null), IgniteException.class,
             "Incorrect type of a dynamic parameter. Expected <BIGINT> but got <null>");
 
         // OFFSET Alternate syntax.
         builder.query("SELECT * FROM t1 OFFSET ? ROWS");
 
-        assertThrows(() -> assertPlan(builder.params(moreThanMaxLong)), IgniteException.class,
+        assertThrows(builder.params(moreThanMaxLong), IgniteException.class,
             "Illegal value of offset");
 
-        assertThrows(() -> assertPlan(builder.params(-1)), IgniteException.class,
+        assertThrows(builder.params(-1), IgniteException.class,
             "Illegal value of offset");
 
-        assertThrows(() -> assertPlan(builder.params((Object)null)), IgniteException.class,
+        assertThrows(builder.params((Object)null), IgniteException.class,
             "Incorrect type of a dynamic parameter. Expected <BIGINT> but got <null>");
 
         // Expression.
         builder.query("SELECT * FROM TEST_REPL OFFSET 2+? ROWS");
 
-        assertThrows(() -> assertPlan(builder), IgniteException.class,
+        assertThrows(builder, IgniteException.class,
             "Encountered \" \"+\"");
     }
 }
