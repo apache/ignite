@@ -1487,8 +1487,6 @@ public final class CacheContinuousQueryHandler<K, V> implements GridContinuousHa
     /** {@inheritDoc} */
     @Override public void p2pUnmarshal(UUID nodeId, GridKernalContext ctx) throws IgniteCheckedException {
         assert ctx.config().isPeerClassLoadingEnabled();
-        assert !p2pUnmarshalFut.isDone() && p2pUnmarshalFut instanceof GridFutureAdapter :
-            "Can't p2p-unmarshal, the p2p-umarshalling future seems to be already done, " + getClass().getSimpleName();
 
         try {
             if (rmtFilterDep != null)
