@@ -51,7 +51,8 @@ public class MarshallerUtils {
     public static final String DEFAULT_WHITELIST_CLS_NAMES_FILE = "META-INF/classnames-default-whitelist.properties";
 
     /** */
-    private static final IgniteMarshallerClassFilter FILTER = new IgniteMarshallerClassFilter(classWhiteList(), classBlackList());
+    private static final IgniteMarshallerClassFilter IGNITE_MARSHALLER_CLASS_FILTER
+        = new IgniteMarshallerClassFilter(classWhiteList(), classBlackList());
 
     /**
      * Private constructor.
@@ -66,7 +67,7 @@ public class MarshallerUtils {
      * @return Class name filter for marshaller.
      */
     public static IgniteMarshallerClassFilter classNameFilter() {
-        return FILTER;
+        return IGNITE_MARSHALLER_CLASS_FILTER;
     }
 
     /**
