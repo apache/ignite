@@ -65,6 +65,7 @@ public class SecurityBasicPermissionSetSerializationTest extends GridCommonAbstr
         src.setServicePermissions(Map.of("service", Set.of(SERVICE_INVOKE, SERVICE_CANCEL)));
         src.setCachePermissions(Map.of("cache", Set.of(CACHE_CREATE, CACHE_PUT)));
 
+        src.setCachePermissions(Map.of("cache", Set.of(CACHE_CREATE, CACHE_PUT)));
         SecurityBasicPermissionSet res = writeAndReadBack(src);
 
         assertTrue("Permission sets are not equal [src=" + src + ", res=" + res + "]", deepEquals(src, res));
@@ -114,7 +115,7 @@ public class SecurityBasicPermissionSetSerializationTest extends GridCommonAbstr
         return lhs != null
             && rhs != null
             && lhs.defaultAllowAll() == rhs.defaultAllowAll()
-            && (F.isEmpty(rhs.systemPermissions()) && F.isEmpty(lhs.systemPermissions())
+            && (F.isEmpty(rhs.systemPermissions()) && F.isEmpty(rhs.systemPermissions())
             || F.eqNotOrdered(rhs.systemPermissions(), lhs.systemPermissions()))
             && eqNotOrdered(rhs.taskPermissions(), lhs.taskPermissions())
             && eqNotOrdered(rhs.servicePermissions(), lhs.servicePermissions())
