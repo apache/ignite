@@ -973,8 +973,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                     dataWriter.addUpdateTask(ver, newHist, nodeData.fullDataKeys, nodeData.fullDataValsBytes);
 
                 if (nodeData.updates != null) {
-                    for (DistributedMetaStorageHistoryItemMessage updateMsg : nodeData.updates)
-                        completeWrite(new DistributedMetaStorageHistoryItem(updateMsg.keys, updateMsg.valBytes));
+                    for (DistributedMetaStorageHistoryItem item : DistributedMetaStorageHistoryItem.fromMessages(nodeData.updates))
+                        completeWrite(item);
                 }
             }
             else if (!isClient && ver.id() > 0) {
