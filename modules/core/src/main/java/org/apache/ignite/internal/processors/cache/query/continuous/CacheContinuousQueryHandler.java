@@ -141,41 +141,8 @@ public final class CacheContinuousQueryHandler<K, V> implements GridContinuousHa
             }
         };
 
-    /** Remote filter. */
-    volatile CacheEntryEventSerializableFilter<K, V> rmtFilter;
-
-    /** Deployable object for {@link #rmtFilter}. Is {@code null} if no external marsshalling used. */
-    @Order(0)
-    @Nullable volatile CacheContinuousQueryDeployableObject rmtFilterDep;
-
-    /** Marshalled {@link #rmtFilter} if {@link #rmtFilterDep} is {@code null}. */
-    @Order(1)
-    @Nullable volatile byte[] rmtFilterBytes;
-
-    /** Remote filter factory. */
-    @Nullable volatile Factory<? extends CacheEntryEventFilter> rmtFilterFactory;
-
-    /** Deployable object for {@link #rmtFilterFactory}. Is {@code null} if no external marsshalling used. */
-    @Order(2)
-    volatile CacheContinuousQueryDeployableObject rmtFilterFactoryDep;
-
-    /** Marshalled {@link #rmtFilterFactory} if {@link #rmtFilterFactoryDep} is {@code null}. */
-    @Order(3)
-    @Nullable volatile byte[] rmtFilterFactoryBytes;
-
-    /** Remote transformer factory. */
-    volatile Factory<? extends IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?>> rmtTransFactory;
-
-    /** Deployable object for {@link #rmtTransFactory}. Is {@code null} if no external marsshalling used. */
-    @Order(4)
-    volatile CacheContinuousQueryDeployableObject rmtTransFactoryDep;
-
-    /** Marshalled {@link #rmtTransFactory} if {@link #rmtTransFactoryDep} is {@code null}. */
-    @Order(5)
-    @Nullable volatile byte[] rmtTransFactoryBytes;
-
     /** Cache name. */
-    @Order(6)
+    @Order(0)
     String cacheName;
 
     /** Topic for ordered messages. */
@@ -183,40 +150,8 @@ public final class CacheContinuousQueryHandler<K, V> implements GridContinuousHa
     Object topic;
 
     /** Marshalled {@link #topic}. */
-    @Order(7)
+    @Order(1)
     byte[] topicBytes;
-
-    /** Internal flag. */
-    @Order(8)
-    boolean internal;
-
-    /** Notify existing flag. */
-    @Order(9)
-    boolean notifyExisting;
-
-    /** Old value required flag. */
-    @Order(10)
-    boolean oldValRequired;
-
-    /** Synchronous flag. */
-    @Order(11)
-    boolean sync;
-
-    /** Ignore expired events flag. */
-    @Order(12)
-    boolean ignoreExpired;
-
-    /** Task name hash code. */
-    @Order(13)
-    int taskHash;
-
-    /** */
-    @Order(14)
-    boolean keepBinary;
-
-    /** Event types for JCache API. */
-    @Order(15)
-    byte types;
 
     /** P2P unmarshalling future. */
     protected volatile IgniteInternalFuture<Void> p2pUnmarshalFut = new GridFinishedFuture<>();
@@ -227,8 +162,46 @@ public final class CacheContinuousQueryHandler<K, V> implements GridContinuousHa
     /** Local listener. */
     private CacheEntryUpdatedListener<K, V> locLsnr;
 
+    /** Remote filter. */
+    volatile CacheEntryEventSerializableFilter<K, V> rmtFilter;
+
+    /** Deployable object for {@link #rmtFilter}. Is {@code null} if no external marsshalling used. */
+    @Order(2)
+    @Nullable volatile CacheContinuousQueryDeployableObject rmtFilterDep;
+
+    /** Marshalled {@link #rmtFilter} if {@link #rmtFilterDep} is {@code null}. */
+    @Order(3)
+    @Nullable volatile byte[] rmtFilterBytes;
+
+    /** Remote filter factory. */
+    @Nullable volatile Factory<? extends CacheEntryEventFilter> rmtFilterFactory;
+
+    /** Deployable object for {@link #rmtFilterFactory}. Is {@code null} if no external marsshalling used. */
+    @Order(4)
+    volatile CacheContinuousQueryDeployableObject rmtFilterFactoryDep;
+
+    /** Marshalled {@link #rmtFilterFactory} if {@link #rmtFilterFactoryDep} is {@code null}. */
+    @Order(5)
+    @Nullable volatile byte[] rmtFilterFactoryBytes;
+
     /** Remote filter created by {@link #rmtFilterFactory}. */
     private CacheEntryEventFilter rmtFilterFromFactory;
+
+    /** Event types for JCache API. */
+    @Order(6)
+    byte types;
+
+    /** Remote transformer factory. */
+    volatile Factory<? extends IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?>> rmtTransFactory;
+
+
+    /** Deployable object for {@link #rmtTransFactory}. Is {@code null} if no external marsshalling used. */
+    @Order(7)
+    volatile CacheContinuousQueryDeployableObject rmtTransFactoryDep;
+
+    /** Marshalled {@link #rmtTransFactory} if {@link #rmtTransFactoryDep} is {@code null}. */
+    @Order(8)
+    @Nullable volatile byte[] rmtTransFactoryBytes;
 
     /** Remote transformer created by {@link #rmtTransFactory}. */
     private IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> rmtTrans;
@@ -236,11 +209,39 @@ public final class CacheContinuousQueryHandler<K, V> implements GridContinuousHa
     /** Local listener for transformed events. */
     private EventListener<?> locTransLsnr;
 
+    /** Internal flag. */
+    @Order(9)
+    boolean internal;
+
+    /** Notify existing flag. */
+    @Order(10)
+    boolean notifyExisting;
+
+    /** Old value required flag. */
+    @Order(11)
+    boolean oldValRequired;
+
+    /** Synchronous flag. */
+    @Order(12)
+    boolean sync;
+
+    /** Ignore expired events flag. */
+    @Order(13)
+    boolean ignoreExpired;
+
+    /** Task name hash code. */
+    @Order(14)
+    int taskHash;
+
     /** Whether to skip primary check for REPLICATED cache. */
     boolean skipPrimaryCheck;
-    
+
     /** */
     private boolean locOnly;
+
+    /** */
+    @Order(15)
+    boolean keepBinary;
 
     /** */
     private ConcurrentMap<Integer, CacheContinuousQueryPartitionRecovery> rcvs;
