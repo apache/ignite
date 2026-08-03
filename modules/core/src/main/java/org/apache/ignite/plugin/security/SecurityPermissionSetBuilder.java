@@ -215,11 +215,7 @@ public class SecurityPermissionSetBuilder {
     private EnumSet<SecurityPermission> toEnumSet(SecurityPermission... perms) {
         assert perms != null;
 
-        EnumSet<SecurityPermission> permsSet = EnumSet.noneOf(SecurityPermission.class);
-
-        permsSet.addAll(Arrays.asList(perms));
-
-        return permsSet;
+        return EnumSet.copyOf(Arrays.asList(perms));
     }
 
     /**
@@ -256,7 +252,7 @@ public class SecurityPermissionSetBuilder {
         permSet.setCachePermissions(unmodifiableMap(cachePerms));
         permSet.setTaskPermissions(unmodifiableMap(taskPerms));
         permSet.setServicePermissions(unmodifiableMap(srvcPerms));
-        permSet.setSystemPermissions(sysPerms);
+        permSet.setSystemPermissions(EnumSet.copyOf(sysPerms));
 
         return permSet;
     }

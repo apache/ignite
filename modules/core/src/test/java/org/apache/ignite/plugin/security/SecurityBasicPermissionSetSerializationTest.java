@@ -19,6 +19,7 @@ package org.apache.ignite.plugin.security;
 
 import java.nio.ByteBuffer;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.CoreMessagesProvider;
@@ -65,6 +66,38 @@ public class SecurityBasicPermissionSetSerializationTest extends GridCommonAbstr
         src.setCachePermissions(Map.of("cache", EnumSet.of(CACHE_CREATE, CACHE_PUT)));
 
         SecurityBasicPermissionSet res = writeAndReadBack(src);
+
+        assertEquals("Permission sets are not equal", src, res);
+        assertEquals("Hashes of permission sets are not equal [src=" + src + ", res=" + res + "]",
+            src.hashCode(), res.hashCode());
+    }
+
+    /** */
+    @Test
+    public void testWillNullAndEmptyPermissions() throws Exception {
+        SecurityBasicPermissionSet src = new SecurityBasicPermissionSet();
+        src.setDefaultAllowAll(true);
+
+        EnumSet<SecurityPermission> emptyPerms = EnumSet.noneOf(SecurityPermission.class);
+
+        src.setSystemPermissions(emptyPerms);
+
+        HashMap<String, EnumSet<SecurityPermission>> taskPerms = new HashMap<>();
+        taskPerms.put("task1", null);
+        taskPerms.put("task2", emptyPerms);
+
+        src.setTaskPermissions(taskPerms);
+
+        SecurityBasicPermissionSet res = writeAndReadBack(src);
+
+        assertEquals("Permission sets are not equal", src, res);
+        assertEquals("Hashes of permission sets are not equal [src=" + src + ", res=" + res + "]",
+            src.hashCode(), res.hashCode());
+
+        // Explicitly test 'null' for system permissions.
+        src.setSystemPermissions(null);
+
+        res = writeAndReadBack(src);
 
         assertEquals("Permission sets are not equal", src, res);
         assertEquals("Hashes of permission sets are not equal [src=" + src + ", res=" + res + "]",

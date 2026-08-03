@@ -142,13 +142,13 @@ public class SecurityUtils {
         return upcast(srvcPerms);
     }
 
-    /** @param map Map. */
+    /** */
     @SuppressWarnings("rawtypes")
     public static Map<String, Collection<SecurityPermission>> upcast(Map<String, EnumSet<SecurityPermission>> map) {
         return (Map<String, Collection<SecurityPermission>>)(Map)map;
     }
 
-    /** @param map Map. */
+    /** */
     @SuppressWarnings("rawtypes")
     public static Map<String, EnumSet<SecurityPermission>> downcast(Map<String, Collection<SecurityPermission>> map) {
         return (Map<String, EnumSet<SecurityPermission>>)(Map)map;
@@ -378,8 +378,7 @@ public class SecurityUtils {
     }
 
     /** */
-    private static void authorizeAll(IgniteSecurity security,
-        Map<String, EnumSet<SecurityPermission>> permissions) {
+    private static void authorizeAll(IgniteSecurity security, Map<String, EnumSet<SecurityPermission>> permissions) {
         if (F.isEmpty(permissions))
             return;
 

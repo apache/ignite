@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -71,7 +72,7 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet, Marsha
     /** System permissions. */
     @GridToStringInclude
     @Order(3)
-    Collection<SecurityPermission> sysPermissions;
+    @Nullable Collection<SecurityPermission> sysPermissions;
 
     /** Default allow all. */
     @Order(4)
@@ -85,7 +86,7 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet, Marsha
     public void setCachePermissions(Map<String, EnumSet<SecurityPermission>> cachePermissions) {
         A.notNull(cachePermissions, "cachePermissions");
 
-        this.cachePermissions = upcast(cachePermissions);
+        this.cachePermissions = normalizeValueType(upcast(cachePermissions));
     }
 
     /**
@@ -96,7 +97,7 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet, Marsha
     public void setTaskPermissions(Map<String, EnumSet<SecurityPermission>> taskPermissions) {
         A.notNull(taskPermissions, "taskPermissions");
 
-        this.taskPermissions = upcast(taskPermissions);
+        this.taskPermissions = normalizeValueType(upcast(taskPermissions));
     }
 
     /**
@@ -107,7 +108,7 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet, Marsha
     public void setServicePermissions(Map<String, EnumSet<SecurityPermission>> srvcPermissions) {
         A.notNull(taskPermissions, "servicePermissions");
 
-        this.srvcPermissions = upcast(srvcPermissions);
+        this.srvcPermissions = normalizeValueType(upcast(srvcPermissions));
     }
 
     /**
@@ -115,7 +116,7 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet, Marsha
      *
      * @param sysPermissions System permissions.
      */
-    public void setSystemPermissions(EnumSet<SecurityPermission> sysPermissions) {
+    public void setSystemPermissions(@Nullable EnumSet<SecurityPermission> sysPermissions) {
         this.sysPermissions = sysPermissions;
     }
 
@@ -182,9 +183,7 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet, Marsha
         return res;
     }
 
-    /**
-     * @param out Out.
-     */
+    /** */
     private void writeObject(ObjectOutputStream out) throws IOException {
         out.defaultWriteObject();
 
@@ -192,9 +191,7 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet, Marsha
             U.writeMap(out, srvcPermissions);
     }
 
-    /**
-     * @param in In.
-     */
+    /** */
     private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
         in.defaultReadObject();
 
@@ -208,6 +205,8 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet, Marsha
             else
                 srvcPermissions = Collections.emptyMap();
         }
+
+        normalize();
     }
 
     /** {@inheritDoc} */
@@ -222,21 +221,39 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet, Marsha
 
     /** {@inheritDoc} */
     @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        // Message framework uses ArrayList for ordinary collectons, so we need convert it explicitly.
-        cachePermissions = toHashSetMap(cachePermissions);
-        taskPermissions = toHashSetMap(taskPermissions);
-        srvcPermissions = toHashSetMap(srvcPermissions);
-        sysPermissions = EnumSet.copyOf(sysPermissions);
+        // Message framework uses ArrayList for ordinary collections,
+        // so we need to convert it to appropriate form explicitly.
+        normalize();
+    }
+
+    /** */
+    private void normalize() {
+        cachePermissions = normalizeValueType(cachePermissions);
+        taskPermissions = normalizeValueType(taskPermissions);
+        srvcPermissions = normalizeValueType(srvcPermissions);
+        sysPermissions = sysPermissions == null ? null : copySafe(sysPermissions);
     }
 
     /**
-     * Copies content to a form with indemponent `hashCode` and `equals` results.
-     *
      * @param cachePermissions Cache permissions.
-     * @return Map with hash set of security permissions.
+     * @return Map with enum sets of security permissions.
      */
-    private Map<String, Collection<SecurityPermission>> toHashSetMap(Map<String, Collection<SecurityPermission>> cachePermissions) {
+    public static Map<String, Collection<SecurityPermission>> normalizeValueType(
+        Map<String, Collection<SecurityPermission>> cachePermissions
+    ) {
         return cachePermissions.entrySet().stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, e -> EnumSet.copyOf(e.getValue())));
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> copySafe(e.getValue())));
+    }
+
+    /** */
+    private static EnumSet<SecurityPermission> copySafe(Collection<SecurityPermission> col) {
+        if (col instanceof EnumSet<SecurityPermission> enumSet)
+            return enumSet;
+
+        // Enum set does not allow to copy empty collections, so we check it explicitly.
+        if (F.isEmpty(col))
+            return EnumSet.noneOf(SecurityPermission.class);
+
+        return EnumSet.copyOf(col);
     }
 }
