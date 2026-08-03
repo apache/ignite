@@ -23,6 +23,7 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
@@ -38,7 +39,10 @@ import javax.lang.model.util.ElementFilter;
 import javax.tools.Diagnostic;
 import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor;
 
+import static org.apache.ignite.internal.MessageProcessor.CACHE_OBJECT_CLS;
 import static org.apache.ignite.internal.MessageProcessor.IGNITE_CHECKED_EXCEPTION_CLS;
+import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
+import static org.apache.ignite.internal.MessageProcessor.NON_MARSHALLABLE_MESSAGE_INTERFACE;
 
 /**
  * Generates the {@code *WireForm} class of a {@code Message}: the code that walks into its nested messages and
@@ -47,11 +51,21 @@ import static org.apache.ignite.internal.MessageProcessor.IGNITE_CHECKED_EXCEPTI
  */
 public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
     /** Interface the generated wire forms implement. */
+    /** Facade the generated code calls to take nested messages to the wire and back. */
+    private static final String MESSAGE_WIRE_CLS = "org.apache.ignite.internal.managers.communication.MessageWire";
+
+    /** */
     private static final String MESSAGE_WIRE_FORM_CLS = "org.apache.ignite.plugin.extensions.communication.MessageWireForm";
 
     /** */
     MessageWireFormGenerator(ProcessingEnvironment env) {
         super(env);
+
+        msgType = type(MESSAGE_INTERFACE);
+        cacheObjType = type(CACHE_OBJECT_CLS);
+        nonMarshallableType = type(NON_MARSHALLABLE_MESSAGE_INTERFACE);
+        mapType = type(Map.class.getName());
+        colType = type(Collection.class.getName());
     }
 
     /** {@inheritDoc} */
@@ -470,5 +484,53 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
         }
 
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean shouldSkip(TypeElement type, List<VariableElement> fields) {
+        return isNonMarshallable(type.asType());
+    }
+
+    /** Recursion skip for such fields is subtype-safe: subclasses inherit the {@code NonMarshallableMessage} marker. */
+    private boolean isNonMarshallable(TypeMirror t) {
+        return assignableFrom(t, nonMarshallableType);
+    }
+
+    /** */
+    private final TypeMirror nonMarshallableType;
+
+    /** Nesting depth of the current for-loop; names loop variables {@code e}, {@code e1}, {@code e2}… */
+    private int loopDepth;
+
+    /** */
+    private final TypeMirror msgType;
+
+    /** */
+    private final TypeMirror cacheObjType;
+
+    /** */
+    private final TypeMirror mapType;
+
+    /** */
+    private final TypeMirror colType;
+
+    /** */
+    private boolean isMessage(TypeMirror type) {
+        return assignableFrom(type, msgType);
+    }
+
+    /** */
+    private boolean isCacheObject(TypeMirror type) {
+        return assignableFrom(type, cacheObjType);
+    }
+
+    /** Returns {@code true} if {@code type} (erased) is assignable to {@code java.util.Map}. */
+    private boolean isMap(TypeMirror type) {
+        return assignableFrom(erasedType(type), mapType);
+    }
+
+    /** Returns {@code true} if {@code type} (erased) is assignable to {@code java.util.Collection}. */
+    private boolean isCollection(TypeMirror type) {
+        return assignableFrom(erasedType(type), colType);
     }
 }
