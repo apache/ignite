@@ -65,14 +65,6 @@ public final class GridMessageListenHandler implements GridContinuousHandler, Ma
     @Order(3)
     @Nullable volatile GridDeploymentInfoBean predDepInfo;
 
-    /**
-     * Lever of the own marshaling.
-     *
-     * @see #p2pMarshal(GridKernalContext)
-     */
-    @Order(4)
-    volatile boolean externalMarshal;
-
     /** P2P unmarshalling future. */
     private volatile IgniteInternalFuture<Void> p2pUnmarshalFut = new GridFinishedFuture<>();
 
@@ -154,6 +146,7 @@ public final class GridMessageListenHandler implements GridContinuousHandler, Ma
     @Override public void p2pMarshal(GridKernalContext ctx) throws IgniteCheckedException {
         assert ctx != null;
         assert ctx.config().isPeerClassLoadingEnabled();
+        assert predDepInfo == null : "Already P2P-marshalled: " + getClass().getSimpleName();
 
         if (topic != null)
             topicBytes = U.marshal(ctx.marshaller(), topic);
@@ -171,17 +164,12 @@ public final class GridMessageListenHandler implements GridContinuousHandler, Ma
             throw new IgniteDeploymentCheckedException("Failed to deploy message listener.");
 
         predDepInfo = new GridDeploymentInfoBean(dep);
-
-        externalMarshal = true;
     }
 
     /** {@inheritDoc} */
     @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
-        assert externalMarshal == (clsName != null);
-        assert externalMarshal == (predDepInfo != null);
-
         /** Are marshaled in {@link #p2pMarshal(GridKernalContext)}. */
-        if (externalMarshal)
+        if (predDepInfo == null)
             return;
 
         assert predBytes == null;
@@ -195,7 +183,7 @@ public final class GridMessageListenHandler implements GridContinuousHandler, Ma
         assert nodeId != null;
         assert ctx != null;
         assert ctx.config().isPeerClassLoadingEnabled();
-        assert externalMarshal : "Is not p2p-marshaled " + getClass().getSimpleName();
+        assert pred == null : "Already P2P-unmarshalled: " + getClass().getSimpleName();
 
         try {
             GridDeployment dep = ctx.deploy().getGlobalDeployment(predDepInfo.deployMode(), clsName, clsName,
@@ -227,12 +215,10 @@ public final class GridMessageListenHandler implements GridContinuousHandler, Ma
 
     /** {@inheritDoc} */
     @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        assert externalMarshal == (clsName != null);
-        assert externalMarshal == (predDepInfo != null);
         assert predBytes != null;
 
         /** Are unmarshaled in {@link #p2pUnmarshal(UUID, GridKernalContext)}. */
-        if (externalMarshal) {
+        if (predDepInfo != null) {
             p2pUnmarshalFut = new GridFutureAdapter<>();
 
             return;

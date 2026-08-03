@@ -1418,6 +1418,7 @@ public final class CacheContinuousQueryHandler<K, V> implements GridContinuousHa
 
     /** {@inheritDoc} */
     @Override public void p2pMarshal(GridKernalContext ctx) throws IgniteCheckedException {
+        assert ctx != null;
         assert ctx.config().isPeerClassLoadingEnabled();
 
         if (requiresDeployment(rmtFilter))
@@ -1428,11 +1429,6 @@ public final class CacheContinuousQueryHandler<K, V> implements GridContinuousHa
 
         if (requiresDeployment(rmtTransFactory))
             rmtTransFactoryDep = new CacheContinuousQueryDeployableObject(rmtTransFactory, ctx);
-    }
-
-    /** */
-    private static boolean requiresDeployment(@Nullable Object obj) {
-        return obj != null && !U.isGrid(obj.getClass());
     }
 
     /** {@inheritDoc} */
@@ -1451,7 +1447,26 @@ public final class CacheContinuousQueryHandler<K, V> implements GridContinuousHa
     }
 
     /** {@inheritDoc} */
+    @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (rmtFilterBytes != null && rmtFilterDep == null)
+            rmtFilter = marsh.unmarshal(rmtFilterBytes, clsLdr);
+
+        if (rmtFilterFactoryBytes != null && rmtFilterFactoryDep == null)
+            rmtFilterFactory = marsh.unmarshal(rmtFilterFactoryBytes, clsLdr);
+
+        if (rmtTransFactoryBytes != null && rmtTransFactoryDep == null)
+            rmtTransFactory = marsh.unmarshal(rmtTransFactoryBytes, clsLdr);
+
+        if (rmtFilterDep != null || rmtFilterFactoryDep != null || rmtTransFactoryDep != null)
+            p2pUnmarshalFut = new GridFutureAdapter<>();
+
+        cacheId = CU.cacheId(cacheName);
+    }
+
+    /** {@inheritDoc} */
     @Override public void p2pUnmarshal(UUID nodeId, GridKernalContext ctx) throws IgniteCheckedException {
+        assert nodeId != null;
+        assert ctx != null;
         assert ctx.config().isPeerClassLoadingEnabled();
 
         try {
@@ -1479,23 +1494,6 @@ public final class CacheContinuousQueryHandler<K, V> implements GridContinuousHa
 
             throw err;
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (rmtFilterBytes != null && rmtFilterDep == null)
-            rmtFilter = marsh.unmarshal(rmtFilterBytes, clsLdr);
-
-        if (rmtFilterFactoryBytes != null && rmtFilterFactoryDep == null)
-            rmtFilterFactory = marsh.unmarshal(rmtFilterFactoryBytes, clsLdr);
-
-        if (rmtTransFactoryBytes != null && rmtTransFactoryDep == null)
-            rmtTransFactory = marsh.unmarshal(rmtTransFactoryBytes, clsLdr);
-
-        if (rmtFilterDep != null || rmtFilterFactoryDep != null || rmtTransFactoryDep != null)
-            p2pUnmarshalFut = new GridFutureAdapter<>();
-
-        cacheId = CU.cacheId(cacheName);
     }
 
     /**
@@ -1785,5 +1783,10 @@ public final class CacheContinuousQueryHandler<K, V> implements GridContinuousHa
     /** */
     Map<Integer, CacheContinuousQueryEventBuffer> partitionContinuesQueryEntryBuffers() {
         return Collections.unmodifiableMap(entryBufs);
+    }
+
+    /** */
+    private static boolean requiresDeployment(@Nullable Object obj) {
+        return obj != null && !U.isGrid(obj.getClass());
     }
 }
