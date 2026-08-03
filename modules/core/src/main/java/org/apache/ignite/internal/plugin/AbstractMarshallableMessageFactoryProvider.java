@@ -40,10 +40,15 @@ import org.jetbrains.annotations.Nullable;
  * with {@link UseBinaryMarshaller}, the default one otherwise.
  */
 public abstract class AbstractMarshallableMessageFactoryProvider implements MessageFactoryProvider {
-    /** Generated-companion constructors per message class, including cached negative lookups. */
-    private static final ClassValue<Companions> COMPANIONS = new ClassValue<>() {
-        @Override protected Companions computeValue(Class<?> cls) {
-            return new Companions(companionCtor(cls, "Serializer"), companionCtor(cls, "Marshaller"), companionCtor(cls, "Deployer"));
+    /** Generated-companion constructors per message class, indexed by {@link Companion#ordinal()}. */
+    private static final ClassValue<Constructor<?>[]> COMPANIONS = new ClassValue<>() {
+        @Override protected Constructor<?>[] computeValue(Class<?> cls) {
+            Constructor<?>[] ctors = new Constructor<?>[Companion.values().length];
+
+            for (Companion companion : Companion.values())
+                ctors[companion.ordinal()] = companionCtor(cls, companion);
+
+            return ctors;
         }
     };
 
@@ -69,33 +74,33 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
 
     /** */
     private static <T extends Message> void register(IgniteMessageFactory factory, Class<T> cls, short id, Marshaller marsh) {
-        MessageSerializer<T> serializer = loadGenerated(cls, "Serializer", null);
+        MessageSerializer<T> serializer = loadGenerated(cls, Companion.SERIALIZER, null);
 
         MessageMarshaller<T> marshaller = NonMarshallableMessage.class.isAssignableFrom(cls)
             ? null
-            : loadGenerated(cls, "Marshaller", marsh);
+            : loadGenerated(cls, Companion.MARSHALLER, marsh);
 
         // Deployers exist for GridCacheMessage only; a DeployableMessage left without one is rejected at registration.
         GridCacheMessageDeployer<?> deployer = GridCacheMessage.class.isAssignableFrom(cls)
-            ? loadGenerated(cls, "Deployer", null)
+            ? loadGenerated(cls, Companion.DEPLOYER, null)
             : null;
 
         factory.register(id, serializer, marshaller, deployer);
     }
 
     /**
-     * Instantiates the generated {@code <message>Serializer/Marshaller/Deployer}. Only the marshaller may take a
-     * {@code Marshaller}, so {@code marsh} is {@code null} for the other two. Lookups are cached in {@link #COMPANIONS}.
+     * Instantiates the generated companion of {@code cls}. Only the marshaller may take a {@code Marshaller}, so
+     * {@code marsh} is {@code null} for the other two. Lookups are cached in {@link #COMPANIONS}.
      *
      * @return the companion, or {@code null} when it is not generated and not required.
      */
     @SuppressWarnings("unchecked")
-    private static <T> @Nullable T loadGenerated(Class<?> cls, String suffix, @Nullable Marshaller marsh) {
-        Constructor<?> ctor = COMPANIONS.get(cls).ctor(suffix);
+    private static <T> @Nullable T loadGenerated(Class<?> cls, Companion companion, @Nullable Marshaller marsh) {
+        Constructor<?> ctor = COMPANIONS.get(cls)[companion.ordinal()];
 
         if (ctor == null) {
-            if (required(cls, suffix)) {
-                throw new IgniteException("No " + cls.getSimpleName() + suffix + " found for " + cls.getName() +
+            if (companion.required(cls)) {
+                throw new IgniteException("No " + companion.className(cls) + " found for " + cls.getName() +
                     ". Either the class is not processed by codegen or the generated sources are stale," +
                     " try 'mvn clean install'.");
             }
@@ -104,73 +109,59 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
         }
 
         assert ctor.getParameterCount() == 0 || marsh != null :
-            cls.getSimpleName() + suffix + " takes a marshaller, but none was provided";
+            companion.className(cls) + " takes a marshaller, but none was provided";
 
         try {
             return (T)(ctor.getParameterCount() == 0 ? ctor.newInstance() : ctor.newInstance(marsh));
         }
         catch (Exception e) {
-            throw new IgniteException("Failed to instantiate " + cls.getSimpleName() + suffix, e);
+            throw new IgniteException("Failed to instantiate " + companion.className(cls), e);
         }
     }
 
-    /**
-     * Codegen emits a serializer for every message, and a {@code <message>Marshaller} for every
-     * {@link MarshallableMessage}, whose own {@code marshal} call is already enough to generate one. So a companion
-     * missing in these two cases means a stale build. The rest are emitted only when there is work to do, so their
-     * absence is normal.
-     *
-     * @return {@code true} if {@code cls} must have the {@code suffix} companion.
-     */
-    private static boolean required(Class<?> cls, String suffix) {
-        return "Serializer".equals(suffix)
-            || ("Marshaller".equals(suffix) && MarshallableMessage.class.isAssignableFrom(cls));
-    }
-
-    /** @return the sole public constructor of the generated companion {@code <message><suffix>}, or {@code null} when it does not exist. */
-    private static @Nullable Constructor<?> companionCtor(Class<?> cls, String suffix) {
+    /** @return the sole public constructor of the generated companion, or {@code null} when it does not exist. */
+    private static @Nullable Constructor<?> companionCtor(Class<?> cls, Companion companion) {
         try {
             // The companion lives next to the message class, so it must be looked up in the same class loader.
-            return Class.forName(cls.getName() + suffix, true, cls.getClassLoader()).getConstructors()[0];
+            return Class.forName(cls.getName() + companion.suffix, true, cls.getClassLoader()).getConstructors()[0];
         }
         catch (ClassNotFoundException ignored) {
             return null;
         }
     }
 
-    /** Generated-companion constructors of one message class; a {@code null} entry means the companion is not generated. */
-    private static final class Companions {
-        /** */
-        private final @Nullable Constructor<?> serializer;
+    /** Companion class codegen generates next to a message. */
+    private enum Companion {
+        /** Reads and writes the message fields. Generated for every message. */
+        SERIALIZER("Serializer"),
+
+        /** Marshals the fields that need it. Generated when the message has something to marshal. */
+        MARSHALLER("Marshaller"),
+
+        /** Prepares the deployable fields. Generated for a {@link GridCacheMessage} that has them. */
+        DEPLOYER("Deployer");
+
+        /** Suffix the generated class name ends with. */
+        private final String suffix;
 
         /** */
-        private final @Nullable Constructor<?> marshaller;
-
-        /** */
-        private final @Nullable Constructor<?> deployer;
-
-        /** */
-        Companions(@Nullable Constructor<?> serializer, @Nullable Constructor<?> marshaller, @Nullable Constructor<?> deployer) {
-            this.serializer = serializer;
-            this.marshaller = marshaller;
-            this.deployer = deployer;
+        Companion(String suffix) {
+            this.suffix = suffix;
         }
 
-        /** @return the constructor of the {@code suffix} companion, or {@code null} when it is not generated. */
-        @Nullable Constructor<?> ctor(String suffix) {
-            switch (suffix) {
-                case "Serializer":
-                    return serializer;
+        /**
+         * A {@link MarshallableMessage} always gets a marshaller, its own {@code marshal} call being enough to
+         * generate one, so a missing companion in these two cases means a stale build.
+         *
+         * @return {@code true} if {@code cls} must have this companion.
+         */
+        boolean required(Class<?> cls) {
+            return this == SERIALIZER || (this == MARSHALLER && MarshallableMessage.class.isAssignableFrom(cls));
+        }
 
-                case "Marshaller":
-                    return marshaller;
-
-                case "Deployer":
-                    return deployer;
-
-                default:
-                    throw new IllegalArgumentException("Unknown companion suffix: " + suffix);
-            }
+        /** @return the companion class name to report {@code cls} problems with. */
+        String className(Class<?> cls) {
+            return cls.getSimpleName() + suffix;
         }
     }
 }

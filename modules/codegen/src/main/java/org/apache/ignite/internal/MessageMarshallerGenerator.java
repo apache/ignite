@@ -241,7 +241,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
             if (marshallable)
                 appendBlock(body, List.of(indentedLine("msg.marshal(marshaller);")));
 
-            appendFields(body, orderedFields, MarshalMode.MARSHAL);
+            appendFields(body, orderedFields, Direction.OUT);
 
             prependMsgFactoryResolution(body);
         });
@@ -296,7 +296,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
             if (needsCtx(fields) || !wireFieldSkip.isEmpty())
                 appendBlock(body, List.of(ctxResolutionLine()));
 
-            appendFields(body, fields, MarshalMode.UNMARSHAL, wireFieldSkip);
+            appendFields(body, fields, Direction.IN, wireFieldSkip);
 
             if (marshallable)
                 appendBlock(body, List.of(indentedLine("msg.unmarshal(marshaller, clsLdr);")));
@@ -578,7 +578,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
         indent++;
 
-        code.addAll(codeFor(compType, "e", MarshalMode.UNMARSHAL));
+        code.addAll(codeFor(compType, "e", Direction.IN));
         code.add(EMPTY);
         code.add(indentedLine("%s.add(e);", colField));
 
@@ -734,8 +734,8 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
         code.add(indentedLine("%s", kDecl));
         code.add(indentedLine("%s", vDecl));
 
-        List<String> keyUnmarshal = codeFor(keyCompType, "k", MarshalMode.UNMARSHAL);
-        List<String> valUnmarshal = codeFor(valCompType, "v", MarshalMode.UNMARSHAL);
+        List<String> keyUnmarshal = codeFor(keyCompType, "k", Direction.IN);
+        List<String> valUnmarshal = codeFor(valCompType, "v", Direction.IN);
 
         if (!keyUnmarshal.isEmpty()) {
             code.add(EMPTY);
@@ -791,12 +791,12 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
     }
 
     /** Marshals each field and appends non-empty results to {@code body}. */
-    private void appendFields(List<String> body, List<VariableElement> fields, MarshalMode mode) {
+    private void appendFields(List<String> body, List<VariableElement> fields, Direction mode) {
         appendFields(body, fields, mode, Set.of());
     }
 
     /** Marshals each field, skipping names in {@code skip}, and appends non-empty results to {@code body}. */
-    private void appendFields(List<String> body, List<VariableElement> fields, MarshalMode mode, Set<String> skip) {
+    private void appendFields(List<String> body, List<VariableElement> fields, Direction mode, Set<String> skip) {
         for (VariableElement field : fields) {
             if (skip.contains(field.getSimpleName().toString()))
                 continue;
@@ -809,22 +809,22 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
     }
 
     /** Returns generated marshal/unmarshal code lines for field of type {@code t}, or empty if none needed. */
-    private List<String> codeFor(TypeMirror t, String accessor, MarshalMode mode) {
+    private List<String> codeFor(TypeMirror t, String accessor, Direction mode) {
         if (t.getKind() == TypeKind.ARRAY) {
             TypeMirror comp = ((ArrayType)t).getComponentType();
 
-            return comp.getKind() == TypeKind.DECLARED ? marshallArray(comp, accessor, mode) : List.of();
+            return comp.getKind() == TypeKind.DECLARED ? arrayCode(comp, accessor, mode) : List.of();
         }
 
         if (t.getKind() == TypeKind.DECLARED || t.getKind() == TypeKind.TYPEVAR) {
             if (isMessage(t))
-                return isNonMarshallable(t) ? List.of() : wireMessage(accessor, mode);
+                return isNonMarshallable(t) ? List.of() : messageCode(accessor, mode);
             if (isCacheObject(t))
-                return marshallCacheObject(accessor, mode);
+                return cacheObjectCode(accessor, mode);
             if (isMap(t))
-                return marshallMap((DeclaredType)t, accessor, mode);
+                return mapCode((DeclaredType)t, accessor, mode);
             if (isCollection(t))
-                return marshallCollection((DeclaredType)t, accessor, mode);
+                return collectionCode((DeclaredType)t, accessor, mode);
         }
 
         return List.of();
@@ -835,7 +835,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
      * pre-resolved {@code msgFactory} local (see {@link #prependMsgFactoryResolution}), so the factory is not
      * re-resolved from the context on every element.
      */
-    private List<String> wireMessage(String accessor, MarshalMode mode) {
+    private List<String> messageCode(String accessor, Direction mode) {
         imports.add(MESSAGE_WIRE_CLS);
 
         List<String> code = new ArrayList<>();
@@ -847,12 +847,12 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
         if (loopDepth > 0) {
             usesMsgFactory = true;
 
-            code.add(mode == MarshalMode.MARSHAL
+            code.add(mode == Direction.OUT
                 ? indentedLine("MessageWire.toWire(msgFactory, %s, kctx, ctx);", accessor)
                 : indentedLine("MessageWire.fromWire(msgFactory, %s, kctx, ctx, clsLdr);", accessor));
         }
         else {
-            code.add(mode == MarshalMode.MARSHAL
+            code.add(mode == Direction.OUT
                 ? indentedLine("MessageWire.toWire(%s, kctx, ctx);", accessor)
                 : indentedLine("MessageWire.fromWire(%s, kctx, ctx, clsLdr);", accessor));
         }
@@ -863,14 +863,14 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
     }
 
     /** Generates a null-and-ctx-guarded {@code marshal/unmarshal} call on a {@code CacheObject} (marshal or cache-aware unmarshal only). */
-    private List<String> marshallCacheObject(String accessor, MarshalMode mode) {
+    private List<String> cacheObjectCode(String accessor, Direction mode) {
         List<String> code = new ArrayList<>();
 
         code.add(indentedLine("if (%s != null && ctx != null)", accessor));
 
         indent++;
 
-        code.add(mode == MarshalMode.MARSHAL
+        code.add(mode == Direction.OUT
             ? indentedLine("%s.marshal(ctx);", accessor)
             : indentedLine("%s.unmarshal(ctx, clsLdr);", accessor));
 
@@ -880,7 +880,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
     }
 
     /** Generates a null-guarded for-each loop over the array's elements. */
-    private List<String> marshallArray(TypeMirror comp, String accessor, MarshalMode mode) {
+    private List<String> arrayCode(TypeMirror comp, String accessor, Direction mode) {
         Element elem = ((DeclaredType)comp).asElement();
 
         indent++;
@@ -896,7 +896,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
     }
 
     /** Generates a null-guarded for-each loop over the collection's elements. */
-    private List<String> marshallCollection(DeclaredType t, String accessor, MarshalMode mode) {
+    private List<String> collectionCode(DeclaredType t, String accessor, Direction mode) {
         TypeMirror arg = t.getTypeArguments().get(0);
 
         if (arg.getKind() != TypeKind.DECLARED && arg.getKind() != TypeKind.TYPEVAR)
@@ -921,7 +921,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
     }
 
     /** Iterates {@code keySet()} then {@code values()}, wrapping both loops in a null-guard. */
-    private List<String> marshallMap(DeclaredType t, String accessor, MarshalMode mode) {
+    private List<String> mapCode(DeclaredType t, String accessor, Direction mode) {
         List<? extends TypeMirror> args = t.getTypeArguments();
 
         indent++;
@@ -957,7 +957,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
     }
 
     /** Returns empty if {@code elemType} requires no marshalling; otherwise returns a for-each loop over {@code iterable}. */
-    private List<String> forLoop(String typeName, TypeMirror elemType, String iterable, MarshalMode mode) {
+    private List<String> forLoop(String typeName, TypeMirror elemType, String iterable, Direction mode) {
         String el = loopDepth == 0 ? "e" : "e" + loopDepth;
 
         loopDepth++;
@@ -1196,11 +1196,11 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
     }
 
     /** Direction of the field code a generator pass emits: object→wire ({@link #MARSHAL}) or wire→object ({@link #UNMARSHAL}). */
-    private enum MarshalMode {
-        /** Marshal: object → wire bytes, on the sending side. */
-        MARSHAL,
+    private enum Direction {
+        /** On the way out: the code runs before the message is written. */
+        OUT,
 
-        /** Unmarshal: wire bytes → object, with full cache context and class loader. */
-        UNMARSHAL
+        /** On the way in: the code runs after the message is read, with cache context and class loader at hand. */
+        IN
     }
 }
