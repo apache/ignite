@@ -19,9 +19,9 @@ package org.apache.ignite.internal.plugin;
 
 import java.lang.reflect.Constructor;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.CustomMarshallingMessage;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.UseBinaryMarshaller;
-import org.apache.ignite.internal.CustomWireFormMessage;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
@@ -71,15 +71,13 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
     private static <T extends Message> void register(IgniteMessageFactory factory, Class<T> cls, short id, Marshaller marsh) {
         MessageSerializer<T> serializer = loadGenerated(cls, "Serializer", null, true);
 
-        // A message that declares marshalling or a prepare step always gets a generated marshaller (that call alone
-        // is a statement), so its absence is a build problem. For the rest the generator skips statement-free
+        // A CustomMarshallingMessage always gets a generated marshaller (its own step alone is a statement), so the
+        // absence of one is a build problem. For the rest the generator skips statement-free
         // marshallers, so absence legitimately means "nothing to marshal"; the message and its companions ship in the
         // same jar, hence a missing class cannot be a packaging accident that spares the (required) serializer.
-        boolean hasOwnStep = MarshallableMessage.class.isAssignableFrom(cls) || CustomWireFormMessage.class.isAssignableFrom(cls);
-
         MessageMarshaller<T> marshaller = NonMarshallableMessage.class.isAssignableFrom(cls)
             ? null
-            : loadGenerated(cls, "Marshaller", marsh, hasOwnStep);
+            : loadGenerated(cls, "Marshaller", marsh, CustomMarshallingMessage.class.isAssignableFrom(cls));
 
         // Deployers are generated for GridCacheMessage subclasses only, so the class lookup is skipped for the rest;
         // a DeployableMessage left without a deployer is then rejected at registration.

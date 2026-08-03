@@ -21,8 +21,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-/** A {@link Message} requiring a custom marshal/unmarshal step via {@link Marshaller}. */
-public interface MarshallableMessage extends Message {
+/** A {@link CustomMarshallingMessage} whose step needs a {@link Marshaller}. */
+public interface MarshallableMessage extends CustomMarshallingMessage {
     /** @param marsh Marshaller for marshalling. */
     public void marshal(Marshaller marsh) throws IgniteCheckedException;
 

@@ -612,8 +612,8 @@ public class MessageProcessorTest {
         assertThat(compilation).failed();
 
         assertThat(compilation)
-            .hadErrorContaining("NonMarshallableMessage must not implement MarshallableMessage or CustomWireFormMessage," +
-                " or declare @Marshalled fields");
+            .hadErrorContaining(
+                "NonMarshallableMessage must not implement CustomMarshallingMessage or declare @Marshalled fields");
     }
 
     /** */

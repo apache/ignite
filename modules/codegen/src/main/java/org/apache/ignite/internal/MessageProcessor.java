@@ -81,6 +81,9 @@ public class MessageProcessor extends AbstractProcessor {
     /** Compressed message. */
     static final String COMPRESSED_MESSAGE_CLASS = "org.apache.ignite.internal.managers.communication.CompressedMessage";
 
+    /** Message taking part in marshalling itself, whether with a marshaller or not. */
+    static final String CUSTOM_MARSHALLING_MESSAGE_INTERFACE = "org.apache.ignite.internal.CustomMarshallingMessage";
+
     /** Externalizable message. */
     static final String MARSHALLABLE_MESSAGE_INTERFACE = "org.apache.ignite.internal.MarshallableMessage";
 
@@ -142,8 +145,7 @@ public class MessageProcessor extends AbstractProcessor {
         List<TypeMirror> emptyMsgs = typesToTypeMirrors(EMPTY_MESSAGES);
         List<TypeMirror> skipMsgs = typesToTypeMirrors(SKIP_MESSAGES);
 
-        TypeElement marshallableEl = processingEnv.getElementUtils().getTypeElement(MARSHALLABLE_MESSAGE_INTERFACE);
-        TypeElement wireFormEl = processingEnv.getElementUtils().getTypeElement(CUSTOM_WIRE_FORM_MESSAGE_INTERFACE);
+        TypeElement customMarshallingEl = processingEnv.getElementUtils().getTypeElement(CUSTOM_MARSHALLING_MESSAGE_INTERFACE);
         TypeElement nonMarshallableEl = processingEnv.getElementUtils().getTypeElement(NON_MARSHALLABLE_MESSAGE_INTERFACE);
 
         Map<TypeElement, List<VariableElement>> msgFields = new HashMap<>();
@@ -159,12 +161,11 @@ public class MessageProcessor extends AbstractProcessor {
 
             // No marshaller is generated for a NonMarshallableMessage, so declared marshalling logic would silently never run.
             if (nonMarshallableEl != null && isAssignable(nonMarshallableEl.asType(), clazz)
-                && ((marshallableEl != null && isAssignable(marshallableEl.asType(), clazz))
-                    || (wireFormEl != null && isAssignable(wireFormEl.asType(), clazz))
+                && ((customMarshallingEl != null && isAssignable(customMarshallingEl.asType(), clazz))
                     || hasMarshalledFields(clazz))) {
                 processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
-                    "NonMarshallableMessage must not implement MarshallableMessage or CustomWireFormMessage," +
-                        " or declare @Marshalled fields", clazz);
+                    "NonMarshallableMessage must not implement CustomMarshallingMessage or declare @Marshalled fields",
+                    clazz);
             }
 
             if (clazz.getModifiers().contains(Modifier.ABSTRACT))
