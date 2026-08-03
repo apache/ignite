@@ -59,7 +59,7 @@ public class DistributedMetaStorageClusterNodeData implements Message {
     @Order(4)
     @Nullable DistributedMetaStorageHistoryItemMessage[] hist;
 
-    /** Additional updates. Makes sence only if the full data is not {@code null}. */
+    /** Additional updates. Makes sense only if the full data is not {@code null}. */
     @Order(5)
     @Nullable DistributedMetaStorageHistoryItemMessage[] updates;
 
