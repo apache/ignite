@@ -52,6 +52,7 @@ public class LimitExecutionTest extends AbstractExecutionTest {
     /** Tests Sort node can limit its output when fetch param is set. */
     @Test
     public void testSortLimit() {
+        checkLimitSort(0, 0);
         checkLimitSort(0, 1);
         checkLimitSort(1, 0);
         checkLimitSort(1, 1);
@@ -110,7 +111,6 @@ public class LimitExecutionTest extends AbstractExecutionTest {
 
         RootNode<Object[]> rootNode = new RootNode<>(ctx, rowType);
         LimitNode<Object[]> limitNode = new LimitNode<>(ctx, rowType, offset, fetch == 0 ? -1 : fetch);
-
         SourceNode srcNode = new SourceNode(ctx, rowType);
 
         rootNode.register(limitNode);
