@@ -24,7 +24,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiFunction;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.QualifiedNameable;
@@ -35,9 +34,7 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
-import javax.lang.model.util.ElementFilter;
 import javax.tools.Diagnostic;
-import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.MessageProcessor.CACHE_OBJECT_CLS;
@@ -133,12 +130,12 @@ public abstract class MessageWireCompanionGenerator extends MessageCompanionGene
         return isNonMarshallable(type.asType());
     }
 
-    /** Marshals each field and appends non-empty results to {@code body}. */
+    /** Generates the code of each field and appends the non-empty results to {@code body}. */
     protected void appendFields(List<String> body, List<VariableElement> fields, Direction mode) {
         appendFields(body, fields, mode, Set.of());
     }
 
-    /** Marshals each field, skipping names in {@code skip}, and appends non-empty results to {@code body}. */
+    /** Generates the code of each field, skipping names in {@code skip}, and appends the non-empty results. */
     protected void appendFields(List<String> body, List<VariableElement> fields, Direction mode, Set<String> skip) {
         for (VariableElement field : fields) {
             if (skip.contains(field.getSimpleName().toString()))
@@ -151,7 +148,7 @@ public abstract class MessageWireCompanionGenerator extends MessageCompanionGene
         }
     }
 
-    /** Returns generated marshal/unmarshal code lines for field of type {@code t}, or empty if none needed. */
+    /** @return the generated code lines for a field of type {@code t} in the given direction, or empty if it needs none. */
     protected List<String> codeFor(TypeMirror t, String accessor, Direction mode) {
         if (t.getKind() == TypeKind.ARRAY) {
             TypeMirror comp = ((ArrayType)t).getComponentType();
@@ -205,7 +202,7 @@ public abstract class MessageWireCompanionGenerator extends MessageCompanionGene
         return code;
     }
 
-    /** Generates a null-and-ctx-guarded {@code marshal/unmarshal} call on a {@code CacheObject} (marshal or cache-aware unmarshal only). */
+    /** Generates a null-and-ctx-guarded call that prepares a {@code CacheObject} field, or reads it back. */
     private List<String> cacheObjectCode(String accessor, Direction mode) {
         List<String> code = new ArrayList<>();
 
@@ -299,7 +296,7 @@ public abstract class MessageWireCompanionGenerator extends MessageCompanionGene
         return wrapNullGuarded(accessor, combined);
     }
 
-    /** Returns empty if {@code elemType} requires no marshalling; otherwise returns a for-each loop over {@code iterable}. */
+    /** @return a for-each loop over {@code iterable}, or empty when its elements need no code of their own. */
     private List<String> forLoop(String typeName, TypeMirror elemType, String iterable, Direction mode) {
         String el = loopDepth == 0 ? "e" : "e" + loopDepth;
 
@@ -374,23 +371,6 @@ public abstract class MessageWireCompanionGenerator extends MessageCompanionGene
         return fields.stream().anyMatch(f -> needsCtxType(f.asType()));
     }
 
-    /**
-     * Returns whether the {@code @Order} fields of {@code msgType} need a cache object context to unmarshal. Such a
-     * message must not be a {@code @NioField}: its {@code unmarshalNio} runs on the NIO thread, which has no context.
-     * A type with no fields to inspect (e.g. a type variable) is conservatively assumed to need the context.
-     */
-    protected boolean nestedNeedsCtx(TypeMirror type) {
-        Element el = env.getTypeUtils().asElement(type);
-
-        if (!(el instanceof TypeElement))
-            return true;
-
-        return SystemViewRowAttributeWalkerProcessor.superclasses(env, (TypeElement)el)
-            .flatMap(c -> ElementFilter.fieldsIn(c.getEnclosedElements()).stream())
-            .filter(f -> f.getAnnotation(Order.class) != null)
-            .anyMatch(f -> needsCtxType(f.asType()));
-    }
-
     /** Returns {@code true} if type {@code t} (or its element/key/value types) requires {@code ctx}. */
     protected boolean needsCtxType(TypeMirror t) {
         if (t.getKind() == TypeKind.ARRAY)
@@ -447,25 +427,11 @@ public abstract class MessageWireCompanionGenerator extends MessageCompanionGene
         return assignableFrom(te.asType(), cacheGrpIdMsgType);
     }
 
-    /** */
-    protected static boolean isNioField(VariableElement field) {
-        return field.getAnnotation(NioField.class) != null;
-    }
-
     /** Returns the element for {@code t}; for a type variable, uses its upper bound. */
     protected Element element(TypeMirror t) {
         return t.getKind() == TypeKind.DECLARED
             ? ((DeclaredType)t).asElement()
             : ((DeclaredType)((TypeVariable)t).getUpperBound()).asElement();
-    }
-
-    /** Returns the simple name of the array component type of {@code field}, registering its import. */
-    protected String arrayComponentName(VariableElement field) {
-        Element comp = ((DeclaredType)((ArrayType)field.asType()).getComponentType()).asElement();
-
-        imports.add(((QualifiedNameable)comp).getQualifiedName().toString());
-
-        return comp.getSimpleName().toString();
     }
 
     /** Marshalling flavour of a {@code @Marshalled} field, told apart by the shape of its companion wire field(s). */
@@ -524,18 +490,6 @@ public abstract class MessageWireCompanionGenerator extends MessageCompanionGene
             throw new IllegalStateException(annotationName + " companion field '" + name + "' not found in " + type);
 
         return el;
-    }
-
-    /** Iterates all {@code @Marshalled} fields and applies {@code codeGen(bytesAccessor, objAccessor)} to each. */
-    protected void forEachMarshalled(BiFunction<String, String, List<String>> codeGen, List<String> body) {
-        for (VariableElement field : enclosed.values()) {
-            if (kinds.get(field) != MarshalledKind.BLOB)
-                continue;
-
-            Marshalled ann = field.getAnnotation(Marshalled.class);
-
-            appendBlock(body, codeGen.apply("msg." + ann.value(), "msg." + field.getSimpleName()));
-        }
     }
 
     /** Returns names of wire fields skipped by {@link #appendFields} in UNMARSHAL mode. */

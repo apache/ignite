@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.Modifier;
@@ -628,5 +629,26 @@ public class MessageMarshallerGenerator extends MessageWireCompanionGenerator {
         inner.add(indentedLine("%s = %s.values();", valuesField, mapField));
 
         return inner;
+    }
+
+    /** Returns the simple name of the array component type of {@code field}, registering its import. */
+    private String arrayComponentName(VariableElement field) {
+        Element comp = ((DeclaredType)((ArrayType)field.asType()).getComponentType()).asElement();
+
+        imports.add(((QualifiedNameable)comp).getQualifiedName().toString());
+
+        return comp.getSimpleName().toString();
+    }
+
+    /** Iterates all {@code @Marshalled} fields and applies {@code codeGen(bytesAccessor, objAccessor)} to each. */
+    private void forEachMarshalled(BiFunction<String, String, List<String>> codeGen, List<String> body) {
+        for (VariableElement field : enclosed.values()) {
+            if (kinds.get(field) != MarshalledKind.BLOB)
+                continue;
+
+            Marshalled ann = field.getAnnotation(Marshalled.class);
+
+            appendBlock(body, codeGen.apply("msg." + ann.value(), "msg." + field.getSimpleName()));
+        }
     }
 }

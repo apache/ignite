@@ -24,8 +24,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.element.Element;
+import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.ElementFilter;
 import javax.tools.Diagnostic;
+import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor;
 
 import static org.apache.ignite.internal.MessageProcessor.IGNITE_CHECKED_EXCEPTION_CLS;
 
@@ -169,7 +174,7 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
         });
     }
 
-    /** Cache-free unmarshal of a {@code @NioField} message field on the NIO thread (no cache context available). */
+    /** Cache-free read-back of a {@code @NioField} message field on the NIO thread (no cache context available). */
     private List<String> fromWireNioField(String accessor) {
         imports.add(MESSAGE_WIRE_CLS);
 
@@ -184,5 +189,27 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
         indent--;
 
         return code;
+    }
+
+    /** */
+    private static boolean isNioField(VariableElement field) {
+        return field.getAnnotation(NioField.class) != null;
+    }
+
+    /**
+     * Returns whether the {@code @Order} fields of {@code msgType} need a cache object context to unmarshal. Such a
+     * message must not be a {@code @NioField}: its {@code unmarshalNio} runs on the NIO thread, which has no context.
+     * A type with no fields to inspect (e.g. a type variable) is conservatively assumed to need the context.
+     */
+    private boolean nestedNeedsCtx(TypeMirror type) {
+        Element el = env.getTypeUtils().asElement(type);
+
+        if (!(el instanceof TypeElement))
+            return true;
+
+        return SystemViewRowAttributeWalkerProcessor.superclasses(env, (TypeElement)el)
+            .flatMap(c -> ElementFilter.fieldsIn(c.getEnclosedElements()).stream())
+            .filter(f -> f.getAnnotation(Order.class) != null)
+            .anyMatch(f -> needsCtxType(f.asType()));
     }
 }
