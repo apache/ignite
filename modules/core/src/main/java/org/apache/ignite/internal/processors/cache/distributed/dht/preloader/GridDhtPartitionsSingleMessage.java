@@ -23,7 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Compress;
-import org.apache.ignite.internal.MarshallableMessage;
+import org.apache.ignite.internal.CustomWireFormMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
@@ -39,7 +39,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * Sent in response to {@link GridDhtPartitionsSingleRequest} and during processing partitions exchange future.
  */
-public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMessage implements MarshallableMessage {
+public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMessage implements CustomWireFormMessage {
     /** Local partitions. */
     @Order(0)
     @Compress
@@ -292,12 +292,12 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     }
 
     /** {@inheritDoc} */
-    @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
+    @Override public void toWireForm() throws IgniteCheckedException {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void fromWireForm() throws IgniteCheckedException {
         if (dupPartsData != null) {
             assert parts != null;
 

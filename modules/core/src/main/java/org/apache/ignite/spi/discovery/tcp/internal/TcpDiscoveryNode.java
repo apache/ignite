@@ -36,7 +36,7 @@ import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteNodeAttributes;
-import org.apache.ignite.internal.MarshallableMessage;
+import org.apache.ignite.internal.CustomWireFormMessage;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
@@ -64,7 +64,7 @@ import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
  * <tt>public</tt> due to certain limitations of Java technology.
  */
 public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements IgniteClusterNode,
-    Comparable<TcpDiscoveryNode>, Externalizable, MarshallableMessage {
+    Comparable<TcpDiscoveryNode>, Externalizable, CustomWireFormMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -223,12 +223,12 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     }
 
     /** {@inheritDoc} */
-    @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
+    @Override public void toWireForm() throws IgniteCheckedException {
         metricsMsg = new NodeMetricsMessage(metrics);
     }
 
     /** {@inheritDoc} */
-    @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void fromWireForm() throws IgniteCheckedException {
         if (metricsMsg != null)
             metrics = new ClusterMetricsSnapshot(metricsMsg);
 

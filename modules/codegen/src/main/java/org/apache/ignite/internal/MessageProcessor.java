@@ -84,6 +84,9 @@ public class MessageProcessor extends AbstractProcessor {
     /** Externalizable message. */
     static final String MARSHALLABLE_MESSAGE_INTERFACE = "org.apache.ignite.internal.MarshallableMessage";
 
+    /** Message reshaping its own fields, with no marshaller involved. */
+    static final String CUSTOM_WIRE_FORM_MESSAGE_INTERFACE = "org.apache.ignite.internal.CustomWireFormMessage";
+
     /** Marker of messages with no marshaller. */
     static final String NON_MARSHALLABLE_MESSAGE_INTERFACE = "org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage";
 
@@ -140,6 +143,7 @@ public class MessageProcessor extends AbstractProcessor {
         List<TypeMirror> skipMsgs = typesToTypeMirrors(SKIP_MESSAGES);
 
         TypeElement marshallableEl = processingEnv.getElementUtils().getTypeElement(MARSHALLABLE_MESSAGE_INTERFACE);
+        TypeElement wireFormEl = processingEnv.getElementUtils().getTypeElement(CUSTOM_WIRE_FORM_MESSAGE_INTERFACE);
         TypeElement nonMarshallableEl = processingEnv.getElementUtils().getTypeElement(NON_MARSHALLABLE_MESSAGE_INTERFACE);
 
         Map<TypeElement, List<VariableElement>> msgFields = new HashMap<>();
@@ -155,9 +159,12 @@ public class MessageProcessor extends AbstractProcessor {
 
             // No marshaller is generated for a NonMarshallableMessage, so declared marshalling logic would silently never run.
             if (nonMarshallableEl != null && isAssignable(nonMarshallableEl.asType(), clazz)
-                && ((marshallableEl != null && isAssignable(marshallableEl.asType(), clazz)) || hasMarshalledFields(clazz))) {
+                && ((marshallableEl != null && isAssignable(marshallableEl.asType(), clazz))
+                    || (wireFormEl != null && isAssignable(wireFormEl.asType(), clazz))
+                    || hasMarshalledFields(clazz))) {
                 processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
-                    "NonMarshallableMessage must not implement MarshallableMessage or declare @Marshalled fields", clazz);
+                    "NonMarshallableMessage must not implement MarshallableMessage or CustomWireFormMessage," +
+                        " or declare @Marshalled fields", clazz);
             }
 
             if (clazz.getModifiers().contains(Modifier.ABSTRACT))

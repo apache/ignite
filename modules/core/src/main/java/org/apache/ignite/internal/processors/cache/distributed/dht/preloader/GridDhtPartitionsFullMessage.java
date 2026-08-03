@@ -28,7 +28,7 @@ import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.Compress;
-import org.apache.ignite.internal.MarshallableMessage;
+import org.apache.ignite.internal.CustomWireFormMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -49,7 +49,7 @@ import org.jetbrains.annotations.Nullable;
  * GridDhtPartitionsSingleMessage}s were received. <br> May be also compacted as part of {@link
  * CacheAffinityChangeMessage} for node left or failed case.<br>
  */
-public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessage implements MarshallableMessage {
+public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessage implements CustomWireFormMessage {
     /** */
     private static final byte REBALANCED_FLAG_MASK = 0x01;
 
@@ -388,7 +388,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     }
 
     /** {@inheritDoc} */
-    @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
+    @Override public void toWireForm() throws IgniteCheckedException {
         if (!F.isEmpty(parts) && locParts == null)
             locParts = copyPartitionsMap(parts);
     }
@@ -408,7 +408,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     }
 
     /** {@inheritDoc} */
-    @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void fromWireForm() throws IgniteCheckedException {
         if (locParts != null && parts == null) {
             parts = copyPartitionsMap(locParts);
 

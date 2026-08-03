@@ -29,6 +29,7 @@ import java.lang.invoke.VarHandle;
 import java.lang.management.ManagementFactory;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.SoftReference;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -102,7 +103,6 @@ import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -2724,14 +2724,13 @@ public final class GridTestUtils {
             Class<?> marshallerCls = U.gridClassLoader()
                 .loadClass(msgCls.getPackage().getName() + "." + msgCls.getSimpleName() + "Marshaller");
 
-            boolean isMarshallable = MarshallableMessage.class.isAssignableFrom(msgCls);
+            // The generator gives the companion a Marshaller constructor only when the message has something to
+            // marshal with one, which no interface of the message tells; ask the constructor itself.
+            Constructor<?> ctor = marshallerCls.getConstructors()[0];
 
-            if (isMarshallable) {
-                Marshaller marsh = dfltMarsh != null ? dfltMarsh : jdk();
-                return (MessageMarshaller<T>)marshallerCls.getConstructor(Marshaller.class).newInstance(marsh);
-            }
-
-            return (MessageMarshaller<T>)U.newInstance(marshallerCls);
+            return (MessageMarshaller<T>)(ctor.getParameterCount() == 0
+                ? ctor.newInstance()
+                : ctor.newInstance(dfltMarsh != null ? dfltMarsh : jdk()));
         }
         catch (Exception e) {
             throw new RuntimeException("Unable to find marshaller for message: " + msgCls, e);

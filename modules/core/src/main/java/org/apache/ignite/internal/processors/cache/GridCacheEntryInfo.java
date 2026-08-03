@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.MarshallableMessage;
+import org.apache.ignite.internal.CustomWireFormMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -32,7 +32,7 @@ import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
  * Entry information that gets passed over wire.
  */
 @UseBinaryMarshaller
-public class GridCacheEntryInfo implements MarshallableMessage, CacheIdAware {
+public class GridCacheEntryInfo implements CustomWireFormMessage, CacheIdAware {
     /** */
     private static final int SIZE_OVERHEAD = 3 * 8 /* reference */ + 4 /* int */ + 2 * 8 /* long */ + 32 /* version */;
 
@@ -195,7 +195,7 @@ public class GridCacheEntryInfo implements MarshallableMessage, CacheIdAware {
 
     // TODO IGNITE-28920: move the expireTime rebase out of the marshalling hooks.
     /** {@inheritDoc} */
-    @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
+    @Override public void toWireForm() throws IgniteCheckedException {
         if (expireTime == 0)
             expireTime = -1;
         else {
@@ -207,7 +207,7 @@ public class GridCacheEntryInfo implements MarshallableMessage, CacheIdAware {
     }
 
     /** {@inheritDoc} */
-    @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void fromWireForm() throws IgniteCheckedException {
         long remaining = expireTime;
 
         expireTime = remaining < 0 ? 0 : U.currentTimeMillis() + remaining;
