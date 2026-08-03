@@ -1433,7 +1433,6 @@ public final class CacheContinuousQueryHandler<K, V> implements GridContinuousHa
 
     /** {@inheritDoc} */
     @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
-        /** @see #marshalDeployable(Object, GridKernalContext) */
         if (rmtFilter != null && rmtFilterDep == null)
             rmtFilterBytes = marsh.marshal(rmtFilter);
 
