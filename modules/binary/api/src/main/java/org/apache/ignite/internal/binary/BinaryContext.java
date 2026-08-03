@@ -264,7 +264,7 @@ public class BinaryContext {
 
         BinaryUtils.binariesFactory.predefinedTypes().forEach(this::registerPredefinedType);
 
-        // BinaryUtils.FIELDS_SORTED_ORDER support, since it uses TreeMap at BinaryMetadata.
+        // TreeMap and TreeSet binary write-replacement support.
         registerBinarilizableSystemClass(BinaryTreeMap.class);
         registerBinarilizableSystemClass(TreeMap.class);
         registerBinarilizableSystemClass(TreeSet.class);
