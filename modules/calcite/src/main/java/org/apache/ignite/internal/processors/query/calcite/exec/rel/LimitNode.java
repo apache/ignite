@@ -125,7 +125,11 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
 
         waiting = NOT_WAITING;
 
-        downstream().end();
+        if (requested > 0) {
+            requested = 0;
+
+            downstream().end();
+        }
     }
 
     /** {@inheritDoc} */
