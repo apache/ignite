@@ -51,11 +51,28 @@ import static org.apache.ignite.internal.MessageProcessor.NON_MARSHALLABLE_MESSA
  */
 public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
     /** Interface the generated wire forms implement. */
+    private static final String MESSAGE_WIRE_FORM_CLS = "org.apache.ignite.plugin.extensions.communication.MessageWireForm";
+
     /** Facade the generated code calls to take nested messages to the wire and back. */
     private static final String MESSAGE_WIRE_CLS = "org.apache.ignite.internal.managers.communication.MessageWire";
 
     /** */
-    private static final String MESSAGE_WIRE_FORM_CLS = "org.apache.ignite.plugin.extensions.communication.MessageWireForm";
+    private final TypeMirror msgType;
+
+    /** */
+    private final TypeMirror cacheObjType;
+
+    /** */
+    private final TypeMirror nonMarshallableType;
+
+    /** */
+    private final TypeMirror mapType;
+
+    /** */
+    private final TypeMirror colType;
+
+    /** Nesting depth of the current for-loop; names loop variables {@code e}, {@code e1}, {@code e2}… */
+    private int loopDepth;
 
     /** */
     MessageWireFormGenerator(ProcessingEnvironment env) {
@@ -495,24 +512,6 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
     private boolean isNonMarshallable(TypeMirror t) {
         return assignableFrom(t, nonMarshallableType);
     }
-
-    /** */
-    private final TypeMirror nonMarshallableType;
-
-    /** Nesting depth of the current for-loop; names loop variables {@code e}, {@code e1}, {@code e2}… */
-    private int loopDepth;
-
-    /** */
-    private final TypeMirror msgType;
-
-    /** */
-    private final TypeMirror cacheObjType;
-
-    /** */
-    private final TypeMirror mapType;
-
-    /** */
-    private final TypeMirror colType;
 
     /** */
     private boolean isMessage(TypeMirror type) {

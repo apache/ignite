@@ -409,8 +409,6 @@ public class MessageProcessor extends AbstractProcessor {
     }
 
     /** @return {@code true} if {@code clazz} or any of its superclasses declares a {@code @Marshalled} field. */
-
-    /** @return {@code true} if the class has a {@code @Marshalled} field. */
     private boolean hasMarshalledFields(TypeElement clazz) {
         return SystemViewRowAttributeWalkerProcessor.superclasses(processingEnv, clazz)
             .flatMap(c -> ElementFilter.fieldsIn(c.getEnclosedElements()).stream())

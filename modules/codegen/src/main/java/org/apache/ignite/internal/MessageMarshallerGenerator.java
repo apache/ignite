@@ -55,8 +55,17 @@ public class MessageMarshallerGenerator extends MessageWireCompanionGenerator {
     /** */
     private static final String MARSHALLER_CLS = "org.apache.ignite.marshaller.Marshaller";
 
+    /** {@code IgniteUtils} shortcut used by the generated {@code @Marshalled} handling. */
+    private static final String U_CLS = "org.apache.ignite.internal.util.typedef.internal.U";
+
     /** */
     private final TypeMirror marshallableMsgType;
+
+    /** {@link MarshalledKind} of each {@code @Marshalled} enclosed field. Computed once per {@link #generateBody} call. */
+    private final Map<VariableElement, MarshalledKind> kinds = new HashMap<>();
+
+    /** Enclosed fields of the currently processed type. Computed once per {@link #generateBody} call. */
+    private Map<String, VariableElement> enclosed;
 
     /** Whether the message marshals some of its fields itself. */
     private boolean marshallable;
@@ -697,15 +706,6 @@ public class MessageMarshallerGenerator extends MessageWireCompanionGenerator {
 
         return MarshalledKind.ELEMENT_BLOBS;
     }
-
-    /** {@code IgniteUtils} shortcut used by the generated {@code @Marshalled} handling. */
-    private static final String U_CLS = "org.apache.ignite.internal.util.typedef.internal.U";
-
-    /** Enclosed fields of the currently processed type. Computed once per {@link #generateBody} call. */
-    private Map<String, VariableElement> enclosed;
-
-    /** {@link MarshalledKind} of each {@code @Marshalled} enclosed field. Computed once per {@link #generateBody} call. */
-    private final Map<VariableElement, MarshalledKind> kinds = new HashMap<>();
 
     /** Reads the enclosed fields of the current type and the kind of each {@code @Marshalled} one among them. */
     private void readFields() {
