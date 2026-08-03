@@ -92,15 +92,6 @@ public final class GridEventConsumeHandler implements GridContinuousHandler, Mar
     @Order(3)
     int[] types;
 
-    /**
-     * Lever of own marshaling.
-     *
-     * @see #p2pMarshal(GridKernalContext)
-     * @see #marshal(Marshaller)
-     */
-    @Order(4)
-    volatile boolean externalMarshal;
-
     /** Listener. */
     private GridLocalEventListener lsnr;
 
@@ -418,8 +409,6 @@ public final class GridEventConsumeHandler implements GridContinuousHandler, Mar
             depInfo = new GridDeploymentInfoBean(dep);
 
             filterBytes = U.marshal(ctx.marshaller(), filter);
-
-            externalMarshal = true;
         }
     }
 
@@ -427,7 +416,6 @@ public final class GridEventConsumeHandler implements GridContinuousHandler, Mar
     @Override public void p2pUnmarshal(UUID nodeId, GridKernalContext ctx) throws IgniteCheckedException {
         assert nodeId != null;
         assert ctx.config().isPeerClassLoadingEnabled();
-        assert externalMarshal : "Is not p2p-marshaled " + getClass().getSimpleName();
 
         // TODO : Remove this check after https://issues.apache.org/jira/browse/IGNITE-28945
         if (filter != null)
@@ -491,19 +479,18 @@ public final class GridEventConsumeHandler implements GridContinuousHandler, Mar
     /** {@inheritDoc} */
     @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
         assert (clsName == null) == (depInfo == null);
-        assert (depInfo == null) == !externalMarshal;
 
-        if (filter != null && !externalMarshal)
+        /** Are marshaled in {@link #p2pUnmarshal(UUID, GridKernalContext)}. */
+        if (filter != null && depInfo == null)
             filterBytes = marsh.marshal(filter);
     }
 
     /** {@inheritDoc} */
     @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         assert (clsName == null) == (depInfo == null);
-        assert (depInfo == null) == !externalMarshal;
 
         /** Are unmarshaled in {@link #p2pUnmarshal(UUID, GridKernalContext)}. */
-        if (externalMarshal) {
+        if (depInfo != null) {
             p2pUnmarshalFut = new GridFutureAdapter<>();
 
             return;

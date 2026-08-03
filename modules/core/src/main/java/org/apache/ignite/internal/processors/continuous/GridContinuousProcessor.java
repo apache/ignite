@@ -401,7 +401,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             return;
         }
 
-        Message data = getDiscoveryData(dataBag.joiningNodeId());
+        ContinousRoutineDiscoveryData data = getDiscoveryData(dataBag.joiningNodeId());
 
         if (data != null)
             dataBag.addJoiningNodeData(CONTINUOUS_PROC.ordinal(), data);
@@ -415,7 +415,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             return;
         }
 
-        Message data = getDiscoveryData(dataBag.joiningNodeId());
+        ContinousRoutineDiscoveryData data = getDiscoveryData(dataBag.joiningNodeId());
 
         if (data != null)
             dataBag.addNodeSpecificData(CONTINUOUS_PROC.ordinal(), data);
