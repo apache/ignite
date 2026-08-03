@@ -374,7 +374,7 @@ public class MessageProcessorTest {
 
     /**
      * A custom wire form is a step of its own, not marshalling: the message gets no marshaller unless it has
-     * something to marshal. The wire form calls are made by {@code MessageMarshalling}, not by generated code.
+     * something to marshal. The wire form calls are made by {@code MessageWire}, not by generated code.
      */
     @Test
     public void testCustomWireFormMessage() {
@@ -630,21 +630,7 @@ public class MessageProcessorTest {
 
         assertThat(compilation)
             .hadErrorContaining(
-                "NonMarshallableMessage must not implement MarshallableMessage or CustomWireFormMessage,"
-                    + " nor declare @Marshalled fields");
-    }
-
-    /** The same rejection for the other kind of marshalling step: a custom wire form. */
-    @Test
-    public void testNonMarshallableWithCustomWireFormFailed() {
-        Compilation compilation = compile("WrongNonMarshallableWireFormMessage.java");
-
-        assertThat(compilation).failed();
-
-        assertThat(compilation)
-            .hadErrorContaining(
-                "NonMarshallableMessage must not implement MarshallableMessage or CustomWireFormMessage,"
-                    + " nor declare @Marshalled fields");
+                "NonMarshallableMessage must not implement MarshallableMessage or declare @Marshalled fields");
     }
 
     /** */

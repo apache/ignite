@@ -25,7 +25,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopicMessage;
 import org.apache.ignite.internal.TestMarshalledArrayMapMessage;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactory;
-import org.apache.ignite.internal.managers.communication.MessageMarshalling;
+import org.apache.ignite.internal.managers.communication.MessageWire;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
@@ -67,7 +67,7 @@ public final class TestMarshalledArrayMapMessageMarshaller implements MessageMar
         if (msg.mapKeys != null) {
             for (GridTopicMessage e : msg.mapKeys) {
                 if (e != null)
-                    MessageMarshalling.marshal(msgFactory, e, kctx, ctx);
+                    MessageWire.toWire(msgFactory, e, kctx, ctx);
             }
         }
 
@@ -76,7 +76,7 @@ public final class TestMarshalledArrayMapMessageMarshaller implements MessageMar
                 if (e != null) {
                     for (GridTopicMessage e1 : (Collection<? extends GridTopicMessage>)e) {
                         if (e1 != null)
-                            MessageMarshalling.marshal(msgFactory, e1, kctx, ctx);
+                            MessageWire.toWire(msgFactory, e1, kctx, ctx);
                     }
                 }
             }
@@ -85,7 +85,7 @@ public final class TestMarshalledArrayMapMessageMarshaller implements MessageMar
         if (msg.fixedMapKeys != null) {
             for (GridTopicMessage e : msg.fixedMapKeys) {
                 if (e != null)
-                    MessageMarshalling.marshal(msgFactory, e, kctx, ctx);
+                    MessageWire.toWire(msgFactory, e, kctx, ctx);
             }
         }
 
@@ -94,7 +94,7 @@ public final class TestMarshalledArrayMapMessageMarshaller implements MessageMar
                 if (e != null) {
                     for (GridTopicMessage e1 : (Collection<? extends GridTopicMessage>)e) {
                         if (e1 != null)
-                            MessageMarshalling.marshal(msgFactory, e1, kctx, ctx);
+                            MessageWire.toWire(msgFactory, e1, kctx, ctx);
                     }
                 }
             }
@@ -115,12 +115,12 @@ public final class TestMarshalledArrayMapMessageMarshaller implements MessageMar
                 List v = msg.mapVals[i];
 
                 if (k != null)
-                    MessageMarshalling.unmarshal(k, kctx, ctx, clsLdr);
+                    MessageWire.fromWire(k, kctx, ctx, clsLdr);
 
                 if (v != null) {
                     for (GridTopicMessage e : (Collection<? extends GridTopicMessage>)v) {
                         if (e != null)
-                            MessageMarshalling.unmarshal(msgFactory, e, kctx, ctx, clsLdr);
+                            MessageWire.fromWire(msgFactory, e, kctx, ctx, clsLdr);
                     }
                 }
 
@@ -137,12 +137,12 @@ public final class TestMarshalledArrayMapMessageMarshaller implements MessageMar
                 List v = msg.fixedMapVals[i];
 
                 if (k != null)
-                    MessageMarshalling.unmarshal(k, kctx, ctx, clsLdr);
+                    MessageWire.fromWire(k, kctx, ctx, clsLdr);
 
                 if (v != null) {
                     for (GridTopicMessage e : (Collection<? extends GridTopicMessage>)v) {
                         if (e != null)
-                            MessageMarshalling.unmarshal(msgFactory, e, kctx, ctx, clsLdr);
+                            MessageWire.fromWire(msgFactory, e, kctx, ctx, clsLdr);
                     }
                 }
 

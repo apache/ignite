@@ -36,12 +36,13 @@ import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
- * A custom wire form is a step of its own: {@link MessageMarshalling} runs it around marshalling, so it happens even
- * for a message that has no marshaller at all.
+ * A custom wire form is a step of its own: {@link MessageWire} runs it around marshalling, so it happens even for
+ * a message that has no marshaller at all.
  */
 @SuppressWarnings("deprecation")
 public class MessageWireFormStepTest extends GridCommonAbstractTest {
@@ -50,6 +51,9 @@ public class MessageWireFormStepTest extends GridCommonAbstractTest {
 
     /** Direct type of the message that has a wire form only. */
     private static final short WIRE_ONLY_TYPE = (short)(CoreMessagesProvider.MAX_MESSAGE_ID + 2);
+
+    /** Direct type of the message excluded from marshalling. */
+    private static final short NON_MARSHALLABLE_TYPE = (short)(CoreMessagesProvider.MAX_MESSAGE_ID + 3);
 
     /** Steps taken, in the order they happened. */
     private static final List<String> STEPS = Collections.synchronizedList(new ArrayList<>());
@@ -67,6 +71,7 @@ public class MessageWireFormStepTest extends GridCommonAbstractTest {
                 registry.registerExtension(MessageFactoryProvider.class, factory -> {
                     factory.register(BOTH_TYPE, new BothSerializer(), new RecordingMarshaller());
                     factory.register(WIRE_ONLY_TYPE, new WireOnlySerializer(), null);
+                    factory.register(NON_MARSHALLABLE_TYPE, new NonMarshallableSerializer(), null);
                 });
             }
         });
@@ -95,8 +100,8 @@ public class MessageWireFormStepTest extends GridCommonAbstractTest {
 
         BothMessage msg = new BothMessage();
 
-        MessageMarshalling.marshal(msg, kctx, null);
-        MessageMarshalling.unmarshal(msg, kctx, null, getClass().getClassLoader());
+        MessageWire.toWire(msg, kctx, null);
+        MessageWire.fromWire(msg, kctx, null, getClass().getClassLoader());
 
         assertEquals("The wire form must be built before marshalling and read back after unmarshalling",
             List.of("toWireForm", "marshal", "unmarshal", "fromWireForm"), STEPS);
@@ -109,11 +114,43 @@ public class MessageWireFormStepTest extends GridCommonAbstractTest {
 
         WireOnlyMessage msg = new WireOnlyMessage();
 
-        MessageMarshalling.marshal(msg, kctx, null);
-        MessageMarshalling.unmarshal(msg, kctx, null, getClass().getClassLoader());
+        MessageWire.toWire(msg, kctx, null);
+        MessageWire.fromWire(msg, kctx, null, getClass().getClassLoader());
 
         assertEquals("A message with nothing to marshal still gets its wire form step",
             List.of("toWireForm", "fromWireForm"), STEPS);
+    }
+
+    /**
+     * {@link NonMarshallableMessage} says no marshaller is generated, which says nothing about a step the message
+     * runs itself, so the two are free to meet.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testWireFormRunsForNonMarshallableMessage() throws Exception {
+        GridKernalContext kctx = startGrid(0).context();
+
+        NonMarshallableWireFormMessage msg = new NonMarshallableWireFormMessage();
+
+        MessageWire.toWire(msg, kctx, null);
+        MessageWire.fromWire(msg, kctx, null, getClass().getClassLoader());
+
+        assertEquals("Being excluded from marshalling must not take the message's own step away",
+            List.of("toWireForm", "fromWireForm"), STEPS);
+    }
+
+    /** Fieldless message excluded from marshalling that still has a wire form. */
+    private static class NonMarshallableWireFormMessage implements NonMarshallableMessage, CustomWireFormMessage {
+        /** {@inheritDoc} */
+        @Override public void toWireForm() {
+            STEPS.add("toWireForm");
+        }
+
+        /** {@inheritDoc} */
+        @Override public void fromWireForm() {
+            STEPS.add("fromWireForm");
+        }
     }
 
     /** Fieldless message with both steps; only the order of the recorded steps matters. */
@@ -163,6 +200,24 @@ public class MessageWireFormStepTest extends GridCommonAbstractTest {
         @Override public void unmarshal(BothMessage msg, GridKernalContext kctx, CacheObjectContext nested,
             ClassLoader clsLdr) {
             msg.unmarshal(null, clsLdr);
+        }
+    }
+
+    /** Header-only serializer for {@link NonMarshallableWireFormMessage}. */
+    private static class NonMarshallableSerializer implements MessageSerializer<NonMarshallableWireFormMessage> {
+        /** {@inheritDoc} */
+        @Override public boolean writeTo(NonMarshallableWireFormMessage msg, MessageWriter writer) {
+            return writeHeader(msg, writer);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean readFrom(NonMarshallableWireFormMessage msg, MessageReader reader) {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public NonMarshallableWireFormMessage createMessage() {
+            return new NonMarshallableWireFormMessage();
         }
     }
 

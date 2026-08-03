@@ -24,8 +24,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Handles {@code marshal}/{@code unmarshal} for a {@link Message} that requires custom serialization. Resolve-and-dispatch
- * entry points that look the marshaller up from the message factory live in {@code MessageMarshalling}.
+ * Handles {@code marshal}/{@code unmarshal} for a {@link Message} that requires custom serialization. It is called by
+ * {@code MessageWire}, which also orders it against the step a message may run itself.
  *
  * @param <M> Message type.
  */

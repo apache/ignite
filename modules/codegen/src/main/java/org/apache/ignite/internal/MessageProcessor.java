@@ -145,7 +145,6 @@ public class MessageProcessor extends AbstractProcessor {
         List<TypeMirror> skipMsgs = typesToTypeMirrors(SKIP_MESSAGES);
 
         TypeElement marshallableEl = processingEnv.getElementUtils().getTypeElement(MARSHALLABLE_MESSAGE_INTERFACE);
-        TypeElement wireFormEl = processingEnv.getElementUtils().getTypeElement(CUSTOM_WIRE_FORM_MESSAGE_INTERFACE);
         TypeElement nonMarshallableEl = processingEnv.getElementUtils().getTypeElement(NON_MARSHALLABLE_MESSAGE_INTERFACE);
 
         Map<TypeElement, List<VariableElement>> msgFields = new HashMap<>();
@@ -159,14 +158,12 @@ public class MessageProcessor extends AbstractProcessor {
             if (!isAssignable(msgType, clazz))
                 continue;
 
-            // Neither step runs for a NonMarshallableMessage: it is excluded from marshalling altogether.
+            // No marshaller is generated for a NonMarshallableMessage, so declared marshalling would silently never run.
             if (nonMarshallableEl != null && isAssignable(nonMarshallableEl.asType(), clazz)
                 && ((marshallableEl != null && isAssignable(marshallableEl.asType(), clazz))
-                    || (wireFormEl != null && isAssignable(wireFormEl.asType(), clazz))
                     || hasMarshalledFields(clazz))) {
                 processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
-                    "NonMarshallableMessage must not implement MarshallableMessage or CustomWireFormMessage," +
-                        " nor declare @Marshalled fields",
+                    "NonMarshallableMessage must not implement MarshallableMessage or declare @Marshalled fields",
                     clazz);
             }
 

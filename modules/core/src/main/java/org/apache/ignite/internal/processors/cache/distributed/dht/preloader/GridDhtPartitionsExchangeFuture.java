@@ -66,7 +66,7 @@ import org.apache.ignite.internal.IgniteNeedReconnectException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
-import org.apache.ignite.internal.managers.communication.MessageMarshalling;
+import org.apache.ignite.internal.managers.communication.MessageWire;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.pagemem.wal.record.ExchangeRecord;
@@ -3827,7 +3827,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             // Marshal eagerly: the heavy partition-map copy lands in the "Full message preparing" stage, and the
             // message cached in FinishState is sent to late joiners as is (the send-path marshal-once turns no-op).
-            MessageMarshalling.marshal(msg, cctx.kernalContext(), null);
+            MessageWire.toWire(msg, cctx.kernalContext(), null);
 
             timeBag.finishGlobalStage("Full message preparing");
 

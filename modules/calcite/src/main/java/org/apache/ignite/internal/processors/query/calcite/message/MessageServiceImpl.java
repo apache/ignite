@@ -30,7 +30,7 @@ import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.managers.communication.MessageMarshalling;
+import org.apache.ignite.internal.managers.communication.MessageWire;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
@@ -183,7 +183,7 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     private void onMessageInternal(UUID nodeId, Message msg, boolean unmarshal) {
         if (unmarshal) {
             try {
-                MessageMarshalling.unmarshal(msg, kctx);
+                MessageWire.fromWire(msg, kctx);
             }
             catch (IgniteCheckedException e) {
                 throw U.convertException(e);

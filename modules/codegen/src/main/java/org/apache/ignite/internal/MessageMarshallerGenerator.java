@@ -55,8 +55,7 @@ import static org.apache.ignite.internal.MessageProcessor.NON_MARSHALLABLE_MESSA
 /**
  * Generates the {@code *Marshaller} class of a {@code Message}: the code that marshals its fields, walks into its
  * nested messages, and prepares its cache objects. A message with none of that gets no marshaller. A step the message
- * defines itself, such as {@code CustomWireFormMessage}, is not marshalling and is run by {@code MessageMarshalling}
- * instead.
+ * defines itself, such as {@code CustomWireFormMessage}, is not marshalling and is run by {@code MessageWire} instead.
  */
 public class MessageMarshallerGenerator extends MessageCompanionGenerator {
     /** Interface the generated marshallers implement. */
@@ -74,8 +73,8 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
     /** */
     private static final String GRID_CACHE_GROUP_ID_MESSAGE_CLS = "org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage";
 
-    /** Facade the generated code calls to marshal and unmarshal nested messages. */
-    private static final String MESSAGE_MARSHALLING_CLS = "org.apache.ignite.internal.managers.communication.MessageMarshalling";
+    /** Facade the generated code calls to take nested messages to the wire and back. */
+    private static final String MESSAGE_WIRE_CLS = "org.apache.ignite.internal.managers.communication.MessageWire";
 
     /** */
     private static final String IGNITE_MESSAGE_FACTORY_CLS = "org.apache.ignite.internal.managers.communication.IgniteMessageFactory";
@@ -322,7 +321,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
     /** Cache-free unmarshal of a {@code @NioField} message field on the NIO thread (no cache context available). */
     private List<String> unmarshalNioField(String accessor) {
-        imports.add(MESSAGE_MARSHALLING_CLS);
+        imports.add(MESSAGE_WIRE_CLS);
 
         List<String> code = new ArrayList<>();
 
@@ -330,7 +329,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
         indent++;
 
-        code.add(indentedLine("MessageMarshalling.unmarshal(%s, kctx);", accessor));
+        code.add(indentedLine("MessageWire.fromWire(%s, kctx);", accessor));
 
         indent--;
 
@@ -832,12 +831,12 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
     }
 
     /**
-     * Generates a null-guarded {@code MessageMarshalling.marshal/unmarshal} call. Loop-nested calls go through the
+     * Generates a null-guarded {@code MessageWire.toWire/unmarshal} call. Loop-nested calls go through the
      * overloads taking the pre-resolved {@code msgFactory} local (see {@link #prependMsgFactoryResolution}), so the
      * factory is not re-resolved from the context on every element.
      */
     private List<String> marshallMessage(String accessor, MarshalMode mode) {
-        imports.add(MESSAGE_MARSHALLING_CLS);
+        imports.add(MESSAGE_WIRE_CLS);
 
         List<String> code = new ArrayList<>();
 
@@ -849,13 +848,13 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
             usesMsgFactory = true;
 
             code.add(mode == MarshalMode.MARSHAL
-                ? indentedLine("MessageMarshalling.marshal(msgFactory, %s, kctx, ctx);", accessor)
-                : indentedLine("MessageMarshalling.unmarshal(msgFactory, %s, kctx, ctx, clsLdr);", accessor));
+                ? indentedLine("MessageWire.toWire(msgFactory, %s, kctx, ctx);", accessor)
+                : indentedLine("MessageWire.fromWire(msgFactory, %s, kctx, ctx, clsLdr);", accessor));
         }
         else {
             code.add(mode == MarshalMode.MARSHAL
-                ? indentedLine("MessageMarshalling.marshal(%s, kctx, ctx);", accessor)
-                : indentedLine("MessageMarshalling.unmarshal(%s, kctx, ctx, clsLdr);", accessor));
+                ? indentedLine("MessageWire.toWire(%s, kctx, ctx);", accessor)
+                : indentedLine("MessageWire.fromWire(%s, kctx, ctx, clsLdr);", accessor));
         }
 
         indent--;
