@@ -3390,7 +3390,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             Throwable err = null;
 
             try {
-                unmarshall(nodeId, cacheMsg);
+                fromWire(nodeId, cacheMsg);
             }
             catch (Exception e) {
                 err = e;
@@ -3502,7 +3502,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
          * @param nodeId Sender node ID.
          * @param cacheMsg Message.
          */
-        private void unmarshall(UUID nodeId, GridCacheMessage cacheMsg) {
+        private void fromWire(UUID nodeId, GridCacheMessage cacheMsg) {
             if (cctx.localNodeId().equals(nodeId))
                 return;
 

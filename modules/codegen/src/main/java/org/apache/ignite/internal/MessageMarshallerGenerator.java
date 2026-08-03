@@ -315,12 +315,12 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
     private void generateUnmarshalNioMethod(String params, List<VariableElement> nioFields) {
         hasStatements |= emitMethod(marshall, "unmarshalNio(" + params + ")", body -> {
             for (VariableElement f : nioFields)
-                appendBlock(body, unmarshalNioField(fieldAccessor(f)));
+                appendBlock(body, fromWireNioField(fieldAccessor(f)));
         });
     }
 
     /** Cache-free unmarshal of a {@code @NioField} message field on the NIO thread (no cache context available). */
-    private List<String> unmarshalNioField(String accessor) {
+    private List<String> fromWireNioField(String accessor) {
         imports.add(MESSAGE_WIRE_CLS);
 
         List<String> code = new ArrayList<>();
@@ -818,7 +818,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
         if (t.getKind() == TypeKind.DECLARED || t.getKind() == TypeKind.TYPEVAR) {
             if (isMessage(t))
-                return isNonMarshallable(t) ? List.of() : marshallMessage(accessor, mode);
+                return isNonMarshallable(t) ? List.of() : wireMessage(accessor, mode);
             if (isCacheObject(t))
                 return marshallCacheObject(accessor, mode);
             if (isMap(t))
@@ -831,11 +831,11 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
     }
 
     /**
-     * Generates a null-guarded {@code MessageWire.toWire/unmarshal} call. Loop-nested calls go through the
+     * Generates a null-guarded {@code MessageWire} call. Loop-nested calls go through the
      * overloads taking the pre-resolved {@code msgFactory} local (see {@link #prependMsgFactoryResolution}), so the
      * factory is not re-resolved from the context on every element.
      */
-    private List<String> marshallMessage(String accessor, MarshalMode mode) {
+    private List<String> wireMessage(String accessor, MarshalMode mode) {
         imports.add(MESSAGE_WIRE_CLS);
 
         List<String> code = new ArrayList<>();
