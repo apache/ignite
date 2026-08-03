@@ -373,8 +373,8 @@ public class MessageProcessorTest {
     }
 
     /**
-     * A message with a custom wire form gets a marshaller even with no field to marshal: the wire form calls alone
-     * make up its body. Message registration relies on that marshaller being there.
+     * A custom wire form is a step of its own, not marshalling: the message gets no marshaller unless it has
+     * something to marshal. The wire form calls are made by {@code MessageMarshalling}, not by generated code.
      */
     @Test
     public void testCustomWireFormMessage() {
@@ -382,11 +382,11 @@ public class MessageProcessorTest {
 
         assertThat(compilation).succeeded();
 
-        assertEquals(2, compilation.generatedSourceFiles().size());
+        assertEquals(1, compilation.generatedSourceFiles().size());
 
         assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.TestCustomWireFormMessageMarshaller")
-            .hasSourceEquivalentTo(javaFile("TestCustomWireFormMessageMarshaller.java"));
+            .generatedSourceFile("org.apache.ignite.internal.TestCustomWireFormMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("TestCustomWireFormMessageSerializer.java"));
     }
 
     /**
@@ -630,7 +630,8 @@ public class MessageProcessorTest {
 
         assertThat(compilation)
             .hadErrorContaining(
-                "NonMarshallableMessage must not implement CustomMarshallingMessage or declare @Marshalled fields");
+                "NonMarshallableMessage must not implement MarshallableMessage or CustomWireFormMessage,"
+                    + " nor declare @Marshalled fields");
     }
 
     /** The same rejection for the other kind of marshalling step: a custom wire form. */
@@ -642,7 +643,8 @@ public class MessageProcessorTest {
 
         assertThat(compilation)
             .hadErrorContaining(
-                "NonMarshallableMessage must not implement CustomMarshallingMessage or declare @Marshalled fields");
+                "NonMarshallableMessage must not implement MarshallableMessage or CustomWireFormMessage,"
+                    + " nor declare @Marshalled fields");
     }
 
     /** */

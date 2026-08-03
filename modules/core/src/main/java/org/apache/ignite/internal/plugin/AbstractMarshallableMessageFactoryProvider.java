@@ -19,7 +19,6 @@ package org.apache.ignite.internal.plugin;
 
 import java.lang.reflect.Constructor;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.CustomMarshallingMessage;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -116,15 +115,15 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
 
     /**
      * Codegen emits a serializer for every message, and a {@code <message>Marshaller} for every
-     * {@link CustomMarshallingMessage}: the marshalling step of its own is already enough to generate, no matter
-     * whether that step needs a {@link Marshaller}. So a companion missing in these two cases means a stale build.
-     * The rest are emitted only when there is work to do, so their absence is normal.
+     * {@link MarshallableMessage}, whose own {@code marshal} call is already enough to generate one. So a companion
+     * missing in these two cases means a stale build. The rest are emitted only when there is work to do, so their
+     * absence is normal.
      *
      * @return {@code true} if {@code cls} must have the {@code suffix} companion.
      */
     private static boolean required(Class<?> cls, String suffix) {
         return "Serializer".equals(suffix)
-            || ("Marshaller".equals(suffix) && CustomMarshallingMessage.class.isAssignableFrom(cls));
+            || ("Marshaller".equals(suffix) && MarshallableMessage.class.isAssignableFrom(cls));
     }
 
     /** @return the sole public constructor of the generated companion {@code <message><suffix>}, or {@code null} when it does not exist. */

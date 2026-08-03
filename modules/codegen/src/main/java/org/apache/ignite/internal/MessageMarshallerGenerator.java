@@ -46,7 +46,6 @@ import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcess
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.MessageProcessor.CACHE_OBJECT_CLS;
-import static org.apache.ignite.internal.MessageProcessor.CUSTOM_WIRE_FORM_MESSAGE_INTERFACE;
 import static org.apache.ignite.internal.MessageProcessor.IGNITE_CHECKED_EXCEPTION_CLS;
 import static org.apache.ignite.internal.MessageProcessor.KEY_CACHE_OBJECT_CLS;
 import static org.apache.ignite.internal.MessageProcessor.MARSHALLABLE_MESSAGE_INTERFACE;
@@ -88,7 +87,6 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
     private final TypeMirror marshallableMsgType;
 
     /** */
-    private final TypeMirror wireFormMsgType;
 
     /** */
     private final TypeMirror msgType;
@@ -110,9 +108,6 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
     /** */
     private boolean marshallable;
-
-    /** */
-    private boolean wireForm;
 
     /** */
     private boolean hasMarshalled;
@@ -137,7 +132,6 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
         super(env);
 
         marshallableMsgType = type(MARSHALLABLE_MESSAGE_INTERFACE);
-        wireFormMsgType = type(CUSTOM_WIRE_FORM_MESSAGE_INTERFACE);
         msgType = type(MESSAGE_INTERFACE);
         cacheObjType = type(CACHE_OBJECT_CLS);
         nonMarshallableType = type(NON_MARSHALLABLE_MESSAGE_INTERFACE);
@@ -168,7 +162,6 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
         }
 
         marshallable = marshallableMsgType != null && assignableFrom(type.asType(), marshallableMsgType);
-        wireForm = wireFormMsgType != null && assignableFrom(type.asType(), wireFormMsgType);
         hasMarshalled = kinds.values().stream().anyMatch(k -> k == MarshalledKind.BLOB || k == MarshalledKind.ELEMENT_BLOBS);
 
         generateMarshalMethod(fields);
@@ -248,9 +241,6 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
             if (marshallable)
                 appendBlock(body, List.of(indentedLine("msg.marshal(marshaller);")));
 
-            if (wireForm)
-                appendBlock(body, List.of(indentedLine("msg.toWireForm();")));
-
             appendFields(body, orderedFields, MarshalMode.MARSHAL);
 
             prependMsgFactoryResolution(body);
@@ -310,9 +300,6 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
             if (marshallable)
                 appendBlock(body, List.of(indentedLine("msg.unmarshal(marshaller, clsLdr);")));
-
-            if (wireForm)
-                appendBlock(body, List.of(indentedLine("msg.fromWireForm();")));
 
             appendMarshalledFinish(body);
 

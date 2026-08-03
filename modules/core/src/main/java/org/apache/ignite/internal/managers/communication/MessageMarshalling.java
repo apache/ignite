@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.managers.communication;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.CustomWireFormMessage;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -27,6 +28,9 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Resolve-and-dispatch entry points for {@link MessageMarshaller}: each looks up the marshaller registered for the
  * message's direct type in {@code kctx.messageFactory()} and delegates to it, or skips when none is registered.
+ * <p>
+ * A {@link CustomWireFormMessage} also gets its own step here, kept apart from marshalling: it runs before the
+ * message is marshalled and after it is unmarshalled, so the marshaller always sees the fields as they go on the wire.
  */
 public final class MessageMarshalling {
     /** */
@@ -57,6 +61,8 @@ public final class MessageMarshalling {
      */
     public static <M extends Message> void marshal(IgniteMessageFactory msgFactory, M msg, GridKernalContext kctx,
         @Nullable CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
+        toWireForm(msg);
+
         MessageMarshaller<M> m = resolve(msgFactory, msg);
 
         if (m != null)
@@ -95,6 +101,8 @@ public final class MessageMarshalling {
 
         if (m != null)
             m.unmarshal(msg, kctx, cacheObjCtx, clsLdr);
+
+        fromWireForm(msg);
     }
 
     /**
@@ -111,6 +119,8 @@ public final class MessageMarshalling {
 
         if (m != null)
             m.unmarshal(msg, kctx);
+
+        fromWireForm(msg);
     }
 
     /**
@@ -125,6 +135,18 @@ public final class MessageMarshalling {
 
         if (m != null)
             m.unmarshalNio(msg, kctx);
+    }
+
+    /** Runs the message's own step before it is marshalled; a no-op for a message without one. */
+    private static void toWireForm(Message msg) throws IgniteCheckedException {
+        if (msg instanceof CustomWireFormMessage)
+            ((CustomWireFormMessage)msg).toWireForm();
+    }
+
+    /** Runs the message's own step after it is unmarshalled; a no-op for a message without one. */
+    private static void fromWireForm(Message msg) throws IgniteCheckedException {
+        if (msg instanceof CustomWireFormMessage)
+            ((CustomWireFormMessage)msg).fromWireForm();
     }
 
     /** @return the message factory of {@code kctx}. */

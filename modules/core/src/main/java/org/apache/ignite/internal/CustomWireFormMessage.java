@@ -18,16 +18,22 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
- * A message that converts its own fields to and from the form that goes on the wire: copying a value into the field
- * that is actually sent, packing bits, recalculating a TTL. Needs no {@link Marshaller} for that.
+ * A {@link Message} that reshapes its own fields before they go on the wire and back after they arrive: copying a
+ * value into the field that is actually sent, packing bits, recalculating a TTL. Marshalling is a separate step and
+ * does not happen here.
+ *
+ * @deprecated A message carries data, it is not a place to compute. Each use of this interface is a message doing
+ * work that belongs to the code building or reading it, so treat the current ones as debt and add no new ones: do the
+ * conversion where the message is filled in and where it is consumed.
  */
-public interface CustomWireFormMessage extends CustomMarshallingMessage {
-    /** Called before sending. */
+@Deprecated
+public interface CustomWireFormMessage extends Message {
+    /** Called before the message is marshalled and sent. */
     public void toWireForm() throws IgniteCheckedException;
 
-    /** Called after receiving. */
+    /** Called after the message is received and unmarshalled. */
     public void fromWireForm() throws IgniteCheckedException;
 }
