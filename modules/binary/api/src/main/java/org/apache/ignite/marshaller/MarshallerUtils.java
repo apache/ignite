@@ -24,17 +24,14 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.ObjectInputFilter;
 import java.net.URL;
 import java.util.Enumeration;
-import java.util.Objects;
 import java.util.function.Consumer;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCommonsSystemProperties;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.ClassSet;
+import org.apache.ignite.internal.util.CommonUtils;
 
-import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION;
 import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_MARSHALLER_BLACKLIST;
 
 /**
@@ -54,7 +51,7 @@ public class MarshallerUtils {
     public static final String DEFAULT_WHITELIST_CLS_NAMES_FILE = "META-INF/classnames-default-whitelist.properties";
 
     /** */
-    private static final Object MUX = new Object();
+    private static final IgniteMarshallerClassFilter FILTER = new IgniteMarshallerClassFilter(classWhiteList(), classBlackList());
 
     /**
      * Private constructor.
@@ -66,80 +63,44 @@ public class MarshallerUtils {
     /**
      * Returns class name filter for marshaller.
      *
-     * @param clsLdr Class loader.
      * @return Class name filter for marshaller.
      */
-    public static IgniteMarshallerClassFilter classNameFilter(ClassLoader clsLdr) throws IgniteCheckedException {
-        return new IgniteMarshallerClassFilter(classWhiteList(clsLdr), classBlackList(clsLdr));
+    public static IgniteMarshallerClassFilter classNameFilter() {
+        return FILTER;
     }
 
     /**
-     * @param clsFilter Ignite marshaller class filter to which class validation will be delegated.
-     * @throws IgniteCheckedException if autoconfiguration failed.
-     */
-    public static void autoconfigureObjectInputFilter(IgniteMarshallerClassFilter clsFilter) throws IgniteCheckedException {
-        if (!IgniteCommonsSystemProperties.getBoolean(IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION, true))
-            return;
-
-        synchronized (MUX) {
-            ObjectInputFilter objFilter = ObjectInputFilter.Config.getSerialFilter();
-
-            if (objFilter == null)
-                ObjectInputFilter.Config.setSerialFilter(new IgniteObjectInputFilter(clsFilter));
-            else if (objFilter instanceof IgniteObjectInputFilter) {
-                IgniteObjectInputFilter igniteObjFilter = (IgniteObjectInputFilter)objFilter;
-
-                if (!Objects.equals(igniteObjFilter.classFilter(), clsFilter)) {
-                    throw new IgniteCheckedException("Failed to autoconfigure Ignite Object Input Filter for the current JVM" +
-                        " because it was already set by another Ignite instance which is running in the same JVM and is" +
-                        " configured with a different Marshaller Black or White lists.");
-                }
-            }
-            else {
-                throw new IgniteCheckedException("Failed to autoconfigure Ignite Object Input Filter for the current JVM as" +
-                    " it was already set via `jdk.serialFilter` JVM system property or programmatically. You can disable" +
-                    " Object Input Stream Filter autoconfiguration by setting `IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION`" +
-                    " system property to `false`. Note that in this case you must configure Java Serialization" +
-                    " Filtering manually to filter out classes defined by the `IGNITE_MARSHALLER_BLACKLIST` system property" +
-                    " [objectInputFilterClass=" + objFilter.getClass().getName() + ']');
-            }
-        }
-    }
-
-    /**
-     * @param clsLdr Class loader.
      * @return White list of classes.
      */
-    private static ClassSet classWhiteList(ClassLoader clsLdr) throws IgniteCheckedException {
+    private static ClassSet classWhiteList() {
         ClassSet clsSet = null;
 
         String fileName = IgniteCommonsSystemProperties.getString(IgniteCommonsSystemProperties.IGNITE_MARSHALLER_WHITELIST);
 
-        if (fileName != null) {
+        if (fileName != null && !fileName.isBlank()) {
             clsSet = new ClassSet();
 
-            addClassNames(JDK_CLS_NAMES_FILE, clsSet, clsLdr);
-            addClassNames(CLS_NAMES_FILE, clsSet, clsLdr);
-            addClassNames(DEFAULT_WHITELIST_CLS_NAMES_FILE, clsSet, clsLdr);
-            addClassNames(fileName, clsSet, clsLdr);
+            addClassNames(JDK_CLS_NAMES_FILE, clsSet, CommonUtils.gridClassLoader());
+            addClassNames(CLS_NAMES_FILE, clsSet, CommonUtils.gridClassLoader());
+            addClassNames(DEFAULT_WHITELIST_CLS_NAMES_FILE, clsSet, CommonUtils.gridClassLoader());
+            addClassNames(fileName, clsSet, CommonUtils.gridClassLoader());
         }
 
         return clsSet;
     }
 
     /**
-     * @param clsLdr Class loader.
      * @return Black list of classes.
      */
-    private static ClassSet classBlackList(ClassLoader clsLdr) throws IgniteCheckedException {
+    private static ClassSet classBlackList() {
         ClassSet clsSet = new ClassSet();
 
-        addClassNames(DEFAULT_BLACKLIST_CLS_NAMES_FILE, clsSet, clsLdr);
+        addClassNames(DEFAULT_BLACKLIST_CLS_NAMES_FILE, clsSet, CommonUtils.gridClassLoader());
 
         String blackListFileName = IgniteCommonsSystemProperties.getString(IGNITE_MARSHALLER_BLACKLIST);
 
-        if (blackListFileName != null)
-            addClassNames(blackListFileName, clsSet, clsLdr);
+        if (blackListFileName != null && !blackListFileName.isBlank())
+            addClassNames(blackListFileName, clsSet, CommonUtils.gridClassLoader());
 
         return clsSet;
     }
@@ -155,7 +116,7 @@ public class MarshallerUtils {
         String fileName,
         ClassSet clsSet,
         ClassLoader clsLdr
-    ) throws IgniteCheckedException {
+    ) {
         InputStream is = clsLdr.getResourceAsStream(fileName);
 
         if (is == null) {
@@ -163,7 +124,7 @@ public class MarshallerUtils {
                 is = new FileInputStream(new File(fileName));
             }
             catch (FileNotFoundException e) {
-                throw new IgniteCheckedException("File " + fileName + " not found.");
+                throw new IgniteException("File " + fileName + " not found.");
             }
         }
 
@@ -178,14 +139,14 @@ public class MarshallerUtils {
                         clsSet.add(s);
                     }
                     catch (IllegalArgumentException e) {
-                        throw new IgniteCheckedException("Exception occurred while reading list of classes" +
+                        throw new IgniteException("Exception occurred while reading list of classes" +
                             "[path=" + fileName + ", row=" + i + ", line=" + s + ']', e);
                     }
                 }
             }
         }
         catch (IOException e) {
-            throw new IgniteCheckedException("Exception occurred while reading and creating list of classes " +
+            throw new IgniteException("Exception occurred while reading and creating list of classes " +
                 "[path=" + fileName + ']', e);
         }
     }
@@ -193,11 +154,10 @@ public class MarshallerUtils {
     /**
      * Find all system class names (for JDK or Ignite classes) and process them with a given consumer.
      *
-     * @param ldr Class loader.
      * @param proc Class processor (class name consumer).
      */
-    public static void processSystemClasses(ClassLoader ldr, Consumer<String> proc) throws IOException {
-        Enumeration<URL> urls = ldr.getResources(CLS_NAMES_FILE);
+    public static void processSystemClasses(Consumer<String> proc) throws IOException {
+        Enumeration<URL> urls = CommonUtils.gridClassLoader().getResources(CLS_NAMES_FILE);
 
         boolean foundClsNames = false;
 
@@ -209,13 +169,13 @@ public class MarshallerUtils {
 
         if (!foundClsNames)
             throw new IgniteException("Failed to load class names properties file packaged with ignite binaries " +
-                "[file=" + CLS_NAMES_FILE + ", ldr=" + ldr + ']');
+                "[file=" + CLS_NAMES_FILE + ", ldr=" + CommonUtils.gridClassLoader() + ']');
 
-        URL jdkClsNames = ldr.getResource(JDK_CLS_NAMES_FILE);
+        URL jdkClsNames = CommonUtils.gridClassLoader().getResource(JDK_CLS_NAMES_FILE);
 
         if (jdkClsNames == null)
             throw new IgniteException("Failed to load class names properties file packaged with ignite binaries " +
-                "[file=" + JDK_CLS_NAMES_FILE + ", ldr=" + ldr + ']');
+                "[file=" + JDK_CLS_NAMES_FILE + ", ldr=" + CommonUtils.gridClassLoader() + ']');
 
         processResource(jdkClsNames, proc);
     }

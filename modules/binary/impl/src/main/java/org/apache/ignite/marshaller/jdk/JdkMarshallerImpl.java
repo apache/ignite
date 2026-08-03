@@ -18,16 +18,20 @@
 package org.apache.ignite.marshaller.jdk;
 
 import java.io.InputStream;
+import java.io.ObjectInputFilter;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCommonsSystemProperties;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.io.GridByteArrayInputStream;
 import org.apache.ignite.internal.util.io.GridByteArrayOutputStream;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.AbstractNodeNameAwareMarshaller;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION;
 
 /**
  * Implementation of {@link org.apache.ignite.marshaller.Marshaller} based on JDK serialization mechanism.
@@ -66,23 +70,26 @@ import org.jetbrains.annotations.Nullable;
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
 public class JdkMarshallerImpl extends AbstractNodeNameAwareMarshaller implements JdkMarshaller {
-    /** Class name filter. */
-    private final IgnitePredicate<String> clsFilter;
+    /** */
+    private static final Object MUX = new Object();
 
-    /**
-     * Default constructor.
-     * Use this constructor with caution. It creates a JdkMarshaller instance that has class filtering DISABLED. Therefore,
-     * if it will be used on the server side to unmarshal user data received from the network, it may lead to security breaches.
-     */
-    public JdkMarshallerImpl() {
-        this(null);
-    }
+    static {
+        if (IgniteCommonsSystemProperties.getBoolean(IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION, true)) {
+            synchronized (MUX) {
+                ObjectInputFilter objFilter = ObjectInputFilter.Config.getSerialFilter();
 
-    /**
-     * @param clsFilter Class name filter.
-     */
-    public JdkMarshallerImpl(@Nullable IgnitePredicate<String> clsFilter) {
-        this.clsFilter = clsFilter;
+                if (objFilter == null)
+                    ObjectInputFilter.Config.setSerialFilter(new IgniteObjectInputFilter());
+                else if (!(objFilter instanceof IgniteObjectInputFilter)) {
+                    throw new IgniteException("Failed to autoconfigure Ignite Object Input Filter for the current JVM as" +
+                        " it was already set via `jdk.serialFilter` JVM system property or programmatically. You can disable" +
+                        " Object Input Stream Filter autoconfiguration by setting `IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION`" +
+                        " system property to `false`. Note that in this case you must configure Java Serialization" +
+                        " Filtering manually to filter out classes defined by the `IGNITE_MARSHALLER_BLACKLIST` system property" +
+                        " [objectInputFilterClass=" + objFilter.getClass().getName() + ']');
+                }
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -117,8 +124,7 @@ public class JdkMarshallerImpl extends AbstractNodeNameAwareMarshaller implement
         if (clsLdr == null)
             clsLdr = getClass().getClassLoader();
 
-        try (ObjectInputStream objIn = new JdkMarshallerObjectInputStream(
-            new JdkMarshallerInputStreamWrapper(in), clsLdr, clsFilter)) {
+        try (ObjectInputStream objIn = new JdkMarshallerObjectInputStream(new JdkMarshallerInputStreamWrapper(in), clsLdr)) {
             return (T)objIn.readObject();
         }
         catch (ClassNotFoundException e) {

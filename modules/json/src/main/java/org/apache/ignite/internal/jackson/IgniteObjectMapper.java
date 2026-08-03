@@ -52,6 +52,7 @@ import org.apache.ignite.internal.visor.util.VisorExceptionWrapper;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.MarshallerUtils;
 
 /**
  * Custom object mapper for HTTP REST API.
@@ -96,7 +97,7 @@ public class IgniteObjectMapper extends ObjectMapper {
         if (ctx != null) {
             module.addDeserializer(BinaryObject.class, new IgniteBinaryObjectJsonDeserializer(ctx));
 
-            IgnitePredicate<String> clsFilter = ctx.marshallerContext().classNameFilter();
+            IgnitePredicate<String> clsFilter = MarshallerUtils.classNameFilter();
 
             if (clsFilter != null)
                 setDefaultTyping(new RestrictedTypeResolverBuilder(clsFilter).init(JsonTypeInfo.Id.CLASS, null));

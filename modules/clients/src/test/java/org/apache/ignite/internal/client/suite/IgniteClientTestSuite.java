@@ -70,7 +70,12 @@ import org.junit.runners.Suite;
 
     // Test custom binary protocol with test client.
     RestBinaryProtocolSelfTest.class,
-    TcpRestUnmarshalVulnerabilityTest.class,
+    TcpRestUnmarshalVulnerabilityTest.NoListTest.class,
+    TcpRestUnmarshalVulnerabilityTest.WhiteListIncludedTest.class,
+    TcpRestUnmarshalVulnerabilityTest.WhiteListExcludedTest.class,
+    TcpRestUnmarshalVulnerabilityTest.BlackListIncludedTest.class,
+    TcpRestUnmarshalVulnerabilityTest.BlackListExcludedTest.class,
+    TcpRestUnmarshalVulnerabilityTest.BothListIncludedTest.class,
 
     // Test jetty rest processor
     JettyRestProcessorSignedSelfTest.class,
