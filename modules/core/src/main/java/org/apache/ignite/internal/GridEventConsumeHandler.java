@@ -401,6 +401,10 @@ public final class GridEventConsumeHandler implements GridContinuousHandler, Mar
     @Override public void p2pMarshal(GridKernalContext ctx) throws IgniteCheckedException {
         assert ctx.config().isPeerClassLoadingEnabled();
 
+        // TODO : Remove this check after https://issues.apache.org/jira/browse/IGNITE-28945
+        if (filterBytes != null)
+            return;
+
         if (filter != null) {
             Class<?> cls = U.detectClass(filter);
 
@@ -424,6 +428,10 @@ public final class GridEventConsumeHandler implements GridContinuousHandler, Mar
         assert nodeId != null;
         assert ctx.config().isPeerClassLoadingEnabled();
         assert externalMarshal : "Is not p2p-marshaled " + getClass().getSimpleName();
+
+        // TODO : Remove this check after https://issues.apache.org/jira/browse/IGNITE-28945
+        if (filter != null)
+            return;
 
         if (filterBytes != null) {
             try {

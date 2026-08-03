@@ -155,6 +155,10 @@ public final class GridMessageListenHandler implements GridContinuousHandler, Ma
         assert ctx != null;
         assert ctx.config().isPeerClassLoadingEnabled();
 
+        // TODO : Remove this check after https://issues.apache.org/jira/browse/IGNITE-28945
+        if (predDepInfo != null)
+            return;
+
         if (topic != null)
             topicBytes = U.marshal(ctx.marshaller(), topic);
 
@@ -196,6 +200,10 @@ public final class GridMessageListenHandler implements GridContinuousHandler, Ma
         assert ctx != null;
         assert ctx.config().isPeerClassLoadingEnabled();
         assert externalMarshal : "Is not p2p-marshaled " + getClass().getSimpleName();
+
+        // TODO : Remove this check after https://issues.apache.org/jira/browse/IGNITE-28945
+        if (pred != null)
+            return;
 
         try {
             GridDeployment dep = ctx.deploy().getGlobalDeployment(predDepInfo.deployMode(), clsName, clsName,
