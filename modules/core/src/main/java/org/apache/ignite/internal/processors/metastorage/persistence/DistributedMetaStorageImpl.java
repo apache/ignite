@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -1313,42 +1314,50 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
         Map<String, byte[]> oldData = bridge.localFullData();
 
+        Iterator<Map.Entry<String, byte[]>> oldDataIt = oldData.entrySet().iterator();
+        Map.Entry<String, byte[]> oldDataEntry = oldDataIt.hasNext() ? oldDataIt.next() : null;
         int newIdx = 0;
 
-        for (var oldE : oldData.entrySet()) {
-            String oldKey = oldE.getKey();
-            byte[] oldValBytes = oldE.getValue();
+        while (oldDataEntry != null && newIdx < newDataKeys.length) {
+            String oldKey = oldDataEntry.getKey();
+            byte[] oldValBytes = oldDataEntry.getValue();
 
-            if (newIdx < newDataKeys.length) {
-                String newKey = newDataKeys[newIdx];
-                byte[] newValBytes = newDataVals[newIdx];
+            String newKey = newDataKeys[newIdx];
+            byte[] newValBytes = newDataVals[newIdx];
 
-                int c = oldKey.compareTo(newKey);
+            int c = oldKey.compareTo(newKey);
 
-                if (c < 0)
-                    notifyListeners(oldKey, () -> unmarshal(marshaller, oldValBytes), () -> null);
-                else if (c > 0) {
-                    notifyListeners(newKey, () -> null, () -> unmarshal(marshaller, newValBytes));
-
-                    ++newIdx;
-                }
-                else {
-                    notifyListeners(
-                        oldKey,
-                        () -> unmarshal(marshaller, oldValBytes),
-                        () -> unmarshal(marshaller, newValBytes));
-
-                    ++newIdx;
-                }
-            }
-            else
+            if (c < 0) {
                 notifyListeners(oldKey, () -> unmarshal(marshaller, oldValBytes), () -> null);
+
+                oldDataEntry = oldDataIt.hasNext() ? oldDataIt.next() : null;
+            }
+            else if (c > 0) {
+                notifyListeners(newKey, () -> null, () -> unmarshal(marshaller, newValBytes));
+
+                ++newIdx;
+            }
+            else {
+                notifyListeners(oldKey, () -> unmarshal(marshaller, oldValBytes), () -> unmarshal(marshaller, newValBytes));
+
+                oldDataEntry = oldDataIt.hasNext() ? oldDataIt.next() : null;
+
+                ++newIdx;
+            }
+        }
+
+        while (oldDataEntry != null) {
+            byte[] oldDataVal = oldDataEntry.getValue();
+
+            notifyListeners(oldDataEntry.getKey(), () -> unmarshal(marshaller, oldDataVal), () -> null);
+
+            oldDataEntry = oldDataIt.hasNext() ? oldDataIt.next() : null;
         }
 
         for (; newIdx < newDataKeys.length; ++newIdx) {
-            byte[] newValBytes = newDataVals[newIdx];
+            byte[] newDataVal = newDataVals[newIdx];
 
-            notifyListeners(newDataKeys[newIdx], () -> null, () -> unmarshal(marshaller, newValBytes));
+            notifyListeners(newDataKeys[newIdx], () -> null, () -> unmarshal(marshaller, newDataVal));
         }
     }
 
