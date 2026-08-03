@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Distributed metastorage data that cluster sends to joining node. To reduce messages number, contains plain representation
- * of {@link DistributedMetaStorageVersion}, arrays of plain representations of {@link DistributedMetaStorageKeyValuePair}.
+ * of {@link DistributedMetaStorageVersion}, arrays of plain representations of Distributed MetaStorage's key-value pairs.
  * And wrapped {@link DistributedMetaStorageHistoryItem}s. The version and the full data holders are {@link Externalizable}s
  * persistent by {@link MetaStorage} with the dedicated code-generated serializers. Thus, we do not make them directly a {@link Message}.
  *
@@ -45,20 +45,12 @@ public class DistributedMetaStorageClusterNodeData implements Message {
     @GridToStringInclude
     long dVerHash;
 
-    /**
-     * Array of the full data keys.
-     *
-     * @see DistributedMetaStorageKeyValuePair#key
-     */
+    /** Array of the full data keys. */
     @GridToStringInclude
     @Order(2)
     @Nullable String[] fullDataKeys;
 
-    /**
-     * Arrays of the full data bytes.
-     *
-     * @see DistributedMetaStorageKeyValuePair#valBytes
-     */
+    /** Arrays of the full data bytes. */
     @GridToStringInclude
     @Order(3)
     @Nullable byte[][] fullDataValsBytes;
