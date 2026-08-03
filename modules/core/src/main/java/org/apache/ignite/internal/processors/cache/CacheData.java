@@ -84,7 +84,7 @@ public class CacheData implements Message {
     /**
      * @param cacheCfg Cache configuration.
      * @param grpId Cache group ID.
-     * @param cacheType Cache ID.
+     * @param cacheType Cache type.
      * @param deploymentId Cache deployment ID.
      * @param schema Query schema.
      * @param rcvdFrom Node ID cache was started from.
