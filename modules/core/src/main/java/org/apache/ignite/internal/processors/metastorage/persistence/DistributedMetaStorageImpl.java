@@ -956,17 +956,12 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 }
 
                 if (nodeData.hist != null) {
-                    newHist = new DistributedMetaStorageHistoryItem[nodeData.hist.length];
+                    newHist = DistributedMetaStorageHistoryItem.fromMessages(nodeData.hist);
 
                     clearHistoryCache();
 
-                    for (int i = 0, len = nodeData.hist.length; i < len; i++) {
-                        var histItem = new DistributedMetaStorageHistoryItem(nodeData.hist[i].keys, nodeData.hist[i].valBytes);
-
-                        newHist[i] = histItem;
-
-                        addToHistoryCache(ver.id() + i - (len - 1), histItem);
-                    }
+                    for (int i = 0, len = newHist.length; i < len; i++)
+                        addToHistoryCache(ver.id() + i - (len - 1), newHist[i]);
                 }
 
                 if (isPersistenceEnabled && nodeData.fullDataKeys != null)
