@@ -243,8 +243,8 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     @Override protected void validateSelect(SqlSelect select, RelDataType targetRowType) {
         super.validateSelect(select, targetRowType);
 
-        invalidateFetchOffset(select.getFetch(), "fetch / limit");
-        invalidateFetchOffset(select.getOffset(), "offset");
+        validateFetchOffset(select.getFetch(), "fetch / limit");
+        validateFetchOffset(select.getOffset(), "offset");
     }
 
     /**
@@ -253,10 +253,9 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
      * @param n        Node to check limit.
      * @param nodeName Node name.
      */
-    private void invalidateFetchOffset(@Nullable SqlNode n, String nodeName) {
-        if (n == null) {
+    private void validateFetchOffset(@Nullable SqlNode n, String nodeName) {
+        if (n == null)
             return;
-        }
 
         if (n instanceof SqlLiteral) {
             BigDecimal offsetFetchLimit = ((SqlLiteral)n).bigDecimalValue();

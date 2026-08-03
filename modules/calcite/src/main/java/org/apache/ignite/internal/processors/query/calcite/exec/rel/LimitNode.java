@@ -33,8 +33,8 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
     /** Summary rows to process. */
     private final long rowsSummary;
 
-    /** Already processed (pushed to upstream) rows count. */
-    private int rowsProcessed;
+    /** Already processed (pushed to downstream) rows count. */
+    private long rowsProcessed;
 
     /** Waiting results counter. */
     private int waiting;
@@ -47,6 +47,8 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
      *
      * @param ctx Execution context.
      * @param rowType Row type.
+     * @param offset How many rows need to be skipped.
+     * @param fetch How many rows need to be processed.
      */
     public LimitNode(
         ExecutionContext<Row> ctx,
@@ -76,7 +78,7 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
         requested = rowsCnt;
 
         if (fetch > 0) {
-            long remain = IgniteMath.addExact(fetch, offset) - rowsProcessed;
+            long remain = rowsSummary - rowsProcessed;
 
             rowsCnt = remain > rowsCnt ? rowsCnt : (int)remain;
         }
@@ -96,7 +98,7 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
         --waiting;
 
         if (rowsProcessed >= offset && hasMoreData()) {
-            // this two rows can`t be swapped, cause if all requested rows have been pushed it will trigger further request call.
+            // This two rows can`t be swapped, cause if all requested rows have been pushed it will trigger further request call.
             --requested;
             downstream().push(row);
         }
