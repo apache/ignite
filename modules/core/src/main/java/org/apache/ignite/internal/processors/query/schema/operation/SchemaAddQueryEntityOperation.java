@@ -67,7 +67,7 @@ public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation {
         this.qryParallelism = qryParallelism;
         this.sqlEscape = sqlEscape;
 
-        entitiesMsgs = F.viewReadOnly(entities, this::makeEntityMessage);
+        entitiesMsgs = F.transform(entities, this::makeEntityMessage);
     }
 
     /** @return Collection of query entities. */
