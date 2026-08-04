@@ -68,8 +68,8 @@ public class GridIoMessage implements Message, MessageWrapper {
     @GridToStringInclude
     @Nullable OperationContextSnapshotMessage opCtxSnp;
 
-    /** Whether the message has been taken to the wire. */
-    private boolean onWire;
+    /** Set once the payload is marshalled; guards double marshal and unmarshalled transmit. Not on the wire. */
+    private boolean marshalled;
 
     /**
      * Default constructor.
@@ -148,14 +148,14 @@ public class GridIoMessage implements Message, MessageWrapper {
         return skipOnTimeout;
     }
 
-    /** Marks this message as taken to the wire. */
-    void markOnWire() {
-        onWire = true;
+    /** Marks this message as marshalled. */
+    void markMarshalled() {
+        marshalled = true;
     }
 
-    /** @return {@code true} if this message has been taken to the wire. */
-    boolean onWire() {
-        return onWire;
+    /** @return {@code true} if this message has been marshalled. */
+    boolean marshalled() {
+        return marshalled;
     }
 
     /**

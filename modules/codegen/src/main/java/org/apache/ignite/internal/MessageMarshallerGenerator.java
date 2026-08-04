@@ -50,11 +50,11 @@ import static org.apache.ignite.internal.MessageProcessor.IGNITE_CHECKED_EXCEPTI
 import static org.apache.ignite.internal.MessageProcessor.KEY_CACHE_OBJECT_CLS;
 import static org.apache.ignite.internal.MessageProcessor.MARSHALLABLE_MESSAGE_INTERFACE;
 import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
-import static org.apache.ignite.internal.MessageProcessor.PLAIN_MESSAGE_INTERFACE;
+import static org.apache.ignite.internal.MessageProcessor.NON_MARSHALLABLE_MESSAGE_INTERFACE;
 import static org.apache.ignite.internal.MessageProcessor.SELF_MARSHALLING_MESSAGE_INTERFACE;
 
 /**
- * Generates {@code *Marshaller} classes for {@code Message} types that are not {@code PlainMessage}.
+ * Generates {@code *Marshaller} classes for {@code Message} types that are not {@code NonMarshallableMessage}.
  */
 public class MessageMarshallerGenerator extends MessageCompanionGenerator {
     /** Interface the generated marshallers implement. */
@@ -94,7 +94,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
     private final TypeMirror cacheObjType;
 
     /** */
-    private final TypeMirror plainType;
+    private final TypeMirror nonMarshallableType;
 
     /** */
     private final TypeMirror selfMarshallingMsgType;
@@ -139,7 +139,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
         marshallableMsgType = type(MARSHALLABLE_MESSAGE_INTERFACE);
         msgType = type(MESSAGE_INTERFACE);
         cacheObjType = type(CACHE_OBJECT_CLS);
-        plainType = type(PLAIN_MESSAGE_INTERFACE);
+        nonMarshallableType = type(NON_MARSHALLABLE_MESSAGE_INTERFACE);
         selfMarshallingMsgType = type(SELF_MARSHALLING_MESSAGE_INTERFACE);
         cacheGrpIdMsgType = type(GRID_CACHE_GROUP_ID_MESSAGE_CLS);
         mapType = type(Map.class.getName());
@@ -153,7 +153,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
     /** {@inheritDoc} */
     @Override protected boolean shouldSkip(TypeElement type, List<VariableElement> fields) {
-        return isPlain(type.asType());
+        return isNonMarshallable(type.asType());
     }
 
     /** {@inheritDoc} */
@@ -831,7 +831,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
         if (t.getKind() == TypeKind.DECLARED || t.getKind() == TypeKind.TYPEVAR) {
             if (isMessage(t))
-                return isPlain(t) ? List.of() : marshallMessage(accessor, mode);
+                return isNonMarshallable(t) ? List.of() : marshallMessage(accessor, mode);
             if (isCacheObject(t))
                 return marshallCacheObject(accessor, mode);
             if (isMap(t))
@@ -1068,7 +1068,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
         if (t.getKind() == TypeKind.DECLARED || t.getKind() == TypeKind.TYPEVAR) {
             if (isMessage(t))
-                return !isPlain(t);
+                return !isNonMarshallable(t);
 
             if (isCacheObject(t))
                 return true;
@@ -1107,9 +1107,9 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
         return assignableFrom(erasedType(type), colType);
     }
 
-    /** Recursion skip for such fields is subtype-safe: subclasses inherit the {@code PlainMessage} marker. */
-    private boolean isPlain(TypeMirror t) {
-        return assignableFrom(t, plainType);
+    /** Recursion skip for such fields is subtype-safe: subclasses inherit the {@code NonMarshallableMessage} marker. */
+    private boolean isNonMarshallable(TypeMirror t) {
+        return assignableFrom(t, nonMarshallableType);
     }
 
     /** */

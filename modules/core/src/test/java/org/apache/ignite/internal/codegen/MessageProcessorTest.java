@@ -182,7 +182,7 @@ public class MessageProcessorTest {
 
         assertThat(compilation).succeeded();
 
-        // No ChildMessageMarshaller: the message has nothing to walk or marshal, so its generation is skipped.
+        // No ChildMessageMarshaller: the message has nothing to marshal, so its generation is skipped.
         assertEquals(3, compilation.generatedSourceFiles().size());
 
         assertThat(compilation)
@@ -624,15 +624,15 @@ public class MessageProcessorTest {
         assertThat(compilation).hadErrorContaining("Cannot resolve cache context");
     }
 
-    /** Verifies the processor rejects a {@code PlainMessage} with declared marshalling logic. */
+    /** Verifies the processor rejects a {@code NonMarshallableMessage} with declared marshalling logic. */
     @Test
     public void testPlainWithMarshalledFieldFailed() {
-        Compilation compilation = compile("WrongPlainMessage.java");
+        Compilation compilation = compile("WrongNonMarshallableMessage.java");
 
         assertThat(compilation).failed();
 
         assertThat(compilation)
-            .hadErrorContaining("PlainMessage must not implement MarshallableMessage or declare @Marshalled fields");
+            .hadErrorContaining("NonMarshallableMessage must not implement MarshallableMessage or declare @Marshalled fields");
     }
 
     /** */

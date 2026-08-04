@@ -1454,13 +1454,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         if (lsnr == null)
             return;
 
-        payloadFromWire(msg);
+        unmarshalPayload(msg);
 
         invokeListener(msg.policy(), lsnr, nodeId, msg.message());
     }
 
     /** */
-    private void payloadFromWire(GridIoMessage msg) {
+    private void unmarshalPayload(GridIoMessage msg) {
         if (msg.message() instanceof DeferredUnmarshalMessage)
             return;
 
@@ -2044,15 +2044,15 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
     }
 
     /**
-     * Takes {@code ioMsg} to the wire, enforcing the once-only contract: a wrap goes to the wire exactly once before
-     * transmission (the step is not idempotent, see {@code MessageMarshalOnceTest}).
+     * Marshals {@code ioMsg} enforcing the marshal-once contract: a wrap is marshalled exactly once before
+     * transmission (marshalling is not idempotent, see {@code MessageMarshalOnceTest}).
      */
     private void marshal(GridIoMessage ioMsg) throws IgniteCheckedException {
-        assert !ioMsg.onWire() : "GridIoMessage is taken to the wire twice: " + ioMsg;
+        assert !ioMsg.marshalled() : "GridIoMessage is marshalled twice: " + ioMsg;
 
         MessageMarshalling.marshal(ioMsg, ctx, null);
 
-        ioMsg.markOnWire();
+        ioMsg.markMarshalled();
     }
 
     /**
@@ -2061,7 +2061,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
      */
     public void sendPrepared(ClusterNode node, GridIoMessage ioMsg) throws IgniteCheckedException {
         assert !locNodeId.equals(node.id()) : node;
-        assert ioMsg.onWire() : "Message must be prepared via prepare() before sendPrepared(): " + ioMsg;
+        assert ioMsg.marshalled() : "Message must be prepared via prepare() before sendPrepared(): " + ioMsg;
 
         sendMarshalled(node, ioMsg, null);
     }
@@ -2120,7 +2120,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
      */
     private void sendMarshalled(ClusterNode node, GridIoMessage ioMsg, IgniteInClosure<IgniteException> ackC)
         throws IgniteCheckedException {
-        assert ioMsg.onWire() : "GridIoMessage is transmitted before being taken to the wire: " + ioMsg;
+        assert ioMsg.marshalled() : "GridIoMessage is transmitted unmarshalled: " + ioMsg;
 
         try {
             if ((CommunicationSpi<?>)getSpi() instanceof TcpCommunicationSpi)
@@ -3911,7 +3911,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                 try (Scope ignored0 = ctx.operationContextDispatcher().restoreSnapshot(mc.message.opCtxSnp)) {
                     try {
                         try {
-                            payloadFromWire(mc.message);
+                            unmarshalPayload(mc.message);
                         }
                         catch (IgniteException e) {
                             // Skip the failed message: rethrowing would abandon the rest of the set until

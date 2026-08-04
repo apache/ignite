@@ -31,7 +31,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
-import org.apache.ignite.plugin.extensions.communication.PlainMessage;
+import org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -39,7 +39,7 @@ import org.jetbrains.annotations.Nullable;
  * hands a {@link MarshallableMessage} the marshaller its class asks for: schema-aware when the class is annotated
  * with {@link UseBinaryMarshaller}, the default one otherwise.
  */
-public abstract class AbstractCompanionMessageFactoryProvider implements MessageFactoryProvider {
+public abstract class AbstractMessageFactoryProvider implements MessageFactoryProvider {
     /** Generated-companion constructors per message class, indexed by {@link Companion#ordinal()}. */
     private static final ClassValue<Constructor<?>[]> COMPANIONS = new ClassValue<>() {
         @Override protected Constructor<?>[] computeValue(Class<?> cls) {
@@ -76,7 +76,7 @@ public abstract class AbstractCompanionMessageFactoryProvider implements Message
     private static <T extends Message> void register(IgniteMessageFactory factory, Class<T> cls, short id, Marshaller marsh) {
         MessageSerializer<T> serializer = loadGenerated(cls, Companion.SERIALIZER, null);
 
-        MessageMarshaller<T> marshaller = PlainMessage.class.isAssignableFrom(cls)
+        MessageMarshaller<T> marshaller = NonMarshallableMessage.class.isAssignableFrom(cls)
             ? null
             : loadGenerated(cls, Companion.MARSHALLER, marsh);
 

@@ -26,7 +26,7 @@ import org.jetbrains.annotations.Nullable;
  * Per-message deployer generated for a {@link GridCacheMessage} whose fields need deployment: the generated
  * {@code <Message>Deployer} deploys them via {@code GridCacheMessage}'s public {@code deploy*} methods. The static
  * {@link #deploy(MessageFactory, GridCacheMessage, GridCacheSharedContext)} resolves the deployer from the message
- * factory and dispatches, mirroring the static {@code MessageMarshalling#marshal}.
+ * factory and dispatches, mirroring the static {@code MessageMarshaller#marshal}.
  */
 public interface GridCacheMessageDeployer<M extends GridCacheMessage> {
     /** Deploys all deployable fields of {@code msg}. */

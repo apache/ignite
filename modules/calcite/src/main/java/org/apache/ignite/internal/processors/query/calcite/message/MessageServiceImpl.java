@@ -166,22 +166,22 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     }
 
     /** */
-    private void onMessage(UUID nodeId, Message msg, boolean fromWire) {
+    private void onMessage(UUID nodeId, Message msg, boolean unmarshal) {
         if (msg instanceof ExecutionContextAware) {
             ExecutionContextAware msg0 = (ExecutionContextAware)msg;
-            taskExecutor().execute(msg0.queryId(), msg0.fragmentId(), () -> onMessageInternal(nodeId, msg, fromWire));
+            taskExecutor().execute(msg0.queryId(), msg0.fragmentId(), () -> onMessageInternal(nodeId, msg, unmarshal));
         }
         else
             taskExecutor().execute(
                 IgniteUuid.VM_ID,
                 ThreadLocalRandom.current().nextLong(1024),
-                () -> onMessageInternal(nodeId, msg, fromWire)
+                () -> onMessageInternal(nodeId, msg, unmarshal)
             );
     }
 
-    /** @param fromWire {@code True} for a remotely received {@link DeferredUnmarshalMessage}, skipped by the generic pass. */
-    private void onMessageInternal(UUID nodeId, Message msg, boolean fromWire) {
-        if (fromWire) {
+    /** @param unmarshal {@code True} for a remotely received {@link DeferredUnmarshalMessage}, skipped by the generic pass. */
+    private void onMessageInternal(UUID nodeId, Message msg, boolean unmarshal) {
+        if (unmarshal) {
             try {
                 MessageMarshalling.unmarshal(msg, kctx);
             }

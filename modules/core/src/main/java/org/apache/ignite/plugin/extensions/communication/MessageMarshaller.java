@@ -24,18 +24,16 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Puts the fields of a {@link Message} into the shape they go on the wire in, and back. Three kinds of work end up
- * here, and codegen writes only the ones the message actually needs: the step the message defines itself, the
- * {@code @Marshalled} fields that become bytes, and the walk into nested messages and cache objects.
- * Generated per message class and called by {@code MessageMarshalling}.
+ * Handles {@code marshal}/{@code unmarshal} for a {@link Message} that requires custom serialization. Resolve-and-dispatch
+ * entry points that look the marshaller up from the message factory live in {@code MessageMarshalling}.
  *
  * @param <M> Message type.
  */
 public interface MessageMarshaller<M extends Message> {
     /**
-     * Takes the fields to their wire shape. Called on the user thread before sending.
+     * Marshals the message on the user thread before sending.
      *
-     * @param msg Message to take to the wire.
+     * @param msg Message to marshal.
      * @param kctx Kernal context.
      * @param cacheObjCtx Cache object context of the enclosing message, or {@code null} at the top level.
      */
@@ -43,22 +41,22 @@ public interface MessageMarshaller<M extends Message> {
         throws IgniteCheckedException;
 
     /**
-     * Brings the fields back, with full cache context and class loader.
+     * Unmarshals the message with full cache context and class loader.
      *
-     * @param msg Message to bring back.
+     * @param msg Message to unmarshal.
      * @param kctx Kernal context.
      * @param cacheObjCtx Cache object context of the enclosing message, or {@code null} at the top level.
-     * @param clsLdr Class loader to resolve the classes with.
+     * @param clsLdr Class loader for unmarshalling.
      */
     public void unmarshal(M msg, GridKernalContext kctx, @Nullable CacheObjectContext cacheObjCtx, ClassLoader clsLdr)
         throws IgniteCheckedException;
 
     /**
-     * Brings the fields back without a cache context, using the configuration class loader — the cache-free receive path.
-     * Delegates to the cache-aware overload with a {@code null} context, so a generated marshaller implements the
-     * cache-aware method only.
+     * Unmarshals the message without a cache context, using the configuration class loader — the cache-free receive
+     * path (e.g. the generic {@code GridIoManager} pass). Delegates to the cache-aware overload with a {@code null}
+     * context, so per-message marshallers need only implement the cache-aware method.
      *
-     * @param msg Message to bring back.
+     * @param msg Message to unmarshal.
      * @param kctx Kernal context.
      */
     default void unmarshal(M msg, GridKernalContext kctx) throws IgniteCheckedException {
@@ -66,13 +64,12 @@ public interface MessageMarshaller<M extends Message> {
     }
 
     /**
-     * Brings back only the {@code @NioField} fields (routing headers) on the NIO thread — unlike the {@code restore}
-     * overloads, which take the full payload later on a worker thread. No-op unless the message has {@code @NioField}s.
+     * Unmarshals only the {@code @NioField} fields (routing headers) on the NIO thread — unlike the {@code unmarshal}
+     * overloads, which restore the full payload later on a worker thread. No-op unless the message has {@code @NioField}s.
      *
-     * @param msg Message to bring back.
+     * @param msg Message to unmarshal.
      * @param kctx Kernal context.
      */
     default void unmarshalNio(M msg, GridKernalContext kctx) throws IgniteCheckedException {
-        // No-op.
     }
 }

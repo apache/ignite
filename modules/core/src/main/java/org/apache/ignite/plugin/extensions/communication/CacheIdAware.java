@@ -19,7 +19,7 @@ package org.apache.ignite.plugin.extensions.communication;
 
 /**
  * Implemented by messages that carry cache data ({@code CacheObject}) to transfer. The cache ID lets the generated
- * companions resolve the cache object context used to (un)marshal and deploy that data.
+ * marshaller and deployer resolve the cache object context used to (un)marshal and deploy that data.
  *
  * @see MessageMarshaller
  * @see MessageFactory

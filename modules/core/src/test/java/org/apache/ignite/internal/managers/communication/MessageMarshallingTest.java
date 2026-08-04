@@ -36,7 +36,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.apache.ignite.plugin.extensions.communication.PlainMessage;
+import org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -107,8 +107,8 @@ public class MessageMarshallingTest extends GridCommonAbstractTest {
             List.of("marshal", "unmarshal"), STEPS);
     }
 
-    /** Fieldless {@link PlainMessage} with a step of its own; registered with no wire. */
-    private static class PlainWireFormMessage implements PlainMessage, SelfMarshallingMessage {
+    /** Fieldless {@link NonMarshallableMessage} with a step of its own; registered with no wire. */
+    private static class PlainWireFormMessage implements NonMarshallableMessage, SelfMarshallingMessage {
         /** {@inheritDoc} */
         @Override public void selfMarshal() {
             STEPS.add("selfMarshal");

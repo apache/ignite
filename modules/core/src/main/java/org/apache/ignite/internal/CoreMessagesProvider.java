@@ -43,7 +43,7 @@ import org.apache.ignite.internal.managers.encryption.MasterKeyChangeRequest;
 import org.apache.ignite.internal.managers.encryption.NodeEncryptionKeys;
 import org.apache.ignite.internal.managers.eventstorage.EventsDataBagItem;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageMessage;
-import org.apache.ignite.internal.plugin.AbstractCompanionMessageFactoryProvider;
+import org.apache.ignite.internal.plugin.AbstractMessageFactoryProvider;
 import org.apache.ignite.internal.processors.authentication.AuthentificationDataBagItem;
 import org.apache.ignite.internal.processors.authentication.User;
 import org.apache.ignite.internal.processors.authentication.UserAcceptedMessage;
@@ -315,7 +315,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessa
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class CoreMessagesProvider extends AbstractCompanionMessageFactoryProvider {
+public class CoreMessagesProvider extends AbstractMessageFactoryProvider {
     /** Node ID message type. */
     public static final short NODE_ID_MSG_TYPE = 11500;
 

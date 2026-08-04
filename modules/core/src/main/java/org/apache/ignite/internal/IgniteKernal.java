@@ -110,7 +110,7 @@ import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.managers.systemview.IgniteConfigurationIterable;
-import org.apache.ignite.internal.plugin.AbstractCompanionMessageFactoryProvider;
+import org.apache.ignite.internal.plugin.AbstractMessageFactoryProvider;
 import org.apache.ignite.internal.plugin.IgniteLogInfoProvider;
 import org.apache.ignite.internal.plugin.IgniteLogInfoProviderImpl;
 import org.apache.ignite.internal.processors.GridProcessor;
@@ -1346,13 +1346,13 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     }
 
     /**
-     * Re-init {@link AbstractCompanionMessageFactoryProvider} with a proper marshaller.
+     * Re-init {@link AbstractMessageFactoryProvider} with a proper marshaller.
      *
      * @param factoryProvider Message factory provider.
      */
     private void initProvider(MessageFactoryProvider factoryProvider) {
-        if (factoryProvider instanceof AbstractCompanionMessageFactoryProvider) {
-            ((AbstractCompanionMessageFactoryProvider)factoryProvider).init(ctx.marshallerContext().jdkMarshaller(),
+        if (factoryProvider instanceof AbstractMessageFactoryProvider) {
+            ((AbstractMessageFactoryProvider)factoryProvider).init(ctx.marshallerContext().jdkMarshaller(),
                 ctx.marshaller());
         }
     }
