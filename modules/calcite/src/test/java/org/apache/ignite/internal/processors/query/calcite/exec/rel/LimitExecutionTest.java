@@ -30,6 +30,8 @@ import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.query.calcite.exec.rel.LimitNode.defaultFetchValue;
+
 /**
  * Test LimitNode execution.
  */
@@ -80,7 +82,7 @@ public class LimitExecutionTest extends AbstractExecutionTest {
         RootNode<Object[]> rootNode = new RootNode<>(ctx, rowType);
 
         SortNode<Object[]> sortNode = new SortNode<>(ctx, rowType, F::compareArrays, offset,
-            fetch == 0 ? -1 : fetch);
+            fetch == 0 ? defaultFetchValue() : fetch);
 
         List<Object[]> data = IntStream.range(0, IN_BUFFER_SIZE + fetch + offset).boxed()
             .map(i -> new Object[] {i}).collect(Collectors.toList());

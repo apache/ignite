@@ -652,7 +652,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         RelCollation collation = rel.getCollation();
 
         long offset = rel.offset == null ? 0 : validateAndGetFetchOffsetParams(rel.offset, "offset");
-        long fetch = rel.fetch == null ? -1 : validateAndGetFetchOffsetParams(rel.fetch, "fetch");
+        long fetch = rel.fetch == null ? defaultFetchValue() : validateAndGetFetchOffsetParams(rel.fetch, "fetch");
 
         SortNode<Row> node = new SortNode<>(ctx, rel.getRowType(), expressionFactory.comparator(collation), offset,
             fetch);
