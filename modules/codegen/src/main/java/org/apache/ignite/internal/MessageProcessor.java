@@ -87,7 +87,7 @@ public class MessageProcessor extends AbstractProcessor {
     /** Message that reshapes its own fields before they go on the wire. */
     static final String SELF_MARSHALLING_MESSAGE_INTERFACE = "org.apache.ignite.internal.SelfMarshallingMessage";
 
-    /** Marker of messages that need nothing but their serializer. */
+    /** Marker of messages with no marshaller. */
     static final String NON_MARSHALLABLE_MESSAGE_INTERFACE = "org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage";
 
     /** */
@@ -160,8 +160,8 @@ public class MessageProcessor extends AbstractProcessor {
             // No marshaller is generated for a NonMarshallableMessage, so declared marshalling logic would silently never run.
             if (nonMarshallableEl != null && isAssignable(nonMarshallableEl.asType(), clazz)
                 && ((marshallableEl != null && isAssignable(marshallableEl.asType(), clazz))
-                || (selfMarshallingEl != null && isAssignable(selfMarshallingEl.asType(), clazz))
-                || hasMarshalledFields(clazz))) {
+                    || (selfMarshallingEl != null && isAssignable(selfMarshallingEl.asType(), clazz))
+                    || hasMarshalledFields(clazz))) {
                 processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
                     "NonMarshallableMessage must not implement MarshallableMessage or SelfMarshallingMessage, " +
                         "nor declare @Marshalled fields", clazz);

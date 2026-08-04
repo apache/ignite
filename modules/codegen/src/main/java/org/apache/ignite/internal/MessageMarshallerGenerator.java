@@ -111,7 +111,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
     /** */
     private boolean marshallable;
 
-    /** Whether the message marshals a part of its fields by hand, so the generated methods call its own step. */
+    /** Whether the message marshals fields of its own, so the generated methods call its step. */
     private boolean selfMarshalling;
 
     /** */

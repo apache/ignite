@@ -23,11 +23,11 @@ public class WrongSelfMarshallingMessage implements NonMarshallableMessage, Self
     @Order(0)
     int id;
 
-    public void selfMarshal() {
+    @Override public void selfMarshal() {
         // No-op.
     }
 
-    public void selfUnmarshal() {
+    @Override public void selfUnmarshal() {
         // No-op.
     }
 

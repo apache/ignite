@@ -30,9 +30,9 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  */
 @Deprecated
 public interface SelfMarshallingMessage extends Message {
-    /** Called before the message is marshalled and sent. */
+    /** Called before anything else is marshalled, so a field this step fills still goes on the wire. */
     public void selfMarshal();
 
-    /** Called after the message is received and unmarshalled. */
+    /** Called after everything else is unmarshalled, so this step sees the fields already read back. */
     public void selfUnmarshal();
 }

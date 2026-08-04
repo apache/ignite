@@ -190,7 +190,7 @@ public class GridCacheEntryInfo implements SelfMarshallingMessage, CacheIdAware 
         return SIZE_OVERHEAD + size;
     }
 
-    // TODO IGNITE-28920: move the expireTime rebase out of the marshalling hooks.
+    // TODO IGNITE-28920: move the expireTime rebase out of the self-marshalling step.
     /** {@inheritDoc} */
     @Override public void selfMarshal() {
         if (expireTime == 0)
