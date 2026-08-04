@@ -27,6 +27,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
+import org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -73,10 +74,16 @@ public class IgniteMessageFactoryImpl<M extends Message, CM extends GridCacheMes
         initialized = true;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Registers a message with a serializer, an optional marshaller, and an optional deployer.
+     *
+     * @param directType Direct type ({@link Message#directType()}) to register the message under.
+     * @param serializer Message serializer.
+     * @param marshaller Message marshaller, or {@code null} for {@link NonMarshallableMessage} types.
+     * @param deployer Message deployer, or {@code null} for messages without deployable fields.
+     */
     @Override public void register(short directType, MessageSerializer<M> serializer,
-        @Nullable MessageMarshaller<M> marshaller,
-        @Nullable GridCacheMessageDeployer<CM> deployer) throws IgniteException {
+        @Nullable MessageMarshaller<M> marshaller, @Nullable GridCacheMessageDeployer<CM> deployer) throws IgniteException {
         if (initialized) {
             throw new IllegalStateException("Message factory is already initialized. " +
                     "Registration of new message types is forbidden.");
