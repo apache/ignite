@@ -146,8 +146,6 @@ public class DmsDataWriter extends IgniteAsyncObjectHandler<RunnableFuture<?>> {
         String[] newDataKeys,
         byte[][] newDataVals
     ) {
-        assert hist != null;
-
         addToQueue(newDmsTask(() -> {
             metastorage.writeRaw(cleanupGuardKey(), DUMMY_VALUE);
 

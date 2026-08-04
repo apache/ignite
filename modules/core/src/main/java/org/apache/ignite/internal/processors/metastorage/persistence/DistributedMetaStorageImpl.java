@@ -942,9 +942,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             DistributedMetaStorageClusterNodeData nodeData = data.commonData();
 
             if (nodeData != null) {
-                // Cached unwrapped history.
-                DistributedMetaStorageHistoryItem[] newHist = null;
-
                 if (nodeData.fullDataKeys != null) {
                     assert nodeData.fullDataValsBytes != null && nodeData.fullDataValsBytes.length == nodeData.fullDataKeys.length;
 
@@ -954,6 +951,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
                     bridge.writeFullNodeData(nodeData);
                 }
+
+                // Cached unwrapped history.
+                DistributedMetaStorageHistoryItem[] newHist = null;
 
                 if (nodeData.hist != null) {
                     newHist = DistributedMetaStorageHistoryItem.fromMessages(nodeData.hist);
