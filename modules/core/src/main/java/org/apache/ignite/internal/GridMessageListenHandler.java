@@ -172,12 +172,14 @@ public final class GridMessageListenHandler implements GridContinuousHandler, Ma
     /** {@inheritDoc} */
     @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
         /** Are marshaled in {@link #p2pMarshal(GridKernalContext)}. */
-        if (predDepInfo == null)
+        if (predDepInfo != null)
             return;
 
         assert predBytes == null;
 
-        topicBytes = marsh.marshal(topic);
+        if (topic != null)
+            topicBytes = marsh.marshal(topic);
+
         predBytes = marsh.marshal(pred);
     }
 
@@ -221,16 +223,20 @@ public final class GridMessageListenHandler implements GridContinuousHandler, Ma
 
     /** {@inheritDoc} */
     @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        assert predBytes != null;
-
         /** Are unmarshaled in {@link #p2pUnmarshal(UUID, GridKernalContext)}. */
         if (predDepInfo != null) {
+            assert predBytes == null;
+
             p2pUnmarshalFut = new GridFutureAdapter<>();
 
             return;
         }
 
-        topic = marsh.unmarshal(topicBytes, clsLdr);
+        assert predBytes != null;
+
+        if (topicBytes != null)
+            topic = marsh.unmarshal(topicBytes, clsLdr);
+
         pred = marsh.unmarshal(predBytes, clsLdr);
     }
 
