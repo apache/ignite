@@ -298,7 +298,7 @@ public class MessageProcessorTest {
      */
     @Test
     public void testCustomMapperCannotBeUsedOnNonEnumCollection() {
-        Compilation compilation = compile("CustomEnumMapperOnArrayFieldMessage.java");
+        Compilation compilation = compile("CustomEnumMapperOnNonEnumCollectionMessage.java");
 
         assertThat(compilation).failed();
         assertThat(compilation).hadErrorContaining(CUSTOM_MAPPER_ERROR);

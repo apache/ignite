@@ -25,7 +25,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -46,8 +46,8 @@ class BinaryMetadataCollector implements BinaryWriter {
     /** Name mapper. */
     private final BinaryInternalMapper mapper;
 
-    /** Collected metadata. */
-    private final Map<String, BinaryFieldMetadata> meta = new HashMap<>();
+    /** Collected metadata in field write order. */
+    private final Map<String, BinaryFieldMetadata> meta = new LinkedHashMap<>();
 
     /** Schema builder. */
     private BinarySchema.Builder schemaBuilder = BinarySchema.Builder.newBuilder();
