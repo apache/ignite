@@ -42,7 +42,8 @@ import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.managers.encryption.MasterKeyChangeRequest;
 import org.apache.ignite.internal.managers.encryption.NodeEncryptionKeys;
 import org.apache.ignite.internal.managers.eventstorage.EventsDataBagItem;
-import org.apache.ignite.internal.managers.eventstorage.GridEventStorageMessage;
+import org.apache.ignite.internal.managers.eventstorage.GridEventStorageRequest;
+import org.apache.ignite.internal.managers.eventstorage.GridEventStorageResponse;
 import org.apache.ignite.internal.plugin.AbstractMarshallableMessageFactoryProvider;
 import org.apache.ignite.internal.processors.authentication.AuthentificationDataBagItem;
 import org.apache.ignite.internal.processors.authentication.User;
@@ -703,7 +704,8 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
 
         // [13000 - 13300]: Control, configuration, diagnostics and other messages.
         msgIdx = 13000;
-        register(GridEventStorageMessage.class);
+        register(GridEventStorageRequest.class);
+        register(GridEventStorageResponse.class);
         register(ChangeGlobalStateMessage.class);
         register(GridChangeGlobalStateMessageResponse.class);
         register(IgniteDiagnosticRequest.class);
