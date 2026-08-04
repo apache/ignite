@@ -192,7 +192,6 @@ public final class CacheContinuousQueryHandler<K, V> implements GridContinuousHa
     /** Remote transformer factory. */
     volatile Factory<? extends IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?>> rmtTransFactory;
 
-
     /** Deployable object for {@link #rmtTransFactory}. Is {@code null} if no external marsshalling used. */
     @Order(7)
     volatile CacheContinuousQueryDeployableObject rmtTransFactoryDep;
@@ -1418,6 +1417,10 @@ public final class CacheContinuousQueryHandler<K, V> implements GridContinuousHa
     @Override public void p2pMarshal(GridKernalContext ctx) throws IgniteCheckedException {
         assert ctx != null;
         assert ctx.config().isPeerClassLoadingEnabled();
+
+        // TODO : Remove this check after https://issues.apache.org/jira/browse/IGNITE-28945
+        if (rmtFilterDep != null || rmtFilterFactoryDep != null || rmtTransFactoryDep != null)
+            return;
 
         /**
          * Some filters, factories might be an Ignite-internals and do not require external marshaling. But there is no

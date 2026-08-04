@@ -29,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
 
 /** Local routine info.  */
 @UseBinaryMarshaller
-public class ContinousRoutineLocalInfo implements Message, GridContinuousProcessor.RoutineInfo {
+public final class ContinousRoutineLocalInfo implements Message, GridContinuousProcessor.RoutineInfo {
     /** Source node id. */
     @Order(0)
     UUID nodeId;
