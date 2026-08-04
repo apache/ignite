@@ -70,24 +70,19 @@ import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_ENABLE_OBJE
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
 public class JdkMarshallerImpl extends AbstractNodeNameAwareMarshaller implements JdkMarshaller {
-    /** */
-    private static final Object MUX = new Object();
-
     static {
         if (IgniteCommonsSystemProperties.getBoolean(IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION, true)) {
-            synchronized (MUX) {
-                ObjectInputFilter objFilter = ObjectInputFilter.Config.getSerialFilter();
+            ObjectInputFilter objFilter = ObjectInputFilter.Config.getSerialFilter();
 
-                if (objFilter == null)
-                    ObjectInputFilter.Config.setSerialFilter(new IgniteObjectInputFilter());
-                else if (!(objFilter instanceof IgniteObjectInputFilter)) {
-                    throw new IgniteException("Failed to autoconfigure Ignite Object Input Filter for the current JVM as" +
-                        " it was already set via `jdk.serialFilter` JVM system property or programmatically. You can disable" +
-                        " Object Input Stream Filter autoconfiguration by setting `IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION`" +
-                        " system property to `false`. Note that in this case you must configure Java Serialization" +
-                        " Filtering manually to filter out classes defined by the `IGNITE_MARSHALLER_BLACKLIST` system property" +
-                        " [objectInputFilterClass=" + objFilter.getClass().getName() + ']');
-                }
+            if (objFilter == null)
+                ObjectInputFilter.Config.setSerialFilter(new IgniteObjectInputFilter());
+            else if (!(objFilter instanceof IgniteObjectInputFilter)) {
+                throw new IgniteException("Failed to autoconfigure Ignite Object Input Filter for the current JVM as" +
+                    " it was already set via `jdk.serialFilter` JVM system property or programmatically. You can disable" +
+                    " Object Input Stream Filter autoconfiguration by setting `IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION`" +
+                    " system property to `false`. Note that in this case you must configure Java Serialization" +
+                    " Filtering manually to filter out classes defined by the `IGNITE_MARSHALLER_BLACKLIST` system property" +
+                    " [objectInputFilterClass=" + objFilter.getClass().getName() + ']');
             }
         }
     }
